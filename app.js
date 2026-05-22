@@ -13,6 +13,7 @@ let view = 'projects';   // 'projects' | 'library'
 let stack = [];          // navigation stack ('home' | {kind:'family', name} | {kind:'project', name})
 
 const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
+const LS_BENT_KEY = 'kd_bent_parts_v1';
 
 // ──────────────────────────────────────────────────────────────────────
 // Utilities
@@ -100,6 +101,37 @@ function markCompleted(name, done) {
   saveCompletedSet(s);
 }
 
+// ── Bent parts (per-part workshop tracking) ─────────────────────────
+
+function loadBentSet() {
+  try {
+    const raw = localStorage.getItem(LS_BENT_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch { return new Set(); }
+}
+
+function saveBentSet(set) {
+  try { localStorage.setItem(LS_BENT_KEY, JSON.stringify([...set])); } catch {}
+}
+
+function bentKey(projectKey, code) { return `${projectKey}::${code}`; }
+
+function isBent(projectKey, code) { return loadBentSet().has(bentKey(projectKey, code)); }
+
+function markBent(projectKey, code, done) {
+  const s = loadBentSet();
+  const k = bentKey(projectKey, code);
+  if (done) s.add(k); else s.delete(k);
+  saveBentSet(s);
+}
+
+function bentCountForProject(projectKey, parts) {
+  const set = loadBentSet();
+  return parts.filter(p => set.has(bentKey(projectKey, p.code))).length;
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Data shaping
 // ──────────────────────────────────────────────────────────────────────
@@ -130,15 +162,19 @@ function partsByFamily() {
 function projectList() {
   const projects = manifest.projects || {};
   const auto = manifest.auto_generated || {};
+  const bentSet = loadBentSet();
   const items = Object.entries(projects).map(([key, p]) => {
     const parts = p.parts || [];
     const drawnCount = parts.filter(part => !!auto[part.code]).length;
+    const bentCount = parts.filter(part => bentSet.has(bentKey(key, part.code))).length;
     return {
       key,
       ...p,
       completed: isCompleted(key),
       drawn_count: drawnCount,
       missing_count: parts.length - drawnCount,
+      bent_count: bentCount,
+      bent_pct: parts.length ? Math.round((bentCount * 100) / parts.length) : 0,
     };
   });
   // Sort: active first by updated_at desc, then completed by updated_at desc
@@ -216,11 +252,16 @@ function renderProjectsHome() {
     const updated = fmtDate(p.updated_at || p.created_at);
     const totalQty = p.total_qty != null ? p.total_qty : (p.parts || []).reduce((s, x) => s + (x.qty || 0), 0);
     const uniq = p.total_unique_parts != null ? p.total_unique_parts : (p.parts || []).length;
+    const bentBadge = p.bent_count > 0
+      ? `<span class="project-badge bent">🔨 ${p.bent_count}/${uniq} bent (${p.bent_pct}%)</span>`
+      : '';
+    const progressBar = `<div class="progress-bar"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>`;
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         <div class="project-name">${escapeHtml(p.name || p.key)}${statusBadge}</div>
         <div class="project-meta">${escapeHtml(updated)} · ${uniq} unique · ${totalQty} pcs · ${p.drawn_count}/${uniq} drawn</div>
-        <div class="project-badges">${drawingBadge}</div>
+        ${progressBar}
+        <div class="project-badges">${drawingBadge}${bentBadge}</div>
       </div>`;
   }).join('');
 
@@ -260,15 +301,17 @@ function saveCollapsed(set) {
   try { localStorage.setItem(LS_COLLAPSED_KEY, JSON.stringify([...set])); } catch {}
 }
 
-function renderBomRow(p) {
+function renderBomRow(p, projectKey) {
   const fam = p.family || 'Other';
   const url = pdfUrlForCode(p.code);
   const hasDrawing = !!url;
+  const bent = projectKey ? isBent(projectKey, p.code) : false;
   return `
-    <div class="bom-row" data-url="${escapeHtml(url)}" data-has="${hasDrawing}" style="${famVars(fam)}">
+    <div class="bom-row ${bent ? 'bent' : ''}" data-url="${escapeHtml(url)}" data-has="${hasDrawing}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
       <span class="bom-icon">${familyIcon(fam)}</span>
       <span class="bom-code">${escapeHtml(p.code)}</span>
       <span class="bom-qty">×${p.qty}</span>
+      <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent">${bent ? '✓' : '○'}</button>
     </div>`;
 }
 
@@ -299,7 +342,7 @@ function renderProject(key) {
     const isCollapsed = collapsed.has(groupId);
     const totalQty = items.reduce((s, x) => s + (x.qty || 0), 0);
     const isOrphan = master === '(no drawing yet)';
-    const rowsHtml = items.map(renderBomRow).join('');
+    const rowsHtml = items.map(p => renderBomRow(p, key)).join('');
     return `
       <div class="master-group ${isCollapsed ? 'collapsed' : ''} ${isOrphan ? 'orphan' : ''}" data-group="${escapeHtml(groupId)}">
         <div class="master-header">
@@ -315,9 +358,19 @@ function renderProject(key) {
     ? project.total_qty
     : parts.reduce((s, x) => s + (x.qty || 0), 0);
 
+  const bentCount = bentCountForProject(key, parts);
+  const bentPct = parts.length ? Math.round((bentCount * 100) / parts.length) : 0;
+
   ROOT.innerHTML = `
     <button class="back-btn">← กลับ</button>
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
+    <div class="bent-summary">
+      <div class="bent-row">
+        <span class="bent-label">🔨 Bending progress</span>
+        <span class="bent-stat">${bentCount}/${parts.length} parts done · ${bentPct}%</span>
+      </div>
+      <div class="progress-bar large"><div class="progress-fill" style="width:${bentPct}%"></div></div>
+    </div>
     <div class="project-actions">
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
         ${completed ? '↺ Re-activate' : '✓ Mark Completed'}
@@ -376,6 +429,15 @@ function renderProject(key) {
       set.add(g.dataset.group);
     });
     saveCollapsed(set);
+  });
+
+  ROOT.querySelectorAll('.bent-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const code = btn.dataset.code;
+      markBent(key, code, !isBent(key, code));
+      render();
+    });
   });
 
   ROOT.querySelectorAll('.bom-row').forEach(el => {

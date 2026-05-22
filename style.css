@@ -324,6 +324,90 @@ h1 {
 
 .bom-row[data-has="false"]:active { transform: none; }
 
+/* --- Bent toggle (per-part workshop tracking) --- */
+
+.bent-btn {
+  background: transparent;
+  border: 2px solid #444;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.bent-btn:active { transform: scale(0.85); }
+
+.bom-row.bent .bent-btn {
+  background: #2c5d34;
+  border-color: #5dbb63;
+  color: #fff;
+}
+
+.bom-row.bent .bom-code {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+
+.bom-row.bent .bom-icon {
+  opacity: 0.45;
+}
+
+.bom-row.bent .bom-qty {
+  opacity: 0.6;
+}
+
+/* --- Progress bar (BOM page header + project card) --- */
+
+.bent-summary {
+  background: #1a1f24;
+  padding: 12px 14px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  border: 1px solid #232830;
+}
+
+.bent-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.bent-label { font-weight: 600; }
+.bent-stat { color: #5dbb63; font-size: 12px; }
+
+.progress-bar {
+  background: #2a2f34;
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.progress-bar.large { height: 10px; border-radius: 5px; }
+
+.progress-fill {
+  background: linear-gradient(90deg, #4a90e2 0%, #5dbb63 100%);
+  height: 100%;
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.project-badge.bent {
+  background: #2c5d34;
+  color: #c5e8c8;
+}
+
 .bom-icon { font-size: 18px; width: 22px; text-align: center; }
 
 .bom-code {
