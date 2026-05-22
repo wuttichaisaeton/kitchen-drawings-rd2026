@@ -1,0 +1,13 @@
+{
+  "name": "kitchen-drawings-ui",
+  "version": "1.0.0",
+  "description": "Mobile/iPad web UI for Stainless Kitchen workshop drawing PDFs.",
+  "scripts": {
+    "start": "serve . -l tcp://0.0.0.0:${PORT:-3000} --no-clipboard --no-port-switching",
+    "dev": "serve . -l 3000"
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  }
+}
+

@@ -1,0 +1,11 @@
+{
+  "Drawer":     {"icon": "📦", "order": 1, "color": "#4a90e2", "tint": "#1f3450"},
+  "Door":       {"icon": "🚪", "order": 2, "color": "#5dbb63", "tint": "#1e3625"},
+  "Side Panel": {"icon": "▥",  "order": 3, "color": "#d4a44a", "tint": "#3a2e15"},
+  "Back-Down":  {"icon": "⬛", "order": 4, "color": "#a070d0", "tint": "#2e1f3a"},
+  "Floor":      {"icon": "▤",  "order": 5, "color": "#e07a5f", "tint": "#3a201a"},
+  "Top Sup":    {"icon": "▦",  "order": 6, "color": "#4ac4c4", "tint": "#15333a"},
+  "Beam":       {"icon": "━",  "order": 7, "color": "#c44a8a", "tint": "#3a1a2e"},
+  "Other":      {"icon": "📄", "order": 8, "color": "#888888", "tint": "#262626"},
+  "Custom":     {"icon": "✨", "order": 9, "color": "#e2c84a", "tint": "#3a3315"}
+}

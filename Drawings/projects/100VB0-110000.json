@@ -1,0 +1,70 @@
+{
+  "name": "100VB0-110000",
+  "status": "active",
+  "created_at": "2026-05-22T21:52:11.208867+00:00",
+  "updated_at": "2026-05-22T22:18:28.500231+00:00",
+  "total_unique_parts": 12,
+  "total_qty": 19,
+  "parts": [
+    {
+      "code": "BK1DN1-110000",
+      "qty": 1,
+      "family": "Back-Down"
+    },
+    {
+      "code": "BM2LI0-110000",
+      "qty": 3,
+      "family": "Beam"
+    },
+    {
+      "code": "DSB0BA-110050",
+      "qty": 1,
+      "family": "Other"
+    },
+    {
+      "code": "DSB0F0-110050",
+      "qty": 1,
+      "family": "Other"
+    },
+    {
+      "code": "DSV100-110020",
+      "qty": 1,
+      "family": "Drawer"
+    },
+    {
+      "code": "DSV2B1-110020",
+      "qty": 1,
+      "family": "Drawer"
+    },
+    {
+      "code": "DSV2B2-110020",
+      "qty": 1,
+      "family": "Drawer"
+    },
+    {
+      "code": "DSV2B3-110020",
+      "qty": 1,
+      "family": "Drawer"
+    },
+    {
+      "code": "DSV2B4-110020",
+      "qty": 1,
+      "family": "Drawer"
+    },
+    {
+      "code": "TS1BHH-110000",
+      "qty": 2,
+      "family": "Top Sup"
+    },
+    {
+      "code": "TS1BVH-060000",
+      "qty": 2,
+      "family": "Top Sup"
+    },
+    {
+      "code": "TS2TRX-000000",
+      "qty": 4,
+      "family": "Top Sup"
+    }
+  ]
+}

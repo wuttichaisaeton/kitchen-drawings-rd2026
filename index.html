@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Kitchen Drawings</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <h1>🔥 Kitchen Drawings</h1>
+      <span id="updated" class="updated"></span>
+    </div>
+    <div class="tabs">
+      <button id="tab-projects" class="tab active" data-view="projects">📋 Projects</button>
+      <button id="tab-library"  class="tab"        data-view="library">📦 Library</button>
+    </div>
+    <div class="search-wrap">
+      <input id="search" type="search" placeholder="ค้นหา…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button id="search-clear" type="button" aria-label="Clear">✕</button>
+    </div>
+  </header>
+
+  <main id="root">
+    <p class="loading">Loading…</p>
+  </main>
+
+  <footer>
+    <span id="count"></span>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

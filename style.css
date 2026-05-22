@@ -1,0 +1,535 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  background: #0f1419;
+  color: #e4e4e4;
+  min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+header {
+  padding: 14px 16px 12px;
+  background: #1a1f24;
+  border-bottom: 1px solid #2a2f34;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: calc(14px + env(safe-area-inset-top));
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 18px;
+  color: #4a90e2;
+  white-space: nowrap;
+}
+
+.updated {
+  font-size: 11px;
+  opacity: 0.5;
+  white-space: nowrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.tab {
+  flex: 1;
+  padding: 8px 10px;
+  background: #2a2f34;
+  color: #aaa;
+  border: 1px solid #3a3f44;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tab.active {
+  background: #1f3450;
+  color: #e4e4e4;
+  border-color: #4a90e2;
+}
+
+.tab:active { transform: scale(0.97); }
+
+.search-wrap {
+  position: relative;
+}
+
+#search {
+  width: 100%;
+  padding: 9px 38px 9px 12px;
+  background: #2a2f34;
+  color: #e4e4e4;
+  border: 1px solid #3a3f44;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#search:focus { border-color: #4a90e2; }
+
+/* Hide native search cancel button (we have a custom one) */
+#search::-webkit-search-cancel-button,
+#search::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+
+#search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #3a3f44;
+  color: #aaa;
+  border: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  display: none;
+}
+
+#search-clear.visible { display: flex; align-items: center; justify-content: center; }
+#search-clear:active { background: #4a90e2; color: #fff; }
+
+/* --- Project cards (Projects view) --- */
+
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.project-card {
+  background: #1a1f24;
+  padding: 14px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: 1px solid #232830;
+  transition: background 0.15s;
+}
+
+.project-card.completed {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.project-card.active-today {
+  border-color: #4a90e2;
+  background: #1c2535;
+  box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.5);
+  animation: todayPulse 2.5s ease-out infinite;
+}
+
+@keyframes todayPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.35); }
+  60%  { box-shadow: 0 0 0 8px rgba(74, 144, 226, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(74, 144, 226, 0); }
+}
+
+.project-card.completed {
+  filter: grayscale(0.4);
+}
+
+.project-card:active { background: #232830; }
+
+.project-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.project-meta {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.project-badge {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #4a90e2;
+  color: #fff;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.project-badge.done {
+  background: #555;
+}
+
+.project-badge.missing {
+  background: #d4a44a;
+  color: #1a1a1a;
+}
+
+.project-badge.complete {
+  background: #5dbb63;
+  color: #fff;
+}
+
+.project-badges {
+  margin-top: 6px;
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.filter-btn {
+  background: #2a2f34;
+  color: #aaa;
+  border: 1px solid #3a3f44;
+  padding: 6px 10px;
+  border-radius: 14px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn.active {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+}
+
+.filter-btn:active { transform: scale(0.96); }
+
+.project-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* --- BOM list inside project --- */
+
+/* Auto-fit grid: as many columns as fit (min 260px each).
+   - iPhone portrait (~375px) → 1 col
+   - iPhone landscape (~812px) → 2-3 cols
+   - iPad portrait (768px) → 2 cols
+   - iPad landscape (1024px) → 3 cols
+   - Desktop (≥1280px) → 4+ cols
+   Auto-adapts on rotation. */
+.bom-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 6px 12px;
+}
+
+.bom-row {
+  background: #1a1f24;
+  padding: 12px 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px solid #232830;
+  border-left: 3px solid var(--fam-color, #4a90e2);
+  transition: background 0.15s, transform 0.08s;
+}
+
+.bom-row:active {
+  background: #232830;
+  transform: scale(0.99);
+}
+
+.bom-row[data-has="false"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bom-row[data-has="false"]:active { transform: none; }
+
+.bom-icon { font-size: 18px; width: 22px; text-align: center; }
+
+.bom-code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  /* 13-character fixed-width column — project uses 13-char part codes as the standard.
+     Monospace + min-width:13ch makes every code align to the same right edge. */
+  min-width: 13ch;
+  letter-spacing: 0;
+}
+
+.bom-qty {
+  background: #2a2f34;
+  color: #4a90e2;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 44px;
+  text-align: center;
+  margin-left: 10px;
+}
+
+/* --- Project actions (mark complete button) --- */
+
+.project-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.action-btn {
+  background: #2a2f34;
+  color: #e4e4e4;
+  border: 1px solid #3a3f44;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.action-btn:active { transform: scale(0.97); }
+
+.action-btn.danger {
+  border-color: #c25555;
+  color: #e29090;
+}
+
+main {
+  padding: 14px;
+  animation: pageFade 0.2s ease-out;
+}
+
+@keyframes pageFade {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+main.transit-back {
+  animation: pageFadeBack 0.18s ease-out;
+}
+
+@keyframes pageFadeBack {
+  from { opacity: 0; transform: translateX(-6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.loading {
+  opacity: 0.6;
+  text-align: center;
+  padding: 60px 0;
+  font-size: 14px;
+}
+
+.error {
+  padding: 20px;
+  background: #2a1a1a;
+  border-left: 3px solid #e25555;
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* --- Family grid (index page) --- */
+
+.family-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.family-card {
+  background: var(--fam-tint, #1a1f24);
+  padding: 18px 12px;
+  border-radius: 10px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.15s, border-color 0.15s;
+  border: 1px solid var(--fam-color, #232830);
+  border-left: 4px solid var(--fam-color, #4a90e2);
+}
+
+.family-card:active {
+  transform: scale(0.97);
+  background: color-mix(in srgb, var(--fam-tint, #1f2530) 70%, white 5%);
+}
+
+.family-icon { font-size: 26px; line-height: 1; }
+
+.family-name {
+  font-weight: 600;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.family-count {
+  opacity: 0.5;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+/* --- Part list (drill-down page) --- */
+
+.back-btn {
+  background: none;
+  border: none;
+  color: #4a90e2;
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 12px;
+  padding: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-btn:active { opacity: 0.5; }
+
+.section-title {
+  margin: 0 0 12px;
+  font-size: 16px;
+  color: #e4e4e4;
+}
+
+.section-title .count {
+  opacity: 0.5;
+  font-weight: normal;
+  font-size: 13px;
+  margin-left: 6px;
+}
+
+.part-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 6px 12px;
+}
+
+.part-row {
+  background: #1a1f24;
+  padding: 11px 14px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  border: 1px solid #232830;
+  border-left: 3px solid var(--fam-color, #4a90e2);
+  transition: background 0.15s, transform 0.08s;
+}
+
+.part-row:active {
+  background: #232830;
+  transform: scale(0.99);
+}
+
+.part-row .part-icon {
+  font-size: 16px;
+  opacity: 0.9;
+  width: 20px;
+  text-align: center;
+}
+
+.part-row .part-code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  min-width: 13ch;
+}
+
+.part-code {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+
+.part-version {
+  color: #4a90e2;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.part-meta {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 2px;
+}
+
+/* --- Search results (mixed family display) --- */
+
+.search-row {
+  background: #1a1f24;
+  padding: 10px 14px;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  border: 1px solid #232830;
+}
+
+.search-row:active { background: #232830; }
+
+.search-row .row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.search-row .row-fam {
+  font-size: 11px;
+  opacity: 0.5;
+  margin-top: 3px;
+}
+
+/* --- Footer --- */
+
+footer {
+  text-align: center;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  font-size: 11px;
+  opacity: 0.4;
+}
+
+/* --- iPad portrait: 3-col grid, larger touch targets --- */
+
+@media (min-width: 768px) {
+  body { font-size: 16px; }
+  header { padding: 18px 28px 14px; padding-top: calc(18px + env(safe-area-inset-top)); }
+  h1 { font-size: 22px; }
+  .updated { font-size: 12px; }
+  .tab { padding: 10px 14px; font-size: 14px; }
+  #search { font-size: 16px; padding: 11px 14px; }
+  main { padding: 22px 28px; }
+  .family-grid { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .family-card { padding: 26px 14px; }
+  .family-icon { font-size: 34px; }
+  .family-name { font-size: 15px; margin-top: 8px; }
+  .family-count { font-size: 12px; }
+  .part-row { padding: 14px 18px; }
+  .part-code { font-size: 14px; }
+  .section-title { font-size: 18px; }
+  .project-card { padding: 18px 22px; }
+  .project-name { font-size: 17px; }
+  .bom-row { padding: 14px 18px; }
+  .bom-code { font-size: 14px; }
+  .bom-qty { font-size: 14px; min-width: 52px; padding: 4px 12px; }
+  .bom-icon { font-size: 22px; }
+}
+
+/* --- iPad landscape / desktop: 4-col grid centered --- */
+
+@media (min-width: 1024px) {
+  .family-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  main { max-width: 1100px; margin: 0 auto; }
+  header > div, header { max-width: 1100px; margin-left: auto; margin-right: auto; }
+}
