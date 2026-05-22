@@ -233,6 +233,45 @@ function renderProjectsHome() {
   COUNT_EL.textContent = `${items.length} projects · ${items.filter(p => !p.completed).length} active`;
 }
 
+function masterForCode(code, auto) {
+  const entry = (auto || manifest.auto_generated || {})[code];
+  if (!entry || !entry.pdf) return null;
+  return entry.pdf.replace(/\.pdf$/i, '');
+}
+
+function groupPartsByMaster(parts, auto) {
+  // Ordered map: master_name -> [parts] (insertion order from input parts)
+  const groups = new Map();
+  for (const p of parts) {
+    const master = masterForCode(p.code, auto) || '(no drawing yet)';
+    if (!groups.has(master)) groups.set(master, []);
+    groups.get(master).push(p);
+  }
+  return groups;
+}
+
+const LS_COLLAPSED_KEY = 'kd_collapsed_groups_v1';
+
+function loadCollapsed() {
+  try { return new Set(JSON.parse(localStorage.getItem(LS_COLLAPSED_KEY)) || []); }
+  catch { return new Set(); }
+}
+function saveCollapsed(set) {
+  try { localStorage.setItem(LS_COLLAPSED_KEY, JSON.stringify([...set])); } catch {}
+}
+
+function renderBomRow(p) {
+  const fam = p.family || 'Other';
+  const url = pdfUrlForCode(p.code);
+  const hasDrawing = !!url;
+  return `
+    <div class="bom-row" data-url="${escapeHtml(url)}" data-has="${hasDrawing}" style="${famVars(fam)}">
+      <span class="bom-icon">${familyIcon(fam)}</span>
+      <span class="bom-code">${escapeHtml(p.code)}</span>
+      <span class="bom-qty">×${p.qty}</span>
+    </div>`;
+}
+
 function renderProject(key) {
   const project = (manifest.projects || {})[key];
   if (!project) {
@@ -243,33 +282,42 @@ function renderProject(key) {
   const parts = project.parts || [];
   const auto = manifest.auto_generated || {};
 
-  // Filter state stored on the stack node so back/forth keeps state
   const top = stack[stack.length - 1] || {};
-  const filter = top.filter || 'all';  // 'all' | 'missing'
+  const filter = top.filter || 'all';
 
   const visibleParts = filter === 'missing'
     ? parts.filter(p => !auto[p.code])
     : parts;
-
   const missingCount = parts.filter(p => !auto[p.code]).length;
 
-  const rows = visibleParts.map(p => {
-    const fam = p.family || 'Other';
-    const url = pdfUrlForCode(p.code);
-    const hasDrawing = !!url;
+  // Group by source master file
+  const groups = groupPartsByMaster(visibleParts, auto);
+  const collapsed = loadCollapsed();
+
+  const groupsHtml = [...groups.entries()].map(([master, items]) => {
+    const groupId = `${key}::${master}`;
+    const isCollapsed = collapsed.has(groupId);
+    const totalQty = items.reduce((s, x) => s + (x.qty || 0), 0);
+    const isOrphan = master === '(no drawing yet)';
+    const rowsHtml = items.map(renderBomRow).join('');
     return `
-      <div class="bom-row" data-url="${escapeHtml(url)}" data-has="${hasDrawing}" style="${famVars(fam)}">
-        <span class="bom-icon">${familyIcon(fam)}</span>
-        <span class="bom-code">${escapeHtml(p.code)}</span>
-        <span class="bom-qty">×${p.qty}</span>
+      <div class="master-group ${isCollapsed ? 'collapsed' : ''} ${isOrphan ? 'orphan' : ''}" data-group="${escapeHtml(groupId)}">
+        <div class="master-header">
+          <span class="master-toggle">▼</span>
+          <span class="master-name">${escapeHtml(master)}</span>
+          <span class="master-meta">${items.length} parts · ${totalQty} pcs</span>
+        </div>
+        <div class="master-rows">${rowsHtml}</div>
       </div>`;
   }).join('');
 
-  const totalQty = project.total_qty != null ? project.total_qty : parts.reduce((s, x) => s + (x.qty || 0), 0);
+  const totalQtyAll = project.total_qty != null
+    ? project.total_qty
+    : parts.reduce((s, x) => s + (x.qty || 0), 0);
 
   ROOT.innerHTML = `
     <button class="back-btn">← กลับ</button>
-    <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQty} pcs</span></h2>
+    <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
     <div class="project-actions">
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
         ${completed ? '↺ Re-activate' : '✓ Mark Completed'}
@@ -278,8 +326,10 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
       </div>
+      <button class="action-btn" id="expand-all">⊞ Expand all</button>
+      <button class="action-btn" id="collapse-all">⊟ Collapse all</button>
     </div>
-    <div class="bom-list">${rows || '<p class="loading">ทุก part มี drawing แล้ว ✓</p>'}</div>
+    <div class="master-list">${groupsHtml || '<p class="loading">ทุก part มี drawing แล้ว ✓</p>'}</div>
   `;
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
@@ -293,6 +343,41 @@ function renderProject(key) {
       render();
     });
   });
+
+  // Master-group collapsible
+  ROOT.querySelectorAll('.master-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const group = h.parentElement;
+      const id = group.dataset.group;
+      const set = loadCollapsed();
+      if (group.classList.contains('collapsed')) {
+        group.classList.remove('collapsed');
+        set.delete(id);
+      } else {
+        group.classList.add('collapsed');
+        set.add(id);
+      }
+      saveCollapsed(set);
+    });
+  });
+
+  ROOT.querySelector('#expand-all').addEventListener('click', () => {
+    const set = loadCollapsed();
+    ROOT.querySelectorAll('.master-group').forEach(g => {
+      g.classList.remove('collapsed');
+      set.delete(g.dataset.group);
+    });
+    saveCollapsed(set);
+  });
+  ROOT.querySelector('#collapse-all').addEventListener('click', () => {
+    const set = loadCollapsed();
+    ROOT.querySelectorAll('.master-group').forEach(g => {
+      g.classList.add('collapsed');
+      set.add(g.dataset.group);
+    });
+    saveCollapsed(set);
+  });
+
   ROOT.querySelectorAll('.bom-row').forEach(el => {
     el.addEventListener('click', () => {
       if (el.dataset.has === 'true') window.open(el.dataset.url, '_blank', 'noopener');

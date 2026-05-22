@@ -231,10 +231,72 @@ h1 {
    - iPad landscape (1024px) → 3 cols
    - Desktop (≥1280px) → 4+ cols
    Auto-adapts on rotation. */
-.bom-list {
+.bom-list,
+.master-rows {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 6px 12px;
+}
+
+/* Collapsible master groups — owner sees which source .f3d each part comes from */
+
+.master-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.master-group {
+  background: #14181c;
+  border-radius: 8px;
+  border: 1px solid #232830;
+  overflow: hidden;
+}
+
+.master-header {
+  background: #1f262d;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.master-header:active { background: #28313a; }
+
+.master-toggle {
+  font-size: 11px;
+  opacity: 0.7;
+  width: 12px;
+  transition: transform 0.2s;
+}
+
+.master-group.collapsed .master-toggle { transform: rotate(-90deg); }
+.master-group.collapsed .master-rows { display: none; }
+
+.master-name {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.master-meta {
+  font-size: 11px;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.master-group.orphan .master-header {
+  background: #3a2a15;
+  border-bottom: 1px solid #4a3a25;
+}
+.master-group.orphan .master-name { color: #d4a44a; }
+
+.master-rows {
+  padding: 8px 10px;
 }
 
 .bom-row {
