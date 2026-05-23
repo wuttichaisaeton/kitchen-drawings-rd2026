@@ -8,8 +8,9 @@ const COUNT_EL = document.getElementById('count');
 
 let manifest = null;
 let families = null;
+let missingData = null;  // { scanned_at, project_name, count, missing: [{name,urn,family,folder_path,open_url}] }
 
-let view = 'projects';   // 'projects' | 'library'
+let view = 'projects';   // 'projects' | 'library' | 'missing'
 let stack = [];          // navigation stack ('home' | {kind:'family', name} | {kind:'project', name})
 
 const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
@@ -60,7 +61,14 @@ function fmtDate(iso) {
 }
 
 function familyIcon(name) {
-  return (families[name] && families[name].icon) || '📄';
+  const f = families[name];
+  if (f && f.image) {
+    // CSS mask-image: SVG = mask shape, background-color = --fam-color
+    // (cascaded from parent row/card). Width/height = 1em scales the icon
+    // with the parent's font-size — no per-container sizing needed.
+    return `<span class="fam-icon" style="--icon-mask:url('${f.image}')" aria-hidden="true"></span>`;
+  }
+  return (f && f.icon) || '📄';
 }
 
 function famVars(name) {
@@ -194,6 +202,7 @@ function projectList() {
 function render() {
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
+    if (view === 'missing')  return renderMissingHome();
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
@@ -379,8 +388,8 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
       </div>
-      <button class="action-btn" id="expand-all">⊞ Expand all</button>
-      <button class="action-btn" id="collapse-all">⊟ Collapse all</button>
+      <button class="action-btn" id="expand-all"><svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg> Expand all</button>
+      <button class="action-btn" id="collapse-all"><svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 11 12 6 17 11"/><polyline points="7 18 12 13 17 18"/></svg> Collapse all</button>
     </div>
     <div class="master-list">${groupsHtml || '<p class="loading">ทุก part มี drawing แล้ว ✓</p>'}</div>
   `;
@@ -445,6 +454,81 @@ function renderProject(key) {
       if (el.dataset.has === 'true') window.open(el.dataset.url, '_blank', 'noopener');
     });
   });
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Missing view — masters that need a drawing.
+// Data source: drawings-ui/Drawings/missing.json
+//   (populated by CC_ScanMissingDrawings Fusion script)
+// Each row has an "Open in Fusion" deep link → browser → Fusion launches.
+// ──────────────────────────────────────────────────────────────────────
+
+function renderMissingHome() {
+  if (!missingData || !Array.isArray(missingData.missing)) {
+    ROOT.innerHTML = `
+      <div class="empty-state">
+        <h2>⚠️ ยังไม่มีข้อมูล Missing</h2>
+        <p>รัน <code>CC_ScanMissingDrawings</code> ใน Fusion เพื่อ scan
+        Cloud project + create <code>missing.json</code></p>
+        <p>หลัง sync (~1 นาที) refresh page นี้ → จะเห็น list</p>
+      </div>`;
+    COUNT_EL.textContent = '';
+    return;
+  }
+
+  const items = missingData.missing.slice();
+  if (!items.length) {
+    ROOT.innerHTML = `
+      <div class="empty-state">
+        <h2>🎉 ไม่มี missing drawing</h2>
+        <p>ทุก master ใน "${escapeHtml(missingData.project_name || 'project')}" มี drawing คู่กันครบ</p>
+        <p class="muted">Last scan: ${escapeHtml(fmtDate(missingData.scanned_at))}</p>
+      </div>`;
+    COUNT_EL.textContent = '0 missing';
+    return;
+  }
+
+  // Group by family
+  const groups = {};
+  for (const e of items) {
+    const fam = e.family || 'Other';
+    if (!groups[fam]) groups[fam] = [];
+    groups[fam].push(e);
+  }
+  const groupNames = Object.keys(groups).sort(familyOrder);
+
+  const sections = groupNames.map(fam => {
+    const rows = groups[fam].map(e => {
+      const href = e.open_url || '#';
+      const targetAttr = e.open_url ? 'target="_blank" rel="noopener"' : 'aria-disabled="true"';
+      return `
+        <div class="missing-row" style="${famVars(fam)}">
+          <span class="missing-icon">${familyIcon(fam)}</span>
+          <span class="missing-name">${escapeHtml(e.name)}</span>
+          <span class="missing-path">${escapeHtml(e.folder_path || '/')}</span>
+          <a class="missing-open" href="${escapeHtml(href)}" ${targetAttr}>Open ↗</a>
+        </div>`;
+    }).join('');
+    return `
+      <section class="missing-group">
+        <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">
+          ${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${groups[fam].length}</span>
+        </h2>
+        ${rows}
+      </section>`;
+  }).join('');
+
+  const scanInfo = missingData.scanned_at
+    ? `Scanned ${escapeHtml(fmtDate(missingData.scanned_at))} · ${missingData.pairs_count || 0} pairs OK`
+    : '';
+
+  ROOT.innerHTML = `
+    <div class="missing-header">
+      <p class="muted">${scanInfo}</p>
+      <p class="hint">Click <strong>Open ↗</strong> → browser ถาม "Open in Fusion?" → สร้าง drawing → save → re-run scan</p>
+    </div>
+    ${sections}`;
+  COUNT_EL.textContent = `${items.length} missing`;
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -602,10 +686,27 @@ document.querySelectorAll('.tab').forEach(btn => {
     SEARCH.value = '';
     updateSearchClear();
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
-    SEARCH.placeholder = view === 'projects' ? 'ค้นหา project หรือ part…' : 'ค้นหา part code…';
+    SEARCH.placeholder =
+      view === 'projects' ? 'ค้นหา project หรือ part…' :
+      view === 'missing'  ? 'ค้นหา missing master…' :
+                            'ค้นหา part code…';
     render();
   });
 });
+
+// Update Missing tab badge with count
+function updateMissingBadge() {
+  const badge = document.getElementById('missing-badge');
+  if (!badge) return;
+  const n = (missingData && Array.isArray(missingData.missing)) ? missingData.missing.length : 0;
+  if (n > 0) {
+    badge.textContent = String(n);
+    badge.style.display = '';
+  } else {
+    badge.textContent = '';
+    badge.style.display = 'none';
+  }
+}
 
 // ──────────────────────────────────────────────────────────────────────
 // Search input
@@ -645,6 +746,17 @@ async function init() {
     manifest = m;
     families = f;
     UPDATED.textContent = fmtDate(manifest.generated_at);
+
+    // Load missing.json (optional — silently absent until first scan).
+    // missing.json lives next to manifest.json in the Drawings/ folder.
+    try {
+      const mu = window.APP_CONFIG.MANIFEST_URL || 'Drawings/manifest.json';
+      const missingPath = mu.replace(/[^/]+$/, 'missing.json');
+      missingData = await fetchJson(missingPath);
+    } catch (e) {
+      missingData = null;
+    }
+    updateMissingBadge();
 
     // If no projects yet, default to Library view
     const hasProjects = manifest.projects && Object.keys(manifest.projects).length > 0;

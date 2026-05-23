@@ -64,6 +64,19 @@ h1 {
   border-color: #4a90e2;
 }
 
+/* Count badge on Missing tab (hidden by default; shown when N > 0) */
+.tab-badge {
+  display: none;
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #c44a4a;
+  color: #fff;
+  border-radius: 10px;
+  vertical-align: middle;
+}
+
 .tab:active { transform: scale(0.97); }
 
 .search-wrap {
@@ -451,6 +464,15 @@ h1 {
 
 .action-btn:active { transform: scale(0.97); }
 
+/* Inline SVG icons inside action buttons (Expand all / Collapse all etc.)
+   stroke=currentColor → inherits button text color, no theming needed. */
+.action-btn .btn-svg {
+  width: 14px;
+  height: 14px;
+  vertical-align: -2px;
+  margin-right: 2px;
+}
+
 .action-btn.danger {
   border-color: #c25555;
   color: #e29090;
@@ -515,6 +537,19 @@ main.transit-back {
 }
 
 .family-icon { font-size: 26px; line-height: 1; }
+
+/* SVG icon (mask-image trick) — colored shape that takes --fam-color from
+   the parent row/card. Scales with parent font-size (1em × 1em).
+   Falls back gracefully to emoji if families.json has no `image` field. */
+.fam-icon {
+  display: inline-block;
+  vertical-align: -0.15em;
+  width: 1em;
+  height: 1em;
+  background-color: var(--fam-color, currentColor);
+  -webkit-mask: var(--icon-mask) center / contain no-repeat;
+          mask: var(--icon-mask) center / contain no-repeat;
+}
 
 .family-name {
   font-weight: 600;
@@ -635,6 +670,94 @@ main.transit-back {
   font-size: 11px;
   opacity: 0.5;
   margin-top: 3px;
+}
+
+/* --- Missing view --- */
+
+.missing-header {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  background: #1f2530;
+  border: 1px solid #2f3540;
+  border-radius: 10px;
+}
+.missing-header .muted { font-size: 11px; opacity: 0.55; margin: 0 0 4px; }
+.missing-header .hint  { font-size: 12px; opacity: 0.8;  margin: 0; }
+.missing-header strong { color: #e07a5f; }
+
+.empty-state {
+  padding: 40px 20px;
+  text-align: center;
+  opacity: 0.7;
+}
+.empty-state h2 { font-size: 18px; margin-bottom: 12px; }
+.empty-state p  { font-size: 13px; line-height: 1.6; margin: 6px 0; }
+.empty-state code {
+  background: #2a2f34; padding: 1px 6px; border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
+}
+.empty-state .muted { opacity: 0.5; font-size: 11px; margin-top: 14px; }
+
+.missing-group { margin-bottom: 18px; }
+.missing-group .section-title .count {
+  margin-left: 10px;
+  padding: 1px 8px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.missing-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 5px;
+  background: #1a1f24;
+  border: 1px solid #232830;
+  border-left: 3px solid var(--fam-color, #4a90e2);
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.missing-row:hover { background: #20262d; }
+
+.missing-icon { font-size: 18px; width: 22px; text-align: center; }
+
+.missing-name {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  min-width: 13ch;
+  color: #e4e4e4;
+}
+
+.missing-path {
+  font-size: 11px;
+  opacity: 0.55;
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.missing-open {
+  padding: 6px 12px;
+  background: var(--fam-color, #4a90e2);
+  color: #fff;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.missing-open:hover  { opacity: 0.85; }
+.missing-open:active { transform: scale(0.96); }
+.missing-open[aria-disabled="true"] {
+  opacity: 0.3;
+  pointer-events: none;
 }
 
 /* --- Footer --- */
