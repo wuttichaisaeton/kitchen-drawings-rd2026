@@ -605,11 +605,18 @@ function renderMissingHome() {
       const badge = isStale
         ? `<span class="missing-badge stale" title="Master saved after drawing — re-export needed">⏰ outdated</span>`
         : '';
+      // For stale: open the DRAWING file (user needs to update drawing, not master)
+      // For missing: open the MASTER file (user needs to create a drawing from it)
+      const openUrn = isStale && e.drawing_urn ? e.drawing_urn : (e.urn || '');
+      const openLabel = isStale ? 'Update ↗' : 'Open ↗';
+      const openTitle = isStale
+        ? `Open drawing "${e.drawing_name || ''}" to re-export`
+        : `Open master "${e.name}" to create drawing`;
       return `
-      <div class="missing-card ${isStale ? 'stale' : ''}" style="${famVars(fam)}" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">
+      <div class="missing-card ${isStale ? 'stale' : ''}" style="${famVars(fam)}" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(e.open_url || '#')}">
         <span class="missing-card-icon">${familyIcon(fam)}</span>
         <span class="missing-card-name">${escapeHtml(e.name)}${badge}</span>
-        <button class="missing-open" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">Open ↗</button>
+        <button class="missing-open" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(e.open_url || '#')}" title="${escapeHtml(openTitle)}">${openLabel}</button>
       </div>`;
     }).join('');
     return `
