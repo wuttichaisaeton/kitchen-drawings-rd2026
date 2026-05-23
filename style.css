@@ -685,6 +685,40 @@ main.transit-back {
 .missing-header .hint  { font-size: 12px; opacity: 0.8;  margin: 0; }
 .missing-header strong { color: #e07a5f; }
 
+.missing-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.missing-toolbar .muted { margin: 0; }
+
+/* Tree expand/collapse button on each missing row */
+.tree-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #999;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.tree-toggle:hover { background: #2a3540; color: #e4e4e4; }
+.tree-toggle.open  { color: var(--fam-color, #e4e4e4); }
+.tree-toggle-spacer {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+}
+
 .empty-state {
   padding: 40px 20px;
   text-align: center;
@@ -710,7 +744,7 @@ main.transit-back {
 
 .missing-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto;  /* toggle | icon | name (expand) | open-btn */
   align-items: center;
   gap: 10px;
   padding: 10px 14px;

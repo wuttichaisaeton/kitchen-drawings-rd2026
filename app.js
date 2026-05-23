@@ -388,8 +388,7 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
       </div>
-      <button class="action-btn" id="expand-all"><svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 13 12 18 17 13"/><polyline points="7 6 12 11 17 6"/></svg> Expand all</button>
-      <button class="action-btn" id="collapse-all"><svg class="btn-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 11 12 6 17 11"/><polyline points="7 18 12 13 17 18"/></svg> Collapse all</button>
+      <button class="action-btn" id="toggle-all" data-state="collapsed"><span class="toggle-arrow">▶</span> <span class="toggle-label">Expand all</span></button>
     </div>
     <div class="master-list">${groupsHtml || '<p class="loading">ทุก part มี drawing แล้ว ✓</p>'}</div>
   `;
@@ -423,21 +422,47 @@ function renderProject(key) {
     });
   });
 
-  ROOT.querySelector('#expand-all').addEventListener('click', () => {
-    const set = loadCollapsed();
-    ROOT.querySelectorAll('.master-group').forEach(g => {
-      g.classList.remove('collapsed');
-      set.delete(g.dataset.group);
+  // Single toggle button — expands all if any collapsed, otherwise collapses all
+  const toggleBtn = ROOT.querySelector('#toggle-all');
+  function refreshToggleLabel() {
+    if (!toggleBtn) return;
+    const groups = ROOT.querySelectorAll('.master-group');
+    if (groups.length === 0) return;
+    let anyCollapsed = false;
+    groups.forEach(g => { if (g.classList.contains('collapsed')) anyCollapsed = true; });
+    // If any group is collapsed → next click will expand → show ▶ Expand all
+    // If all expanded → next click will collapse → show ▼ Collapse all
+    if (anyCollapsed) {
+      toggleBtn.dataset.state = 'collapsed';
+      toggleBtn.querySelector('.toggle-arrow').textContent = '▶';
+      toggleBtn.querySelector('.toggle-label').textContent = 'Expand all';
+    } else {
+      toggleBtn.dataset.state = 'expanded';
+      toggleBtn.querySelector('.toggle-arrow').textContent = '▼';
+      toggleBtn.querySelector('.toggle-label').textContent = 'Collapse all';
+    }
+  }
+  refreshToggleLabel();
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const set = loadCollapsed();
+      const isCurrentlyCollapsed = toggleBtn.dataset.state === 'collapsed';
+      ROOT.querySelectorAll('.master-group').forEach(g => {
+        if (isCurrentlyCollapsed) {
+          g.classList.remove('collapsed');
+          set.delete(g.dataset.group);
+        } else {
+          g.classList.add('collapsed');
+          set.add(g.dataset.group);
+        }
+      });
+      saveCollapsed(set);
+      refreshToggleLabel();
     });
-    saveCollapsed(set);
-  });
-  ROOT.querySelector('#collapse-all').addEventListener('click', () => {
-    const set = loadCollapsed();
-    ROOT.querySelectorAll('.master-group').forEach(g => {
-      g.classList.add('collapsed');
-      set.add(g.dataset.group);
-    });
-    saveCollapsed(set);
+  }
+  // Also refresh label when user toggles individual groups
+  ROOT.querySelectorAll('.master-header').forEach(h => {
+    h.addEventListener('click', () => setTimeout(refreshToggleLabel, 0));
   });
 
   ROOT.querySelectorAll('.bent-btn').forEach(btn => {
@@ -462,6 +487,98 @@ function renderProject(key) {
 //   (populated by CC_ScanMissingDrawings Fusion script)
 // Each row has an "Open in Fusion" deep link → browser → Fusion launches.
 // ──────────────────────────────────────────────────────────────────────
+
+// ─── Hierarchy tree for Missing tab ────────────────────────────────
+// Stainless Kitchen naming rule (per user):
+//   "ตัวพ่อ" (parent/umbrella) uses 0 or X at variant positions.
+//   So if name A has "0" or "X" where B has a specific letter at the
+//   same position, A is an ANCESTOR of B (parent or higher).
+//
+// Example:
+//   DSB00X-... is ancestor of DSB0B0-... (0/X→B/0 ok, both wildcards)
+//   DSB0B0-... is ancestor of DSB0BA-... (closer parent than DSB00X)
+//   Tree: DSB00X → DSB0B0 → DSB0BA
+//                → DSB0F0 → DSB0FA
+//
+// Closest-parent picked by highest "specificity" (fewest 0/X in prefix).
+
+function _missingPrefix(name) {
+  return (name || '').split('-')[0];
+}
+
+function _isAncestorPrefix(ancestor, descendant) {
+  if (!ancestor || !descendant) return false;
+  if (ancestor.length !== descendant.length) return false;
+  if (ancestor === descendant) return false;
+  for (let i = 0; i < ancestor.length; i++) {
+    if (ancestor[i] === descendant[i]) continue;
+    if (ancestor[i] === '0' || ancestor[i] === 'X') continue; // wildcard
+    return false;
+  }
+  return true;
+}
+
+function _specificity(prefix) {
+  let n = 0;
+  for (const c of prefix) if (c !== '0' && c !== 'X') n++;
+  return n;
+}
+
+function buildMissingTree(entries) {
+  const nodes = entries.map(e => ({
+    ...e,
+    _prefix: _missingPrefix(e.name),
+    children: [],
+    parent: null,
+  }));
+  for (const node of nodes) {
+    let best = null, bestSpec = -1;
+    for (const cand of nodes) {
+      if (cand === node) continue;
+      if (!_isAncestorPrefix(cand._prefix, node._prefix)) continue;
+      const s = _specificity(cand._prefix);
+      if (s > bestSpec) { bestSpec = s; best = cand; }
+    }
+    if (best) {
+      node.parent = best;
+      best.children.push(node);
+    }
+  }
+  return nodes.filter(n => !n.parent);
+}
+
+// Persisted expand/collapse state per node (keyed by name)
+const LS_MISSING_EXPANDED = 'kd_missing_expanded_v1';
+function getExpandedSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(LS_MISSING_EXPANDED) || '[]'));
+  } catch { return new Set(); }
+}
+function saveExpandedSet(set) {
+  try { localStorage.setItem(LS_MISSING_EXPANDED, JSON.stringify([...set])); }
+  catch {}
+}
+
+function renderMissingNode(node, depth, expanded) {
+  const hasChildren = node.children.length > 0;
+  const isOpen = expanded.has(node.name);
+  const fam = node.family || 'Other';
+  const indent = depth * 24;
+  const toggleHtml = hasChildren
+    ? `<button class="tree-toggle ${isOpen ? 'open' : ''}" data-name="${escapeHtml(node.name)}" aria-label="Toggle">${isOpen ? '▼' : '▶'}</button>`
+    : `<span class="tree-toggle-spacer"></span>`;
+  const row = `
+    <div class="missing-row" style="${famVars(fam)};padding-left:${14 + indent}px">
+      ${toggleHtml}
+      <span class="missing-icon">${familyIcon(fam)}</span>
+      <span class="missing-name">${escapeHtml(node.name)}</span>
+      <button class="missing-open" data-urn="${escapeHtml(node.urn || '')}" data-weburl="${escapeHtml(node.open_url || '#')}">Open ↗</button>
+    </div>`;
+  const childRows = (hasChildren && isOpen)
+    ? node.children.map(c => renderMissingNode(c, depth + 1, expanded)).join('')
+    : '';
+  return row + childRows;
+}
 
 function renderMissingHome() {
   if (!missingData || !Array.isArray(missingData.missing)) {
@@ -488,36 +605,35 @@ function renderMissingHome() {
     return;
   }
 
-  // Group by family
-  const groups = {};
-  for (const e of items) {
-    const fam = e.family || 'Other';
-    if (!groups[fam]) groups[fam] = [];
-    groups[fam].push(e);
+  // Build hierarchy tree
+  const roots = buildMissingTree(items);
+  // Stable sort roots: by family order, then name
+  roots.sort((a, b) =>
+    (familyOrder(a.family || 'Other', b.family || 'Other'))
+    || a.name.localeCompare(b.name)
+  );
+  for (const r of roots) {
+    const sortRec = (n) => {
+      n.children.sort((a, b) => a.name.localeCompare(b.name));
+      n.children.forEach(sortRec);
+    };
+    sortRec(r);
   }
-  const groupNames = Object.keys(groups).sort(familyOrder);
 
-  const sections = groupNames.map(fam => {
-    const rows = groups[fam].map(e => {
-      const webHref = e.open_url || '#';
-      const urn = e.urn || '';
-      const dataAttrs = `data-urn="${escapeHtml(urn)}" data-weburl="${escapeHtml(webHref)}"`;
-      return `
-        <div class="missing-row" style="${famVars(fam)}">
-          <span class="missing-icon">${familyIcon(fam)}</span>
-          <span class="missing-name">${escapeHtml(e.name)}</span>
-          <span class="missing-path">${escapeHtml(e.folder_path || '/')}</span>
-          <button class="missing-open" ${dataAttrs}>Open ↗</button>
-        </div>`;
-    }).join('');
-    return `
-      <section class="missing-group">
-        <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">
-          ${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${groups[fam].length}</span>
-        </h2>
-        ${rows}
-      </section>`;
-  }).join('');
+  const expanded = getExpandedSet();
+  const treeHtml = roots.map(r => renderMissingNode(r, 0, expanded)).join('');
+
+  // Detect global state: are ALL expandable nodes currently open?
+  let anyExpandable = false, allOpen = true;
+  function walk(n) {
+    if (n.children.length > 0) {
+      anyExpandable = true;
+      if (!expanded.has(n.name)) allOpen = false;
+      n.children.forEach(walk);
+    }
+  }
+  roots.forEach(walk);
+  const globalIsOpen = anyExpandable && allOpen;
 
   const scanInfo = missingData.scanned_at
     ? `Scanned ${escapeHtml(fmtDate(missingData.scanned_at))} · ${missingData.pairs_count || 0} pairs OK`
@@ -525,11 +641,49 @@ function renderMissingHome() {
 
   ROOT.innerHTML = `
     <div class="missing-header">
-      <p class="muted">${scanInfo}</p>
-      <p class="hint">Click <strong>Open ↗</strong> → Fusion เปิดไฟล์ทันที (ถ้า add-in รันอยู่) → สร้าง drawing → save</p>
+      <div class="missing-toolbar">
+        <p class="muted">${scanInfo}</p>
+        ${anyExpandable ? `<button class="action-btn" id="missing-toggle-all">${globalIsOpen ? '▼ Collapse all' : '▶ Expand all'}</button>` : ''}
+      </div>
+      <p class="hint">Click <strong>Open ↗</strong> → Fusion เปิดไฟล์ทันที (ถ้า add-in รันอยู่). คลิก <strong>▶</strong> ที่ไฟล์รวมเพื่อขยายดูไฟล์ลูก</p>
     </div>
-    ${sections}`;
+    ${treeHtml}`;
   COUNT_EL.textContent = `${items.length} missing`;
+
+  // Wire per-node toggle
+  ROOT.querySelectorAll('.tree-toggle').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const name = btn.dataset.name;
+      const set = getExpandedSet();
+      if (set.has(name)) set.delete(name); else set.add(name);
+      saveExpandedSet(set);
+      renderMissingHome();
+    });
+  });
+
+  // Wire global Expand all / Collapse all toggle
+  const globalBtn = ROOT.querySelector('#missing-toggle-all');
+  if (globalBtn) {
+    globalBtn.addEventListener('click', () => {
+      const set = getExpandedSet();
+      if (globalIsOpen) {
+        // Collapse all
+        set.clear();
+      } else {
+        // Expand all expandable nodes
+        function collect(n) {
+          if (n.children.length > 0) {
+            set.add(n.name);
+            n.children.forEach(collect);
+          }
+        }
+        roots.forEach(collect);
+      }
+      saveExpandedSet(set);
+      renderMissingHome();
+    });
+  }
 
   // Wire Open buttons — try localhost bridge first (1-click direct open),
   // fallback to web hub if add-in/bridge not running.
