@@ -773,6 +773,30 @@ main.transit-back {
   text-overflow: ellipsis;
 }
 
+/* Stale state — master saved after drawing, needs re-export */
+.missing-card.stale {
+  background: linear-gradient(90deg, #2a2418 0%, #1a1f24 60%);
+  border-color: #6e5824;
+}
+.missing-card.stale:hover { background: linear-gradient(90deg, #322a1d 0%, #20262d 60%); }
+.missing-card.stale .missing-card-name { color: #f2c870; }
+
+.missing-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 6px;
+  font-family: -apple-system, sans-serif;
+  vertical-align: 1px;
+}
+.missing-badge.stale { background: #6e5824; color: #fdd47a; }
+
+/* Status summary in header toolbar */
+.stat-stale   { color: #fdd47a; font-weight: 600; }
+.stat-missing { color: #e07a5f; font-weight: 600; }
+
 /* Legacy .missing-row (kept for any non-grid usage) */
 .missing-row {
   display: grid;

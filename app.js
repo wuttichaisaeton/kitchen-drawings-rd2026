@@ -599,12 +599,19 @@ function renderMissingHome() {
       a.name.localeCompare(b.name));
     const groupId = `family::${fam}`;
     const isCollapsed = collapsed.has(groupId);
-    const cards = entries.map(e => `
-      <div class="missing-card" style="${famVars(fam)}" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">
+    const cards = entries.map(e => {
+      const status = e.status || 'missing';
+      const isStale = status === 'stale';
+      const badge = isStale
+        ? `<span class="missing-badge stale" title="Master saved after drawing — re-export needed">⏰ outdated</span>`
+        : '';
+      return `
+      <div class="missing-card ${isStale ? 'stale' : ''}" style="${famVars(fam)}" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">
         <span class="missing-card-icon">${familyIcon(fam)}</span>
-        <span class="missing-card-name">${escapeHtml(e.name)}</span>
+        <span class="missing-card-name">${escapeHtml(e.name)}${badge}</span>
         <button class="missing-open" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">Open ↗</button>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     return `
       <div class="master-group ${isCollapsed ? 'collapsed' : ''}" data-group="${escapeHtml(groupId)}" style="${famVars(fam)}">
         <div class="master-header">
@@ -620,19 +627,26 @@ function renderMissingHome() {
     ? `Scanned ${escapeHtml(fmtDate(missingData.scanned_at))} · ${missingData.pairs_count || 0} pairs OK`
     : '';
 
+  // Count statuses
+  const noDrawingCount = items.filter(e => (e.status || 'missing') === 'missing').length;
+  const staleCount = items.filter(e => e.status === 'stale').length;
+  const statusSummary = staleCount > 0
+    ? ` · <span class="stat-stale">⏰ ${staleCount} outdated</span> · <span class="stat-missing">🚫 ${noDrawingCount} no drawing</span>`
+    : '';
+
   // Detect: are ALL groups collapsed? → next click = expand all
   const allCollapsed = sortedFams.every(f => collapsed.has(`family::${f}`));
 
   ROOT.innerHTML = `
     <div class="missing-header">
       <div class="missing-toolbar">
-        <p class="muted">${scanInfo}</p>
+        <p class="muted">${scanInfo}${statusSummary}</p>
         <button class="action-btn" id="missing-toggle-all">
           <span class="toggle-arrow">${allCollapsed ? '▶' : '▼'}</span>
           <span class="toggle-label">${allCollapsed ? 'Expand all' : 'Collapse all'}</span>
         </button>
       </div>
-      <p class="hint">Click <strong>Open ↗</strong> → Fusion เปิดไฟล์ทันที (ถ้า add-in รันอยู่) → สร้าง drawing → save</p>
+      <p class="hint">⏰ <strong>outdated</strong> = master ถูก save หลัง drawing → ต้อง re-export. 🚫 <strong>no drawing</strong> = ยังไม่เคยเขียน</p>
     </div>
     ${groupsHtml}`;
   COUNT_EL.textContent = `${items.length} missing`;
