@@ -12,7 +12,8 @@
       "urn": "urn:adsk.wipprod:dm.lineage:Bqy-SaytStapm4yPX5tEIg",
       "family": "Floor",
       "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:Bqy-SaytStapm4yPX5tEIg"
+      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:Bqy-SaytStapm4yPX5tEIg",
+      "status": "missing"
     },
     {
       "name": "DXSB-060XXX",
@@ -31,7 +32,8 @@
   ],
   "scanned_folders": [
     "urn:adsk.wipprod:fs.folder:co.LwOdjf1iR7uwDnnij2zSHA",
-    "urn:adsk.wipprod:fs.folder:co.RBxVDoUaSSOBsM7meLvUhA"
+    "urn:adsk.wipprod:fs.folder:co.RBxVDoUaSSOBsM7meLvUhA",
+    "urn:adsk.wipprod:fs.folder:co.RyNqyAb7TFKWnnKVCJebQg"
   ],
-  "updated_at": "2026-05-24T06:42:58"
+  "updated_at": "2026-05-24T06:49:17"
 }
