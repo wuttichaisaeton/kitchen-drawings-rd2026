@@ -547,37 +547,16 @@ function buildMissingTree(entries) {
   return nodes.filter(n => !n.parent);
 }
 
-// Persisted expand/collapse state per node (keyed by name)
-const LS_MISSING_EXPANDED = 'kd_missing_expanded_v1';
-function getExpandedSet() {
+// Persisted collapsed-group state (keyed by group ID, e.g. "family::Drawer")
+const LS_MISSING_COLLAPSED = 'kd_missing_collapsed_v2';
+function getMissingCollapsedSet() {
   try {
-    return new Set(JSON.parse(localStorage.getItem(LS_MISSING_EXPANDED) || '[]'));
+    return new Set(JSON.parse(localStorage.getItem(LS_MISSING_COLLAPSED) || '[]'));
   } catch { return new Set(); }
 }
-function saveExpandedSet(set) {
-  try { localStorage.setItem(LS_MISSING_EXPANDED, JSON.stringify([...set])); }
+function saveMissingCollapsedSet(set) {
+  try { localStorage.setItem(LS_MISSING_COLLAPSED, JSON.stringify([...set])); }
   catch {}
-}
-
-function renderMissingNode(node, depth, expanded) {
-  const hasChildren = node.children.length > 0;
-  const isOpen = expanded.has(node.name);
-  const fam = node.family || 'Other';
-  const indent = depth * 24;
-  const toggleHtml = hasChildren
-    ? `<button class="tree-toggle ${isOpen ? 'open' : ''}" data-name="${escapeHtml(node.name)}" aria-label="Toggle">${isOpen ? '▼' : '▶'}</button>`
-    : `<span class="tree-toggle-spacer"></span>`;
-  const row = `
-    <div class="missing-row" style="${famVars(fam)};padding-left:${14 + indent}px">
-      ${toggleHtml}
-      <span class="missing-icon">${familyIcon(fam)}</span>
-      <span class="missing-name">${escapeHtml(node.name)}</span>
-      <button class="missing-open" data-urn="${escapeHtml(node.urn || '')}" data-weburl="${escapeHtml(node.open_url || '#')}">Open ↗</button>
-    </div>`;
-  const childRows = (hasChildren && isOpen)
-    ? node.children.map(c => renderMissingNode(c, depth + 1, expanded)).join('')
-    : '';
-  return row + childRows;
 }
 
 function renderMissingHome() {
@@ -605,82 +584,87 @@ function renderMissingHome() {
     return;
   }
 
-  // Build hierarchy tree
-  const roots = buildMissingTree(items);
-  // Stable sort roots: by family order, then name
-  roots.sort((a, b) =>
-    (familyOrder(a.family || 'Other', b.family || 'Other'))
-    || a.name.localeCompare(b.name)
-  );
-  for (const r of roots) {
-    const sortRec = (n) => {
-      n.children.sort((a, b) => a.name.localeCompare(b.name));
-      n.children.forEach(sortRec);
-    };
-    sortRec(r);
+  // Group by family (Drawer / Back-Down / Floor / Top Sup / Other / ...)
+  const groups = new Map();
+  for (const e of items) {
+    const fam = e.family || 'Other';
+    if (!groups.has(fam)) groups.set(fam, []);
+    groups.get(fam).push(e);
   }
+  const sortedFams = [...groups.keys()].sort(familyOrder);
+  const collapsed = getMissingCollapsedSet();
 
-  const expanded = getExpandedSet();
-  const treeHtml = roots.map(r => renderMissingNode(r, 0, expanded)).join('');
-
-  // Detect global state: are ALL expandable nodes currently open?
-  let anyExpandable = false, allOpen = true;
-  function walk(n) {
-    if (n.children.length > 0) {
-      anyExpandable = true;
-      if (!expanded.has(n.name)) allOpen = false;
-      n.children.forEach(walk);
-    }
-  }
-  roots.forEach(walk);
-  const globalIsOpen = anyExpandable && allOpen;
+  const groupsHtml = sortedFams.map(fam => {
+    const entries = groups.get(fam).slice().sort((a, b) =>
+      a.name.localeCompare(b.name));
+    const groupId = `family::${fam}`;
+    const isCollapsed = collapsed.has(groupId);
+    const cards = entries.map(e => `
+      <div class="missing-card" style="${famVars(fam)}" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">
+        <span class="missing-card-icon">${familyIcon(fam)}</span>
+        <span class="missing-card-name">${escapeHtml(e.name)}</span>
+        <button class="missing-open" data-urn="${escapeHtml(e.urn || '')}" data-weburl="${escapeHtml(e.open_url || '#')}">Open ↗</button>
+      </div>`).join('');
+    return `
+      <div class="master-group ${isCollapsed ? 'collapsed' : ''}" data-group="${escapeHtml(groupId)}" style="${famVars(fam)}">
+        <div class="master-header">
+          <span class="master-toggle">▼</span>
+          <span class="master-name" style="color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}</span>
+          <span class="master-meta">${entries.length} ${entries.length === 1 ? 'part' : 'parts'}</span>
+        </div>
+        <div class="master-rows missing-grid">${cards}</div>
+      </div>`;
+  }).join('');
 
   const scanInfo = missingData.scanned_at
     ? `Scanned ${escapeHtml(fmtDate(missingData.scanned_at))} · ${missingData.pairs_count || 0} pairs OK`
     : '';
 
+  // Detect: are ALL groups collapsed? → next click = expand all
+  const allCollapsed = sortedFams.every(f => collapsed.has(`family::${f}`));
+
   ROOT.innerHTML = `
     <div class="missing-header">
       <div class="missing-toolbar">
         <p class="muted">${scanInfo}</p>
-        ${anyExpandable ? `<button class="action-btn" id="missing-toggle-all">${globalIsOpen ? '▼ Collapse all' : '▶ Expand all'}</button>` : ''}
+        <button class="action-btn" id="missing-toggle-all">
+          <span class="toggle-arrow">${allCollapsed ? '▶' : '▼'}</span>
+          <span class="toggle-label">${allCollapsed ? 'Expand all' : 'Collapse all'}</span>
+        </button>
       </div>
-      <p class="hint">Click <strong>Open ↗</strong> → Fusion เปิดไฟล์ทันที (ถ้า add-in รันอยู่). คลิก <strong>▶</strong> ที่ไฟล์รวมเพื่อขยายดูไฟล์ลูก</p>
+      <p class="hint">Click <strong>Open ↗</strong> → Fusion เปิดไฟล์ทันที (ถ้า add-in รันอยู่) → สร้าง drawing → save</p>
     </div>
-    ${treeHtml}`;
+    ${groupsHtml}`;
   COUNT_EL.textContent = `${items.length} missing`;
 
-  // Wire per-node toggle
-  ROOT.querySelectorAll('.tree-toggle').forEach(btn => {
-    btn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const name = btn.dataset.name;
-      const set = getExpandedSet();
-      if (set.has(name)) set.delete(name); else set.add(name);
-      saveExpandedSet(set);
-      renderMissingHome();
+  // Wire per-group collapse/expand
+  ROOT.querySelectorAll('.master-header').forEach(h => {
+    h.addEventListener('click', () => {
+      const group = h.closest('.master-group');
+      const id = group.dataset.group;
+      const set = getMissingCollapsedSet();
+      if (group.classList.contains('collapsed')) {
+        group.classList.remove('collapsed');
+        set.delete(id);
+      } else {
+        group.classList.add('collapsed');
+        set.add(id);
+      }
+      saveMissingCollapsedSet(set);
     });
   });
 
-  // Wire global Expand all / Collapse all toggle
+  // Wire global toggle-all
   const globalBtn = ROOT.querySelector('#missing-toggle-all');
   if (globalBtn) {
     globalBtn.addEventListener('click', () => {
-      const set = getExpandedSet();
-      if (globalIsOpen) {
-        // Collapse all
+      const set = getMissingCollapsedSet();
+      if (allCollapsed) {
         set.clear();
       } else {
-        // Expand all expandable nodes
-        function collect(n) {
-          if (n.children.length > 0) {
-            set.add(n.name);
-            n.children.forEach(collect);
-          }
-        }
-        roots.forEach(collect);
+        sortedFams.forEach(f => set.add(`family::${f}`));
       }
-      saveExpandedSet(set);
+      saveMissingCollapsedSet(set);
       renderMissingHome();
     });
   }

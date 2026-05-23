@@ -5,15 +5,8 @@
   "scope": "incremental (watcher bootstrap)",
   "walk_elapsed_s": 0,
   "pairs_count": 0,
-  "count": 9,
+  "count": 4,
   "missing": [
-    {
-      "name": "DSB00X-000000",
-      "urn": "urn:adsk.wipprod:dm.lineage:ipzhf848QTa0nCNbFrLGLg",
-      "family": "Drawer",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:ipzhf848QTa0nCNbFrLGLg"
-    },
     {
       "name": "DSB0F0-000050",
       "urn": "urn:adsk.wipprod:dm.lineage:Bqy-SaytStapm4yPX5tEIg",
@@ -27,34 +20,6 @@
       "family": "Back-Down",
       "folder_path": "",
       "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:XyTtmsyIRGe-V_r1vvUNBg"
-    },
-    {
-      "name": "DSB0BD-000050",
-      "urn": "urn:adsk.wipprod:dm.lineage:zo1LrhayRgKQ7iOfQ4N_kg",
-      "family": "Back-Down",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:zo1LrhayRgKQ7iOfQ4N_kg"
-    },
-    {
-      "name": "DSB0BA-120050",
-      "urn": "urn:adsk.wipprod:dm.lineage:je8gbiTLSJaDr6vxPTv4WQ",
-      "family": "Back-Down",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:je8gbiTLSJaDr6vxPTv4WQ"
-    },
-    {
-      "name": "DSB0FD-000000",
-      "urn": "urn:adsk.wipprod:dm.lineage:v9zjawx9Sl66gKq3fTmtFA",
-      "family": "Floor",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:v9zjawx9Sl66gKq3fTmtFA"
-    },
-    {
-      "name": "DSB0FA-000000",
-      "urn": "urn:adsk.wipprod:dm.lineage:VwoCtstARHqexJZq6XnJgw",
-      "family": "Floor",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:VwoCtstARHqexJZq6XnJgw"
     },
     {
       "name": "DXSB-060XXX",
@@ -75,5 +40,5 @@
     "urn:adsk.wipprod:fs.folder:co.LwOdjf1iR7uwDnnij2zSHA",
     "urn:adsk.wipprod:fs.folder:co.RBxVDoUaSSOBsM7meLvUhA"
   ],
-  "updated_at": "2026-05-24T03:39:28"
+  "updated_at": "2026-05-24T05:30:50"
 }
