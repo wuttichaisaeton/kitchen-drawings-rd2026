@@ -5,16 +5,8 @@
   "scope": "incremental (watcher bootstrap)",
   "walk_elapsed_s": 0,
   "pairs_count": 0,
-  "count": 3,
+  "count": 2,
   "missing": [
-    {
-      "name": "DSB0F0-000050",
-      "urn": "urn:adsk.wipprod:dm.lineage:Bqy-SaytStapm4yPX5tEIg",
-      "family": "Floor",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:Bqy-SaytStapm4yPX5tEIg",
-      "status": "missing"
-    },
     {
       "name": "DXSB-060XXX",
       "urn": "urn:adsk.wipprod:dm.lineage:SHrLxQbFSr63D0cvD5k7rw",
@@ -35,5 +27,5 @@
     "urn:adsk.wipprod:fs.folder:co.RBxVDoUaSSOBsM7meLvUhA",
     "urn:adsk.wipprod:fs.folder:co.RyNqyAb7TFKWnnKVCJebQg"
   ],
-  "updated_at": "2026-05-24T06:49:17"
+  "updated_at": "2026-05-24T06:50:45"
 }
