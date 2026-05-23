@@ -499,14 +499,15 @@ function renderMissingHome() {
 
   const sections = groupNames.map(fam => {
     const rows = groups[fam].map(e => {
-      const href = e.open_url || '#';
-      const targetAttr = e.open_url ? 'target="_blank" rel="noopener"' : 'aria-disabled="true"';
+      const webHref = e.open_url || '#';
+      const urn = e.urn || '';
+      const dataAttrs = `data-urn="${escapeHtml(urn)}" data-weburl="${escapeHtml(webHref)}"`;
       return `
         <div class="missing-row" style="${famVars(fam)}">
           <span class="missing-icon">${familyIcon(fam)}</span>
           <span class="missing-name">${escapeHtml(e.name)}</span>
           <span class="missing-path">${escapeHtml(e.folder_path || '/')}</span>
-          <a class="missing-open" href="${escapeHtml(href)}" ${targetAttr}>Open ↗</a>
+          <button class="missing-open" ${dataAttrs}>Open ↗</button>
         </div>`;
     }).join('');
     return `
@@ -525,10 +526,44 @@ function renderMissingHome() {
   ROOT.innerHTML = `
     <div class="missing-header">
       <p class="muted">${scanInfo}</p>
-      <p class="hint">Click <strong>Open ↗</strong> → browser ถาม "Open in Fusion?" → สร้าง drawing → save → re-run scan</p>
+      <p class="hint">Click <strong>Open ↗</strong> → Fusion เปิดไฟล์ทันที (ถ้า add-in รันอยู่) → สร้าง drawing → save</p>
     </div>
     ${sections}`;
   COUNT_EL.textContent = `${items.length} missing`;
+
+  // Wire Open buttons — try localhost bridge first (1-click direct open),
+  // fallback to web hub if add-in/bridge not running.
+  ROOT.querySelectorAll('.missing-open').forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      ev.preventDefault();
+      const urn = btn.dataset.urn;
+      const webUrl = btn.dataset.weburl;
+      if (!urn) return;
+      const original = btn.textContent;
+      btn.textContent = '...';
+      btn.disabled = true;
+      try {
+        const r = await fetch(
+          `http://127.0.0.1:8765/open?urn=${encodeURIComponent(urn)}`,
+          { method: 'GET', mode: 'cors' });
+        if (r.ok) {
+          btn.textContent = '✓ Sent';
+          setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
+          return;
+        }
+        throw new Error('bridge returned ' + r.status);
+      } catch (e) {
+        // Fallback — open web hub in new tab
+        if (webUrl && webUrl !== '#') {
+          window.open(webUrl, '_blank', 'noopener');
+          btn.textContent = '↗ Web';
+        } else {
+          btn.textContent = 'ERR';
+        }
+        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1500);
+      }
+    });
+  });
 }
 
 // ──────────────────────────────────────────────────────────────────────

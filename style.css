@@ -751,14 +751,14 @@ main.transit-back {
   font-weight: 600;
   border-radius: 6px;
   white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
   transition: opacity 0.15s, transform 0.1s;
 }
-.missing-open:hover  { opacity: 0.85; }
-.missing-open:active { transform: scale(0.96); }
-.missing-open[aria-disabled="true"] {
-  opacity: 0.3;
-  pointer-events: none;
-}
+.missing-open:hover    { opacity: 0.85; }
+.missing-open:active   { transform: scale(0.96); }
+.missing-open:disabled { opacity: 0.5; cursor: progress; }
 
 /* --- Footer --- */
 
