@@ -1341,22 +1341,74 @@ async function _doLeafAction(node) {
   }
 }
 
-// Compute radial positions for N neighbors around (cx, cy) with radius r.
-// Spacing-adaptive: more neighbors → larger r (so cards don't overlap).
+// Card geometry — kept here so layout math + SVG renderer agree.
+const SPOKE_CARD_W = 140;
+const SPOKE_CARD_H = 40;
+const SPOKE_CHORD_PADDING = 18;  // gap between adjacent cards along the ring
+
+// Compute radial positions for N neighbors. Uses chord-based spacing
+// (the real overlap constraint) instead of arc-based. Splits into 2
+// rings when a single ring would force the radius to grow huge.
+//
+// Returns: [{ node, x, y, angle, ring }]
 function _radialLayout(neighbors, cx, cy, baseR) {
-  const minSpacing = 110;  // px between adjacent card centers along arc
-  const n = Math.max(1, neighbors.length);
-  const minR = (n * minSpacing) / (2 * Math.PI);
-  const r = Math.max(baseR, minR);
-  return neighbors.map((node, i) => {
-    const angle = (2 * Math.PI * i / n) - Math.PI / 2;  // start at top
-    return {
-      node,
-      x: cx + r * Math.cos(angle),
-      y: cy + r * Math.sin(angle),
-      angle,
-    };
-  });
+  const n = neighbors.length;
+  if (n === 0) return [];
+  if (n === 1) {
+    return [{ node: neighbors[0], x: cx, y: cy - baseR, angle: -Math.PI / 2, ring: 0 }];
+  }
+  const minChord = SPOKE_CARD_W + SPOKE_CHORD_PADDING;
+
+  // Radius required for N evenly-spaced cards in a single ring to not overlap:
+  //   chord = 2·r·sin(π/n) ≥ minChord  →  r ≥ minChord / (2·sin(π/n))
+  const singleR = minChord / (2 * Math.sin(Math.PI / n));
+
+  // Threshold: switch to 2 rings if single-ring radius is too large
+  // (keeps the mindmap reasonably compact for many siblings).
+  const SINGLE_RING_MAX = baseR * 1.8;
+  if (singleR <= SINGLE_RING_MAX) {
+    const r = Math.max(baseR, singleR);
+    return neighbors.map((node, i) => {
+      const angle = (2 * Math.PI * i / n) - Math.PI / 2;
+      return {
+        node,
+        x: cx + r * Math.cos(angle),
+        y: cy + r * Math.sin(angle),
+        angle, ring: 0,
+      };
+    });
+  }
+
+  // Two-ring layout — split roughly in half. Outer ring rotated by
+  // half-angle so cards interleave (don't sit directly on radial spokes
+  // of inner cards, keeping the connector lines readable).
+  const innerN = Math.ceil(n / 2);
+  const outerN = n - innerN;
+  const innerR = Math.max(baseR, minChord / (2 * Math.sin(Math.PI / Math.max(innerN, 2))));
+  const ringGap = SPOKE_CARD_H + 24;
+  const outerR = innerR + ringGap + SPOKE_CARD_H;
+
+  const result = [];
+  for (let i = 0; i < innerN; i++) {
+    const angle = (2 * Math.PI * i / innerN) - Math.PI / 2;
+    result.push({
+      node: neighbors[i],
+      x: cx + innerR * Math.cos(angle),
+      y: cy + innerR * Math.sin(angle),
+      angle, ring: 0,
+    });
+  }
+  for (let i = 0; i < outerN; i++) {
+    // Offset by half a slot to stagger outer ring between inner spokes
+    const angle = (2 * Math.PI * i / outerN) - Math.PI / 2 + (Math.PI / outerN);
+    result.push({
+      node: neighbors[innerN + i],
+      x: cx + outerR * Math.cos(angle),
+      y: cy + outerR * Math.sin(angle),
+      angle, ring: 1,
+    });
+  }
+  return result;
 }
 
 // Build crumbs path: [ {kind: 'all'}, {kind: 'family', name}, {kind: 'node', code}, ... ]
@@ -1513,12 +1565,13 @@ function renderRadialMindmap(roots) {
   const fam = currentFamily || 'Other';
 
   // Compute SVG canvas + layout
-  const baseR = 240;
+  const baseR = 220;
   const positioned = _radialLayout(neighbors, 0, 0, baseR);
   const maxR = positioned.length
     ? Math.max(...positioned.map(p => Math.hypot(p.x, p.y)))
     : baseR;
-  const padding = 110;  // extra space for card half-width + buttons
+  // Padding = half card width + a little headroom for status/comment chips
+  const padding = (SPOKE_CARD_W / 2) + 28;
   const half = maxR + padding;
   const W = 2 * half;
   const H = 2 * half;
@@ -1563,6 +1616,8 @@ function renderRadialMindmap(roots) {
   }
 
   // Spoke nodes — clickable cards
+  const halfW = SPOKE_CARD_W / 2;     // 70
+  const halfH = SPOKE_CARD_H / 2;     // 20
   const spokes = positioned.map(p => {
     const n = p.node;
     const hasChildren = n.children && n.children.length > 0;
@@ -1570,28 +1625,28 @@ function renderRadialMindmap(roots) {
     const badgeColor = _statusBadgeColor(n.status);
     const comments = getComments(n.code);
     const cBadge = comments.length
-      ? `<g class="mm-mini-badge" transform="translate(70, -22)">
-           <circle r="10" fill="#ffc107" />
+      ? `<g class="mm-mini-badge" transform="translate(${halfW - 10}, ${-halfH - 2})">
+           <circle r="9" fill="#ffc107" />
            <text text-anchor="middle" dy="3" font-size="9" font-weight="700" fill="#000">${comments.length}</text>
          </g>` : '';
     const childCountBadge = hasChildren
-      ? `<g class="mm-mini-badge" transform="translate(-70, -22)">
-           <circle r="11" fill="#1f3450" stroke="#fff" stroke-width="1.5" />
-           <text text-anchor="middle" dy="3" font-size="10" font-weight="700" fill="#fff">${n.children.length}</text>
+      ? `<g class="mm-mini-badge" transform="translate(${-halfW + 10}, ${-halfH - 2})">
+           <circle r="10" fill="#1f3450" stroke="#fff" stroke-width="1.5" />
+           <text text-anchor="middle" dy="3" font-size="9" font-weight="700" fill="#fff">${n.children.length}</text>
          </g>` : '';
     const drillHint = hasChildren ? '▶' : (pdfUrlForCode(n.code) ? '📄' : (n.urn ? '↗' : ''));
 
     return `
       <g class="mm-spoke ${hasChildren ? 'has-children' : 'is-leaf'}" data-code="${escapeHtml(n.code)}"
          transform="translate(${p.x}, ${p.y})" style="${famVars(n.family || fam)}">
-        <rect x="-80" y="-22" width="160" height="44" rx="22"
+        <rect x="${-halfW}" y="${-halfH}" width="${SPOKE_CARD_W}" height="${SPOKE_CARD_H}" rx="${halfH}"
               fill="var(--fam-tint)" stroke="var(--fam-color)" stroke-width="2"
               class="mm-spoke-bg" />
-        <text class="mm-spoke-code" text-anchor="middle" dy="-2" font-size="11" font-weight="600" fill="#e4e4e4">${escapeHtml(n.code)}</text>
-        <text class="mm-spoke-hint" text-anchor="middle" dy="12" font-size="9" fill="var(--fam-color)" opacity="0.8">${drillHint}</text>
-        ${badge ? `<g transform="translate(60, 14)">
-            <rect x="-14" y="-7" width="28" height="14" rx="7" fill="${badgeColor}" />
-            <text text-anchor="middle" dy="3" font-size="8" font-weight="700" fill="#fff">${badge}</text>
+        <text class="mm-spoke-code" text-anchor="middle" dy="-3" font-size="10" font-weight="600" fill="#e4e4e4">${escapeHtml(n.code)}</text>
+        <text class="mm-spoke-hint" text-anchor="middle" dy="10" font-size="8" fill="var(--fam-color)" opacity="0.8">${drillHint}</text>
+        ${badge ? `<g transform="translate(${halfW - 14}, ${halfH - 4})">
+            <rect x="-13" y="-6" width="26" height="12" rx="6" fill="${badgeColor}" />
+            <text text-anchor="middle" dy="3" font-size="7" font-weight="700" fill="#fff">${badge}</text>
           </g>` : ''}
         ${childCountBadge}
         ${cBadge}
