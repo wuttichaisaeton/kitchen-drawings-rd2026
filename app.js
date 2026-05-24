@@ -17,6 +17,7 @@ const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
 const LS_BENT_KEY = 'kd_bent_parts_v1';
 const LS_COMMENTS_KEY = 'kd_comments_v1';        // { partCode: [{text, time}] }
 const LS_COMMENTS_OPEN_KEY = 'kd_comments_open_v1';  // Set<partCode>: which rows have comments panel expanded
+const LS_TIMERS_KEY = 'kd_timers_v1';             // { projectKey: { partCode: { sessions, active_start } } }
 
 // ──────────────────────────────────────────────────────────────────────
 // Utilities
@@ -277,6 +278,143 @@ function toggleCommentsOpen(code) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// Timers — per (project, part code). Workshop start/stop to track how
+// long each part takes to bend. Multiple sessions accumulate.
+//
+// Schema in Firebase RTDB:
+//   timers/<projectKey>/<partCode>:
+//     active_start: epoch_ms  // null/missing when stopped
+//     sessions/<pushId>: { start: epoch_ms, end: epoch_ms }
+// ──────────────────────────────────────────────────────────────────────
+
+let timersCache = {};   // synced from Firebase
+let _tickInterval = null;
+
+function loadCachedTimers() {
+  try {
+    const raw = localStorage.getItem(LS_TIMERS_KEY);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  } catch { return {}; }
+}
+function saveCachedTimers(all) {
+  try { localStorage.setItem(LS_TIMERS_KEY, JSON.stringify(all)); } catch {}
+}
+timersCache = loadCachedTimers();
+
+function initTimersSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('timers').on('value', snapshot => {
+      timersCache = snapshot.val() || {};
+      saveCachedTimers(timersCache);
+      _updateTickerState();
+      try { render(); } catch {}
+    }, err => console.warn('Firebase timers listener error:', err));
+  } catch (e) {
+    console.warn('Failed to attach timers listener:', e);
+  }
+}
+
+function _getTimer(pk, code) {
+  return (timersCache[pk] && timersCache[pk][code]) || {};
+}
+function isTimerRunning(pk, code) {
+  return !!(_getTimer(pk, code).active_start);
+}
+function getTimerTotalSeconds(pk, code) {
+  const t = _getTimer(pk, code);
+  let total = 0;
+  if (t.sessions) {
+    for (const k in t.sessions) {
+      const s = t.sessions[k];
+      if (s && s.end && s.start) total += (s.end - s.start) / 1000;
+    }
+  }
+  if (t.active_start) {
+    total += (Date.now() - t.active_start) / 1000;
+  }
+  return Math.max(0, Math.round(total));
+}
+
+function formatDuration(seconds) {
+  seconds = Math.max(0, Math.round(seconds));
+  if (seconds === 0) return '';
+  if (seconds < 60) return seconds + 's';
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return s ? `${m}m ${s}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const mm = m % 60;
+  return mm ? `${h}h ${mm}m` : `${h}h`;
+}
+
+function startTimer(pk, code) {
+  if (!pk || !code) return;
+  if (!window.firebaseDB) {
+    // localStorage-only fallback
+    if (!timersCache[pk]) timersCache[pk] = {};
+    if (!timersCache[pk][code]) timersCache[pk][code] = { sessions: {} };
+    timersCache[pk][code].active_start = Date.now();
+    saveCachedTimers(timersCache);
+    _updateTickerState();
+    render();
+    return;
+  }
+  try {
+    window.firebaseDB.ref(`timers/${pk}/${code}/active_start`).set(Date.now());
+  } catch (e) { console.warn('startTimer failed:', e); }
+}
+
+function stopTimer(pk, code) {
+  if (!pk || !code) return;
+  const t = _getTimer(pk, code);
+  if (!t.active_start) return;
+  const session = { start: t.active_start, end: Date.now() };
+  if (!window.firebaseDB) {
+    if (!timersCache[pk]) timersCache[pk] = {};
+    if (!timersCache[pk][code]) timersCache[pk][code] = { sessions: {} };
+    if (!timersCache[pk][code].sessions) timersCache[pk][code].sessions = {};
+    const localKey = 'local_' + session.end;
+    timersCache[pk][code].sessions[localKey] = session;
+    timersCache[pk][code].active_start = null;
+    saveCachedTimers(timersCache);
+    _updateTickerState();
+    render();
+    return;
+  }
+  try {
+    window.firebaseDB.ref(`timers/${pk}/${code}/sessions`).push(session);
+    window.firebaseDB.ref(`timers/${pk}/${code}/active_start`).set(null);
+  } catch (e) { console.warn('stopTimer failed:', e); }
+}
+
+function _updateTickerState() {
+  // Start/stop the 1s tick interval based on whether any timer is running.
+  let anyRunning = false;
+  for (const pk in timersCache) {
+    for (const code in (timersCache[pk] || {})) {
+      if (timersCache[pk][code] && timersCache[pk][code].active_start) {
+        anyRunning = true; break;
+      }
+    }
+    if (anyRunning) break;
+  }
+  if (anyRunning && !_tickInterval) {
+    _tickInterval = setInterval(() => {
+      // Update only live-elapsed text nodes — no full re-render every second
+      document.querySelectorAll('.timer-elapsed.running').forEach(el => {
+        const pk = el.dataset.pk;
+        const code = el.dataset.code;
+        if (pk && code) el.textContent = formatDuration(getTimerTotalSeconds(pk, code));
+      });
+    }, 1000);
+  } else if (!anyRunning && _tickInterval) {
+    clearInterval(_tickInterval);
+    _tickInterval = null;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // Data shaping
 // ──────────────────────────────────────────────────────────────────────
 
@@ -471,12 +609,20 @@ function renderBomRow(p, projectKey) {
         <button type="submit" class="comment-add">+ Add</button>
       </form>
     </div>` : '';
+  const tRunning = projectKey ? isTimerRunning(projectKey, p.code) : false;
+  const tSeconds = projectKey ? getTimerTotalSeconds(projectKey, p.code) : 0;
+  const tText = formatDuration(tSeconds);
+  const timerHtml = projectKey ? `
+    <span class="timer-elapsed ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}">${escapeHtml(tText)}</span>
+    <button class="timer-btn ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}" aria-label="${tRunning ? 'Stop' : 'Start'} timer" title="${tRunning ? 'Stop timer' : 'Start timer'}">${tRunning ? '⏸' : '▶'}</button>
+  ` : '';
   return `
     <div class="bom-row ${bent ? 'bent' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
       <div class="bom-row-main" data-url="${escapeHtml(url)}" data-has="${hasDrawing}">
         <span class="bom-icon">${familyIcon(fam)}</span>
         <span class="bom-code">${escapeHtml(p.code)}</span>
         <span class="bom-qty">×${p.qty}</span>
+        ${timerHtml}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent">${bent ? '✓' : '○'}</button>
       </div>
@@ -675,11 +821,27 @@ function renderProject(key) {
       const code = btn.dataset.code;
       const id = btn.dataset.id;
       if (code && id) {
-        // Try as number first (legacy localStorage entries), else string key
         const asNum = Number(id);
         removeComment(code, !isNaN(asNum) && /^\d+$/.test(id) ? asNum : id);
         render();
       }
+    });
+  });
+
+  // Timer Start/Stop button — toggle based on current state, sync to Firebase
+  ROOT.querySelectorAll('.timer-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const pk = btn.dataset.pk;
+      const code = btn.dataset.code;
+      if (!pk || !code) return;
+      if (isTimerRunning(pk, code)) {
+        stopTimer(pk, code);
+      } else {
+        startTimer(pk, code);
+      }
+      // Firebase listener will re-render. For localStorage-only fallback,
+      // start/stopTimer already calls render() itself.
     });
   });
 }
@@ -1178,9 +1340,10 @@ SEARCH_CLEAR.addEventListener('click', () => {
 // ──────────────────────────────────────────────────────────────────────
 
 async function init() {
-  // Connect to Firebase Realtime DB for shared comments (real-time sync).
-  // Falls back silently to localStorage if Firebase unavailable.
+  // Connect to Firebase Realtime DB for shared comments + timers (real-time
+  // sync across devices). Falls back to localStorage if Firebase unavailable.
   initCommentsSync();
+  initTimersSync();
 
   try {
     const [m, f] = await Promise.all([
