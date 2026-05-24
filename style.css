@@ -76,6 +76,19 @@ h1 {
   white-space: nowrap;
 }
 
+/* Sheet-metal bending icon — used wherever a Bending/พับ action shows up.
+   Uses mask-image so the SVG inherits the current text/foreground color.
+   Width = 1em so it scales with the surrounding font-size. */
+.icon-bend {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  background-color: currentColor;
+  -webkit-mask: url("icons/bending.svg") no-repeat center / contain;
+  mask: url("icons/bending.svg") no-repeat center / contain;
+  vertical-align: -0.12em;
+}
+
 /* Admin badge — shown only when this device is in owner/admin mode.
    Toggle with ?admin=1 URL param or ":admin" in the search box. */
 .admin-badge {

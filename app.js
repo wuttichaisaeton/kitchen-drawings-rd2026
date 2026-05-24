@@ -805,13 +805,13 @@ function renderProjectsHome() {
     const totalQty = p.total_qty != null ? p.total_qty : (p.parts || []).reduce((s, x) => s + (x.qty || 0), 0);
     const uniq = p.total_unique_parts != null ? p.total_unique_parts : (p.parts || []).length;
     const bentBadge = p.bent_count > 0
-      ? `<span class="project-badge bent">🔨 ${p.bent_count}/${uniq} bent (${p.bent_pct}%)</span>`
+      ? `<span class="project-badge bent"><span class="icon-bend"></span> ${p.bent_count}/${uniq} bent (${p.bent_pct}%)</span>`
       : '';
     const assembledBadge = p.assembled_count > 0
       ? `<span class="project-badge assembled">🧩 ${p.assembled_count}/${uniq} assembled (${p.assembled_pct}%)</span>`
       : '';
     const progressBars = `
-      <div class="progress-bar bent-bar" title="🔨 Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
+      <div class="progress-bar bent-bar" title="Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
       <div class="progress-bar assembled-bar" title="🧩 Assembly"><div class="progress-fill" style="width:${p.assembled_pct}%"></div></div>
     `;
     return `
@@ -993,7 +993,7 @@ function renderBomRow(p, projectKey) {
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         ${deleteBtnHtml}
         ${restoreBtnHtml}
-        <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent" title="${bent ? 'Bent — click to undo' : 'Mark as bent (folded)'}">🔨</button>
+        <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent" title="${bent ? 'Bent — click to undo' : 'Mark as bent (folded)'}"><span class="icon-bend"></span></button>
         <button class="assembled-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle assembled" title="${assembled ? 'Assembled — click to undo' : 'Mark as assembled'}">🧩</button>
       </div>
       ${commentsPanel}
@@ -1003,7 +1003,7 @@ function renderBomRow(p, projectKey) {
 // ─── Project mindmap renderer (HTML + SVG) ─────────────────────────
 // Spoke design — wider than Tree spokes so we can pack inline actions:
 //   row 1: code, qty, status badge, comment count
-//   row 2: ▶ timer button + elapsed text + 🔨 bent + 🧩 assembled
+//   row 2: ▶ timer button + elapsed text + bend-icon bent + 🧩 assembled
 // Uses pure SVG (no foreignObject) for cross-browser/iPad reliability.
 const PSPOKE_W = 240;
 const PSPOKE_H = 64;
@@ -1157,7 +1157,7 @@ function _renderProjectMindmapHtml(projectKey, project, parts) {
         </svg>
       </div>
       <p class="hint">
-        Click spoke center → drill in · 🔨/🧩/▶/💬 buttons act inline · drag spoke to reposition · click center → go back
+        Click spoke center → drill in · bend/🧩/▶/💬 buttons act inline · drag spoke to reposition · click center → go back
         ${neighbors.length === 0 ? '<br><strong>⚠️ No children here</strong> — click center to go back' : ''}
       </p>
     </div>
@@ -1242,7 +1242,10 @@ function _renderProjectSpoke(p, projectKey) {
 
       <g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${bentX}, ${btnY})">
         <circle r="12" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.08)'}" stroke="${bent ? '#5dbb63' : '#666'}" stroke-width="2" />
-        <text text-anchor="middle" dy="3" font-size="11">🔨</text>
+        <!-- Bending icon: L-shape (flat + 90deg vertical) drawn inline so it inherits color -->
+        <g transform="translate(-6.5, -6.5) scale(0.55)" stroke="${bent ? '#fff' : '#aaa'}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <path d="M3 18 L13 18 Q 15.5 18 15.5 15.5 L15.5 5" />
+        </g>
       </g>
       <g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${asmX}, ${btnY})">
         <circle r="12" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.08)'}" stroke="${assembled ? '#e07a5f' : '#666'}" stroke-width="2" />
@@ -1499,7 +1502,7 @@ function renderProject(key) {
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
     <div class="bent-summary">
       <div class="bent-row">
-        <span class="bent-label">🔨 Bending</span>
+        <span class="bent-label"><span class="icon-bend"></span> Bending</span>
         <span class="bent-stat">${bentCount}/${parts.length} · ${bentPct}%</span>
       </div>
       <div class="progress-bar large bent-bar"><div class="progress-fill" style="width:${bentPct}%"></div></div>
