@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-24T03:00:42.946320+00:00",
+  "generated_at": "2026-05-24T07:25:05.215843+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1437,6 +1437,36 @@
           "code": "TS2TRX-000000",
           "qty": 4,
           "family": "Top Sup"
+        }
+      ]
+    },
+    "DSV0B0-000000": {
+      "name": "DSV0B0-000000",
+      "status": "active",
+      "created_at": "2026-05-24T07:25:05.214311+00:00",
+      "updated_at": "2026-05-24T07:25:05.214311+00:00",
+      "total_unique_parts": 4,
+      "total_qty": 4,
+      "parts": [
+        {
+          "code": "DSB0BA-110050",
+          "qty": 1,
+          "family": "Back-Down"
+        },
+        {
+          "code": "DSB0F0-110050",
+          "qty": 1,
+          "family": "Floor"
+        },
+        {
+          "code": "DSV100-110020",
+          "qty": 1,
+          "family": "Drawer"
+        },
+        {
+          "code": "DSV2B4-110020",
+          "qty": 1,
+          "family": "Drawer"
         }
       ]
     }
