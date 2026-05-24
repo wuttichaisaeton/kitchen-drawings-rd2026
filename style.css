@@ -68,6 +68,20 @@ h1 {
   font-size: 18px;
   color: #4a90e2;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Brand icon — detailed stainless-steel kitchen scene (cabinets, stove,
+   sink, range hood). Rendered as background-image so the colors and
+   gradients in the SVG are preserved (no mask). */
+.brand-icon {
+  display: inline-block;
+  width: 1.5em;
+  height: 1.5em;
+  background: url("icons/kitchen-drawings.svg") no-repeat center / contain;
+  flex-shrink: 0;
 }
 
 .updated {

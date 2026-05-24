@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="kd-counter" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="30%" stop-color="#cbd5e1" />
+      <stop offset="70%" stop-color="#94a3b8" />
+      <stop offset="100%" stop-color="#475569" />
+    </linearGradient>
+    <linearGradient id="kd-steel" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="50%" stop-color="#cbd5e1" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+    <linearGradient id="kd-darkMetal" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#475569" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+    <linearGradient id="kd-highlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#cbd5e1" />
+      <stop offset="50%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#94a3b8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Base Cabinets -->
+  <rect x="12" y="55" width="76" height="31" rx="2" fill="url(#kd-steel)" stroke="#1e293b" stroke-width="2" />
+
+  <!-- Lower cabinet doors / drawers -->
+  <rect x="15" y="58" width="11.5" height="25" fill="url(#kd-highlight)" stroke="#1e293b" stroke-width="1.5" rx="1" />
+  <rect x="27.5" y="58" width="11.5" height="25" fill="url(#kd-highlight)" stroke="#1e293b" stroke-width="1.5" rx="1" />
+  <rect x="42" y="58" width="16" height="7.5" fill="url(#kd-highlight)" stroke="#1e293b" stroke-width="1.5" rx="1" />
+  <rect x="42" y="66.5" width="16" height="7.5" fill="url(#kd-highlight)" stroke="#1e293b" stroke-width="1.5" rx="1" />
+  <rect x="42" y="75" width="16" height="8" fill="url(#kd-highlight)" stroke="#1e293b" stroke-width="1.5" rx="1" />
+
+  <!-- Built-in Oven -->
+  <rect x="61" y="58" width="24" height="25" fill="url(#kd-darkMetal)" stroke="#1e293b" stroke-width="1.5" rx="1" />
+  <rect x="65" y="64" width="16" height="13" fill="#0f172a" rx="1" />
+  <rect x="67" y="60" width="12" height="1.5" fill="#f8fafc" stroke="#334155" stroke-width="0.5" />
+
+  <!-- Lower handles -->
+  <circle cx="24.5" cy="70" r="1" fill="#475569" />
+  <circle cx="29.5" cy="70" r="1" fill="#475569" />
+  <rect x="47" y="61" width="6" height="1" fill="#475569" rx="0.5" />
+  <rect x="47" y="69.5" width="6" height="1" fill="#475569" rx="0.5" />
+  <rect x="47" y="78" width="6" height="1" fill="#475569" rx="0.5" />
+
+  <!-- Countertop -->
+  <rect x="10" y="51" width="80" height="4" rx="1.5" fill="url(#kd-counter)" stroke="#1e293b" stroke-width="2" />
+
+  <!-- Sink faucet -->
+  <path d="M 23 51 V 42 C 23 38, 29 38, 29 42 V 44" fill="none" stroke="url(#kd-counter)" stroke-width="2.5" stroke-linecap="round" />
+  <rect x="21" y="50" width="4" height="1" fill="#475569" />
+
+  <!-- Stove / cooktop with two orange burners -->
+  <rect x="63" y="49" width="20" height="2" fill="#0f172a" rx="0.5" />
+  <circle cx="68" cy="50" r="1.5" fill="#f97316" />
+  <circle cx="78" cy="50" r="1.5" fill="#f97316" />
+
+  <!-- Frying pan on stove -->
+  <ellipse cx="68" cy="46" rx="4.5" ry="1.5" fill="#ef4444" stroke="#7f1d1d" stroke-width="1" />
+  <path d="M 72.5 46.5 L 78 45" stroke="#7f1d1d" stroke-width="1.5" stroke-linecap="round" />
+
+  <!-- Upper Cabinets (Left) -->
+  <rect x="12" y="12" width="42" height="22" rx="2" fill="url(#kd-steel)" stroke="#1e293b" stroke-width="2" />
+  <line x1="26" y1="12" x2="26" y2="34" stroke="#1e293b" stroke-width="1.5" />
+  <line x1="40" y1="12" x2="40" y2="34" stroke="#1e293b" stroke-width="1.5" />
+  <circle cx="24.5" cy="30" r="0.8" fill="#1e293b" />
+  <circle cx="27.5" cy="30" r="0.8" fill="#1e293b" />
+  <circle cx="38.5" cy="30" r="0.8" fill="#1e293b" />
+  <circle cx="41.5" cy="30" r="0.8" fill="#1e293b" />
+
+  <!-- Range hood -->
+  <path d="M 58 12 H 84 V 22 L 78 30 H 64 L 58 22 Z" fill="url(#kd-steel)" stroke="#1e293b" stroke-linejoin="round" stroke-width="2" />
+  <rect x="64" y="30" width="14" height="2" fill="#334155" />
+</svg>
