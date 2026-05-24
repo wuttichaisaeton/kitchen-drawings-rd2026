@@ -795,7 +795,7 @@ function renderProjectsHome() {
   if (!items.length) {
     ROOT.innerHTML = `
       <p class="loading">No projects yet<br><br>
-      Open a project assembly in Fusion and run <code>CC_ProjectBOM</code></p>`;
+      Open a project assembly in Fusion and run <code>CC_Assembly</code></p>`;
     COUNT_EL.textContent = '';
     return;
   }

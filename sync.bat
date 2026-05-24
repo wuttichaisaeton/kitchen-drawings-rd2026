@@ -1,6 +1,6 @@
 @echo off
 REM sync.bat — Push latest Drawings/ to GitHub Pages.
-REM Auto-triggered by CC_DrawingPDFExport / CC_ProjectBOM / CC_DrawingPDFExport_Batch.
+REM Auto-triggered by CC_DrawingPDFExport / CC_Assembly / CC_DrawingPDFExport_Batch.
 REM Can also be double-clicked manually.
 
 cd /d "%~dp0"
