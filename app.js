@@ -173,7 +173,14 @@ function familyOrder(a, b) {
 
 function _remapFamilyForCode(code, originalFamily) {
   if (originalFamily === 'Back-Down') return 'DW-BK';
-  if (originalFamily === 'Floor')     return 'DW-FL';
+  if (originalFamily === 'Floor') {
+    // Split Floor by code prefix:
+    //   FN* (FN0B00, FN2BLA, FN2BNX, ...) → "FL" — standalone floor beams/rails
+    //   Everything else (DSB0F*, etc.)    → "DW-FL" — drawer-related floor parts
+    const prefix2 = (code || '').slice(0, 2).toUpperCase();
+    if (prefix2 === 'FN') return 'FL';
+    return 'DW-FL';
+  }
   if (originalFamily === 'Drawer') {
     const prefix4 = (code || '').slice(0, 4).toUpperCase();
     if (prefix4 === 'DSV1') return 'DW-S1';

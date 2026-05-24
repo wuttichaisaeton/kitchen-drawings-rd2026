@@ -5,8 +5,9 @@
   "Side Panel": {"icon": "▥",  "image": "icons/side-panel.svg", "order": 4, "color": "#d4a44a", "tint": "#3a2e15"},
   "DW-BK":      {"icon": "⬛", "image": "icons/back-down.svg",  "order": 5, "color": "#a070d0", "tint": "#2e1f3a"},
   "DW-FL":      {"icon": "▤",  "image": "icons/floor.svg",      "order": 6, "color": "#e07a5f", "tint": "#3a201a"},
-  "Top Sup":    {"icon": "▦",  "image": "icons/top-sup.svg",    "order": 7, "color": "#4ac4c4", "tint": "#15333a"},
-  "Beam":       {"icon": "━",  "image": "icons/beam.svg",       "order": 8, "color": "#c44a8a", "tint": "#3a1a2e"},
-  "Other":      {"icon": "📄", "image": "icons/other.svg",      "order": 9, "color": "#888888", "tint": "#262626"},
-  "Custom":     {"icon": "✨", "image": "icons/custom.svg",     "order": 10, "color": "#e2c84a", "tint": "#3a3315"}
+  "FL":         {"icon": "═",  "image": "icons/floor.svg",      "order": 7, "color": "#d4a44a", "tint": "#3a2e15"},
+  "Top Sup":    {"icon": "▦",  "image": "icons/top-sup.svg",    "order": 8, "color": "#4ac4c4", "tint": "#15333a"},
+  "Beam":       {"icon": "━",  "image": "icons/beam.svg",       "order": 9, "color": "#c44a8a", "tint": "#3a1a2e"},
+  "Other":      {"icon": "📄", "image": "icons/other.svg",      "order": 10, "color": "#888888", "tint": "#262626"},
+  "Custom":     {"icon": "✨", "image": "icons/custom.svg",     "order": 11, "color": "#e2c84a", "tint": "#3a3315"}
 }
