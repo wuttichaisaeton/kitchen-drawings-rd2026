@@ -1490,11 +1490,16 @@ footer {
   cursor: grab;
   /* Prevent browser from intercepting touch as scroll/zoom during drag */
   touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;  /* disable iOS long-press menu */
+  pointer-events: all;
 }
 .mm-spoke:active { cursor: grabbing; }
 .mm-spoke .mm-spoke-bg {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
   transition: fill 0.15s, stroke-width 0.15s, filter 0.15s;
+  pointer-events: all;
 }
 .mm-spoke:hover .mm-spoke-bg {
   fill: rgba(74, 144, 226, 0.18);

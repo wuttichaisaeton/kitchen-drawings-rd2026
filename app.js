@@ -1786,94 +1786,101 @@ function renderRadialMindmap(roots) {
   });
 
   // ─── Drag-and-click handling for spoke nodes ─────────────────────
-  // Pointer events handle mouse + touch + pen uniformly. Drag threshold
-  // = 4 SVG units; below threshold counts as a click (drill / leaf action).
+  // Use document-level pointermove/pointerup listeners (rather than
+  // setPointerCapture on the SVG <g>) for cross-browser reliability —
+  // setPointerCapture on SVG elements has uneven support, while
+  // document-level listeners work everywhere.
   const svgEl = ROOT.querySelector('.mindmap-svg');
-  ROOT.querySelectorAll('.mm-spoke').forEach(el => {
-    const code = el.dataset.code;
+  let activeDrag = null;
+
+  function onDragMove(ev) {
+    if (!activeDrag || ev.pointerId !== activeDrag.pointerId) return;
+    ev.preventDefault();
+    const pt = _svgPoint(svgEl, ev);
+    const dx = pt.x - activeDrag.startSvgX;
+    const dy = pt.y - activeDrag.startSvgY;
+    if (!activeDrag.moved && Math.hypot(dx, dy) > 4) {
+      activeDrag.moved = true;
+      activeDrag.spoke.classList.add('dragging');
+    }
+    if (activeDrag.moved) {
+      const nx = activeDrag.curX + dx;
+      const ny = activeDrag.curY + dy;
+      activeDrag.spoke.setAttribute('transform', `translate(${nx}, ${ny})`);
+      // Live-update connector edge
+      const edge = svgEl.querySelector(`.mm-edge[data-target="${CSS.escape(activeDrag.code)}"]`);
+      if (edge) {
+        const mx = (cx + nx) / 2, my = (cy + ny) / 2;
+        const ddx = nx - cx, ddy = ny - cy;
+        const len = Math.hypot(ddx, ddy) || 1;
+        const bx = -ddy / len * 22, by = ddx / len * 22;
+        edge.setAttribute('d', `M ${cx} ${cy} Q ${mx + bx} ${my + by} ${nx} ${ny}`);
+      }
+    }
+  }
+
+  function onDragEnd(ev) {
+    if (!activeDrag || ev.pointerId !== activeDrag.pointerId) return;
+    document.removeEventListener('pointermove', onDragMove);
+    document.removeEventListener('pointerup', onDragEnd);
+    document.removeEventListener('pointercancel', onDragEnd);
+    const drag = activeDrag;
+    activeDrag = null;
+    drag.spoke.classList.remove('dragging');
+    if (drag.moved) {
+      const pt = _svgPoint(svgEl, ev);
+      const dx = pt.x - drag.startSvgX;
+      const dy = pt.y - drag.startSvgY;
+      const finalX = drag.curX + dx;
+      const finalY = drag.curY + dy;
+      const dxFromAuto = finalX - drag.positionedNode._autoX;
+      const dyFromAuto = finalY - drag.positionedNode._autoY;
+      setSpokeOverride(centerKey, drag.code, dxFromAuto, dyFromAuto);
+      drag.positionedNode.x = finalX;
+      drag.positionedNode.y = finalY;
+      drag.spoke.classList.add('moved');
+      if (!hasAnyOverride) renderTreeHome();
+    } else {
+      // Click — drill in or leaf action
+      const node = _findNodeByCode(roots, drag.code);
+      if (node) {
+        if (node.children && node.children.length > 0) {
+          radialCenter = drag.code;
+          saveRadialState();
+          renderTreeHome();
+        } else {
+          _doLeafAction(node);
+        }
+      }
+    }
+  }
+
+  ROOT.querySelectorAll('.mm-spoke').forEach(spoke => {
+    const code = spoke.dataset.code;
     const positionedNode = positioned.find(pp => pp.node.code === code);
     if (!positionedNode) return;
-    let drag = null;
 
-    el.addEventListener('pointerdown', (ev) => {
-      // Ignore right-click / middle-click
+    spoke.addEventListener('pointerdown', (ev) => {
       if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      // Prevent text selection + iOS callout
+      ev.preventDefault();
       ev.stopPropagation();
-      try { el.setPointerCapture(ev.pointerId); } catch {}
       const pt = _svgPoint(svgEl, ev);
-      drag = {
+      activeDrag = {
+        spoke,
+        code,
+        positionedNode,
         startSvgX: pt.x,
         startSvgY: pt.y,
-        // Live position (may have already been moved earlier this session)
         curX: positionedNode.x,
         curY: positionedNode.y,
         moved: false,
         pointerId: ev.pointerId,
       };
+      document.addEventListener('pointermove', onDragMove);
+      document.addEventListener('pointerup', onDragEnd);
+      document.addEventListener('pointercancel', onDragEnd);
     });
-
-    el.addEventListener('pointermove', (ev) => {
-      if (!drag) return;
-      const pt = _svgPoint(svgEl, ev);
-      const dx = pt.x - drag.startSvgX;
-      const dy = pt.y - drag.startSvgY;
-      if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
-        drag.moved = true;
-        el.classList.add('dragging');
-      }
-      if (drag.moved) {
-        const nx = drag.curX + dx;
-        const ny = drag.curY + dy;
-        el.setAttribute('transform', `translate(${nx}, ${ny})`);
-        // Live-update the connector edge for this spoke
-        const edge = svgEl.querySelector(`.mm-edge[data-target="${CSS.escape(code)}"]`);
-        if (edge) {
-          const mx = (cx + nx) / 2, my = (cy + ny) / 2;
-          const ddx = nx - cx, ddy = ny - cy;
-          const len = Math.hypot(ddx, ddy) || 1;
-          const bulgeX = -ddy / len * 22;
-          const bulgeY = ddx / len * 22;
-          edge.setAttribute('d', `M ${cx} ${cy} Q ${mx + bulgeX} ${my + bulgeY} ${nx} ${ny}`);
-        }
-      }
-    });
-
-    const endDrag = (ev) => {
-      if (!drag) return;
-      try { el.releasePointerCapture(drag.pointerId); } catch {}
-      el.classList.remove('dragging');
-      if (drag.moved) {
-        // Persist the final offset (delta from auto position)
-        const pt = _svgPoint(svgEl, ev);
-        const dx = pt.x - drag.startSvgX;
-        const dy = pt.y - drag.startSvgY;
-        const finalX = drag.curX + dx;
-        const finalY = drag.curY + dy;
-        const dxFromAuto = finalX - positionedNode._autoX;
-        const dyFromAuto = finalY - positionedNode._autoY;
-        setSpokeOverride(centerKey, code, dxFromAuto, dyFromAuto);
-        positionedNode.x = finalX;
-        positionedNode.y = finalY;
-        el.classList.add('moved');
-        // Re-render to update Reset-button visibility (only if it wasn't visible)
-        if (!hasAnyOverride) renderTreeHome();
-      } else {
-        // Treated as a click — drill in or leaf action
-        const node = _findNodeByCode(roots, code);
-        if (node) {
-          if (node.children && node.children.length > 0) {
-            radialCenter = code;
-            saveRadialState();
-            renderTreeHome();
-          } else {
-            _doLeafAction(node);
-          }
-        }
-      }
-      drag = null;
-    };
-    el.addEventListener('pointerup', endDrag);
-    el.addEventListener('pointercancel', endDrag);
   });
 }
 
