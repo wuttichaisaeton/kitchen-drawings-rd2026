@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-23T23:53:55.771720+00:00",
+  "generated_at": "2026-05-23T23:55:22.497643+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -518,7 +518,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771693+00:00",
+      "generated_at": "2026-05-23T23:55:22.497617+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -531,7 +531,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771703+00:00",
+      "generated_at": "2026-05-23T23:55:22.497625+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -544,7 +544,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771706+00:00",
+      "generated_at": "2026-05-23T23:55:22.497628+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -557,7 +557,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771708+00:00",
+      "generated_at": "2026-05-23T23:55:22.497630+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -570,7 +570,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771709+00:00",
+      "generated_at": "2026-05-23T23:55:22.497631+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -583,7 +583,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771711+00:00",
+      "generated_at": "2026-05-23T23:55:22.497633+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -596,7 +596,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771713+00:00",
+      "generated_at": "2026-05-23T23:55:22.497635+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -609,7 +609,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771714+00:00",
+      "generated_at": "2026-05-23T23:55:22.497637+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -622,7 +622,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771716+00:00",
+      "generated_at": "2026-05-23T23:55:22.497638+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -635,7 +635,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771717+00:00",
+      "generated_at": "2026-05-23T23:55:22.497640+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -648,7 +648,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-05-23T23:53:55.771719+00:00",
+      "generated_at": "2026-05-23T23:55:22.497641+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
