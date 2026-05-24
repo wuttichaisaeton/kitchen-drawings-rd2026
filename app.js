@@ -1211,6 +1211,42 @@ function setTreeFilter(v) {
   try { localStorage.setItem(LS_TREE_FILTER, v); } catch {}
 }
 
+// Per-mindmap drag overrides — each spoke can be dragged to a custom
+// position; the offset (dx, dy) from the auto-computed location is
+// persisted so the layout sticks across reloads + tab switches.
+//
+// Schema:
+//   { "<centerKey>": { "<spokeCode>": { dx, dy }, ... }, ... }
+//   centerKey = node.code when drilled in, or `family:<name>` at family level.
+const LS_MINDMAP_POSITIONS = 'kd_mindmap_positions_v1';
+function getPositionOverrides() {
+  try { return JSON.parse(localStorage.getItem(LS_MINDMAP_POSITIONS) || '{}'); }
+  catch { return {}; }
+}
+function savePositionOverrides(all) {
+  try { localStorage.setItem(LS_MINDMAP_POSITIONS, JSON.stringify(all)); } catch {}
+}
+function setSpokeOverride(centerKey, spokeCode, dx, dy) {
+  const all = getPositionOverrides();
+  if (!all[centerKey]) all[centerKey] = {};
+  all[centerKey][spokeCode] = { dx, dy };
+  savePositionOverrides(all);
+}
+function clearOverridesForCenter(centerKey) {
+  const all = getPositionOverrides();
+  delete all[centerKey];
+  savePositionOverrides(all);
+}
+function _centerKey(centerNode, currentFamily) {
+  return centerNode ? centerNode.code : `family:${currentFamily}`;
+}
+function _svgPoint(svg, evt) {
+  const pt = svg.createSVGPoint();
+  pt.x = evt.clientX;
+  pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
 // ─── Unified node list (manifest drawn parts + missing.json) ──────
 // "Other" family is excluded — those are usually junk that the watcher
 // picked up by mistake (logos, hybrid templates, test files, RD Logo,
@@ -1567,6 +1603,24 @@ function renderRadialMindmap(roots) {
   // Compute SVG canvas + layout
   const baseR = 220;
   const positioned = _radialLayout(neighbors, 0, 0, baseR);
+
+  // Apply user drag overrides (offsets from auto position) so a
+  // hand-arranged mindmap survives reloads + tab switches.
+  const centerKey = _centerKey(centerNode, currentFamily);
+  const overrides = getPositionOverrides()[centerKey] || {};
+  let hasAnyOverride = false;
+  for (const p of positioned) {
+    const ov = overrides[p.node.code];
+    p._autoX = p.x;
+    p._autoY = p.y;
+    if (ov) {
+      p.x += ov.dx;
+      p.y += ov.dy;
+      p._moved = true;
+      hasAnyOverride = true;
+    }
+  }
+
   const maxR = positioned.length
     ? Math.max(...positioned.map(p => Math.hypot(p.x, p.y)))
     : baseR;
@@ -1578,19 +1632,23 @@ function renderRadialMindmap(roots) {
   const cx = half, cy = half;
 
   // Translate positioned coords from (0,0)-relative to canvas-relative
-  for (const p of positioned) { p.x += cx; p.y += cy; }
+  for (const p of positioned) {
+    p.x += cx; p.y += cy;
+    p._autoX += cx; p._autoY += cy;
+  }
 
-  // Edges (curves from center to each neighbor) — quadratic Bezier
+  // Edges (curves from center to each neighbor) — quadratic Bezier.
+  // data-target wires each edge to its spoke so we can update the path
+  // live during drag without re-rendering the whole SVG.
   const edges = positioned.map(p => {
     const mx = (cx + p.x) / 2, my = (cy + p.y) / 2;
-    // Slight curve offset perpendicular to the radial direction
     const dx = p.x - cx, dy = p.y - cy;
     const len = Math.hypot(dx, dy) || 1;
     const nx = -dy / len, ny = dx / len;
     const bulge = 22;
     const ctrlX = mx + nx * bulge;
     const ctrlY = my + ny * bulge;
-    return `<path class="mm-edge" d="M ${cx} ${cy} Q ${ctrlX} ${ctrlY} ${p.x} ${p.y}" />`;
+    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${cx} ${cy} Q ${ctrlX} ${ctrlY} ${p.x} ${p.y}" />`;
   }).join('');
 
   // Center node (big circle for family / rounded rect for node)
@@ -1637,7 +1695,7 @@ function renderRadialMindmap(roots) {
     const drillHint = hasChildren ? '▶' : (pdfUrlForCode(n.code) ? '📄' : (n.urn ? '↗' : ''));
 
     return `
-      <g class="mm-spoke ${hasChildren ? 'has-children' : 'is-leaf'}" data-code="${escapeHtml(n.code)}"
+      <g class="mm-spoke ${hasChildren ? 'has-children' : 'is-leaf'} ${p._moved ? 'moved' : ''}" data-code="${escapeHtml(n.code)}"
          transform="translate(${p.x}, ${p.y})" style="${famVars(n.family || fam)}">
         <rect x="${-halfW}" y="${-halfH}" width="${SPOKE_CARD_W}" height="${SPOKE_CARD_H}" rx="${halfH}"
               fill="var(--fam-tint)" stroke="var(--fam-color)" stroke-width="2"
@@ -1661,7 +1719,10 @@ function renderRadialMindmap(roots) {
 
   ROOT.innerHTML = `
     <div class="mindmap-wrapper" style="${famVars(fam)}">
-      <div class="mindmap-breadcrumb">${breadcrumbHtml}</div>
+      <div class="mindmap-breadcrumb">
+        <div class="mm-bc-trail">${breadcrumbHtml}</div>
+        ${hasAnyOverride ? `<button class="mm-reset-layout" id="mm-reset-layout" title="Restore auto-positions for this view">↻ Reset layout</button>` : ''}
+      </div>
       <div class="mindmap-canvas">
         <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="mindmap-svg">
           ${edges}
@@ -1671,6 +1732,7 @@ function renderRadialMindmap(roots) {
       </div>
       <p class="hint">
         Click a node with ▶ → drill down · leaf (📄/↗) → open PDF/Fusion · click center → go up 1 level
+        · <strong>drag any node to move it</strong> (position is saved per view)
         ${neighbors.length === 0 ? '<br><strong>⚠️ No children here</strong> — click center to go back' : ''}
       </p>
     </div>
@@ -1714,21 +1776,104 @@ function renderRadialMindmap(roots) {
     renderTreeHome();
   });
 
-  // Wire spoke nodes — drill in OR action
+  // Wire Reset layout button
+  ROOT.querySelector('#mm-reset-layout')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (confirm('Restore auto-layout for this view?\n(Custom positions will be lost — other views are not affected.)')) {
+      clearOverridesForCenter(centerKey);
+      renderTreeHome();
+    }
+  });
+
+  // ─── Drag-and-click handling for spoke nodes ─────────────────────
+  // Pointer events handle mouse + touch + pen uniformly. Drag threshold
+  // = 4 SVG units; below threshold counts as a click (drill / leaf action).
+  const svgEl = ROOT.querySelector('.mindmap-svg');
   ROOT.querySelectorAll('.mm-spoke').forEach(el => {
-    el.addEventListener('click', (ev) => {
+    const code = el.dataset.code;
+    const positionedNode = positioned.find(pp => pp.node.code === code);
+    if (!positionedNode) return;
+    let drag = null;
+
+    el.addEventListener('pointerdown', (ev) => {
+      // Ignore right-click / middle-click
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
       ev.stopPropagation();
-      const code = el.dataset.code;
-      const node = _findNodeByCode(roots, code);
-      if (!node) return;
-      if (node.children && node.children.length > 0) {
-        radialCenter = code;
-        saveRadialState();
-        renderTreeHome();
-      } else {
-        _doLeafAction(node);
+      try { el.setPointerCapture(ev.pointerId); } catch {}
+      const pt = _svgPoint(svgEl, ev);
+      drag = {
+        startSvgX: pt.x,
+        startSvgY: pt.y,
+        // Live position (may have already been moved earlier this session)
+        curX: positionedNode.x,
+        curY: positionedNode.y,
+        moved: false,
+        pointerId: ev.pointerId,
+      };
+    });
+
+    el.addEventListener('pointermove', (ev) => {
+      if (!drag) return;
+      const pt = _svgPoint(svgEl, ev);
+      const dx = pt.x - drag.startSvgX;
+      const dy = pt.y - drag.startSvgY;
+      if (!drag.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+        drag.moved = true;
+        el.classList.add('dragging');
+      }
+      if (drag.moved) {
+        const nx = drag.curX + dx;
+        const ny = drag.curY + dy;
+        el.setAttribute('transform', `translate(${nx}, ${ny})`);
+        // Live-update the connector edge for this spoke
+        const edge = svgEl.querySelector(`.mm-edge[data-target="${CSS.escape(code)}"]`);
+        if (edge) {
+          const mx = (cx + nx) / 2, my = (cy + ny) / 2;
+          const ddx = nx - cx, ddy = ny - cy;
+          const len = Math.hypot(ddx, ddy) || 1;
+          const bulgeX = -ddy / len * 22;
+          const bulgeY = ddx / len * 22;
+          edge.setAttribute('d', `M ${cx} ${cy} Q ${mx + bulgeX} ${my + bulgeY} ${nx} ${ny}`);
+        }
       }
     });
+
+    const endDrag = (ev) => {
+      if (!drag) return;
+      try { el.releasePointerCapture(drag.pointerId); } catch {}
+      el.classList.remove('dragging');
+      if (drag.moved) {
+        // Persist the final offset (delta from auto position)
+        const pt = _svgPoint(svgEl, ev);
+        const dx = pt.x - drag.startSvgX;
+        const dy = pt.y - drag.startSvgY;
+        const finalX = drag.curX + dx;
+        const finalY = drag.curY + dy;
+        const dxFromAuto = finalX - positionedNode._autoX;
+        const dyFromAuto = finalY - positionedNode._autoY;
+        setSpokeOverride(centerKey, code, dxFromAuto, dyFromAuto);
+        positionedNode.x = finalX;
+        positionedNode.y = finalY;
+        el.classList.add('moved');
+        // Re-render to update Reset-button visibility (only if it wasn't visible)
+        if (!hasAnyOverride) renderTreeHome();
+      } else {
+        // Treated as a click — drill in or leaf action
+        const node = _findNodeByCode(roots, code);
+        if (node) {
+          if (node.children && node.children.length > 0) {
+            radialCenter = code;
+            saveRadialState();
+            renderTreeHome();
+          } else {
+            _doLeafAction(node);
+          }
+        }
+      }
+      drag = null;
+    };
+    el.addEventListener('pointerup', endDrag);
+    el.addEventListener('pointercancel', endDrag);
   });
 }
 

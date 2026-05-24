@@ -1396,13 +1396,37 @@ footer {
 
 .mindmap-breadcrumb {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   border-left: 3px solid var(--fam-color, #4a90e2);
+}
+.mm-bc-trail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+}
+.mm-reset-layout {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--fam-color, #4a90e2);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--fam-color, #4a90e2);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  letter-spacing: 0.03em;
+}
+.mm-reset-layout:hover {
+  background: var(--fam-color, #4a90e2);
+  color: #fff;
 }
 .mm-bc-item {
   font-size: 12px;
@@ -1463,11 +1487,14 @@ footer {
 
 /* Spoke nodes */
 .mm-spoke {
-  cursor: pointer;
+  cursor: grab;
+  /* Prevent browser from intercepting touch as scroll/zoom during drag */
+  touch-action: none;
 }
+.mm-spoke:active { cursor: grabbing; }
 .mm-spoke .mm-spoke-bg {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
-  transition: all 0.15s;
+  transition: fill 0.15s, stroke-width 0.15s, filter 0.15s;
 }
 .mm-spoke:hover .mm-spoke-bg {
   fill: rgba(74, 144, 226, 0.18);
@@ -1477,6 +1504,21 @@ footer {
 .mm-spoke.is-leaf .mm-spoke-bg {
   stroke-dasharray: 4 3;
   stroke-opacity: 0.7;
+}
+/* Dragging state — bigger shadow, no transition (so it tracks pointer) */
+.mm-spoke.dragging {
+  cursor: grabbing;
+}
+.mm-spoke.dragging .mm-spoke-bg {
+  fill: rgba(74, 144, 226, 0.28);
+  stroke-width: 3;
+  stroke-dasharray: 6 3;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.6));
+  transition: none;
+}
+/* Moved (overridden) — small visual cue at left edge so user knows it's hand-positioned */
+.mm-spoke.moved .mm-spoke-bg {
+  stroke-dasharray: 8 2;
 }
 .mm-spoke text { pointer-events: none; }
 .mm-spoke .mm-mini-badge { pointer-events: none; }
