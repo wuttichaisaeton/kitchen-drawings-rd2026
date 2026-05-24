@@ -763,16 +763,19 @@ h1 {
 }
 .bent-label.assembled-label { color: #e07a5f; }
 
-/* ─── View toggle (List ↔ Mindmap) in project header ─── */
+/* ─── Workflow toggle (Bending Kanban ↔ Assembly Kanban) ─── */
 .view-toggle-group {
   display: inline-flex;
   background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
 }
 .view-toggle-btn {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
   background: transparent;
   color: #888;
   border: none;
@@ -783,6 +786,16 @@ h1 {
   transition: all 0.15s;
 }
 .view-toggle-btn:hover { color: #ddd; }
+.view-toggle-btn.active.bending {
+  background: #2c5d34;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(46, 160, 67, 0.4);
+}
+.view-toggle-btn.active.assembly {
+  background: #5d3a2c;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(224, 122, 95, 0.4);
+}
 .view-toggle-btn.active {
   background: #4a90e2;
   color: #fff;
@@ -838,6 +851,22 @@ h1 {
 /* When both bent + assembled are done — subtle backdrop on the card */
 .pm-spoke.is-bent.is-assembled .pm-spoke-bg {
   fill: rgba(46, 160, 67, 0.12);
+}
+
+/* Warn frame — pulses subtly on missing/outdated parts so they
+   stand out in either Kanban view */
+.pm-spoke.pm-warn .pm-spoke-bg {
+  fill: rgba(248, 81, 73, 0.08);
+}
+.pm-warn-frame {
+  animation: pm-warn-pulse 1.8s ease-in-out infinite;
+}
+@keyframes pm-warn-pulse {
+  0%, 100% { opacity: 0.9; }
+  50%      { opacity: 0.5; }
+}
+.pm-warn-badge text {
+  font-family: "Flux Architect", -apple-system, sans-serif;
 }
 
 .project-badge.assembled {

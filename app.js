@@ -743,9 +743,10 @@ function projectList() {
 // ──────────────────────────────────────────────────────────────────────
 
 function render() {
+  // Migrate legacy 'missing' view (Tree tab — removed 2026-05-24) → projects
+  if (view === 'missing') view = 'projects';
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
-    if (view === 'missing')  return renderMissingHome();
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
@@ -862,11 +863,18 @@ function saveCollapsed(set) {
   try { localStorage.setItem(LS_COLLAPSED_KEY, JSON.stringify([...set])); } catch {}
 }
 
-// ─── Project view mode (BOM list vs mindmap) ───────────────────────
+// ─── Project view mode (Bending workflow vs Assembly workflow) ─────
+// Both are Kanban-style radial mindmaps; differ only in which checkbox
+// is shown on each spoke (bend vs assembled). Workshop staff toggle
+// to focus on one task at a time.
 const LS_PROJECT_VIEW = 'kd_project_view_v1';
 function getProjectViewMode() {
-  try { return localStorage.getItem(LS_PROJECT_VIEW) || 'list'; }
-  catch { return 'list'; }
+  try {
+    const v = localStorage.getItem(LS_PROJECT_VIEW);
+    // Migrate legacy 'list' / 'mindmap' → 'bending' (mindmap-by-default)
+    if (v === 'bending' || v === 'assembly') return v;
+    return 'bending';
+  } catch { return 'bending'; }
 }
 function setProjectViewMode(v) {
   try { localStorage.setItem(LS_PROJECT_VIEW, v); } catch {}
@@ -1008,7 +1016,7 @@ function renderBomRow(p, projectKey) {
 const PSPOKE_W = 240;
 const PSPOKE_H = 64;
 
-function _renderProjectMindmapHtml(projectKey, project, parts) {
+function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
   const tree = buildProjectTree(parts, projectKey);
   const { roots, all } = tree;
   if (!roots.length) {
@@ -1133,8 +1141,8 @@ function _renderProjectMindmapHtml(projectKey, project, parts) {
       <text text-anchor="middle" y="18" font-size="11" fill="#fff" opacity="0.9">${escapeHtml(centerLabel)}</text>
     </g>`;
 
-  // Spokes — large cards with inline buttons
-  const spokes = positioned.map(p => _renderProjectSpoke(p, projectKey)).join('');
+  // Spokes — large cards with inline buttons (workflow controls which checkbox is shown)
+  const spokes = positioned.map(p => _renderProjectSpoke(p, projectKey, workflow)).join('');
 
   // Breadcrumb
   const breadcrumbHtml = breadcrumb.map((b, i) => {
@@ -1164,9 +1172,11 @@ function _renderProjectMindmapHtml(projectKey, project, parts) {
   `;
 }
 
-// Render one spoke (pure SVG, ~240×64). Sub-buttons (.pm-btn) each
-// have their own data-action so the click handler can route correctly.
-function _renderProjectSpoke(p, projectKey) {
+// Render one spoke (pure SVG). Layout adapts to workflow:
+//   • 'bending'  → shows bend checkbox on the right (assembly hidden)
+//   • 'assembly' → shows assembly checkbox on the right (bend hidden)
+// Missing/outdated parts get a big red WARNING strip across the bottom.
+function _renderProjectSpoke(p, projectKey, workflow) {
   const n = p.node;
   const code = n.code;
   const fam = n.family || 'Other';
@@ -1174,13 +1184,13 @@ function _renderProjectSpoke(p, projectKey) {
   const halfW = PSPOKE_W / 2;  // 120
   const halfH = PSPOKE_H / 2;  // 32
 
-  // Status badge color
+  // Status info — used for warning strip + small badge
   const statusInfo = {
-    drawn:   { color: '#4dd06a', text: '✓' },
-    missing: { color: '#f85149', text: '⚠' },
-    stale:   { color: '#ffc107', text: '⏰' },
-    deleted: { color: '#dc3545', text: 'DEL' },
-  }[n.status] || { color: '#888', text: '?' };
+    drawn:   { color: '#4dd06a', text: '✓ OK',       isWarn: false },
+    missing: { color: '#f85149', text: '⚠ NO DRAWING', isWarn: true  },
+    stale:   { color: '#ffc107', text: '⏰ OUTDATED',  isWarn: true  },
+    deleted: { color: '#dc3545', text: 'DEL — REDO',  isWarn: true  },
+  }[n.status] || { color: '#888', text: '?', isWarn: false };
 
   // Comments
   const comments = getComments(code);
@@ -1201,16 +1211,43 @@ function _renderProjectSpoke(p, projectKey) {
   const btnY = halfH - 14;
   const timerX = -halfW + 18;   // far left
   const timerTextX = timerX + 18;
-  const bentX = halfW - 60;     // right side
-  const asmX = halfW - 24;
-  // Top-right: comment + status badge
+  const actionX = halfW - 24;   // single workflow checkbox on right
+  // Top-right: comment + small status pill (kept for non-warn states)
   const cmtX = halfW - 18;
   const cmtY = -halfH + 14;
-  const stsX = halfW - 48;
-  const stsY = -halfH + 14;
+
+  // Workflow-specific button: just one shown (bend OR assembled)
+  const wfBtn = workflow === 'assembly'
+    ? `<g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${actionX}, ${btnY})">
+         <circle r="13" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.06)'}" stroke="${assembled ? '#e07a5f' : '#777'}" stroke-width="2" />
+         <text text-anchor="middle" dy="4" font-size="13">🧩</text>
+       </g>`
+    : `<g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${actionX}, ${btnY})">
+         <circle r="13" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.06)'}" stroke="${bent ? '#5dbb63' : '#777'}" stroke-width="2" />
+         <g transform="translate(-7, -7) scale(0.6)" stroke="${bent ? '#fff' : '#aaa'}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+           <path d="M3 18 L13 18 Q 15.5 18 15.5 15.5 L15.5 5" />
+         </g>
+       </g>`;
+
+  // Warning strip across the whole card border when missing/stale/deleted —
+  // makes the status impossible to miss in either Kanban view
+  const warnFrame = statusInfo.isWarn
+    ? `<rect class="pm-warn-frame" x="${-halfW - 2}" y="${-halfH - 2}" width="${PSPOKE_W + 4}" height="${PSPOKE_H + 4}" rx="12"
+            fill="none" stroke="${statusInfo.color}" stroke-width="3" stroke-dasharray="6 3" opacity="0.9" />
+       <g class="pm-warn-badge" transform="translate(${-halfW + 16}, ${-halfH - 8})">
+         <rect x="-2" y="-9" width="${(statusInfo.text.length * 6) + 8}" height="16" rx="8" fill="${statusInfo.color}" />
+         <text x="2" dy="3" font-size="9" font-weight="700" fill="#fff">${statusInfo.text}</text>
+       </g>` : '';
+
+  // Small ✓ pill for non-warn (drawn) states
+  const okBadge = !statusInfo.isWarn ? `
+    <g class="pm-status" transform="translate(${halfW - 42}, ${-halfH + 14})">
+      <rect x="-12" y="-8" width="24" height="13" rx="6" fill="${statusInfo.color}" />
+      <text text-anchor="middle" dy="2" font-size="8" font-weight="700" fill="#fff">${statusInfo.text}</text>
+    </g>` : '';
 
   return `
-    <g class="pm-spoke ${hasChildren ? 'has-children' : 'is-leaf'} ${p._moved ? 'moved' : ''} ${bent ? 'is-bent' : ''} ${assembled ? 'is-assembled' : ''}"
+    <g class="pm-spoke ${hasChildren ? 'has-children' : 'is-leaf'} ${p._moved ? 'moved' : ''} pm-wf-${workflow} ${statusInfo.isWarn ? 'pm-warn' : ''}"
        data-code="${escapeHtml(code)}" data-auto-x="${p._autoX}" data-auto-y="${p._autoY}"
        transform="translate(${p.x}, ${p.y})" style="${famVars(fam)}">
 
@@ -1218,45 +1255,33 @@ function _renderProjectSpoke(p, projectKey) {
       <rect class="pm-spoke-bg" x="${-halfW}" y="${-halfH}" width="${PSPOKE_W}" height="${PSPOKE_H}" rx="10"
             fill="var(--fam-tint)" stroke="var(--fam-color)" stroke-width="2" />
 
+      ${warnFrame}
+
       <!-- Top-left: code + qty + drill hint -->
       <text class="pm-code" x="${-halfW + 12}" y="${-halfH + 18}" font-size="12" font-weight="700" fill="#e4e4e4">${escapeHtml(code)}</text>
-      <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 32}" font-size="10" fill="#aaa">×${n.qty} ${drillHint ? `· ${drillHint} ${childCount}` : ''}</text>
+      <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 32}" font-size="10" fill="#aaa">×${n.qty}${drillHint ? ` · ${drillHint} ${childCount}` : ''}</text>
 
-      <!-- Top-right: status + comments -->
-      <g class="pm-status" transform="translate(${stsX}, ${stsY})">
-        <rect x="-12" y="-9" width="24" height="14" rx="7" fill="${statusInfo.color}" />
-        <text text-anchor="middle" dy="2" font-size="8" font-weight="700" fill="#fff">${statusInfo.text}</text>
-      </g>
+      <!-- Top-right: small ✓ pill (when drawn) + comments -->
+      ${okBadge}
       <g class="pm-btn pm-comments" data-action="comments" transform="translate(${cmtX}, ${cmtY})">
         <circle r="10" fill="${cCount ? '#ffc107' : 'rgba(255,255,255,0.08)'}" />
         <text text-anchor="middle" dy="3" font-size="10" fill="${cCount ? '#000' : '#aaa'}">💬</text>
         ${cCount ? `<text text-anchor="middle" dy="3" x="14" font-size="8" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
       </g>
 
-      <!-- Bottom row: timer, bent, assembled -->
+      <!-- Bottom row: timer (always) + workflow-specific checkbox -->
       <g class="pm-btn pm-timer ${tRunning ? 'on' : ''}" data-action="timer" transform="translate(${timerX}, ${btnY})">
         <circle r="12" fill="${tRunning ? '#4dd06a' : 'rgba(255,255,255,0.08)'}" stroke="${tRunning ? '#4dd06a' : '#666'}" stroke-width="2" />
         <text text-anchor="middle" dy="3" font-size="10" fill="${tRunning ? '#000' : '#aaa'}">${tRunning ? '⏸' : '▶'}</text>
       </g>
       ${tText ? `<text class="pm-timer-text ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(code)}" x="${timerTextX}" y="${btnY + 3}" font-size="10" fill="${tRunning ? '#4dd06a' : '#aaa'}">${escapeHtml(tText)}</text>` : ''}
-
-      <g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${bentX}, ${btnY})">
-        <circle r="12" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.08)'}" stroke="${bent ? '#5dbb63' : '#666'}" stroke-width="2" />
-        <!-- Bending icon: L-shape (flat + 90deg vertical) drawn inline so it inherits color -->
-        <g transform="translate(-6.5, -6.5) scale(0.55)" stroke="${bent ? '#fff' : '#aaa'}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
-          <path d="M3 18 L13 18 Q 15.5 18 15.5 15.5 L15.5 5" />
-        </g>
-      </g>
-      <g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${asmX}, ${btnY})">
-        <circle r="12" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.08)'}" stroke="${assembled ? '#e07a5f' : '#666'}" stroke-width="2" />
-        <text text-anchor="middle" dy="3" font-size="11">🧩</text>
-      </g>
+      ${wfBtn}
     </g>`;
 }
 
 // Wire all interactivity for the project mindmap (drag + button clicks +
 // breadcrumb + center navigation). Called after innerHTML is set.
-function _wireProjectMindmap(projectKey, visibleParts) {
+function _wireProjectMindmap(projectKey, visibleParts, workflow) {
   const svgEl = ROOT.querySelector('.mindmap-svg');
   if (!svgEl) return;
   const cx = parseFloat(svgEl.dataset.cx);
@@ -1465,28 +1490,9 @@ function renderProject(key) {
   const groups = groupPartsByMaster(visibleParts, auto);
   const collapsed = loadCollapsed();
 
-  // List view (BOM rows)
-  const listHtml = (viewMode === 'list') ? [...groups.entries()].map(([master, items]) => {
-    const groupId = `${key}::${master}`;
-    const isCollapsed = collapsed.has(groupId);
-    const totalQty = items.reduce((s, x) => s + (x.qty || 0), 0);
-    const isOrphan = master === '(no drawing yet)';
-    const rowsHtml = items.map(p => renderBomRow(p, key)).join('');
-    return `
-      <div class="master-group ${isCollapsed ? 'collapsed' : ''} ${isOrphan ? 'orphan' : ''}" data-group="${escapeHtml(groupId)}">
-        <div class="master-header">
-          <span class="master-toggle">▼</span>
-          <span class="master-name">${escapeHtml(master)}</span>
-          <span class="master-meta">${items.length} parts · ${totalQty} pcs</span>
-        </div>
-        <div class="master-rows">${rowsHtml}</div>
-      </div>`;
-  }).join('') : '';
-
-  // Mindmap view (radial)
-  const mindmapHtml = (viewMode === 'mindmap')
-    ? _renderProjectMindmapHtml(key, project, visibleParts)
-    : '';
+  // Both Bending + Assembly are Kanban mindmaps — the workflow string is
+  // passed to the renderer so it can show only the relevant checkbox.
+  const mindmapHtml = _renderProjectMindmapHtml(key, project, visibleParts, viewMode);
 
   const totalQtyAll = project.total_qty != null
     ? project.total_qty
@@ -1520,16 +1526,16 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
       </div>
-      <div class="view-toggle-group">
-        <button class="view-toggle-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="List view">☰ List</button>
-        <button class="view-toggle-btn ${viewMode === 'mindmap' ? 'active' : ''}" data-view="mindmap" title="Mindmap view">🌳 Mindmap</button>
+      <div class="view-toggle-group workflow-toggle">
+        <button class="view-toggle-btn ${viewMode === 'bending' ? 'active bending' : ''}" data-view="bending" title="Bending Kanban">
+          <span class="icon-bend"></span> Bending
+        </button>
+        <button class="view-toggle-btn ${viewMode === 'assembly' ? 'active assembly' : ''}" data-view="assembly" title="Assembly Kanban">
+          🧩 Assembly
+        </button>
       </div>
-      ${viewMode === 'list' ? '<button class="action-btn" id="toggle-all" data-state="collapsed"><span class="toggle-arrow">▶</span> <span class="toggle-label">Expand all</span></button>' : ''}
     </div>
-    ${viewMode === 'list'
-      ? `<div class="master-list">${listHtml || '<p class="loading">All parts have drawings ✓</p>'}</div>`
-      : mindmapHtml
-    }
+    ${mindmapHtml}
   `;
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
@@ -1543,17 +1549,15 @@ function renderProject(key) {
       render();
     });
   });
-  // View-mode toggle (list ↔ mindmap)
+  // Workflow toggle (Bending Kanban ↔ Assembly Kanban)
   ROOT.querySelectorAll('.view-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       setProjectViewMode(btn.dataset.view);
       render();
     });
   });
-  // Wire mindmap events (only when mindmap view is active)
-  if (viewMode === 'mindmap') {
-    _wireProjectMindmap(key, visibleParts);
-  }
+  // Wire mindmap events (always — only view mode now)
+  _wireProjectMindmap(key, visibleParts, viewMode);
 
   // Master-group collapsible
   ROOT.querySelectorAll('.master-header').forEach(h => {
@@ -2709,26 +2713,15 @@ function renderSearch(q) {
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.view;
-    if (v === view) {
-      // Same-tab click — for Tree tab, reset radial state (escape hatch
-      // when stuck deep in a mindmap)
-      if (v === 'missing') {
-        radialFamily = null;
-        radialCenter = null;
-        saveRadialState();
-        render();
-      }
-      return;
-    }
+    if (v === view) return;
     view = v;
     stack = [];
     SEARCH.value = '';
     updateSearchClear();
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
-    SEARCH.placeholder =
-      view === 'projects' ? 'Search project or part…' :
-      view === 'missing'  ? 'Search part code in tree…' :
-                            'Search part code…';
+    SEARCH.placeholder = view === 'projects'
+      ? 'Search project or part…'
+      : 'Search part code…';
     render();
   });
 });
