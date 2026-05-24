@@ -69,8 +69,17 @@ h1 {
   color: #4a90e2;
   white-space: nowrap;
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 8px;
+}
+/* "by Rough Design" subtitle — muted, smaller, lighter weight */
+.brand-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: #888;
+  letter-spacing: 0.06em;
+  font-style: italic;
+  margin-left: -2px;
 }
 
 /* Brand icon — detailed stainless-steel kitchen scene (cabinets, stove,
