@@ -1151,6 +1151,40 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     return `${sep}<span class="mm-bc-item ${cls}" data-kind="${b.kind}" data-code="${escapeHtml(b.code || '')}">${escapeHtml(b.label || '')}</span>`;
   }).join('');
 
+  // Comments panels — rendered as HTML below the SVG canvas for any
+  // parts that have their comments toggled open. (SVG can't host HTML
+  // reliably, so a separate HTML overlay region is cleaner than
+  // foreignObject and works on iOS Safari without quirks.)
+  const partCodes = new Set();
+  function _collectCodes(nodes) {
+    for (const nn of nodes) { partCodes.add(nn.code); _collectCodes(nn.children || []); }
+  }
+  _collectCodes(roots);
+  const openInProject = [...loadCommentsOpenSet()].filter(c => partCodes.has(c));
+  const adminMode = isAdmin();
+  const commentPanelsHtml = openInProject.map(code => {
+    const cList = getComments(code);
+    return `
+      <div class="mm-comment-panel" data-code="${escapeHtml(code)}">
+        <div class="mm-comment-header">
+          <span class="mm-comment-title">💬 <strong>${escapeHtml(code)}</strong> · ${cList.length} comment${cList.length === 1 ? '' : 's'}</span>
+          <button class="mm-comment-close" data-code="${escapeHtml(code)}" aria-label="Close">✕</button>
+        </div>
+        <ul class="comments-list">
+          ${cList.length ? cList.map(c => `
+            <li class="comment-item">
+              <span class="comment-time">${escapeHtml(fmtCommentTime(c.time))}</span>
+              <span class="comment-text">${escapeHtml(c.text)}</span>
+              ${adminMode ? `<button class="comment-del" data-code="${escapeHtml(code)}" data-id="${escapeHtml(c._key || String(c.time))}" aria-label="Delete">✕</button>` : ''}
+            </li>`).join('') : '<li class="comment-empty">No comments yet</li>'}
+        </ul>
+        <form class="comment-input-wrap" data-code="${escapeHtml(code)}">
+          <input class="comment-input" type="text" placeholder="พิมพ์ comment / type a note…" autocomplete="off">
+          <button type="submit" class="comment-add">+ Add</button>
+        </form>
+      </div>`;
+  }).join('');
+
   return `
     <div class="mindmap-wrapper project-mindmap">
       <div class="mindmap-breadcrumb">
@@ -1164,6 +1198,7 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
           ${spokes}
         </svg>
       </div>
+      ${commentPanelsHtml ? `<div class="mm-comments-area">${commentPanelsHtml}</div>` : ''}
       <p class="hint">
         Click spoke center → drill in · bend/🧩/▶/💬 buttons act inline · drag spoke to reposition · click center → go back
         ${neighbors.length === 0 ? '<br><strong>⚠️ No children here</strong> — click center to go back' : ''}
@@ -1238,13 +1273,6 @@ function _renderProjectSpoke(p, projectKey, workflow) {
          <text x="2" dy="3" font-size="9" font-weight="700" fill="#fff">${statusInfo.text}</text>
        </g>` : '';
 
-  // Small ✓ pill for non-warn (drawn) states
-  const okBadge = !statusInfo.isWarn ? `
-    <g class="pm-status" transform="translate(${halfW - 42}, ${-halfH + 14})">
-      <rect x="-12" y="-8" width="24" height="13" rx="6" fill="${statusInfo.color}" />
-      <text text-anchor="middle" dy="2" font-size="8" font-weight="700" fill="#fff">${statusInfo.text}</text>
-    </g>` : '';
-
   return `
     <g class="pm-spoke ${hasChildren ? 'has-children' : 'is-leaf'} ${p._moved ? 'moved' : ''} pm-wf-${workflow} ${statusInfo.isWarn ? 'pm-warn' : ''}"
        data-code="${escapeHtml(code)}" data-auto-x="${p._autoX}" data-auto-y="${p._autoY}"
@@ -1256,16 +1284,15 @@ function _renderProjectSpoke(p, projectKey, workflow) {
 
       ${warnFrame}
 
-      <!-- Top-left: code + qty + drill hint -->
+      <!-- Top-left: code + qty (×N) + drill hint -->
       <text class="pm-code" x="${-halfW + 12}" y="${-halfH + 18}" font-size="12" font-weight="700" fill="#e4e4e4">${escapeHtml(code)}</text>
-      <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 32}" font-size="10" fill="#aaa">×${n.qty}${drillHint ? ` · ${drillHint} ${childCount}` : ''}</text>
+      <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 34}" font-size="14" font-weight="700" fill="#e4e4e4">×${n.qty}${drillHint ? `  ${drillHint} ${childCount}` : ''}</text>
 
-      <!-- Top-right: small ✓ pill (when drawn) + comments -->
-      ${okBadge}
+      <!-- Top-right: comments only (no OK badge — warning is enough cue) -->
       <g class="pm-btn pm-comments" data-action="comments" transform="translate(${cmtX}, ${cmtY})">
-        <circle r="10" fill="${cCount ? '#ffc107' : 'rgba(255,255,255,0.08)'}" />
-        <text text-anchor="middle" dy="3" font-size="10" fill="${cCount ? '#000' : '#aaa'}">💬</text>
-        ${cCount ? `<text text-anchor="middle" dy="3" x="14" font-size="8" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
+        <circle r="11" fill="${cCount ? '#ffc107' : 'rgba(255,255,255,0.08)'}" />
+        <text text-anchor="middle" dy="3" font-size="11" fill="${cCount ? '#000' : '#aaa'}">💬</text>
+        ${cCount ? `<text text-anchor="middle" dy="3" x="16" font-size="9" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
       </g>
 
       <!-- Bottom row: timer (always) + workflow-specific checkbox -->
@@ -1322,6 +1349,15 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
       clearOverridesForCenter(key);
       render();
     }
+  });
+
+  // Comments panel close — toggles the comments-open state for that code
+  ROOT.querySelectorAll('.mm-comment-close').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleCommentsOpen(btn.dataset.code);
+      render();
+    });
   });
 
   // Drag + click handling on spokes

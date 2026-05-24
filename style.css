@@ -858,6 +858,59 @@ h1 {
   fill: rgba(46, 160, 67, 0.12);
 }
 
+/* Mindmap comments panel — sits below the SVG canvas when a part has
+   its comments opened. Stacks multiple panels if several are open. */
+.mm-comments-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.mm-comment-panel {
+  background: linear-gradient(180deg, rgba(74, 144, 226, 0.06), rgba(0, 0, 0, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-left: 4px solid #ffc107;
+  border-radius: 10px;
+  padding: 12px 14px;
+  animation: mm-comment-slide-in 0.18s ease-out;
+}
+@keyframes mm-comment-slide-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.mm-comment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.mm-comment-title {
+  font-size: 13px;
+  color: #ffc107;
+  letter-spacing: 0.02em;
+}
+.mm-comment-title strong {
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+.mm-comment-close {
+  width: 26px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.12s;
+}
+.mm-comment-close:hover {
+  background: #dc3545;
+  color: #fff;
+  border-color: #dc3545;
+}
+
 /* Warn frame — pulses subtly on missing/outdated parts so they
    stand out in either Kanban view */
 .pm-spoke.pm-warn .pm-spoke-bg {
