@@ -162,8 +162,8 @@ function familyOrder(a, b) {
 // only the remapped names.
 //
 // Rules:
-//   • Old "Drawer" family + code prefix DSV1xx → DW-S1 (Slide type 1)
-//   • Old "Drawer" family + code prefix DSV2xx → DW-S2 (Slide type 2)
+//   • Old "Drawer" family + code prefix DSV1xx → DW-S1
+//   • Old "Drawer" family + code prefix DSV2xx → DW-S2
 //   • Old "Drawer" family + anything else      → DW-S1 (default bucket)
 //   • Old "Back-Down" → DW-BK
 //   • Old "Floor"     → DW-FL
