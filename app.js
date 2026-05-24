@@ -143,43 +143,108 @@ function bentCountForProject(projectKey, parts) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Comments — per part code, shared across all projects/views.
-// Stored in localStorage (per-device for v1). Workshop staff and designer
-// can leave notes like "พับเสร็จแล้ว ตัดมาขาด 1 ชิ้น" or "ระยะ X ผิด re-export".
-// Thai text uses fallback system Thai font (CSS .comment-text font-family).
+// Comments — per part code, SHARED across devices via Firebase Realtime DB.
+// localStorage acts as offline cache + fallback if Firebase fails.
+//
+// Workshop staff (iPad) and designer (laptop) see the same comments
+// in real-time. Thai text uses system Thai font (CSS .comment-text).
+//
+// Schema in Firebase RTDB:
+//   comments/<partCode>/<pushId>: { text: "...", time: <epoch_ms> }
 // ──────────────────────────────────────────────────────────────────────
 
-function loadAllComments() {
+let commentsCache = {};  // { partCode: [{text, time, _key}] } — synced from Firebase
+
+function loadCachedComments() {
   try {
     const raw = localStorage.getItem(LS_COMMENTS_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) || {};
+    return raw ? (JSON.parse(raw) || {}) : {};
   } catch { return {}; }
 }
-function saveAllComments(all) {
+function saveCachedComments(all) {
   try { localStorage.setItem(LS_COMMENTS_KEY, JSON.stringify(all)); } catch {}
 }
-function getComments(code) {
-  const all = loadAllComments();
-  return Array.isArray(all[code]) ? all[code] : [];
+
+// Initialize cache from localStorage; will be replaced when Firebase syncs.
+commentsCache = loadCachedComments();
+
+// Attach Firebase real-time listener on startup.
+function initCommentsSync() {
+  if (!window.firebaseDB) {
+    console.warn('Firebase not available — comments are localStorage-only');
+    return;
+  }
+  try {
+    window.firebaseDB.ref('comments').on('value', snapshot => {
+      const raw = snapshot.val() || {};
+      // Normalize Firebase shape → our cache shape (array per code)
+      const next = {};
+      for (const [code, entries] of Object.entries(raw)) {
+        const arr = [];
+        for (const [key, val] of Object.entries(entries || {})) {
+          if (val && val.text) {
+            arr.push({ text: val.text, time: val.time || 0, _key: key });
+          }
+        }
+        // Sort oldest → newest
+        arr.sort((a, b) => (a.time || 0) - (b.time || 0));
+        next[code] = arr;
+      }
+      commentsCache = next;
+      saveCachedComments(commentsCache);
+      // Re-render to reflect new comments from other devices
+      try { render(); } catch {}
+    }, err => {
+      console.warn('Firebase comments listener error:', err);
+    });
+  } catch (e) {
+    console.warn('Failed to attach Firebase listener:', e);
+  }
 }
+
+function getComments(code) {
+  return Array.isArray(commentsCache[code]) ? commentsCache[code] : [];
+}
+
 function addComment(code, text) {
   text = (text || '').trim();
-  if (!text) return false;
-  const all = loadAllComments();
-  if (!Array.isArray(all[code])) all[code] = [];
-  all[code].push({ text: text, time: Date.now() });
-  saveAllComments(all);
+  if (!text || !code) return false;
+  const entry = { text: text, time: Date.now() };
+  // Push to Firebase (gets push key + propagates to all clients via listener)
+  if (window.firebaseDB) {
+    try {
+      window.firebaseDB.ref('comments/' + code).push(entry);
+      return true;
+    } catch (e) {
+      console.warn('Firebase push failed, falling back to localStorage:', e);
+    }
+  }
+  // Fallback — localStorage only
+  if (!Array.isArray(commentsCache[code])) commentsCache[code] = [];
+  commentsCache[code].push(entry);
+  saveCachedComments(commentsCache);
   return true;
 }
-function removeComment(code, time) {
-  const all = loadAllComments();
-  if (!Array.isArray(all[code])) return false;
-  const before = all[code].length;
-  all[code] = all[code].filter(c => c.time !== time);
-  if (all[code].length === 0) delete all[code];
-  saveAllComments(all);
-  return all[code] ? all[code].length < before : true;
+
+function removeComment(code, timeOrKey) {
+  if (!code) return false;
+  const arr = commentsCache[code] || [];
+  const entry = arr.find(c => c.time === timeOrKey || c._key === timeOrKey);
+  // Firebase removal (by push key, if we have it)
+  if (window.firebaseDB && entry && entry._key) {
+    try {
+      window.firebaseDB.ref('comments/' + code + '/' + entry._key).remove();
+      return true;
+    } catch (e) {
+      console.warn('Firebase remove failed, falling back to localStorage:', e);
+    }
+  }
+  // Fallback
+  const before = arr.length;
+  commentsCache[code] = arr.filter(c => c.time !== timeOrKey);
+  if (commentsCache[code].length === 0) delete commentsCache[code];
+  saveCachedComments(commentsCache);
+  return commentsCache[code] ? commentsCache[code].length < before : true;
 }
 function fmtCommentTime(ts) {
   try {
@@ -398,7 +463,7 @@ function renderBomRow(p, projectKey) {
           <li class="comment-item">
             <span class="comment-time">${escapeHtml(fmtCommentTime(c.time))}</span>
             <span class="comment-text">${escapeHtml(c.text)}</span>
-            <button class="comment-del" data-code="${escapeHtml(p.code)}" data-time="${c.time}" aria-label="Delete">✕</button>
+            <button class="comment-del" data-code="${escapeHtml(p.code)}" data-id="${escapeHtml(c._key || String(c.time))}" aria-label="Delete">✕</button>
           </li>`).join('') : '<li class="comment-empty">No comments yet</li>'}
       </ul>
       <form class="comment-input-wrap" data-code="${escapeHtml(p.code)}">
@@ -602,15 +667,17 @@ function renderProject(key) {
     });
   });
 
-  // Delete comment
+  // Delete comment — id may be a Firebase push key (string) or epoch ms (number-as-string)
   ROOT.querySelectorAll('.comment-del').forEach(btn => {
     btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
       ev.preventDefault();
       const code = btn.dataset.code;
-      const time = Number(btn.dataset.time);
-      if (code && time) {
-        removeComment(code, time);
+      const id = btn.dataset.id;
+      if (code && id) {
+        // Try as number first (legacy localStorage entries), else string key
+        const asNum = Number(id);
+        removeComment(code, !isNaN(asNum) && /^\d+$/.test(id) ? asNum : id);
         render();
       }
     });
@@ -1111,6 +1178,10 @@ SEARCH_CLEAR.addEventListener('click', () => {
 // ──────────────────────────────────────────────────────────────────────
 
 async function init() {
+  // Connect to Firebase Realtime DB for shared comments (real-time sync).
+  // Falls back silently to localStorage if Firebase unavailable.
+  initCommentsSync();
+
   try {
     const [m, f] = await Promise.all([
       fetchJson(window.APP_CONFIG.MANIFEST_URL),

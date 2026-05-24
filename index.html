@@ -34,6 +34,20 @@
   </footer>
 
   <script src="config.js"></script>
+  <script src="firebase-config.js"></script>
+  <!-- Firebase Realtime Database (compat SDK from CDN) — for shared comments -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  <script>
+    if (window.firebase && window.FIREBASE_CONFIG) {
+      try {
+        firebase.initializeApp(window.FIREBASE_CONFIG);
+        window.firebaseDB = firebase.database();
+      } catch (e) {
+        console.warn('Firebase init failed:', e);
+      }
+    }
+  </script>
   <script src="app.js"></script>
 </body>
 </html>
