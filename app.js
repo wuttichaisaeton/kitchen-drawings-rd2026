@@ -1771,7 +1771,7 @@ function renderProject(key) {
       ev.stopPropagation();
       const code = btn.dataset.code;
       if (!code) return;
-      if (confirm(`Mark drawing "${code}" as needs redo?\n\nIt will move to "(no drawing yet)" group until re-exported with CC_DrawingPDFExport.`)) {
+      if (confirm(`Mark drawing "${code}" as needs redo?\n\nIt will move to "(no drawing yet)" group until re-exported with CC_DrawingPDF.`)) {
         softDeleteDrawing(code);
       }
     });
@@ -2601,7 +2601,7 @@ function renderTreeHome() {
     ROOT.innerHTML = `
       <div class="empty-state">
         <h2>🌳 No data yet</h2>
-        <p>Run <code>CC_DrawingPDFExport</code> + <code>CC_ScanMissingDrawings</code> in Fusion</p>
+        <p>Run <code>CC_DrawingPDF</code> + <code>CC_ScanMissingDrawings</code> in Fusion</p>
       </div>`;
     COUNT_EL.textContent = '';
     return;
@@ -2636,7 +2636,7 @@ function renderLibraryHome() {
   const visible = Object.keys(by).filter(f => by[f].length).sort(familyOrder);
 
   if (!visible.length) {
-    ROOT.innerHTML = '<p class="loading">No drawings yet — run CC_DrawingPDFExport in Fusion first</p>';
+    ROOT.innerHTML = '<p class="loading">No drawings yet — run CC_DrawingPDF in Fusion first</p>';
     COUNT_EL.textContent = '';
     return;
   }
