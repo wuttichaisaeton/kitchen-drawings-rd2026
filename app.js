@@ -1567,7 +1567,7 @@ function renderProject(key) {
   const assembledPct = parts.length ? Math.round((assembledCount * 100) / parts.length) : 0;
 
   ROOT.innerHTML = `
-    <button class="back-btn">← Back</button>
+    <button class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span></button>
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
     <div class="bent-summary">
       <div class="bent-row">
@@ -2674,7 +2674,7 @@ function renderFamily(fam) {
   }).join('');
 
   ROOT.innerHTML = `
-    <button class="back-btn">← Back</button>
+    <button class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span></button>
     <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
     <div class="part-list">${list}</div>
   `;
