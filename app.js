@@ -15,6 +15,8 @@ let stack = [];          // navigation stack ('home' | {kind:'family', name} | {
 
 const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
 const LS_BENT_KEY = 'kd_bent_parts_v1';
+const LS_COMMENTS_KEY = 'kd_comments_v1';        // { partCode: [{text, time}] }
+const LS_COMMENTS_OPEN_KEY = 'kd_comments_open_v1';  // Set<partCode>: which rows have comments panel expanded
 
 // ──────────────────────────────────────────────────────────────────────
 // Utilities
@@ -138,6 +140,75 @@ function markBent(projectKey, code, done) {
 function bentCountForProject(projectKey, parts) {
   const set = loadBentSet();
   return parts.filter(p => set.has(bentKey(projectKey, p.code))).length;
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Comments — per part code, shared across all projects/views.
+// Stored in localStorage (per-device for v1). Workshop staff and designer
+// can leave notes like "พับเสร็จแล้ว ตัดมาขาด 1 ชิ้น" or "ระยะ X ผิด re-export".
+// Thai text uses fallback system Thai font (CSS .comment-text font-family).
+// ──────────────────────────────────────────────────────────────────────
+
+function loadAllComments() {
+  try {
+    const raw = localStorage.getItem(LS_COMMENTS_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) || {};
+  } catch { return {}; }
+}
+function saveAllComments(all) {
+  try { localStorage.setItem(LS_COMMENTS_KEY, JSON.stringify(all)); } catch {}
+}
+function getComments(code) {
+  const all = loadAllComments();
+  return Array.isArray(all[code]) ? all[code] : [];
+}
+function addComment(code, text) {
+  text = (text || '').trim();
+  if (!text) return false;
+  const all = loadAllComments();
+  if (!Array.isArray(all[code])) all[code] = [];
+  all[code].push({ text: text, time: Date.now() });
+  saveAllComments(all);
+  return true;
+}
+function removeComment(code, time) {
+  const all = loadAllComments();
+  if (!Array.isArray(all[code])) return false;
+  const before = all[code].length;
+  all[code] = all[code].filter(c => c.time !== time);
+  if (all[code].length === 0) delete all[code];
+  saveAllComments(all);
+  return all[code] ? all[code].length < before : true;
+}
+function fmtCommentTime(ts) {
+  try {
+    const d = new Date(ts);
+    const yy = String(d.getFullYear()).slice(2);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yy}-${mm}-${dd} ${hh}:${mi}`;
+  } catch { return ''; }
+}
+
+// Comment panel open state — keyed by part code
+function loadCommentsOpenSet() {
+  try {
+    const raw = localStorage.getItem(LS_COMMENTS_OPEN_KEY);
+    return new Set(raw ? JSON.parse(raw) : []);
+  } catch { return new Set(); }
+}
+function saveCommentsOpenSet(set) {
+  try { localStorage.setItem(LS_COMMENTS_OPEN_KEY, JSON.stringify([...set])); }
+  catch {}
+}
+function isCommentsOpen(code) { return loadCommentsOpenSet().has(code); }
+function toggleCommentsOpen(code) {
+  const set = loadCommentsOpenSet();
+  if (set.has(code)) set.delete(code); else set.add(code);
+  saveCommentsOpenSet(set);
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -315,12 +386,36 @@ function renderBomRow(p, projectKey) {
   const url = pdfUrlForCode(p.code);
   const hasDrawing = !!url;
   const bent = projectKey ? isBent(projectKey, p.code) : false;
+  const comments = getComments(p.code);
+  const cOpen = isCommentsOpen(p.code);
+  const cBadgeHtml = comments.length > 0
+    ? `<span class="comment-count">${comments.length}</span>`
+    : '';
+  const commentsPanel = cOpen ? `
+    <div class="comments-panel" data-code="${escapeHtml(p.code)}">
+      <ul class="comments-list">
+        ${comments.length ? comments.map(c => `
+          <li class="comment-item">
+            <span class="comment-time">${escapeHtml(fmtCommentTime(c.time))}</span>
+            <span class="comment-text">${escapeHtml(c.text)}</span>
+            <button class="comment-del" data-code="${escapeHtml(p.code)}" data-time="${c.time}" aria-label="Delete">✕</button>
+          </li>`).join('') : '<li class="comment-empty">No comments yet</li>'}
+      </ul>
+      <form class="comment-input-wrap" data-code="${escapeHtml(p.code)}">
+        <input class="comment-input" type="text" placeholder="พิมพ์ comment / type a note…" autocomplete="off">
+        <button type="submit" class="comment-add">+ Add</button>
+      </form>
+    </div>` : '';
   return `
-    <div class="bom-row ${bent ? 'bent' : ''}" data-url="${escapeHtml(url)}" data-has="${hasDrawing}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
-      <span class="bom-icon">${familyIcon(fam)}</span>
-      <span class="bom-code">${escapeHtml(p.code)}</span>
-      <span class="bom-qty">×${p.qty}</span>
-      <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent">${bent ? '✓' : '○'}</button>
+    <div class="bom-row ${bent ? 'bent' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+      <div class="bom-row-main" data-url="${escapeHtml(url)}" data-has="${hasDrawing}">
+        <span class="bom-icon">${familyIcon(fam)}</span>
+        <span class="bom-code">${escapeHtml(p.code)}</span>
+        <span class="bom-qty">×${p.qty}</span>
+        <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
+        <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent">${bent ? '✓' : '○'}</button>
+      </div>
+      ${commentsPanel}
     </div>`;
 }
 
@@ -474,9 +569,50 @@ function renderProject(key) {
     });
   });
 
-  ROOT.querySelectorAll('.bom-row').forEach(el => {
-    el.addEventListener('click', () => {
+  // Click bom-row-main → open PDF (don't trigger from comment panel area)
+  ROOT.querySelectorAll('.bom-row-main').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      // Don't open PDF if user clicked a button inside the row
+      if (ev.target.closest('button')) return;
       if (el.dataset.has === 'true') window.open(el.dataset.url, '_blank', 'noopener');
+    });
+  });
+
+  // Comment button → toggle panel + re-render
+  ROOT.querySelectorAll('.comment-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleCommentsOpen(btn.dataset.code);
+      render();  // re-render current view
+    });
+  });
+
+  // Comment input form → submit adds comment
+  ROOT.querySelectorAll('.comment-input-wrap').forEach(form => {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const input = form.querySelector('.comment-input');
+      const code = form.dataset.code;
+      if (input && code && input.value.trim()) {
+        addComment(code, input.value);
+        input.value = '';
+        render();
+      }
+    });
+  });
+
+  // Delete comment
+  ROOT.querySelectorAll('.comment-del').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const code = btn.dataset.code;
+      const time = Number(btn.dataset.time);
+      if (code && time) {
+        removeComment(code, time);
+        render();
+      }
     });
   });
 }
