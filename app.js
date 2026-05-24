@@ -1223,10 +1223,9 @@ function _renderProjectSpoke(p, projectKey, workflow) {
          <text text-anchor="middle" dy="4" font-size="13">🧩</text>
        </g>`
     : `<g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${actionX}, ${btnY})">
-         <circle r="13" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.06)'}" stroke="${bent ? '#5dbb63' : '#777'}" stroke-width="2" />
-         <g transform="translate(-7, -7) scale(0.6)" stroke="${bent ? '#fff' : '#aaa'}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
-           <path d="M3 18 L13 18 Q 15.5 18 15.5 15.5 L15.5 5" />
-         </g>
+         <circle r="14" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.06)'}" stroke="${bent ? '#5dbb63' : '#777'}" stroke-width="2" />
+         <!-- Press-brake icon (V-die + punch + glowing workpiece) referenced from icons/bending.svg -->
+         <image href="icons/bending.svg" x="-11" y="-11" width="22" height="22" />
        </g>`;
 
   // Warning strip across the whole card border when missing/stale/deleted —

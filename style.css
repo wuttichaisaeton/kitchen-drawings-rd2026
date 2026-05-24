@@ -76,17 +76,22 @@ h1 {
   white-space: nowrap;
 }
 
-/* Sheet-metal bending icon — used wherever a Bending/พับ action shows up.
-   Uses mask-image so the SVG inherits the current text/foreground color.
-   Width = 1em so it scales with the surrounding font-size. */
+/* Sheet-metal bending icon — colorful press-brake illustration
+   (V-die + punch + glowing orange workpiece). Rendered as background-
+   image (no mask) so the SVG keeps its gradients and colors. Sized at
+   1.4em so the punch + die details stay readable inline with text. */
 .icon-bend {
   display: inline-block;
-  width: 1em;
-  height: 1em;
-  background-color: currentColor;
-  -webkit-mask: url("icons/bending.svg") no-repeat center / contain;
-  mask: url("icons/bending.svg") no-repeat center / contain;
-  vertical-align: -0.12em;
+  width: 1.4em;
+  height: 1.4em;
+  background: url("icons/bending.svg") no-repeat center / contain;
+  vertical-align: -0.35em;
+}
+/* Larger variant for use inside buttons where there's more room */
+.icon-bend.icon-bend-lg {
+  width: 1.8em;
+  height: 1.8em;
+  vertical-align: -0.5em;
 }
 
 /* Admin badge — shown only when this device is in owner/admin mode.
