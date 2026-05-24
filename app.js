@@ -156,6 +156,53 @@ function familyOrder(a, b) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
+// Family remap — Fusion side classifies parts into broad families
+// (Drawer, Back-Down, Floor, ...), but for UI display we want a finer
+// split. Applied once at data-load time so the rest of the code sees
+// only the remapped names.
+//
+// Rules:
+//   • Old "Drawer" family + code prefix DSV1xx → DW-S1 (Slide type 1)
+//   • Old "Drawer" family + code prefix DSV2xx → DW-S2 (Slide type 2)
+//   • Old "Drawer" family + anything else      → DW-S1 (default bucket)
+//   • Old "Back-Down" → DW-BK
+//   • Old "Floor"     → DW-FL
+//   • Everything else: keep as-is
+// ──────────────────────────────────────────────────────────────────────
+
+function _remapFamilyForCode(code, originalFamily) {
+  if (originalFamily === 'Back-Down') return 'DW-BK';
+  if (originalFamily === 'Floor')     return 'DW-FL';
+  if (originalFamily === 'Drawer') {
+    const prefix4 = (code || '').slice(0, 4).toUpperCase();
+    if (prefix4 === 'DSV1') return 'DW-S1';
+    if (prefix4 === 'DSV2') return 'DW-S2';
+    return 'DW-S1';  // default bucket for any other Drawer-family code
+  }
+  return originalFamily;
+}
+
+function applyFamilyRemap() {
+  if (manifest && manifest.auto_generated) {
+    for (const [code, entry] of Object.entries(manifest.auto_generated)) {
+      entry.family = _remapFamilyForCode(code, entry.family);
+    }
+  }
+  if (missingData && Array.isArray(missingData.missing)) {
+    for (const m of missingData.missing) {
+      m.family = _remapFamilyForCode(m.name, m.family);
+    }
+  }
+  if (manifest && manifest.projects) {
+    for (const p of Object.values(manifest.projects)) {
+      for (const part of (p.parts || [])) {
+        part.family = _remapFamilyForCode(part.code, part.family);
+      }
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────
 // Completed projects (localStorage)
 // ──────────────────────────────────────────────────────────────────────
 
@@ -2184,6 +2231,9 @@ async function init() {
     } catch (e) {
       missingData = null;
     }
+    // Rewrite family names (Drawer split, Back-Down → DW-BK, Floor → DW-FL)
+    // so everything downstream sees only the new names.
+    applyFamilyRemap();
     updateMissingBadge();
 
     // If no projects yet, default to Library view
