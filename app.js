@@ -559,6 +559,18 @@ function saveMissingCollapsedSet(set) {
   catch {}
 }
 
+// Persisted per-card expand state (which cards have their details panel shown)
+const LS_MISSING_CARD_EXPANDED = 'kd_missing_card_expanded_v1';
+function getMissingCardExpandedSet() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(LS_MISSING_CARD_EXPANDED) || '[]'));
+  } catch { return new Set(); }
+}
+function saveMissingCardExpandedSet(set) {
+  try { localStorage.setItem(LS_MISSING_CARD_EXPANDED, JSON.stringify([...set])); }
+  catch {}
+}
+
 function renderMissingHome() {
   if (!missingData || !Array.isArray(missingData.missing)) {
     ROOT.innerHTML = `
@@ -599,6 +611,7 @@ function renderMissingHome() {
       a.name.localeCompare(b.name));
     const groupId = `family::${fam}`;
     const isCollapsed = collapsed.has(groupId);
+    const cardExpanded = getMissingCardExpandedSet();
     const cards = entries.map(e => {
       const status = e.status || 'missing';
       const isStale = status === 'stale';
@@ -612,11 +625,29 @@ function renderMissingHome() {
       const openTitle = isStale
         ? `Open drawing "${e.drawing_name || ''}" to re-export`
         : `Open master "${e.name}" to create drawing`;
+      const covers = Array.isArray(e.covers) ? e.covers : [];
+      const folderName = e.folder_name || '';
+      const drawingName = e.drawing_name || '';
+      const hasDetails = covers.length > 0 || folderName || drawingName;
+      const isExp = cardExpanded.has(e.name);
+      const togglerHtml = hasDetails
+        ? `<button class="card-toggle ${isExp ? 'open' : ''}" data-name="${escapeHtml(e.name)}" aria-label="Toggle details">${isExp ? '▼' : '▶'}</button>`
+        : `<span class="card-toggle-spacer"></span>`;
+      const detailsHtml = hasDetails && isExp ? `
+        <div class="card-details">
+          ${folderName ? `<div class="cd-row">📂 <span class="cd-label">Folder:</span> ${escapeHtml(folderName)}</div>` : ''}
+          ${drawingName ? `<div class="cd-row">📄 <span class="cd-label">Drawing:</span> ${escapeHtml(drawingName)}</div>` : ''}
+          ${covers.length ? `<div class="cd-row"><span class="cd-label">Covers (${covers.length}):</span> ${covers.map(c => `<span class="cover-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
+        </div>` : '';
       return `
-      <div class="missing-card ${isStale ? 'stale' : ''}" style="${famVars(fam)}" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(e.open_url || '#')}">
-        <span class="missing-card-icon">${familyIcon(fam)}</span>
-        <span class="missing-card-name">${escapeHtml(e.name)}${badge}</span>
-        <button class="missing-open" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(e.open_url || '#')}" title="${escapeHtml(openTitle)}">${openLabel}</button>
+      <div class="missing-card ${isStale ? 'stale' : ''} ${isExp ? 'expanded' : ''}" style="${famVars(fam)}">
+        <div class="card-row">
+          ${togglerHtml}
+          <span class="missing-card-icon">${familyIcon(fam)}</span>
+          <span class="missing-card-name">${escapeHtml(e.name)}${badge}</span>
+          <button class="missing-open" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(e.open_url || '#')}" title="${escapeHtml(openTitle)}">${openLabel}</button>
+        </div>
+        ${detailsHtml}
       </div>`;
     }).join('');
     return `
@@ -672,6 +703,18 @@ function renderMissingHome() {
         set.add(id);
       }
       saveMissingCollapsedSet(set);
+    });
+  });
+
+  // Wire per-card details toggle (▶/▼ chevron at left of each card)
+  ROOT.querySelectorAll('.card-toggle').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const name = btn.dataset.name;
+      const set = getMissingCardExpandedSet();
+      if (set.has(name)) set.delete(name); else set.add(name);
+      saveMissingCardExpandedSet(set);
+      renderMissingHome();
     });
   });
 

@@ -751,18 +751,64 @@ main.transit-back {
 }
 
 .missing-card {
-  display: grid;
-  grid-template-columns: auto 1fr auto;  /* icon | name (expand) | open-btn */
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
   background: #1a1f24;
   border: 1px solid #232830;
   border-left: 3px solid var(--fam-color, #4a90e2);
   border-radius: 6px;
   transition: background 0.15s;
+  overflow: hidden;
 }
 .missing-card:hover { background: #20262d; }
+.missing-card.expanded { grid-column: 1 / -1; }  /* span full row when expanded */
+
+.missing-card .card-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;  /* toggle | icon | name | open-btn */
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+}
+
+.card-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #888;
+  font-size: 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.card-toggle:hover { background: #2a3540; color: #e4e4e4; }
+.card-toggle.open  { color: var(--fam-color, #e4e4e4); }
+.card-toggle-spacer { display: inline-block; width: 20px; }
+
+.card-details {
+  padding: 10px 12px 12px 38px;  /* indent under the toggle */
+  border-top: 1px solid #232830;
+  background: #161b1f;
+  font-size: 12px;
+}
+.card-details .cd-row { margin-bottom: 5px; opacity: 0.85; }
+.card-details .cd-row:last-child { margin-bottom: 0; }
+.card-details .cd-label { font-weight: 600; opacity: 0.8; margin-right: 4px; }
+.cover-chip {
+  display: inline-block;
+  padding: 1px 7px;
+  margin: 2px 4px 2px 0;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+}
 
 .missing-card-icon { font-size: 18px; width: 22px; text-align: center; }
 .missing-card-name {
