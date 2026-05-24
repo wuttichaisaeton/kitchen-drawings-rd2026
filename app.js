@@ -1288,11 +1288,12 @@ function _renderProjectSpoke(p, projectKey, workflow) {
       <text class="pm-code" x="${-halfW + 12}" y="${-halfH + 18}" font-size="12" font-weight="700" fill="#e4e4e4">${escapeHtml(code)}</text>
       <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 34}" font-size="14" font-weight="700" fill="#e4e4e4">×${n.qty}${drillHint ? `  ${drillHint} ${childCount}` : ''}</text>
 
-      <!-- Top-right: comments only (no OK badge — warning is enough cue) -->
+      <!-- Top-right: comments button (visible outline even when empty so the
+           user can tell it's clickable). Filled yellow when comments exist. -->
       <g class="pm-btn pm-comments" data-action="comments" transform="translate(${cmtX}, ${cmtY})">
-        <circle r="11" fill="${cCount ? '#ffc107' : 'rgba(255,255,255,0.08)'}" />
-        <text text-anchor="middle" dy="3" font-size="11" fill="${cCount ? '#000' : '#aaa'}">💬</text>
-        ${cCount ? `<text text-anchor="middle" dy="3" x="16" font-size="9" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
+        <circle r="12" fill="${cCount ? '#ffc107' : 'rgba(255,193,7,0.12)'}" stroke="${cCount ? '#ffc107' : '#ffc107'}" stroke-width="${cCount ? '0' : '1.6'}" />
+        <text text-anchor="middle" dy="3" font-size="12" fill="${cCount ? '#000' : '#ffc107'}">💬</text>
+        ${cCount ? `<text text-anchor="middle" dy="3" x="18" font-size="10" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
       </g>
 
       <!-- Bottom row: timer (always) + workflow-specific checkbox -->
@@ -1445,6 +1446,21 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
         } else if (action === 'comments') {
           toggleCommentsOpen(code);
           render();
+          // The panel renders BELOW the SVG canvas — on a tall mindmap it
+          // can end up outside the viewport. Scroll it into view and
+          // focus the input so the user sees it immediately.
+          setTimeout(() => {
+            const panel = document.querySelector(
+              `.mm-comment-panel[data-code="${CSS.escape(code)}"]`);
+            if (panel) {
+              panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              const input = panel.querySelector('.comment-input');
+              if (input) {
+                // Small extra delay so smooth-scroll doesn't fight the focus
+                setTimeout(() => input.focus({ preventScroll: true }), 250);
+              }
+            }
+          }, 30);
         }
         return;
       }

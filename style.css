@@ -1698,8 +1698,8 @@ footer {
   border-radius: 12px;
   padding: 10px;
   overflow: auto;
-  min-height: 500px;
-  max-height: 75vh;
+  min-height: 480px;
+  max-height: 60vh;
 }
 .mindmap-svg {
   width: 100%;
