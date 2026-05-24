@@ -1108,13 +1108,16 @@ function renderProject(key) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Missing view — masters that need a drawing.
-// Data source: drawings-ui/Drawings/missing.json
-//   (populated by CC_ScanMissingDrawings Fusion script)
-// Each row has an "Open in Fusion" deep link → browser → Fusion launches.
+// Tree view — full library hierarchy (ปู่ → พ่อ → ลูก → หลาน)
+// Replaces the old flat Missing tab. Combines:
+//   • manifest.auto_generated  — drawn parts (status: drawn / deleted)
+//   • missingData.missing      — missing/stale masters
+// Builds parent-child relations via wildcard prefix matching (0 / X
+// positions in the 6-char prefix-before-dash). Renders as a nested
+// indented list with expand/collapse + per-node action buttons.
 // ──────────────────────────────────────────────────────────────────────
 
-// ─── Hierarchy tree for Missing tab ────────────────────────────────
+// ─── Hierarchy detection (also used by tree view) ──────────────────
 // Stainless Kitchen naming rule (per user):
 //   Parent/umbrella files use "0" or "X" at variant positions.
 //   So if name A has "0" or "X" where B has a specific letter at the
@@ -1173,196 +1176,298 @@ function buildMissingTree(entries) {
   return nodes.filter(n => !n.parent);
 }
 
-// Persisted collapsed-group state (keyed by group ID, e.g. "family::Drawer")
-const LS_MISSING_COLLAPSED = 'kd_missing_collapsed_v2';
-function getMissingCollapsedSet() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(LS_MISSING_COLLAPSED) || '[]'));
-  } catch { return new Set(); }
+// Persisted expanded-node state (which tree nodes have their children shown)
+const LS_TREE_EXPANDED = 'kd_tree_expanded_v1';
+function getTreeExpandedSet() {
+  try { return new Set(JSON.parse(localStorage.getItem(LS_TREE_EXPANDED) || '[]')); }
+  catch { return new Set(); }
 }
-function saveMissingCollapsedSet(set) {
-  try { localStorage.setItem(LS_MISSING_COLLAPSED, JSON.stringify([...set])); }
-  catch {}
+function saveTreeExpandedSet(set) {
+  try { localStorage.setItem(LS_TREE_EXPANDED, JSON.stringify([...set])); } catch {}
 }
 
-// Persisted per-card expand state (which cards have their details panel shown)
-const LS_MISSING_CARD_EXPANDED = 'kd_missing_card_expanded_v1';
-function getMissingCardExpandedSet() {
-  try {
-    return new Set(JSON.parse(localStorage.getItem(LS_MISSING_CARD_EXPANDED) || '[]'));
-  } catch { return new Set(); }
+// Filter toggle (all / missing only)
+const LS_TREE_FILTER = 'kd_tree_filter_v1';
+function getTreeFilter() {
+  try { return localStorage.getItem(LS_TREE_FILTER) || 'all'; } catch { return 'all'; }
 }
-function saveMissingCardExpandedSet(set) {
-  try { localStorage.setItem(LS_MISSING_CARD_EXPANDED, JSON.stringify([...set])); }
-  catch {}
+function setTreeFilter(v) {
+  try { localStorage.setItem(LS_TREE_FILTER, v); } catch {}
 }
 
-function renderMissingHome() {
-  if (!missingData || !Array.isArray(missingData.missing)) {
+// ─── Unified node list (manifest drawn parts + missing.json) ──────
+function buildLibraryTreeNodes() {
+  const nodes = new Map();
+
+  // Add drawn parts from manifest
+  const auto = manifest.auto_generated || {};
+  for (const [code, entry] of Object.entries(auto)) {
+    const softDeleted = isDrawingSoftDeleted(code);
+    nodes.set(code, {
+      code,
+      _prefix: code.split('-')[0],
+      family: entry.family || 'Other',
+      pdf: entry.pdf,
+      page: entry.page_number || 1,
+      exported_at: entry.exported_at,
+      status: softDeleted ? 'deleted' : 'drawn',
+      urn: null,
+      drawing_urn: null,
+      open_url: null,
+    });
+  }
+
+  // Overlay missing.json (missing / stale masters). For 'stale', keep the
+  // existing 'drawn' status info but mark status='stale' so user sees it.
+  if (missingData && Array.isArray(missingData.missing)) {
+    for (const e of missingData.missing) {
+      const existing = nodes.get(e.name) || {};
+      nodes.set(e.name, {
+        ...existing,
+        code: e.name,
+        _prefix: e.name.split('-')[0],
+        family: e.family || existing.family || 'Other',
+        status: e.status || 'missing',
+        urn: e.urn,
+        drawing_urn: e.drawing_urn,
+        open_url: e.open_url,
+        covers: e.covers || [],
+        folder_name: e.folder_name,
+        drawing_name: e.drawing_name,
+      });
+    }
+  }
+
+  return [...nodes.values()];
+}
+
+function buildLibraryTree() {
+  const nodes = buildLibraryTreeNodes();
+  for (const n of nodes) { n.children = []; n.parent = null; }
+  for (const node of nodes) {
+    let best = null, bestSpec = -1;
+    for (const cand of nodes) {
+      if (cand === node) continue;
+      if (!_isAncestorPrefix(cand._prefix, node._prefix)) continue;
+      const s = _specificity(cand._prefix);
+      if (s > bestSpec) { bestSpec = s; best = cand; }
+    }
+    if (best) {
+      node.parent = best;
+      best.children.push(node);
+    }
+  }
+  function sortKids(n) {
+    n.children.sort((a, b) => a.code.localeCompare(b.code));
+    n.children.forEach(sortKids);
+  }
+  const roots = nodes.filter(n => !n.parent);
+  roots.sort((a, b) => {
+    const fcmp = familyOrder(a.family || 'zz', b.family || 'zz');
+    if (fcmp !== 0) return fcmp;
+    return a.code.localeCompare(b.code);
+  });
+  roots.forEach(sortKids);
+  return { roots, all: nodes };
+}
+
+// ─── Tree node renderer (recursive) ────────────────────────────────
+function renderTreeNode(node, depth, expanded, filterMode) {
+  // Skip filter: if 'missing' filter active and this subtree has no missing
+  // descendants AND this node itself is not missing/stale → hide entirely.
+  if (filterMode === 'missing') {
+    const hasMissingInSubtree = (n) =>
+      n.status === 'missing' || n.status === 'stale' ||
+      (n.children && n.children.some(hasMissingInSubtree));
+    if (!hasMissingInSubtree(node)) return '';
+  }
+
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = expanded.has(node.code);
+  const fam = node.family || 'Other';
+  const url = pdfUrlForCode(node.code);
+  const hasDrawing = !!url;
+
+  // Status badge
+  const statusInfo = {
+    drawn: { cls: 'drawn', text: '✓', title: 'Drawing exists' },
+    missing: { cls: 'missing', text: '⚠️', title: 'No drawing yet' },
+    stale: { cls: 'stale', text: '⏰', title: 'Master saved after drawing — outdated' },
+    deleted: { cls: 'deleted', text: 'DEL', title: 'Soft-deleted — needs redo' },
+  }[node.status || 'missing'] || { cls: '', text: '', title: '' };
+  const statusBadge = statusInfo.text
+    ? `<span class="tree-status ${statusInfo.cls}" title="${escapeHtml(statusInfo.title)}">${statusInfo.text}</span>`
+    : '';
+
+  // Comments + bent badges
+  const comments = getComments(node.code);
+  const commentBadge = comments.length
+    ? `<span class="tree-meta-badge comments" title="${comments.length} comment(s)">💬${comments.length}</span>`
+    : '';
+
+  // Action buttons
+  const buttons = [];
+  if (hasDrawing) {
+    buttons.push(`<button class="tree-btn open-pdf" data-url="${escapeHtml(url)}" title="Open PDF drawing" aria-label="Open PDF">📄</button>`);
+  }
+  if (node.urn) {
+    const openUrn = (node.status === 'stale' && node.drawing_urn) ? node.drawing_urn : node.urn;
+    const openTitle = node.status === 'stale'
+      ? `Open drawing "${node.drawing_name || ''}" to re-export`
+      : `Open master "${node.code}" in Fusion`;
+    buttons.push(`<button class="tree-btn open-fusion" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(node.open_url || '#')}" title="${escapeHtml(openTitle)}" aria-label="Open in Fusion">↗</button>`);
+  }
+
+  const toggler = hasChildren
+    ? `<button class="tree-toggle ${isExpanded ? 'open' : ''}" data-code="${escapeHtml(node.code)}" aria-label="Toggle">${isExpanded ? '▼' : '▶'}</button>`
+    : `<span class="tree-toggle-spacer"></span>`;
+  const childrenCount = hasChildren
+    ? `<span class="tree-children-count">${node.children.length}</span>` : '';
+
+  // Recursive children rendering
+  const childrenHtml = (isExpanded && hasChildren)
+    ? `<div class="tree-children">${node.children.map(c => renderTreeNode(c, depth + 1, expanded, filterMode)).join('')}</div>`
+    : '';
+
+  return `
+    <div class="tree-node depth-${depth}" data-code="${escapeHtml(node.code)}" style="${famVars(fam)}; --depth: ${depth};">
+      <div class="tree-node-row">
+        ${toggler}
+        <span class="tree-icon">${familyIcon(fam)}</span>
+        <span class="tree-code">${escapeHtml(node.code)}</span>
+        ${statusBadge}
+        ${childrenCount}
+        ${commentBadge}
+        ${buttons.join('')}
+      </div>
+      ${childrenHtml}
+    </div>`;
+}
+
+function renderTreeHome() {
+  // Empty state — no data yet
+  if (!manifest || (!manifest.auto_generated && !missingData)) {
     ROOT.innerHTML = `
       <div class="empty-state">
-        <h2>⚠️ No missing data</h2>
-        <p>Run <code>CC_ScanMissingDrawings</code> in Fusion to scan
-        the Cloud project and create <code>missing.json</code></p>
-        <p>After sync (~1 min), refresh this page to see the list</p>
+        <h2>🌳 No data yet</h2>
+        <p>Run <code>CC_DrawingPDFExport</code> + <code>CC_ScanMissingDrawings</code> in Fusion</p>
       </div>`;
     COUNT_EL.textContent = '';
     return;
   }
 
-  const items = missingData.missing.slice();
-  if (!items.length) {
+  const { roots, all } = buildLibraryTree();
+  if (!roots.length) {
     ROOT.innerHTML = `
       <div class="empty-state">
-        <h2>🎉 No missing drawings</h2>
-        <p>All masters in "${escapeHtml(missingData.project_name || 'project')}" have paired drawings</p>
-        <p class="muted">Last scan: ${escapeHtml(fmtDate(missingData.scanned_at))}</p>
+        <h2>🌳 Tree is empty</h2>
+        <p>No parts found in manifest or missing data</p>
       </div>`;
-    COUNT_EL.textContent = '0 missing';
+    COUNT_EL.textContent = '';
     return;
   }
 
-  // Group by family (Drawer / Back-Down / Floor / Top Sup / Other / ...)
-  const groups = new Map();
-  for (const e of items) {
-    const fam = e.family || 'Other';
-    if (!groups.has(fam)) groups.set(fam, []);
-    groups.get(fam).push(e);
+  const expanded = getTreeExpandedSet();
+  const filterMode = getTreeFilter();
+
+  // Group roots by family for headers (keeps the family-color cue)
+  const byFam = new Map();
+  for (const r of roots) {
+    const f = r.family || 'Other';
+    if (!byFam.has(f)) byFam.set(f, []);
+    byFam.get(f).push(r);
   }
-  const sortedFams = [...groups.keys()].sort(familyOrder);
-  const collapsed = getMissingCollapsedSet();
+  const sortedFams = [...byFam.keys()].sort(familyOrder);
 
-  const groupsHtml = sortedFams.map(fam => {
-    const entries = groups.get(fam).slice().sort((a, b) =>
-      a.name.localeCompare(b.name));
-    const groupId = `family::${fam}`;
-    const isCollapsed = collapsed.has(groupId);
-    const cardExpanded = getMissingCardExpandedSet();
-    const cards = entries.map(e => {
-      const status = e.status || 'missing';
-      const isStale = status === 'stale';
-      const badge = isStale
-        ? `<span class="missing-badge stale" title="Master saved after drawing — re-export needed">⏰ outdated</span>`
-        : '';
-      // For stale: open the DRAWING file (user needs to update drawing, not master)
-      // For missing: open the MASTER file (user needs to create a drawing from it)
-      const openUrn = isStale && e.drawing_urn ? e.drawing_urn : (e.urn || '');
-      const openLabel = isStale ? 'Update ↗' : 'Open ↗';
-      const openTitle = isStale
-        ? `Open drawing "${e.drawing_name || ''}" to re-export`
-        : `Open master "${e.name}" to create drawing`;
-      const covers = Array.isArray(e.covers) ? e.covers : [];
-      const folderName = e.folder_name || '';
-      const drawingName = e.drawing_name || '';
-      const hasDetails = covers.length > 0 || folderName || drawingName;
-      const isExp = cardExpanded.has(e.name);
-      const togglerHtml = hasDetails
-        ? `<button class="card-toggle ${isExp ? 'open' : ''}" data-name="${escapeHtml(e.name)}" aria-label="Toggle details">${isExp ? '▼' : '▶'}</button>`
-        : `<span class="card-toggle-spacer"></span>`;
-      const detailsHtml = hasDetails && isExp ? `
-        <div class="card-details">
-          ${folderName ? `<div class="cd-row">📂 <span class="cd-label">Folder:</span> ${escapeHtml(folderName)}</div>` : ''}
-          ${drawingName ? `<div class="cd-row">📄 <span class="cd-label">Drawing:</span> ${escapeHtml(drawingName)}</div>` : ''}
-          ${covers.length ? `<div class="cd-row"><span class="cd-label">Covers (${covers.length}):</span> ${covers.map(c => `<span class="cover-chip">${escapeHtml(c)}</span>`).join('')}</div>` : ''}
-        </div>` : '';
-      return `
-      <div class="missing-card ${isStale ? 'stale' : ''} ${isExp ? 'expanded' : ''}" style="${famVars(fam)}">
-        <div class="card-row">
-          ${togglerHtml}
-          <span class="missing-card-icon">${familyIcon(fam)}</span>
-          <span class="missing-card-name">${escapeHtml(e.name)}${badge}</span>
-          <button class="missing-open" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(e.open_url || '#')}" title="${escapeHtml(openTitle)}">${openLabel}</button>
-        </div>
-        ${detailsHtml}
-      </div>`;
-    }).join('');
+  const famsHtml = sortedFams.map(fam => {
+    const rs = byFam.get(fam);
+    const rendered = rs.map(r => renderTreeNode(r, 0, expanded, filterMode)).filter(s => s).join('');
+    if (!rendered) return '';  // entire family filtered out
     return `
-      <div class="master-group ${isCollapsed ? 'collapsed' : ''}" data-group="${escapeHtml(groupId)}" style="${famVars(fam)}">
-        <div class="master-header">
-          <span class="master-toggle">▼</span>
-          <span class="master-name" style="color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}</span>
-          <span class="master-meta">${entries.length} ${entries.length === 1 ? 'part' : 'parts'}</span>
-        </div>
-        <div class="master-rows missing-grid">${cards}</div>
+      <div class="tree-family" style="${famVars(fam)}">
+        <h3 class="tree-family-title" style="color:var(--fam-color)">
+          ${familyIcon(fam)} ${escapeHtml(fam)}
+          <span class="tree-family-count">${rs.length} ${rs.length === 1 ? 'root' : 'roots'}</span>
+        </h3>
+        ${rendered}
       </div>`;
-  }).join('');
-
-  const scanInfo = missingData.scanned_at
-    ? `Scanned ${escapeHtml(fmtDate(missingData.scanned_at))} · ${missingData.pairs_count || 0} pairs OK`
-    : '';
+  }).filter(s => s).join('');
 
   // Count statuses
-  const noDrawingCount = items.filter(e => (e.status || 'missing') === 'missing').length;
-  const staleCount = items.filter(e => e.status === 'stale').length;
-  const statusSummary = staleCount > 0
-    ? ` · <span class="stat-stale">⏰ ${staleCount} outdated</span> · <span class="stat-missing">🚫 ${noDrawingCount} no drawing</span>`
-    : '';
-
-  // Detect: are ALL groups collapsed? → next click = expand all
-  const allCollapsed = sortedFams.every(f => collapsed.has(`family::${f}`));
+  const counts = { drawn: 0, missing: 0, stale: 0, deleted: 0 };
+  for (const n of all) counts[n.status] = (counts[n.status] || 0) + 1;
 
   ROOT.innerHTML = `
-    <div class="missing-header">
-      <div class="missing-toolbar">
-        <p class="muted">${scanInfo}${statusSummary}</p>
-        <button class="action-btn" id="missing-toggle-all">
-          <span class="toggle-arrow">${allCollapsed ? '▶' : '▼'}</span>
-          <span class="toggle-label">${allCollapsed ? 'Expand all' : 'Collapse all'}</span>
-        </button>
+    <div class="tree-toolbar">
+      <div class="tree-filter-group">
+        <button class="filter-btn ${filterMode === 'all' ? 'active' : ''}" data-filter="all">All (${all.length})</button>
+        <button class="filter-btn ${filterMode === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing only (${counts.missing + counts.stale})</button>
       </div>
-      <p class="hint">⏰ <strong>outdated</strong> = master saved after drawing — needs re-export. 🚫 <strong>no drawing</strong> = not yet drawn</p>
+      <div class="tree-actions">
+        <button class="action-btn" id="tree-expand-all">▼ Expand all</button>
+        <button class="action-btn" id="tree-collapse-all">▶ Collapse all</button>
+      </div>
     </div>
-    ${groupsHtml}`;
-  COUNT_EL.textContent = `${items.length} missing`;
+    <p class="hint">🌳 <strong>Hierarchy:</strong> ปู่ → พ่อ → ลูก → หลาน via wildcard prefix (0/X). Click ▶ to expand.
+    Status: ✓ drawn · ⚠️ missing · ⏰ outdated · <span class="del-inline">DEL</span> needs redo</p>
+    <div class="tree-content">${famsHtml || '<p class="loading">No nodes match the current filter</p>'}</div>
+  `;
 
-  // Wire per-group collapse/expand
-  ROOT.querySelectorAll('.master-header').forEach(h => {
-    h.addEventListener('click', () => {
-      const group = h.closest('.master-group');
-      const id = group.dataset.group;
-      const set = getMissingCollapsedSet();
-      if (group.classList.contains('collapsed')) {
-        group.classList.remove('collapsed');
-        set.delete(id);
-      } else {
-        group.classList.add('collapsed');
-        set.add(id);
-      }
-      saveMissingCollapsedSet(set);
+  COUNT_EL.textContent = `${all.length} parts · ${counts.drawn} drawn · ${counts.missing + counts.stale} need work${counts.deleted ? ` · ${counts.deleted} DEL` : ''}`;
+
+  // Wire filter buttons
+  ROOT.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTreeFilter(btn.dataset.filter);
+      renderTreeHome();
     });
   });
 
-  // Wire per-card details toggle (▶/▼ chevron at left of each card)
-  ROOT.querySelectorAll('.card-toggle').forEach(btn => {
+  // Wire expand/collapse togglers
+  ROOT.querySelectorAll('.tree-toggle').forEach(btn => {
     btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      const name = btn.dataset.name;
-      const set = getMissingCardExpandedSet();
-      if (set.has(name)) set.delete(name); else set.add(name);
-      saveMissingCardExpandedSet(set);
-      renderMissingHome();
+      const code = btn.dataset.code;
+      const set = getTreeExpandedSet();
+      if (set.has(code)) set.delete(code); else set.add(code);
+      saveTreeExpandedSet(set);
+      renderTreeHome();
     });
   });
 
-  // Wire global toggle-all
-  const globalBtn = ROOT.querySelector('#missing-toggle-all');
-  if (globalBtn) {
-    globalBtn.addEventListener('click', () => {
-      const set = getMissingCollapsedSet();
-      if (allCollapsed) {
-        set.clear();
-      } else {
-        sortedFams.forEach(f => set.add(`family::${f}`));
+  // Expand all / Collapse all
+  ROOT.querySelector('#tree-expand-all').addEventListener('click', () => {
+    const allCodes = [];
+    function collect(nodes) {
+      for (const n of nodes) {
+        if (n.children && n.children.length) {
+          allCodes.push(n.code);
+          collect(n.children);
+        }
       }
-      saveMissingCollapsedSet(set);
-      renderMissingHome();
-    });
-  }
+    }
+    collect(roots);
+    saveTreeExpandedSet(new Set(allCodes));
+    renderTreeHome();
+  });
+  ROOT.querySelector('#tree-collapse-all').addEventListener('click', () => {
+    saveTreeExpandedSet(new Set());
+    renderTreeHome();
+  });
 
-  // Wire Open buttons — try localhost bridge first (1-click direct open),
-  // fallback to web hub if add-in/bridge not running.
-  ROOT.querySelectorAll('.missing-open').forEach(btn => {
+  // Wire Open PDF buttons
+  ROOT.querySelectorAll('.open-pdf').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const url = btn.dataset.url;
+      if (url) window.open(url, '_blank', 'noopener');
+    });
+  });
+
+  // Wire Open in Fusion (localhost bridge → fallback to web hub)
+  ROOT.querySelectorAll('.open-fusion').forEach(btn => {
     btn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
       ev.preventDefault();
       const urn = btn.dataset.urn;
       const webUrl = btn.dataset.weburl;
@@ -1375,16 +1480,15 @@ function renderMissingHome() {
           `http://127.0.0.1:8765/open?urn=${encodeURIComponent(urn)}`,
           { method: 'GET', mode: 'cors' });
         if (r.ok) {
-          btn.textContent = '✓ Sent';
+          btn.textContent = '✓';
           setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
           return;
         }
         throw new Error('bridge returned ' + r.status);
       } catch (e) {
-        // Fallback — open web hub in new tab
         if (webUrl && webUrl !== '#') {
           window.open(webUrl, '_blank', 'noopener');
-          btn.textContent = '↗ Web';
+          btn.textContent = '↗';
         } else {
           btn.textContent = 'ERR';
         }
@@ -1393,6 +1497,9 @@ function renderMissingHome() {
     });
   });
 }
+
+// Legacy alias so older callsites (render() dispatch) keep working.
+const renderMissingHome = renderTreeHome;
 
 // ──────────────────────────────────────────────────────────────────────
 // Library view (existing — family grid + drill-down)
@@ -1551,17 +1658,24 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
     SEARCH.placeholder =
       view === 'projects' ? 'Search project or part…' :
-      view === 'missing'  ? 'Search missing master…' :
+      view === 'missing'  ? 'Search part code in tree…' :
                             'Search part code…';
     render();
   });
 });
 
-// Update Missing tab badge with count
+// Update Tree tab badge with count of items needing work (missing + stale + DEL).
+// Counts from the unified tree node list, not just missing.json.
 function updateMissingBadge() {
   const badge = document.getElementById('missing-badge');
   if (!badge) return;
-  const n = (missingData && Array.isArray(missingData.missing)) ? missingData.missing.length : 0;
+  let n = 0;
+  try {
+    if (manifest) {
+      const { all } = buildLibraryTree();
+      n = all.filter(node => node.status === 'missing' || node.status === 'stale' || node.status === 'deleted').length;
+    }
+  } catch {}
   if (n > 0) {
     badge.textContent = String(n);
     badge.style.display = '';
