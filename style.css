@@ -364,9 +364,15 @@ h1 {
   padding: 12px 14px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  flex-wrap: wrap;          /* Wrap buttons to next line on narrow cards */
+  gap: 6px 10px;
   cursor: pointer;
   transition: background 0.15s, transform 0.08s;
+}
+
+.bom-code {
+  flex: 1 1 130px;          /* Code expands to fill, pushes buttons right */
+  min-width: 130px;
 }
 
 .bom-row-main:active {
