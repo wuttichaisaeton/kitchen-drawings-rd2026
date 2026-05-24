@@ -447,6 +447,42 @@ h1 {
 .timer-reset:hover  { background: #3a2a15; color: #d4a44a; border-color: #d4a44a; border-style: solid; }
 .timer-reset:active { transform: scale(0.9); }
 
+/* --- Part delete / restore (soft-delete a wrong drawing) --- */
+
+.part-delete, .part-restore {
+  background: transparent;
+  border: 1px solid #3a3f44;
+  color: #888;
+  width: 24px;
+  height: 26px;
+  border-radius: 5px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.part-delete:hover  { background: #3a1f1f; color: #e29090; border-color: #c25555; }
+.part-restore:hover { background: #1f3a2f; color: #90e2a8; border-color: #5dbb63; }
+.part-delete:active, .part-restore:active { transform: scale(0.9); }
+
+/* Inline DEL tag for soft-deleted parts (visible in "no drawing yet" group) */
+.part-deleted-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  background: #c25555;
+  color: #fff;
+  border-radius: 4px;
+  font-family: -apple-system, sans-serif;
+  vertical-align: 1px;
+}
+
 /* --- Comment button (in row) + comments panel (below row) --- */
 
 .comment-btn {
