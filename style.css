@@ -1,4 +1,4 @@
-@font-face {
+﻿@font-face {
   font-family: "Flux Architect";
   src: url("fonts/Flux Architect Regular.ttf") format("truetype");
   font-weight: 400;
@@ -321,7 +321,7 @@ h1 {
 .master-group.collapsed .master-rows { display: none; }
 
 .master-name {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   font-weight: 600;
   flex: 1;
@@ -455,7 +455,7 @@ h1 {
 .bom-icon { font-size: 18px; width: 22px; text-align: center; }
 
 .bom-code {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   /* 13-character fixed-width column — project uses 13-char part codes as the standard.
      Monospace + min-width:13ch makes every code align to the same right edge. */
@@ -656,13 +656,13 @@ main.transit-back {
 }
 
 .part-row .part-code {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   min-width: 13ch;
 }
 
 .part-code {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
 }
 
@@ -759,7 +759,7 @@ main.transit-back {
 .empty-state p  { font-size: 13px; line-height: 1.6; margin: 6px 0; }
 .empty-state code {
   background: #2a2f34; padding: 1px 6px; border-radius: 4px;
-  font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace; font-size: 12px;
 }
 .empty-state .muted { opacity: 0.5; font-size: 11px; margin-top: 14px; }
 
@@ -837,13 +837,13 @@ main.transit-back {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 4px;
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 11px;
 }
 
 .missing-card-icon { font-size: 18px; width: 22px; text-align: center; }
 .missing-card-name {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   color: #e4e4e4;
   overflow: hidden;
@@ -893,7 +893,7 @@ main.transit-back {
 .missing-icon { font-size: 18px; width: 22px; text-align: center; }
 
 .missing-name {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   min-width: 13ch;
   color: #e4e4e4;
