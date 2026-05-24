@@ -1176,14 +1176,30 @@ function buildMissingTree(entries) {
   return nodes.filter(n => !n.parent);
 }
 
-// Persisted expanded-node state (which tree nodes have their children shown)
-const LS_TREE_EXPANDED = 'kd_tree_expanded_v1';
-function getTreeExpandedSet() {
-  try { return new Set(JSON.parse(localStorage.getItem(LS_TREE_EXPANDED) || '[]')); }
-  catch { return new Set(); }
-}
-function saveTreeExpandedSet(set) {
-  try { localStorage.setItem(LS_TREE_EXPANDED, JSON.stringify([...set])); } catch {}
+// Radial mindmap navigation state — persisted across reloads so the
+// user comes back to where they were. Two levels of state:
+//   • radialFamily  — which family is selected (null = family overview)
+//   • radialCenter  — which node is at the center (null = family-level
+//                     mindmap with roots around). When set, this node
+//                     becomes the center and its children radiate out.
+const LS_RADIAL_STATE = 'kd_radial_state_v1';
+let radialFamily = null;
+let radialCenter = null;
+(function _loadRadial() {
+  try {
+    const raw = localStorage.getItem(LS_RADIAL_STATE);
+    if (raw) {
+      const o = JSON.parse(raw);
+      radialFamily = o.family || null;
+      radialCenter = o.center || null;
+    }
+  } catch {}
+})();
+function saveRadialState() {
+  try {
+    localStorage.setItem(LS_RADIAL_STATE,
+      JSON.stringify({ family: radialFamily, center: radialCenter }));
+  } catch {}
 }
 
 // Filter toggle (all / missing only)
@@ -1279,81 +1295,339 @@ function buildLibraryTree() {
   return { roots, all: nodes };
 }
 
-// ─── Tree node renderer (recursive) ────────────────────────────────
-function renderTreeNode(node, depth, expanded, filterMode) {
-  // Skip filter: if 'missing' filter active and this subtree has no missing
-  // descendants AND this node itself is not missing/stale → hide entirely.
-  if (filterMode === 'missing') {
-    const hasMissingInSubtree = (n) =>
-      n.status === 'missing' || n.status === 'stale' ||
-      (n.children && n.children.some(hasMissingInSubtree));
-    if (!hasMissingInSubtree(node)) return '';
+// ─── Radial mindmap helpers ────────────────────────────────────────
+
+function _findNodeByCode(roots, code) {
+  for (const r of roots) {
+    if (r.code === code) return r;
+    const found = _findNodeByCode(r.children || [], code);
+    if (found) return found;
   }
+  return null;
+}
 
-  const hasChildren = node.children && node.children.length > 0;
-  const isExpanded = expanded.has(node.code);
-  const fam = node.family || 'Other';
+function _statusBadgeChar(status) {
+  return ({ drawn: '✓', missing: '⚠️', stale: '⏰', deleted: 'DEL' })[status] || '';
+}
+function _statusBadgeColor(status) {
+  return ({
+    drawn:   '#4dd06a',
+    missing: '#f85149',
+    stale:   '#ffc107',
+    deleted: '#dc3545',
+  })[status] || '#888';
+}
+
+// Decide what to do when user clicks a leaf (no children) node:
+//   1. If has drawing → open PDF
+//   2. Else if has urn → try Fusion bridge → fallback web
+//   3. Else nothing
+async function _doLeafAction(node) {
   const url = pdfUrlForCode(node.code);
-  const hasDrawing = !!url;
-
-  // Status badge
-  const statusInfo = {
-    drawn: { cls: 'drawn', text: '✓', title: 'Drawing exists' },
-    missing: { cls: 'missing', text: '⚠️', title: 'No drawing yet' },
-    stale: { cls: 'stale', text: '⏰', title: 'Master saved after drawing — outdated' },
-    deleted: { cls: 'deleted', text: 'DEL', title: 'Soft-deleted — needs redo' },
-  }[node.status || 'missing'] || { cls: '', text: '', title: '' };
-  const statusBadge = statusInfo.text
-    ? `<span class="tree-status ${statusInfo.cls}" title="${escapeHtml(statusInfo.title)}">${statusInfo.text}</span>`
-    : '';
-
-  // Comments + bent badges
-  const comments = getComments(node.code);
-  const commentBadge = comments.length
-    ? `<span class="tree-meta-badge comments" title="${comments.length} comment(s)">💬${comments.length}</span>`
-    : '';
-
-  // Action buttons
-  const buttons = [];
-  if (hasDrawing) {
-    buttons.push(`<button class="tree-btn open-pdf" data-url="${escapeHtml(url)}" title="Open PDF drawing" aria-label="Open PDF">📄</button>`);
+  if (url) {
+    window.open(url, '_blank', 'noopener');
+    return;
   }
   if (node.urn) {
     const openUrn = (node.status === 'stale' && node.drawing_urn) ? node.drawing_urn : node.urn;
-    const openTitle = node.status === 'stale'
-      ? `Open drawing "${node.drawing_name || ''}" to re-export`
-      : `Open master "${node.code}" in Fusion`;
-    buttons.push(`<button class="tree-btn open-fusion" data-urn="${escapeHtml(openUrn)}" data-weburl="${escapeHtml(node.open_url || '#')}" title="${escapeHtml(openTitle)}" aria-label="Open in Fusion">↗</button>`);
+    try {
+      const r = await fetch(
+        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(openUrn)}`,
+        { method: 'GET', mode: 'cors' });
+      if (r.ok) return;
+    } catch {}
+    // Fallback — open web hub
+    if (node.open_url) window.open(node.open_url, '_blank', 'noopener');
   }
-
-  const toggler = hasChildren
-    ? `<button class="tree-toggle ${isExpanded ? 'open' : ''}" data-code="${escapeHtml(node.code)}" aria-label="Toggle">${isExpanded ? '▼' : '▶'}</button>`
-    : `<span class="tree-toggle-spacer"></span>`;
-  const childrenCount = hasChildren
-    ? `<span class="tree-children-count">${node.children.length}</span>` : '';
-
-  // Recursive children rendering
-  const childrenHtml = (isExpanded && hasChildren)
-    ? `<div class="tree-children">${node.children.map(c => renderTreeNode(c, depth + 1, expanded, filterMode)).join('')}</div>`
-    : '';
-
-  return `
-    <div class="tree-node depth-${depth}" data-code="${escapeHtml(node.code)}" style="${famVars(fam)}; --depth: ${depth};">
-      <div class="tree-node-row">
-        ${toggler}
-        <span class="tree-icon">${familyIcon(fam)}</span>
-        <span class="tree-code">${escapeHtml(node.code)}</span>
-        ${statusBadge}
-        ${childrenCount}
-        ${commentBadge}
-        ${buttons.join('')}
-      </div>
-      ${childrenHtml}
-    </div>`;
 }
 
+// Compute radial positions for N neighbors around (cx, cy) with radius r.
+// Spacing-adaptive: more neighbors → larger r (so cards don't overlap).
+function _radialLayout(neighbors, cx, cy, baseR) {
+  const minSpacing = 110;  // px between adjacent card centers along arc
+  const n = Math.max(1, neighbors.length);
+  const minR = (n * minSpacing) / (2 * Math.PI);
+  const r = Math.max(baseR, minR);
+  return neighbors.map((node, i) => {
+    const angle = (2 * Math.PI * i / n) - Math.PI / 2;  // start at top
+    return {
+      node,
+      x: cx + r * Math.cos(angle),
+      y: cy + r * Math.sin(angle),
+      angle,
+    };
+  });
+}
+
+// Build crumbs path: [ {kind: 'all'}, {kind: 'family', name}, {kind: 'node', code}, ... ]
+function _buildBreadcrumb(currentNode, currentFamily) {
+  const path = [{ kind: 'all', label: '🏠 Families' }];
+  if (!currentNode && !currentFamily) return path;
+  const fam = currentNode ? currentNode.family : currentFamily;
+  path.push({ kind: 'family', label: fam, family: fam });
+  if (!currentNode) return path;
+  // Walk ancestors from root down to current
+  const chain = [];
+  let n = currentNode;
+  while (n) { chain.unshift(n); n = n.parent; }
+  for (let i = 0; i < chain.length; i++) {
+    const node = chain[i];
+    path.push({
+      kind: i === chain.length - 1 ? 'current' : 'node',
+      label: node.code,
+      code: node.code,
+    });
+  }
+  return path;
+}
+
+// ─── Family overview (top-level when no family selected) ──────────
+function renderFamilyOverview(roots, all) {
+  // Group by family + count statuses
+  const byFam = new Map();
+  for (const n of all) {
+    const f = n.family;
+    if (!f) continue;
+    if (!byFam.has(f)) byFam.set(f, { roots: 0, drawn: 0, missing: 0, stale: 0, deleted: 0, total: 0 });
+    const s = byFam.get(f);
+    s.total++;
+    s[n.status] = (s[n.status] || 0) + 1;
+  }
+  // Count roots per family
+  for (const r of roots) {
+    const f = r.family;
+    if (byFam.has(f)) byFam.get(f).roots++;
+  }
+  const sortedFams = [...byFam.keys()].sort(familyOrder);
+
+  const cards = sortedFams.map(fam => {
+    const s = byFam.get(fam);
+    const needWork = s.missing + s.stale + s.deleted;
+    return `
+      <div class="mindmap-family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}">
+        <div class="mfc-icon">${familyIcon(fam)}</div>
+        <div class="mfc-name">${escapeHtml(fam)}</div>
+        <div class="mfc-stats">
+          <span class="mfc-stat-roots">${s.roots} roots · ${s.total} total</span>
+        </div>
+        <div class="mfc-badges">
+          ${s.drawn > 0   ? `<span class="mfc-badge drawn">✓ ${s.drawn}</span>` : ''}
+          ${s.missing > 0 ? `<span class="mfc-badge missing">⚠️ ${s.missing}</span>` : ''}
+          ${s.stale > 0   ? `<span class="mfc-badge stale">⏰ ${s.stale}</span>` : ''}
+          ${s.deleted > 0 ? `<span class="mfc-badge deleted">DEL ${s.deleted}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  ROOT.innerHTML = `
+    <p class="hint">🌳 <strong>เลือก family</strong> เพื่อเปิด mindmap. Status: ✓ drawn · ⚠️ missing · ⏰ outdated · <span class="del-inline">DEL</span> needs redo</p>
+    <div class="mindmap-family-grid">${cards}</div>
+  `;
+
+  ROOT.querySelectorAll('.mindmap-family-card').forEach(el => {
+    el.addEventListener('click', () => {
+      radialFamily = el.dataset.family;
+      radialCenter = null;
+      saveRadialState();
+      renderTreeHome();
+    });
+  });
+
+  COUNT_EL.textContent = `${all.length} parts across ${sortedFams.length} families`;
+}
+
+// ─── Radial mindmap renderer (family-center OR node-center) ───────
+function renderRadialMindmap(roots) {
+  let centerNode, centerLabel, neighbors, currentFamily;
+  if (radialCenter) {
+    centerNode = _findNodeByCode(roots, radialCenter);
+    if (!centerNode) {
+      // Lost reference — fall back to family level
+      radialCenter = null;
+      saveRadialState();
+      return renderRadialMindmap(roots);
+    }
+    currentFamily = centerNode.family;
+    centerLabel = centerNode.code;
+    neighbors = centerNode.children || [];
+  } else {
+    // Family-level mindmap — family name in center, roots around
+    currentFamily = radialFamily;
+    centerLabel = radialFamily;
+    centerNode = null;
+    neighbors = roots.filter(r => r.family === radialFamily);
+  }
+
+  const breadcrumb = _buildBreadcrumb(centerNode, currentFamily);
+  const fam = currentFamily || 'Other';
+
+  // Compute SVG canvas + layout
+  const baseR = 240;
+  const positioned = _radialLayout(neighbors, 0, 0, baseR);
+  const maxR = positioned.length
+    ? Math.max(...positioned.map(p => Math.hypot(p.x, p.y)))
+    : baseR;
+  const padding = 110;  // extra space for card half-width + buttons
+  const half = maxR + padding;
+  const W = 2 * half;
+  const H = 2 * half;
+  const cx = half, cy = half;
+
+  // Translate positioned coords from (0,0)-relative to canvas-relative
+  for (const p of positioned) { p.x += cx; p.y += cy; }
+
+  // Edges (curves from center to each neighbor) — quadratic Bezier
+  const edges = positioned.map(p => {
+    const mx = (cx + p.x) / 2, my = (cy + p.y) / 2;
+    // Slight curve offset perpendicular to the radial direction
+    const dx = p.x - cx, dy = p.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const bulge = 22;
+    const ctrlX = mx + nx * bulge;
+    const ctrlY = my + ny * bulge;
+    return `<path class="mm-edge" d="M ${cx} ${cy} Q ${ctrlX} ${ctrlY} ${p.x} ${p.y}" />`;
+  }).join('');
+
+  // Center node (big circle for family / rounded rect for node)
+  let centerSvg;
+  if (centerNode) {
+    // Drilled into a specific node — show that node as center, plus an
+    // "up arrow" affordance (click center → go up).
+    centerSvg = `
+      <g class="mm-center mm-center-node" transform="translate(${cx}, ${cy})">
+        <rect x="-110" y="-36" width="220" height="72" rx="36"
+              fill="var(--fam-color)" stroke="#fff" stroke-width="3" />
+        <text class="mm-center-icon" text-anchor="middle" y="-6" font-size="14" fill="#fff" opacity="0.85">↑ click to go back</text>
+        <text class="mm-center-label" text-anchor="middle" y="18" font-size="15" font-weight="700" fill="#fff">${escapeHtml(centerLabel)}</text>
+      </g>`;
+  } else {
+    // Family center
+    centerSvg = `
+      <g class="mm-center mm-center-family" transform="translate(${cx}, ${cy})">
+        <circle r="80" fill="var(--fam-color)" stroke="#fff" stroke-width="4" opacity="0.95" />
+        <text text-anchor="middle" y="-6" font-size="22" fill="#fff">${familyIcon(fam).replace(/<[^>]+>/g, '')}</text>
+        <text text-anchor="middle" y="22" font-size="14" font-weight="700" fill="#fff">${escapeHtml(centerLabel)}</text>
+      </g>`;
+  }
+
+  // Spoke nodes — clickable cards
+  const spokes = positioned.map(p => {
+    const n = p.node;
+    const hasChildren = n.children && n.children.length > 0;
+    const badge = _statusBadgeChar(n.status);
+    const badgeColor = _statusBadgeColor(n.status);
+    const comments = getComments(n.code);
+    const cBadge = comments.length
+      ? `<g class="mm-mini-badge" transform="translate(70, -22)">
+           <circle r="10" fill="#ffc107" />
+           <text text-anchor="middle" dy="3" font-size="9" font-weight="700" fill="#000">${comments.length}</text>
+         </g>` : '';
+    const childCountBadge = hasChildren
+      ? `<g class="mm-mini-badge" transform="translate(-70, -22)">
+           <circle r="11" fill="#1f3450" stroke="#fff" stroke-width="1.5" />
+           <text text-anchor="middle" dy="3" font-size="10" font-weight="700" fill="#fff">${n.children.length}</text>
+         </g>` : '';
+    const drillHint = hasChildren ? '▶' : (pdfUrlForCode(n.code) ? '📄' : (n.urn ? '↗' : ''));
+
+    return `
+      <g class="mm-spoke ${hasChildren ? 'has-children' : 'is-leaf'}" data-code="${escapeHtml(n.code)}"
+         transform="translate(${p.x}, ${p.y})" style="${famVars(n.family || fam)}">
+        <rect x="-80" y="-22" width="160" height="44" rx="22"
+              fill="var(--fam-tint)" stroke="var(--fam-color)" stroke-width="2"
+              class="mm-spoke-bg" />
+        <text class="mm-spoke-code" text-anchor="middle" dy="-2" font-size="11" font-weight="600" fill="#e4e4e4">${escapeHtml(n.code)}</text>
+        <text class="mm-spoke-hint" text-anchor="middle" dy="12" font-size="9" fill="var(--fam-color)" opacity="0.8">${drillHint}</text>
+        ${badge ? `<g transform="translate(60, 14)">
+            <rect x="-14" y="-7" width="28" height="14" rx="7" fill="${badgeColor}" />
+            <text text-anchor="middle" dy="3" font-size="8" font-weight="700" fill="#fff">${badge}</text>
+          </g>` : ''}
+        ${childCountBadge}
+        ${cBadge}
+      </g>`;
+  }).join('');
+
+  const breadcrumbHtml = breadcrumb.map((b, i) => {
+    const sep = i > 0 ? '<span class="mm-bc-sep">›</span>' : '';
+    const cls = b.kind + (b.kind === 'current' ? ' current' : '');
+    return `${sep}<span class="mm-bc-item ${cls}" data-kind="${b.kind}" data-code="${escapeHtml(b.code || '')}" data-family="${escapeHtml(b.family || '')}">${escapeHtml(b.label || '')}</span>`;
+  }).join('');
+
+  ROOT.innerHTML = `
+    <div class="mindmap-wrapper" style="${famVars(fam)}">
+      <div class="mindmap-breadcrumb">${breadcrumbHtml}</div>
+      <div class="mindmap-canvas">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="mindmap-svg">
+          ${edges}
+          ${centerSvg}
+          ${spokes}
+        </svg>
+      </div>
+      <p class="hint">
+        คลิก node มีลูก (▶) → ลงลึก · node ไม่มีลูก (📄/↗) → เปิด PDF/Fusion · กดกลาง → ขึ้น 1 ชั้น
+        ${neighbors.length === 0 ? '<br><strong>⚠️ Node นี้ไม่มีลูก</strong> — คลิกกลางเพื่อกลับ' : ''}
+      </p>
+    </div>
+  `;
+
+  COUNT_EL.textContent = `${neighbors.length} ${neighbors.length === 1 ? 'child' : 'children'} of ${centerLabel}`;
+
+  // Wire breadcrumb
+  ROOT.querySelectorAll('.mm-bc-item').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const kind = el.dataset.kind;
+      if (kind === 'all') {
+        radialFamily = null;
+        radialCenter = null;
+      } else if (kind === 'family') {
+        radialFamily = el.dataset.family;
+        radialCenter = null;
+      } else if (kind === 'node') {
+        radialCenter = el.dataset.code;
+      } else { return; }  // 'current' = no-op
+      saveRadialState();
+      renderTreeHome();
+    });
+  });
+
+  // Wire center node — go up 1 level (parent or family)
+  ROOT.querySelector('.mm-center')?.addEventListener('click', () => {
+    if (centerNode) {
+      // Go to parent, or back to family level
+      if (centerNode.parent) {
+        radialCenter = centerNode.parent.code;
+      } else {
+        radialCenter = null;  // back to family
+      }
+    } else {
+      // We're at family level — back to family overview
+      radialFamily = null;
+    }
+    saveRadialState();
+    renderTreeHome();
+  });
+
+  // Wire spoke nodes — drill in OR action
+  ROOT.querySelectorAll('.mm-spoke').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = el.dataset.code;
+      const node = _findNodeByCode(roots, code);
+      if (!node) return;
+      if (node.children && node.children.length > 0) {
+        radialCenter = code;
+        saveRadialState();
+        renderTreeHome();
+      } else {
+        _doLeafAction(node);
+      }
+    });
+  });
+}
+
+// ─── Main tree-tab dispatcher ──────────────────────────────────────
 function renderTreeHome() {
-  // Empty state — no data yet
   if (!manifest || (!manifest.auto_generated && !missingData)) {
     ROOT.innerHTML = `
       <div class="empty-state">
@@ -1369,141 +1643,16 @@ function renderTreeHome() {
     ROOT.innerHTML = `
       <div class="empty-state">
         <h2>🌳 Tree is empty</h2>
-        <p>No parts found in manifest or missing data</p>
+        <p>No kitchen parts found</p>
       </div>`;
     COUNT_EL.textContent = '';
     return;
   }
 
-  const expanded = getTreeExpandedSet();
-  const filterMode = getTreeFilter();
-
-  // Group roots by family for headers (keeps the family-color cue)
-  const byFam = new Map();
-  for (const r of roots) {
-    const f = r.family || 'Other';
-    if (!byFam.has(f)) byFam.set(f, []);
-    byFam.get(f).push(r);
+  if (!radialFamily) {
+    return renderFamilyOverview(roots, all);
   }
-  const sortedFams = [...byFam.keys()].sort(familyOrder);
-
-  const famsHtml = sortedFams.map(fam => {
-    const rs = byFam.get(fam);
-    const rendered = rs.map(r => renderTreeNode(r, 0, expanded, filterMode)).filter(s => s).join('');
-    if (!rendered) return '';  // entire family filtered out
-    return `
-      <div class="tree-family" style="${famVars(fam)}">
-        <h3 class="tree-family-title" style="color:var(--fam-color)">
-          ${familyIcon(fam)} ${escapeHtml(fam)}
-          <span class="tree-family-count">${rs.length} ${rs.length === 1 ? 'root' : 'roots'}</span>
-        </h3>
-        ${rendered}
-      </div>`;
-  }).filter(s => s).join('');
-
-  // Count statuses
-  const counts = { drawn: 0, missing: 0, stale: 0, deleted: 0 };
-  for (const n of all) counts[n.status] = (counts[n.status] || 0) + 1;
-
-  ROOT.innerHTML = `
-    <div class="tree-toolbar">
-      <div class="tree-filter-group">
-        <button class="filter-btn ${filterMode === 'all' ? 'active' : ''}" data-filter="all">All (${all.length})</button>
-        <button class="filter-btn ${filterMode === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing only (${counts.missing + counts.stale})</button>
-      </div>
-      <div class="tree-actions">
-        <button class="action-btn" id="tree-expand-all">▼ Expand all</button>
-        <button class="action-btn" id="tree-collapse-all">▶ Collapse all</button>
-      </div>
-    </div>
-    <p class="hint">🌳 <strong>Hierarchy:</strong> ปู่ → พ่อ → ลูก → หลาน via wildcard prefix (0/X). Click ▶ to expand.
-    Status: ✓ drawn · ⚠️ missing · ⏰ outdated · <span class="del-inline">DEL</span> needs redo</p>
-    <div class="tree-content">${famsHtml || '<p class="loading">No nodes match the current filter</p>'}</div>
-  `;
-
-  COUNT_EL.textContent = `${all.length} parts · ${counts.drawn} drawn · ${counts.missing + counts.stale} need work${counts.deleted ? ` · ${counts.deleted} DEL` : ''}`;
-
-  // Wire filter buttons
-  ROOT.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setTreeFilter(btn.dataset.filter);
-      renderTreeHome();
-    });
-  });
-
-  // Wire expand/collapse togglers
-  ROOT.querySelectorAll('.tree-toggle').forEach(btn => {
-    btn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const code = btn.dataset.code;
-      const set = getTreeExpandedSet();
-      if (set.has(code)) set.delete(code); else set.add(code);
-      saveTreeExpandedSet(set);
-      renderTreeHome();
-    });
-  });
-
-  // Expand all / Collapse all
-  ROOT.querySelector('#tree-expand-all').addEventListener('click', () => {
-    const allCodes = [];
-    function collect(nodes) {
-      for (const n of nodes) {
-        if (n.children && n.children.length) {
-          allCodes.push(n.code);
-          collect(n.children);
-        }
-      }
-    }
-    collect(roots);
-    saveTreeExpandedSet(new Set(allCodes));
-    renderTreeHome();
-  });
-  ROOT.querySelector('#tree-collapse-all').addEventListener('click', () => {
-    saveTreeExpandedSet(new Set());
-    renderTreeHome();
-  });
-
-  // Wire Open PDF buttons
-  ROOT.querySelectorAll('.open-pdf').forEach(btn => {
-    btn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const url = btn.dataset.url;
-      if (url) window.open(url, '_blank', 'noopener');
-    });
-  });
-
-  // Wire Open in Fusion (localhost bridge → fallback to web hub)
-  ROOT.querySelectorAll('.open-fusion').forEach(btn => {
-    btn.addEventListener('click', async (ev) => {
-      ev.stopPropagation();
-      ev.preventDefault();
-      const urn = btn.dataset.urn;
-      const webUrl = btn.dataset.weburl;
-      if (!urn) return;
-      const original = btn.textContent;
-      btn.textContent = '...';
-      btn.disabled = true;
-      try {
-        const r = await fetch(
-          `http://127.0.0.1:8765/open?urn=${encodeURIComponent(urn)}`,
-          { method: 'GET', mode: 'cors' });
-        if (r.ok) {
-          btn.textContent = '✓';
-          setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1200);
-          return;
-        }
-        throw new Error('bridge returned ' + r.status);
-      } catch (e) {
-        if (webUrl && webUrl !== '#') {
-          window.open(webUrl, '_blank', 'noopener');
-          btn.textContent = '↗';
-        } else {
-          btn.textContent = 'ERR';
-        }
-        setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 1500);
-      }
-    });
-  });
+  return renderRadialMindmap(roots);
 }
 
 // Legacy alias so older callsites (render() dispatch) keep working.
@@ -1658,7 +1807,17 @@ function renderSearch(q) {
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.view;
-    if (v === view) return;
+    if (v === view) {
+      // Same-tab click — for Tree tab, reset radial state (escape hatch
+      // when stuck deep in a mindmap)
+      if (v === 'missing') {
+        radialFamily = null;
+        radialCenter = null;
+        saveRadialState();
+        render();
+      }
+      return;
+    }
     view = v;
     stack = [];
     SEARCH.value = '';

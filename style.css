@@ -1227,193 +1227,12 @@ footer {
 }
 
 /* ──────────────────────────────────────────────────────────────────
-   Tree View (🌳 tab) — indented hierarchy of all parts.
-   Replaces the old flat Missing tab. Shows ปู่ → พ่อ → ลูก → หลาน
-   detected via wildcard prefix matching.
+   Tree View (🌳 tab) — Radial Mindmap (Kanban-style)
+   Family chips overview → click family → SVG mindmap with family in
+   center, roots around. Click a root → it becomes new center, its
+   children radiate out. Drill in indefinitely. Breadcrumb at top
+   for navigation back up.
    ────────────────────────────────────────────────────────────────── */
-
-.tree-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px;
-  margin-bottom: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-}
-.tree-filter-group, .tree-actions {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.tree-family {
-  margin-bottom: 18px;
-}
-.tree-family-title {
-  margin: 12px 0 6px 0;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 10px;
-  border-left: 4px solid var(--fam-color);
-  background: rgba(255, 255, 255, 0.025);
-  border-radius: 0 8px 8px 0;
-  letter-spacing: 0.02em;
-}
-.tree-family-count {
-  font-size: 10px;
-  opacity: 0.55;
-  font-weight: 400;
-  margin-left: 6px;
-}
-
-.tree-node {
-  position: relative;
-}
-
-.tree-node-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-  margin: 3px 0;
-  margin-left: calc(var(--depth, 0) * 22px);
-  background: var(--fam-tint, #1a1f24);
-  border-radius: 6px;
-  border-left: 3px solid var(--fam-color, #4a90e2);
-  transition: background 0.12s, transform 0.08s;
-}
-.tree-node-row:hover {
-  background: #232a31;
-}
-
-/* Visual tree "guide line" at left of indented rows */
-.tree-node[data-depth]:not([data-depth="0"]) .tree-node-row::before {
-  content: "";
-  position: absolute;
-  left: calc((var(--depth, 0) - 1) * 22px + 8px);
-  top: 50%;
-  width: 12px;
-  border-top: 1px dashed rgba(255, 255, 255, 0.12);
-}
-
-.tree-toggle, .tree-toggle-spacer {
-  flex-shrink: 0;
-  width: 22px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.tree-toggle {
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 4px;
-  color: #888;
-  cursor: pointer;
-  font-size: 10px;
-  padding: 0;
-  transition: all 0.12s;
-}
-.tree-toggle:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #eee;
-}
-.tree-toggle.open {
-  color: var(--fam-color);
-  border-color: var(--fam-color);
-}
-
-.tree-icon {
-  flex-shrink: 0;
-  font-size: 14px;
-  color: var(--fam-color, #4a90e2);
-}
-
-.tree-code {
-  flex: 1 1 0;
-  min-width: 0;
-  font-weight: 600;
-  font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: 0.02em;
-}
-
-.tree-status {
-  flex-shrink: 0;
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 8px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  line-height: 1.2;
-}
-.tree-status.drawn   { background: rgba(46, 160, 67, 0.18);  color: #4dd06a; }
-.tree-status.missing { background: rgba(248, 81, 73, 0.18);  color: #f85149; }
-.tree-status.stale   { background: rgba(255, 193, 7, 0.18);  color: #ffc107; }
-.tree-status.deleted { background: rgba(220, 53, 69, 0.7);   color: #fff; }
-
-.tree-children-count {
-  flex-shrink: 0;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #aaa;
-  font-weight: 600;
-}
-
-.tree-meta-badge {
-  flex-shrink: 0;
-  font-size: 10px;
-  padding: 1px 5px;
-  border-radius: 8px;
-}
-.tree-meta-badge.comments {
-  background: rgba(255, 193, 7, 0.18);
-  color: #ffc107;
-}
-
-.tree-btn {
-  flex-shrink: 0;
-  width: 28px;
-  height: 26px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 5px;
-  cursor: pointer;
-  color: var(--fam-color, #4a90e2);
-  font-size: 11px;
-  padding: 0;
-  transition: all 0.12s;
-}
-.tree-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: var(--fam-color);
-}
-.tree-btn:disabled {
-  opacity: 0.5;
-  cursor: wait;
-}
-
-.tree-children {
-  position: relative;
-}
-
-/* Vertical guideline connecting children */
-.tree-children::before {
-  content: "";
-  position: absolute;
-  left: calc(var(--depth, 0) * 22px - 14px);
-  top: 0;
-  bottom: 12px;
-  width: 1px;
-  background: rgba(255, 255, 255, 0.08);
-}
 
 .hint .del-inline {
   background: rgba(220, 53, 69, 0.7);
@@ -1425,11 +1244,187 @@ footer {
   letter-spacing: 0.04em;
 }
 
-/* iPad / desktop — slightly larger tree row sizing */
-@media (min-width: 768px) {
-  .tree-node-row { padding: 10px 12px; gap: 10px; }
-  .tree-code { font-size: 14px; }
-  .tree-status, .tree-children-count, .tree-meta-badge { font-size: 11px; }
-  .tree-btn { width: 32px; height: 30px; font-size: 13px; }
-  .tree-node-row { margin-left: calc(var(--depth, 0) * 28px); }
+/* ─── Family overview grid (entry point) ─── */
+.mindmap-family-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.mindmap-family-card {
+  background: linear-gradient(135deg, var(--fam-tint), rgba(0,0,0,0.3));
+  border: 2px solid var(--fam-color);
+  border-radius: 12px;
+  padding: 18px 14px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.mindmap-family-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 4px;
+  background: var(--fam-color);
+}
+.mindmap-family-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3),
+              0 0 0 1px var(--fam-color);
+}
+.mfc-icon {
+  font-size: 36px;
+  margin-bottom: 8px;
+  color: var(--fam-color);
+}
+.mfc-icon .fam-icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+}
+.mfc-name {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--fam-color);
+  margin-bottom: 4px;
+}
+.mfc-stats {
+  font-size: 11px;
+  opacity: 0.65;
+  margin-bottom: 8px;
+}
+.mfc-badges {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.mfc-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+.mfc-badge.drawn   { background: rgba(46, 160, 67, 0.18);  color: #4dd06a; }
+.mfc-badge.missing { background: rgba(248, 81, 73, 0.18);  color: #f85149; }
+.mfc-badge.stale   { background: rgba(255, 193, 7, 0.18);  color: #ffc107; }
+.mfc-badge.deleted { background: rgba(220, 53, 69, 0.7);   color: #fff; }
+
+/* ─── Mindmap canvas (the SVG view) ─── */
+.mindmap-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 70vh;
+}
+
+.mindmap-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
+  border-left: 3px solid var(--fam-color, #4a90e2);
+}
+.mm-bc-item {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.06);
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.mm-bc-item:hover { background: rgba(255, 255, 255, 0.14); }
+.mm-bc-item.current {
+  background: var(--fam-color);
+  color: #fff;
+  font-weight: 700;
+  cursor: default;
+}
+.mm-bc-item.all     { background: rgba(74, 144, 226, 0.18); color: #4a90e2; }
+.mm-bc-item.family  { background: rgba(255, 255, 255, 0.1); font-weight: 600; }
+.mm-bc-sep { opacity: 0.4; font-size: 12px; margin: 0 2px; }
+
+.mindmap-canvas {
+  background: radial-gradient(ellipse at center, rgba(74, 144, 226, 0.06) 0%, rgba(0,0,0,0.3) 70%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px;
+  overflow: auto;
+  min-height: 500px;
+  max-height: 75vh;
+}
+.mindmap-svg {
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  display: block;
+}
+
+/* Edges between center and spokes */
+.mm-edge {
+  fill: none;
+  stroke: rgba(74, 144, 226, 0.35);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  transition: stroke-width 0.15s;
+}
+
+/* Center node */
+.mm-center {
+  cursor: pointer;
+}
+.mm-center circle, .mm-center rect {
+  filter: drop-shadow(0 6px 16px rgba(0, 0, 0, 0.5));
+  transition: all 0.18s;
+}
+.mm-center:hover circle { r: 84; }
+.mm-center-node:hover rect { stroke-width: 5; }
+.mm-center text { pointer-events: none; }
+
+/* Spoke nodes */
+.mm-spoke {
+  cursor: pointer;
+}
+.mm-spoke .mm-spoke-bg {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  transition: all 0.15s;
+}
+.mm-spoke:hover .mm-spoke-bg {
+  fill: rgba(74, 144, 226, 0.18);
+  stroke-width: 3;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+}
+.mm-spoke.is-leaf .mm-spoke-bg {
+  stroke-dasharray: 4 3;
+  stroke-opacity: 0.7;
+}
+.mm-spoke text { pointer-events: none; }
+.mm-spoke .mm-mini-badge { pointer-events: none; }
+
+/* Make sure SVG text uses the same font as the rest of the UI */
+.mindmap-svg text {
+  font-family: "Flux Architect", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  user-select: none;
+}
+
+/* Mobile — make canvas full-width with native scroll */
+@media (max-width: 767px) {
+  .mindmap-canvas {
+    min-height: 60vh;
+    max-height: none;
+    padding: 4px;
+  }
+  .mindmap-svg { min-height: 60vh; }
+  .mindmap-family-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .mfc-icon { font-size: 28px; }
+  .mindmap-family-card { padding: 14px 8px; }
 }
