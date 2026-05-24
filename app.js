@@ -1084,13 +1084,13 @@ function renderProject(key) {
       const code = btn.dataset.code;
       if (!pk || !code) return;
       const cur = getTimerTotalSeconds(pk, code);
-      const msg = `แก้เวลา / Reset\n\n` +
-        `ปัจจุบัน (current): ${formatDuration(cur) || '0s'}\n\n` +
-        `พิมพ์เวลาใหม่เป็น "วินาที" (seconds):\n` +
-        `• 0 หรือว่าง = reset เป็น 0\n` +
-        `• 600 = 10 นาที\n` +
-        `• 3600 = 1 ชั่วโมง\n` +
-        `• 5400 = 1h 30m`;
+      const msg = `Edit / Reset timer\n\n` +
+        `Current: ${formatDuration(cur) || '0s'}\n\n` +
+        `Enter new total in seconds:\n` +
+        `  0 (or empty) = reset to 0\n` +
+        `  600 = 10 minutes\n` +
+        `  3600 = 1 hour\n` +
+        `  5400 = 1h 30m`;
       const input = prompt(msg, String(cur));
       if (input === null) return;  // user cancelled
       const n = parseInt(String(input).trim(), 10);
@@ -1098,7 +1098,7 @@ function renderProject(key) {
         if (input.trim() === '') {
           resetTimer(pk, code, 0);
         } else {
-          alert('ค่าไม่ถูกต้อง / Invalid input');
+          alert('Invalid input — must be a number of seconds');
         }
         return;
       }
@@ -1388,46 +1388,97 @@ function renderFamilyOverview(roots, all) {
   for (const n of all) {
     const f = n.family;
     if (!f) continue;
-    if (!byFam.has(f)) byFam.set(f, { roots: 0, drawn: 0, missing: 0, stale: 0, deleted: 0, total: 0 });
+    if (!byFam.has(f)) byFam.set(f, {
+      roots: 0, drawn: 0, missing: 0, stale: 0, deleted: 0, total: 0,
+      rootNodes: [],   // collected for the chip preview list
+    });
     const s = byFam.get(f);
     s.total++;
     s[n.status] = (s[n.status] || 0) + 1;
   }
-  // Count roots per family
+  // Collect roots per family (for the in-chip preview)
   for (const r of roots) {
     const f = r.family;
-    if (byFam.has(f)) byFam.get(f).roots++;
+    if (byFam.has(f)) {
+      byFam.get(f).roots++;
+      byFam.get(f).rootNodes.push(r);
+    }
   }
   const sortedFams = [...byFam.keys()].sort(familyOrder);
 
   const cards = sortedFams.map(fam => {
     const s = byFam.get(fam);
-    const needWork = s.missing + s.stale + s.deleted;
+    // Preview list — top N parents (sorted by child count desc, then code).
+    // Each row clickable → jumps directly into that parent's mindmap.
+    const PREVIEW_MAX = 6;
+    const previewParents = s.rootNodes.slice().sort((a, b) => {
+      const ac = (a.children || []).length;
+      const bc = (b.children || []).length;
+      if (ac !== bc) return bc - ac;
+      return a.code.localeCompare(b.code);
+    });
+    const shown = previewParents.slice(0, PREVIEW_MAX);
+    const overflow = Math.max(0, previewParents.length - PREVIEW_MAX);
+    const parentsHtml = shown.map(p => {
+      const childN = (p.children || []).length;
+      const stBadge = p.status === 'missing' ? '<span class="mfc-pp-st missing">⚠️</span>'
+                    : p.status === 'stale'   ? '<span class="mfc-pp-st stale">⏰</span>'
+                    : p.status === 'deleted' ? '<span class="mfc-pp-st deleted">DEL</span>'
+                    : '<span class="mfc-pp-st drawn">✓</span>';
+      const cnt = childN > 0 ? `<span class="mfc-pp-cnt">[${childN}]</span>` : '';
+      return `<div class="mfc-pp-row" data-code="${escapeHtml(p.code)}">
+        ${stBadge}<span class="mfc-pp-code">${escapeHtml(p.code)}</span>${cnt}
+      </div>`;
+    }).join('');
+    const overflowHtml = overflow > 0
+      ? `<div class="mfc-pp-more">+ ${overflow} more parent${overflow === 1 ? '' : 's'}</div>`
+      : '';
+
     return `
       <div class="mindmap-family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}">
-        <div class="mfc-icon">${familyIcon(fam)}</div>
-        <div class="mfc-name">${escapeHtml(fam)}</div>
-        <div class="mfc-stats">
-          <span class="mfc-stat-roots">${s.roots} roots · ${s.total} total</span>
+        <div class="mfc-head">
+          <div class="mfc-icon">${familyIcon(fam)}</div>
+          <div class="mfc-name">${escapeHtml(fam)}</div>
+          <div class="mfc-stats">${s.roots} roots · ${s.total} total</div>
+          <div class="mfc-badges">
+            ${s.drawn > 0   ? `<span class="mfc-badge drawn">✓ ${s.drawn}</span>` : ''}
+            ${s.missing > 0 ? `<span class="mfc-badge missing">⚠️ ${s.missing}</span>` : ''}
+            ${s.stale > 0   ? `<span class="mfc-badge stale">⏰ ${s.stale}</span>` : ''}
+            ${s.deleted > 0 ? `<span class="mfc-badge deleted">DEL ${s.deleted}</span>` : ''}
+          </div>
         </div>
-        <div class="mfc-badges">
-          ${s.drawn > 0   ? `<span class="mfc-badge drawn">✓ ${s.drawn}</span>` : ''}
-          ${s.missing > 0 ? `<span class="mfc-badge missing">⚠️ ${s.missing}</span>` : ''}
-          ${s.stale > 0   ? `<span class="mfc-badge stale">⏰ ${s.stale}</span>` : ''}
-          ${s.deleted > 0 ? `<span class="mfc-badge deleted">DEL ${s.deleted}</span>` : ''}
+        <div class="mfc-parents">
+          <div class="mfc-pp-title">Parents (top ${shown.length})</div>
+          ${parentsHtml}
+          ${overflowHtml}
         </div>
       </div>`;
   }).join('');
 
   ROOT.innerHTML = `
-    <p class="hint">🌳 <strong>เลือก family</strong> เพื่อเปิด mindmap. Status: ✓ drawn · ⚠️ missing · ⏰ outdated · <span class="del-inline">DEL</span> needs redo</p>
+    <p class="hint">🌳 <strong>Pick a family</strong> to open its mindmap, or click a parent below to jump in directly. Status: ✓ drawn · ⚠️ missing · ⏰ outdated · <span class="del-inline">DEL</span> needs redo</p>
     <div class="mindmap-family-grid">${cards}</div>
   `;
 
+  // Card body → open family mindmap (legacy click target)
   ROOT.querySelectorAll('.mindmap-family-card').forEach(el => {
-    el.addEventListener('click', () => {
+    el.addEventListener('click', (ev) => {
+      // If a parent-row was clicked, that handler takes over (stopPropagation).
       radialFamily = el.dataset.family;
       radialCenter = null;
+      saveRadialState();
+      renderTreeHome();
+    });
+  });
+
+  // Parent-row click → jump straight into THAT parent's mindmap
+  ROOT.querySelectorAll('.mfc-pp-row').forEach(row => {
+    row.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = row.dataset.code;
+      const card = row.closest('.mindmap-family-card');
+      radialFamily = card ? card.dataset.family : null;
+      radialCenter = code;
       saveRadialState();
       renderTreeHome();
     });
@@ -1564,8 +1615,8 @@ function renderRadialMindmap(roots) {
         </svg>
       </div>
       <p class="hint">
-        คลิก node มีลูก (▶) → ลงลึก · node ไม่มีลูก (📄/↗) → เปิด PDF/Fusion · กดกลาง → ขึ้น 1 ชั้น
-        ${neighbors.length === 0 ? '<br><strong>⚠️ Node นี้ไม่มีลูก</strong> — คลิกกลางเพื่อกลับ' : ''}
+        Click a node with ▶ → drill down · leaf (📄/↗) → open PDF/Fusion · click center → go up 1 level
+        ${neighbors.length === 0 ? '<br><strong>⚠️ No children here</strong> — click center to go back' : ''}
       </p>
     </div>
   `;

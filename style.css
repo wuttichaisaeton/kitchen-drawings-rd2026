@@ -1247,20 +1247,20 @@ footer {
 /* ─── Family overview grid (entry point) ─── */
 .mindmap-family-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
   margin-top: 12px;
 }
 .mindmap-family-card {
   background: linear-gradient(135deg, var(--fam-tint), rgba(0,0,0,0.3));
   border: 2px solid var(--fam-color);
   border-radius: 12px;
-  padding: 18px 14px;
-  text-align: center;
   cursor: pointer;
   transition: transform 0.15s, box-shadow 0.15s;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .mindmap-family-card::before {
   content: "";
@@ -1273,9 +1273,14 @@ footer {
   box-shadow: 0 6px 20px rgba(0,0,0,0.3),
               0 0 0 1px var(--fam-color);
 }
+.mfc-head {
+  padding: 18px 14px 12px;
+  text-align: center;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
 .mfc-icon {
-  font-size: 36px;
-  margin-bottom: 8px;
+  font-size: 32px;
+  margin-bottom: 6px;
   color: var(--fam-color);
 }
 .mfc-icon .fam-icon {
@@ -1311,6 +1316,75 @@ footer {
 .mfc-badge.missing { background: rgba(248, 81, 73, 0.18);  color: #f85149; }
 .mfc-badge.stale   { background: rgba(255, 193, 7, 0.18);  color: #ffc107; }
 .mfc-badge.deleted { background: rgba(220, 53, 69, 0.7);   color: #fff; }
+
+/* ─── Parents preview list inside each family chip ─── */
+.mfc-parents {
+  padding: 10px 12px 12px;
+  background: rgba(0, 0, 0, 0.15);
+}
+.mfc-pp-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  opacity: 0.5;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.mfc-pp-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 5px;
+  margin: 2px 0;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.1s;
+  background: rgba(255, 255, 255, 0.02);
+}
+.mfc-pp-row:hover {
+  background: var(--fam-tint);
+  outline: 1px solid var(--fam-color);
+}
+.mfc-pp-st {
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 18px;
+  text-align: center;
+}
+.mfc-pp-st.drawn   { background: rgba(46, 160, 67, 0.18);  color: #4dd06a; }
+.mfc-pp-st.missing { background: rgba(248, 81, 73, 0.18);  color: #f85149; }
+.mfc-pp-st.stale   { background: rgba(255, 193, 7, 0.18);  color: #ffc107; }
+.mfc-pp-st.deleted { background: rgba(220, 53, 69, 0.7);   color: #fff; }
+.mfc-pp-code {
+  flex: 1 1 0;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #ddd;
+  letter-spacing: 0.02em;
+}
+.mfc-pp-cnt {
+  flex-shrink: 0;
+  font-size: 9px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--fam-color);
+  color: #fff;
+  font-weight: 700;
+}
+.mfc-pp-more {
+  text-align: center;
+  font-size: 10px;
+  opacity: 0.5;
+  margin-top: 6px;
+  font-style: italic;
+}
 
 /* ─── Mindmap canvas (the SVG view) ─── */
 .mindmap-wrapper {
@@ -1422,9 +1496,10 @@ footer {
   }
   .mindmap-svg { min-height: 60vh; }
   .mindmap-family-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: 1fr;
     gap: 10px;
   }
   .mfc-icon { font-size: 28px; }
-  .mindmap-family-card { padding: 14px 8px; }
+  .mfc-head { padding: 14px 10px 10px; }
+  .mfc-parents { padding: 8px 10px 10px; }
 }
