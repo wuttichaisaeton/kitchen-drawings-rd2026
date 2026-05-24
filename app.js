@@ -388,6 +388,46 @@ function stopTimer(pk, code) {
   } catch (e) { console.warn('stopTimer failed:', e); }
 }
 
+function resetTimer(pk, code, totalSeconds) {
+  // Set timer to totalSeconds (0 = wipe everything). Stops any running session.
+  if (!pk || !code) return;
+  totalSeconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  if (!window.firebaseDB) {
+    if (!timersCache[pk]) timersCache[pk] = {};
+    timersCache[pk][code] = {
+      active_start: null,
+      sessions: {}
+    };
+    if (totalSeconds > 0) {
+      const now = Date.now();
+      timersCache[pk][code].sessions['manual_' + now] = {
+        start: now - totalSeconds * 1000,
+        end: now,
+        manual: true
+      };
+    }
+    saveCachedTimers(timersCache);
+    _updateTickerState();
+    render();
+    return;
+  }
+  try {
+    const updates = {};
+    updates[`timers/${pk}/${code}/active_start`] = null;
+    updates[`timers/${pk}/${code}/sessions`] = null;
+    if (totalSeconds > 0) {
+      const now = Date.now();
+      const sessionKey = window.firebaseDB.ref(`timers/${pk}/${code}/sessions`).push().key;
+      updates[`timers/${pk}/${code}/sessions/${sessionKey}`] = {
+        start: now - totalSeconds * 1000,
+        end: now,
+        manual: true
+      };
+    }
+    window.firebaseDB.ref().update(updates);
+  } catch (e) { console.warn('resetTimer failed:', e); }
+}
+
 function _updateTickerState() {
   // Start/stop the 1s tick interval based on whether any timer is running.
   let anyRunning = false;
@@ -612,9 +652,12 @@ function renderBomRow(p, projectKey) {
   const tRunning = projectKey ? isTimerRunning(projectKey, p.code) : false;
   const tSeconds = projectKey ? getTimerTotalSeconds(projectKey, p.code) : 0;
   const tText = formatDuration(tSeconds);
+  // Reset button shown when has any accumulated time (running or stopped)
+  const showReset = projectKey && tSeconds > 0;
   const timerHtml = projectKey ? `
     <span class="timer-elapsed ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}">${escapeHtml(tText)}</span>
     <button class="timer-btn ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}" aria-label="${tRunning ? 'Stop' : 'Start'} timer" title="${tRunning ? 'Stop timer' : 'Start timer'}">${tRunning ? '⏸' : '▶'}</button>
+    ${showReset ? `<button class="timer-reset" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}" aria-label="Edit / Reset timer" title="Edit or reset timer">↻</button>` : ''}
   ` : '';
   return `
     <div class="bom-row ${bent ? 'bent' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
@@ -842,6 +885,36 @@ function renderProject(key) {
       }
       // Firebase listener will re-render. For localStorage-only fallback,
       // start/stopTimer already calls render() itself.
+    });
+  });
+
+  // Timer Reset / Edit button — prompt for new total time (0 = wipe)
+  ROOT.querySelectorAll('.timer-reset').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const pk = btn.dataset.pk;
+      const code = btn.dataset.code;
+      if (!pk || !code) return;
+      const cur = getTimerTotalSeconds(pk, code);
+      const msg = `แก้เวลา / Reset\n\n` +
+        `ปัจจุบัน (current): ${formatDuration(cur) || '0s'}\n\n` +
+        `พิมพ์เวลาใหม่เป็น "วินาที" (seconds):\n` +
+        `• 0 หรือว่าง = reset เป็น 0\n` +
+        `• 600 = 10 นาที\n` +
+        `• 3600 = 1 ชั่วโมง\n` +
+        `• 5400 = 1h 30m`;
+      const input = prompt(msg, String(cur));
+      if (input === null) return;  // user cancelled
+      const n = parseInt(String(input).trim(), 10);
+      if (isNaN(n)) {
+        if (input.trim() === '') {
+          resetTimer(pk, code, 0);
+        } else {
+          alert('ค่าไม่ถูกต้อง / Invalid input');
+        }
+        return;
+      }
+      resetTimer(pk, code, n);
     });
   });
 }
