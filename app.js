@@ -1196,17 +1196,24 @@ function setTreeFilter(v) {
 }
 
 // ─── Unified node list (manifest drawn parts + missing.json) ──────
+// "Other" family is excluded — those are usually junk that the watcher
+// picked up by mistake (logos, hybrid templates, test files, RD Logo,
+// Beauty Panel, etc.). Kitchen parts always belong to a real family
+// (Drawer / Back-Down / Floor / Top Sup / Side Panel / Beam / Cover).
 function buildLibraryTreeNodes() {
   const nodes = new Map();
+  const isJunkFamily = (f) => !f || f === 'Other';
 
   // Add drawn parts from manifest
   const auto = manifest.auto_generated || {};
   for (const [code, entry] of Object.entries(auto)) {
+    const fam = entry.family;
+    if (isJunkFamily(fam)) continue;  // skip Other / unknown
     const softDeleted = isDrawingSoftDeleted(code);
     nodes.set(code, {
       code,
       _prefix: code.split('-')[0],
-      family: entry.family || 'Other',
+      family: fam,
       pdf: entry.pdf,
       page: entry.page_number || 1,
       exported_at: entry.exported_at,
@@ -1217,16 +1224,17 @@ function buildLibraryTreeNodes() {
     });
   }
 
-  // Overlay missing.json (missing / stale masters). For 'stale', keep the
-  // existing 'drawn' status info but mark status='stale' so user sees it.
+  // Overlay missing.json (missing / stale masters). Same Other-skip rule.
   if (missingData && Array.isArray(missingData.missing)) {
     for (const e of missingData.missing) {
+      const fam = e.family;
+      if (isJunkFamily(fam)) continue;  // skip Other / unknown
       const existing = nodes.get(e.name) || {};
       nodes.set(e.name, {
         ...existing,
         code: e.name,
         _prefix: e.name.split('-')[0],
-        family: e.family || existing.family || 'Other',
+        family: fam,
         status: e.status || 'missing',
         urn: e.urn,
         drawing_urn: e.drawing_urn,
