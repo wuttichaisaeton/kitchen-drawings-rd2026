@@ -633,7 +633,9 @@ function projectList() {
   const bentSet = loadBentSet();
   const items = Object.entries(projects).map(([key, p]) => {
     const parts = p.parts || [];
-    const drawnCount = parts.filter(part => !!auto[part.code]).length;
+    // A part is "drawn" only if it has a manifest entry AND isn't soft-deleted.
+    // Soft-deleted = workshop flagged "redo this drawing" (wrong title block etc.)
+    const drawnCount = parts.filter(part => !!auto[part.code] && !isDrawingSoftDeleted(part.code)).length;
     const bentCount = parts.filter(part => bentSet.has(bentKey(key, part.code))).length;
     return {
       key,
@@ -744,6 +746,9 @@ function renderProjectsHome() {
 }
 
 function masterForCode(code, auto) {
+  // Soft-deleted drawings: treat as if no master so the part falls into
+  // the "(no drawing yet)" group (so workshop knows it needs redoing).
+  if (isDrawingSoftDeleted(code)) return null;
   const entry = (auto || manifest.auto_generated || {})[code];
   if (!entry || !entry.pdf) return null;
   return entry.pdf.replace(/\.pdf$/i, '');
@@ -847,10 +852,10 @@ function renderProject(key) {
   const top = stack[stack.length - 1] || {};
   const filter = top.filter || 'all';
 
-  const visibleParts = filter === 'missing'
-    ? parts.filter(p => !auto[p.code])
-    : parts;
-  const missingCount = parts.filter(p => !auto[p.code]).length;
+  // "Missing" includes both: no manifest entry AND soft-deleted (flagged for redo)
+  const isMissing = (p) => !auto[p.code] || isDrawingSoftDeleted(p.code);
+  const visibleParts = filter === 'missing' ? parts.filter(isMissing) : parts;
+  const missingCount = parts.filter(isMissing).length;
 
   // Group by source master file
   const groups = groupPartsByMaster(visibleParts, auto);
