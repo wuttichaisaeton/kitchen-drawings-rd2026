@@ -40,6 +40,11 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Form elements don't inherit body font by default — force it. */
+input, button, select, textarea {
+  font-family: inherit;
+}
+
 header {
   padding: 14px 16px 12px;
   background: #1a1f24;
