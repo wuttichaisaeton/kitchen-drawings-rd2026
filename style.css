@@ -652,6 +652,41 @@ h1 {
   color: #fff;
 }
 
+/* Assembled button — same shape, orange theme to distinguish from bent (green) */
+.assembled-btn {
+  background: transparent;
+  border: 2px solid #444;
+  color: #666;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  filter: grayscale(1) opacity(0.55);
+}
+.assembled-btn:hover { filter: grayscale(0.2) opacity(1); border-color: #e07a5f; }
+.assembled-btn:active { transform: scale(0.85); }
+
+.bom-row.assembled .assembled-btn {
+  background: #5d3a2c;
+  border-color: #e07a5f;
+  color: #fff;
+  filter: none;
+}
+
+/* Visual cue when BOTH are done — slight checkmark behind the row to
+   show this part is fully complete for this project */
+.bom-row.bent.assembled {
+  background: linear-gradient(90deg, rgba(46, 160, 67, 0.04), rgba(224, 122, 95, 0.04));
+}
+
 .bom-row.bent .bom-code {
   opacity: 0.45;
   text-decoration: line-through;
@@ -701,6 +736,24 @@ h1 {
   height: 100%;
   transition: width 0.3s ease;
   border-radius: 4px;
+}
+
+/* Per-bar color overrides so the two progress bars are easy to tell apart */
+.progress-bar.bent-bar .progress-fill {
+  background: linear-gradient(90deg, #2c5d34 0%, #5dbb63 100%);
+}
+.progress-bar.assembled-bar .progress-fill {
+  background: linear-gradient(90deg, #5d3a2c 0%, #e07a5f 100%);
+}
+.progress-bar.assembled-bar {
+  margin-top: 4px;  /* small gap below the bent bar */
+}
+.bent-label.assembled-label { color: #e07a5f; }
+
+.project-badge.assembled {
+  background: #5d3a2c;
+  color: #ffd9c5;
+  border-color: #e07a5f;
 }
 
 .project-badge.bent {

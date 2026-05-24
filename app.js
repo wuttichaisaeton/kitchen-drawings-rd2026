@@ -14,7 +14,8 @@ let view = 'projects';   // 'projects' | 'library' | 'missing'
 let stack = [];          // navigation stack ('home' | {kind:'family', name} | {kind:'project', name})
 
 const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
-const LS_BENT_KEY = 'kd_bent_parts_v1';
+const LS_BENT_KEY = 'kd_bent_parts_v1';            // bent / งานพับ (per project::code)
+const LS_ASSEMBLED_KEY = 'kd_assembled_parts_v1';  // assembled / งานประกอบ (per project::code)
 const LS_COMMENTS_KEY = 'kd_comments_v1';        // { partCode: [{text, time}] }
 const LS_COMMENTS_OPEN_KEY = 'kd_comments_open_v1';  // Set<partCode>: which rows have comments panel expanded
 const LS_TIMERS_KEY = 'kd_timers_v1';             // { projectKey: { partCode: { sessions, active_start } } }
@@ -255,6 +256,35 @@ function markBent(projectKey, code, done) {
 
 function bentCountForProject(projectKey, parts) {
   const set = loadBentSet();
+  return parts.filter(p => set.has(bentKey(projectKey, p.code))).length;
+}
+
+// ── Assembled parts (per-part workshop tracking, parallel to bent) ─
+
+function loadAssembledSet() {
+  try {
+    const raw = localStorage.getItem(LS_ASSEMBLED_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch { return new Set(); }
+}
+
+function saveAssembledSet(set) {
+  try { localStorage.setItem(LS_ASSEMBLED_KEY, JSON.stringify([...set])); } catch {}
+}
+
+function isAssembled(projectKey, code) { return loadAssembledSet().has(bentKey(projectKey, code)); }
+
+function markAssembled(projectKey, code, done) {
+  const s = loadAssembledSet();
+  const k = bentKey(projectKey, code);
+  if (done) s.add(k); else s.delete(k);
+  saveAssembledSet(s);
+}
+
+function assembledCountForProject(projectKey, parts) {
+  const set = loadAssembledSet();
   return parts.filter(p => set.has(bentKey(projectKey, p.code))).length;
 }
 
@@ -678,12 +708,14 @@ function projectList() {
   const projects = manifest.projects || {};
   const auto = manifest.auto_generated || {};
   const bentSet = loadBentSet();
+  const assembledSet = loadAssembledSet();
   const items = Object.entries(projects).map(([key, p]) => {
     const parts = p.parts || [];
     // A part is "drawn" only if it has a manifest entry AND isn't soft-deleted.
     // Soft-deleted = workshop flagged "redo this drawing" (wrong title block etc.)
     const drawnCount = parts.filter(part => !!auto[part.code] && !isDrawingSoftDeleted(part.code)).length;
     const bentCount = parts.filter(part => bentSet.has(bentKey(key, part.code))).length;
+    const assembledCount = parts.filter(part => assembledSet.has(bentKey(key, part.code))).length;
     return {
       key,
       ...p,
@@ -692,6 +724,8 @@ function projectList() {
       missing_count: parts.length - drawnCount,
       bent_count: bentCount,
       bent_pct: parts.length ? Math.round((bentCount * 100) / parts.length) : 0,
+      assembled_count: assembledCount,
+      assembled_pct: parts.length ? Math.round((assembledCount * 100) / parts.length) : 0,
     };
   });
   // Sort: active first by updated_at desc, then completed by updated_at desc
@@ -773,13 +807,19 @@ function renderProjectsHome() {
     const bentBadge = p.bent_count > 0
       ? `<span class="project-badge bent">🔨 ${p.bent_count}/${uniq} bent (${p.bent_pct}%)</span>`
       : '';
-    const progressBar = `<div class="progress-bar"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>`;
+    const assembledBadge = p.assembled_count > 0
+      ? `<span class="project-badge assembled">🧩 ${p.assembled_count}/${uniq} assembled (${p.assembled_pct}%)</span>`
+      : '';
+    const progressBars = `
+      <div class="progress-bar bent-bar" title="🔨 Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
+      <div class="progress-bar assembled-bar" title="🧩 Assembly"><div class="progress-fill" style="width:${p.assembled_pct}%"></div></div>
+    `;
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         <div class="project-name">${escapeHtml(p.name || p.key)}${statusBadge}</div>
         <div class="project-meta">${escapeHtml(updated)} · ${uniq} unique · ${totalQty} pcs · ${p.drawn_count}/${uniq} drawn</div>
-        ${progressBar}
-        <div class="project-badges">${drawingBadge}${bentBadge}</div>
+        ${progressBars}
+        <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
       </div>`;
   }).join('');
 
@@ -827,6 +867,7 @@ function renderBomRow(p, projectKey) {
   const url = pdfUrlForCode(p.code);
   const hasDrawing = !!url;
   const bent = projectKey ? isBent(projectKey, p.code) : false;
+  const assembled = projectKey ? isAssembled(projectKey, p.code) : false;
   const comments = getComments(p.code);
   const cOpen = isCommentsOpen(p.code);
   const cBadgeHtml = comments.length > 0
@@ -871,7 +912,7 @@ function renderBomRow(p, projectKey) {
     ${showReset ? `<button class="timer-reset" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}" aria-label="Edit / Reset timer" title="Edit or reset timer">↻</button>` : ''}
   ` : '';
   return `
-    <div class="bom-row ${bent ? 'bent' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+    <div class="bom-row ${bent ? 'bent' : ''} ${assembled ? 'assembled' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
       <div class="bom-row-main" data-url="${escapeHtml(url)}" data-has="${hasDrawing}">
         <span class="bom-icon">${familyIcon(fam)}</span>
         <span class="bom-code">${escapeHtml(p.code)}${softDeleted ? '<span class="part-deleted-tag">DEL</span>' : ''}</span>
@@ -880,7 +921,8 @@ function renderBomRow(p, projectKey) {
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         ${deleteBtnHtml}
         ${restoreBtnHtml}
-        <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent">${bent ? '✓' : '○'}</button>
+        <button class="bent-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle bent" title="${bent ? 'Bent — click to undo' : 'Mark as bent (folded)'}">🔨</button>
+        <button class="assembled-btn" data-code="${escapeHtml(p.code)}" aria-label="Toggle assembled" title="${assembled ? 'Assembled — click to undo' : 'Mark as assembled'}">🧩</button>
       </div>
       ${commentsPanel}
     </div>`;
@@ -931,16 +973,23 @@ function renderProject(key) {
 
   const bentCount = bentCountForProject(key, parts);
   const bentPct = parts.length ? Math.round((bentCount * 100) / parts.length) : 0;
+  const assembledCount = assembledCountForProject(key, parts);
+  const assembledPct = parts.length ? Math.round((assembledCount * 100) / parts.length) : 0;
 
   ROOT.innerHTML = `
     <button class="back-btn">← Back</button>
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
     <div class="bent-summary">
       <div class="bent-row">
-        <span class="bent-label">🔨 Bending progress</span>
-        <span class="bent-stat">${bentCount}/${parts.length} parts done · ${bentPct}%</span>
+        <span class="bent-label">🔨 Bending</span>
+        <span class="bent-stat">${bentCount}/${parts.length} · ${bentPct}%</span>
       </div>
-      <div class="progress-bar large"><div class="progress-fill" style="width:${bentPct}%"></div></div>
+      <div class="progress-bar large bent-bar"><div class="progress-fill" style="width:${bentPct}%"></div></div>
+      <div class="bent-row">
+        <span class="bent-label assembled-label">🧩 Assembly</span>
+        <span class="bent-stat">${assembledCount}/${parts.length} · ${assembledPct}%</span>
+      </div>
+      <div class="progress-bar large assembled-bar"><div class="progress-fill" style="width:${assembledPct}%"></div></div>
     </div>
     <div class="project-actions">
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
@@ -1032,6 +1081,15 @@ function renderProject(key) {
       e.stopPropagation();
       const code = btn.dataset.code;
       markBent(key, code, !isBent(key, code));
+      render();
+    });
+  });
+
+  ROOT.querySelectorAll('.assembled-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const code = btn.dataset.code;
+      markAssembled(key, code, !isAssembled(key, code));
       render();
     });
   });
