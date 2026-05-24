@@ -172,17 +172,22 @@ function familyOrder(a, b) {
 // ──────────────────────────────────────────────────────────────────────
 
 function _remapFamilyForCode(code, originalFamily) {
+  const upper = (code || '').toUpperCase();
+  const prefix2 = upper.slice(0, 2);
+
+  // ─── Prefix-first hard rules (override Fusion's family classifier) ──
+  // Some prefixes ALWAYS belong to a specific Library chip regardless
+  // of how the Fusion-side family classifier tagged them.
+  //
+  // FN / FC → "FL" (standalone floor beams / rails)
+  //   Per user 2026-05-24: "FN FC ให้ อยู่ในโฟลเดอร์นี้"
+  if (prefix2 === 'FN' || prefix2 === 'FC') return 'FL';
+
+  // ─── Family-based rules ──────────────────────────────────────────
   if (originalFamily === 'Back-Down') return 'DW-BK';
-  if (originalFamily === 'Floor') {
-    // Split Floor by code prefix:
-    //   FN* (FN0B00, FN2BLA, FN2BNX, ...) → "FL" — standalone floor beams/rails
-    //   Everything else (DSB0F*, etc.)    → "DW-FL" — drawer-related floor parts
-    const prefix2 = (code || '').slice(0, 2).toUpperCase();
-    if (prefix2 === 'FN') return 'FL';
-    return 'DW-FL';
-  }
+  if (originalFamily === 'Floor')     return 'DW-FL';  // DSB0F-* etc.
   if (originalFamily === 'Drawer') {
-    const prefix4 = (code || '').slice(0, 4).toUpperCase();
+    const prefix4 = upper.slice(0, 4);
     if (prefix4 === 'DSV1') return 'DW-S1';
     if (prefix4 === 'DSV2') return 'DW-S2';
     return 'DW-S1';  // default bucket for any other Drawer-family code
