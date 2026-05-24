@@ -862,6 +862,78 @@ function saveCollapsed(set) {
   try { localStorage.setItem(LS_COLLAPSED_KEY, JSON.stringify([...set])); } catch {}
 }
 
+// ─── Project view mode (BOM list vs mindmap) ───────────────────────
+const LS_PROJECT_VIEW = 'kd_project_view_v1';
+function getProjectViewMode() {
+  try { return localStorage.getItem(LS_PROJECT_VIEW) || 'list'; }
+  catch { return 'list'; }
+}
+function setProjectViewMode(v) {
+  try { localStorage.setItem(LS_PROJECT_VIEW, v); } catch {}
+}
+
+// Project mindmap drill-down center (one per project, persisted)
+const LS_PROJECT_CENTER = 'kd_project_center_v1';
+function getProjectMindmapCenter(projectKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_CENTER) || '{}');
+    return all[projectKey] || null;
+  } catch { return null; }
+}
+function setProjectMindmapCenter(projectKey, code) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_CENTER) || '{}');
+    if (code) all[projectKey] = code; else delete all[projectKey];
+    localStorage.setItem(LS_PROJECT_CENTER, JSON.stringify(all));
+  } catch {}
+}
+
+// Build hierarchy tree from project parts using same wildcard prefix
+// rules as the Library Tree tab (0/X positions = wildcards). Returns
+// { roots, all } same as buildLibraryTree, but preserves qty + project
+// context. Soft-deleted parts use status 'deleted'.
+function buildProjectTree(parts, projectKey) {
+  const auto = manifest.auto_generated || {};
+  const nodes = parts.map(p => {
+    const entry = auto[p.code];
+    const softDeleted = isDrawingSoftDeleted(p.code);
+    let status = 'missing';
+    if (entry) status = softDeleted ? 'deleted' : 'drawn';
+    return {
+      code: p.code,
+      qty: p.qty || 1,
+      _prefix: p.code.split('-')[0],
+      family: p.family || 'Other',
+      pdf: entry ? entry.pdf : null,
+      page: entry ? (entry.page_number || 1) : 1,
+      status,
+      children: [],
+      parent: null,
+    };
+  });
+  for (const node of nodes) {
+    let best = null, bestSpec = -1;
+    for (const cand of nodes) {
+      if (cand === node) continue;
+      if (!_isAncestorPrefix(cand._prefix, node._prefix)) continue;
+      const s = _specificity(cand._prefix);
+      if (s > bestSpec) { bestSpec = s; best = cand; }
+    }
+    if (best) {
+      node.parent = best;
+      best.children.push(node);
+    }
+  }
+  function sortKids(n) {
+    n.children.sort((a, b) => a.code.localeCompare(b.code));
+    n.children.forEach(sortKids);
+  }
+  const roots = nodes.filter(n => !n.parent);
+  roots.sort((a, b) => a.code.localeCompare(b.code));
+  roots.forEach(sortKids);
+  return { roots, all: nodes };
+}
+
 function renderBomRow(p, projectKey) {
   const fam = p.family || 'Other';
   const url = pdfUrlForCode(p.code);
@@ -928,6 +1000,445 @@ function renderBomRow(p, projectKey) {
     </div>`;
 }
 
+// ─── Project mindmap renderer (HTML + SVG) ─────────────────────────
+// Spoke design — wider than Tree spokes so we can pack inline actions:
+//   row 1: code, qty, status badge, comment count
+//   row 2: ▶ timer button + elapsed text + 🔨 bent + 🧩 assembled
+// Uses pure SVG (no foreignObject) for cross-browser/iPad reliability.
+const PSPOKE_W = 240;
+const PSPOKE_H = 64;
+
+function _renderProjectMindmapHtml(projectKey, project, parts) {
+  const tree = buildProjectTree(parts, projectKey);
+  const { roots, all } = tree;
+  if (!roots.length) {
+    return '<p class="loading">No parts to show</p>';
+  }
+
+  const currentCenterCode = getProjectMindmapCenter(projectKey);
+  let centerNode = null;
+  let neighbors;
+  let centerLabel;
+  if (currentCenterCode) {
+    centerNode = _findNodeByCode(roots, currentCenterCode);
+    if (!centerNode) {
+      setProjectMindmapCenter(projectKey, null);
+      neighbors = roots;
+      centerLabel = project.name || projectKey;
+    } else {
+      neighbors = centerNode.children || [];
+      centerLabel = centerNode.code;
+    }
+  } else {
+    neighbors = roots;
+    centerLabel = project.name || projectKey;
+  }
+
+  // Breadcrumb path
+  const breadcrumb = [{ kind: 'project', label: project.name || projectKey }];
+  if (centerNode) {
+    const chain = [];
+    let n = centerNode;
+    while (n) { chain.unshift(n); n = n.parent; }
+    for (let i = 0; i < chain.length; i++) {
+      breadcrumb.push({
+        kind: i === chain.length - 1 ? 'current' : 'node',
+        label: chain[i].code,
+        code: chain[i].code,
+      });
+    }
+  }
+
+  // Layout — chord-based spacing tuned for the larger spokes
+  const minChord = PSPOKE_W + 24;  // wider chord because spokes are wider
+  const n = neighbors.length;
+  let positioned;
+  if (n === 0) {
+    positioned = [];
+  } else if (n === 1) {
+    positioned = [{ node: neighbors[0], x: 0, y: -260, _autoX: 0, _autoY: -260, ring: 0 }];
+  } else {
+    const singleR = minChord / (2 * Math.sin(Math.PI / n));
+    const SINGLE_MAX = 320;  // tighter than tree because spokes are bigger
+    if (singleR <= SINGLE_MAX) {
+      const r = Math.max(220, singleR);
+      positioned = neighbors.map((node, i) => {
+        const a = (2 * Math.PI * i / n) - Math.PI / 2;
+        const x = r * Math.cos(a), y = r * Math.sin(a);
+        return { node, x, y, _autoX: x, _autoY: y, ring: 0 };
+      });
+    } else {
+      // Two-ring layout
+      const innerN = Math.ceil(n / 2);
+      const outerN = n - innerN;
+      const innerR = Math.max(240, minChord / (2 * Math.sin(Math.PI / Math.max(innerN, 2))));
+      const outerR = innerR + PSPOKE_H + 50;
+      positioned = [];
+      for (let i = 0; i < innerN; i++) {
+        const a = (2 * Math.PI * i / innerN) - Math.PI / 2;
+        const x = innerR * Math.cos(a), y = innerR * Math.sin(a);
+        positioned.push({ node: neighbors[i], x, y, _autoX: x, _autoY: y, ring: 0 });
+      }
+      for (let i = 0; i < outerN; i++) {
+        const a = (2 * Math.PI * i / outerN) - Math.PI / 2 + (Math.PI / outerN);
+        const x = outerR * Math.cos(a), y = outerR * Math.sin(a);
+        positioned.push({ node: neighbors[innerN + i], x, y, _autoX: x, _autoY: y, ring: 1 });
+      }
+    }
+  }
+
+  // Apply user drag overrides
+  const centerKey = `project:${projectKey}:${currentCenterCode || ''}`;
+  const overrides = getPositionOverrides()[centerKey] || {};
+  let hasAnyOverride = false;
+  for (const p of positioned) {
+    const ov = overrides[p.node.code];
+    if (ov) {
+      p.x += ov.dx;
+      p.y += ov.dy;
+      p._moved = true;
+      hasAnyOverride = true;
+    }
+  }
+
+  const maxR = positioned.length
+    ? Math.max(...positioned.map(p => Math.hypot(p.x, p.y)))
+    : 220;
+  const padding = (PSPOKE_W / 2) + 30;
+  const half = maxR + padding;
+  const W = 2 * half, H = 2 * half;
+  const cx = half, cy = half;
+  for (const p of positioned) { p.x += cx; p.y += cy; p._autoX += cx; p._autoY += cy; }
+
+  // Edges
+  const edges = positioned.map(p => {
+    const mx = (cx + p.x) / 2, my = (cy + p.y) / 2;
+    const dx = p.x - cx, dy = p.y - cy;
+    const len = Math.hypot(dx, dy) || 1;
+    const bx = -dy / len * 22, by = dx / len * 22;
+    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${cx} ${cy} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
+  }).join('');
+
+  // Center node
+  const centerColorVars = centerNode ? famVars(centerNode.family || 'Other') : 'color: #4a90e2';
+  const centerSvg = centerNode ? `
+    <g class="mm-center mm-center-node" transform="translate(${cx}, ${cy})" style="${centerColorVars}">
+      <rect x="-130" y="-36" width="260" height="72" rx="36" fill="var(--fam-color)" stroke="#fff" stroke-width="3" />
+      <text text-anchor="middle" y="-6" font-size="12" fill="#fff" opacity="0.85">↑ click to go back</text>
+      <text text-anchor="middle" y="18" font-size="14" font-weight="700" fill="#fff">${escapeHtml(centerLabel)}</text>
+    </g>` : `
+    <g class="mm-center mm-center-project" transform="translate(${cx}, ${cy})">
+      <circle r="80" fill="#4a90e2" stroke="#fff" stroke-width="4" opacity="0.95" />
+      <text text-anchor="middle" y="-4" font-size="13" font-weight="700" fill="#fff">📋 PROJECT</text>
+      <text text-anchor="middle" y="18" font-size="11" fill="#fff" opacity="0.9">${escapeHtml(centerLabel)}</text>
+    </g>`;
+
+  // Spokes — large cards with inline buttons
+  const spokes = positioned.map(p => _renderProjectSpoke(p, projectKey)).join('');
+
+  // Breadcrumb
+  const breadcrumbHtml = breadcrumb.map((b, i) => {
+    const sep = i > 0 ? '<span class="mm-bc-sep">›</span>' : '';
+    const cls = b.kind + (b.kind === 'current' ? ' current' : '');
+    return `${sep}<span class="mm-bc-item ${cls}" data-kind="${b.kind}" data-code="${escapeHtml(b.code || '')}">${escapeHtml(b.label || '')}</span>`;
+  }).join('');
+
+  return `
+    <div class="mindmap-wrapper project-mindmap">
+      <div class="mindmap-breadcrumb">
+        <div class="mm-bc-trail">${breadcrumbHtml}</div>
+        ${hasAnyOverride ? `<button class="mm-reset-layout" id="pm-reset-layout" data-key="${escapeHtml(centerKey)}">↻ Reset layout</button>` : ''}
+      </div>
+      <div class="mindmap-canvas">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" class="mindmap-svg" data-cx="${cx}" data-cy="${cy}">
+          ${edges}
+          ${centerSvg}
+          ${spokes}
+        </svg>
+      </div>
+      <p class="hint">
+        Click spoke center → drill in · 🔨/🧩/▶/💬 buttons act inline · drag spoke to reposition · click center → go back
+        ${neighbors.length === 0 ? '<br><strong>⚠️ No children here</strong> — click center to go back' : ''}
+      </p>
+    </div>
+  `;
+}
+
+// Render one spoke (pure SVG, ~240×64). Sub-buttons (.pm-btn) each
+// have their own data-action so the click handler can route correctly.
+function _renderProjectSpoke(p, projectKey) {
+  const n = p.node;
+  const code = n.code;
+  const fam = n.family || 'Other';
+  const hasChildren = n.children && n.children.length > 0;
+  const halfW = PSPOKE_W / 2;  // 120
+  const halfH = PSPOKE_H / 2;  // 32
+
+  // Status badge color
+  const statusInfo = {
+    drawn:   { color: '#4dd06a', text: '✓' },
+    missing: { color: '#f85149', text: '⚠' },
+    stale:   { color: '#ffc107', text: '⏰' },
+    deleted: { color: '#dc3545', text: 'DEL' },
+  }[n.status] || { color: '#888', text: '?' };
+
+  // Comments
+  const comments = getComments(code);
+  const cCount = comments.length;
+
+  // Bent / assembled / timer states
+  const bent = isBent(projectKey, code);
+  const assembled = isAssembled(projectKey, code);
+  const tRunning = isTimerRunning(projectKey, code);
+  const tSec = getTimerTotalSeconds(projectKey, code);
+  const tText = formatDuration(tSec);
+
+  // Drill-in arrow icon
+  const drillHint = hasChildren ? '▶' : '';
+  const childCount = hasChildren ? n.children.length : '';
+
+  // Button positions — bottom row of card
+  const btnY = halfH - 14;
+  const timerX = -halfW + 18;   // far left
+  const timerTextX = timerX + 18;
+  const bentX = halfW - 60;     // right side
+  const asmX = halfW - 24;
+  // Top-right: comment + status badge
+  const cmtX = halfW - 18;
+  const cmtY = -halfH + 14;
+  const stsX = halfW - 48;
+  const stsY = -halfH + 14;
+
+  return `
+    <g class="pm-spoke ${hasChildren ? 'has-children' : 'is-leaf'} ${p._moved ? 'moved' : ''} ${bent ? 'is-bent' : ''} ${assembled ? 'is-assembled' : ''}"
+       data-code="${escapeHtml(code)}" data-auto-x="${p._autoX}" data-auto-y="${p._autoY}"
+       transform="translate(${p.x}, ${p.y})" style="${famVars(fam)}">
+
+      <!-- Background card -->
+      <rect class="pm-spoke-bg" x="${-halfW}" y="${-halfH}" width="${PSPOKE_W}" height="${PSPOKE_H}" rx="10"
+            fill="var(--fam-tint)" stroke="var(--fam-color)" stroke-width="2" />
+
+      <!-- Top-left: code + qty + drill hint -->
+      <text class="pm-code" x="${-halfW + 12}" y="${-halfH + 18}" font-size="12" font-weight="700" fill="#e4e4e4">${escapeHtml(code)}</text>
+      <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 32}" font-size="10" fill="#aaa">×${n.qty} ${drillHint ? `· ${drillHint} ${childCount}` : ''}</text>
+
+      <!-- Top-right: status + comments -->
+      <g class="pm-status" transform="translate(${stsX}, ${stsY})">
+        <rect x="-12" y="-9" width="24" height="14" rx="7" fill="${statusInfo.color}" />
+        <text text-anchor="middle" dy="2" font-size="8" font-weight="700" fill="#fff">${statusInfo.text}</text>
+      </g>
+      <g class="pm-btn pm-comments" data-action="comments" transform="translate(${cmtX}, ${cmtY})">
+        <circle r="10" fill="${cCount ? '#ffc107' : 'rgba(255,255,255,0.08)'}" />
+        <text text-anchor="middle" dy="3" font-size="10" fill="${cCount ? '#000' : '#aaa'}">💬</text>
+        ${cCount ? `<text text-anchor="middle" dy="3" x="14" font-size="8" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
+      </g>
+
+      <!-- Bottom row: timer, bent, assembled -->
+      <g class="pm-btn pm-timer ${tRunning ? 'on' : ''}" data-action="timer" transform="translate(${timerX}, ${btnY})">
+        <circle r="12" fill="${tRunning ? '#4dd06a' : 'rgba(255,255,255,0.08)'}" stroke="${tRunning ? '#4dd06a' : '#666'}" stroke-width="2" />
+        <text text-anchor="middle" dy="3" font-size="10" fill="${tRunning ? '#000' : '#aaa'}">${tRunning ? '⏸' : '▶'}</text>
+      </g>
+      ${tText ? `<text class="pm-timer-text ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(code)}" x="${timerTextX}" y="${btnY + 3}" font-size="10" fill="${tRunning ? '#4dd06a' : '#aaa'}">${escapeHtml(tText)}</text>` : ''}
+
+      <g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${bentX}, ${btnY})">
+        <circle r="12" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.08)'}" stroke="${bent ? '#5dbb63' : '#666'}" stroke-width="2" />
+        <text text-anchor="middle" dy="3" font-size="11">🔨</text>
+      </g>
+      <g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${asmX}, ${btnY})">
+        <circle r="12" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.08)'}" stroke="${assembled ? '#e07a5f' : '#666'}" stroke-width="2" />
+        <text text-anchor="middle" dy="3" font-size="11">🧩</text>
+      </g>
+    </g>`;
+}
+
+// Wire all interactivity for the project mindmap (drag + button clicks +
+// breadcrumb + center navigation). Called after innerHTML is set.
+function _wireProjectMindmap(projectKey, visibleParts) {
+  const svgEl = ROOT.querySelector('.mindmap-svg');
+  if (!svgEl) return;
+  const cx = parseFloat(svgEl.dataset.cx);
+  const cy = parseFloat(svgEl.dataset.cy);
+
+  const project = manifest.projects[projectKey];
+  const tree = buildProjectTree(visibleParts, projectKey);
+  const { roots } = tree;
+  const currentCenter = getProjectMindmapCenter(projectKey);
+  const centerNode = currentCenter ? _findNodeByCode(roots, currentCenter) : null;
+
+  // Breadcrumb navigation
+  ROOT.querySelectorAll('.mm-bc-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const kind = el.dataset.kind;
+      if (kind === 'project') {
+        setProjectMindmapCenter(projectKey, null);
+      } else if (kind === 'node') {
+        setProjectMindmapCenter(projectKey, el.dataset.code);
+      }
+      render();
+    });
+  });
+
+  // Center → go up 1 level
+  ROOT.querySelector('.mm-center')?.addEventListener('click', () => {
+    if (centerNode) {
+      setProjectMindmapCenter(projectKey,
+        centerNode.parent ? centerNode.parent.code : null);
+      render();
+    }
+  });
+
+  // Reset layout button
+  ROOT.querySelector('#pm-reset-layout')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (confirm('Restore auto-layout for this view?')) {
+      const key = ev.target.dataset.key;
+      clearOverridesForCenter(key);
+      render();
+    }
+  });
+
+  // Drag + click handling on spokes
+  const centerKeyForOverrides = `project:${projectKey}:${currentCenter || ''}`;
+  let activeDrag = null;
+
+  function onMove(ev) {
+    if (!activeDrag || ev.pointerId !== activeDrag.pointerId) return;
+    ev.preventDefault();
+    const pt = _svgPoint(svgEl, ev);
+    const dx = pt.x - activeDrag.startSvgX;
+    const dy = pt.y - activeDrag.startSvgY;
+    if (!activeDrag.moved && Math.hypot(dx, dy) > 4) {
+      activeDrag.moved = true;
+      activeDrag.spoke.classList.add('dragging');
+    }
+    if (activeDrag.moved) {
+      const nx = activeDrag.curX + dx;
+      const ny = activeDrag.curY + dy;
+      activeDrag.spoke.setAttribute('transform', `translate(${nx}, ${ny})`);
+      const edge = svgEl.querySelector(`.mm-edge[data-target="${CSS.escape(activeDrag.code)}"]`);
+      if (edge) {
+        const mx = (cx + nx) / 2, my = (cy + ny) / 2;
+        const ddx = nx - cx, ddy = ny - cy;
+        const len = Math.hypot(ddx, ddy) || 1;
+        const bx = -ddy / len * 22, by = ddx / len * 22;
+        edge.setAttribute('d', `M ${cx} ${cy} Q ${mx + bx} ${my + by} ${nx} ${ny}`);
+      }
+    }
+  }
+
+  function onEnd(ev) {
+    if (!activeDrag || ev.pointerId !== activeDrag.pointerId) return;
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onEnd);
+    document.removeEventListener('pointercancel', onEnd);
+    const drag = activeDrag;
+    activeDrag = null;
+    drag.spoke.classList.remove('dragging');
+    if (drag.moved) {
+      const pt = _svgPoint(svgEl, ev);
+      const dx = pt.x - drag.startSvgX;
+      const dy = pt.y - drag.startSvgY;
+      const finalX = drag.curX + dx;
+      const finalY = drag.curY + dy;
+      const dxFromAuto = finalX - drag.autoX;
+      const dyFromAuto = finalY - drag.autoY;
+      setSpokeOverride(centerKeyForOverrides, drag.code, dxFromAuto, dyFromAuto);
+      render();  // re-render to show Reset button
+    } else {
+      // Click on body — drill in or leaf-action
+      const node = _findNodeByCode(roots, drag.code);
+      if (!node) return;
+      if (node.children && node.children.length > 0) {
+        setProjectMindmapCenter(projectKey, drag.code);
+        render();
+      } else {
+        // Leaf — try open PDF
+        const url = pdfUrlForCode(drag.code);
+        if (url) window.open(url, '_blank', 'noopener');
+      }
+    }
+  }
+
+  ROOT.querySelectorAll('.pm-spoke').forEach(spoke => {
+    const code = spoke.dataset.code;
+
+    spoke.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      // Was it a button click? Buttons route their own actions.
+      const btn = ev.target.closest('.pm-btn');
+      if (btn) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const action = btn.dataset.action;
+        if (action === 'timer') {
+          if (isTimerRunning(projectKey, code)) stopTimer(projectKey, code);
+          else                                   startTimer(projectKey, code);
+        } else if (action === 'bent') {
+          markBent(projectKey, code, !isBent(projectKey, code));
+          render();
+        } else if (action === 'assembled') {
+          markAssembled(projectKey, code, !isAssembled(projectKey, code));
+          render();
+        } else if (action === 'comments') {
+          toggleCommentsOpen(code);
+          render();
+        }
+        return;
+      }
+      // Body click — start drag/click tracking
+      ev.preventDefault();
+      ev.stopPropagation();
+      const pt = _svgPoint(svgEl, ev);
+      // Find current spoke position from its transform
+      const m = spoke.getAttribute('transform').match(/translate\(([-\d.]+),\s*([-\d.]+)\)/);
+      const curX = m ? parseFloat(m[1]) : 0;
+      const curY = m ? parseFloat(m[2]) : 0;
+      // Find auto position by looking up positioned array
+      // We recompute it here to avoid dependency on closure scope
+      const positioned = _projectSpokesAutoPositions(spoke);
+      const autoP = positioned[code];
+      const autoX = autoP ? autoP.x : curX;
+      const autoY = autoP ? autoP.y : curY;
+      activeDrag = {
+        spoke, code,
+        startSvgX: pt.x, startSvgY: pt.y,
+        curX, curY,
+        autoX, autoY,
+        moved: false,
+        pointerId: ev.pointerId,
+      };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onEnd);
+      document.addEventListener('pointercancel', onEnd);
+    });
+  });
+}
+
+// Reads the auto positions (before overrides) from data-* attributes on
+// the SVG so drag-end can compute the delta to save. Stored as JSON on
+// the SVG root for compactness.
+function _projectSpokesAutoPositions(spokeEl) {
+  const svg = spokeEl.closest('svg');
+  if (!svg) return {};
+  if (svg._autoPositionsCache) return svg._autoPositionsCache;
+  // Walk all spokes and extract their CURRENT transform as a fallback.
+  // Auto positions are also stored on each spoke via data-auto-x/y when rendered.
+  const out = {};
+  svg.querySelectorAll('.pm-spoke').forEach(el => {
+    const code = el.dataset.code;
+    const ax = parseFloat(el.dataset.autoX);
+    const ay = parseFloat(el.dataset.autoY);
+    if (!isNaN(ax) && !isNaN(ay)) {
+      out[code] = { x: ax, y: ay };
+    } else {
+      const m = el.getAttribute('transform').match(/translate\(([-\d.]+),\s*([-\d.]+)\)/);
+      out[code] = { x: m ? parseFloat(m[1]) : 0, y: m ? parseFloat(m[2]) : 0 };
+    }
+  });
+  svg._autoPositionsCache = out;
+  return out;
+}
+
 function renderProject(key) {
   const project = (manifest.projects || {})[key];
   if (!project) {
@@ -937,6 +1448,7 @@ function renderProject(key) {
   const completed = isCompleted(key);
   const parts = project.parts || [];
   const auto = manifest.auto_generated || {};
+  const viewMode = getProjectViewMode();
 
   const top = stack[stack.length - 1] || {};
   const filter = top.filter || 'all';
@@ -950,7 +1462,8 @@ function renderProject(key) {
   const groups = groupPartsByMaster(visibleParts, auto);
   const collapsed = loadCollapsed();
 
-  const groupsHtml = [...groups.entries()].map(([master, items]) => {
+  // List view (BOM rows)
+  const listHtml = (viewMode === 'list') ? [...groups.entries()].map(([master, items]) => {
     const groupId = `${key}::${master}`;
     const isCollapsed = collapsed.has(groupId);
     const totalQty = items.reduce((s, x) => s + (x.qty || 0), 0);
@@ -965,7 +1478,12 @@ function renderProject(key) {
         </div>
         <div class="master-rows">${rowsHtml}</div>
       </div>`;
-  }).join('');
+  }).join('') : '';
+
+  // Mindmap view (radial)
+  const mindmapHtml = (viewMode === 'mindmap')
+    ? _renderProjectMindmapHtml(key, project, visibleParts)
+    : '';
 
   const totalQtyAll = project.total_qty != null
     ? project.total_qty
@@ -999,9 +1517,16 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
       </div>
-      <button class="action-btn" id="toggle-all" data-state="collapsed"><span class="toggle-arrow">▶</span> <span class="toggle-label">Expand all</span></button>
+      <div class="view-toggle-group">
+        <button class="view-toggle-btn ${viewMode === 'list' ? 'active' : ''}" data-view="list" title="List view">☰ List</button>
+        <button class="view-toggle-btn ${viewMode === 'mindmap' ? 'active' : ''}" data-view="mindmap" title="Mindmap view">🌳 Mindmap</button>
+      </div>
+      ${viewMode === 'list' ? '<button class="action-btn" id="toggle-all" data-state="collapsed"><span class="toggle-arrow">▶</span> <span class="toggle-label">Expand all</span></button>' : ''}
     </div>
-    <div class="master-list">${groupsHtml || '<p class="loading">All parts have drawings ✓</p>'}</div>
+    ${viewMode === 'list'
+      ? `<div class="master-list">${listHtml || '<p class="loading">All parts have drawings ✓</p>'}</div>`
+      : mindmapHtml
+    }
   `;
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
@@ -1015,6 +1540,17 @@ function renderProject(key) {
       render();
     });
   });
+  // View-mode toggle (list ↔ mindmap)
+  ROOT.querySelectorAll('.view-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setProjectViewMode(btn.dataset.view);
+      render();
+    });
+  });
+  // Wire mindmap events (only when mindmap view is active)
+  if (viewMode === 'mindmap') {
+    _wireProjectMindmap(key, visibleParts);
+  }
 
   // Master-group collapsible
   ROOT.querySelectorAll('.master-header').forEach(h => {
