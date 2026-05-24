@@ -238,8 +238,8 @@ function renderProjectsHome() {
 
   if (!items.length) {
     ROOT.innerHTML = `
-      <p class="loading">ยังไม่มี Projects<br><br>
-      เปิด project assembly ใน Fusion แล้วรัน <code>CC_ProjectBOM</code></p>`;
+      <p class="loading">No projects yet<br><br>
+      Open a project assembly in Fusion and run <code>CC_ProjectBOM</code></p>`;
     COUNT_EL.textContent = '';
     return;
   }
@@ -327,7 +327,7 @@ function renderBomRow(p, projectKey) {
 function renderProject(key) {
   const project = (manifest.projects || {})[key];
   if (!project) {
-    ROOT.innerHTML = `<p class="loading">Project ไม่พบ: ${escapeHtml(key)}</p>`;
+    ROOT.innerHTML = `<p class="loading">Project not found: ${escapeHtml(key)}</p>`;
     return;
   }
   const completed = isCompleted(key);
@@ -371,7 +371,7 @@ function renderProject(key) {
   const bentPct = parts.length ? Math.round((bentCount * 100) / parts.length) : 0;
 
   ROOT.innerHTML = `
-    <button class="back-btn">← กลับ</button>
+    <button class="back-btn">← Back</button>
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
     <div class="bent-summary">
       <div class="bent-row">
@@ -390,7 +390,7 @@ function renderProject(key) {
       </div>
       <button class="action-btn" id="toggle-all" data-state="collapsed"><span class="toggle-arrow">▶</span> <span class="toggle-label">Expand all</span></button>
     </div>
-    <div class="master-list">${groupsHtml || '<p class="loading">ทุก part มี drawing แล้ว ✓</p>'}</div>
+    <div class="master-list">${groupsHtml || '<p class="loading">All parts have drawings ✓</p>'}</div>
   `;
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
@@ -490,7 +490,7 @@ function renderProject(key) {
 
 // ─── Hierarchy tree for Missing tab ────────────────────────────────
 // Stainless Kitchen naming rule (per user):
-//   "ตัวพ่อ" (parent/umbrella) uses 0 or X at variant positions.
+//   Parent/umbrella files use "0" or "X" at variant positions.
 //   So if name A has "0" or "X" where B has a specific letter at the
 //   same position, A is an ANCESTOR of B (parent or higher).
 //
@@ -575,10 +575,10 @@ function renderMissingHome() {
   if (!missingData || !Array.isArray(missingData.missing)) {
     ROOT.innerHTML = `
       <div class="empty-state">
-        <h2>⚠️ ยังไม่มีข้อมูล Missing</h2>
-        <p>รัน <code>CC_ScanMissingDrawings</code> ใน Fusion เพื่อ scan
-        Cloud project + create <code>missing.json</code></p>
-        <p>หลัง sync (~1 นาที) refresh page นี้ → จะเห็น list</p>
+        <h2>⚠️ No missing data</h2>
+        <p>Run <code>CC_ScanMissingDrawings</code> in Fusion to scan
+        the Cloud project and create <code>missing.json</code></p>
+        <p>After sync (~1 min), refresh this page to see the list</p>
       </div>`;
     COUNT_EL.textContent = '';
     return;
@@ -588,8 +588,8 @@ function renderMissingHome() {
   if (!items.length) {
     ROOT.innerHTML = `
       <div class="empty-state">
-        <h2>🎉 ไม่มี missing drawing</h2>
-        <p>ทุก master ใน "${escapeHtml(missingData.project_name || 'project')}" มี drawing คู่กันครบ</p>
+        <h2>🎉 No missing drawings</h2>
+        <p>All masters in "${escapeHtml(missingData.project_name || 'project')}" have paired drawings</p>
         <p class="muted">Last scan: ${escapeHtml(fmtDate(missingData.scanned_at))}</p>
       </div>`;
     COUNT_EL.textContent = '0 missing';
@@ -684,7 +684,7 @@ function renderMissingHome() {
           <span class="toggle-label">${allCollapsed ? 'Expand all' : 'Collapse all'}</span>
         </button>
       </div>
-      <p class="hint">⏰ <strong>outdated</strong> = master ถูก save หลัง drawing → ต้อง re-export. 🚫 <strong>no drawing</strong> = ยังไม่เคยเขียน</p>
+      <p class="hint">⏰ <strong>outdated</strong> = master saved after drawing — needs re-export. 🚫 <strong>no drawing</strong> = not yet drawn</p>
     </div>
     ${groupsHtml}`;
   COUNT_EL.textContent = `${items.length} missing`;
@@ -777,7 +777,7 @@ function renderLibraryHome() {
   const visible = Object.keys(by).filter(f => by[f].length).sort(familyOrder);
 
   if (!visible.length) {
-    ROOT.innerHTML = '<p class="loading">ยังไม่มี drawings — รัน CC_DrawingPDFExport ใน Fusion ก่อน</p>';
+    ROOT.innerHTML = '<p class="loading">No drawings yet — run CC_DrawingPDFExport in Fusion first</p>';
     COUNT_EL.textContent = '';
     return;
   }
@@ -815,7 +815,7 @@ function renderFamily(fam) {
   }).join('');
 
   ROOT.innerHTML = `
-    <button class="back-btn">← กลับ</button>
+    <button class="back-btn">← Back</button>
     <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
     <div class="part-list">${list}</div>
   `;
@@ -855,7 +855,7 @@ function renderSearch(q) {
   }
 
   if (!matches.length) {
-    ROOT.innerHTML = `<p class="loading">ไม่พบ "${escapeHtml(q)}"</p>`;
+    ROOT.innerHTML = `<p class="loading">No results for "${escapeHtml(q)}"</p>`;
     COUNT_EL.textContent = '0 results';
     return;
   }
@@ -924,9 +924,9 @@ document.querySelectorAll('.tab').forEach(btn => {
     updateSearchClear();
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
     SEARCH.placeholder =
-      view === 'projects' ? 'ค้นหา project หรือ part…' :
-      view === 'missing'  ? 'ค้นหา missing master…' :
-                            'ค้นหา part code…';
+      view === 'projects' ? 'Search project or part…' :
+      view === 'missing'  ? 'Search missing master…' :
+                            'Search part code…';
     render();
   });
 });
@@ -1005,7 +1005,7 @@ async function init() {
 
     render();
   } catch (e) {
-    ROOT.innerHTML = `<div class="error">โหลดข้อมูลไม่ได้: ${escapeHtml(e.message)}<br><br>ตรวจสอบ MANIFEST_URL ใน config.js</div>`;
+    ROOT.innerHTML = `<div class="error">Failed to load data: ${escapeHtml(e.message)}<br><br>Check MANIFEST_URL in config.js</div>`;
   }
 }
 

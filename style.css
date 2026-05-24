@@ -1,8 +1,39 @@
+@font-face {
+  font-family: "Flux Architect";
+  src: url("fonts/Flux Architect Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Flux Architect";
+  src: url("fonts/Flux Architect Italic.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Flux Architect";
+  src: url("fonts/Flux Architect Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Flux Architect";
+  src: url("fonts/Flux Architect Bold Italic.ttf") format("truetype");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
+  /* Flux Architect — primary UI font. Fallback to system sans for any
+     non-supported chars (e.g. Thai data names from Fusion projects). */
+  font-family: "Flux Architect", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", sans-serif;
   background: #0f1419;
   color: #e4e4e4;
   min-height: 100vh;
