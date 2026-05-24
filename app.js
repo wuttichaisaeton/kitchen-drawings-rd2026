@@ -19,6 +19,71 @@ const LS_COMMENTS_KEY = 'kd_comments_v1';        // { partCode: [{text, time}] }
 const LS_COMMENTS_OPEN_KEY = 'kd_comments_open_v1';  // Set<partCode>: which rows have comments panel expanded
 const LS_TIMERS_KEY = 'kd_timers_v1';             // { projectKey: { partCode: { sessions, active_start } } }
 const LS_DELETED_KEY = 'kd_deleted_drawings_v1';  // { partCode: epoch_ms }  — soft-deleted drawings (workshop "redo this")
+const LS_ADMIN_KEY = 'kd_admin_v1';               // '1' if this device is owner (เอ๋); only owner sees delete/edit buttons
+
+// ──────────────────────────────────────────────────────────────────────
+// Admin mode — only owner (เอ๋) can delete/restore/reset/edit data.
+// Workshop staff (Jack, Noom, น้อง, iPad) see read+add only.
+//
+// Toggle:
+//   • Visit  ?admin=1  → enable on this device (persists via localStorage)
+//   • Visit  ?admin=0  → disable on this device
+//   • Type   :admin    in search box → enable
+//   • Type   :admin off in search box → disable
+//
+// Gated UI:
+//   • ✕  Soft-delete drawing
+//   • ↻  Restore drawing
+//   • ↻  Timer reset / edit
+//   • ✕  Delete individual comment
+// (Adding comments, start/stop timer, mark bent — open to everyone)
+// ──────────────────────────────────────────────────────────────────────
+
+function isAdmin() {
+  try { return localStorage.getItem(LS_ADMIN_KEY) === '1'; } catch { return false; }
+}
+
+function setAdmin(on) {
+  try {
+    if (on) localStorage.setItem(LS_ADMIN_KEY, '1');
+    else localStorage.removeItem(LS_ADMIN_KEY);
+  } catch {}
+  updateAdminBadge();
+}
+
+function updateAdminBadge() {
+  let badge = document.getElementById('admin-badge');
+  const headerRow = document.querySelector('.header-row');
+  if (isAdmin()) {
+    if (!badge && headerRow) {
+      badge = document.createElement('span');
+      badge.id = 'admin-badge';
+      badge.className = 'admin-badge';
+      badge.textContent = '🔓 Admin';
+      badge.title = 'Admin mode — delete/edit enabled. Type ":admin off" in search to disable.';
+      headerRow.appendChild(badge);
+    }
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+// Apply URL flag on page load (clean URL after toggling so it doesn't
+// stay around in browser history with the admin flag).
+(function applyUrlAdminFlag() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('admin')) {
+      const v = params.get('admin');
+      if (v === '1' || v === 'on' || v === 'true') setAdmin(true);
+      else if (v === '0' || v === 'off' || v === 'false') setAdmin(false);
+      params.delete('admin');
+      const qs = params.toString();
+      const cleanUrl = window.location.origin + window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
+      window.history.replaceState({}, '', cleanUrl);
+    }
+  } catch (e) { console.warn('admin flag parse failed:', e); }
+})();
 
 // ──────────────────────────────────────────────────────────────────────
 // Utilities
@@ -715,6 +780,7 @@ function renderBomRow(p, projectKey) {
   const cBadgeHtml = comments.length > 0
     ? `<span class="comment-count">${comments.length}</span>`
     : '';
+  const admin = isAdmin();
   const commentsPanel = cOpen ? `
     <div class="comments-panel" data-code="${escapeHtml(p.code)}">
       <ul class="comments-list">
@@ -722,7 +788,7 @@ function renderBomRow(p, projectKey) {
           <li class="comment-item">
             <span class="comment-time">${escapeHtml(fmtCommentTime(c.time))}</span>
             <span class="comment-text">${escapeHtml(c.text)}</span>
-            <button class="comment-del" data-code="${escapeHtml(p.code)}" data-id="${escapeHtml(c._key || String(c.time))}" aria-label="Delete">✕</button>
+            ${admin ? `<button class="comment-del" data-code="${escapeHtml(p.code)}" data-id="${escapeHtml(c._key || String(c.time))}" aria-label="Delete">✕</button>` : ''}
           </li>`).join('') : '<li class="comment-empty">No comments yet</li>'}
       </ul>
       <form class="comment-input-wrap" data-code="${escapeHtml(p.code)}">
@@ -733,20 +799,20 @@ function renderBomRow(p, projectKey) {
   // Soft-delete state — entry in manifest BUT marked as needs-redo
   const hasManifestEntry = !!((manifest.auto_generated || {})[p.code]);
   const softDeleted = isDrawingSoftDeleted(p.code);
-  // ✕ button — show only when drawing physically exists AND not soft-deleted
-  const deleteBtnHtml = (hasManifestEntry && !softDeleted) ? `
+  // ✕ button — show only when drawing physically exists AND not soft-deleted (admin only)
+  const deleteBtnHtml = (admin && hasManifestEntry && !softDeleted) ? `
     <button class="part-delete" data-code="${escapeHtml(p.code)}" aria-label="Mark drawing for redo" title="Mark drawing as needs redo (wrong title block etc.)">✕</button>
   ` : '';
-  // ↻ restore button — show only when soft-deleted (so user can undo)
-  const restoreBtnHtml = softDeleted ? `
+  // ↻ restore button — show only when soft-deleted (so user can undo, admin only)
+  const restoreBtnHtml = (admin && softDeleted) ? `
     <button class="part-restore" data-code="${escapeHtml(p.code)}" aria-label="Restore drawing" title="Undo delete — restore drawing">↻</button>
   ` : '';
 
   const tRunning = projectKey ? isTimerRunning(projectKey, p.code) : false;
   const tSeconds = projectKey ? getTimerTotalSeconds(projectKey, p.code) : 0;
   const tText = formatDuration(tSeconds);
-  // Reset button shown when has any accumulated time (running or stopped)
-  const showReset = projectKey && tSeconds > 0;
+  // Reset button shown when has any accumulated time (running or stopped) AND admin
+  const showReset = projectKey && tSeconds > 0 && admin;
   const timerHtml = projectKey ? `
     <span class="timer-elapsed ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}">${escapeHtml(tText)}</span>
     <button class="timer-btn ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(p.code)}" aria-label="${tRunning ? 'Stop' : 'Start'} timer" title="${tRunning ? 'Stop timer' : 'Start timer'}">${tRunning ? '⏸' : '▶'}</button>
@@ -1510,7 +1576,23 @@ function updateSearchClear() {
 
 SEARCH.addEventListener('input', () => {
   updateSearchClear();
-  const q = SEARCH.value.trim().toLowerCase();
+  const raw = SEARCH.value.trim();
+  const q = raw.toLowerCase();
+  // Admin toggle via magic words in the search box
+  if (q === ':admin' || q === ':admin on' || q === ':admin 1') {
+    setAdmin(true);
+    SEARCH.value = '';
+    updateSearchClear();
+    render();
+    return;
+  }
+  if (q === ':admin off' || q === ':admin 0') {
+    setAdmin(false);
+    SEARCH.value = '';
+    updateSearchClear();
+    render();
+    return;
+  }
   if (!q) {
     render();
     return;
@@ -1530,6 +1612,9 @@ SEARCH_CLEAR.addEventListener('click', () => {
 // ──────────────────────────────────────────────────────────────────────
 
 async function init() {
+  // Show admin badge if this device was previously toggled into admin mode.
+  updateAdminBadge();
+
   // Connect to Firebase Realtime DB for shared comments + timers + soft-
   // deleted drawings (real-time sync across devices). Falls back to
   // localStorage if Firebase unavailable.
