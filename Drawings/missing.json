@@ -5,7 +5,7 @@
   "scope": "incremental (watcher bootstrap)",
   "walk_elapsed_s": 0,
   "pairs_count": 0,
-  "count": 32,
+  "count": 31,
   "missing": [
     {
       "name": "DXSB-060XXX",
@@ -28,14 +28,6 @@
       "status": "missing",
       "folder_path": "",
       "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:e4tbKc96RmKAyArJ9PjUmQ"
-    },
-    {
-      "name": "DSB0F0-030050",
-      "urn": "urn:adsk.wipprod:dm.lineage:BGO3jIemRGiPOxkdOHARyQ",
-      "family": "Floor",
-      "status": "missing",
-      "folder_path": "",
-      "open_url": "https://myhub.autodesk360.com/g/projects/a.YnVzaW5lc3M6bXltZTM1NjcjMjAyMDAzMDkyNzMwMzExMDY/data/urn:adsk.wipprod:dm.lineage:BGO3jIemRGiPOxkdOHARyQ"
     },
     {
       "name": "บริษัท รัฟ ดีไซน์ จำกัด 200",
@@ -362,5 +354,5 @@
     "urn:adsk.wipprod:fs.folder:co.QF9ZYuXcToya_-QpH4k77A",
     "urn:adsk.wipprod:fs.folder:co.luoCCaLRSICqCMK1fxDuvA"
   ],
-  "updated_at": "2026-05-24T08:33:47"
+  "updated_at": "2026-05-24T11:55:10"
 }
