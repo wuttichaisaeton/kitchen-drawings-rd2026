@@ -314,50 +314,82 @@ function markCompleted(name, done) {
   saveCompletedSet(s);
 }
 
-// ── Pinned projects (localStorage) ──────────────────────────────────
+// ── Pinned projects + manual order (Firebase-synced) ───────────────
 // Pinned projects float to the top of the projects list (above non-
-// pinned active projects). Pin/unpin toggled by star button on each
-// card. State is per-device (localStorage, not Firebase) — each user
-// can pin their own working set.
+// pinned active projects). Manual order from drag-and-drop overrides
+// default updated_at sort within each pinned/active/completed band.
+//
+// Both pieces of state are SHARED across devices via Firebase Realtime
+// Database — that way the workshop iPad (non-admin) sees the same
+// favourites & queue order the owner curated on the laptop. Falls back
+// to localStorage when Firebase is unavailable.
+//
+// Firebase shapes:
+//   pinned_projects/<projectKey> = true
+//   project_order = ["key1", "key2", ...]
+let _pinnedCache = new Set();
+let _projectOrderCache = [];
 
-function loadPinnedSet() {
+function initPinnedSync() {
+  // Seed from localStorage so first paint isn't empty.
   try {
     const raw = localStorage.getItem(LS_PINNED_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch { return new Set(); }
-}
-
-function savePinnedSet(set) {
-  try { localStorage.setItem(LS_PINNED_KEY, JSON.stringify([...set])); } catch {}
-}
-
-function isPinned(key) { return loadPinnedSet().has(key); }
-
-function togglePinned(key) {
-  const s = loadPinnedSet();
-  if (s.has(key)) s.delete(key); else s.add(key);
-  savePinnedSet(s);
-}
-
-// ── Manual project order (localStorage) ─────────────────────────────
-// Array<projectKey> — user-defined order from drag-and-drop. Projects
-// listed here take precedence over default updated_at sort. Projects
-// NOT in the array fall back to default sort and slot in after the
-// manually-ordered ones (within the same pinned/active/completed band).
-
-function loadProjectOrder() {
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) _pinnedCache = new Set(arr);
+    }
+  } catch {}
   try {
     const raw = localStorage.getItem(LS_PROJECT_ORDER_KEY);
-    if (!raw) return [];
-    const arr = JSON.parse(raw);
-    return Array.isArray(arr) ? arr : [];
-  } catch { return []; }
+    if (raw) {
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) _projectOrderCache = arr;
+    }
+  } catch {}
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('pinned_projects').on('value', snap => {
+      const raw = snap.val() || {};
+      _pinnedCache = new Set(Object.keys(raw).filter(k => !!raw[k]));
+      try { localStorage.setItem(LS_PINNED_KEY, JSON.stringify([..._pinnedCache])); } catch {}
+      try { render(); } catch {}
+    });
+    window.firebaseDB.ref('project_order').on('value', snap => {
+      const arr = snap.val();
+      _projectOrderCache = Array.isArray(arr) ? arr : [];
+      try { localStorage.setItem(LS_PROJECT_ORDER_KEY, JSON.stringify(_projectOrderCache)); } catch {}
+      try { render(); } catch {}
+    });
+  } catch (e) {
+    console.warn('Firebase pinned/order listener failed:', e);
+  }
 }
 
+function loadPinnedSet() { return new Set(_pinnedCache); }
+function isPinned(key) { return _pinnedCache.has(key); }
+
+function togglePinned(key) {
+  if (_pinnedCache.has(key)) _pinnedCache.delete(key);
+  else _pinnedCache.add(key);
+  // Persist locally + push to Firebase if available.
+  try { localStorage.setItem(LS_PINNED_KEY, JSON.stringify([..._pinnedCache])); } catch {}
+  if (window.firebaseDB) {
+    try {
+      window.firebaseDB.ref('pinned_projects/' + key)
+        .set(_pinnedCache.has(key) ? true : null);
+    } catch (e) { console.warn('Firebase pin write failed:', e); }
+  }
+}
+
+function loadProjectOrder() { return _projectOrderCache.slice(); }
+
 function saveProjectOrder(arr) {
-  try { localStorage.setItem(LS_PROJECT_ORDER_KEY, JSON.stringify(arr)); } catch {}
+  _projectOrderCache = Array.isArray(arr) ? arr.slice() : [];
+  try { localStorage.setItem(LS_PROJECT_ORDER_KEY, JSON.stringify(_projectOrderCache)); } catch {}
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('project_order').set(_projectOrderCache); }
+    catch (e) { console.warn('Firebase order write failed:', e); }
+  }
 }
 
 // ── Bent parts (per-part workshop tracking) ─────────────────────────
@@ -3455,6 +3487,7 @@ async function init() {
   initCommentsSync();
   initTimersSync();
   initDeletedDrawingsSync();
+  initPinnedSync();
 
   try {
     const [m, f] = await Promise.all([
