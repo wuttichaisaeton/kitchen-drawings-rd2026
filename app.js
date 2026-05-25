@@ -104,6 +104,44 @@ async function fetchJson(url) {
   return r.json();
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Drawing aliases — groups of part codes that share one workshop drawing.
+// Source: drawings-ui/Drawings/drawing_aliases.json.
+//
+// When any code in a group has a manifest entry, ALL codes in the group
+// are treated as "drawn" with the same pdf/drawing_urn. Master URN stays
+// per-code (master .f3d files are still separate).
+//
+// _drawingAliasIndex: Map<code, code[]>  — code → sibling codes in same group
+// ──────────────────────────────────────────────────────────────────────
+let _drawingAliasIndex = new Map();
+
+function _buildDrawingAliasIndex(aliasData) {
+  _drawingAliasIndex = new Map();
+  if (!aliasData || !Array.isArray(aliasData.groups)) return;
+  for (const group of aliasData.groups) {
+    if (!Array.isArray(group) || group.length < 2) continue;
+    for (const code of group) {
+      // Each code maps to the FULL group (including itself). When resolving,
+      // we skip the code itself and try the rest.
+      _drawingAliasIndex.set(code, group);
+    }
+  }
+}
+
+// Return the code whose manifest entry should represent `code`'s drawing.
+// Falls back to `code` itself if no alias has a manifest entry either.
+function _effectiveDrawingCode(code) {
+  const auto = (manifest && manifest.auto_generated) || {};
+  if (auto[code]) return code;  // self has the drawing — use as-is
+  const group = _drawingAliasIndex.get(code);
+  if (!group) return code;
+  for (const sibling of group) {
+    if (sibling !== code && auto[sibling]) return sibling;
+  }
+  return code;
+}
+
 function pdfUrl(entry) {
   if (entry.isManual) {
     return window.APP_CONFIG.MANUAL_BASE_URL + encodeURIComponent(entry.filename);
@@ -118,7 +156,10 @@ function pdfUrl(entry) {
 function pdfUrlForCode(code) {
   // Soft-deleted drawings act as if missing (until re-exported)
   if (isDrawingSoftDeleted(code)) return '';
-  const e = (manifest.auto_generated || {})[code];
+  // Honor drawing aliases — fall back to a group sibling's drawing if
+  // this code doesn't have its own entry.
+  const effective = _effectiveDrawingCode(code);
+  const e = (manifest.auto_generated || {})[effective];
   return e ? pdfUrl(e) : '';
 }
 
@@ -1028,8 +1069,12 @@ function setProjectMindmapCenter(projectKey, code) {
 function buildProjectTree(parts, projectKey) {
   const auto = manifest.auto_generated || {};
   const nodes = parts.map(p => {
-    const entry = auto[p.code];
-    const softDeleted = isDrawingSoftDeleted(p.code);
+    // Drawing status uses the EFFECTIVE code (own entry, else group sibling
+    // with one). Per the shared-drawing rule, multiple part codes can map
+    // to one workshop drawing — see _drawingAliasIndex.
+    const drawingCode = _effectiveDrawingCode(p.code);
+    const entry = auto[drawingCode];
+    const softDeleted = isDrawingSoftDeleted(p.code);  // soft-delete is per-code
     let status = 'missing';
     if (entry) status = softDeleted ? 'deleted' : 'drawn';
     return {
@@ -1043,6 +1088,8 @@ function buildProjectTree(parts, projectKey) {
       // URN of the master .f3d (from CC_Assembly) and of the linked drawing
       // (from manifest auto_generated). Used by leaf-click routing per
       // feedback_leaf_click_routing rule: missing→open 3D, otherwise→drawing.
+      // Master URN stays per-code (separate .f3d). Drawing URN follows the
+      // effective code (shared drawing).
       urn: p.urn || null,
       drawing_urn: entry ? (entry.drawing_urn || null) : null,
       status,
@@ -3102,6 +3149,17 @@ async function init() {
       missingData = await fetchJson(missingPath);
     } catch (e) {
       missingData = null;
+    }
+    // Load drawing_aliases.json — groups of codes that share one drawing.
+    // Per feedback_leaf_click_routing + user's "shared drawing" rule.
+    // Empty if file absent (no aliases configured yet).
+    try {
+      const mu = window.APP_CONFIG.MANIFEST_URL || 'Drawings/manifest.json';
+      const aliasesPath = mu.replace(/[^/]+$/, 'drawing_aliases.json');
+      const aliasData = await fetchJson(aliasesPath);
+      _buildDrawingAliasIndex(aliasData);
+    } catch (e) {
+      _buildDrawingAliasIndex(null);
     }
     // Rewrite family names (Drawer split, Back-Down → DW-BK, Floor → DW-FL)
     // so everything downstream sees only the new names.
