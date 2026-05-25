@@ -419,6 +419,21 @@ h1 {
   color: #888;
 }
 
+/* "📄 Project PDF" — single-file accent, distinct from All PDF green. */
+/* Disabled state when the project master has no exported PDF yet. */
+.filter-btn.project-pdf-btn {
+  background: #2d3a4a;
+  color: #b3c9d9;
+  border-color: #3d4a5a;
+}
+.filter-btn.project-pdf-btn:not([disabled]):hover { background: #3d4a5a; }
+.filter-btn.project-pdf-btn[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #2a2f34;
+  color: #666;
+}
+
 /* Deep-link highlight — a bright halo rect is injected by _highlight */
 /* Spoke() as a sibling of .pm-spoke-bg, then auto-removed after 4s. */
 /* CSS animates opacity + stroke-width so the pulse is obvious even on */

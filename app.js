@@ -2359,9 +2359,29 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
       <text text-anchor="middle" y="18" font-size="14" font-weight="700" fill="#fff">${escapeHtml(centerLabel)}</text>
     </g>` : `
     <g class="mm-center mm-center-project" transform="translate(${cx}, ${cy})">
-      <circle r="80" fill="#4a90e2" stroke="#fff" stroke-width="4" opacity="0.95" />
-      <text text-anchor="middle" y="-4" font-size="13" font-weight="700" fill="#fff">📋 PROJECT</text>
-      <text text-anchor="middle" y="18" font-size="11" fill="#fff" opacity="0.9">${escapeHtml(centerLabel)}</text>
+      <circle r="80" fill="#1e293b" stroke="#4a90e2" stroke-width="4" opacity="0.95" />
+      <g transform="translate(0, -20) scale(1.5)">
+        <!-- Top Cube -->
+        <g transform="translate(0, -10)">
+          <polygon points="0,-10 9,-5 0,-1 -9,-5" fill="#f8fafc" stroke="#334155" stroke-width="1"/>
+          <polygon points="-9,-5 0,-1 0,8 -9,4" fill="#cbd5e1" stroke="#334155" stroke-width="1"/>
+          <polygon points="0,-1 9,-5 9,4 0,8" fill="#94a3b8" stroke="#334155" stroke-width="1"/>
+        </g>
+        <!-- Bottom Left Cube -->
+        <g transform="translate(-8, 3)">
+          <polygon points="0,-10 9,-5 0,-1 -9,-5" fill="#f8fafc" stroke="#334155" stroke-width="1"/>
+          <polygon points="-9,-5 0,-1 0,8 -9,4" fill="#cbd5e1" stroke="#334155" stroke-width="1"/>
+          <polygon points="0,-1 9,-5 9,4 0,8" fill="#94a3b8" stroke="#334155" stroke-width="1"/>
+        </g>
+        <!-- Bottom Right Cube -->
+        <g transform="translate(8, 3)">
+          <polygon points="0,-10 9,-5 0,-1 -9,-5" fill="#f8fafc" stroke="#334155" stroke-width="1"/>
+          <polygon points="-9,-5 0,-1 0,8 -9,4" fill="#cbd5e1" stroke="#334155" stroke-width="1"/>
+          <polygon points="0,-1 9,-5 9,4 0,8" fill="#94a3b8" stroke="#334155" stroke-width="1"/>
+        </g>
+      </g>
+      <text text-anchor="middle" y="24" font-size="13" font-weight="700" fill="#fff" letter-spacing="1">PROJECT</text>
+      <text text-anchor="middle" y="44" font-size="11" fill="#cbd5e1" opacity="0.9">${escapeHtml(centerLabel)}</text>
     </g>`;
 
   // Spokes — large cards with inline buttons (workflow controls which checkbox is shown)
@@ -2846,6 +2866,9 @@ function renderProject(key) {
       <div class="filter-group">
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
+        <button class="filter-btn project-pdf-btn" id="project-pdf-btn"
+          ${pdfUrlForCode(key) ? '' : 'disabled'}
+          title="${pdfUrlForCode(key) ? `Open the project master drawing (${key}.pdf)` : `No drawing yet — run CC_DrawingPDF on ${key}.f3d in Fusion, or drag-drop a PDF onto its family chip in admin mode`}">📄 Project PDF</button>
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
       </div>
     </div>
@@ -2866,6 +2889,11 @@ function renderProject(key) {
   });
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
+  });
+  ROOT.querySelector('#project-pdf-btn')?.addEventListener('click', () => {
+    const url = pdfUrlForCode(key);
+    if (!url) return;  // disabled state already handles this, defensive
+    window.open(url, '_blank');
   });
   // (workflow + layout toggles removed — see commit notes; both bent and
   // assembled buttons render on every spoke, and layout is always Expand.)
