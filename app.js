@@ -1589,56 +1589,29 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Edges with junction-point anchoring.
-  //
-  // Each wrapper has ONE anchor point on its rectangle boundary — the
-  // point where the project→wrapper line enters the box. The project
-  // edge ends at that anchor. Every child edge of that wrapper ALSO
-  // starts at that same anchor. Visually this reads as a junction: one
-  // wire goes in from project, multiple wires fan out to children, all
-  // physically joining at one spot on the wrapper (per user feedback —
-  // "เริ่มจากปลายเส้นที่ถูกชี้มา").
-  //
-  // Child edges then end trimmed at the child rect boundary so they
-  // clearly enter the child box without overshooting.
-  const halfW = PSPOKE_W / 2;
-  const halfH = PSPOKE_H / 2;
-  function trimToRectEdge(fromX, fromY, toX, toY) {
-    const dx = toX - fromX, dy = toY - fromY;
-    const adx = Math.abs(dx) || 1e-9;
-    const ady = Math.abs(dy) || 1e-9;
-    const t = Math.min(halfW / adx, halfH / ady);
-    return { x: fromX + dx * t, y: fromY + dy * t };
-  }
-  // Pre-compute anchor (project-facing boundary point) for every wrapper.
-  // Map keyed by wrapper.code so child edges can look it up later.
-  const wrapperAnchorByCode = new Map();
-  for (const p of positioned) {
-    if (p._parentSpokePos) continue;  // skip children — only top-level wrappers/leaves
-    wrapperAnchorByCode.set(p.node.code, trimToRectEdge(p.x, p.y, cx, cy));
-  }
+  // Edges — anchor at the geometric centre of each rectangle (both
+  // horizontally and vertically). Project edge ends at the wrapper's
+  // centre; child edges also start at the wrapper's centre and end at
+  // the child's centre. All connections converge on one shared point
+  // per box, regardless of which side the line comes from. (User feedback:
+  // "anchor จุดที่ center ทั้งแนวตั้งและแนวนอน — ไม่ตัดที่ขอบกล่อง".)
   const edges = positioned.map(p => {
     const isChild = !!p._parentSpokePos;
+    const fromX = isChild ? p._parentSpokePos.x : cx;
+    const fromY = isChild ? p._parentSpokePos.y : cy;
     if (isChild) {
-      // Start at the parent's anchor (project-facing boundary), end at
-      // child boundary. Both ends trimmed to rectangle edges.
-      const parentCode = p._parentSpokePos.code;
-      const start = wrapperAnchorByCode.get(parentCode)
-                 || trimToRectEdge(p._parentSpokePos.x, p._parentSpokePos.y, p.x, p.y);
-      const end = trimToRectEdge(p.x, p.y, p._parentSpokePos.x, p._parentSpokePos.y);
+      // Straight line, both ends at rectangle centres (under the boxes).
       const styleAttr = ` style="${famVars(p.node.family || 'Other')}"`;
-      return `<path class="mm-edge mm-edge-child" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${start.x} ${start.y} L ${end.x} ${end.y}" />`;
+      return `<path class="mm-edge mm-edge-child" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${fromX} ${fromY} L ${p.x} ${p.y}" />`;
     }
-    // Project edge — trim end to the wrapper's anchor so the line
-    // visibly STOPS at the wrapper's edge (junction point) rather than
-    // disappearing under the box.
-    const anchor = wrapperAnchorByCode.get(p.node.code) || { x: p.x, y: p.y };
-    const mx = (cx + anchor.x) / 2, my = (cy + anchor.y) / 2;
-    const dx = anchor.x - cx, dy = anchor.y - cy;
+    // Project edge — slight curve bias so the 10 inner-ring lines don't
+    // stack on each other in a starburst.
+    const mx = (fromX + p.x) / 2, my = (fromY + p.y) / 2;
+    const dx = p.x - fromX, dy = p.y - fromY;
     const len = Math.hypot(dx, dy) || 1;
     const bias = 22;
     const bx = -dy / len * bias, by = dx / len * bias;
-    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${cx} ${cy} Q ${mx + bx} ${my + by} ${anchor.x} ${anchor.y}" />`;
+    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
   }).join('');
 
   // Center node
