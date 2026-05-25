@@ -170,6 +170,27 @@ function _effectiveDrawingCode(code) {
   return code;
 }
 
+// Open a URL in a new tab via a synthetic anchor click. iPad PWAs
+// (added to Home Screen with apple-mobile-web-app-capable) suppress
+// window.open('_blank') as a popup, so the more reliable pattern is
+// to create + click an <a target="_blank"> — browsers treat that as
+// a user-initiated navigation.
+function _openInNewTab(url) {
+  if (!url) return;
+  try {
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  } catch (e) {
+    // Last-resort fallback: navigate the current window.
+    try { window.location.href = url; } catch {}
+  }
+}
+
 function pdfUrl(entry) {
   if (entry.isManual) {
     return window.APP_CONFIG.MANUAL_BASE_URL + encodeURIComponent(entry.filename);
@@ -2920,7 +2941,7 @@ function renderProject(key) {
   ROOT.querySelector('#project-pdf-btn')?.addEventListener('click', () => {
     const url = projectPdfUrl(key);
     if (!url) return;  // disabled state already handles this, defensive
-    window.open(url, '_blank');
+    _openInNewTab(url);
   });
   // (workflow + layout toggles removed — see commit notes; both bent and
   // assembled buttons render on every spoke, and layout is always Expand.)
