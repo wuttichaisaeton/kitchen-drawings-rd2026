@@ -1184,9 +1184,10 @@ main.transit-back {
 /* --- Part list (drill-down page) --- */
 
 /* Back button — square icon-only with neon hover. Sized large (42×42)
-   so it's clearly tappable on iPad and visible at a glance. Uses theme
-   accent #4a90e2 (not the off-brand #2e75b6) so it doesn't break the
-   palette. SVG arrow translates left on hover for affordance. */
+   so it's clearly tappable on iPad and visible at a glance. Uses the
+   theme danger accent #c25555 (same as .part-delete, .bent-count) so
+   it reads as a "return / exit" action without breaking the palette.
+   SVG arrow translates left on hover for affordance. */
 .back-btn {
   display: inline-flex;
   align-items: center;
@@ -1194,8 +1195,8 @@ main.transit-back {
   width: 42px;
   height: 42px;
   background: #0f1419;
-  color: #4a90e2;
-  border: 2px solid #4a90e2;
+  color: #c25555;
+  border: 2px solid #c25555;
   border-radius: 12px;
   cursor: pointer;
   margin-bottom: 12px;
@@ -1210,8 +1211,8 @@ main.transit-back {
 }
 .back-btn:hover {
   color: #ffffff;
-  background: #4a90e2;
-  box-shadow: 0 0 15px rgba(74, 144, 226, 0.55);
+  background: #c25555;
+  box-shadow: 0 0 15px rgba(194, 85, 85, 0.55);
   transform: translateY(-2px);
 }
 .back-btn:hover svg { transform: translateX(-3px); }
