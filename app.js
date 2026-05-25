@@ -1395,24 +1395,32 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Expand mode — for each wrapper that's now positioned, fan its
-  // children outward along the ray from project center → wrapper.
-  // Children store _parentSpokePos so the edge renderer can draw an
-  // arc from wrapper → child instead of project → child.
+  // Expand mode — for each wrapper, place its children along a TANGENT
+  // line through the wrapper, perpendicular to the project→wrapper ray.
+  // This keeps children inside the wrapper's angular "slice" so they
+  // don't visually collide with adjacent wrappers' clusters. Each child
+  // is also pushed outward (away from center) by childOutwardOffset so
+  // it's clear which wrapper they belong to and edges don't cross.
   if (layout === 'expand' && expandChildrenByParent.size > 0) {
-    const fanSpan = Math.PI * 0.7;  // ~126° spread per wrapper
-    const childDist = 230;           // px from wrapper centre to child
+    const childSpacing = PSPOKE_W + 30;   // 270 — space between child spokes
+    const childOutwardOffset = 110;        // push children away from center
     const wrappersOnly = positioned.slice();  // freeze list before pushing kids
     for (const wp of wrappersOnly) {
       const kids = expandChildrenByParent.get(wp.node.code);
       if (!kids || !kids.length) continue;
       const k = kids.length;
-      const wAngle = Math.atan2(wp.y, wp.x);
+      // Unit vector from project center (0,0) to wrapper (outward direction)
+      const wLen = Math.hypot(wp.x, wp.y) || 1;
+      const ux = wp.x / wLen, uy = wp.y / wLen;
+      // Tangent vector (perpendicular, rotated +90°)
+      const tx = -uy, ty = ux;
+      // Start point for the children line: a bit outside the wrapper
+      const startX = wp.x + childOutwardOffset * ux;
+      const startY = wp.y + childOutwardOffset * uy;
       for (let i = 0; i < k; i++) {
-        const t = k > 1 ? (i / (k - 1) - 0.5) : 0;
-        const a = wAngle + t * fanSpan;
-        const cxL = wp.x + childDist * Math.cos(a);
-        const cyL = wp.y + childDist * Math.sin(a);
+        const t = k > 1 ? (i - (k - 1) / 2) : 0;  // centred on wrapper line
+        const cxL = startX + t * childSpacing * tx;
+        const cyL = startY + t * childSpacing * ty;
         positioned.push({
           node: kids[i], x: cxL, y: cyL,
           _autoX: cxL, _autoY: cyL, ring: 2,
