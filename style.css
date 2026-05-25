@@ -1592,12 +1592,18 @@ footer {
   .bom-icon { font-size: 22px; }
 }
 
-/* --- iPad landscape / desktop: 4-col grid centered --- */
+/* --- iPad landscape / desktop: 4-col grid, full width --- */
+/* iPad 12.9" Gen 1 landscape = 1366px wide; the previous 1100px cap */
+/* left ~130px of empty space on each side, so use the full width. */
 
 @media (min-width: 1024px) {
   .family-grid { grid-template-columns: repeat(4, 1fr); gap: 16px; }
-  main { max-width: 1100px; margin: 0 auto; }
-  header > div, header { max-width: 1100px; margin-left: auto; margin-right: auto; }
+}
+
+/* On very wide screens (desktop monitors), bump to 5 cols so cards */
+/* don't grow comically large. */
+@media (min-width: 1500px) {
+  .family-grid { grid-template-columns: repeat(5, 1fr); gap: 18px; }
 }
 
 /* ──────────────────────────────────────────────────────────────────
