@@ -1,20 +1,21 @@
-CC_Assembly walk debug — 2026-05-25T09:41:00.671730
+CC_Assembly walk debug — 2026-05-25T09:52:48.044620
 Project: FN0000-110000
 Total occurrences visited: 14
+CAM-ALPF tagged components: 0
 
-depth | sheet_metal | material         | display_name (component)
+depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  | ALPF             | FN0F00-110000 v2:1 (FN0F00-110000 v2)
-    0 |     |                  | FN1BLA-110000 v3:1 (FN1BLA-110000 v3)
-    1 | SM  | ALPF             | FN2BLI:1 (FN2BLI)
-    0 |     |                  | FN2BNX-110000 v3:2 (FN2BNX-110000 v3)
-    1 | SM  | ALPF             | FN2BNX:1 (FN2BNX)
-    0 |     |                  | Legs:1 (Legs)
-    1 |     |                  | Leg-060 v3:1 (Leg-060 v3)
-    2 |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
-    2 |     |                  | กลาง:1 (กลาง)
-    2 |     |                  | ฐานล้าง:1 (ฐานล้าง)
-    1 |     |                  | Leg-060 v3:2 (Leg-060 v3)
-    1 |     |                  | Leg-060 v3:3 (Leg-060 v3)
-    1 |     |                  | Leg-060 v3:4 (Leg-060 v3)
-    0 |     |                  | FN3BLA-110000 v2:1 (FN3BLA-110000 v2)
+    0 | SM  |     | ALPF             | FN0F00-110000 v2:1 (FN0F00-110000 v2)
+    0 |     |     |                  | FN1BLA-110000 v3:1 (FN1BLA-110000 v3)
+    1 | SM  |     | ALPF             | FN2BLI:1 (FN2BLI)
+    0 |     |     |                  | FN2BNX-110000 v3:2 (FN2BNX-110000 v3)
+    1 | SM  |     | ALPF             | FN2BNX:1 (FN2BNX)
+    0 |     |     |                  | Legs:1 (Legs)
+    1 |     |     |                  | Leg-060 v3:1 (Leg-060 v3)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     |                  | กลาง:1 (กลาง)
+    2 |     |     |                  | ฐานล้าง:1 (ฐานล้าง)
+    1 |     |     |                  | Leg-060 v3:2 (Leg-060 v3)
+    1 |     |     |                  | Leg-060 v3:3 (Leg-060 v3)
+    1 |     |     |                  | Leg-060 v3:4 (Leg-060 v3)
+    0 |     |     |                  | FN3BLA-110000 v2:1 (FN3BLA-110000 v2)
