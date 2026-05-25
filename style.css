@@ -38,11 +38,26 @@ body {
   color: #e4e4e4;
   min-height: 100vh;
   padding-bottom: env(safe-area-inset-bottom);
+  /* Native-app feel: no accidental text selection on tap, no iOS */
+  /* long-press dictionary popup, no Edge translate/define bubbles. */
+  /* Opted back in below for inputs and comments where copy/paste is */
+  /* actually useful. */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Form elements don't inherit body font by default — force it. */
 input, button, select, textarea {
   font-family: inherit;
+}
+
+/* Re-enable text selection where copy/paste is useful: form inputs, */
+/* comment text, and part codes (long-pressable to copy on mobile). */
+input, textarea, .comment-text, .comment-input, .part-code, .bom-code {
+  user-select: text;
+  -webkit-user-select: text;
+  -webkit-touch-callout: default;
 }
 
 header {
