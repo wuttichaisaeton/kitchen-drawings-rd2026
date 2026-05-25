@@ -1489,16 +1489,21 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
   // child edges keeps the grouping legible.
   if (layout === 'expand' && expandChildrenByParent.size > 0) {
     const childDist = 280;
+    // Minimum angular separation between adjacent children so their
+    // rectangles don't overlap (chord at radius childDist must be at
+    // least one spoke-width + a small gap).
+    const minChord = PSPOKE_W + 30;  // 270
+    const minSep = 2 * Math.asin(Math.min(0.99, (minChord / 2) / childDist));
     const wrappersOnly = positioned.slice();
     for (const wp of wrappersOnly) {
       const kids = expandChildrenByParent.get(wp.node.code);
       if (!kids || !kids.length) continue;
       const k = kids.length;
-      // Outward unit vector — the "away from project" direction.
-      const wAngle = Math.atan2(wp.y, wp.x);
-      // Spread enough so adjacent children don't stack on top of each
-      // other, but cap at ~90° so the cluster reads as a branch group.
-      const fanSpan = k <= 1 ? 0 : Math.min(Math.PI * 0.5, (k - 1) * 0.4);
+      const wAngle = Math.atan2(wp.y, wp.x);  // outward direction
+      // Fan spans the minimum needed for k children to not overlap each
+      // other — and not let a parent→child line clip a sibling rectangle.
+      // Capped at ~324° so a very large k doesn't wrap past full circle.
+      const fanSpan = k <= 1 ? 0 : Math.min(Math.PI * 1.8, (k - 1) * minSep);
       for (let i = 0; i < k; i++) {
         const t = k > 1 ? (i / (k - 1) - 0.5) : 0;  // -0.5..+0.5
         const a = wAngle + t * fanSpan;
