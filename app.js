@@ -2651,14 +2651,33 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
     });
   });
 
-  // Center → go up 1 level
-  ROOT.querySelector('.mm-center')?.addEventListener('click', () => {
-    if (centerNode) {
-      setProjectMindmapCenter(projectKey,
-        centerNode.parent ? centerNode.parent.code : null);
-      render();
+  // Center click:
+  //   • When drilled into a sub-node → go up one level (existing).
+  //   • At the top-level project circle → open the project's master
+  //     PDF if one exists. The big "PROJECT 100VB0-110000" circle is
+  //     the most natural target for "show me this project's drawing"
+  //     and workshop iPad consistently reached for it instead of the
+  //     📄 Project PDF button in the filter row.
+  const centerEl = ROOT.querySelector('.mm-center');
+  if (centerEl) {
+    // Style cue so it's discoverable as clickable, but only when a
+    // PDF actually exists at the top level (otherwise it'd look broken).
+    const topLevelHasPdf = !centerNode && !!projectPdfUrl(projectKey);
+    if (topLevelHasPdf) {
+      centerEl.style.cursor = 'pointer';
+      centerEl.setAttribute('aria-label', `Open ${projectKey}.pdf`);
     }
-  });
+    centerEl.addEventListener('click', () => {
+      if (centerNode) {
+        setProjectMindmapCenter(projectKey,
+          centerNode.parent ? centerNode.parent.code : null);
+        render();
+        return;
+      }
+      const url = projectPdfUrl(projectKey);
+      if (url) _openInNewTab(url);
+    });
+  }
 
   // Reset layout button
   ROOT.querySelector('#pm-reset-layout')?.addEventListener('click', (ev) => {
