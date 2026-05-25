@@ -46,11 +46,11 @@
 
   <script src="config.js"></script>
   <script src="firebase-config.js"></script>
-  <!-- Firebase Realtime Database (compat SDK from CDN) — for shared comments -->
+  <!-- Firebase Realtime Database (compat SDK from CDN) — shared metadata + comments. -->
+  <!-- Storage SDK intentionally absent: this project is on the Spark plan -->
+  <!-- and uploads route through the GitHub Contents API instead. -->
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
-  <!-- Firebase Storage — for drag-drop PDF uploads from the Library view -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
   <!-- Sortable.js — touch-friendly drag-and-drop for project reordering -->
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <script>
@@ -58,7 +58,6 @@
       try {
         firebase.initializeApp(window.FIREBASE_CONFIG);
         window.firebaseDB = firebase.database();
-        if (firebase.storage) window.firebaseStorage = firebase.storage();
       } catch (e) {
         console.warn('Firebase init failed:', e);
       }

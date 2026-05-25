@@ -461,14 +461,28 @@ function saveFamilyOrder(arr) {
   }
 }
 
-// ── Uploaded PDFs (Firebase Storage + Realtime DB) ─────────────────
-// Admin drag-drops a PDF onto a family chip → uploaded to Firebase
-// Storage at drawings/<code>.pdf, then a metadata entry pushed to
-// uploaded_pdfs/<code> in Realtime DB so every device sees it.
+// ── Uploaded PDFs (GitHub commits + Realtime DB metadata) ───────────
+// Admin drag-drops a PDF onto a family chip → committed via the GitHub
+// Contents API to drawings-ui/Drawings/manual/<code>.pdf on main, then a
+// metadata entry pushed to uploaded_pdfs/<code> in Realtime DB so every
+// device picks it up. The committed file is served by GitHub Pages
+// (~1 min after commit) at the corresponding public URL.
 //
 // Read shape: uploaded_pdfs/<code> = { url, family, filename, size, uploaded_at }
-// pdfUrlForCode and partsByFamily both honour this cache so uploaded
-// PDFs render as drawn parts alongside the CC_DrawingPDF-exported ones.
+// pdfUrlForCode and partsByFamily honour this cache so uploaded PDFs
+// render as drawn parts alongside the CC_DrawingPDF-exported ones.
+//
+// Auth: a fine-grained PAT (repo: kitchen-drawings-rd2026, Contents:
+// Read+Write) is stored per-device in localStorage["kd_github_pat_v1"].
+// First upload prompts for it. Reset with `:reset-pat` in the search bar.
+
+const GH_OWNER = 'wuttichaisaeton';
+const GH_REPO = 'kitchen-drawings-rd2026';
+const GH_BRANCH = 'main';
+const GH_UPLOAD_PATH = 'drawings-ui/Drawings/manual';  // repo-relative
+const GH_PUBLIC_BASE = `https://${GH_OWNER}.github.io/${GH_REPO}/Drawings/manual/`;
+const LS_GITHUB_PAT_KEY = 'kd_github_pat_v1';
+
 let _uploadedPdfsCache = {};
 
 function initUploadedPdfsSync() {
@@ -483,56 +497,167 @@ function initUploadedPdfsSync() {
   }
 }
 
-async function uploadPdfFromDrop(file, code, family) {
-  console.log('[upload] start — code=%s family=%s file=%s size=%d type=%s',
-    code, family, file && file.name, file && file.size, file && file.type);
-  if (!window.firebaseStorage) {
-    console.error('[upload] firebaseStorage is undefined');
-    alert('Firebase Storage not available — refresh the page and try again.');
-    return false;
+function getGitHubPat() {
+  let pat = '';
+  try { pat = localStorage.getItem(LS_GITHUB_PAT_KEY) || ''; } catch {}
+  if (pat) return pat;
+  const entered = prompt(
+    'GitHub PAT needed for upload (one-time setup).\n\n' +
+    '1. Open https://github.com/settings/personal-access-tokens/new\n' +
+    '2. Resource owner: your account\n' +
+    '3. Repository access: only "kitchen-drawings-rd2026"\n' +
+    '4. Permission → Repository → Contents: Read and write\n' +
+    '5. Expiry: 90 days (or longer)\n' +
+    '6. Generate → copy the token (starts with github_pat_…)\n\n' +
+    'Paste the token here:'
+  );
+  if (!entered) return null;
+  const trimmed = entered.trim();
+  if (!/^github_pat_|^ghp_/.test(trimmed)) {
+    alert('That doesn\'t look like a GitHub PAT. Cancel + try again.');
+    return null;
   }
+  try { localStorage.setItem(LS_GITHUB_PAT_KEY, trimmed); } catch {}
+  return trimmed;
+}
+
+function resetGitHubPat() {
+  try { localStorage.removeItem(LS_GITHUB_PAT_KEY); } catch {}
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result || '';
+      const comma = result.indexOf(',');
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function _ghContentsRequest(path, init = {}) {
+  const pat = getGitHubPat();
+  if (!pat) throw new Error('No PAT — upload cancelled');
+  const url = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`;
+  const headers = {
+    Authorization: `Bearer ${pat}`,
+    Accept: 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28',
+    ...(init.headers || {}),
+  };
+  return fetch(url, { ...init, headers });
+}
+
+async function _ghGetFileSha(path) {
+  const resp = await _ghContentsRequest(`${path}?ref=${GH_BRANCH}`);
+  if (resp.status === 404) return null;
+  if (!resp.ok) {
+    const body = await resp.text();
+    throw new Error(`GitHub GET ${path} → ${resp.status}: ${body}`);
+  }
+  const json = await resp.json();
+  return json.sha || null;
+}
+
+async function uploadPdfFromDrop(file, code, family) {
+  console.log('[upload] start — code=%s family=%s file=%s size=%d',
+    code, family, file && file.name, file && file.size);
   if (!file || (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name))) {
-    console.warn('[upload] not a PDF — got', file && file.type, file && file.name);
     alert('Please drop a PDF file (.pdf).');
     return false;
   }
-  if (!code) {
-    console.warn('[upload] empty code — aborting');
-    return false;
-  }
+  if (!code) return false;
+
+  const path = `${GH_UPLOAD_PATH}/${code}.pdf`;
   try {
-    console.log('[upload] starting Storage.put -> drawings/' + code + '.pdf');
-    const ref = window.firebaseStorage.ref().child('drawings/' + code + '.pdf');
-    const snap = await ref.put(file, { contentType: 'application/pdf' });
-    console.log('[upload] Storage.put complete, fetching download URL');
-    const url = await snap.ref.getDownloadURL();
-    console.log('[upload] download URL =', url);
-    console.log('[upload] writing RTDB metadata uploaded_pdfs/' + code);
-    await window.firebaseDB.ref('uploaded_pdfs/' + code).set({
-      url,
-      family: family || '',
-      filename: file.name,
-      size: file.size,
-      uploaded_at: Date.now(),
+    console.log('[upload] reading file as base64');
+    const content = await fileToBase64(file);
+
+    console.log('[upload] checking for existing file SHA');
+    const existingSha = await _ghGetFileSha(path);
+
+    console.log('[upload] PUT', path, existingSha ? `(replacing ${existingSha.slice(0,7)})` : '(new)');
+    const resp = await _ghContentsRequest(path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `Upload drawing ${code}` + (existingSha ? ' (replace)' : ''),
+        content,
+        branch: GH_BRANCH,
+        ...(existingSha ? { sha: existingSha } : {}),
+      }),
     });
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      console.error('[upload] GitHub PUT failed:', resp.status, errBody);
+      if (resp.status === 401 || resp.status === 403) {
+        resetGitHubPat();
+        alert(`GitHub auth failed (${resp.status}). PAT cleared — try again with a fresh token.`);
+      } else {
+        alert(`Upload failed (${resp.status}):\n\n${errBody.slice(0, 500)}`);
+      }
+      return false;
+    }
+    const json = await resp.json();
+    const commitSha = json.commit && json.commit.sha;
+    console.log('[upload] committed', commitSha);
+
+    // Cache-buster on the public URL so the admin's own UI bypasses any
+    // stale Pages cache on next render.
+    const publicUrl = `${GH_PUBLIC_BASE}${encodeURIComponent(code)}.pdf?v=${Date.now()}`;
+
+    if (window.firebaseDB) {
+      await window.firebaseDB.ref('uploaded_pdfs/' + code).set({
+        url: publicUrl,
+        family: family || '',
+        filename: file.name,
+        size: file.size,
+        uploaded_at: Date.now(),
+        commit_sha: commitSha || '',
+      });
+    }
     console.log('[upload] DONE');
-    alert('Uploaded: ' + code + ' (' + Math.round(file.size / 1024) + ' KB)');
+    alert(
+      `Uploaded ${code} (${Math.round(file.size / 1024)} KB)\n\n` +
+      `GitHub commit: ${commitSha ? commitSha.slice(0, 7) : 'OK'}\n` +
+      `Workshop URL fresh in ~1 min (GitHub Pages rebuild).`
+    );
     return true;
   } catch (e) {
     console.error('[upload] FAILED:', e);
-    alert('Upload failed (see console for details):\n\n' + (e.code || '') + '\n' + e.message);
+    alert('Upload failed:\n\n' + (e.message || e));
     return false;
   }
 }
 
 async function deleteUploadedPdf(code) {
-  if (!code || !window.firebaseDB) return false;
+  if (!code) return false;
+  const path = `${GH_UPLOAD_PATH}/${code}.pdf`;
   try {
-    if (window.firebaseStorage) {
-      try { await window.firebaseStorage.ref().child('drawings/' + code + '.pdf').delete(); }
-      catch {}  // file might not exist any more — fine
+    const sha = await _ghGetFileSha(path);
+    if (sha) {
+      const resp = await _ghContentsRequest(path, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: `Delete drawing ${code}`,
+          sha,
+          branch: GH_BRANCH,
+        }),
+      });
+      if (!resp.ok) {
+        const errBody = await resp.text();
+        console.error('[delete] GitHub DELETE failed:', resp.status, errBody);
+        // Fall through and still clear the RTDB entry — the file may have
+        // been deleted out of band.
+      }
     }
-    await window.firebaseDB.ref('uploaded_pdfs/' + code).set(null);
+    if (window.firebaseDB) {
+      await window.firebaseDB.ref('uploaded_pdfs/' + code).set(null);
+    }
     return true;
   } catch (e) {
     console.error('PDF delete failed:', e);
