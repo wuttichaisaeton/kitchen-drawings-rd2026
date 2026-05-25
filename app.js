@@ -484,19 +484,30 @@ function initUploadedPdfsSync() {
 }
 
 async function uploadPdfFromDrop(file, code, family) {
+  console.log('[upload] start — code=%s family=%s file=%s size=%d type=%s',
+    code, family, file && file.name, file && file.size, file && file.type);
   if (!window.firebaseStorage) {
+    console.error('[upload] firebaseStorage is undefined');
     alert('Firebase Storage not available — refresh the page and try again.');
     return false;
   }
-  if (!file || file.type !== 'application/pdf') {
+  if (!file || (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name))) {
+    console.warn('[upload] not a PDF — got', file && file.type, file && file.name);
     alert('Please drop a PDF file (.pdf).');
     return false;
   }
-  if (!code) return false;
+  if (!code) {
+    console.warn('[upload] empty code — aborting');
+    return false;
+  }
   try {
+    console.log('[upload] starting Storage.put -> drawings/' + code + '.pdf');
     const ref = window.firebaseStorage.ref().child('drawings/' + code + '.pdf');
     const snap = await ref.put(file, { contentType: 'application/pdf' });
+    console.log('[upload] Storage.put complete, fetching download URL');
     const url = await snap.ref.getDownloadURL();
+    console.log('[upload] download URL =', url);
+    console.log('[upload] writing RTDB metadata uploaded_pdfs/' + code);
     await window.firebaseDB.ref('uploaded_pdfs/' + code).set({
       url,
       family: family || '',
@@ -504,10 +515,12 @@ async function uploadPdfFromDrop(file, code, family) {
       size: file.size,
       uploaded_at: Date.now(),
     });
+    console.log('[upload] DONE');
+    alert('Uploaded: ' + code + ' (' + Math.round(file.size / 1024) + ' KB)');
     return true;
   } catch (e) {
-    console.error('PDF upload failed:', e);
-    alert('Upload failed: ' + e.message);
+    console.error('[upload] FAILED:', e);
+    alert('Upload failed (see console for details):\n\n' + (e.code || '') + '\n' + e.message);
     return false;
   }
 }
