@@ -3630,21 +3630,56 @@ function renderLibraryHome() {
   ROOT.innerHTML = `<div class="family-grid">${cards}</div>`;
 
   ROOT.querySelectorAll('.family-card').forEach(el => {
-    // Click → drill into family (unless we're catching a dblclick for rename)
-    el.addEventListener('click', () => navTo({ kind: 'family', name: el.dataset.family }));
-    // Admin: double-click to rename, drag PDF to upload.
+    // Click → drill into family. A long-press in admin (touch-friendly
+    // rename) suppresses the click via _suppressClickUntil; a successful
+    // double-click rename also suppresses via the same flag.
+    let _suppressClickUntil = 0;
+    el.addEventListener('click', (ev) => {
+      if (Date.now() < _suppressClickUntil) {
+        ev.preventDefault(); ev.stopPropagation();
+        return;
+      }
+      navTo({ kind: 'family', name: el.dataset.family });
+    });
+    // Admin: double-click OR long-press to rename, drag PDF to upload.
     if (adminMode) {
-      el.addEventListener('dblclick', (ev) => {
-        ev.preventDefault();
-        ev.stopPropagation();
+      const triggerRename = () => {
         const fam = el.dataset.family;
         const current = familyDisplayLabel(fam);
         const next = prompt(`Rename chip "${fam}":`, current);
+        _suppressClickUntil = Date.now() + 400;  // swallow the click that follows
         if (next === null) return;  // cancelled
-        // Empty string → reset to default key
-        setFamilyLabel(fam, next);
+        setFamilyLabel(fam, next);  // empty string resets to default key
         render();
+      };
+      el.addEventListener('dblclick', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        triggerRename();
       });
+      // Long-press (≥600ms) — touch-friendly path. Cancels if the user
+      // lifts, moves, or scrolls before the timer fires.
+      let pressTimer = null;
+      let startX = 0, startY = 0;
+      const cancelPress = () => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      };
+      el.addEventListener('pointerdown', (ev) => {
+        if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+        startX = ev.clientX; startY = ev.clientY;
+        cancelPress();
+        pressTimer = setTimeout(() => {
+          pressTimer = null;
+          triggerRename();
+        }, 600);
+      });
+      el.addEventListener('pointermove', (ev) => {
+        if (!pressTimer) return;
+        const dx = ev.clientX - startX, dy = ev.clientY - startY;
+        if (dx * dx + dy * dy > 100) cancelPress();  // moved >10px → cancel
+      });
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(evt =>
+        el.addEventListener(evt, cancelPress));
       // PDF drag-drop upload — preventDefault on dragover to enable drop.
       el.addEventListener('dragover', (ev) => {
         if (ev.dataTransfer && [...ev.dataTransfer.items || []].some(i => i.kind === 'file')) {
