@@ -21,6 +21,8 @@ const LS_COMMENTS_OPEN_KEY = 'kd_comments_open_v1';  // Set<partCode>: which row
 const LS_TIMERS_KEY = 'kd_timers_v1';             // { projectKey: { partCode: { sessions, active_start } } }
 const LS_DELETED_KEY = 'kd_deleted_drawings_v1';  // { partCode: epoch_ms }  — soft-deleted drawings (workshop "redo this")
 const LS_ADMIN_KEY = 'kd_admin_v1';               // '1' if this device is owner (เอ๋); only owner sees delete/edit buttons
+const LS_PINNED_KEY = 'kd_pinned_projects_v1';    // Set<projectKey> — pinned projects float to top
+const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — manual drag order (truthy projects come first in this order)
 
 // ──────────────────────────────────────────────────────────────────────
 // Admin mode — only owner (เอ๋) can delete/restore/reset/edit data.
@@ -238,6 +240,52 @@ function markCompleted(name, done) {
   const s = loadCompletedSet();
   if (done) s.add(name); else s.delete(name);
   saveCompletedSet(s);
+}
+
+// ── Pinned projects (localStorage) ──────────────────────────────────
+// Pinned projects float to the top of the projects list (above non-
+// pinned active projects). Pin/unpin toggled by star button on each
+// card. State is per-device (localStorage, not Firebase) — each user
+// can pin their own working set.
+
+function loadPinnedSet() {
+  try {
+    const raw = localStorage.getItem(LS_PINNED_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch { return new Set(); }
+}
+
+function savePinnedSet(set) {
+  try { localStorage.setItem(LS_PINNED_KEY, JSON.stringify([...set])); } catch {}
+}
+
+function isPinned(key) { return loadPinnedSet().has(key); }
+
+function togglePinned(key) {
+  const s = loadPinnedSet();
+  if (s.has(key)) s.delete(key); else s.add(key);
+  savePinnedSet(s);
+}
+
+// ── Manual project order (localStorage) ─────────────────────────────
+// Array<projectKey> — user-defined order from drag-and-drop. Projects
+// listed here take precedence over default updated_at sort. Projects
+// NOT in the array fall back to default sort and slot in after the
+// manually-ordered ones (within the same pinned/active/completed band).
+
+function loadProjectOrder() {
+  try {
+    const raw = localStorage.getItem(LS_PROJECT_ORDER_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+
+function saveProjectOrder(arr) {
+  try { localStorage.setItem(LS_PROJECT_ORDER_KEY, JSON.stringify(arr)); } catch {}
 }
 
 // ── Bent parts (per-part workshop tracking) ─────────────────────────
@@ -721,6 +769,7 @@ function projectList() {
   const auto = manifest.auto_generated || {};
   const bentSet = loadBentSet();
   const assembledSet = loadAssembledSet();
+  const pinnedSet = loadPinnedSet();
   const items = Object.entries(projects).map(([key, p]) => {
     const parts = p.parts || [];
     // A part is "drawn" only if it has a manifest entry AND isn't soft-deleted.
@@ -732,6 +781,7 @@ function projectList() {
       key,
       ...p,
       completed: isCompleted(key),
+      pinned: pinnedSet.has(key),
       drawn_count: drawnCount,
       missing_count: parts.length - drawnCount,
       bent_count: bentCount,
@@ -740,9 +790,29 @@ function projectList() {
       assembled_pct: parts.length ? Math.round((assembledCount * 100) / parts.length) : 0,
     };
   });
-  // Sort: active first by updated_at desc, then completed by updated_at desc
+
+  // Sort priority:
+  //   1. Pinned active projects first (manual order > updated_at)
+  //   2. Non-pinned active projects (manual order > updated_at)
+  //   3. Completed projects (manual order > updated_at)
+  // Manual order from drag-and-drop is honored within each band; projects
+  // not yet ranked manually fall back to updated_at desc and sort after
+  // the ranked ones in the same band.
+  const manualOrder = loadProjectOrder();
+  const rankMap = new Map(manualOrder.map((k, i) => [k, i]));
+
+  function bandRank(p) {
+    if (p.completed) return 2;
+    if (p.pinned) return 0;
+    return 1;
+  }
+
   items.sort((a, b) => {
-    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    const bandDiff = bandRank(a) - bandRank(b);
+    if (bandDiff !== 0) return bandDiff;
+    const ra = rankMap.has(a.key) ? rankMap.get(a.key) : Infinity;
+    const rb = rankMap.has(b.key) ? rankMap.get(b.key) : Infinity;
+    if (ra !== rb) return ra - rb;
     const ta = a.updated_at || a.created_at || '';
     const tb = b.updated_at || b.created_at || '';
     return tb.localeCompare(ta);
@@ -801,10 +871,11 @@ function renderProjectsHome() {
   }
 
   const html = items.map((p, idx) => {
-    const isTop = idx === 0 && !p.completed;
+    const isTop = idx === 0 && !p.completed && !p.pinned;
     const cls = [
       'project-card',
       p.completed ? 'completed' : '',
+      p.pinned ? 'pinned' : '',
       isTop ? 'active-today' : '',
     ].filter(Boolean).join(' ');
     const statusBadge = p.completed
@@ -827,20 +898,62 @@ function renderProjectsHome() {
       <div class="progress-bar bent-bar" title="Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
       <div class="progress-bar assembled-bar" title="🧩 Assembly"><div class="progress-fill" style="width:${p.assembled_pct}%"></div></div>
     `;
+    const pinTitle = p.pinned ? 'Unpin from top' : 'Pin to top';
+    const pinBtn = `<button class="pin-btn ${p.pinned ? 'on' : ''}" data-project="${escapeHtml(p.key)}" aria-label="${pinTitle}" title="${pinTitle}">${p.pinned ? '★' : '☆'}</button>`;
+    const dragHandle = `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`;
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
-        <div class="project-name">${escapeHtml(p.name || p.key)}${statusBadge}</div>
-        <div class="project-meta">${escapeHtml(updated)} · ${uniq} unique · ${totalQty} pcs · ${p.drawn_count}/${uniq} drawn</div>
-        ${progressBars}
-        <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
+        ${dragHandle}
+        <div class="project-body">
+          <div class="project-name">${escapeHtml(p.name || p.key)}${statusBadge}</div>
+          <div class="project-meta">${escapeHtml(updated)} · ${uniq} unique · ${totalQty} pcs · ${p.drawn_count}/${uniq} drawn</div>
+          ${progressBars}
+          <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
+        </div>
+        ${pinBtn}
       </div>`;
   }).join('');
 
   ROOT.innerHTML = `<div class="project-list">${html}</div>`;
 
+  // Card click → drill into project (but ignore clicks on pin button and drag handle).
   ROOT.querySelectorAll('.project-card').forEach(el => {
-    el.addEventListener('click', () => navTo({ kind: 'project', name: el.dataset.project }));
+    el.addEventListener('click', (ev) => {
+      if (ev.target.closest('.pin-btn, .drag-handle')) return;
+      navTo({ kind: 'project', name: el.dataset.project });
+    });
   });
+
+  // Pin/unpin button — re-render to reflect new sort position.
+  ROOT.querySelectorAll('.pin-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      togglePinned(btn.dataset.project);
+      render();
+    });
+  });
+
+  // Drag-and-drop reorder (Sortable.js — touch-friendly for iPad).
+  // Records the new visual order into localStorage, then re-renders so
+  // the sort logic in projectList() reflects the manual order.
+  const listEl = ROOT.querySelector('.project-list');
+  if (listEl && window.Sortable) {
+    Sortable.create(listEl, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'project-card-ghost',
+      chosenClass: 'project-card-chosen',
+      dragClass: 'project-card-drag',
+      forceFallback: true,  // consistent behavior across desktop + iPad
+      fallbackTolerance: 4,
+      onEnd: () => {
+        const newOrder = [...listEl.querySelectorAll('.project-card')]
+          .map(el => el.dataset.project);
+        saveProjectOrder(newOrder);
+        render();
+      },
+    });
+  }
 
   COUNT_EL.textContent = `${items.length} projects · ${items.filter(p => !p.completed).length} active`;
 }

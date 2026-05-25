@@ -228,11 +228,23 @@ h1 {
   cursor: pointer;
   border: 1px solid #232830;
   transition: background 0.15s;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
 }
+
+.project-body { min-width: 0; }
 
 .project-card.completed {
   opacity: 0.5;
   border-style: dashed;
+}
+
+.project-card.pinned {
+  border-color: #f2c870;
+  background: #221d10;
+  box-shadow: inset 3px 0 0 0 #f2c870;
 }
 
 .project-card.active-today {
@@ -240,6 +252,12 @@ h1 {
   background: #1c2535;
   box-shadow: 0 0 0 0 rgba(74, 144, 226, 0.5);
   animation: todayPulse 2.5s ease-out infinite;
+}
+
+/* Pinned + today — combine: keep pinned amber rail, blue pulse outside */
+.project-card.pinned.active-today {
+  background: #1f1f1a;
+  box-shadow: inset 3px 0 0 0 #f2c870;
 }
 
 @keyframes todayPulse {
@@ -253,6 +271,58 @@ h1 {
 }
 
 .project-card:active { background: #232830; }
+
+/* ── Drag handle (left side) — Sortable.js uses this as the drag grip ── */
+.drag-handle {
+  color: #555;
+  font-size: 18px;
+  cursor: grab;
+  user-select: none;
+  padding: 6px 4px;
+  line-height: 1;
+  letter-spacing: -2px;
+  transition: color 0.15s;
+  touch-action: none;
+}
+.drag-handle:hover { color: #aaa; }
+.drag-handle:active { cursor: grabbing; }
+
+/* ── Pin button (right side) — star, toggle on/off ── */
+.pin-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-size: 20px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.pin-btn:hover { color: #f2c870; border-color: rgba(242, 200, 112, 0.4); background: rgba(242, 200, 112, 0.08); }
+.pin-btn.on { color: #f2c870; }
+.pin-btn.on:hover { color: #ffd97a; background: rgba(242, 200, 112, 0.15); }
+.pin-btn:active { transform: scale(0.9); }
+
+/* ── Sortable.js dragging visuals ── */
+.project-card-ghost {
+  opacity: 0.3;
+  background: #2a3540 !important;
+  border-style: dashed !important;
+}
+.project-card-chosen {
+  cursor: grabbing;
+}
+.project-card-drag {
+  opacity: 0.95;
+  transform: rotate(0.5deg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
 
 .project-name {
   font-weight: 600;
