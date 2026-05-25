@@ -1106,6 +1106,27 @@ function setProjectViewMode(v) {
 // Project mindmap drill-down center (one per project, persisted)
 const LS_PROJECT_CENTER = 'kd_project_center_v1';
 const LS_PROJECT_LAYOUT = 'kd_project_layout_v1';  // per-project: 'tree' | 'flat' | 'expand'
+const LS_PROJECT_EXPANDED = 'kd_project_expanded_v1';  // per-project: { code: true, ... } — which parents have their children visible (Expand mode)
+
+function getExpandedSet(projectKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_EXPANDED) || '{}');
+    return new Set(Array.isArray(all[projectKey]) ? all[projectKey] : []);
+  } catch { return new Set(); }
+}
+function setExpandedSet(projectKey, set) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_EXPANDED) || '{}');
+    if (set.size) all[projectKey] = [...set];
+    else delete all[projectKey];
+    localStorage.setItem(LS_PROJECT_EXPANDED, JSON.stringify(all));
+  } catch {}
+}
+function toggleExpandedNode(projectKey, code) {
+  const s = getExpandedSet(projectKey);
+  if (s.has(code)) s.delete(code); else s.add(code);
+  setExpandedSet(projectKey, s);
+}
 
 function getProjectLayout(projectKey) {
   try {
@@ -1373,18 +1394,24 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     neighbors = all;
     centerLabel = project.name || projectKey;
   } else if (layout === 'expand') {
-    // Expand — true hierarchical mindmap (country → province → district):
-    // wrappers fan out FROM project, and each wrapper's children fan out
-    // FROM that wrapper (not from project). Edges go parent→child, never
-    // bypassing the wrapper. So a leaf's edge attaches to its wrapper,
-    // and only the wrapper's edge attaches to project.
+    // Expand — progressive click-to-reveal hierarchy. Initial state shows
+    // wrappers only (collapsed). User clicks a wrapper → its children
+    // appear around IT (not around project). Click a child that has its
+    // own children → those appear too. Everything stays on one canvas;
+    // no drill-down navigation.
     neighbors = roots;
     centerLabel = project.name || projectKey;
-    for (const r of roots) {
-      if (r.children && r.children.length > 0) {
-        expandChildrenByParent.set(r.code, r.children);
+    const expanded = getExpandedSet(projectKey);
+    // Recursively queue children for every EXPANDED parent — at any
+    // depth (district → sub-district → village). The renderer uses
+    // expandChildrenByParent to lay children next to their parent.
+    function queueExpanded(node) {
+      if (expanded.has(node.code) && node.children && node.children.length > 0) {
+        expandChildrenByParent.set(node.code, node.children);
+        for (const c of node.children) queueExpanded(c);
       }
     }
+    for (const r of roots) queueExpanded(r);
   } else if (currentCenterCode) {
     centerNode = _findNodeByCode(roots, currentCenterCode);
     if (!centerNode) {
@@ -1548,7 +1575,8 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     </g>`;
 
   // Spokes — large cards with inline buttons (workflow controls which checkbox is shown)
-  const spokes = positioned.map(p => _renderProjectSpoke(p, projectKey, workflow)).join('');
+  const expandedSetForSpokes = (layout === 'expand') ? getExpandedSet(projectKey) : null;
+  const spokes = positioned.map(p => _renderProjectSpoke(p, projectKey, workflow, expandedSetForSpokes)).join('');
 
   // Breadcrumb
   const breadcrumbHtml = breadcrumb.map((b, i) => {
@@ -1617,11 +1645,12 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
 //   • 'bending'  → shows bend checkbox on the right (assembly hidden)
 //   • 'assembly' → shows assembly checkbox on the right (bend hidden)
 // Missing/outdated parts get a big red WARNING strip across the bottom.
-function _renderProjectSpoke(p, projectKey, workflow) {
+function _renderProjectSpoke(p, projectKey, workflow, expandedSet) {
   const n = p.node;
   const code = n.code;
   const fam = n.family || 'Other';
   const hasChildren = n.children && n.children.length > 0;
+  const isExpanded = !!(expandedSet && expandedSet.has(code));
   const halfW = PSPOKE_W / 2;  // 120
   const halfH = PSPOKE_H / 2;  // 32
 
@@ -1645,7 +1674,9 @@ function _renderProjectSpoke(p, projectKey, workflow) {
   const tText = formatDuration(tSec);
 
   // Drill-in arrow icon
-  const drillHint = hasChildren ? '▶' : '';
+  // ▼ when this parent's children are currently revealed on canvas
+  // (Expand mode); ▶ when collapsed or in Tree mode (drill-to-open).
+  const drillHint = hasChildren ? (isExpanded ? '▼' : '▶') : '';
   const childCount = hasChildren ? n.children.length : '';
 
   // Button positions — bottom row of card
@@ -1819,11 +1850,21 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
       setSpokeOverride(centerKeyForOverrides, drag.code, dxFromAuto, dyFromAuto);
       render();  // re-render to show Reset button
     } else {
-      // Click on body — drill in or leaf-action
+      // Click on body — behaviour depends on layout mode:
+      //   • Tree   — drill into the wrapper (replaces center)
+      //   • Expand — toggle the wrapper's children visible/hidden on
+      //              the SAME canvas (no navigation)
+      //   • Flat   — no children to drill; leaf path runs below
+      // Leaf path is always: route per feedback_leaf_click_routing.
       const node = _findNodeByCode(roots, drag.code);
       if (!node) return;
       if (node.children && node.children.length > 0) {
-        setProjectMindmapCenter(projectKey, drag.code);
+        const currentLayout = getProjectLayout(projectKey);
+        if (currentLayout === 'expand') {
+          toggleExpandedNode(projectKey, drag.code);
+        } else {
+          setProjectMindmapCenter(projectKey, drag.code);
+        }
         render();
       } else {
         // Leaf — route per feedback_leaf_click_routing rule:
