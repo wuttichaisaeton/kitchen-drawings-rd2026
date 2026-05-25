@@ -1132,7 +1132,8 @@ function getProjectLayout(projectKey) {
   try {
     const all = JSON.parse(localStorage.getItem(LS_PROJECT_LAYOUT) || '{}');
     const v = all[projectKey];
-    if (v === 'flat' || v === 'expand') return v;
+    // 'flat' is a legacy value (Show all was removed) — collapse to tree.
+    if (v === 'expand') return 'expand';
     return 'tree';
   } catch { return 'tree'; }
 }
@@ -2082,11 +2083,8 @@ function renderProject(key) {
         <button class="view-toggle-btn ${getProjectLayout(key) === 'tree' ? 'active' : ''}" id="layout-tree" title="Tree — wrappers + drill-down">
           🌲 Tree
         </button>
-        <button class="view-toggle-btn ${getProjectLayout(key) === 'expand' ? 'active' : ''}" id="layout-expand" title="Expand — wrappers + children fanned out around them">
+        <button class="view-toggle-btn ${getProjectLayout(key) === 'expand' ? 'active' : ''}" id="layout-expand" title="Expand — wrappers + click to reveal children inline">
           🕸 Expand
-        </button>
-        <button class="view-toggle-btn ${getProjectLayout(key) === 'flat' ? 'active' : ''}" id="layout-flat" title="Show all — every part flat around the center">
-          🔍 Show all
         </button>
       </div>
     </div>
@@ -2111,11 +2109,6 @@ function renderProject(key) {
   ROOT.querySelector('#layout-expand').addEventListener('click', () => {
     setProjectLayout(key, 'expand');
     setProjectMindmapCenter(key, null);  // expand mode ignores center anyway
-    render();
-  });
-  ROOT.querySelector('#layout-flat').addEventListener('click', () => {
-    setProjectLayout(key, 'flat');
-    setProjectMindmapCenter(key, null);  // reset drill state when going flat
     render();
   });
   // Workflow toggle (Bending Kanban ↔ Assembly Kanban)
