@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-25T01:53:55.418737+00:00",
+  "generated_at": "2026-05-25T02:17:32.265771+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1829,7 +1829,7 @@
       "name": "100VB0-110000",
       "status": "active",
       "created_at": "2026-05-22T21:52:11.208867+00:00",
-      "updated_at": "2026-05-25T01:53:55.417543+00:00",
+      "updated_at": "2026-05-25T02:17:32.264481+00:00",
       "total_unique_parts": 16,
       "total_qty": 26,
       "parts": [
@@ -1837,97 +1837,113 @@
           "code": "BK1DN1-110000",
           "qty": 1,
           "family": "Back-Down",
-          "parent_code": "BK0DN0-110000"
+          "parent_code": "BK0DN0-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:5KfBBKp-SWmsOnPyb_dSYw"
         },
         {
           "code": "BK2TR1-110000",
           "qty": 4,
           "family": "Back-Down",
-          "parent_code": "BK0DN0-110000"
+          "parent_code": "BK0DN0-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:BrD3P6kKSfiaXe4H8l7emA"
         },
         {
           "code": "BM2LI0-110000",
           "qty": 3,
           "family": "Beam",
-          "parent_code": "BM2LI3-110000"
+          "parent_code": "BM2LI3-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:UB72AC1RSpmJi6gidIoomQ"
         },
         {
           "code": "DSB0BA-110050",
           "qty": 1,
           "family": "Back-Down",
-          "parent_code": "DSB0FA-110000"
+          "parent_code": "DSB0FA-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:7AoYkK-XSBKuwxHyUUfx3A"
         },
         {
           "code": "DSB0F0-110050",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "DSB0FA-110000"
+          "parent_code": "DSB0FA-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:x8rUrwDDTpSPaIaVKKdJlw"
         },
         {
           "code": "DSV100-110020",
           "qty": 1,
           "family": "Drawer",
-          "parent_code": "DSVBA1-110000"
+          "parent_code": "DSVBA1-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:0Ec3Z2uYREKNirnTFhuoEQ"
         },
         {
           "code": "DSV2B1-110020",
           "qty": 1,
           "family": "Drawer",
-          "parent_code": "DSVBA1-110000"
+          "parent_code": "DSVBA1-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:kUbpTRwOQRCnhnUwPaIUuw"
         },
         {
           "code": "DSV2B2-110020",
           "qty": 1,
           "family": "Drawer",
-          "parent_code": "DSVBA2-110000"
+          "parent_code": "DSVBA2-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:ulkQLJrrRC6h0Y28-vjNTw"
         },
         {
           "code": "DSV2B3-110020",
           "qty": 1,
           "family": "Drawer",
-          "parent_code": "DSVBA3-110000"
+          "parent_code": "DSVBA3-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:EKvY6MHsTI-Om0NtVFgxZg"
         },
         {
           "code": "DSV2B4-110020",
           "qty": 1,
           "family": "Drawer",
-          "parent_code": "DSVBA4-110000"
+          "parent_code": "DSVBA4-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:YgT8g2DESISJ_Vs4lA6I1w"
         },
         {
           "code": "FN0F00-110000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-110004"
+          "parent_code": "FN0FL2-110004",
+          "urn": "urn:adsk.wipprod:dm.lineage:idlUz3EQR5eOqTigxEcl3w"
         },
         {
           "code": "FN1BLA-110000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-110004"
+          "parent_code": "FN0FL2-110004",
+          "urn": "urn:adsk.wipprod:dm.lineage:uWKlBTWRT4aGRktmwdnW2g"
         },
         {
           "code": "FN2BNX-110000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-110004"
+          "parent_code": "FN0FL2-110004",
+          "urn": "urn:adsk.wipprod:dm.lineage:_HP3CUDcTDO2fLRrvlltrg"
         },
         {
           "code": "TS1BHH-110000",
           "qty": 2,
           "family": "Top Sup",
-          "parent_code": "TS002H-110000"
+          "parent_code": "TS002H-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:Q8-6FBBuTKCsIY6xeKoNWQ"
         },
         {
           "code": "TS1BVH-060000",
           "qty": 2,
           "family": "Top Sup",
-          "parent_code": "TS002H-110000"
+          "parent_code": "TS002H-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
         },
         {
           "code": "TS2TRX-000000",
           "qty": 4,
           "family": "Top Sup",
-          "parent_code": "TS2TR4-110000"
+          "parent_code": "TS2TR4-110000",
+          "urn": "urn:adsk.wipprod:dm.lineage:6kBuaRG0S3yhjW5i3x39Kw"
         }
       ]
     },
