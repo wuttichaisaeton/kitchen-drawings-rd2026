@@ -1260,9 +1260,11 @@ function projectList() {
   const pinnedSet = loadPinnedSet();
   const items = Object.entries(projects).map(([key, p]) => {
     const parts = p.parts || [];
-    // A part is "drawn" only if it has a manifest entry AND isn't soft-deleted.
-    // Soft-deleted = workshop flagged "redo this drawing" (wrong title block etc.)
-    const drawnCount = parts.filter(part => !!auto[part.code] && !isDrawingSoftDeleted(part.code)).length;
+    // A part is "drawn" if pdfUrlForCode resolves to a URL — covers
+    // manifest entries (Fusion-exported), direct web uploads, and
+    // prefix-share / group siblings of uploads. Returns '' if soft-
+    // deleted, so workshop-flagged-redo parts still count as missing.
+    const drawnCount = parts.filter(part => !!pdfUrlForCode(part.code)).length;
     const bentCount = parts.filter(part => bentSet.has(bentKey(key, part.code))).length;
     const assembledCount = parts.filter(part => assembledSet.has(bentKey(key, part.code))).length;
     return {
@@ -2439,8 +2441,11 @@ function renderProject(key) {
   const top = stack[stack.length - 1] || {};
   const filter = top.filter || 'all';
 
-  // "Missing" includes both: no manifest entry AND soft-deleted (flagged for redo)
-  const isMissing = (p) => !auto[p.code] || isDrawingSoftDeleted(p.code);
+  // "Missing" = no resolvable drawing for this part. pdfUrlForCode
+  // returns '' when there's neither a manifest entry nor an upload
+  // (own or via prefix-share / group sibling), and also '' when soft-
+  // deleted — so workshop-flagged-redo parts still surface as missing.
+  const isMissing = (p) => !pdfUrlForCode(p.code);
   const visibleParts = filter === 'missing' ? parts.filter(isMissing) : parts;
   const missingCount = parts.filter(isMissing).length;
 
