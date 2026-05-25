@@ -189,9 +189,34 @@ function pdfUrlForCode(code) {
   const effective = _effectiveDrawingCode(code);
   const e = (manifest.auto_generated || {})[effective];
   if (e) return pdfUrl(e);
-  // Then check Firebase-uploaded PDFs (user drag-dropped). Either the
-  // exact code or a group sibling having an upload counts.
-  const upload = _uploadedPdfsCache[effective] || _uploadedPdfsCache[code];
+  // Then check web-uploaded PDFs (admin drag-drop, served by GitHub
+  // Pages). Direct match by effective or original code, then — for
+  // prefix-shared families — by any sibling with the same prefix.
+  let upload = _uploadedPdfsCache[effective] || _uploadedPdfsCache[code];
+  if (!upload) {
+    const prefix = code.split('-')[0];
+    if (prefix && _drawingAliasPrefixes.has(prefix)) {
+      for (const otherCode of Object.keys(_uploadedPdfsCache || {})) {
+        if (otherCode === code) continue;
+        if (otherCode.startsWith(prefix + '-')) {
+          upload = _uploadedPdfsCache[otherCode];
+          break;
+        }
+      }
+    }
+    // Explicit groups too, in case a future upload covers a group sibling.
+    if (!upload) {
+      const group = _drawingAliasIndex.get(code);
+      if (group) {
+        for (const sibling of group) {
+          if (sibling !== code && _uploadedPdfsCache[sibling]) {
+            upload = _uploadedPdfsCache[sibling];
+            break;
+          }
+        }
+      }
+    }
+  }
   if (upload && upload.url) return upload.url;
   return '';
 }
@@ -1194,11 +1219,17 @@ function partsByFamily() {
         if (seen.has(p.code)) continue;
         const fam = p.family || 'Other';
         if (!out[fam]) out[fam] = [];
+        // If a sibling upload covers this code via prefix-share or an
+        // explicit group, pdfUrlForCode returns a non-empty URL — mark
+        // as drawn so workshop sees the part is ready.
+        const resolved = pdfUrlForCode(p.code);
         out[fam].push({
           code: p.code,
           family: fam,
           pdf: null,
-          status: 'missing',
+          url: resolved || undefined,
+          status: resolved ? 'drawn' : 'missing',
+          isUploaded: !!resolved,
           urn: p.urn || null,
           drawing_urn: p.drawing_urn || null,
         });
