@@ -3669,7 +3669,10 @@ function renderLibraryHome() {
 function renderFamily(fam) {
   const items = partsByFamily()[fam] || [];
   const list = items.map(p => {
-    const url = pdfUrl(p);
+    // pdfUrlForCode handles uploads (full URL) and aliases; pdfUrl is
+    // only correct for manifest entries whose filename happens to live
+    // next to index.html.
+    const url = pdfUrlForCode(p.code) || pdfUrl(p);
     const ver = p.isManual ? '' :
       (p.last_drawn_version > 0 ? `<span class="part-version">v${p.last_drawn_version}</span>` : '');
     return `
@@ -3728,7 +3731,7 @@ function renderSearch(q) {
 
   const rows = matches.map(m => {
     if (m.kind === 'part') {
-      const url = pdfUrl(m);
+      const url = pdfUrlForCode(m.code) || pdfUrl(m);
       const ver = m.isManual ? '' : (m.last_drawn_version > 0 ? `<span class="part-version">v${m.last_drawn_version}</span>` : '');
       return `
         <div class="search-row" data-url="${escapeHtml(url)}">
