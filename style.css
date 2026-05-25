@@ -419,27 +419,9 @@ h1 {
   color: #888;
 }
 
-/* "📄 Project PDF" — single-file accent, distinct from All PDF green. */
-/* Renders as <a> when a PDF exists (browsers open it natively) and as */
-/* <button disabled> otherwise. Both must look identical. */
-a.filter-btn.project-pdf-btn,
-button.filter-btn.project-pdf-btn {
-  background: #2d3a4a;
-  color: #b3c9d9;
-  border-color: #3d4a5a;
-  text-decoration: none;          /* kill the anchor underline */
-  display: inline-flex;
-  align-items: center;
-  font: inherit;                  /* anchor doesn't inherit button font */
-  line-height: 1;
-}
-a.filter-btn.project-pdf-btn:hover { background: #3d4a5a; }
-button.filter-btn.project-pdf-btn[disabled] {
-  opacity: 0.45;
-  cursor: not-allowed;
-  background: #2a2f34;
-  color: #666;
-}
+/* Project PDF button removed — clicking the project mindmap center */
+/* circle opens the PDF instead. See app.js renderProject + the     */
+/* .mm-center click handler. */
 
 /* Deep-link highlight — a bright halo rect is injected by _highlight */
 /* Spoke() as a sibling of .pm-spoke-bg, then auto-removed after 4s. */

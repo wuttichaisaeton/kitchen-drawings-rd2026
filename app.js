@@ -2949,20 +2949,6 @@ function renderProject(key) {
       <div class="filter-group">
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
-        ${(() => {
-          const u = projectPdfUrl(key);
-          if (u) {
-            // Render as a real <a> — browsers handle PDF opens natively
-            // (no JS click handler, no popup-blocker, no PWA standalone
-            // weirdness). Workshop iPad: tap → Safari opens the PDF in
-            // a new tab; app-switcher returns to the PWA.
-            return `<a class="filter-btn project-pdf-btn" id="project-pdf-btn"
-              href="${escapeHtml(u)}" target="_blank" rel="noopener"
-              title="Open the project master drawing (${escapeHtml(key)}.pdf)">📄 Project PDF</a>`;
-          }
-          return `<button class="filter-btn project-pdf-btn" id="project-pdf-btn" disabled
-            title="No drawing yet — run CC_DrawingPDF on ${escapeHtml(key)}.f3d in Fusion, or drag-drop a PDF onto its family chip in admin mode">📄 Project PDF</button>`;
-        })()}
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
       </div>
     </div>
@@ -2984,9 +2970,9 @@ function renderProject(key) {
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
   });
-  // #project-pdf-btn now renders as <a href> when a PDF exists, so
-  // the browser opens the link natively — no JS click handler needed.
-  // The <button disabled> branch (no PDF) is non-clickable by default.
+  // Project PDF button removed — clicking the mindmap center circle
+  // opens the project's master PDF instead (see the .mm-center
+  // handler below).
   // (workflow + layout toggles removed — see commit notes; both bent and
   // assembled buttons render on every spoke, and layout is always Expand.)
   // Wire mindmap events (always — only view mode now)
