@@ -1373,17 +1373,15 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     neighbors = all;
     centerLabel = project.name || projectKey;
   } else if (layout === 'expand') {
-    // Expand — wrappers on inner ring, their children fan out around each
-    // wrapper in the outward direction. Click any spoke (wrapper OR leaf)
-    // acts inline: wrappers don't drill down (already expanded), leaves
-    // route to PDF/Fusion via _routeLeafToFusion.
-    neighbors = roots;
+    // Expand — skip the wrapper layer entirely. The wrappers are
+    // organisational containers (virtual nodes synthesized from
+    // parent_code) — they're not parts the workshop actually touches.
+    // Show only the LEAVES directly as spokes of the project, so the
+    // user can scan and click the parts they care about without a drill
+    // step. Each leaf keeps its wrapper's family colour via family
+    // remap, so the grouping is still visible.
+    neighbors = all.filter(n => !n._is_wrapper && (!n.children || n.children.length === 0));
     centerLabel = project.name || projectKey;
-    for (const r of roots) {
-      if (r.children && r.children.length > 0) {
-        expandChildrenByParent.set(r.code, r.children);
-      }
-    }
   } else if (currentCenterCode) {
     centerNode = _findNodeByCode(roots, currentCenterCode);
     if (!centerNode) {
