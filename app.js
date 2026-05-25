@@ -1585,29 +1585,37 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Edges — anchor at the geometric centre of each rectangle (both
-  // horizontally and vertically). Project edge ends at the wrapper's
-  // centre; child edges also start at the wrapper's centre and end at
-  // the child's centre. All connections converge on one shared point
-  // per box, regardless of which side the line comes from. (User feedback:
-  // "anchor จุดที่ center ทั้งแนวตั้งและแนวนอน — ไม่ตัดที่ขอบกล่อง".)
+  // Edges — child edges trimmed to rectangle boundaries (start at the
+  // PARENT rect edge in the direction of the child, end at the CHILD
+  // rect edge in the direction of the parent). Project edges still
+  // run centre-to-centre with a slight curve bias so the inner-ring
+  // radials don't stack into a starburst. (Reverted from junction-
+  // point + centre-anchor variants per user.)
+  const halfW = PSPOKE_W / 2;
+  const halfH = PSPOKE_H / 2;
+  function trimToRectEdge(fromX, fromY, toX, toY) {
+    const dx = toX - fromX, dy = toY - fromY;
+    const adx = Math.abs(dx) || 1e-9;
+    const ady = Math.abs(dy) || 1e-9;
+    const t = Math.min(halfW / adx, halfH / ady);
+    return { x: fromX + dx * t, y: fromY + dy * t };
+  }
   const edges = positioned.map(p => {
     const isChild = !!p._parentSpokePos;
-    const fromX = isChild ? p._parentSpokePos.x : cx;
-    const fromY = isChild ? p._parentSpokePos.y : cy;
+    const fromCenterX = isChild ? p._parentSpokePos.x : cx;
+    const fromCenterY = isChild ? p._parentSpokePos.y : cy;
     if (isChild) {
-      // Straight line, both ends at rectangle centres (under the boxes).
+      const start = trimToRectEdge(fromCenterX, fromCenterY, p.x, p.y);
+      const end = trimToRectEdge(p.x, p.y, fromCenterX, fromCenterY);
       const styleAttr = ` style="${famVars(p.node.family || 'Other')}"`;
-      return `<path class="mm-edge mm-edge-child" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${fromX} ${fromY} L ${p.x} ${p.y}" />`;
+      return `<path class="mm-edge mm-edge-child" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${start.x} ${start.y} L ${end.x} ${end.y}" />`;
     }
-    // Project edge — slight curve bias so the 10 inner-ring lines don't
-    // stack on each other in a starburst.
-    const mx = (fromX + p.x) / 2, my = (fromY + p.y) / 2;
-    const dx = p.x - fromX, dy = p.y - fromY;
+    const mx = (fromCenterX + p.x) / 2, my = (fromCenterY + p.y) / 2;
+    const dx = p.x - fromCenterX, dy = p.y - fromCenterY;
     const len = Math.hypot(dx, dy) || 1;
     const bias = 22;
     const bx = -dy / len * bias, by = dx / len * bias;
-    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
+    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${fromCenterX} ${fromCenterY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
   }).join('');
 
   // Center node
