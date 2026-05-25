@@ -1,7 +1,19 @@
 {
-  "_doc": "Drawing aliases — groups of part codes that share one workshop drawing. When ANY code in a group has a manifest entry (PDF generated), ALL codes in the group are treated as 'drawn' and route to the same drawing on click. Master URN stays per-code (master .f3d files are separate). Edit by hand or via future admin UI.",
+  "_doc": "Drawing aliases — codes that share one workshop drawing. Two mechanisms: (1) 'groups' = explicit arrays of codes that share. (2) 'prefix_shares' = code prefixes; any code starting with '<prefix>-' shares with every other same-prefix code. Both look up the manifest auto_generated[] entry of a sibling when the code itself has no entry. Master URN stays per-code.",
   "version": 1,
   "groups": [
     ["FN1BLA-110000", "FN2BNX-110000"]
+  ],
+  "prefix_shares": [
+    "BK1DN1",
+    "BK2TR1",
+    "BM2LI0",
+    "BM2LI3",
+    "TS1BVH",
+    "TS1BHH",
+    "TS2TRX",
+    "TS2TR4",
+    "FN1BLA",
+    "FN3BLA"
   ]
 }

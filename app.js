@@ -105,26 +105,39 @@ async function fetchJson(url) {
 }
 
 // ──────────────────────────────────────────────────────────────────────
-// Drawing aliases — groups of part codes that share one workshop drawing.
-// Source: drawings-ui/Drawings/drawing_aliases.json.
+// Drawing aliases — groups / prefix-shares of part codes that share one
+// workshop drawing. Source: drawings-ui/Drawings/drawing_aliases.json.
 //
-// When any code in a group has a manifest entry, ALL codes in the group
-// are treated as "drawn" with the same pdf/drawing_urn. Master URN stays
-// per-code (master .f3d files are still separate).
-//
-// _drawingAliasIndex: Map<code, code[]>  — code → sibling codes in same group
+// Two mechanisms:
+//   1. "groups" — explicit arrays of codes. Any code in a group with a
+//      manifest entry covers the others. e.g. ["FN1BLA-110000",
+//      "FN2BNX-110000"] → both share whichever has the entry.
+//   2. "prefix_shares" — list of code prefixes. Any code starting with
+//      "<prefix>-" shares drawings with every other code that has the
+//      same prefix. Useful for parametric masters with many config rows
+//      that all derive from one drawing (e.g. BK1DN1-* all share the
+//      BK1DN1 master's drawing).
 // ──────────────────────────────────────────────────────────────────────
-let _drawingAliasIndex = new Map();
+let _drawingAliasIndex = new Map();      // code → group array
+let _drawingAliasPrefixes = new Set();   // prefixes that share drawings
 
 function _buildDrawingAliasIndex(aliasData) {
   _drawingAliasIndex = new Map();
-  if (!aliasData || !Array.isArray(aliasData.groups)) return;
-  for (const group of aliasData.groups) {
-    if (!Array.isArray(group) || group.length < 2) continue;
-    for (const code of group) {
-      // Each code maps to the FULL group (including itself). When resolving,
-      // we skip the code itself and try the rest.
-      _drawingAliasIndex.set(code, group);
+  _drawingAliasPrefixes = new Set();
+  if (!aliasData) return;
+  if (Array.isArray(aliasData.groups)) {
+    for (const group of aliasData.groups) {
+      if (!Array.isArray(group) || group.length < 2) continue;
+      for (const code of group) {
+        _drawingAliasIndex.set(code, group);
+      }
+    }
+  }
+  if (Array.isArray(aliasData.prefix_shares)) {
+    for (const prefix of aliasData.prefix_shares) {
+      if (typeof prefix === 'string' && prefix) {
+        _drawingAliasPrefixes.add(prefix);
+      }
     }
   }
 }
@@ -134,10 +147,23 @@ function _buildDrawingAliasIndex(aliasData) {
 function _effectiveDrawingCode(code) {
   const auto = (manifest && manifest.auto_generated) || {};
   if (auto[code]) return code;  // self has the drawing — use as-is
+  // 1. Explicit group — first sibling with a manifest entry wins.
   const group = _drawingAliasIndex.get(code);
-  if (!group) return code;
-  for (const sibling of group) {
-    if (sibling !== code && auto[sibling]) return sibling;
+  if (group) {
+    for (const sibling of group) {
+      if (sibling !== code && auto[sibling]) return sibling;
+    }
+  }
+  // 2. Prefix share — only checked if the code's prefix is in the
+  // share list. First other code with the same prefix that has an
+  // entry wins. Iteration order isn't guaranteed; for our use case
+  // (all same-prefix codes share one drawing) any match is correct.
+  const prefix = code.split('-')[0];
+  if (prefix && _drawingAliasPrefixes.has(prefix)) {
+    for (const otherCode of Object.keys(auto)) {
+      if (otherCode === code) continue;
+      if (otherCode.startsWith(prefix + '-')) return otherCode;
+    }
   }
   return code;
 }
