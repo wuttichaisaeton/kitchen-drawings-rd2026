@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-25T02:17:32.265771+00:00",
+  "generated_at": "2026-05-25T02:28:44.102334+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1981,24 +1981,27 @@
       "name": "FN0000-110000",
       "status": "active",
       "created_at": "2026-05-25T01:40:27.080797+00:00",
-      "updated_at": "2026-05-25T01:40:27.080797+00:00",
+      "updated_at": "2026-05-25T02:28:44.100982+00:00",
       "total_unique_parts": 3,
       "total_qty": 3,
       "parts": [
         {
           "code": "FN0F00-110000",
           "qty": 1,
-          "family": "Floor"
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:idlUz3EQR5eOqTigxEcl3w"
         },
         {
-          "code": "FN2BLA-110000",
+          "code": "FN1BLA-110000",
           "qty": 1,
-          "family": "Floor"
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:uWKlBTWRT4aGRktmwdnW2g"
         },
         {
           "code": "FN2BNX-110000",
           "qty": 1,
-          "family": "Floor"
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:_HP3CUDcTDO2fLRrvlltrg"
         }
       ]
     }
