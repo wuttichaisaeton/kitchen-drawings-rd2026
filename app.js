@@ -1421,32 +1421,29 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Expand mode — for each wrapper, place its children along a TANGENT
-  // line through the wrapper, perpendicular to the project→wrapper ray.
-  // This keeps children inside the wrapper's angular "slice" so they
-  // don't visually collide with adjacent wrappers' clusters. Each child
-  // is also pushed outward (away from center) by childOutwardOffset so
-  // it's clear which wrapper they belong to and edges don't cross.
+  // Expand mode — for each wrapper, fan its children outward on a 2nd
+  // ring at greater radius. Tight fan span (≤30°) keeps children within
+  // the wrapper's angular "slice" (10 wrappers = 36° per slice). Larger
+  // child distance means children sit on a wider outer ring where each
+  // slice's arc length is bigger, so they don't crowd siblings.
   if (layout === 'expand' && expandChildrenByParent.size > 0) {
-    const childSpacing = PSPOKE_W + 30;   // 270 — space between child spokes
-    const childOutwardOffset = 110;        // push children away from center
-    const wrappersOnly = positioned.slice();  // freeze list before pushing kids
+    const childDist = 290;  // 1.4x the wrapper-to-project radius — clearly outside the wrapper
+    const wrappersOnly = positioned.slice();  // freeze before pushing kids
     for (const wp of wrappersOnly) {
       const kids = expandChildrenByParent.get(wp.node.code);
       if (!kids || !kids.length) continue;
       const k = kids.length;
-      // Unit vector from project center (0,0) to wrapper (outward direction)
-      const wLen = Math.hypot(wp.x, wp.y) || 1;
-      const ux = wp.x / wLen, uy = wp.y / wLen;
-      // Tangent vector (perpendicular, rotated +90°)
-      const tx = -uy, ty = ux;
-      // Start point for the children line: a bit outside the wrapper
-      const startX = wp.x + childOutwardOffset * ux;
-      const startY = wp.y + childOutwardOffset * uy;
+      // Angle from project center to wrapper (outward radial direction)
+      const wAngle = Math.atan2(wp.y, wp.x);
+      // Fan tightens for small k and widens slowly for large k, capped
+      // at ~30° total so it never exceeds the wrapper slice (36° for 10
+      // wrappers).
+      const fanSpan = k <= 1 ? 0 : Math.min(Math.PI / 6, (k - 1) * 0.12);
       for (let i = 0; i < k; i++) {
-        const t = k > 1 ? (i - (k - 1) / 2) : 0;  // centred on wrapper line
-        const cxL = startX + t * childSpacing * tx;
-        const cyL = startY + t * childSpacing * ty;
+        const t = k > 1 ? (i / (k - 1) - 0.5) : 0;  // -0.5..+0.5
+        const a = wAngle + t * fanSpan;
+        const cxL = wp.x + childDist * Math.cos(a);
+        const cyL = wp.y + childDist * Math.sin(a);
         positioned.push({
           node: kids[i], x: cxL, y: cyL,
           _autoX: cxL, _autoY: cyL, ring: 2,
@@ -1487,7 +1484,9 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
 
   // Edges — child spokes (expand mode) draw FROM their wrapper, not from
   // the project center. Curve bias kept small so the lines don't bend
-  // dramatically when wrapper + child are close.
+  // dramatically when wrapper + child are close. Child edges inherit
+  // the wrapper's family colour via inline famVars so the workshop can
+  // visually trace which family a child belongs to.
   const edges = positioned.map(p => {
     const fromX = p._parentSpokePos ? p._parentSpokePos.x : cx;
     const fromY = p._parentSpokePos ? p._parentSpokePos.y : cy;
@@ -1496,7 +1495,9 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     const len = Math.hypot(dx, dy) || 1;
     const bias = p._parentSpokePos ? 8 : 22;
     const bx = -dy / len * bias, by = dx / len * bias;
-    return `<path class="mm-edge ${p._parentSpokePos ? 'mm-edge-child' : ''}" data-target="${escapeHtml(p.node.code)}" d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
+    const isChild = !!p._parentSpokePos;
+    const styleAttr = isChild ? ` style="${famVars(p.node.family || 'Other')}"` : '';
+    return `<path class="mm-edge ${isChild ? 'mm-edge-child' : ''}" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
   }).join('');
 
   // Center node
