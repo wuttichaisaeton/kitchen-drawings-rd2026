@@ -1040,6 +1040,11 @@ function buildProjectTree(parts, projectKey) {
       family: p.family || 'Other',
       pdf: entry ? entry.pdf : null,
       page: entry ? (entry.page_number || 1) : 1,
+      // URN of the master .f3d (from CC_Assembly) and of the linked drawing
+      // (from manifest auto_generated). Used by leaf-click routing per
+      // feedback_leaf_click_routing rule: missing→open 3D, otherwise→drawing.
+      urn: p.urn || null,
+      drawing_urn: entry ? (entry.drawing_urn || null) : null,
       status,
       _is_wrapper: false,
       children: [],
@@ -1615,9 +1620,11 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
         setProjectMindmapCenter(projectKey, drag.code);
         render();
       } else {
-        // Leaf — try open PDF
-        const url = pdfUrlForCode(drag.code);
-        if (url) window.open(url, '_blank', 'noopener');
+        // Leaf — route per feedback_leaf_click_routing rule:
+        //   • status='missing' (no drawing) → open Fusion 3D master
+        //   • otherwise (drawn/stale/deleted)  → open Fusion drawing (.f2d)
+        //   • Falls back to PDF if no URN, else nothing.
+        _routeLeafToFusion(node);
       }
     }
   }
@@ -2251,6 +2258,30 @@ function _statusBadgeColor(status) {
     stale:   '#ffc107',
     deleted: '#dc3545',
   })[status] || '#888';
+}
+
+// Project mindmap leaf-click routing — per feedback_leaf_click_routing:
+//   • status === 'missing' (No Drawing badge) → open Fusion 3D master via
+//                                                bridge (?urn=master_urn)
+//   • any other status (drawn/stale/deleted)  → open Fusion drawing (.f2d)
+//                                                via bridge (?urn=drawing_urn)
+//   • If bridge unreachable or URN missing → fall back to PDF, then nothing.
+async function _routeLeafToFusion(node) {
+  const wantDrawing = node.status !== 'missing';
+  const primaryUrn = wantDrawing
+    ? (node.drawing_urn || node.urn)  // prefer drawing; if absent, master is better than nothing
+    : (node.urn || node.drawing_urn); // prefer master 3D; if absent, fall through
+  if (primaryUrn) {
+    try {
+      const r = await fetch(
+        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(primaryUrn)}`,
+        { method: 'GET', mode: 'cors' });
+      if (r.ok) return;
+    } catch {}
+  }
+  // Bridge failed or no URN — fall back to PDF if any.
+  const url = pdfUrlForCode(node.code);
+  if (url) window.open(url, '_blank', 'noopener');
 }
 
 // Decide what to do when user clicks a leaf (no children) node:
