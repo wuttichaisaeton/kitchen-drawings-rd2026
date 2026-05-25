@@ -1048,6 +1048,21 @@ function setProjectViewMode(v) {
 
 // Project mindmap drill-down center (one per project, persisted)
 const LS_PROJECT_CENTER = 'kd_project_center_v1';
+const LS_PROJECT_FLAT = 'kd_project_flat_v1';  // per-project "show all" toggle (vs drill-down tree)
+
+function isProjectFlat(projectKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_FLAT) || '{}');
+    return !!all[projectKey];
+  } catch { return false; }
+}
+function setProjectFlat(projectKey, flat) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_FLAT) || '{}');
+    if (flat) all[projectKey] = true; else delete all[projectKey];
+    localStorage.setItem(LS_PROJECT_FLAT, JSON.stringify(all));
+  } catch {}
+}
 function getProjectMindmapCenter(projectKey) {
   try {
     const all = JSON.parse(localStorage.getItem(LS_PROJECT_CENTER) || '{}');
@@ -1076,7 +1091,18 @@ function buildProjectTree(parts, projectKey) {
     const entry = auto[drawingCode];
     const softDeleted = isDrawingSoftDeleted(p.code);  // soft-delete is per-code
     let status = 'missing';
-    if (entry) status = softDeleted ? 'deleted' : 'drawn';
+    if (entry) {
+      if (softDeleted) {
+        status = 'deleted';
+      } else {
+        // Stale = master has been saved AFTER the drawing was last exported.
+        // Detected by comparing fusion_version (master version at last scan)
+        // vs last_drawn_version (master version when PDF was exported).
+        const fv = entry.fusion_version || 0;
+        const lv = entry.last_drawn_version || 0;
+        status = (fv > lv) ? 'stale' : 'drawn';
+      }
+    }
     return {
       code: p.code,
       qty: p.qty || 1,
@@ -1270,11 +1296,18 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     return '<p class="loading">No parts to show</p>';
   }
 
-  const currentCenterCode = getProjectMindmapCenter(projectKey);
+  const flatMode = isProjectFlat(projectKey);
+  const currentCenterCode = flatMode ? null : getProjectMindmapCenter(projectKey);
   let centerNode = null;
   let neighbors;
   let centerLabel;
-  if (currentCenterCode) {
+  if (flatMode) {
+    // Show-all mode — every node (wrappers + leaves) as a spoke. No drill-
+    // down. Useful when the user wants to scan everything at once or when
+    // drill-down clicks aren't landing reliably.
+    neighbors = all;
+    centerLabel = project.name || projectKey;
+  } else if (currentCenterCode) {
     centerNode = _findNodeByCode(roots, currentCenterCode);
     if (!centerNode) {
       setProjectMindmapCenter(projectKey, null);
@@ -1839,6 +1872,14 @@ function renderProject(key) {
           🧩 Assembly
         </button>
       </div>
+      <div class="view-toggle-group layout-toggle">
+        <button class="view-toggle-btn ${isProjectFlat(key) ? '' : 'active'}" id="layout-tree" title="Tree — wrappers + drill-down">
+          🌲 Tree
+        </button>
+        <button class="view-toggle-btn ${isProjectFlat(key) ? 'active' : ''}" id="layout-flat" title="Show all — every part flat around the center">
+          🔍 Show all
+        </button>
+      </div>
     </div>
     ${mindmapHtml}
   `;
@@ -1853,6 +1894,15 @@ function renderProject(key) {
       top.filter = btn.dataset.filter;
       render();
     });
+  });
+  ROOT.querySelector('#layout-tree').addEventListener('click', () => {
+    setProjectFlat(key, false);
+    render();
+  });
+  ROOT.querySelector('#layout-flat').addEventListener('click', () => {
+    setProjectFlat(key, true);
+    setProjectMindmapCenter(key, null);  // reset drill state when going flat
+    render();
   });
   // Workflow toggle (Bending Kanban ↔ Assembly Kanban)
   ROOT.querySelectorAll('.view-toggle-btn').forEach(btn => {
@@ -2307,26 +2357,46 @@ function _statusBadgeColor(status) {
   })[status] || '#888';
 }
 
-// Project mindmap leaf-click routing — per feedback_leaf_click_routing:
-//   • status === 'missing' (No Drawing badge) → open Fusion 3D master via
-//                                                bridge (?urn=master_urn)
-//   • any other status (drawn/stale/deleted)  → open Fusion drawing (.f2d)
-//                                                via bridge (?urn=drawing_urn)
-//   • If bridge unreachable or URN missing → fall back to PDF, then nothing.
+// Project mindmap leaf-click routing — 3-way per feedback_leaf_click_routing
+// (clarified 2026-05-25):
+//
+//   ┌────────────────┬──────────────────────────────────────────────────┐
+//   │ Status         │ Click action                                     │
+//   ├────────────────┼──────────────────────────────────────────────────┤
+//   │ drawn (PDF up- │ Open PDF (read-only — what workshop uses)        │
+//   │   to-date)     │                                                  │
+//   │ stale (PDF     │ Open Fusion drawing (.f2d) — designer updates it │
+//   │   out of date) │                                                  │
+//   │ missing        │ Open Fusion 3D master — designer makes drawing   │
+//   │ deleted        │ Treat as missing — soft-deleted = redo needed    │
+//   └────────────────┴──────────────────────────────────────────────────┘
+//
+// Bridge: http://127.0.0.1:8765/open?urn=<urn>. Fallback to PDF if any.
 async function _routeLeafToFusion(node) {
-  const wantDrawing = node.status !== 'missing';
-  const primaryUrn = wantDrawing
-    ? (node.drawing_urn || node.urn)  // prefer drawing; if absent, master is better than nothing
-    : (node.urn || node.drawing_urn); // prefer master 3D; if absent, fall through
-  if (primaryUrn) {
+  // Drawn + current → open PDF directly
+  if (node.status === 'drawn') {
+    const url = pdfUrlForCode(node.code);
+    if (url) { window.open(url, '_blank', 'noopener'); return; }
+  }
+  // Stale (drawing exists but out of date) → open Fusion drawing
+  if (node.status === 'stale' && node.drawing_urn) {
     try {
       const r = await fetch(
-        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(primaryUrn)}`,
+        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(node.drawing_urn)}`,
         { method: 'GET', mode: 'cors' });
       if (r.ok) return;
     } catch {}
   }
-  // Bridge failed or no URN — fall back to PDF if any.
+  // Missing / deleted / fallback → open Fusion 3D master
+  if (node.urn) {
+    try {
+      const r = await fetch(
+        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(node.urn)}`,
+        { method: 'GET', mode: 'cors' });
+      if (r.ok) return;
+    } catch {}
+  }
+  // Last-resort fallback — PDF if any (handles stale w/o drawing_urn etc.)
   const url = pdfUrlForCode(node.code);
   if (url) window.open(url, '_blank', 'noopener');
 }
