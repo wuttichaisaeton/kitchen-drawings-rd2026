@@ -1048,21 +1048,27 @@ function setProjectViewMode(v) {
 
 // Project mindmap drill-down center (one per project, persisted)
 const LS_PROJECT_CENTER = 'kd_project_center_v1';
-const LS_PROJECT_FLAT = 'kd_project_flat_v1';  // per-project "show all" toggle (vs drill-down tree)
+const LS_PROJECT_LAYOUT = 'kd_project_layout_v1';  // per-project: 'tree' | 'flat' | 'expand'
 
-function isProjectFlat(projectKey) {
+function getProjectLayout(projectKey) {
   try {
-    const all = JSON.parse(localStorage.getItem(LS_PROJECT_FLAT) || '{}');
-    return !!all[projectKey];
-  } catch { return false; }
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_LAYOUT) || '{}');
+    const v = all[projectKey];
+    if (v === 'flat' || v === 'expand') return v;
+    return 'tree';
+  } catch { return 'tree'; }
 }
-function setProjectFlat(projectKey, flat) {
+function setProjectLayout(projectKey, layout) {
   try {
-    const all = JSON.parse(localStorage.getItem(LS_PROJECT_FLAT) || '{}');
-    if (flat) all[projectKey] = true; else delete all[projectKey];
-    localStorage.setItem(LS_PROJECT_FLAT, JSON.stringify(all));
+    const all = JSON.parse(localStorage.getItem(LS_PROJECT_LAYOUT) || '{}');
+    if (layout && layout !== 'tree') all[projectKey] = layout;
+    else delete all[projectKey];
+    localStorage.setItem(LS_PROJECT_LAYOUT, JSON.stringify(all));
   } catch {}
 }
+// Back-compat shim — anywhere still asking "is flat" still works.
+function isProjectFlat(projectKey) { return getProjectLayout(projectKey) === 'flat'; }
+function setProjectFlat(projectKey, flat) { setProjectLayout(projectKey, flat ? 'flat' : 'tree'); }
 function getProjectMindmapCenter(projectKey) {
   try {
     const all = JSON.parse(localStorage.getItem(LS_PROJECT_CENTER) || '{}');
@@ -1296,17 +1302,31 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     return '<p class="loading">No parts to show</p>';
   }
 
-  const flatMode = isProjectFlat(projectKey);
-  const currentCenterCode = flatMode ? null : getProjectMindmapCenter(projectKey);
+  const layout = getProjectLayout(projectKey);  // 'tree' | 'flat' | 'expand'
+  const currentCenterCode = (layout === 'tree') ? getProjectMindmapCenter(projectKey) : null;
   let centerNode = null;
   let neighbors;
   let centerLabel;
-  if (flatMode) {
-    // Show-all mode — every node (wrappers + leaves) as a spoke. No drill-
-    // down. Useful when the user wants to scan everything at once or when
-    // drill-down clicks aren't landing reliably.
+  // Children of each wrapper, for expand mode (parent_code → child nodes).
+  // Empty for tree/flat — only populated in expand to drive the 2nd ring.
+  const expandChildrenByParent = new Map();
+
+  if (layout === 'flat') {
+    // Show-all — every node flat around the project.
     neighbors = all;
     centerLabel = project.name || projectKey;
+  } else if (layout === 'expand') {
+    // Expand — wrappers on inner ring, their children fan out around each
+    // wrapper in the outward direction. Click any spoke (wrapper OR leaf)
+    // acts inline: wrappers don't drill down (already expanded), leaves
+    // route to PDF/Fusion via _routeLeafToFusion.
+    neighbors = roots;
+    centerLabel = project.name || projectKey;
+    for (const r of roots) {
+      if (r.children && r.children.length > 0) {
+        expandChildrenByParent.set(r.code, r.children);
+      }
+    }
   } else if (currentCenterCode) {
     centerNode = _findNodeByCode(roots, currentCenterCode);
     if (!centerNode) {
@@ -1375,6 +1395,33 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
+  // Expand mode — for each wrapper that's now positioned, fan its
+  // children outward along the ray from project center → wrapper.
+  // Children store _parentSpokePos so the edge renderer can draw an
+  // arc from wrapper → child instead of project → child.
+  if (layout === 'expand' && expandChildrenByParent.size > 0) {
+    const fanSpan = Math.PI * 0.7;  // ~126° spread per wrapper
+    const childDist = 230;           // px from wrapper centre to child
+    const wrappersOnly = positioned.slice();  // freeze list before pushing kids
+    for (const wp of wrappersOnly) {
+      const kids = expandChildrenByParent.get(wp.node.code);
+      if (!kids || !kids.length) continue;
+      const k = kids.length;
+      const wAngle = Math.atan2(wp.y, wp.x);
+      for (let i = 0; i < k; i++) {
+        const t = k > 1 ? (i / (k - 1) - 0.5) : 0;
+        const a = wAngle + t * fanSpan;
+        const cxL = wp.x + childDist * Math.cos(a);
+        const cyL = wp.y + childDist * Math.sin(a);
+        positioned.push({
+          node: kids[i], x: cxL, y: cyL,
+          _autoX: cxL, _autoY: cyL, ring: 2,
+          _parentSpokePos: { x: wp.x, y: wp.y, code: wp.node.code },
+        });
+      }
+    }
+  }
+
   // Apply user drag overrides
   const centerKey = `project:${projectKey}:${currentCenterCode || ''}`;
   const overrides = getPositionOverrides()[centerKey] || {};
@@ -1396,15 +1443,26 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
   const half = maxR + padding;
   const W = 2 * half, H = 2 * half;
   const cx = half, cy = half;
-  for (const p of positioned) { p.x += cx; p.y += cy; p._autoX += cx; p._autoY += cy; }
+  for (const p of positioned) {
+    p.x += cx; p.y += cy; p._autoX += cx; p._autoY += cy;
+    if (p._parentSpokePos) {
+      p._parentSpokePos.x += cx;
+      p._parentSpokePos.y += cy;
+    }
+  }
 
-  // Edges
+  // Edges — child spokes (expand mode) draw FROM their wrapper, not from
+  // the project center. Curve bias kept small so the lines don't bend
+  // dramatically when wrapper + child are close.
   const edges = positioned.map(p => {
-    const mx = (cx + p.x) / 2, my = (cy + p.y) / 2;
-    const dx = p.x - cx, dy = p.y - cy;
+    const fromX = p._parentSpokePos ? p._parentSpokePos.x : cx;
+    const fromY = p._parentSpokePos ? p._parentSpokePos.y : cy;
+    const mx = (fromX + p.x) / 2, my = (fromY + p.y) / 2;
+    const dx = p.x - fromX, dy = p.y - fromY;
     const len = Math.hypot(dx, dy) || 1;
-    const bx = -dy / len * 22, by = dx / len * 22;
-    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${cx} ${cy} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
+    const bias = p._parentSpokePos ? 8 : 22;
+    const bx = -dy / len * bias, by = dx / len * bias;
+    return `<path class="mm-edge ${p._parentSpokePos ? 'mm-edge-child' : ''}" data-target="${escapeHtml(p.node.code)}" d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
   }).join('');
 
   // Center node
@@ -1873,10 +1931,13 @@ function renderProject(key) {
         </button>
       </div>
       <div class="view-toggle-group layout-toggle">
-        <button class="view-toggle-btn ${isProjectFlat(key) ? '' : 'active'}" id="layout-tree" title="Tree — wrappers + drill-down">
+        <button class="view-toggle-btn ${getProjectLayout(key) === 'tree' ? 'active' : ''}" id="layout-tree" title="Tree — wrappers + drill-down">
           🌲 Tree
         </button>
-        <button class="view-toggle-btn ${isProjectFlat(key) ? 'active' : ''}" id="layout-flat" title="Show all — every part flat around the center">
+        <button class="view-toggle-btn ${getProjectLayout(key) === 'expand' ? 'active' : ''}" id="layout-expand" title="Expand — wrappers + children fanned out around them">
+          🕸 Expand
+        </button>
+        <button class="view-toggle-btn ${getProjectLayout(key) === 'flat' ? 'active' : ''}" id="layout-flat" title="Show all — every part flat around the center">
           🔍 Show all
         </button>
       </div>
@@ -1896,11 +1957,16 @@ function renderProject(key) {
     });
   });
   ROOT.querySelector('#layout-tree').addEventListener('click', () => {
-    setProjectFlat(key, false);
+    setProjectLayout(key, 'tree');
+    render();
+  });
+  ROOT.querySelector('#layout-expand').addEventListener('click', () => {
+    setProjectLayout(key, 'expand');
+    setProjectMindmapCenter(key, null);  // expand mode ignores center anyway
     render();
   });
   ROOT.querySelector('#layout-flat').addEventListener('click', () => {
-    setProjectFlat(key, true);
+    setProjectLayout(key, 'flat');
     setProjectMindmapCenter(key, null);  // reset drill state when going flat
     render();
   });
