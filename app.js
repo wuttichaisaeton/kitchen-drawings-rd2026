@@ -996,9 +996,16 @@ function renderProjectsHome() {
       <div class="progress-bar bent-bar" title="Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
       <div class="progress-bar assembled-bar" title="🧩 Assembly"><div class="progress-fill" style="width:${p.assembled_pct}%"></div></div>
     `;
+    // Pin + drag-handle are admin-only — bending technicians on the
+    // workshop iPad shouldn't be able to reorder or favourite projects.
+    const adminMode = isAdmin();
     const pinTitle = p.pinned ? 'Unpin from top' : 'Pin to top';
-    const pinBtn = `<button class="pin-btn ${p.pinned ? 'on' : ''}" data-project="${escapeHtml(p.key)}" aria-label="${pinTitle}" title="${pinTitle}">${p.pinned ? '★' : '☆'}</button>`;
-    const dragHandle = `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`;
+    const pinBtn = adminMode
+      ? `<button class="pin-btn ${p.pinned ? 'on' : ''}" data-project="${escapeHtml(p.key)}" aria-label="${pinTitle}" title="${pinTitle}">${p.pinned ? '★' : '☆'}</button>`
+      : (p.pinned ? `<span class="pin-btn on" aria-hidden="true">★</span>` : '');
+    const dragHandle = adminMode
+      ? `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`
+      : '';
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -1034,8 +1041,10 @@ function renderProjectsHome() {
   // Drag-and-drop reorder (Sortable.js — touch-friendly for iPad).
   // Records the new visual order into localStorage, then re-renders so
   // the sort logic in projectList() reflects the manual order.
+  // Drag-reorder is admin-only — bending technicians on the workshop
+  // iPad shouldn't accidentally rearrange the queue.
   const listEl = ROOT.querySelector('.project-list');
-  if (listEl && window.Sortable) {
+  if (listEl && window.Sortable && isAdmin()) {
     Sortable.create(listEl, {
       animation: 150,
       handle: '.drag-handle',
@@ -1852,6 +1861,10 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
     // mouse cursors don't. Without per-input threshold, taps on iPad got
     // counted as drags and drill-down never fired.
     const dragThreshold = (activeDrag.pointerType === 'touch' || activeDrag.pointerType === 'pen') ? 10 : 4;
+    // Non-admin (bending technician) can click spokes but cannot reposition
+    // them. Skip the moved/dragging branch so taps still register as clicks
+    // (drill-in for wrapper, route to PDF/Fusion for leaves).
+    if (!isAdmin()) return;
     if (!activeDrag.moved && Math.hypot(dx, dy) > dragThreshold) {
       activeDrag.moved = true;
       activeDrag.spoke.classList.add('dragging');
