@@ -1041,22 +1041,55 @@ function buildProjectTree(parts, projectKey) {
       pdf: entry ? entry.pdf : null,
       page: entry ? (entry.page_number || 1) : 1,
       status,
+      _is_wrapper: false,
       children: [],
       parent: null,
     };
   });
 
-  // Hierarchy resolution — TWO sources:
+  // Hierarchy resolution — THREE sources:
   //   (a) Explicit parent_code from CC_Assembly JSON (the new shape, from
   //       Fusion occurrence chain). Authoritative when present.
-  //   (b) Prefix/wildcard matching on code (legacy fallback for projects
+  //   (b) Virtual wrapper nodes — when parent_code points to a code NOT in
+  //       parts[] (typical case: wrapper config rows like FN0FL2-110004
+  //       which are containers, not ALPF leaves), create a synthetic node
+  //       so the hierarchy is visible. Wrappers have qty=0, status='wrapper',
+  //       no PDF, and are excluded from the BOM total — they exist purely
+  //       to anchor the tree.
+  //   (c) Prefix/wildcard matching on code (legacy fallback for projects
   //       built before parent_code was emitted).
   const byCode = new Map(nodes.map(n => [n.code, n]));
 
-  // Pass 1 — explicit parent_code links, only when the parent is also in
-  // the BOM. Wrapper-only codes (not in parts[]) leave the child as a root
-  // (it'll be linked by prefix in pass 2 if applicable).
+  // Pass 1 — auto-create virtual wrappers for any parent_code that isn't
+  // in the BOM. Without this, the explicit links in pass 2 wouldn't have
+  // anywhere to attach.
+  const wrapperCodes = new Set();
   for (const node of nodes) {
+    if (node._parent_code && !byCode.has(node._parent_code)) {
+      wrapperCodes.add(node._parent_code);
+    }
+  }
+  for (const wc of wrapperCodes) {
+    const wrapper = {
+      code: wc,
+      qty: 0,
+      _prefix: wc.split('-')[0],
+      _parent_code: null,
+      family: _remapFamilyForCode(wc, 'Other'),
+      pdf: null,
+      page: 1,
+      status: 'wrapper',
+      _is_wrapper: true,
+      children: [],
+      parent: null,
+    };
+    nodes.push(wrapper);
+    byCode.set(wc, wrapper);
+  }
+
+  // Pass 2 — explicit parent_code links (every parent now exists in byCode).
+  for (const node of nodes) {
+    if (node.parent) continue;
     if (node._parent_code && byCode.has(node._parent_code)) {
       const par = byCode.get(node._parent_code);
       node.parent = par;
@@ -1064,13 +1097,26 @@ function buildProjectTree(parts, projectKey) {
     }
   }
 
-  // Pass 2 — prefix/wildcard for nodes still without a parent (legacy /
-  // wrapper-less cases).
+  // Pass 3 — prefix/wildcard for nodes still without a parent (legacy
+  // projects with no parent_code in their JSON).
+  //
+  // Two important skips here:
+  //  • Wrappers are never made children. They're authoritative roots
+  //    (or children of higher-level wrappers if/when those exist). The
+  //    prefix matcher treats '0' / 'X' as wildcards, so a leaf like
+  //    FN0F00 looks like the "ancestor" of FN0FL2 — wrong direction
+  //    for the wrapper relationship CC_Assembly already emitted.
+  //  • A node that has _parent_code (but parent wasn't found) is also
+  //    skipped — its hierarchy is meant to be from CC_Assembly, not
+  //    legacy prefix inference.
   for (const node of nodes) {
     if (node.parent) continue;
+    if (node._is_wrapper) continue;
+    if (node._parent_code) continue;
     let best = null, bestSpec = -1;
     for (const cand of nodes) {
       if (cand === node) continue;
+      if (cand._is_wrapper) continue;  // don't use wrapper as prefix ancestor
       if (!_isAncestorPrefix(cand._prefix, node._prefix)) continue;
       const s = _specificity(cand._prefix);
       if (s > bestSpec) { bestSpec = s; best = cand; }
