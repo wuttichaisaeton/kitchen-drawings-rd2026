@@ -7,7 +7,18 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Kitchen by Rough Design</title>
   <link rel="icon" type="image/svg+xml" href="icons/kitchen-drawings.svg">
-  <link rel="stylesheet" href="style.css">
+  <!-- Cache-bust style.css per-minute so workshop iPads pick up CSS
+       changes without needing a hard refresh. -->
+  <script>
+    (function() {
+      var v = Math.floor(Date.now() / 60000);  // changes every 60s
+      var l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'style.css?v=' + v;
+      document.head.appendChild(l);
+      window.__KD_CACHE_V = v;
+    })();
+  </script>
 </head>
 <body>
   <header>
@@ -50,6 +61,13 @@
       }
     }
   </script>
-  <script src="app.js"></script>
+  <!-- app.js cache-busted per-minute (shared bucket with style.css). -->
+  <script>
+    (function() {
+      var s = document.createElement('script');
+      s.src = 'app.js?v=' + (window.__KD_CACHE_V || Math.floor(Date.now() / 60000));
+      document.body.appendChild(s);
+    })();
+  </script>
 </body>
 </html>
