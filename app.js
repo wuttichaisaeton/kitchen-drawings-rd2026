@@ -690,6 +690,162 @@ async function deleteUploadedPdf(code) {
   }
 }
 
+// ── Merge all project PDFs into one (with deep-link back-refs) ─────
+// Click "📑 All PDF" on a project → fetch every part's drawing in
+// BOM order, merge into a single PDF via pdf-lib, stamp each page
+// with a clickable link back to that part's spoke in the web UI
+// (`#project=<pk>&code=<code>`), open in a new tab.
+//
+// Skips parts that have no resolvable drawing. Sequential fetch
+// keeps memory bounded for large projects; the button shows N/total
+// while fetching so workshop sees progress.
+
+async function buildAllProjectPdf(projectKey) {
+  if (!window.PDFLib) {
+    alert('PDF library not loaded yet — wait a moment and try again.');
+    return;
+  }
+  const project = (manifest.projects || {})[projectKey];
+  if (!project) { alert('Project not found.'); return; }
+
+  // Unique codes in BOM order with a resolvable drawing.
+  const items = [];
+  const seen = new Set();
+  for (const p of (project.parts || [])) {
+    if (seen.has(p.code)) continue;
+    seen.add(p.code);
+    const url = pdfUrlForCode(p.code);
+    if (!url) continue;
+    items.push({ code: p.code, qty: p.qty || 1, url });
+  }
+  if (!items.length) {
+    alert(`No drawings available for "${projectKey}".`);
+    return;
+  }
+
+  const btn = document.getElementById('all-pdf-btn');
+  const origLabel = btn ? btn.textContent : '';
+  const setLabel = (s) => { if (btn) btn.textContent = s; };
+  if (btn) btn.disabled = true;
+  setLabel(`⏳ 0/${items.length}…`);
+
+  const { PDFDocument, PDFString, PDFName } = window.PDFLib;
+  const merged = await PDFDocument.create();
+  merged.setTitle(`${projectKey} — All Drawings`);
+  merged.setSubject(`Generated from drawings-ui · ${items.length} parts`);
+
+  let done = 0, fail = 0;
+  for (const item of items) {
+    try {
+      // Cache-bust the URL slightly so we don't get a stale CDN copy
+      // right after an upload, but keep it cheap (browser caches still
+      // help across pages).
+      const src = await fetch(item.url, { cache: 'no-cache' });
+      if (!src.ok) throw new Error(`HTTP ${src.status}`);
+      const bytes = await src.arrayBuffer();
+      const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
+      const pages = await merged.copyPages(srcDoc, srcDoc.getPageIndices());
+
+      const deepUrl = `${location.origin}${location.pathname}` +
+        `#project=${encodeURIComponent(projectKey)}` +
+        `&code=${encodeURIComponent(item.code)}`;
+
+      for (const page of pages) {
+        merged.addPage(page);
+        // Annotate the bottom strip of each page with a URI link back
+        // to the part's spoke. Workshop staff taps the strip → web UI
+        // opens centred on that part for status / comments / timer.
+        const { width } = page.getSize();
+        const linkAnnot = merged.context.obj({
+          Type: 'Annot',
+          Subtype: 'Link',
+          Rect: [0, 0, width, 32],
+          Border: [0, 0, 0],
+          A: {
+            Type: 'Action',
+            S: 'URI',
+            URI: PDFString.of(deepUrl),
+          },
+        });
+        const linkRef = merged.context.register(linkAnnot);
+        const existing = page.node.lookup(PDFName.of('Annots'));
+        if (existing && typeof existing.push === 'function') {
+          existing.push(linkRef);
+        } else {
+          page.node.set(PDFName.of('Annots'), merged.context.obj([linkRef]));
+        }
+      }
+    } catch (e) {
+      console.warn(`[all-pdf] failed ${item.code}:`, e);
+      fail++;
+    }
+    done++;
+    setLabel(`⏳ ${done}/${items.length}…`);
+  }
+
+  setLabel('💾 Saving…');
+  const pdfBytes = await merged.save();
+  const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+  const objUrl = URL.createObjectURL(blob);
+
+  if (btn) { btn.disabled = false; }
+  setLabel(origLabel);
+
+  const win = window.open(objUrl, '_blank');
+  if (!win) {
+    // Popup blocked — fall back to download
+    const a = document.createElement('a');
+    a.href = objUrl;
+    a.download = `${projectKey}-all.pdf`;
+    document.body.appendChild(a); a.click(); a.remove();
+  }
+  if (fail > 0) {
+    setTimeout(() => alert(`Done — ${done - fail} merged, ${fail} failed (see console).`), 200);
+  }
+}
+
+// ── Deep-link router — open straight to a project + spoke ──────────
+// `#project=<pk>` → navigates to that project view.
+// `#project=<pk>&code=<code>` → navigates + highlights the spoke.
+// Used by the "All PDF" merged-document link annotations (and any
+// QR-code / shared URL that points at a specific part).
+
+function _applyDeepLinkFromHash() {
+  const raw = location.hash.replace(/^#/, '');
+  if (!raw) return;
+  let params;
+  try { params = new URLSearchParams(raw); }
+  catch { return; }
+  const proj = params.get('project');
+  const code = params.get('code');
+  if (!proj) return;
+  if (!manifest || !manifest.projects || !manifest.projects[proj]) {
+    console.warn('[deeplink] project not in manifest:', proj);
+    return;
+  }
+  // Push the project view onto the stack. If we're already inside
+  // this project skip the push so back-button still works naturally.
+  const top = stack[stack.length - 1];
+  if (!top || top.kind !== 'project' || top.name !== proj) {
+    stack.push({ kind: 'project', name: proj });
+    render();
+  }
+  if (code) {
+    // Wait for the SVG to land in the DOM, then ping the spoke.
+    setTimeout(() => _highlightSpoke(code), 350);
+  }
+  // Clear the hash so a refresh doesn't re-navigate.
+  try { history.replaceState({}, '', location.pathname + location.search); } catch {}
+}
+
+function _highlightSpoke(code) {
+  const spoke = document.querySelector(`.pm-spoke[data-code="${CSS.escape(code)}"]`);
+  if (!spoke) return;
+  spoke.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  spoke.classList.add('deep-link-highlight');
+  setTimeout(() => spoke.classList.remove('deep-link-highlight'), 3500);
+}
+
 // ── Bent + Assembled parts (per-part workshop tracking) ────────────
 //
 // SHARED across devices via Firebase Realtime DB (was per-device
@@ -2658,6 +2814,7 @@ function renderProject(key) {
       <div class="filter-group">
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
+        <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
       </div>
     </div>
     ${mindmapHtml}
@@ -2669,10 +2826,14 @@ function renderProject(key) {
     render();
   });
   ROOT.querySelectorAll('.filter-btn').forEach(btn => {
+    if (!btn.dataset.filter) return;  // skip the All PDF action button
     btn.addEventListener('click', () => {
       top.filter = btn.dataset.filter;
       render();
     });
+  });
+  ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
+    buildAllProjectPdf(key);
   });
   // (workflow + layout toggles removed — see commit notes; both bent and
   // assembled buttons render on every spoke, and layout is always Expand.)
@@ -4176,6 +4337,11 @@ async function init() {
     }
 
     render();
+
+    // Deep-link from a merged-PDF link annotation or shared URL.
+    // Manifest is loaded so the project lookup will succeed.
+    _applyDeepLinkFromHash();
+    window.addEventListener('hashchange', _applyDeepLinkFromHash);
   } catch (e) {
     ROOT.innerHTML = `<div class="error">Failed to load data: ${escapeHtml(e.message)}<br><br>Check MANIFEST_URL in config.js</div>`;
   }

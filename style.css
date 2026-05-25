@@ -404,6 +404,32 @@ h1 {
 
 .filter-btn:active { transform: scale(0.96); }
 
+/* "📑 All PDF" — action button, lives in the filter group but is an */
+/* action not a filter. Distinct accent so it doesn't look selectable. */
+.filter-btn.all-pdf-btn {
+  background: #2d4a2d;
+  color: #b3d9b3;
+  border-color: #3d5a3d;
+}
+.filter-btn.all-pdf-btn:not([disabled]):hover { background: #3d5a3d; }
+.filter-btn.all-pdf-btn[disabled] {
+  opacity: 0.7;
+  cursor: progress;
+  background: #2a2f34;
+  color: #888;
+}
+
+/* Deep-link highlight — temporarily pulse a spoke after a merged-PDF */
+/* page link or shared URL lands on a specific code. */
+.pm-spoke.deep-link-highlight .pm-spoke-bg {
+  animation: deepLinkPulse 1.6s ease-out 2;
+}
+@keyframes deepLinkPulse {
+  0%   { stroke-width: 2; filter: none; }
+  40%  { stroke-width: 5; filter: drop-shadow(0 0 8px #4dd06a); }
+  100% { stroke-width: 2; filter: none; }
+}
+
 .project-actions {
   display: flex;
   gap: 8px;
