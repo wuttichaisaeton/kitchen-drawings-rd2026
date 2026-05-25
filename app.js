@@ -1566,7 +1566,11 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
     const pt = _svgPoint(svgEl, ev);
     const dx = pt.x - activeDrag.startSvgX;
     const dy = pt.y - activeDrag.startSvgY;
-    if (!activeDrag.moved && Math.hypot(dx, dy) > 4) {
+    // Tap-vs-drag threshold — touch fingers wobble 5–10px on a clean tap,
+    // mouse cursors don't. Without per-input threshold, taps on iPad got
+    // counted as drags and drill-down never fired.
+    const dragThreshold = (activeDrag.pointerType === 'touch' || activeDrag.pointerType === 'pen') ? 10 : 4;
+    if (!activeDrag.moved && Math.hypot(dx, dy) > dragThreshold) {
       activeDrag.moved = true;
       activeDrag.spoke.classList.add('dragging');
     }
@@ -1680,6 +1684,7 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
         autoX, autoY,
         moved: false,
         pointerId: ev.pointerId,
+        pointerType: ev.pointerType,
       };
       document.addEventListener('pointermove', onMove);
       document.addEventListener('pointerup', onEnd);
