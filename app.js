@@ -252,6 +252,11 @@ function _remapFamilyForCode(code, originalFamily) {
   //   Per user 2026-05-24: "FN FC ให้ อยู่ในโฟลเดอร์นี้"
   if (prefix2 === 'FN' || prefix2 === 'FC') return 'FL';
 
+  // BK → standalone "BK" chip (mirrors the FN/FC → FL precedent)
+  //   Per user 2026-05-25: BK1DN1, BK2TR1, BK0DN0, BK-XXXX legacy etc.
+  //   all want their own Library chip instead of being lumped under DW-BK.
+  if (prefix2 === 'BK') return 'BK';
+
   // ─── Family-based rules ──────────────────────────────────────────
   if (originalFamily === 'Back-Down') return 'DW-BK';
   if (originalFamily === 'Floor')     return 'DW-FL';  // DSB0F-* etc.
@@ -810,11 +815,37 @@ function _updateTickerState() {
 
 function partsByFamily() {
   const out = {};
+  const seen = new Set();
   const auto = manifest.auto_generated || {};
   for (const [code, entry] of Object.entries(auto)) {
     const fam = entry.family || 'Other';
     if (!out[fam]) out[fam] = [];
     out[fam].push({ code, ...entry });
+    seen.add(code);
+  }
+  // Also surface parts from every project BOM (CC_Assembly output) — even
+  // those without a PDF exported yet. Workshop browsing by family in
+  // Library shouldn't require the part to have a manifest entry first.
+  // Status defaults to 'missing'; gets upgraded by the manifest pass above
+  // when the PDF eventually lands.
+  if (manifest.projects) {
+    for (const project of Object.values(manifest.projects)) {
+      if (!Array.isArray(project.parts)) continue;
+      for (const p of project.parts) {
+        if (seen.has(p.code)) continue;
+        const fam = p.family || 'Other';
+        if (!out[fam]) out[fam] = [];
+        out[fam].push({
+          code: p.code,
+          family: fam,
+          pdf: null,
+          status: 'missing',
+          urn: p.urn || null,
+          drawing_urn: p.drawing_urn || null,
+        });
+        seen.add(p.code);
+      }
+    }
   }
   for (const fam of Object.keys(out)) {
     out[fam].sort((a, b) => a.code.localeCompare(b.code));
@@ -2399,6 +2430,40 @@ function buildLibraryTreeNodes() {
         folder_name: e.folder_name,
         drawing_name: e.drawing_name,
       });
+    }
+  }
+
+  // Overlay parts from every project BOM (CC_Assembly output). Parts that
+  // appear in a project but haven't had a PDF exported yet still belong in
+  // the Library — workshop staff scanning by family code shouldn't need to
+  // know which project a part lives in to find it. New parts that are
+  // already in manifest just refresh fam/urn (no override of status).
+  if (manifest.projects) {
+    for (const project of Object.values(manifest.projects)) {
+      if (!Array.isArray(project.parts)) continue;
+      for (const p of project.parts) {
+        const fam = p.family;
+        if (isJunkFamily(fam)) continue;
+        const existing = nodes.get(p.code);
+        if (existing) {
+          // Already covered by manifest or missing.json — just fill blanks.
+          if (!existing.urn && p.urn) existing.urn = p.urn;
+          if (!existing.drawing_urn && p.drawing_urn) existing.drawing_urn = p.drawing_urn;
+          continue;
+        }
+        nodes.set(p.code, {
+          code: p.code,
+          _prefix: p.code.split('-')[0],
+          family: fam,
+          pdf: null,
+          page: 1,
+          exported_at: null,
+          status: 'missing',
+          urn: p.urn || null,
+          drawing_urn: p.drawing_urn || null,
+          open_url: null,
+        });
+      }
     }
   }
 

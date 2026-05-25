@@ -4,6 +4,7 @@
   "Door":       {"icon": "🚪", "image": "icons/door.svg",       "order": 3, "color": "#5dbb63", "tint": "#1e3625"},
   "Side Panel": {"icon": "▥",  "image": "icons/side-panel.svg", "order": 4, "color": "#d4a44a", "tint": "#3a2e15"},
   "DW-BK":      {"icon": "⬛", "image": "icons/back-down.svg",  "order": 5, "color": "#a070d0", "tint": "#2e1f3a"},
+  "BK":         {"icon": "⬜", "image": "icons/back-down.svg",  "order": 5.5, "color": "#c25555", "tint": "#3a1f1f"},
   "DW-FL":      {"icon": "▤",  "image": "icons/floor.svg",      "order": 6, "color": "#e07a5f", "tint": "#3a201a"},
   "FL":         {"icon": "═",  "image": "icons/floor.svg",      "order": 7, "color": "#d4a44a", "tint": "#3a2e15"},
   "Top Sup":    {"icon": "▦",  "image": "icons/top-sup.svg",    "order": 8, "color": "#4ac4c4", "tint": "#15333a"},
