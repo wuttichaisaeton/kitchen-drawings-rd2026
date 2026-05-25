@@ -1373,15 +1373,18 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     neighbors = all;
     centerLabel = project.name || projectKey;
   } else if (layout === 'expand') {
-    // Expand — skip the wrapper layer entirely. The wrappers are
-    // organisational containers (virtual nodes synthesized from
-    // parent_code) — they're not parts the workshop actually touches.
-    // Show only the LEAVES directly as spokes of the project, so the
-    // user can scan and click the parts they care about without a drill
-    // step. Each leaf keeps its wrapper's family colour via family
-    // remap, so the grouping is still visible.
-    neighbors = all.filter(n => !n._is_wrapper && (!n.children || n.children.length === 0));
+    // Expand — true hierarchical mindmap (country → province → district):
+    // wrappers fan out FROM project, and each wrapper's children fan out
+    // FROM that wrapper (not from project). Edges go parent→child, never
+    // bypassing the wrapper. So a leaf's edge attaches to its wrapper,
+    // and only the wrapper's edge attaches to project.
+    neighbors = roots;
     centerLabel = project.name || projectKey;
+    for (const r of roots) {
+      if (r.children && r.children.length > 0) {
+        expandChildrenByParent.set(r.code, r.children);
+      }
+    }
   } else if (currentCenterCode) {
     centerNode = _findNodeByCode(roots, currentCenterCode);
     if (!centerNode) {
@@ -1450,36 +1453,35 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Expand mode — children chain outward along the same radial line as
-  // their wrapper. project center → wrapper → child1 → child2 → child3
-  // → ... all collinear. Each step = one spoke-height + gap, so no
-  // overlap regardless of how many children. The chain stays inside the
-  // wrapper's slice (no angular spread) and the visual hierarchy reads
-  // like a strand: follow the line from center to find the family.
+  // Expand mode — true hierarchical layout (country → province →
+  // district). Each wrapper's children fan AWAY from project, branching
+  // out from the wrapper itself. Edges go wrapper→child (not
+  // project→child). Fan width scales gently with child count and is
+  // capped, since adjacent wrappers' clusters will inevitably nudge
+  // each other on a tight project; the wrapper's family colour on the
+  // child edges keeps the grouping legible.
   if (layout === 'expand' && expandChildrenByParent.size > 0) {
-    const childStartDist = 200;          // distance wrapper → 1st child
-    const childRadialStep = PSPOKE_H + 18;  // ~82px per child along the radial
+    const childDist = 280;
     const wrappersOnly = positioned.slice();
     for (const wp of wrappersOnly) {
       const kids = expandChildrenByParent.get(wp.node.code);
       if (!kids || !kids.length) continue;
       const k = kids.length;
-      const wLen = Math.hypot(wp.x, wp.y) || 1;
-      const ux = wp.x / wLen, uy = wp.y / wLen;  // outward unit vector
-      // Previous link target for each child = the spoke before it in the
-      // chain (wrapper for child 0, child i-1 for child i). This makes
-      // each edge short and the chain visually obvious.
-      let prevX = wp.x, prevY = wp.y, prevCode = wp.node.code;
+      // Outward unit vector — the "away from project" direction.
+      const wAngle = Math.atan2(wp.y, wp.x);
+      // Spread enough so adjacent children don't stack on top of each
+      // other, but cap at ~90° so the cluster reads as a branch group.
+      const fanSpan = k <= 1 ? 0 : Math.min(Math.PI * 0.5, (k - 1) * 0.4);
       for (let i = 0; i < k; i++) {
-        const d = childStartDist + i * childRadialStep;
-        const cxL = wp.x + d * ux;
-        const cyL = wp.y + d * uy;
+        const t = k > 1 ? (i / (k - 1) - 0.5) : 0;  // -0.5..+0.5
+        const a = wAngle + t * fanSpan;
+        const cxL = wp.x + childDist * Math.cos(a);
+        const cyL = wp.y + childDist * Math.sin(a);
         positioned.push({
           node: kids[i], x: cxL, y: cyL,
           _autoX: cxL, _autoY: cyL, ring: 2,
-          _parentSpokePos: { x: prevX, y: prevY, code: prevCode },
+          _parentSpokePos: { x: wp.x, y: wp.y, code: wp.node.code },
         });
-        prevX = cxL; prevY = cyL; prevCode = kids[i].code;
       }
     }
   }
