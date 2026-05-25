@@ -1452,34 +1452,36 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Expand mode — for each wrapper, fan its children outward on a 2nd
-  // ring at greater radius. Tight fan span (≤30°) keeps children within
-  // the wrapper's angular "slice" (10 wrappers = 36° per slice). Larger
-  // child distance means children sit on a wider outer ring where each
-  // slice's arc length is bigger, so they don't crowd siblings.
+  // Expand mode — children chain outward along the same radial line as
+  // their wrapper. project center → wrapper → child1 → child2 → child3
+  // → ... all collinear. Each step = one spoke-height + gap, so no
+  // overlap regardless of how many children. The chain stays inside the
+  // wrapper's slice (no angular spread) and the visual hierarchy reads
+  // like a strand: follow the line from center to find the family.
   if (layout === 'expand' && expandChildrenByParent.size > 0) {
-    const childDist = 290;  // 1.4x the wrapper-to-project radius — clearly outside the wrapper
-    const wrappersOnly = positioned.slice();  // freeze before pushing kids
+    const childStartDist = 200;          // distance wrapper → 1st child
+    const childRadialStep = PSPOKE_H + 18;  // ~82px per child along the radial
+    const wrappersOnly = positioned.slice();
     for (const wp of wrappersOnly) {
       const kids = expandChildrenByParent.get(wp.node.code);
       if (!kids || !kids.length) continue;
       const k = kids.length;
-      // Angle from project center to wrapper (outward radial direction)
-      const wAngle = Math.atan2(wp.y, wp.x);
-      // Fan tightens for small k and widens slowly for large k, capped
-      // at ~30° total so it never exceeds the wrapper slice (36° for 10
-      // wrappers).
-      const fanSpan = k <= 1 ? 0 : Math.min(Math.PI / 6, (k - 1) * 0.12);
+      const wLen = Math.hypot(wp.x, wp.y) || 1;
+      const ux = wp.x / wLen, uy = wp.y / wLen;  // outward unit vector
+      // Previous link target for each child = the spoke before it in the
+      // chain (wrapper for child 0, child i-1 for child i). This makes
+      // each edge short and the chain visually obvious.
+      let prevX = wp.x, prevY = wp.y, prevCode = wp.node.code;
       for (let i = 0; i < k; i++) {
-        const t = k > 1 ? (i / (k - 1) - 0.5) : 0;  // -0.5..+0.5
-        const a = wAngle + t * fanSpan;
-        const cxL = wp.x + childDist * Math.cos(a);
-        const cyL = wp.y + childDist * Math.sin(a);
+        const d = childStartDist + i * childRadialStep;
+        const cxL = wp.x + d * ux;
+        const cyL = wp.y + d * uy;
         positioned.push({
           node: kids[i], x: cxL, y: cyL,
           _autoX: cxL, _autoY: cyL, ring: 2,
-          _parentSpokePos: { x: wp.x, y: wp.y, code: wp.node.code },
+          _parentSpokePos: { x: prevX, y: prevY, code: prevCode },
         });
+        prevX = cxL; prevY = cyL; prevCode = kids[i].code;
       }
     }
   }
