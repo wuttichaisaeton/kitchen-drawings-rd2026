@@ -690,100 +690,270 @@ async function deleteUploadedPdf(code) {
   }
 }
 
-// ── Bent parts (per-part workshop tracking) ─────────────────────────
+// ── Bent + Assembled parts (per-part workshop tracking) ────────────
+//
+// SHARED across devices via Firebase Realtime DB (was per-device
+// localStorage before 2026-05-25). localStorage now acts as offline
+// cache + initial-load mirror so the UI has data before Firebase
+// fires. Both also feed CC_WebSync on the Fusion side — it reads
+// `bent_status/<projectKey>/<code>` and `assembled_status/...` to
+// show workshop progress next to the master file.
+//
+// Schema in Firebase RTDB:
+//   bent_status/<projectKey>/<code> = { time: epoch_ms }
+//   assembled_status/<projectKey>/<code> = { time: epoch_ms }
+//
+// In-memory cache keyed by "projectKey::code" so existing call sites
+// (Set-based, see bentKey()) keep working without refactor.
 
-function loadBentSet() {
-  try {
-    const raw = localStorage.getItem(LS_BENT_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch { return new Set(); }
-}
-
-function saveBentSet(set) {
-  try { localStorage.setItem(LS_BENT_KEY, JSON.stringify([...set])); } catch {}
-}
+let _bentCache = {};       // { "pk::code": { time } }
+let _assembledCache = {};  // same shape
 
 function bentKey(projectKey, code) { return `${projectKey}::${code}`; }
 
-function isBent(projectKey, code) { return loadBentSet().has(bentKey(projectKey, code)); }
+// Seed the in-memory caches from localStorage on script load — covers
+// the case where the page renders before Firebase fires its first
+// snapshot. The Firebase listener will overwrite this once it fires.
+function _seedBentFromLocal() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_BENT_KEY) || '[]');
+    if (Array.isArray(arr)) {
+      const now = Date.now();
+      _bentCache = {};
+      for (const k of arr) _bentCache[k] = { time: now };
+    }
+  } catch {}
+}
+function _seedAssembledFromLocal() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_ASSEMBLED_KEY) || '[]');
+    if (Array.isArray(arr)) {
+      const now = Date.now();
+      _assembledCache = {};
+      for (const k of arr) _assembledCache[k] = { time: now };
+    }
+  } catch {}
+}
+_seedBentFromLocal();
+_seedAssembledFromLocal();
 
-function markBent(projectKey, code, done) {
-  const s = loadBentSet();
-  const k = bentKey(projectKey, code);
-  if (done) s.add(k); else s.delete(k);
-  saveBentSet(s);
-  // Auto-propagate up: when every child of a parent is bent, the parent
-  // itself becomes bent automatically. When ANY child gets un-bent, the
-  // parent un-bends too. (Assembled does NOT auto-propagate — that's
-  // explicit per the workshop rule.)
-  try { _propagateBentUp(projectKey, code, s); } catch {}
+function _mirrorBentToLocal() {
+  try { localStorage.setItem(LS_BENT_KEY, JSON.stringify(Object.keys(_bentCache))); } catch {}
+}
+function _mirrorAssembledToLocal() {
+  try { localStorage.setItem(LS_ASSEMBLED_KEY, JSON.stringify(Object.keys(_assembledCache))); } catch {}
 }
 
-function _propagateBentUp(projectKey, startCode, bentSet) {
+// Legacy Set-returning helpers — still used by a few call sites that
+// loop over the whole set. Build from cache on demand.
+function loadBentSet() { return new Set(Object.keys(_bentCache)); }
+function saveBentSet(set) {
+  // Used only by _propagateBentUp now. Reconcile cache + localStorage
+  // + Firebase from the passed set.
+  const newCache = {};
+  const now = Date.now();
+  for (const k of set) {
+    newCache[k] = _bentCache[k] || { time: now };
+  }
+  // Compute diff vs current cache so we only touch Firebase for changes.
+  if (window.firebaseDB) {
+    const updates = {};
+    for (const k of Object.keys(newCache)) {
+      if (!_bentCache[k]) {
+        const [pk, code] = k.split('::');
+        updates[`bent_status/${pk}/${code}`] = newCache[k];
+      }
+    }
+    for (const k of Object.keys(_bentCache)) {
+      if (!newCache[k]) {
+        const [pk, code] = k.split('::');
+        updates[`bent_status/${pk}/${code}`] = null;
+      }
+    }
+    if (Object.keys(updates).length) {
+      try { window.firebaseDB.ref().update(updates); }
+      catch (e) { console.warn('Firebase bent batch update failed:', e); }
+    }
+  }
+  _bentCache = newCache;
+  _mirrorBentToLocal();
+}
+function loadAssembledSet() { return new Set(Object.keys(_assembledCache)); }
+function saveAssembledSet(set) {
+  // Assembled has no auto-propagate so this is rarely called directly;
+  // included for API parity with bent.
+  const newCache = {};
+  const now = Date.now();
+  for (const k of set) newCache[k] = _assembledCache[k] || { time: now };
+  if (window.firebaseDB) {
+    const updates = {};
+    for (const k of Object.keys(newCache)) {
+      if (!_assembledCache[k]) {
+        const [pk, code] = k.split('::');
+        updates[`assembled_status/${pk}/${code}`] = newCache[k];
+      }
+    }
+    for (const k of Object.keys(_assembledCache)) {
+      if (!newCache[k]) {
+        const [pk, code] = k.split('::');
+        updates[`assembled_status/${pk}/${code}`] = null;
+      }
+    }
+    if (Object.keys(updates).length) {
+      try { window.firebaseDB.ref().update(updates); }
+      catch (e) { console.warn('Firebase assembled batch update failed:', e); }
+    }
+  }
+  _assembledCache = newCache;
+  _mirrorAssembledToLocal();
+}
+
+function isBent(projectKey, code) { return !!_bentCache[bentKey(projectKey, code)]; }
+function isAssembled(projectKey, code) { return !!_assembledCache[bentKey(projectKey, code)]; }
+
+function markBent(projectKey, code, done) {
+  const k = bentKey(projectKey, code);
+  if (done) {
+    _bentCache[k] = { time: Date.now() };
+    if (window.firebaseDB) {
+      try { window.firebaseDB.ref(`bent_status/${projectKey}/${code}`).set(_bentCache[k]); }
+      catch (e) { console.warn('Firebase bent write failed:', e); }
+    }
+  } else {
+    delete _bentCache[k];
+    if (window.firebaseDB) {
+      try { window.firebaseDB.ref(`bent_status/${projectKey}/${code}`).remove(); }
+      catch (e) { console.warn('Firebase bent remove failed:', e); }
+    }
+  }
+  _mirrorBentToLocal();
+  // Auto-propagate up: when every child of a parent is bent, the parent
+  // itself becomes bent automatically. When ANY child gets un-bent, the
+  // parent un-bends too. (Assembled does NOT auto-propagate.)
+  try { _propagateBentUp(projectKey, code); } catch {}
+}
+
+function markAssembled(projectKey, code, done) {
+  const k = bentKey(projectKey, code);
+  if (done) {
+    _assembledCache[k] = { time: Date.now() };
+    if (window.firebaseDB) {
+      try { window.firebaseDB.ref(`assembled_status/${projectKey}/${code}`).set(_assembledCache[k]); }
+      catch (e) { console.warn('Firebase assembled write failed:', e); }
+    }
+  } else {
+    delete _assembledCache[k];
+    if (window.firebaseDB) {
+      try { window.firebaseDB.ref(`assembled_status/${projectKey}/${code}`).remove(); }
+      catch (e) { console.warn('Firebase assembled remove failed:', e); }
+    }
+  }
+  _mirrorAssembledToLocal();
+}
+
+function _propagateBentUp(projectKey, startCode) {
   // Walk every project the part appears in (usually just one) and find
   // the parent of `startCode` via buildProjectTree. Recurse up while
   // each ancestor's bent state matches its children's collective state.
   const project = manifest && manifest.projects && manifest.projects[projectKey];
   if (!project || !Array.isArray(project.parts)) return;
   const { all } = buildProjectTree(project.parts, projectKey);
-  // Find the node for startCode
   const node = all.find(n => n.code === startCode);
   if (!node) return;
   let cur = node.parent;
-  let s = bentSet || loadBentSet();
-  let dirty = false;
   while (cur) {
     const kids = cur.children || [];
     if (!kids.length) break;
-    const allKidsBent = kids.every(k => s.has(bentKey(projectKey, k.code)));
-    const parentKey = bentKey(projectKey, cur.code);
-    const parentIsBent = s.has(parentKey);
+    const allKidsBent = kids.every(k => isBent(projectKey, k.code));
+    const parentIsBent = isBent(projectKey, cur.code);
     if (allKidsBent && !parentIsBent) {
-      s.add(parentKey); dirty = true;
-    } else if (!allKidsBent && parentIsBent) {
-      s.delete(parentKey); dirty = true;
-    } else {
-      break;  // no change at this level → stop
+      markBent(projectKey, cur.code, true);  // recurses (the markBent call propagates further)
+      return;
     }
-    cur = cur.parent;
+    if (!allKidsBent && parentIsBent) {
+      markBent(projectKey, cur.code, false);
+      return;
+    }
+    break;  // no change at this level → stop
   }
-  if (dirty) saveBentSet(s);
 }
 
 function bentCountForProject(projectKey, parts) {
-  const set = loadBentSet();
-  return parts.filter(p => set.has(bentKey(projectKey, p.code))).length;
+  return parts.filter(p => isBent(projectKey, p.code)).length;
 }
-
-// ── Assembled parts (per-part workshop tracking, parallel to bent) ─
-
-function loadAssembledSet() {
-  try {
-    const raw = localStorage.getItem(LS_ASSEMBLED_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw);
-    return new Set(Array.isArray(arr) ? arr : []);
-  } catch { return new Set(); }
-}
-
-function saveAssembledSet(set) {
-  try { localStorage.setItem(LS_ASSEMBLED_KEY, JSON.stringify([...set])); } catch {}
-}
-
-function isAssembled(projectKey, code) { return loadAssembledSet().has(bentKey(projectKey, code)); }
-
-function markAssembled(projectKey, code, done) {
-  const s = loadAssembledSet();
-  const k = bentKey(projectKey, code);
-  if (done) s.add(k); else s.delete(k);
-  saveAssembledSet(s);
-}
-
 function assembledCountForProject(projectKey, parts) {
-  const set = loadAssembledSet();
-  return parts.filter(p => set.has(bentKey(projectKey, p.code))).length;
+  return parts.filter(p => isAssembled(projectKey, p.code)).length;
+}
+
+function initBentSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('bent_status').on('value', snap => {
+      const data = snap.val() || {};
+      _bentCache = {};
+      for (const [pk, codes] of Object.entries(data)) {
+        for (const [code, payload] of Object.entries(codes || {})) {
+          _bentCache[bentKey(pk, code)] = payload;
+        }
+      }
+      _mirrorBentToLocal();
+      try { render(); } catch {}
+    }, err => console.warn('Firebase bent listener error:', err));
+  } catch (e) {
+    console.warn('Failed to attach bent listener:', e);
+  }
+}
+function initAssembledSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('assembled_status').on('value', snap => {
+      const data = snap.val() || {};
+      _assembledCache = {};
+      for (const [pk, codes] of Object.entries(data)) {
+        for (const [code, payload] of Object.entries(codes || {})) {
+          _assembledCache[bentKey(pk, code)] = payload;
+        }
+      }
+      _mirrorAssembledToLocal();
+      try { render(); } catch {}
+    }, err => console.warn('Firebase assembled listener error:', err));
+  } catch (e) {
+    console.warn('Failed to attach assembled listener:', e);
+  }
+}
+
+// One-shot push of any localStorage entries that don't yet exist in
+// RTDB. Runs after both listeners have fired at least once so we have
+// a baseline. Marks each migrated entry with { migrated: true } so it's
+// distinguishable from native RTDB writes in audit.
+async function _migrateLocalToFirebase() {
+  if (!window.firebaseDB) return;
+  // Wait one tick so the listener has a chance to fire first.
+  await new Promise(r => setTimeout(r, 1500));
+  try {
+    const localBent = JSON.parse(localStorage.getItem(LS_BENT_KEY) || '[]');
+    const localAss  = JSON.parse(localStorage.getItem(LS_ASSEMBLED_KEY) || '[]');
+    const updates = {};
+    const now = Date.now();
+    for (const k of localBent) {
+      if (_bentCache[k]) continue;
+      const [pk, code] = k.split('::');
+      if (!pk || !code) continue;
+      updates[`bent_status/${pk}/${code}`] = { time: now, migrated: true };
+    }
+    for (const k of localAss) {
+      if (_assembledCache[k]) continue;
+      const [pk, code] = k.split('::');
+      if (!pk || !code) continue;
+      updates[`assembled_status/${pk}/${code}`] = { time: now, migrated: true };
+    }
+    if (Object.keys(updates).length) {
+      console.log(`[migrate] pushing ${Object.keys(updates).length} localStorage entries to RTDB`);
+      await window.firebaseDB.ref().update(updates);
+    }
+  } catch (e) {
+    console.warn('Local→Firebase migration failed:', e);
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -3957,6 +4127,11 @@ async function init() {
   initPinnedSync();
   initFamilyChipSync();
   initUploadedPdfsSync();
+  initBentSync();
+  initAssembledSync();
+  // One-shot push of any pre-existing localStorage bent/assembled
+  // entries to RTDB so old per-device state surfaces on every device.
+  _migrateLocalToFirebase();
 
   try {
     const [m, f] = await Promise.all([
