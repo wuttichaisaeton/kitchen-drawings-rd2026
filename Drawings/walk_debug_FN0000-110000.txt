@@ -1,7 +1,87 @@
-CC_Assembly walk debug — 2026-05-25T09:52:48.044620
+CC_Assembly walk debug — 2026-05-25T09:56:42.653690
 Project: FN0000-110000
 Total occurrences visited: 14
 CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+activeDocument: FN0000-110000 v3
+  [FN0000-110000 v3] no CAMProductType
+  [BM01NO-120000 v2] no CAMProductType
+  [BM2LI1-110000 v12] no CAMProductType
+  [BM2NO1-110000 v11] no CAMProductType
+  [BM2NO0-110000 v9] no CAMProductType
+  [BM2LI3-110000 v12] no CAMProductType
+  [SD-Sup v6] no CAMProductType
+  [BM1NO0-110000 v2] no CAMProductType
+  [BM2NO2-110000 v11] no CAMProductType
+  [BM2NO3-110000 v11] no CAMProductType
+  [BM2LI0-110000 v10] no CAMProductType
+  [DSV2B3-110040 v4] no CAMProductType
+  [DSV100-110020 v6] no CAMProductType
+  [DSV2B1-110020 v4] no CAMProductType
+  [BM2LI2-110000 v12] no CAMProductType
+  [BM01LI-120000 v2] no CAMProductType
+  [DSV100-110040 v6] no CAMProductType
+  [BK2TR1-110000 v4] no CAMProductType
+  [SD-0676 v25] no CAMProductType
+  [BK1DN1-110000 v26] no CAMProductType
+  [DSV2B3-110020 v4] no CAMProductType
+  [BK0DN0-110000 v8] no CAMProductType
+  [DST00N-110010 v7] no CAMProductType
+  [BM1LI0-110000 v2] no CAMProductType
+  [DSB0FA-110000 v5] no CAMProductType
+  [DSV2B2-110020 v4] no CAMProductType
+  [DSV2B1-110040 v4] no CAMProductType
+  [Leg-060 v3] no CAMProductType
+  [FN0F00-110000 v2] no CAMProductType
+  [FN3BLA-110000 v1] no CAMProductType
+  [DSV100-110020 v6] no CAMProductType
+  [DSV100-110040 v6] no CAMProductType
+  [DXSB-XXXA v2] no CAMProductType
+  [DSV100-110020 v6] no CAMProductType
+  [DSB0FA-110000 v5] no CAMProductType
+  [DSB0BD-110050 v7] no CAMProductType
+  [1DSB_XXXD v1] no CAMProductType
+  [DSV2B4-110020 v4] no CAMProductType
+  [DSB0F0-110050 v4] no CAMProductType
+  [DSB0FA-110000 v5] no CAMProductType
+  [TS004H-110000 v8] no CAMProductType
+  [DSB0F0-110050 v4] no CAMProductType
+  [DSB0BA-110050 v7] no CAMProductType
+  [TS004H-110000 v4] no CAMProductType
+  [DSB0FD-110000 v4] no CAMProductType
+  [DSVBA2-110000 v3] no CAMProductType
+  [SD00NA-080000 v20] no CAMProductType
+  [DSB00N-110000 v2] no CAMProductType
+  [DSB0FA-110000 v5] no CAMProductType
+  [TS2TR4-110000 v6] no CAMProductType
+  [FN2BNX-110000 v1] no CAMProductType
+  [DSVBD3-110000 v3] no CAMProductType
+  [FN1BLA-110000 v1] no CAMProductType
+  [FN0FL2-110004 v2] no CAMProductType
+  [TP-SuoV-Lo v1] no CAMProductType
+  [DSB0FA-110000 v5] no CAMProductType
+  [DSVBA4-110000 v3] no CAMProductType
+  [TS0BHH-060000 v1] no CAMProductType
+  [DSB0FD-110000 v4] no CAMProductType
+  [DSVBA3-110000 v3] no CAMProductType
+  [TS1BHH-110000 v4] no CAMProductType
+  [DSVBD1-110000 v3] no CAMProductType
+  [DSVBA1-110000 v3] no CAMProductType
+  [TP-SuoV-Hi v3] no CAMProductType
+  [TS002H-110000 v7] no CAMProductType
+  [TS002H-110000 v3] no CAMProductType
+  [100VB0-110000 v11] no CAMProductType
+  [DSB0F0-080050 v4] no CAMProductType
+  [DSB0F0-090050 v4] no CAMProductType
+  [FN3BLA-110000 v2] no CAMProductType
+  [FN1BLA-110000 v3] no CAMProductType
+  [FN2BNX-110000 v3] no CAMProductType
+  [FN0FL2-110004 v3] no CAMProductType
+  [FL-0801 v3] no CAMProductType
+  [FN0F00-080000 v10] no CAMProductType
+  [FN2BNX-110000 v6] no CAMProductType
+  [FN0000-110000 v3] no CAMProductType
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
