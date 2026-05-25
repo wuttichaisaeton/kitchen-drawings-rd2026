@@ -1169,14 +1169,10 @@ function toggleExpandedNode(projectKey, code) {
   setExpandedSet(projectKey, s);
 }
 
-function getProjectLayout(projectKey) {
-  try {
-    const all = JSON.parse(localStorage.getItem(LS_PROJECT_LAYOUT) || '{}');
-    const v = all[projectKey];
-    // 'flat' is a legacy value (Show all was removed) — collapse to tree.
-    if (v === 'expand') return 'expand';
-    return 'tree';
-  } catch { return 'tree'; }
+function getProjectLayout(/* projectKey */) {
+  // Layout toggle removed — always Expand. Kept as a function so any
+  // legacy callers still resolve cleanly.
+  return 'expand';
 }
 function setProjectLayout(projectKey, layout) {
   try {
@@ -1746,17 +1742,12 @@ function _renderProjectSpoke(p, projectKey, workflow, expandedSet) {
   const cmtX = halfW - 18;
   const cmtY = -halfH + 14;
 
-  // Both buttons always rendered. Active workflow gets a subtle outer
-  // ring so the user can see which mode they're tracking.
-  const bentRing = workflow === 'bending' ? '<circle r="17" fill="none" stroke="rgba(93,187,99,0.35)" stroke-width="2" />' : '';
-  const assembledRing = workflow === 'assembly' ? '<circle r="17" fill="none" stroke="rgba(224,122,95,0.35)" stroke-width="2" />' : '';
+  // Both action buttons rendered equally — workflow toggle removed.
   const bentBtn = `<g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${bentX}, ${btnY})">
-       ${bentRing}
        <circle r="14" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.06)'}" stroke="${bent ? '#5dbb63' : '#777'}" stroke-width="2" />
        <image href="icons/bending.svg" x="-11" y="-11" width="22" height="22" />
      </g>`;
   const assembledBtn = `<g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${assembledX}, ${btnY})">
-       ${assembledRing}
        <circle r="13" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.06)'}" stroke="${assembled ? '#e07a5f' : '#777'}" stroke-width="2" />
        <text text-anchor="middle" dy="4" font-size="13">🧩</text>
      </g>`;
@@ -1795,12 +1786,16 @@ function _renderProjectSpoke(p, projectKey, workflow, expandedSet) {
         ${cCount ? `<text text-anchor="middle" dy="3" x="18" font-size="10" font-weight="700" fill="#ffc107">${cCount}</text>` : ''}
       </g>
 
-      <!-- Bottom row: timer (always) + workflow-specific checkbox -->
+      <!-- Bottom row: timer + reset (admin, has-time only) + both action checkboxes -->
       <g class="pm-btn pm-timer ${tRunning ? 'on' : ''}" data-action="timer" transform="translate(${timerX}, ${btnY})">
         <circle r="12" fill="${tRunning ? '#4dd06a' : 'rgba(255,255,255,0.08)'}" stroke="${tRunning ? '#4dd06a' : '#666'}" stroke-width="2" />
         <text text-anchor="middle" dy="3" font-size="10" fill="${tRunning ? '#000' : '#aaa'}">${tRunning ? '⏸' : '▶'}</text>
       </g>
       ${tText ? `<text class="pm-timer-text ${tRunning ? 'running' : ''}" data-pk="${escapeHtml(projectKey)}" data-code="${escapeHtml(code)}" x="${timerTextX}" y="${btnY + 3}" font-size="10" fill="${tRunning ? '#4dd06a' : '#aaa'}">${escapeHtml(tText)}</text>` : ''}
+      ${(tSec > 0 && isAdmin()) ? `<g class="pm-btn pm-timer-reset" data-action="timer-reset" transform="translate(${timerTextX + 50}, ${btnY})">
+        <circle r="9" fill="rgba(212,164,74,0.1)" stroke="#d4a44a" stroke-width="1.4" stroke-dasharray="3 2" />
+        <text text-anchor="middle" dy="3" font-size="10" fill="#d4a44a">↻</text>
+      </g>` : ''}
       ${wfBtn}
     </g>`;
 }
@@ -1962,6 +1957,18 @@ function _wireProjectMindmap(projectKey, visibleParts, workflow) {
         } else if (action === 'assembled') {
           markAssembled(projectKey, code, !isAssembled(projectKey, code));
           render();
+        } else if (action === 'timer-reset') {
+          // Admin: edit / reset the accumulated timer for this part.
+          const cur = getTimerTotalSeconds(projectKey, code);
+          const msg = `Edit / Reset timer\n\n` +
+            `Current: ${formatDuration(cur) || '0s'}\n\n` +
+            `Enter new total in seconds (0 = reset):`;
+          const input = prompt(msg, String(cur));
+          if (input === null) return;
+          const n = parseInt(String(input).trim(), 10);
+          const seconds = (!input.trim() || isNaN(n)) ? 0 : Math.max(0, n);
+          resetTimer(projectKey, code, seconds);
+          render();
         } else if (action === 'comments') {
           toggleCommentsOpen(code);
           render();
@@ -2097,22 +2104,6 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
       </div>
-      <div class="view-toggle-group workflow-toggle">
-        <button class="view-toggle-btn ${viewMode === 'bending' ? 'active bending' : ''}" data-view="bending" title="Bending Kanban">
-          <span class="icon-bend"></span> Bending
-        </button>
-        <button class="view-toggle-btn ${viewMode === 'assembly' ? 'active assembly' : ''}" data-view="assembly" title="Assembly Kanban">
-          🧩 Assembly
-        </button>
-      </div>
-      <div class="view-toggle-group layout-toggle">
-        <button class="view-toggle-btn ${getProjectLayout(key) === 'tree' ? 'active' : ''}" id="layout-tree" title="Tree — wrappers + drill-down">
-          🌲 Tree
-        </button>
-        <button class="view-toggle-btn ${getProjectLayout(key) === 'expand' ? 'active' : ''}" id="layout-expand" title="Expand — wrappers + click to reveal children inline">
-          🕸 Expand
-        </button>
-      </div>
     </div>
     ${mindmapHtml}
   `;
@@ -2128,22 +2119,8 @@ function renderProject(key) {
       render();
     });
   });
-  ROOT.querySelector('#layout-tree').addEventListener('click', () => {
-    setProjectLayout(key, 'tree');
-    render();
-  });
-  ROOT.querySelector('#layout-expand').addEventListener('click', () => {
-    setProjectLayout(key, 'expand');
-    setProjectMindmapCenter(key, null);  // expand mode ignores center anyway
-    render();
-  });
-  // Workflow toggle (Bending Kanban ↔ Assembly Kanban)
-  ROOT.querySelectorAll('.view-toggle-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setProjectViewMode(btn.dataset.view);
-      render();
-    });
-  });
+  // (workflow + layout toggles removed — see commit notes; both bent and
+  // assembled buttons render on every spoke, and layout is always Expand.)
   // Wire mindmap events (always — only view mode now)
   _wireProjectMindmap(key, visibleParts, viewMode);
 
