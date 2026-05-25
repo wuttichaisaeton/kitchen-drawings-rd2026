@@ -1,87 +1,10 @@
-CC_Assembly walk debug — 2026-05-25T10:07:45.421364
+CC_Assembly walk debug — 2026-05-25T10:17:31.279685
 Project: FN0000-110000
 Total occurrences visited: 14
 CAM-ALPF tagged components: 0
 
 --- CAM API exploration ---
-activeDocument: FN0000-110000 v3
-  [FN0000-110000 v3] products(1): DesignProductType
-  [BM01NO-120000 v2] products(2): DesignProductType, FlatPatternProductType
-  [BM2LI1-110000 v12] products(1): DesignProductType
-  [BM2NO1-110000 v11] products(1): DesignProductType
-  [BM2NO0-110000 v9] products(2): DesignProductType, FlatPatternProductType
-  [BM2LI3-110000 v12] products(1): DesignProductType
-  [SD-Sup v6] products(2): DesignProductType, FlatPatternProductType
-  [BM1NO0-110000 v2] products(1): DesignProductType
-  [BM2NO2-110000 v11] products(1): DesignProductType
-  [BM2NO3-110000 v11] products(1): DesignProductType
-  [BM2LI0-110000 v10] products(2): DesignProductType, FlatPatternProductType
-  [DSV2B3-110040 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSV100-110020 v6] products(2): DesignProductType, FlatPatternProductType
-  [DSV2B1-110020 v4] products(2): DesignProductType, FlatPatternProductType
-  [BM2LI2-110000 v12] products(1): DesignProductType
-  [BM01LI-120000 v2] products(2): DesignProductType, FlatPatternProductType
-  [DSV100-110040 v6] products(2): DesignProductType, FlatPatternProductType
-  [BK2TR1-110000 v4] products(2): DesignProductType, FlatPatternProductType
-  [SD-0676 v25] products(2): DesignProductType, FlatPatternProductType
-  [BK1DN1-110000 v26] products(2): DesignProductType, FlatPatternProductType
-  [DSV2B3-110020 v4] products(2): DesignProductType, FlatPatternProductType
-  [BK0DN0-110000 v8] products(1): DesignProductType
-  [DST00N-110010 v7] products(3): DesignProductType, FlatPatternProductType, FlatPatternProductType
-  [BM1LI0-110000 v2] products(1): DesignProductType
-  [DSB0FA-110000 v5] products(1): DesignProductType
-  [DSV2B2-110020 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSV2B1-110040 v4] products(2): DesignProductType, FlatPatternProductType
-  [Leg-060 v3] products(1): DesignProductType
-  [FN0F00-110000 v2] products(2): DesignProductType, FlatPatternProductType
-  [FN3BLA-110000 v1] products(2): DesignProductType, FlatPatternProductType
-  [DSV100-110020 v6] products(2): DesignProductType, FlatPatternProductType
-  [DSV100-110040 v6] products(2): DesignProductType, FlatPatternProductType
-  [DXSB-XXXA v2] products(1): DesignProductType
-  [DSV100-110020 v6] products(2): DesignProductType, FlatPatternProductType
-  [DSB0FA-110000 v5] products(1): DesignProductType
-  [DSB0BD-110050 v7] products(2): DesignProductType, FlatPatternProductType
-  [1DSB_XXXD v1] products(1): DesignProductType
-  [DSV2B4-110020 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSB0F0-110050 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSB0FA-110000 v5] products(1): DesignProductType
-  [TS004H-110000 v8] products(1): DesignProductType
-  [DSB0F0-110050 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSB0BA-110050 v7] products(2): DesignProductType, FlatPatternProductType
-  [TS004H-110000 v4] products(1): DesignProductType
-  [DSB0FD-110000 v4] products(1): DesignProductType
-  [DSVBA2-110000 v3] products(1): DesignProductType
-  [SD00NA-080000 v20] products(1): DesignProductType
-  [DSB00N-110000 v2] products(1): DesignProductType
-  [DSB0FA-110000 v5] products(1): DesignProductType
-  [TS2TR4-110000 v6] products(2): DesignProductType, FlatPatternProductType
-  [FN2BNX-110000 v1] products(3): DesignProductType, FlatPatternProductType, FlatPatternProductType
-  [DSVBD3-110000 v3] products(1): DesignProductType
-  [FN1BLA-110000 v1] products(3): DesignProductType, FlatPatternProductType, FlatPatternProductType
-  [FN0FL2-110004 v2] products(1): DesignProductType
-  [TP-SuoV-Lo v1] products(2): DesignProductType, FlatPatternProductType
-  [DSB0FA-110000 v5] products(1): DesignProductType
-  [DSVBA4-110000 v3] products(1): DesignProductType
-  [TS0BHH-060000 v1] products(2): DesignProductType, FlatPatternProductType
-  [DSB0FD-110000 v4] products(1): DesignProductType
-  [DSVBA3-110000 v3] products(1): DesignProductType
-  [TS1BHH-110000 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSVBD1-110000 v3] products(1): DesignProductType
-  [DSVBA1-110000 v3] products(1): DesignProductType
-  [TP-SuoV-Hi v3] products(2): DesignProductType, FlatPatternProductType
-  [TS002H-110000 v7] products(1): DesignProductType
-  [TS002H-110000 v3] products(1): DesignProductType
-  [100VB0-110000 v11] products(1): DesignProductType
-  [DSB0F0-080050 v4] products(2): DesignProductType, FlatPatternProductType
-  [DSB0F0-090050 v4] products(2): DesignProductType, FlatPatternProductType
-  [FN3BLA-110000 v2] products(2): DesignProductType, FlatPatternProductType
-  [FN1BLA-110000 v3] products(3): DesignProductType, FlatPatternProductType, FlatPatternProductType
-  [FN2BNX-110000 v3] products(3): DesignProductType, FlatPatternProductType, FlatPatternProductType
-  [FN0FL2-110004 v3] products(1): DesignProductType
-  [FL-0801 v3] products(2): DesignProductType, FlatPatternProductType
-  [FN0F00-080000 v10] products(2): DesignProductType, FlatPatternProductType
-  [FN2BNX-110000 v6] products(3): DesignProductType, FlatPatternProductType, FlatPatternProductType
-  [FN0000-110000 v3] products(1): DesignProductType
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
