@@ -2,9 +2,9 @@
   "name": "100VB0-110000",
   "status": "active",
   "created_at": "2026-05-22T21:52:11.208867+00:00",
-  "updated_at": "2026-05-25T02:17:32.264481+00:00",
-  "total_unique_parts": 16,
-  "total_qty": 26,
+  "updated_at": "2026-05-25T07:37:28.984139+00:00",
+  "total_unique_parts": 19,
+  "total_qty": 33,
   "parts": [
     {
       "code": "BK1DN1-110000",
@@ -14,18 +14,18 @@
       "urn": "urn:adsk.wipprod:dm.lineage:5KfBBKp-SWmsOnPyb_dSYw"
     },
     {
-      "code": "BK2TR1-110000",
-      "qty": 4,
-      "family": "Back-Down",
-      "parent_code": "BK0DN0-110000",
-      "urn": "urn:adsk.wipprod:dm.lineage:BrD3P6kKSfiaXe4H8l7emA"
-    },
-    {
       "code": "BM2LI0-110000",
       "qty": 3,
       "family": "Beam",
       "parent_code": "BM2LI3-110000",
       "urn": "urn:adsk.wipprod:dm.lineage:UB72AC1RSpmJi6gidIoomQ"
+    },
+    {
+      "code": "BXXTR0-000000",
+      "qty": 4,
+      "family": "Other",
+      "parent_code": "BK2TR1-110000",
+      "urn": "urn:adsk.wipprod:dm.lineage:BrD3P6kKSfiaXe4H8l7emA"
     },
     {
       "code": "DSB0BA-110050",
@@ -98,18 +98,38 @@
       "urn": "urn:adsk.wipprod:dm.lineage:_HP3CUDcTDO2fLRrvlltrg"
     },
     {
+      "code": "FN3BLA-110000",
+      "qty": 1,
+      "family": "Floor",
+      "parent_code": "FN0FL2-110004",
+      "urn": "urn:adsk.wipprod:dm.lineage:5qcl2TVvQhiMSPjbp0Gnsw"
+    },
+    {
+      "code": "SD00NA-080000",
+      "qty": 2,
+      "family": "Side Panel",
+      "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
+    },
+    {
+      "code": "SD0SUP-000000",
+      "qty": 4,
+      "family": "Side Panel",
+      "parent_code": "SD00NA-080000",
+      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+    },
+    {
+      "code": "TS0BV0-000000",
+      "qty": 2,
+      "family": "Top Sup",
+      "parent_code": "TS002H-110000",
+      "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
+    },
+    {
       "code": "TS1BHH-110000",
       "qty": 2,
       "family": "Top Sup",
       "parent_code": "TS002H-110000",
       "urn": "urn:adsk.wipprod:dm.lineage:Q8-6FBBuTKCsIY6xeKoNWQ"
-    },
-    {
-      "code": "TS1BVH-060000",
-      "qty": 2,
-      "family": "Top Sup",
-      "parent_code": "TS002H-110000",
-      "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
     },
     {
       "code": "TS2TRX-000000",
