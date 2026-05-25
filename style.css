@@ -1154,6 +1154,27 @@ main.transit-back {
   background: color-mix(in srgb, var(--fam-tint, #1f2530) 70%, white 5%);
 }
 
+/* PDF drag-drop affordance (admin) — dashed glowing outline shows the
+   chip is a valid drop target while a file is dragged over it. */
+.family-card.drag-over {
+  outline: 3px dashed var(--fam-color, #4a90e2);
+  outline-offset: -3px;
+  background: color-mix(in srgb, var(--fam-color, #4a90e2) 22%, var(--fam-tint, #1f2530) 78%);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--fam-color, #4a90e2) 50%, transparent);
+}
+
+/* Sortable.js drag visuals for family chips (mirrors project-card). */
+.family-card-ghost {
+  opacity: 0.3;
+  border-style: dashed !important;
+}
+.family-card-chosen { cursor: grabbing; }
+.family-card-drag {
+  opacity: 0.95;
+  transform: rotate(0.5deg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
 .family-icon { font-size: 26px; line-height: 1; }
 
 /* SVG icon (mask-image trick) — colored shape that takes --fam-color from

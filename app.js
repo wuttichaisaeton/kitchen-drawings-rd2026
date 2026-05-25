@@ -188,7 +188,12 @@ function pdfUrlForCode(code) {
   // this code doesn't have its own entry.
   const effective = _effectiveDrawingCode(code);
   const e = (manifest.auto_generated || {})[effective];
-  return e ? pdfUrl(e) : '';
+  if (e) return pdfUrl(e);
+  // Then check Firebase-uploaded PDFs (user drag-dropped). Either the
+  // exact code or a group sibling having an upload counts.
+  const upload = _uploadedPdfsCache[effective] || _uploadedPdfsCache[code];
+  if (upload && upload.url) return upload.url;
+  return '';
 }
 
 function fmtDate(iso) {
@@ -453,6 +458,72 @@ function saveFamilyOrder(arr) {
   if (window.firebaseDB) {
     try { window.firebaseDB.ref('family_order').set(_familyOrderCache); }
     catch (e) { console.warn('Firebase family_order write failed:', e); }
+  }
+}
+
+// ── Uploaded PDFs (Firebase Storage + Realtime DB) ─────────────────
+// Admin drag-drops a PDF onto a family chip → uploaded to Firebase
+// Storage at drawings/<code>.pdf, then a metadata entry pushed to
+// uploaded_pdfs/<code> in Realtime DB so every device sees it.
+//
+// Read shape: uploaded_pdfs/<code> = { url, family, filename, size, uploaded_at }
+// pdfUrlForCode and partsByFamily both honour this cache so uploaded
+// PDFs render as drawn parts alongside the CC_DrawingPDF-exported ones.
+let _uploadedPdfsCache = {};
+
+function initUploadedPdfsSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('uploaded_pdfs').on('value', snap => {
+      _uploadedPdfsCache = snap.val() || {};
+      try { render(); } catch {}
+    });
+  } catch (e) {
+    console.warn('Firebase uploaded_pdfs listener failed:', e);
+  }
+}
+
+async function uploadPdfFromDrop(file, code, family) {
+  if (!window.firebaseStorage) {
+    alert('Firebase Storage not available — refresh the page and try again.');
+    return false;
+  }
+  if (!file || file.type !== 'application/pdf') {
+    alert('Please drop a PDF file (.pdf).');
+    return false;
+  }
+  if (!code) return false;
+  try {
+    const ref = window.firebaseStorage.ref().child('drawings/' + code + '.pdf');
+    const snap = await ref.put(file, { contentType: 'application/pdf' });
+    const url = await snap.ref.getDownloadURL();
+    await window.firebaseDB.ref('uploaded_pdfs/' + code).set({
+      url,
+      family: family || '',
+      filename: file.name,
+      size: file.size,
+      uploaded_at: Date.now(),
+    });
+    return true;
+  } catch (e) {
+    console.error('PDF upload failed:', e);
+    alert('Upload failed: ' + e.message);
+    return false;
+  }
+}
+
+async function deleteUploadedPdf(code) {
+  if (!code || !window.firebaseDB) return false;
+  try {
+    if (window.firebaseStorage) {
+      try { await window.firebaseStorage.ref().child('drawings/' + code + '.pdf').delete(); }
+      catch {}  // file might not exist any more — fine
+    }
+    await window.firebaseDB.ref('uploaded_pdfs/' + code).set(null);
+    return true;
+  } catch (e) {
+    console.error('PDF delete failed:', e);
+    return false;
   }
 }
 
@@ -955,6 +1026,24 @@ function partsByFamily() {
     out[fam].push({ code, ...entry });
     seen.add(code);
   }
+  // Surface Firebase-uploaded PDFs (admin drag-drop). Render under the
+  // family the upload was tagged to (or 'Custom' if unknown).
+  for (const [code, up] of Object.entries(_uploadedPdfsCache || {})) {
+    if (seen.has(code)) continue;
+    const fam = up.family || 'Custom';
+    if (!out[fam]) out[fam] = [];
+    out[fam].push({
+      code,
+      family: fam,
+      pdf: up.filename || (code + '.pdf'),
+      url: up.url,
+      uploaded_at: up.uploaded_at,
+      isUploaded: true,
+      status: 'drawn',
+    });
+    seen.add(code);
+  }
+
   // Also surface parts from every project BOM (CC_Assembly output) — even
   // those without a PDF exported yet. Workshop browsing by family in
   // Library shouldn't require the part to have a manifest entry first.
@@ -3366,7 +3455,7 @@ function renderLibraryHome() {
   ROOT.querySelectorAll('.family-card').forEach(el => {
     // Click → drill into family (unless we're catching a dblclick for rename)
     el.addEventListener('click', () => navTo({ kind: 'family', name: el.dataset.family }));
-    // Admin: double-click to rename the chip
+    // Admin: double-click to rename, drag PDF to upload.
     if (adminMode) {
       el.addEventListener('dblclick', (ev) => {
         ev.preventDefault();
@@ -3378,6 +3467,38 @@ function renderLibraryHome() {
         // Empty string → reset to default key
         setFamilyLabel(fam, next);
         render();
+      });
+      // PDF drag-drop upload — preventDefault on dragover to enable drop.
+      el.addEventListener('dragover', (ev) => {
+        if (ev.dataTransfer && [...ev.dataTransfer.items || []].some(i => i.kind === 'file')) {
+          ev.preventDefault();
+          el.classList.add('drag-over');
+        }
+      });
+      el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+      el.addEventListener('drop', async (ev) => {
+        ev.preventDefault();
+        el.classList.remove('drag-over');
+        const file = ev.dataTransfer?.files?.[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+          alert('PDF only — got ' + (file.type || file.name));
+          return;
+        }
+        const fam = el.dataset.family;
+        const guess = file.name.replace(/\.pdf$/i, '');
+        const code = prompt(
+          `Upload PDF to family "${fam}":\n\n` +
+          `Enter the part CODE this drawing covers ` +
+          `(prefix-shares means any other config of the same prefix will inherit too):`,
+          guess);
+        if (!code) return;
+        const ok = await uploadPdfFromDrop(file, code.trim(), fam);
+        if (ok) {
+          // Firebase listener triggers render — but force one in case
+          // of timing.
+          setTimeout(() => render(), 400);
+        }
       });
     }
   });
@@ -3615,6 +3736,7 @@ async function init() {
   initDeletedDrawingsSync();
   initPinnedSync();
   initFamilyChipSync();
+  initUploadedPdfsSync();
 
   try {
     const [m, f] = await Promise.all([
