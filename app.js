@@ -170,13 +170,30 @@ function _effectiveDrawingCode(code) {
   return code;
 }
 
-// Open a URL in a new tab via a synthetic anchor click. iPad PWAs
-// (added to Home Screen with apple-mobile-web-app-capable) suppress
-// window.open('_blank') as a popup, so the more reliable pattern is
-// to create + click an <a target="_blank"> — browsers treat that as
-// a user-initiated navigation.
+// Open a URL "in a new tab" — but handle the iPad PWA standalone case
+// where target="_blank" silently opens the link in an off-screen
+// webview the user never sees. In standalone mode we navigate the
+// current window instead; iOS swipe-back / back-button gestures
+// return the user to the app.
+//
+// Detection covers both the modern matchMedia signal and the legacy
+// Apple-specific `navigator.standalone` flag (still present in iOS
+// Safari PWA in 2026).
+function _isStandalonePwa() {
+  try {
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+  } catch {}
+  return window.navigator && window.navigator.standalone === true;
+}
+
 function _openInNewTab(url) {
   if (!url) return;
+  console.log('[open]', url, _isStandalonePwa() ? '(standalone PWA → same window)' : '(browser → new tab)');
+  if (_isStandalonePwa()) {
+    // Navigate inside the PWA — PDF replaces the app view; back gesture
+    // returns to the app. Avoids the invisible-tab problem on iOS.
+    try { window.location.href = url; return; } catch {}
+  }
   try {
     const a = document.createElement('a');
     a.href = url;
@@ -186,7 +203,6 @@ function _openInNewTab(url) {
     a.click();
     a.remove();
   } catch (e) {
-    // Last-resort fallback: navigate the current window.
     try { window.location.href = url; } catch {}
   }
 }
