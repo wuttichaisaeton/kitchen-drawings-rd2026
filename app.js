@@ -1764,22 +1764,30 @@ function _renderProjectSpoke(p, projectKey, workflow, expandedSet) {
   const btnY = halfH - 14;
   const timerX = -halfW + 18;   // far left
   const timerTextX = timerX + 18;
-  const actionX = halfW - 24;   // single workflow checkbox on right
+  // Both action checkboxes always visible (bent + assembled) — workflow
+  // toggle at the top of the view emphasizes the active one but doesn't
+  // hide the other. Workshop can mark either at any time.
+  const assembledX = halfW - 22;
+  const bentX = halfW - 54;
   // Top-right: comment + small status pill (kept for non-warn states)
   const cmtX = halfW - 18;
   const cmtY = -halfH + 14;
 
-  // Workflow-specific button: just one shown (bend OR assembled)
-  const wfBtn = workflow === 'assembly'
-    ? `<g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${actionX}, ${btnY})">
-         <circle r="13" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.06)'}" stroke="${assembled ? '#e07a5f' : '#777'}" stroke-width="2" />
-         <text text-anchor="middle" dy="4" font-size="13">🧩</text>
-       </g>`
-    : `<g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${actionX}, ${btnY})">
-         <circle r="14" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.06)'}" stroke="${bent ? '#5dbb63' : '#777'}" stroke-width="2" />
-         <!-- Press-brake icon (V-die + punch + glowing workpiece) referenced from icons/bending.svg -->
-         <image href="icons/bending.svg" x="-11" y="-11" width="22" height="22" />
-       </g>`;
+  // Both buttons always rendered. Active workflow gets a subtle outer
+  // ring so the user can see which mode they're tracking.
+  const bentRing = workflow === 'bending' ? '<circle r="17" fill="none" stroke="rgba(93,187,99,0.35)" stroke-width="2" />' : '';
+  const assembledRing = workflow === 'assembly' ? '<circle r="17" fill="none" stroke="rgba(224,122,95,0.35)" stroke-width="2" />' : '';
+  const bentBtn = `<g class="pm-btn pm-bent ${bent ? 'on' : ''}" data-action="bent" transform="translate(${bentX}, ${btnY})">
+       ${bentRing}
+       <circle r="14" fill="${bent ? '#5dbb63' : 'rgba(255,255,255,0.06)'}" stroke="${bent ? '#5dbb63' : '#777'}" stroke-width="2" />
+       <image href="icons/bending.svg" x="-11" y="-11" width="22" height="22" />
+     </g>`;
+  const assembledBtn = `<g class="pm-btn pm-assembled ${assembled ? 'on' : ''}" data-action="assembled" transform="translate(${assembledX}, ${btnY})">
+       ${assembledRing}
+       <circle r="13" fill="${assembled ? '#e07a5f' : 'rgba(255,255,255,0.06)'}" stroke="${assembled ? '#e07a5f' : '#777'}" stroke-width="2" />
+       <text text-anchor="middle" dy="4" font-size="13">🧩</text>
+     </g>`;
+  const wfBtn = bentBtn + assembledBtn;
 
   // Warning strip across the whole card border when missing/stale/deleted —
   // makes the status impossible to miss in either Kanban view
