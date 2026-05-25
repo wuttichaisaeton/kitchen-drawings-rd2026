@@ -1036,6 +1036,7 @@ function buildProjectTree(parts, projectKey) {
       code: p.code,
       qty: p.qty || 1,
       _prefix: p.code.split('-')[0],
+      _parent_code: p.parent_code || null,  // from CC_Assembly hierarchy
       family: p.family || 'Other',
       pdf: entry ? entry.pdf : null,
       page: entry ? (entry.page_number || 1) : 1,
@@ -1044,7 +1045,29 @@ function buildProjectTree(parts, projectKey) {
       parent: null,
     };
   });
+
+  // Hierarchy resolution — TWO sources:
+  //   (a) Explicit parent_code from CC_Assembly JSON (the new shape, from
+  //       Fusion occurrence chain). Authoritative when present.
+  //   (b) Prefix/wildcard matching on code (legacy fallback for projects
+  //       built before parent_code was emitted).
+  const byCode = new Map(nodes.map(n => [n.code, n]));
+
+  // Pass 1 — explicit parent_code links, only when the parent is also in
+  // the BOM. Wrapper-only codes (not in parts[]) leave the child as a root
+  // (it'll be linked by prefix in pass 2 if applicable).
   for (const node of nodes) {
+    if (node._parent_code && byCode.has(node._parent_code)) {
+      const par = byCode.get(node._parent_code);
+      node.parent = par;
+      par.children.push(node);
+    }
+  }
+
+  // Pass 2 — prefix/wildcard for nodes still without a parent (legacy /
+  // wrapper-less cases).
+  for (const node of nodes) {
+    if (node.parent) continue;
     let best = null, bestSpec = -1;
     for (const cand of nodes) {
       if (cand === node) continue;
@@ -1057,6 +1080,7 @@ function buildProjectTree(parts, projectKey) {
       best.children.push(node);
     }
   }
+
   function sortKids(n) {
     n.children.sort((a, b) => a.code.localeCompare(b.code));
     n.children.forEach(sortKids);

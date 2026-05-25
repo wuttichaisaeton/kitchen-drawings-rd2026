@@ -928,9 +928,17 @@ h1 {
 .pm-spoke.moved .pm-spoke-bg {
   stroke-dasharray: 8 2;
 }
+/* Leaves (no children) → dashed, slightly faded so the eye finds parents
+   first. Parents (has-children) keep the default solid stroke but at
+   a thicker width so the difference is obvious at a glance. */
 .pm-spoke.is-leaf .pm-spoke-bg {
   stroke-dasharray: 4 3;
   stroke-opacity: 0.75;
+}
+.pm-spoke.has-children .pm-spoke-bg {
+  stroke-width: 3;
+  stroke-dasharray: none;
+  stroke-opacity: 1;
 }
 .pm-spoke text {
   pointer-events: none;
