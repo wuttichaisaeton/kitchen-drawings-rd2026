@@ -23,6 +23,8 @@ const LS_DELETED_KEY = 'kd_deleted_drawings_v1';  // { partCode: epoch_ms }  —
 const LS_ADMIN_KEY = 'kd_admin_v1';               // '1' if this device is owner (เอ๋); only owner sees delete/edit buttons
 const LS_PINNED_KEY = 'kd_pinned_projects_v1';    // Set<projectKey> — pinned projects float to top
 const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — manual drag order (truthy projects come first in this order)
+const LS_FAMILY_LABELS_KEY = 'kd_family_labels_v1';  // {familyKey: customLabel} — admin-edited chip labels
+const LS_FAMILY_ORDER_KEY = 'kd_family_order_v1';    // Array<familyKey> — admin-set chip order
 
 // ──────────────────────────────────────────────────────────────────────
 // Admin mode — only owner (เอ๋) can delete/restore/reset/edit data.
@@ -389,6 +391,68 @@ function saveProjectOrder(arr) {
   if (window.firebaseDB) {
     try { window.firebaseDB.ref('project_order').set(_projectOrderCache); }
     catch (e) { console.warn('Firebase order write failed:', e); }
+  }
+}
+
+// ── Library family chips: custom labels + order (Firebase-synced) ──
+// Admin renames + drags chips. Everyone (workshop iPad too) sees the
+// shared state via Firebase listener. Pattern mirrors pin/order.
+let _familyLabelsCache = {};
+let _familyOrderCache = [];
+
+function initFamilyChipSync() {
+  try {
+    const r = localStorage.getItem(LS_FAMILY_LABELS_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _familyLabelsCache = o; }
+  } catch {}
+  try {
+    const r = localStorage.getItem(LS_FAMILY_ORDER_KEY);
+    if (r) { const a = JSON.parse(r); if (Array.isArray(a)) _familyOrderCache = a; }
+  } catch {}
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('family_labels').on('value', snap => {
+      const raw = snap.val();
+      _familyLabelsCache = (raw && typeof raw === 'object') ? raw : {};
+      try { localStorage.setItem(LS_FAMILY_LABELS_KEY, JSON.stringify(_familyLabelsCache)); } catch {}
+      try { render(); } catch {}
+    });
+    window.firebaseDB.ref('family_order').on('value', snap => {
+      const arr = snap.val();
+      _familyOrderCache = Array.isArray(arr) ? arr : [];
+      try { localStorage.setItem(LS_FAMILY_ORDER_KEY, JSON.stringify(_familyOrderCache)); } catch {}
+      try { render(); } catch {}
+    });
+  } catch (e) {
+    console.warn('Firebase family-chip listener failed:', e);
+  }
+}
+
+function familyDisplayLabel(famKey) {
+  return _familyLabelsCache[famKey] || famKey;
+}
+
+function setFamilyLabel(famKey, label) {
+  const trimmed = (label || '').trim();
+  if (trimmed) _familyLabelsCache[famKey] = trimmed;
+  else delete _familyLabelsCache[famKey];
+  try { localStorage.setItem(LS_FAMILY_LABELS_KEY, JSON.stringify(_familyLabelsCache)); } catch {}
+  if (window.firebaseDB) {
+    try {
+      window.firebaseDB.ref('family_labels/' + famKey)
+        .set(trimmed ? trimmed : null);
+    } catch (e) { console.warn('Firebase label write failed:', e); }
+  }
+}
+
+function loadFamilyOrder() { return _familyOrderCache.slice(); }
+
+function saveFamilyOrder(arr) {
+  _familyOrderCache = Array.isArray(arr) ? arr.slice() : [];
+  try { localStorage.setItem(LS_FAMILY_ORDER_KEY, JSON.stringify(_familyOrderCache)); } catch {}
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('family_order').set(_familyOrderCache); }
+    catch (e) { console.warn('Firebase family_order write failed:', e); }
   }
 }
 
@@ -3266,7 +3330,7 @@ const renderMissingHome = renderTreeHome;
 
 function renderLibraryHome() {
   const by = partsByFamily();
-  const visible = Object.keys(by).filter(f => by[f].length).sort(familyOrder);
+  const visible = Object.keys(by).filter(f => by[f].length);
 
   if (!visible.length) {
     ROOT.innerHTML = '<p class="loading">No drawings yet — run CC_DrawingPDF in Fusion first</p>';
@@ -3274,19 +3338,70 @@ function renderLibraryHome() {
     return;
   }
 
-  const cards = visible.map(fam => `
-    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}">
+  // Custom order from admin drag — manually-ranked families first (in
+  // the user's order), then everything else by default family order
+  // (alphabetic / families.json `order`).
+  const manualOrder = loadFamilyOrder();
+  const rank = new Map(manualOrder.map((k, i) => [k, i]));
+  visible.sort((a, b) => {
+    const ra = rank.has(a) ? rank.get(a) : Infinity;
+    const rb = rank.has(b) ? rank.get(b) : Infinity;
+    if (ra !== rb) return ra - rb;
+    return familyOrder(a, b);
+  });
+
+  const adminMode = isAdmin();
+  const cards = visible.map(fam => {
+    const label = familyDisplayLabel(fam);
+    return `
+    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Double-click to rename · drag to reorder"' : ''}>
       <div class="family-icon">${familyIcon(fam)}</div>
-      <div class="family-name">${escapeHtml(fam)}</div>
+      <div class="family-name">${escapeHtml(label)}</div>
       <div class="family-count">${by[fam].length} parts</div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 
   ROOT.innerHTML = `<div class="family-grid">${cards}</div>`;
 
   ROOT.querySelectorAll('.family-card').forEach(el => {
+    // Click → drill into family (unless we're catching a dblclick for rename)
     el.addEventListener('click', () => navTo({ kind: 'family', name: el.dataset.family }));
+    // Admin: double-click to rename the chip
+    if (adminMode) {
+      el.addEventListener('dblclick', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const fam = el.dataset.family;
+        const current = familyDisplayLabel(fam);
+        const next = prompt(`Rename chip "${fam}":`, current);
+        if (next === null) return;  // cancelled
+        // Empty string → reset to default key
+        setFamilyLabel(fam, next);
+        render();
+      });
+    }
   });
+
+  // Admin: drag-reorder via Sortable.js (same library used for projects).
+  if (adminMode && window.Sortable) {
+    const gridEl = ROOT.querySelector('.family-grid');
+    if (gridEl) {
+      Sortable.create(gridEl, {
+        animation: 150,
+        ghostClass: 'family-card-ghost',
+        chosenClass: 'family-card-chosen',
+        dragClass: 'family-card-drag',
+        forceFallback: true,
+        fallbackTolerance: 4,
+        onEnd: () => {
+          const newOrder = [...gridEl.querySelectorAll('.family-card')]
+            .map(el => el.dataset.family);
+          saveFamilyOrder(newOrder);
+          render();
+        },
+      });
+    }
+  }
 
   const total = Object.values(by).reduce((s, arr) => s + arr.length, 0);
   COUNT_EL.textContent = `${visible.length} families · ${total} parts`;
@@ -3499,6 +3614,7 @@ async function init() {
   initTimersSync();
   initDeletedDrawingsSync();
   initPinnedSync();
+  initFamilyChipSync();
 
   try {
     const [m, f] = await Promise.all([
