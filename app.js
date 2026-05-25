@@ -1582,6 +1582,11 @@ function buildProjectTree(parts, projectKey) {
         const lv = entry.last_drawn_version || 0;
         status = (fv > lv) ? 'stale' : 'drawn';
       }
+    } else if (!softDeleted && pdfUrlForCode(p.code)) {
+      // No manifest entry, but a web-uploaded sibling covers this code
+      // via prefix-share or an explicit group alias. Treat as drawn so
+      // the project mindmap stops flagging it as ⚠ NO DRAWING.
+      status = 'drawn';
     }
     return {
       code: p.code,
@@ -2904,6 +2909,9 @@ function buildLibraryTreeNodes() {
           if (!existing.drawing_urn && p.drawing_urn) existing.drawing_urn = p.drawing_urn;
           continue;
         }
+        // Upgrade to 'drawn' if a web upload covers this code (own upload
+        // or via prefix-share / group alias). Otherwise stays 'missing'.
+        const covered = !isDrawingSoftDeleted(p.code) && !!pdfUrlForCode(p.code);
         nodes.set(p.code, {
           code: p.code,
           _prefix: p.code.split('-')[0],
@@ -2911,7 +2919,7 @@ function buildLibraryTreeNodes() {
           pdf: null,
           page: 1,
           exported_at: null,
-          status: 'missing',
+          status: covered ? 'drawn' : 'missing',
           urn: p.urn || null,
           drawing_urn: p.drawing_urn || null,
           open_url: null,
