@@ -1542,20 +1542,20 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Edges — child spokes (expand mode) draw FROM their wrapper, not from
-  // the project center. Curve bias kept small so the lines don't bend
-  // dramatically when wrapper + child are close. Child edges inherit
-  // the wrapper's family colour via inline famVars so the workshop can
-  // visually trace which family a child belongs to.
+  // Edges — child spokes (expand mode) draw FROM their wrapper, not
+  // from the project center. Child edges are STRAIGHT lines (bias=0)
+  // so it's visually obvious they emanate from the centre of the
+  // parent rectangle. Project→wrapper edges keep a small curve bias so
+  // the ten radial lines don't look like a starburst stack.
   const edges = positioned.map(p => {
-    const fromX = p._parentSpokePos ? p._parentSpokePos.x : cx;
-    const fromY = p._parentSpokePos ? p._parentSpokePos.y : cy;
+    const isChild = !!p._parentSpokePos;
+    const fromX = isChild ? p._parentSpokePos.x : cx;
+    const fromY = isChild ? p._parentSpokePos.y : cy;
     const mx = (fromX + p.x) / 2, my = (fromY + p.y) / 2;
     const dx = p.x - fromX, dy = p.y - fromY;
     const len = Math.hypot(dx, dy) || 1;
-    const bias = p._parentSpokePos ? 8 : 22;
+    const bias = isChild ? 0 : 22;  // 0 = straight line center→center for children
     const bx = -dy / len * bias, by = dx / len * bias;
-    const isChild = !!p._parentSpokePos;
     const styleAttr = isChild ? ` style="${famVars(p.node.family || 'Other')}"` : '';
     return `<path class="mm-edge ${isChild ? 'mm-edge-child' : ''}" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
   }).join('');
