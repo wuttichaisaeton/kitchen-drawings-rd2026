@@ -419,15 +419,18 @@ h1 {
   color: #888;
 }
 
-/* Deep-link highlight — temporarily pulse a spoke after a merged-PDF */
-/* page link or shared URL lands on a specific code. */
-.pm-spoke.deep-link-highlight .pm-spoke-bg {
-  animation: deepLinkPulse 1.6s ease-out 2;
+/* Deep-link highlight — a bright halo rect is injected by _highlight */
+/* Spoke() as a sibling of .pm-spoke-bg, then auto-removed after 4s. */
+/* CSS animates opacity + stroke-width so the pulse is obvious even on */
+/* iOS Safari where SVG filter/drop-shadow can render inconsistently. */
+.pm-spoke .pm-deeplink-halo {
+  opacity: 0;
+  animation: deepLinkHaloPulse 1s ease-in-out 4;
 }
-@keyframes deepLinkPulse {
-  0%   { stroke-width: 2; filter: none; }
-  40%  { stroke-width: 5; filter: drop-shadow(0 0 8px #4dd06a); }
-  100% { stroke-width: 2; filter: none; }
+@keyframes deepLinkHaloPulse {
+  0%   { opacity: 0;    stroke-width: 3;  }
+  50%  { opacity: 1;    stroke-width: 8;  }
+  100% { opacity: 0.25; stroke-width: 4;  }
 }
 
 .project-actions {

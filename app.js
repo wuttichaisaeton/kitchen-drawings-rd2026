@@ -838,12 +838,44 @@ function _applyDeepLinkFromHash() {
   try { history.replaceState({}, '', location.pathname + location.search); } catch {}
 }
 
-function _highlightSpoke(code) {
+function _highlightSpoke(code, attempt = 0) {
+  // SVG render can take a beat after the project navigates in; poll
+  // for up to ~3s before giving up. Without polling, large projects
+  // miss the highlight on the very first paint.
   const spoke = document.querySelector(`.pm-spoke[data-code="${CSS.escape(code)}"]`);
-  if (!spoke) return;
-  spoke.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (!spoke) {
+    if (attempt < 15) {
+      setTimeout(() => _highlightSpoke(code, attempt + 1), 200);
+    } else {
+      console.warn('[deeplink] spoke not found after wait:', code);
+    }
+    return;
+  }
+  try { spoke.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+  // Inject a bright halo <rect> as a sibling of the spoke's background.
+  // SVG filter / drop-shadow animations can be invisible on some iOS
+  // versions, but a plain stroked rect that fades in/out is universal.
+  const bg = spoke.querySelector('.pm-spoke-bg');
+  if (bg) {
+    const x = parseFloat(bg.getAttribute('x')) - 6;
+    const y = parseFloat(bg.getAttribute('y')) - 6;
+    const w = parseFloat(bg.getAttribute('width')) + 12;
+    const h = parseFloat(bg.getAttribute('height')) + 12;
+    const ns = 'http://www.w3.org/2000/svg';
+    const halo = document.createElementNS(ns, 'rect');
+    halo.setAttribute('class', 'pm-deeplink-halo');
+    halo.setAttribute('x', x); halo.setAttribute('y', y);
+    halo.setAttribute('width', w); halo.setAttribute('height', h);
+    halo.setAttribute('rx', '14');
+    halo.setAttribute('fill', 'none');
+    halo.setAttribute('stroke', '#4dd06a');
+    halo.setAttribute('stroke-width', '5');
+    halo.setAttribute('pointer-events', 'none');
+    bg.parentNode.insertBefore(halo, bg);
+    setTimeout(() => { try { halo.remove(); } catch {} }, 4000);
+  }
   spoke.classList.add('deep-link-highlight');
-  setTimeout(() => spoke.classList.remove('deep-link-highlight'), 3500);
+  setTimeout(() => spoke.classList.remove('deep-link-highlight'), 4000);
 }
 
 // ── Bent + Assembled parts (per-part workshop tracking) ────────────
