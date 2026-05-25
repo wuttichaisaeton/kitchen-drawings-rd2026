@@ -755,13 +755,15 @@ async function deleteUploadedPdf(code) {
 }
 
 // ── Merge all project PDFs into one (with deep-link back-refs) ─────
-// Click "📑 All PDF" on a project → fetch every part's drawing in
-// BOM order, merge into a single PDF via pdf-lib, stamp each page
-// with a clickable link back to that part's spoke in the web UI
-// (`#project=<pk>&code=<code>`), open in a new tab.
+// Click "📑 All PDF" on a project → produce a single navigable PDF:
 //
-// Skips parts that have no resolvable drawing. Sequential fetch
-// keeps memory bounded for large projects; the button shows N/total
+//   [Page 1 .. M]  Project master PDF (always first, if it exists).
+//                  Each page links back to #project=<pk> (project view).
+//   [Page M+1 .. N] Per-part drawings in BOM order. Each page links
+//                  back to #project=<pk>&code=<code> (that part's spoke).
+//
+// Skips parts that have no resolvable drawing. Sequential fetch keeps
+// memory bounded for large projects; the button shows current/total
 // while fetching so workshop sees progress.
 
 async function buildAllProjectPdf(projectKey) {
@@ -772,15 +774,36 @@ async function buildAllProjectPdf(projectKey) {
   const project = (manifest.projects || {})[projectKey];
   if (!project) { alert('Project not found.'); return; }
 
-  // Unique codes in BOM order with a resolvable drawing.
+  // The project master PDF (if any) always goes first. Skip the part
+  // loop's regular item if a part shares the same code as the project
+  // — its drawing is already covered by the master section.
+  const projectUrl = projectPdfUrl(projectKey);
   const items = [];
-  const seen = new Set();
+  if (projectUrl) {
+    items.push({
+      kind: 'project',
+      code: projectKey,
+      url: projectUrl,
+      deepUrl: `${location.origin}${location.pathname}` +
+        `#project=${encodeURIComponent(projectKey)}`,
+    });
+  }
+  // Unique part codes in BOM order with a resolvable drawing.
+  const seen = new Set([projectKey]);  // dedupe vs the project section
   for (const p of (project.parts || [])) {
     if (seen.has(p.code)) continue;
     seen.add(p.code);
     const url = pdfUrlForCode(p.code);
     if (!url) continue;
-    items.push({ code: p.code, qty: p.qty || 1, url });
+    items.push({
+      kind: 'part',
+      code: p.code,
+      qty: p.qty || 1,
+      url,
+      deepUrl: `${location.origin}${location.pathname}` +
+        `#project=${encodeURIComponent(projectKey)}` +
+        `&code=${encodeURIComponent(p.code)}`,
+    });
   }
   if (!items.length) {
     alert(`No drawings available for "${projectKey}".`);
@@ -795,8 +818,10 @@ async function buildAllProjectPdf(projectKey) {
 
   const { PDFDocument, PDFString, PDFName } = window.PDFLib;
   const merged = await PDFDocument.create();
+  const partCount = items.filter(i => i.kind === 'part').length;
   merged.setTitle(`${projectKey} — All Drawings`);
-  merged.setSubject(`Generated from drawings-ui · ${items.length} parts`);
+  merged.setSubject(`Generated from drawings-ui · ${partCount} parts` +
+    (projectUrl ? ' + master' : ''));
 
   let done = 0, fail = 0;
   for (const item of items) {
@@ -810,15 +835,12 @@ async function buildAllProjectPdf(projectKey) {
       const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
       const pages = await merged.copyPages(srcDoc, srcDoc.getPageIndices());
 
-      const deepUrl = `${location.origin}${location.pathname}` +
-        `#project=${encodeURIComponent(projectKey)}` +
-        `&code=${encodeURIComponent(item.code)}`;
-
       for (const page of pages) {
         merged.addPage(page);
         // Annotate the bottom strip of each page with a URI link back
-        // to the part's spoke. Workshop staff taps the strip → web UI
-        // opens centred on that part for status / comments / timer.
+        // to the relevant web-UI view (project for master pages, the
+        // specific spoke for part pages). Workshop staff taps the strip
+        // → web UI focuses on the right place for status / comments.
         const { width } = page.getSize();
         const linkAnnot = merged.context.obj({
           Type: 'Annot',
@@ -828,7 +850,7 @@ async function buildAllProjectPdf(projectKey) {
           A: {
             Type: 'Action',
             S: 'URI',
-            URI: PDFString.of(deepUrl),
+            URI: PDFString.of(item.deepUrl),
           },
         });
         const linkRef = merged.context.register(linkAnnot);
@@ -840,7 +862,7 @@ async function buildAllProjectPdf(projectKey) {
         }
       }
     } catch (e) {
-      console.warn(`[all-pdf] failed ${item.code}:`, e);
+      console.warn(`[all-pdf] failed ${item.kind} ${item.code}:`, e);
       fail++;
     }
     done++;
