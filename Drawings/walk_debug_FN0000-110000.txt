@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-05-25T09:59:49.322949
+CC_Assembly walk debug — 2026-05-25T10:07:45.421364
 Project: FN0000-110000
 Total occurrences visited: 14
 CAM-ALPF tagged components: 0
@@ -93,9 +93,9 @@ depth | SM | CAM | material         | display_name (component)
     0 |     |     |                  | Legs:1 (Legs)
     1 |     |     |                  | Leg-060 v3:1 (Leg-060 v3)
     2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
-    2 |     |     |                  | กลาง:1 (กลาง)
-    2 |     |     |                  | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
     1 |     |     |                  | Leg-060 v3:2 (Leg-060 v3)
     1 |     |     |                  | Leg-060 v3:3 (Leg-060 v3)
     1 |     |     |                  | Leg-060 v3:4 (Leg-060 v3)
-    0 |     |     |                  | FN3BLA-110000 v2:1 (FN3BLA-110000 v2)
+    0 |     |     | ALPF             | FN3BLA-110000 v2:1 (FN3BLA-110000 v2)
