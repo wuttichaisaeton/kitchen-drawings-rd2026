@@ -1621,12 +1621,13 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     }
   }
 
-  // Edges — child edges trimmed to rectangle boundaries (start at the
-  // PARENT rect edge in the direction of the child, end at the CHILD
-  // rect edge in the direction of the parent). Project edges still
-  // run centre-to-centre with a slight curve bias so the inner-ring
-  // radials don't stack into a starburst. (Reverted from junction-
-  // point + centre-anchor variants per user.)
+  // Edges with junction-point anchoring.
+  // Each wrapper has ONE anchor on its rectangle boundary — the point
+  // where the project→wrapper line enters the box. The project edge
+  // ENDS at that anchor; every child edge of that wrapper STARTS at
+  // the same anchor. Visually: 1 wire in (project), N wires out
+  // (children), all joined at one spot on the wrapper's project-facing
+  // edge. Child edges still END trimmed at the child rect boundary.
   const halfW = PSPOKE_W / 2;
   const halfH = PSPOKE_H / 2;
   function trimToRectEdge(fromX, fromY, toX, toY) {
@@ -1636,22 +1637,30 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     const t = Math.min(halfW / adx, halfH / ady);
     return { x: fromX + dx * t, y: fromY + dy * t };
   }
+  const wrapperAnchorByCode = new Map();
+  for (const p of positioned) {
+    if (p._parentSpokePos) continue;  // top-level only
+    wrapperAnchorByCode.set(p.node.code, trimToRectEdge(p.x, p.y, cx, cy));
+  }
   const edges = positioned.map(p => {
     const isChild = !!p._parentSpokePos;
-    const fromCenterX = isChild ? p._parentSpokePos.x : cx;
-    const fromCenterY = isChild ? p._parentSpokePos.y : cy;
     if (isChild) {
-      const start = trimToRectEdge(fromCenterX, fromCenterY, p.x, p.y);
-      const end = trimToRectEdge(p.x, p.y, fromCenterX, fromCenterY);
+      const parentCode = p._parentSpokePos.code;
+      const start = wrapperAnchorByCode.get(parentCode)
+                 || trimToRectEdge(p._parentSpokePos.x, p._parentSpokePos.y, p.x, p.y);
+      const end = trimToRectEdge(p.x, p.y, p._parentSpokePos.x, p._parentSpokePos.y);
       const styleAttr = ` style="${famVars(p.node.family || 'Other')}"`;
       return `<path class="mm-edge mm-edge-child" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${start.x} ${start.y} L ${end.x} ${end.y}" />`;
     }
-    const mx = (fromCenterX + p.x) / 2, my = (fromCenterY + p.y) / 2;
-    const dx = p.x - fromCenterX, dy = p.y - fromCenterY;
+    // Project edge — ends at the wrapper's anchor (not centre) so it
+    // visibly stops at the box edge.
+    const anchor = wrapperAnchorByCode.get(p.node.code) || { x: p.x, y: p.y };
+    const mx = (cx + anchor.x) / 2, my = (cy + anchor.y) / 2;
+    const dx = anchor.x - cx, dy = anchor.y - cy;
     const len = Math.hypot(dx, dy) || 1;
     const bias = 22;
     const bx = -dy / len * bias, by = dx / len * bias;
-    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${fromCenterX} ${fromCenterY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
+    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${cx} ${cy} Q ${mx + bx} ${my + by} ${anchor.x} ${anchor.y}" />`;
   }).join('');
 
   // Center node
