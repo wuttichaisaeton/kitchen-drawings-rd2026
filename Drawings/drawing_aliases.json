@@ -1,0 +1,7 @@
+{
+  "_doc": "Drawing aliases — groups of part codes that share one workshop drawing. When ANY code in a group has a manifest entry (PDF generated), ALL codes in the group are treated as 'drawn' and route to the same drawing on click. Master URN stays per-code (master .f3d files are separate). Edit by hand or via future admin UI.",
+  "version": 1,
+  "groups": [
+    ["FN1BLA-110000", "FN2BNX-110000"]
+  ]
+}
