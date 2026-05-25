@@ -181,6 +181,33 @@ function pdfUrl(entry) {
   return base + encodeURIComponent(filename) + '#page=' + page;
 }
 
+// Project-master PDF lookup. The project KEY is the master file's
+// part code, but CC_DrawingPDF doesn't emit a manifest entry keyed by
+// that code — it emits one entry per config row, all pointing at the
+// same `<masterCode>.pdf` file. So pdfUrlForCode(projectKey) returns
+// '' even when the file exists.
+//
+// Strategy:
+//   1. Direct lookup via pdfUrlForCode — covers uploads + the rare
+//      case where a manifest entry IS keyed by the project code.
+//   2. Scan auto_generated for any entry whose `pdf` field is
+//      `<projectKey>.pdf` — use that. Page is left at 1 (the master
+//      view is conventionally the first page; per-config navigation
+//      goes through pdfUrlForCode of the specific child code).
+function projectPdfUrl(projectKey) {
+  if (!projectKey) return '';
+  const direct = pdfUrlForCode(projectKey);
+  if (direct) return direct;
+  const auto = (manifest && manifest.auto_generated) || {};
+  const target = `${projectKey}.pdf`;
+  for (const entry of Object.values(auto)) {
+    if (entry && entry.pdf === target) {
+      return pdfUrl({ pdf: target, page_number: 1 });
+    }
+  }
+  return '';
+}
+
 function pdfUrlForCode(code) {
   // Soft-deleted drawings act as if missing (until re-exported)
   if (isDrawingSoftDeleted(code)) return '';
@@ -2867,8 +2894,8 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
         <button class="filter-btn project-pdf-btn" id="project-pdf-btn"
-          ${pdfUrlForCode(key) ? '' : 'disabled'}
-          title="${pdfUrlForCode(key) ? `Open the project master drawing (${key}.pdf)` : `No drawing yet — run CC_DrawingPDF on ${key}.f3d in Fusion, or drag-drop a PDF onto its family chip in admin mode`}">📄 Project PDF</button>
+          ${projectPdfUrl(key) ? '' : 'disabled'}
+          title="${projectPdfUrl(key) ? `Open the project master drawing (${key}.pdf)` : `No drawing yet — run CC_DrawingPDF on ${key}.f3d in Fusion, or drag-drop a PDF onto its family chip in admin mode`}">📄 Project PDF</button>
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
       </div>
     </div>
@@ -2891,7 +2918,7 @@ function renderProject(key) {
     buildAllProjectPdf(key);
   });
   ROOT.querySelector('#project-pdf-btn')?.addEventListener('click', () => {
-    const url = pdfUrlForCode(key);
+    const url = projectPdfUrl(key);
     if (!url) return;  // disabled state already handles this, defensive
     window.open(url, '_blank');
   });
