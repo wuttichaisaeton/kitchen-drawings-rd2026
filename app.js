@@ -1543,21 +1543,44 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
   }
 
   // Edges — child spokes (expand mode) draw FROM their wrapper, not
-  // from the project center. Child edges are STRAIGHT lines (bias=0)
-  // so it's visually obvious they emanate from the centre of the
-  // parent rectangle. Project→wrapper edges keep a small curve bias so
-  // the ten radial lines don't look like a starburst stack.
+  // from the project center. For child edges we TRIM the start and end
+  // points to land on the EDGE of the parent and child rectangles
+  // (instead of their centres). This way the line is visually owned by
+  // the boxes it connects — it doesn't extend into either spoke and
+  // can't get confused with another spoke it happens to pass through.
+  // Project→wrapper edges keep their curved bias so the ten radial
+  // lines don't stack on top of each other.
+  const halfW = PSPOKE_W / 2;
+  const halfH = PSPOKE_H / 2;
+  function trimToRectEdge(fromX, fromY, toX, toY) {
+    // Returns the point where the line from (fromX,fromY) → (toX,toY)
+    // exits the rectangle centred at (fromX,fromY) of size 2*halfW × 2*halfH.
+    const dx = toX - fromX, dy = toY - fromY;
+    const adx = Math.abs(dx) || 1e-9;
+    const ady = Math.abs(dy) || 1e-9;
+    const tX = halfW / adx;
+    const tY = halfH / ady;
+    const t = Math.min(tX, tY);
+    return { x: fromX + dx * t, y: fromY + dy * t };
+  }
   const edges = positioned.map(p => {
     const isChild = !!p._parentSpokePos;
-    const fromX = isChild ? p._parentSpokePos.x : cx;
-    const fromY = isChild ? p._parentSpokePos.y : cy;
-    const mx = (fromX + p.x) / 2, my = (fromY + p.y) / 2;
-    const dx = p.x - fromX, dy = p.y - fromY;
+    const fromCenterX = isChild ? p._parentSpokePos.x : cx;
+    const fromCenterY = isChild ? p._parentSpokePos.y : cy;
+    if (isChild) {
+      // Trim both ends to the rectangle boundary.
+      const start = trimToRectEdge(fromCenterX, fromCenterY, p.x, p.y);
+      const end = trimToRectEdge(p.x, p.y, fromCenterX, fromCenterY);
+      const styleAttr = ` style="${famVars(p.node.family || 'Other')}"`;
+      return `<path class="mm-edge mm-edge-child" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${start.x} ${start.y} L ${end.x} ${end.y}" />`;
+    }
+    // Project edge: curved bias for visual separation between siblings.
+    const mx = (fromCenterX + p.x) / 2, my = (fromCenterY + p.y) / 2;
+    const dx = p.x - fromCenterX, dy = p.y - fromCenterY;
     const len = Math.hypot(dx, dy) || 1;
-    const bias = isChild ? 0 : 22;  // 0 = straight line center→center for children
+    const bias = 22;
     const bx = -dy / len * bias, by = dx / len * bias;
-    const styleAttr = isChild ? ` style="${famVars(p.node.family || 'Other')}"` : '';
-    return `<path class="mm-edge ${isChild ? 'mm-edge-child' : ''}" data-target="${escapeHtml(p.node.code)}"${styleAttr} d="M ${fromX} ${fromY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
+    return `<path class="mm-edge" data-target="${escapeHtml(p.node.code)}" d="M ${fromCenterX} ${fromCenterY} Q ${mx + bx} ${my + by} ${p.x} ${p.y}" />`;
   }).join('');
 
   // Center node
