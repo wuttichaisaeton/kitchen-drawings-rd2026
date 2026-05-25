@@ -416,6 +416,42 @@ function markBent(projectKey, code, done) {
   const k = bentKey(projectKey, code);
   if (done) s.add(k); else s.delete(k);
   saveBentSet(s);
+  // Auto-propagate up: when every child of a parent is bent, the parent
+  // itself becomes bent automatically. When ANY child gets un-bent, the
+  // parent un-bends too. (Assembled does NOT auto-propagate — that's
+  // explicit per the workshop rule.)
+  try { _propagateBentUp(projectKey, code, s); } catch {}
+}
+
+function _propagateBentUp(projectKey, startCode, bentSet) {
+  // Walk every project the part appears in (usually just one) and find
+  // the parent of `startCode` via buildProjectTree. Recurse up while
+  // each ancestor's bent state matches its children's collective state.
+  const project = manifest && manifest.projects && manifest.projects[projectKey];
+  if (!project || !Array.isArray(project.parts)) return;
+  const { all } = buildProjectTree(project.parts, projectKey);
+  // Find the node for startCode
+  const node = all.find(n => n.code === startCode);
+  if (!node) return;
+  let cur = node.parent;
+  let s = bentSet || loadBentSet();
+  let dirty = false;
+  while (cur) {
+    const kids = cur.children || [];
+    if (!kids.length) break;
+    const allKidsBent = kids.every(k => s.has(bentKey(projectKey, k.code)));
+    const parentKey = bentKey(projectKey, cur.code);
+    const parentIsBent = s.has(parentKey);
+    if (allKidsBent && !parentIsBent) {
+      s.add(parentKey); dirty = true;
+    } else if (!allKidsBent && parentIsBent) {
+      s.delete(parentKey); dirty = true;
+    } else {
+      break;  // no change at this level → stop
+    }
+    cur = cur.parent;
+  }
+  if (dirty) saveBentSet(s);
 }
 
 function bentCountForProject(projectKey, parts) {
