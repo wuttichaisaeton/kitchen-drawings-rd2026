@@ -479,7 +479,7 @@ function saveFamilyOrder(arr) {
 const GH_OWNER = 'wuttichaisaeton';
 const GH_REPO = 'kitchen-drawings-rd2026';
 const GH_BRANCH = 'main';
-const GH_UPLOAD_PATH = 'drawings-ui/Drawings/manual';  // repo-relative
+const GH_UPLOAD_PATH = 'Drawings/manual';  // repo-relative; Pages serves from repo root
 const GH_PUBLIC_BASE = `https://${GH_OWNER}.github.io/${GH_REPO}/Drawings/manual/`;
 const LS_GITHUB_PAT_KEY = 'kd_github_pat_v1';
 
