@@ -564,6 +564,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   //   onClick + stopPropagation).
   const centerClickTimer = useRef(null);
   const onNodeClick = useCallback((evt, node) => {
+    // iPad-diagnostic: surface the tap event in the toolbar so we can
+    // tell from the device whether onNodeClick fires at all (workshop
+    // iPad PWA was reporting all taps as no-ops).
+    setStatus(`tap: ${node?.id || '?'}`);
+
     // Inner-button taps have their own handlers; don't double-fire here.
     if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
 
@@ -728,7 +733,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           onSelectionChange={onSelectionChange}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
-          nodesDraggable={admin}
+          nodesDraggable={true}
           nodesConnectable={admin}
           edgesUpdatable={admin}
           elementsSelectable={true}
@@ -736,6 +741,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           panOnDrag={true}
           zoomOnDoubleClick={false}
           selectNodesOnDrag={false}
+          nodeDragThreshold={6}
           fitView
           colorMode="dark"
           proOptions={{ hideAttribution: true }}
