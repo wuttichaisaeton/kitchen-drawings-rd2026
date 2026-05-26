@@ -1952,24 +1952,11 @@ function setProjectViewMode(v) {
 const LS_PROJECT_CENTER = 'kd_project_center_v1';
 const LS_PROJECT_LAYOUT = 'kd_project_layout_v1';  // per-project: 'tree' | 'flat' | 'expand'
 const LS_PROJECT_EXPANDED = 'kd_project_expanded_v1';  // per-project: { code: true, ... } — which parents have their children visible (Expand mode)
-const LS_MINDMAP_MODE = 'kd_mindmap_mode_v1';      // per-project: 'auto' | 'custom' — Auto = BOM-generated, Custom = user-curated via React Flow editor
+// LS_MINDMAP_MODE removed 2026-05-26 — unified editor replaces the
+// Auto|Custom toggle. Single React Flow view shows BOM + Custom nodes
+// together; admin edits, workshop views.
 
-function getMindmapMode(projectKey) {
-  try {
-    const all = JSON.parse(localStorage.getItem(LS_MINDMAP_MODE) || '{}');
-    return all[projectKey] === 'custom' ? 'custom' : 'auto';
-  } catch { return 'auto'; }
-}
-function setMindmapMode(projectKey, mode) {
-  try {
-    const all = JSON.parse(localStorage.getItem(LS_MINDMAP_MODE) || '{}');
-    if (mode === 'custom') all[projectKey] = 'custom';
-    else delete all[projectKey];
-    localStorage.setItem(LS_MINDMAP_MODE, JSON.stringify(all));
-  } catch {}
-}
-
-// Lazy-load the React Flow editor bundle on first switch to Custom mode.
+// Lazy-load the React Flow editor bundle for the unified mindmap view.
 // Bundle is ~317 KB minified — not worth shipping to workshop iPads that
 // only ever use Auto mode. Returns a Promise that resolves once
 // window.KitchenMindmapEditor.mount is callable.
@@ -2063,6 +2050,106 @@ async function _loadCustomMindmap(projectKey) {
     console.warn('[kme] load RTDB failed, using LS cache:', e);
     return cached;
   }
+}
+
+// ── BOM nodes + overrides ────────────────────────────────────────────
+// Unified editor combines BOM-derived nodes (id = bom:<code>) with
+// user-added Custom nodes (id = n_xxx). BOM nodes can't be deleted but
+// admin can drag them (position) + rename (label) — these edits live
+// in custom_mindmaps/<pk>/overrides/<id>/{x,y,label} so reloading
+// a project always rebuilds the BOM defaults first, then re-applies
+// per-user overrides on top.
+
+function _radialLayout(count, centerX, centerY, radius) {
+  // Evenly distribute count items on a circle. centerX/Y default to 0;
+  // radius scales with count so larger BOMs don't crowd.
+  const r = Math.max(radius || 0, 240 + count * 12);
+  const out = [];
+  for (let i = 0; i < count; i++) {
+    const a = (i / count) * Math.PI * 2 - Math.PI / 2;  // start at top
+    out.push({
+      x: (centerX || 0) + r * Math.cos(a),
+      y: (centerY || 0) + r * Math.sin(a),
+    });
+  }
+  return out;
+}
+
+function _buildBomNodes(project, parts) {
+  // BOM nodes are derived from the project's parts list — same source
+  // the Auto mindmap used. id="bom:<code>" so RTDB overrides key in
+  // cleanly without colliding with Custom n_xxx ids.
+  const ps = (parts || project?.parts || []).filter(p => p && p.code);
+  if (!ps.length) return [];
+  const positions = _radialLayout(ps.length, 0, 0, 320);
+  return ps.map((p, i) => ({
+    id: `bom:${p.code}`,
+    type: 'mindmap',
+    // Fallback to (0,0) defensively — React Flow throws on undefined .x
+    // and a missing position is way worse than a stacked node.
+    position: positions[i] || { x: 0, y: 0 },
+    data: {
+      label: p.code,
+      kind: 'bom',
+      qty: p.qty || 0,
+    },
+  }));
+}
+
+async function _loadOverrides(projectKey) {
+  // Per-node overrides from RTDB — admin's drags + renames on BOM nodes
+  // (and label edits on Custom too). Schema:
+  //   custom_mindmaps/<pk>/overrides/<nodeId> = { x?, y?, label? }
+  if (!window.firebaseDB) return {};
+  try {
+    const snap = await window.firebaseDB
+      .ref(`custom_mindmaps/${projectKey}/overrides`).once('value');
+    return snap.val() || {};
+  } catch (e) {
+    console.warn('[kme] load overrides failed:', e);
+    return {};
+  }
+}
+
+function _applyOverrides(nodes, overrides) {
+  if (!overrides || !Object.keys(overrides).length) return nodes;
+  return nodes.map(n => {
+    const o = overrides[n.id];
+    if (!o) return n;
+    return {
+      ...n,
+      position: (o.x != null && o.y != null)
+        ? { x: Number(o.x), y: Number(o.y) }
+        : n.position,
+      data: {
+        ...n.data,
+        ...(o.label != null ? { label: o.label } : {}),
+      },
+    };
+  });
+}
+
+const _overrideWriteTimers = new Map();
+function _saveOverride(projectKey, nodeId, patch) {
+  // Per-node override write — debounced per project (not per node) so
+  // dragging several nodes in a row coalesces into one batch.
+  if (!window.firebaseDB) return;
+  const key = projectKey;
+  const pending = _overrideWriteTimers.get(key) || { patches: {}, t: null };
+  pending.patches[nodeId] = { ...(pending.patches[nodeId] || {}), ...patch };
+  if (pending.t) clearTimeout(pending.t);
+  pending.t = setTimeout(() => {
+    const updates = {};
+    for (const [nid, p] of Object.entries(pending.patches)) {
+      for (const [k, v] of Object.entries(p)) {
+        updates[`custom_mindmaps/${projectKey}/overrides/${nid}/${k}`] = v;
+      }
+    }
+    window.firebaseDB.ref().update(updates).catch(err =>
+      console.warn('[kme] save override failed:', err));
+    _overrideWriteTimers.delete(key);
+  }, 500);
+  _overrideWriteTimers.set(key, pending);
 }
 
 // Debounced write — coalesces rapid drag-drop events into one RTDB roundtrip.
@@ -3072,13 +3159,11 @@ function renderProject(key) {
   const groups = groupPartsByMaster(visibleParts, auto);
   const collapsed = loadCollapsed();
 
-  // Both Bending + Assembly are Kanban mindmaps — the workflow string is
-  // passed to the renderer so it can show only the relevant checkbox.
-  // Mindmap mode toggle (Auto = BOM-generated, Custom = React Flow editor).
-  const mindmapMode = getMindmapMode(key);
-  const mindmapHtml = mindmapMode === 'custom'
-    ? '<div id="kme-mount" class="kme-mount-host"><p class="loading">Loading editor…</p></div>'
-    : _renderProjectMindmapHtml(key, project, visibleParts, viewMode);
+  // Unified editor — React Flow shows BOM nodes (from manifest) +
+  // Custom nodes (from RTDB) in the same canvas. Admin edits, workshop
+  // views. The legacy _renderProjectMindmapHtml SVG path is dead but
+  // kept in the file for now in case we need to fall back.
+  const mindmapHtml = '<div id="kme-mount" class="kme-mount-host"><p class="loading">Loading editor…</p></div>';
 
   const totalQtyAll = project.total_qty != null
     ? project.total_qty
@@ -3113,32 +3198,6 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
       </div>
-      <div class="mindmap-mode-toggle" role="group" aria-label="Mindmap mode">
-        <button class="mm-mode-btn ${mindmapMode === 'auto' ? 'active' : ''}" data-mode="auto" title="BOM-generated mindmap (read-only)">
-          <svg class="mm-mode-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="8" cy="8" r="2"/>
-            <circle cx="2.5" cy="2.5" r="1.5"/>
-            <circle cx="13.5" cy="2.5" r="1.5"/>
-            <circle cx="2.5" cy="13.5" r="1.5"/>
-            <circle cx="13.5" cy="13.5" r="1.5"/>
-            <line x1="6.5" y1="6.5" x2="4" y2="4"/>
-            <line x1="9.5" y1="6.5" x2="12" y2="4"/>
-            <line x1="6.5" y1="9.5" x2="4" y2="12"/>
-            <line x1="9.5" y1="9.5" x2="12" y2="12"/>
-          </svg>
-          <span>Auto</span>
-        </button>
-        <button class="mm-mode-btn ${mindmapMode === 'custom' ? 'active' : ''}" data-mode="custom" title="Editable mindmap — drag, type, connect">
-          <svg class="mm-mode-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="1.5" y="6" width="4.5" height="4" rx="0.8"/>
-            <rect x="10" y="2" width="4.5" height="4" rx="0.8"/>
-            <rect x="10" y="10" width="4.5" height="4" rx="0.8"/>
-            <line x1="6" y1="8" x2="10" y2="4"/>
-            <line x1="6" y1="8" x2="10" y2="12"/>
-          </svg>
-          <span>Custom</span>
-        </button>
-      </div>
     </div>
     ${mindmapHtml}
   `;
@@ -3158,48 +3217,54 @@ function renderProject(key) {
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
   });
-  ROOT.querySelectorAll('.mm-mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const next = btn.dataset.mode;
-      if (next === mindmapMode) return;
-      setMindmapMode(key, next);
-      render();
+  // Unified editor mount — always React Flow.
+  // Composes: BOM nodes (from project.parts, with per-node overrides for
+  // admin's drag + rename) + Custom nodes (from RTDB). Workshop iPad
+  // (non-admin) gets the same view but editing is gated off.
+  ensureEditorBundle().then(async () => {
+    const host = document.getElementById('kme-mount');
+    if (!host) return;
+    const [fresh, overrides] = await Promise.all([
+      _loadCustomMindmap(key),
+      _loadOverrides(key),
+    ]);
+    const bomNodes = _applyOverrides(_buildBomNodes(project, visibleParts), overrides);
+    // Custom node overrides apply too — admin can rename a Custom node
+    // and have it persist via the overrides path rather than mutating
+    // the node payload (keeps two write-paths symmetrical).
+    const customNodes = _applyOverrides(fresh.nodes || [], overrides);
+    const admin = isAdmin();
+    host.innerHTML = '';
+    try { window.__kmeInstance?.unmount?.(); } catch {}
+    window.__kmeInstance = window.KitchenMindmapEditor.mount(host, {
+      projectKey: key,
+      admin,
+      initialNodes: [...bomNodes, ...customNodes],
+      initialEdges: fresh.edges || [],
+      onChange: (data) => {
+        // Split changes: BOM nodes' position/label → overrides path;
+        // Custom nodes go through the existing _saveCustomMindmap path
+        // (which writes the full nodes/edges object).
+        const customOnly = { nodes: [], edges: data.edges || [] };
+        for (const n of (data.nodes || [])) {
+          if (n.id.startsWith('bom:')) {
+            _saveOverride(key, n.id, {
+              x: n.position?.x,
+              y: n.position?.y,
+              label: n.data?.label,
+            });
+          } else {
+            customOnly.nodes.push(n);
+          }
+        }
+        _saveCustomMindmap(key, customOnly);
+      },
     });
+  }).catch(err => {
+    const host = document.getElementById('kme-mount');
+    if (host) host.innerHTML = '<p class="loading">Editor failed to load. Check console.</p>';
+    console.error('[kme] bundle load failed', err);
   });
-  // Project PDF button removed — clicking the mindmap center circle
-  // opens the project's master PDF instead (see the .mm-center
-  // handler below).
-  // (workflow + layout toggles removed — see commit notes; both bent and
-  // assembled buttons render on every spoke, and layout is always Expand.)
-  if (mindmapMode === 'custom') {
-    // First-paint with LS cache (zero-latency), then upgrade to RTDB.
-    const cached = _loadCustomMindmapLocal(key);
-    ensureEditorBundle().then(async () => {
-      const host = document.getElementById('kme-mount');
-      if (!host) return;
-      // Skip if user already switched modes during async load.
-      if (getMindmapMode(key) !== 'custom') return;
-      // Pull fresh data from RTDB (falls back to cache on error).
-      const fresh = await _loadCustomMindmap(key);
-      host.innerHTML = '';
-      // unmount may throw if the previous mount's container was removed
-      // from the DOM by a re-render — swallow so the new mount still happens.
-      try { window.__kmeInstance?.unmount?.(); } catch {}
-      window.__kmeInstance = window.KitchenMindmapEditor.mount(host, {
-        projectKey: key,
-        initialNodes: fresh.nodes.length ? fresh.nodes : cached.nodes,
-        initialEdges: fresh.edges.length ? fresh.edges : cached.edges,
-        onChange: (data) => _saveCustomMindmap(key, data),
-      });
-    }).catch(err => {
-      const host = document.getElementById('kme-mount');
-      if (host) host.innerHTML = '<p class="loading">Editor failed to load. Check console.</p>';
-      console.error('[kme] bundle load failed', err);
-    });
-  } else {
-    // Wire mindmap events (Auto mode only)
-    _wireProjectMindmap(key, visibleParts, viewMode);
-  }
 
   // Master-group collapsible
   ROOT.querySelectorAll('.master-header').forEach(h => {

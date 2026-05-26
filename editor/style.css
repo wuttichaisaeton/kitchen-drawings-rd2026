@@ -95,6 +95,36 @@
   background: #0f2818;
 }
 
+/* BOM-derived node (id=bom:<code>) — slightly different chrome so admin
+   can tell at a glance which came from the manifest vs which were
+   added in the editor. */
+.kme-node.kme-bom {
+  border-color: #58a6ff;
+  background: #0d1c2e;
+}
+.kme-node.kme-bom.kme-linked {
+  /* Linked + BOM means the manifest entry has a CC_LinkNode fusion_link
+     attached — green wins so workshop signal is consistent. */
+  border-color: #3fb950;
+  background: #0f2818;
+}
+
+.kme-node-qty {
+  display: inline-block;
+  font-size: 10px;
+  color: #8b949e;
+  margin-left: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* View-only (workshop iPad) — cursor stays default, no edit affordance. */
+.kme-view-only .kme-node {
+  cursor: default;
+}
+.kme-view-only .kme-node-label {
+  cursor: default;
+}
+
 .kme-node.kme-linked .kme-link-badge {
   color: #3fb950;
   font-size: 11px;
