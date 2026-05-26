@@ -274,7 +274,7 @@ function MindmapNode({ id, data, selected }) {
           {label}
         </div>
         {isBom && qty != null && (
-          <span className="kme-node-qty">x{qty}</span>
+          <span className="kme-node-qty">x<span className="kme-node-qty-num">{qty}</span></span>
         )}
         {missing && isBom && (
           <span className="kme-missing-badge" title="No PDF yet — drag a PDF onto this node to upload">⚠ NO PDF</span>

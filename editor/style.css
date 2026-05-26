@@ -129,6 +129,16 @@
   color: #8b949e;
   margin-left: 6px;
   font-family: inherit;
+  vertical-align: baseline;
+}
+/* Multiplier number — the actual count is what workshop cares about,
+   so render it noticeably larger than the leading "x". */
+.kme-node-qty-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: #e6edf3;
+  margin-left: 1px;
+  vertical-align: baseline;
 }
 
 /* View-only (workshop iPad) — cursor stays default, no edit affordance. */
