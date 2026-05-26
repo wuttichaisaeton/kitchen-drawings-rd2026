@@ -189,46 +189,11 @@ function MindmapNode({ id, data, selected }) {
     if (url) window.open(url, '_blank', 'noopener');
   }, [code, api]);
 
-  // Leaf-click routing — for nodes with no children + a drawing.
-  // Routes per feedback_leaf_click_routing: status=missing → Fusion 3D,
-  // drawn/stale/deleted → drawing .f2d, fallback to PDF.
-  //
-  // iPad/touch: synthesized click events have e.detail === 0, so the old
-  // `if (e.detail !== 1) return` guard blocked every leaf tap on workshop
-  // iPads. Replaced with timer-based dblclick suppression for admin (so a
-  // follow-up double-click cancels the route and starts label edit), and
-  // immediate routing for workshop iPad (no edit path to conflict with).
-  const leafClickTimer = useRef(null);
-  const fireLeafRoute = useCallback(() => {
-    if (api.routeLeaf) {
-      api.routeLeaf({ code, status, urn, drawing_urn });
-    } else if (code) {
-      const url = api.pdfUrlForCode?.(code);
-      if (url) window.open(url, '_blank', 'noopener');
-    }
-  }, [api, code, status, urn, drawing_urn]);
-
-  const onClickBody = useCallback((e) => {
-    if (!isLeaf || !isBom || isWrapper) return;
-    if (e.target.closest('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
-    if (admin) {
-      if (leafClickTimer.current) clearTimeout(leafClickTimer.current);
-      leafClickTimer.current = setTimeout(() => {
-        leafClickTimer.current = null;
-        fireLeafRoute();
-      }, 220);
-    } else {
-      fireLeafRoute();
-    }
-  }, [isLeaf, isBom, isWrapper, admin, fireLeafRoute]);
-
-  const onDblClickBody = useCallback((e) => {
-    if (leafClickTimer.current) {
-      clearTimeout(leafClickTimer.current);
-      leafClickTimer.current = null;
-    }
-    startEdit(e);
-  }, [startEdit]);
+  // Leaf-click routing has moved to Editor.onNodeClick — React Flow's
+  // node-click callback fires reliably from RF's own pointer-event handler,
+  // whereas an inner-div onClick on iPad PWA gets swallowed when
+  // `nodesDraggable=false` (RF treats the touch as a pane interaction).
+  // Inner div now only handles drag-drop PDF upload + label edit (dblclick).
 
   // Drag-drop PDF upload — admin only, BOM nodes only (and pragmatically
   // only useful on missing ones, though we accept replacement uploads too).
@@ -290,8 +255,7 @@ function MindmapNode({ id, data, selected }) {
     <div
       className={cls.join(' ')}
       style={style}
-      onClick={onClickBody}
-      onDoubleClick={onDblClickBody}
+      onDoubleClick={startEdit}
       data-code={code || ''}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -589,17 +553,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     }
   }, [projectKey]);
 
-  // Click handling at the ReactFlow level — fires AFTER React Flow's
-  // own gesture detection so a click that wasn't part of a drag is
-  // reliably routed here.
+  // Click handling at the ReactFlow level — fires from RF's own pointer-
+  // event handler, which (unlike a React onClick on the inner node div)
+  // works reliably on iPad PWA when `nodesDraggable=false`.
   //
   // - Project center: single → toggle global collapse, double → open PDF.
-  // - BOM parent (has children, not a leaf): single → toggle that
-  //   parent's subtree visibility.
-  // - BOM leaf: single → routeLeaf (handled inside MindmapNode body
-  //   onClick so the inner-button hit zones aren't disturbed).
+  // - BOM parent (has children, not a leaf): single → toggle that subtree.
+  // - BOM leaf: single → routeLeaf via window.kdAPI. Skip when the tap
+  //   landed inside a workshop-op button (handled by that button's own
+  //   onClick + stopPropagation).
   const centerClickTimer = useRef(null);
   const onNodeClick = useCallback((evt, node) => {
+    // Inner-button taps have their own handlers; don't double-fire here.
+    if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
+
     if (node?.id?.startsWith('project:')) {
       if (centerClickTimer.current) clearTimeout(centerClickTimer.current);
       centerClickTimer.current = setTimeout(() => {
@@ -608,11 +575,28 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       }, 240);
       return;
     }
-    // Non-project node — if it has children, toggle its subtree.
     const data = node?.data || {};
     const hasChildren = !!data.hasChildren;
-    if (hasChildren && data.kind === 'bom') {
+    const isBom = data.kind === 'bom';
+    const isWrapper = !!data.isWrapper;
+
+    if (isBom && hasChildren) {
       toggleNodeCollapse(node.id);
+      return;
+    }
+
+    // Leaf BOM — route to PDF / Fusion. Per feedback_leaf_click_routing:
+    // status=missing → Fusion 3D, drawn/stale/deleted → drawing .f2d,
+    // fallback to PDF. window.kdAPI.routeLeaf encapsulates the rules.
+    if (isBom && !hasChildren && !isWrapper) {
+      const code = data.label;
+      const api = window.kdAPI || {};
+      if (api.routeLeaf) {
+        api.routeLeaf({ code, status: data.status, urn: data.urn, drawing_urn: data.drawing_urn });
+      } else if (code) {
+        const url = api.pdfUrlForCode?.(code);
+        if (url) window.open(url, '_blank', 'noopener');
+      }
     }
   }, [toggleCollapsed, toggleNodeCollapse]);
   const onNodeDoubleClick = useCallback((evt, node) => {
