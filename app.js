@@ -2075,25 +2075,76 @@ function _radialLayout(count, centerX, centerY, radius) {
   return out;
 }
 
-function _buildBomNodes(project, parts) {
+function _familyForCode(code) {
+  const auto = manifest?.auto_generated || {};
+  const fam = auto[code]?.family || 'Other';
+  return _remapFamilyForCode(code, fam);
+}
+function _familyColors(famKey) {
+  const f = (families || {})[famKey] || (families || {})['Other'] || {};
+  return { color: f.color || '#888', tint: f.tint || '#262626' };
+}
+
+function _buildBomNodes(project, parts, projectKey) {
   // BOM nodes are derived from the project's parts list — same source
   // the Auto mindmap used. id="bom:<code>" so RTDB overrides key in
-  // cleanly without colliding with Custom n_xxx ids.
+  // cleanly without colliding with Custom n_xxx ids. Plus the center
+  // "project" pseudo-node that the spokes connect to.
   const ps = (parts || project?.parts || []).filter(p => p && p.code);
-  if (!ps.length) return [];
-  const positions = _radialLayout(ps.length, 0, 0, 320);
-  return ps.map((p, i) => ({
-    id: `bom:${p.code}`,
+  const center = {
+    id: `project:${projectKey}`,
     type: 'mindmap',
-    // Fallback to (0,0) defensively — React Flow throws on undefined .x
-    // and a missing position is way worse than a stacked node.
-    position: positions[i] || { x: 0, y: 0 },
+    position: { x: 0, y: 0 },
+    draggable: true,
     data: {
-      label: p.code,
-      kind: 'bom',
-      qty: p.qty || 0,
+      label: project?.name || projectKey,
+      code: projectKey,
+      kind: 'project',
     },
+  };
+  if (!ps.length) return { nodes: [center], edges: [] };
+  const positions = _radialLayout(ps.length, 0, 0, 480);
+  const nodes = [center, ...ps.map((p, i) => {
+    const famKey = _familyForCode(p.code);
+    const colors = _familyColors(famKey);
+    return {
+      id: `bom:${p.code}`,
+      type: 'mindmap',
+      position: positions[i] || { x: 0, y: 0 },
+      data: {
+        label: p.code,
+        kind: 'bom',
+        qty: p.qty || 0,
+        family: famKey,
+        color: colors.color,
+        tint: colors.tint,
+        projectKey,
+      },
+    };
+  })];
+  // Spokes: project center → every BOM node.
+  const edges = ps.map(p => ({
+    id: `e:proj:${p.code}`,
+    source: `project:${projectKey}`,
+    target: `bom:${p.code}`,
+    style: { stroke: _familyColors(_familyForCode(p.code)).color, strokeWidth: 1.5, opacity: 0.55 },
+    selectable: false,
   }));
+  return { nodes, edges };
+}
+
+// Expose project-scoped APIs the editor's rich node card needs. The
+// editor bundle is an IIFE, not an ES module — easiest cross-boundary
+// hand-off is a single window object. Keep this small + stable.
+function _exposeKdApi() {
+  window.kdAPI = {
+    isBent, markBent, isAssembled, markAssembled,
+    isTimerRunning, startTimer, stopTimer, resetTimer,
+    getTimerTotalSeconds, formatDuration,
+    getComments,
+    pdfUrlForCode,
+    rerender: () => { try { render(); } catch {} },
+  };
 }
 
 async function _loadOverrides(projectKey) {
@@ -3218,9 +3269,10 @@ function renderProject(key) {
     buildAllProjectPdf(key);
   });
   // Unified editor mount — always React Flow.
-  // Composes: BOM nodes (from project.parts, with per-node overrides for
-  // admin's drag + rename) + Custom nodes (from RTDB). Workshop iPad
-  // (non-admin) gets the same view but editing is gated off.
+  // Composes: project center pseudo-node + BOM nodes (auto-spoked) +
+  // Custom nodes (RTDB). Workshop iPad gets the same view but editing
+  // is gated off via admin flag.
+  _exposeKdApi();
   ensureEditorBundle().then(async () => {
     const host = document.getElementById('kme-mount');
     if (!host) return;
@@ -3228,26 +3280,36 @@ function renderProject(key) {
       _loadCustomMindmap(key),
       _loadOverrides(key),
     ]);
-    const bomNodes = _applyOverrides(_buildBomNodes(project, visibleParts), overrides);
-    // Custom node overrides apply too — admin can rename a Custom node
-    // and have it persist via the overrides path rather than mutating
-    // the node payload (keeps two write-paths symmetrical).
+    const bom = _buildBomNodes(project, visibleParts, key);
+    const bomNodes = _applyOverrides(bom.nodes, overrides);
+    // Custom nodes layer overrides too so renames live in one place.
     const customNodes = _applyOverrides(fresh.nodes || [], overrides);
     const admin = isAdmin();
     host.innerHTML = '';
     try { window.__kmeInstance?.unmount?.(); } catch {}
+    // Deep-link highlight — when hash has #project=X&code=Y, find the
+    // matching node after mount and flash a green halo so workshop sees
+    // exactly which part was opened from the PDF link.
+    const deepCode = (() => {
+      const m = /[#&]code=([^&]+)/.exec(location.hash);
+      return m ? decodeURIComponent(m[1]) : null;
+    })();
     window.__kmeInstance = window.KitchenMindmapEditor.mount(host, {
       projectKey: key,
       admin,
+      deepLinkCode: deepCode,
       initialNodes: [...bomNodes, ...customNodes],
-      initialEdges: fresh.edges || [],
+      initialEdges: [...bom.edges, ...(fresh.edges || [])],
       onChange: (data) => {
-        // Split changes: BOM nodes' position/label → overrides path;
-        // Custom nodes go through the existing _saveCustomMindmap path
-        // (which writes the full nodes/edges object).
-        const customOnly = { nodes: [], edges: data.edges || [] };
+        // Split changes: BOM + project center → overrides path;
+        // Custom nodes go through the existing _saveCustomMindmap path.
+        // Spoke edges (id starts e:proj:) are derived — don't persist.
+        const customOnly = {
+          nodes: [],
+          edges: (data.edges || []).filter(e => !e.id.startsWith('e:proj:')),
+        };
         for (const n of (data.nodes || [])) {
-          if (n.id.startsWith('bom:')) {
+          if (n.id.startsWith('bom:') || n.id.startsWith('project:')) {
             _saveOverride(key, n.id, {
               x: n.position?.x,
               y: n.position?.y,

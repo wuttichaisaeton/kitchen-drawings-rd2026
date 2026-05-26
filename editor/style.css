@@ -134,6 +134,124 @@
   cursor: default;
 }
 
+/* ── Project center node ─────────────────────────────────────────── */
+.kme-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 180px;
+  pointer-events: auto;
+}
+.kme-center-circle {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 40%, #2a6ed6 0%, #1f4a98 75%, #163769 100%);
+  border: 3px solid #4a90e2;
+  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.18), 0 6px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+.kme-center-circle svg {
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+.kme-center-label {
+  font-size: 11px;
+  color: #8b949e;
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+.kme-center-code {
+  font-size: 13px;
+  color: #e6edf3;
+  font-weight: 700;
+}
+.kme-center.kme-selected .kme-center-circle {
+  box-shadow: 0 0 0 5px rgba(74, 144, 226, 0.4), 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Rich BOM node rows ──────────────────────────────────────────── */
+.kme-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.kme-row-head {
+  margin-bottom: 4px;
+}
+.kme-row-actions {
+  margin-top: 6px;
+  border-top: 1px solid rgba(110, 118, 129, 0.25);
+  padding-top: 6px;
+}
+.kme-spacer-mini { flex: 1; }
+
+.kme-mini {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(110, 118, 129, 0.35);
+  color: #8b949e;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  line-height: 1;
+  transition: all 0.12s;
+}
+.kme-mini:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #e6edf3;
+}
+.kme-mini.kme-on {
+  background: #1f6feb;
+  color: #fff;
+  border-color: #1f6feb;
+}
+.kme-timer.kme-on {
+  background: #d4a44a;
+  border-color: #d4a44a;
+  color: #1a1a1a;
+}
+.kme-timer-elapsed {
+  font-size: 10px;
+  opacity: 0.95;
+}
+.kme-bent.kme-on { background: #3fb950; border-color: #3fb950; color: #fff; }
+.kme-assembled.kme-on { background: #a070d0; border-color: #a070d0; color: #fff; }
+
+.kme-comment-count {
+  font-size: 10px;
+  color: #d4a44a;
+  background: rgba(212, 164, 74, 0.12);
+  padding: 1px 5px;
+  border-radius: 6px;
+}
+
+.kme-view-only .kme-row-actions button {
+  /* Workshop iPad still clicks bent/assembled/timer — those are workshop
+     ops, not structural edits. Reset button (kme-timer-reset) is hidden
+     in JSX via {admin &&} so no rule needed for it. */
+  cursor: pointer;
+}
+
+/* ── Deep-link halo (when navigating from PDF) ───────────────────── */
+.react-flow__node.kme-deeplink-halo .kme-node,
+.react-flow__node.kme-deeplink-halo .kme-center-circle {
+  animation: kmeDeepLinkHaloPulse 1s ease-in-out 4;
+}
+@keyframes kmeDeepLinkHaloPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(63, 185, 80, 0); }
+  50%  { box-shadow: 0 0 0 12px rgba(63, 185, 80, 0.5); }
+  100% { box-shadow: 0 0 0 4px rgba(63, 185, 80, 0.25); }
+}
+
 .kme-node.kme-linked .kme-link-badge {
   color: #3fb950;
   font-size: 11px;

@@ -42,13 +42,56 @@ async function openInFusion(urn, fallbackUrl) {
   return { ok: false };
 }
 
-// ── Custom node ─────────────────────────────────────────────────────
+// ── Project center node ─────────────────────────────────────────────
+// Circle with 3D cubes icon + project label below. Always at the
+// center of the canvas, draggable for admin to recenter.
+function ProjectCenterNode({ id, data, selected }) {
+  const { label, code } = data;
+  const cls = ['kme-center'];
+  if (selected) cls.push('kme-selected');
+  return (
+    <div className={cls.join(' ')}>
+      <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
+      <div className="kme-center-circle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {/* 3 stacked cubes (isometric-ish) — back, front-left, front-right */}
+          <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/>
+          <path d="M6 11.5 L12 15 L6 18.5 L0.5 15 Z" transform="translate(2.5 0)"/>
+          <path d="M12 11.5 L18 15 L12 18.5 L6.5 15 Z" transform="translate(3 0)"/>
+        </svg>
+      </div>
+      <div className="kme-center-label">PROJECT</div>
+      <div className="kme-center-code">{code || label}</div>
+      <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
+    </div>
+  );
+}
+
+// ── BOM / Custom node ───────────────────────────────────────────────
 function MindmapNode({ id, data, selected }) {
-  const { label, fusion_link, kind, qty, admin } = data;
+  const { label, fusion_link, kind, qty, admin, color, tint, projectKey } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
+  const code = isBom ? label : null;
   const labelRef = useRef(null);
   const [editing, setEditing] = useState(false);
+  // Bump on workshop-op state changes so re-renders read fresh.
+  const [tick, setTick] = useState(0);
+  const bump = useCallback(() => setTick(t => t + 1), []);
+
+  const api = window.kdAPI || {};
+  const bent = code ? api.isBent?.(projectKey, code) : false;
+  const assembled = code ? api.isAssembled?.(projectKey, code) : false;
+  const timerRunning = code ? api.isTimerRunning?.(projectKey, code) : false;
+  const timerSec = code ? api.getTimerTotalSeconds?.(projectKey, code) : 0;
+  const comments = code ? (api.getComments?.(code) || []) : [];
+
+  // Live tick for running timers so elapsed text updates without parent re-render
+  useEffect(() => {
+    if (!timerRunning) return;
+    const t = setInterval(bump, 1000);
+    return () => clearInterval(t);
+  }, [timerRunning, bump]);
 
   const startEdit = useCallback((e) => {
     if (!admin) return;
@@ -90,27 +133,114 @@ function MindmapNode({ id, data, selected }) {
     openInFusion(fusion_link.urn, fusion_link.open_url || null);
   }, [fusion_link]);
 
+  const onBent = useCallback((e) => {
+    e.stopPropagation();
+    if (!code || !projectKey) return;
+    api.markBent?.(projectKey, code, !bent);
+    bump();
+  }, [code, projectKey, bent, api, bump]);
+
+  const onAssembled = useCallback((e) => {
+    e.stopPropagation();
+    if (!code || !projectKey) return;
+    api.markAssembled?.(projectKey, code, !assembled);
+    bump();
+  }, [code, projectKey, assembled, api, bump]);
+
+  const onTimer = useCallback((e) => {
+    e.stopPropagation();
+    if (!code || !projectKey) return;
+    if (timerRunning) api.stopTimer?.(projectKey, code);
+    else api.startTimer?.(projectKey, code);
+    bump();
+  }, [code, projectKey, timerRunning, api, bump]);
+
+  const onResetTimer = useCallback((e) => {
+    e.stopPropagation();
+    if (!code || !projectKey || !admin) return;
+    const cur = api.getTimerTotalSeconds?.(projectKey, code) || 0;
+    const fmt = api.formatDuration?.(cur) || '0s';
+    const input = window.prompt(
+      `Edit / reset timer for ${code}\n\nCurrent: ${fmt}\n\nEnter new total in seconds (0 = reset):`,
+      String(cur));
+    if (input === null) return;
+    const n = Math.max(0, parseInt(input, 10) || 0);
+    api.resetTimer?.(projectKey, code, n);
+    bump();
+  }, [code, projectKey, admin, api, bump]);
+
+  const onOpenPdf = useCallback((e) => {
+    e.stopPropagation();
+    if (!code) return;
+    const url = api.pdfUrlForCode?.(code);
+    if (url) window.open(url, '_blank', 'noopener');
+  }, [code, api]);
+
   const cls = ['kme-node'];
   if (selected) cls.push('kme-selected');
   if (linked) cls.push('kme-linked');
   if (isBom) cls.push('kme-bom');
   if (!admin) cls.push('kme-view-only');
 
+  // Family color drives border + bottom tint
+  const style = isBom && color ? {
+    borderColor: color,
+    background: `linear-gradient(180deg, #161b22 60%, ${tint || '#161b22'} 100%)`,
+  } : undefined;
+
   return (
-    <div className={cls.join(' ')} onDoubleClick={startEdit}>
+    <div className={cls.join(' ')} style={style} onDoubleClick={startEdit} data-code={code || ''}>
       <Handle type="target" position={Position.Left} />
-      <div
-        ref={labelRef}
-        className="kme-node-label"
-        contentEditable={editing && admin}
-        suppressContentEditableWarning
-        onBlur={commit}
-        onKeyDown={onKeyDown}
-      >
-        {label}
+      <div className="kme-row kme-row-head">
+        <div
+          ref={labelRef}
+          className="kme-node-label"
+          contentEditable={editing && admin}
+          suppressContentEditableWarning
+          onBlur={commit}
+          onKeyDown={onKeyDown}
+        >
+          {label}
+        </div>
+        {isBom && qty != null && (
+          <span className="kme-node-qty">x{qty}</span>
+        )}
+        {comments.length > 0 && (
+          <span className="kme-comment-count" title={`${comments.length} comments`}>💬{comments.length}</span>
+        )}
       </div>
-      {isBom && qty != null && (
-        <div className="kme-node-qty">x{qty}</div>
+      {isBom && (
+        <div className="kme-row kme-row-actions">
+          <button
+            className={`kme-mini kme-timer ${timerRunning ? 'kme-on' : ''}`}
+            onClick={onTimer}
+            title={timerRunning ? 'Stop timer' : 'Start timer'}
+          >
+            {timerRunning ? '⏸' : '▶'}
+            {timerSec > 0 && <span className="kme-timer-elapsed">{api.formatDuration?.(timerSec)}</span>}
+          </button>
+          {admin && timerSec > 0 && (
+            <button className="kme-mini kme-timer-reset" onClick={onResetTimer} title="Edit / reset timer">↺</button>
+          )}
+          <span className="kme-spacer-mini" />
+          <button
+            className={`kme-mini kme-bent ${bent ? 'kme-on' : ''}`}
+            onClick={onBent}
+            title={bent ? 'Mark as not bent' : 'Mark bent'}
+          >
+            {bent ? '↧' : '↓'}
+          </button>
+          <button
+            className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
+            onClick={onAssembled}
+            title={assembled ? 'Mark as not assembled' : 'Mark assembled'}
+          >
+            ❋
+          </button>
+          {code && api.pdfUrlForCode?.(code) && (
+            <button className="kme-mini kme-pdf" onClick={onOpenPdf} title="Open PDF">📄</button>
+          )}
+        </div>
       )}
       {linked && (
         <div
@@ -126,10 +256,10 @@ function MindmapNode({ id, data, selected }) {
   );
 }
 
-const nodeTypes = { mindmap: MindmapNode };
+const nodeTypes = { mindmap: MindmapNode, project: ProjectCenterNode };
 
 // ── Main editor ─────────────────────────────────────────────────────
-function Editor({ projectKey, initialNodes, initialEdges, onChange, admin }) {
+function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
   const [selectedId, setSelectedId] = useState(null);
@@ -147,16 +277,16 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin }) {
     )));
   }, []);
 
-  // Inject onLabelChange + admin flag into every node's data so
-  // MindmapNode can react. admin gating happens at the node level too
-  // because contentEditable + double-click-to-edit are per-node UX.
+  // Inject onLabelChange + admin flag into every node's data so the
+  // node components can react. admin gating happens at the node level
+  // too because contentEditable + double-click-to-edit are per-node UX.
+  // Pick component type from data.kind — 'project' → ProjectCenterNode,
+  // anything else → MindmapNode (handles BOM + Custom).
   const nodesWithHandlers = useMemo(() => nodes.map((n) => ({
     ...n,
-    type: 'mindmap',
+    type: n.data?.kind === 'project' ? 'project' : 'mindmap',
     data: { ...n.data, onLabelChange, admin },
     draggable: admin,
-    // Selectable always — view-only users can still highlight to read
-    // node_id (via clipboard auto-copy below).
   })), [nodes, onLabelChange, admin]);
 
   const onNodesChange = useCallback((changes) => {
@@ -233,6 +363,28 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin }) {
     if (!admin) return;
     onChange?.({ nodes, edges });
   }, [nodes, edges, onChange, admin]);
+
+  // Deep-link highlight — when navigated from PDF with #code=X, flash
+  // green halo on the matching node so workshop sees what was clicked.
+  useEffect(() => {
+    if (!deepLinkCode) return;
+    const targetId = `bom:${deepLinkCode}`;
+    // Wait for nodes to render into DOM.
+    let tries = 0;
+    const t = setInterval(() => {
+      const el = document.querySelector(`.react-flow__node[data-id="${targetId}"]`);
+      tries++;
+      if (el) {
+        el.classList.add('kme-deeplink-halo');
+        try { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch {}
+        setTimeout(() => el.classList.remove('kme-deeplink-halo'), 4200);
+        clearInterval(t);
+      } else if (tries > 30) {
+        clearInterval(t);  // give up after 3s
+      }
+    }, 100);
+    return () => clearInterval(t);
+  }, [deepLinkCode]);
 
   return (
     <div className={`kme-root${admin ? '' : ' kme-view-only'}`}>
