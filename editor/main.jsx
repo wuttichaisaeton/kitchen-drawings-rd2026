@@ -350,36 +350,23 @@ const nodeTypes = { mindmap: MindmapNode, project: ProjectCenterNode };
 // in the direction of the other node, giving short straight lines that
 // look like spokes radiating out from the project center.
 
-function _nodeIntersect(intersect, target) {
-  // Where does the line from `target.center` to `intersect.center` cross
-  // `intersect`'s bounding box? Solved analytically — no per-frame DOM.
-  const w = intersect.measured?.width || intersect.width || 140;
-  const h = intersect.measured?.height || intersect.height || 60;
-  const cx = intersect.internals.positionAbsolute.x + w / 2;
-  const cy = intersect.internals.positionAbsolute.y + h / 2;
-  const tw = target.measured?.width || target.width || 140;
-  const th = target.measured?.height || target.height || 60;
-  const tcx = target.internals.positionAbsolute.x + tw / 2;
-  const tcy = target.internals.positionAbsolute.y + th / 2;
-  const w2 = w / 2;
-  const h2 = h / 2;
-  const dx = tcx - cx;
-  const dy = tcy - cy;
-  if (dx === 0 && dy === 0) return { x: cx, y: cy };
-  const absDx = Math.abs(dx);
-  const absDy = Math.abs(dy);
-  // Scale so we hit the box edge exactly
-  const scale = Math.max(absDx / w2, absDy / h2);
-  return { x: cx + dx / scale, y: cy + dy / scale };
+function _nodeCenter(node) {
+  const w = node.measured?.width || node.width || 140;
+  const h = node.measured?.height || node.height || 60;
+  return {
+    x: node.internals.positionAbsolute.x + w / 2,
+    y: node.internals.positionAbsolute.y + h / 2,
+  };
 }
 
 function _edgeEnds(source, target) {
-  return {
-    sx: _nodeIntersect(source, target).x,
-    sy: _nodeIntersect(source, target).y,
-    tx: _nodeIntersect(target, source).x,
-    ty: _nodeIntersect(target, source).y,
-  };
+  // Both ends terminate at the node's geometric center — single
+  // anchor point per node. The line passes through whatever chrome
+  // sits between the two centers; nodes' z-index puts them over the
+  // edge so the line appears to start/end at the node's centroid.
+  const s = _nodeCenter(source);
+  const t = _nodeCenter(target);
+  return { sx: s.x, sy: s.y, tx: t.x, ty: t.y };
 }
 
 function FloatingEdge({ id, source, target, markerEnd, style }) {
