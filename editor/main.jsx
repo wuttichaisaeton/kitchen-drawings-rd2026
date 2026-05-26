@@ -69,12 +69,14 @@ function ProjectCenterNode({ id, data, selected }) {
 
 // ── BOM / Custom node ───────────────────────────────────────────────
 function MindmapNode({ id, data, selected }) {
-  const { label, fusion_link, kind, qty, admin, color, tint, projectKey } = data;
+  const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
   const labelRef = useRef(null);
   const [editing, setEditing] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
   // Bump on workshop-op state changes so re-renders read fresh.
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick(t => t + 1), []);
@@ -176,10 +178,50 @@ function MindmapNode({ id, data, selected }) {
     if (url) window.open(url, '_blank', 'noopener');
   }, [code, api]);
 
+  // Drag-drop PDF upload — admin only, BOM nodes only (and pragmatically
+  // only useful on missing ones, though we accept replacement uploads too).
+  const onDragOver = useCallback((e) => {
+    if (!admin || !isBom) return;
+    const items = e.dataTransfer?.items;
+    if (!items || ![...items].some(it => it.kind === 'file')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragOver(true);
+  }, [admin, isBom]);
+
+  const onDragLeave = useCallback((e) => {
+    e.stopPropagation();
+    setDragOver(false);
+  }, []);
+
+  const onDrop = useCallback(async (e) => {
+    if (!admin || !isBom || !code) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    if (!api.uploadPdfFromDrop) {
+      window.alert('Upload API not available — refresh the page.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const ok = await api.uploadPdfFromDrop(file, code, family || '');
+      if (ok) api.rerender?.();
+    } finally {
+      setUploading(false);
+    }
+  }, [admin, isBom, code, family, api]);
+
   const cls = ['kme-node'];
   if (selected) cls.push('kme-selected');
   if (linked) cls.push('kme-linked');
   if (isBom) cls.push('kme-bom');
+  if (missing && isBom) cls.push('kme-missing');
+  if (dragOver) cls.push('kme-drag-over');
+  if (uploading) cls.push('kme-uploading');
   if (!admin) cls.push('kme-view-only');
 
   // Family color drives border + bottom tint
@@ -189,7 +231,15 @@ function MindmapNode({ id, data, selected }) {
   } : undefined;
 
   return (
-    <div className={cls.join(' ')} style={style} onDoubleClick={startEdit} data-code={code || ''}>
+    <div
+      className={cls.join(' ')}
+      style={style}
+      onDoubleClick={startEdit}
+      data-code={code || ''}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
+    >
       <Handle type="target" position={Position.Left} />
       <div className="kme-row kme-row-head">
         <div
@@ -204,6 +254,12 @@ function MindmapNode({ id, data, selected }) {
         </div>
         {isBom && qty != null && (
           <span className="kme-node-qty">x{qty}</span>
+        )}
+        {missing && isBom && (
+          <span className="kme-missing-badge" title="No PDF yet — drag a PDF onto this node to upload">⚠ NO PDF</span>
+        )}
+        {uploading && (
+          <span className="kme-missing-badge" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
         )}
         {comments.length > 0 && (
           <span className="kme-comment-count" title={`${comments.length} comments`}>💬{comments.length}</span>

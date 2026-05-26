@@ -241,6 +241,43 @@
   cursor: pointer;
 }
 
+/* ── Missing PDF + drag-drop upload ──────────────────────────────── */
+.kme-node.kme-missing {
+  border-style: dashed !important;
+}
+.kme-missing-badge {
+  background: rgba(248, 81, 73, 0.18);
+  color: #f85149;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.kme-node.kme-drag-over {
+  outline: 2px dashed #58a6ff;
+  outline-offset: 2px;
+  background: rgba(31, 111, 235, 0.12) !important;
+}
+.kme-node.kme-drag-over::after {
+  content: '↓ Drop PDF';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #58a6ff;
+  pointer-events: none;
+}
+.kme-node {
+  position: relative;
+}
+.kme-node.kme-uploading {
+  opacity: 0.75;
+  pointer-events: none;
+}
+
 /* ── Deep-link halo (when navigating from PDF) ───────────────────── */
 .react-flow__node.kme-deeplink-halo .kme-node,
 .react-flow__node.kme-deeplink-halo .kme-center-circle {

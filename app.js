@@ -2119,6 +2119,7 @@ function _buildBomNodes(project, parts, projectKey) {
         color: colors.color,
         tint: colors.tint,
         projectKey,
+        missing: !pdfUrlForCode(p.code),  // no PDF yet — admin can drag one in
       },
     };
   })];
@@ -2143,6 +2144,7 @@ function _exposeKdApi() {
     getTimerTotalSeconds, formatDuration,
     getComments,
     pdfUrlForCode,
+    uploadPdfFromDrop,   // admin drag-drop PDF onto a missing node
     rerender: () => { try { render(); } catch {} },
   };
 }
