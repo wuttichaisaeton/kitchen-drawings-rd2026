@@ -327,6 +327,37 @@
   cursor: pointer;
 }
 
+/* ── Parent nodes (have children) ────────────────────────────────── */
+/* Hint that you can click to collapse — cursor + slight chrome shift. */
+.kme-node.kme-parent {
+  cursor: pointer;
+}
+.kme-node.kme-parent:hover {
+  filter: brightness(1.08);
+}
+
+/* Collapsed parent — pulsing teal halo (same idea as the center's blue
+   pulse, family-tinted) so workshop can spot which sub-trees are
+   currently hidden. */
+.kme-node.kme-parent-collapsed {
+  box-shadow:
+    0 0 0 3px rgba(74, 196, 196, 0.15),
+    0 0 16px 4px rgba(74, 196, 196, 0.35);
+  animation: kmeParentPulse 2.2s ease-in-out infinite;
+}
+@keyframes kmeParentPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(74, 196, 196, 0.15),
+      0 0 16px 4px rgba(74, 196, 196, 0.30);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px rgba(74, 196, 196, 0.28),
+      0 0 24px 8px rgba(74, 196, 196, 0.48);
+  }
+}
+
 /* ── Missing PDF + drag-drop upload ──────────────────────────────── */
 .kme-node.kme-missing {
   border-style: dashed !important;

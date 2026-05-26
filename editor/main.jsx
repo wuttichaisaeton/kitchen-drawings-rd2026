@@ -79,7 +79,8 @@ function ProjectCenterNode({ id, data, selected }) {
 // ── BOM / Custom node ───────────────────────────────────────────────
 function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
-          isLeaf, isWrapper, status, urn, drawing_urn } = data;
+          isLeaf, isWrapper, status, urn, drawing_urn,
+          isCollapsedParent, hasChildren } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -250,6 +251,8 @@ function MindmapNode({ id, data, selected }) {
   if (dragOver) cls.push('kme-drag-over');
   if (uploading) cls.push('kme-uploading');
   if (!admin) cls.push('kme-view-only');
+  if (hasChildren && isBom) cls.push('kme-parent');
+  if (isCollapsedParent) cls.push('kme-parent-collapsed');
 
   // Family color drives border + bottom tint
   const style = isBom && color ? {
@@ -384,18 +387,32 @@ const edgeTypes = { floating: FloatingEdge };
 
 // ── Main editor ─────────────────────────────────────────────────────
 // Collapsed state per project — persisted in localStorage so reopening
-// the project view remembers whether it was last expanded or collapsed.
-const LS_COLLAPSED = 'kme_collapsed_v1';
-function _getCollapsed(pk) {
+// the project view remembers what was collapsed last time.
+//
+// LS shape: { projectKey: { center?: true, nodes?: ['bom:foo', 'bom:bar', ...] } }
+// - center=true means the project center is collapsed (everything hidden).
+// - nodes=[...] are individual parent nodes whose subtrees are hidden.
+const LS_COLLAPSED = 'kme_collapsed_v2';
+
+function _readCollapsedState(pk) {
   try {
     const all = JSON.parse(localStorage.getItem(LS_COLLAPSED) || '{}');
-    return !!all[pk];
-  } catch { return false; }
+    const entry = all[pk] || {};
+    return {
+      center: !!entry.center,
+      nodes: new Set(Array.isArray(entry.nodes) ? entry.nodes : []),
+    };
+  } catch {
+    return { center: false, nodes: new Set() };
+  }
 }
-function _setCollapsed(pk, val) {
+function _writeCollapsedState(pk, state) {
   try {
     const all = JSON.parse(localStorage.getItem(LS_COLLAPSED) || '{}');
-    if (val) all[pk] = true; else delete all[pk];
+    const center = !!state.center;
+    const nodes = [...(state.nodes || new Set())];
+    if (center || nodes.length) all[pk] = { ...(center ? { center: true } : {}), ...(nodes.length ? { nodes } : {}) };
+    else delete all[pk];
     localStorage.setItem(LS_COLLAPSED, JSON.stringify(all));
   } catch {}
 }
@@ -405,14 +422,74 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [edges, setEdges] = useState(initialEdges || []);
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState(admin ? 'ready (admin)' : 'view only');
-  const [collapsed, setCollapsedState] = useState(() => _getCollapsed(projectKey));
+
+  // Two flavours of collapse state, persisted in the same LS entry:
+  //   collapsed       — the project center toggle (everything-but-center hidden)
+  //   collapsedNodes  — Set of BOM parent node ids; each one hides its subtree
+  const [collapsed, setCollapsedState] = useState(
+    () => _readCollapsedState(projectKey).center);
+  const [collapsedNodes, setCollapsedNodes] = useState(
+    () => _readCollapsedState(projectKey).nodes);
+
+  const _persistCollapse = useCallback((c, set) => {
+    _writeCollapsedState(projectKey, { center: c, nodes: set });
+  }, [projectKey]);
+
   const toggleCollapsed = useCallback(() => {
     setCollapsedState(c => {
       const next = !c;
-      _setCollapsed(projectKey, next);
+      _persistCollapse(next, collapsedNodes);
       return next;
     });
-  }, [projectKey]);
+  }, [_persistCollapse, collapsedNodes]);
+
+  const toggleNodeCollapse = useCallback((nodeId) => {
+    setCollapsedNodes(prev => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      _persistCollapse(collapsed, next);
+      return next;
+    });
+  }, [_persistCollapse, collapsed]);
+
+  // Children map for the current edge set → subtree descent.
+  // Recomputed on every nodes/edges change but cheap (O(E)).
+  const descendantMap = useMemo(() => {
+    const children = new Map();  // nodeId → [childId, ...]
+    for (const e of edges) {
+      if (!e.source || !e.target) continue;
+      if (!children.has(e.source)) children.set(e.source, []);
+      children.get(e.source).push(e.target);
+    }
+    // Pre-compute descendants per node so the hidden check is O(1).
+    const descOf = new Map();
+    function descsFor(id, seen = new Set()) {
+      if (descOf.has(id)) return descOf.get(id);
+      if (seen.has(id)) return new Set();   // cycle guard
+      seen.add(id);
+      const out = new Set();
+      for (const child of (children.get(id) || [])) {
+        out.add(child);
+        for (const d of descsFor(child, seen)) out.add(d);
+      }
+      descOf.set(id, out);
+      return out;
+    }
+    for (const id of children.keys()) descsFor(id);
+    return descOf;
+  }, [edges]);
+
+  // hiddenIds = union of descendants of every collapsed parent.
+  const hiddenIds = useMemo(() => {
+    const out = new Set();
+    for (const id of collapsedNodes) {
+      const descs = descendantMap.get(id);
+      if (descs) for (const d of descs) out.add(d);
+    }
+    return out;
+  }, [collapsedNodes, descendantMap]);
+
   const idCounterRef = useRef(0);
 
   const newNodeId = useCallback(() => {
@@ -431,17 +508,32 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // too because contentEditable + double-click-to-edit are per-node UX.
   // Pick component type from data.kind — 'project' → ProjectCenterNode,
   // anything else → MindmapNode (handles BOM + Custom).
-  const nodesWithHandlers = useMemo(() => nodes.map((n) => ({
-    ...n,
-    type: n.data?.kind === 'project' ? 'project' : 'mindmap',
-    data: {
-      ...n.data,
-      onLabelChange, admin,
-      // ProjectCenterNode uses these for the click toggle UX.
-      ...(n.data?.kind === 'project' ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
-    },
-    draggable: admin,
-  })), [nodes, onLabelChange, admin, collapsed, toggleCollapsed]);
+  const nodesWithHandlers = useMemo(() => nodes.map((n) => {
+    const isProject = n.data?.kind === 'project';
+    const isHidden = hiddenIds.has(n.id);
+    const isCollapsedParent = collapsedNodes.has(n.id);
+    const hasChildren = (descendantMap.get(n.id)?.size || 0) > 0;
+    return {
+      ...n,
+      type: isProject ? 'project' : 'mindmap',
+      hidden: isHidden,
+      data: {
+        ...n.data,
+        onLabelChange, admin,
+        isCollapsedParent,
+        hasChildren,
+        ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
+      },
+      draggable: admin,
+    };
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap]);
+
+  // Edges: hide if either endpoint is in hiddenIds (so a collapsed
+  // parent's subtree-edges disappear with the nodes).
+  const visibleEdges = useMemo(() => edges.map(e => ({
+    ...e,
+    hidden: hiddenIds.has(e.source) || hiddenIds.has(e.target),
+  })), [edges, hiddenIds]);
 
   const onNodesChange = useCallback((changes) => {
     // View-only: only allow 'select' changes — block drag/dimension/etc.
@@ -471,19 +563,32 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     }
   }, [projectKey]);
 
-  // Center click handling at the ReactFlow level — fires AFTER React
-  // Flow's own gesture detection so a click that wasn't part of a drag
-  // is reliably routed here. Single click toggles expand/collapse,
-  // double-click opens the project PDF.
+  // Click handling at the ReactFlow level — fires AFTER React Flow's
+  // own gesture detection so a click that wasn't part of a drag is
+  // reliably routed here.
+  //
+  // - Project center: single → toggle global collapse, double → open PDF.
+  // - BOM parent (has children, not a leaf): single → toggle that
+  //   parent's subtree visibility.
+  // - BOM leaf: single → routeLeaf (handled inside MindmapNode body
+  //   onClick so the inner-button hit zones aren't disturbed).
   const centerClickTimer = useRef(null);
   const onNodeClick = useCallback((evt, node) => {
-    if (!node?.id?.startsWith('project:')) return;
-    if (centerClickTimer.current) clearTimeout(centerClickTimer.current);
-    centerClickTimer.current = setTimeout(() => {
-      centerClickTimer.current = null;
-      toggleCollapsed();
-    }, 240);
-  }, [toggleCollapsed]);
+    if (node?.id?.startsWith('project:')) {
+      if (centerClickTimer.current) clearTimeout(centerClickTimer.current);
+      centerClickTimer.current = setTimeout(() => {
+        centerClickTimer.current = null;
+        toggleCollapsed();
+      }, 240);
+      return;
+    }
+    // Non-project node — if it has children, toggle its subtree.
+    const data = node?.data || {};
+    const hasChildren = !!data.hasChildren;
+    if (hasChildren && data.kind === 'bom') {
+      toggleNodeCollapse(node.id);
+    }
+  }, [toggleCollapsed, toggleNodeCollapse]);
   const onNodeDoubleClick = useCallback((evt, node) => {
     if (!node?.id?.startsWith('project:')) return;
     if (centerClickTimer.current) {
@@ -496,7 +601,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     const url = api.projectPdfUrl?.(pk) || api.pdfUrlForCode?.(pk);
     if (url) window.open(url, '_blank', 'noopener');
     else window.alert(`No project PDF found for ${pk}`);
-  }, [projectKey]);
+  }, [projectKey, toggleCollapsed]);
 
   const addNode = useCallback(() => {
     if (!admin) return;
@@ -604,7 +709,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       <div className="kme-canvas">
         <ReactFlow
           nodes={nodesWithHandlers}
-          edges={edges}
+          edges={visibleEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
