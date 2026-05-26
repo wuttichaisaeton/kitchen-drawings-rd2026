@@ -1,0 +1,165 @@
+/* Editor styles — imported into bundle by main.jsx */
+@import '@xyflow/react/dist/style.css';
+
+.kme-root {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #0d1117;
+  color: #e6edf3;
+  font-family: 'Flux Architect', system-ui, sans-serif;
+}
+
+.kme-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  flex-shrink: 0;
+}
+
+.kme-toolbar button {
+  background: #21262d;
+  color: #e6edf3;
+  border: 1px solid #30363d;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+
+.kme-btn-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.kme-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.kme-toolbar button:hover {
+  background: #30363d;
+}
+
+.kme-toolbar button.kme-primary {
+  background: #1f6feb;
+  border-color: #1f6feb;
+}
+
+.kme-toolbar button.kme-primary:hover {
+  background: #388bfd;
+}
+
+.kme-toolbar .kme-spacer { flex: 1; }
+
+.kme-toolbar .kme-status {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.kme-canvas {
+  flex: 1;
+  position: relative;
+}
+
+/* Custom node styling — overrides React Flow defaults */
+.kme-node {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 10px 14px;
+  min-width: 120px;
+  font-family: inherit;
+  font-size: 13px;
+  color: #e6edf3;
+  cursor: pointer;
+}
+
+.kme-node.kme-selected {
+  border-color: #1f6feb;
+  box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.4);
+}
+
+.kme-node.kme-linked {
+  border-color: #3fb950;
+  background: #0f2818;
+}
+
+.kme-node.kme-linked .kme-link-badge {
+  color: #3fb950;
+  font-size: 11px;
+  margin-top: 4px;
+  font-family: 'IBM Plex Mono', monospace;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  display: inline-block;
+  transition: background 0.15s, color 0.15s;
+}
+
+.kme-node.kme-linked .kme-link-badge:hover {
+  background: #3fb950;
+  color: #0d1117;
+}
+
+.kme-node-label {
+  outline: none;
+  min-width: 80px;
+}
+
+.kme-node-label[contenteditable="true"]:focus {
+  background: #0d1117;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* React Flow background tweaks for dark theme */
+.react-flow__background {
+  background: #0d1117;
+}
+
+.react-flow__controls {
+  background: #161b22;
+  border: 1px solid #30363d;
+}
+
+.react-flow__controls button {
+  background: #161b22;
+  color: #e6edf3;
+  border-bottom: 1px solid #30363d;
+}
+
+.react-flow__controls button:hover {
+  background: #21262d;
+}
+
+.react-flow__edge-path {
+  stroke: #6e7681;
+  stroke-width: 2;
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #1f6feb;
+  stroke-width: 3;
+}
+
+.react-flow__handle {
+  background: #6e7681;
+  border: 2px solid #161b22;
+  width: 10px;
+  height: 10px;
+}
+
+.react-flow__handle:hover {
+  background: #1f6feb;
+}

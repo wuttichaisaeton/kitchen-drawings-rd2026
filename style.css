@@ -1986,3 +1986,61 @@ footer {
   .mfc-head { padding: 14px 10px 10px; }
   .mfc-parents { padding: 8px 10px 10px; }
 }
+
+/* Mindmap mode toggle [Auto | Custom] — sits in .project-actions next to
+   filter chips. Two-button pill, same visual weight as filter chips. */
+.mindmap-mode-toggle {
+  display: inline-flex;
+  border: 1px solid #3a3f44;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-left: 8px;
+}
+.mm-mode-btn {
+  background: #2a2f34;
+  color: #aaa;
+  border: none;
+  padding: 6px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+}
+.mm-mode-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+.mm-mode-btn + .mm-mode-btn { border-left: 1px solid #3a3f44; }
+.mm-mode-btn.active {
+  background: #4a90e2;
+  color: #fff;
+}
+.mm-mode-btn:active { transform: scale(0.96); }
+
+/* Custom mindmap mount host — React Flow editor is mounted into this div.
+   Min height keeps the canvas usable on desktop; flex-grow keeps it filling
+   remaining vertical space without clobbering the project header. */
+.kme-mount-host {
+  position: relative;
+  min-height: 70vh;
+  height: 70vh;
+  width: 100%;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.kme-mount-host .loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8b949e;
+  margin: 0;
+}

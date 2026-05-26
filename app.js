@@ -1952,6 +1952,142 @@ function setProjectViewMode(v) {
 const LS_PROJECT_CENTER = 'kd_project_center_v1';
 const LS_PROJECT_LAYOUT = 'kd_project_layout_v1';  // per-project: 'tree' | 'flat' | 'expand'
 const LS_PROJECT_EXPANDED = 'kd_project_expanded_v1';  // per-project: { code: true, ... } — which parents have their children visible (Expand mode)
+const LS_MINDMAP_MODE = 'kd_mindmap_mode_v1';      // per-project: 'auto' | 'custom' — Auto = BOM-generated, Custom = user-curated via React Flow editor
+
+function getMindmapMode(projectKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_MINDMAP_MODE) || '{}');
+    return all[projectKey] === 'custom' ? 'custom' : 'auto';
+  } catch { return 'auto'; }
+}
+function setMindmapMode(projectKey, mode) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_MINDMAP_MODE) || '{}');
+    if (mode === 'custom') all[projectKey] = 'custom';
+    else delete all[projectKey];
+    localStorage.setItem(LS_MINDMAP_MODE, JSON.stringify(all));
+  } catch {}
+}
+
+// Lazy-load the React Flow editor bundle on first switch to Custom mode.
+// Bundle is ~317 KB minified — not worth shipping to workshop iPads that
+// only ever use Auto mode. Returns a Promise that resolves once
+// window.KitchenMindmapEditor.mount is callable.
+let _editorBundlePromise = null;
+function ensureEditorBundle() {
+  if (window.KitchenMindmapEditor) return Promise.resolve();
+  if (_editorBundlePromise) return _editorBundlePromise;
+  _editorBundlePromise = new Promise((resolve, reject) => {
+    const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
+    const cssLink = document.createElement('link');
+    cssLink.rel = 'stylesheet';
+    cssLink.href = 'editor.bundle.css?v=' + v;
+    document.head.appendChild(cssLink);
+    const s = document.createElement('script');
+    s.src = 'editor.bundle.js?v=' + v;
+    s.onload = () => resolve();
+    s.onerror = (e) => { _editorBundlePromise = null; reject(e); };
+    document.body.appendChild(s);
+  });
+  return _editorBundlePromise;
+}
+
+// ── Custom mindmap persistence ───────────────────────────────────────
+// Schema: custom_mindmaps/<projectKey>/{ nodes: {nid: {...}}, edges: {eid: {...}} }
+// Pattern mirrors bent/assembled sync: localStorage cache for offline + first
+// paint, debounced RTDB write, listener overwrites cache on remote change.
+const LS_CUSTOM_MINDMAP = 'kd_custom_mindmap_v1';   // { projectKey: { nodes, edges } }
+
+function _loadCustomMindmapLocal(projectKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_CUSTOM_MINDMAP) || '{}');
+    const data = all[projectKey] || {};
+    return {
+      nodes: Array.isArray(data.nodes) ? data.nodes : [],
+      edges: Array.isArray(data.edges) ? data.edges : [],
+    };
+  } catch { return { nodes: [], edges: [] }; }
+}
+function _saveCustomMindmapLocal(projectKey, { nodes, edges }) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_CUSTOM_MINDMAP) || '{}');
+    if ((nodes && nodes.length) || (edges && edges.length)) {
+      all[projectKey] = { nodes: nodes || [], edges: edges || [] };
+    } else {
+      delete all[projectKey];
+    }
+    localStorage.setItem(LS_CUSTOM_MINDMAP, JSON.stringify(all));
+  } catch {}
+}
+
+// Convert React Flow node → RTDB-friendly (strip functions, keep position)
+function _rfNodeToRtdb(n) {
+  return {
+    label: (n.data && n.data.label) || '',
+    x: n.position?.x ?? 0,
+    y: n.position?.y ?? 0,
+    fusion_link: n.data?.fusion_link || null,
+  };
+}
+function _rtdbToRfNode(id, raw) {
+  return {
+    id,
+    type: 'mindmap',
+    position: { x: Number(raw.x) || 0, y: Number(raw.y) || 0 },
+    data: {
+      label: raw.label || 'untitled',
+      ...(raw.fusion_link ? { fusion_link: raw.fusion_link } : {}),
+    },
+  };
+}
+
+async function _loadCustomMindmap(projectKey) {
+  const cached = _loadCustomMindmapLocal(projectKey);
+  if (!window.firebaseDB) return cached;
+  try {
+    const snap = await window.firebaseDB
+      .ref('custom_mindmaps/' + projectKey).once('value');
+    const data = snap.val() || {};
+    const nodes = data.nodes
+      ? Object.entries(data.nodes).map(([id, raw]) => _rtdbToRfNode(id, raw))
+      : [];
+    const edges = data.edges
+      ? Object.entries(data.edges).map(([id, raw]) => ({
+          id, source: raw.source, target: raw.target,
+        }))
+      : [];
+    // Mirror to LS so next first-paint has data without a Firebase round trip.
+    _saveCustomMindmapLocal(projectKey, { nodes, edges });
+    return { nodes, edges };
+  } catch (e) {
+    console.warn('[kme] load RTDB failed, using LS cache:', e);
+    return cached;
+  }
+}
+
+// Debounced write — coalesces rapid drag-drop events into one RTDB roundtrip.
+const _customMindmapWriteTimers = new Map();
+function _saveCustomMindmap(projectKey, { nodes, edges }) {
+  // Local first — never lose data even if Firebase is offline.
+  _saveCustomMindmapLocal(projectKey, { nodes, edges });
+  if (!window.firebaseDB) return;
+  clearTimeout(_customMindmapWriteTimers.get(projectKey));
+  _customMindmapWriteTimers.set(projectKey, setTimeout(() => {
+    const payload = {
+      nodes: {},
+      edges: {},
+      updated_at: Date.now(),
+    };
+    (nodes || []).forEach(n => { payload.nodes[n.id] = _rfNodeToRtdb(n); });
+    (edges || []).forEach(e => {
+      payload.edges[e.id] = { source: e.source, target: e.target };
+    });
+    // If empty mindmap, wipe the RTDB key entirely so listeners don't see ghosts.
+    const ref = window.firebaseDB.ref('custom_mindmaps/' + projectKey);
+    const op = (!nodes?.length && !edges?.length) ? ref.set(null) : ref.set(payload);
+    op.catch(err => console.warn('[kme] save RTDB failed:', err));
+  }, 500));
+}
 
 function getExpandedSet(projectKey) {
   try {
@@ -2938,7 +3074,11 @@ function renderProject(key) {
 
   // Both Bending + Assembly are Kanban mindmaps — the workflow string is
   // passed to the renderer so it can show only the relevant checkbox.
-  const mindmapHtml = _renderProjectMindmapHtml(key, project, visibleParts, viewMode);
+  // Mindmap mode toggle (Auto = BOM-generated, Custom = React Flow editor).
+  const mindmapMode = getMindmapMode(key);
+  const mindmapHtml = mindmapMode === 'custom'
+    ? '<div id="kme-mount" class="kme-mount-host"><p class="loading">Loading editor…</p></div>'
+    : _renderProjectMindmapHtml(key, project, visibleParts, viewMode);
 
   const totalQtyAll = project.total_qty != null
     ? project.total_qty
@@ -2973,6 +3113,32 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
       </div>
+      <div class="mindmap-mode-toggle" role="group" aria-label="Mindmap mode">
+        <button class="mm-mode-btn ${mindmapMode === 'auto' ? 'active' : ''}" data-mode="auto" title="BOM-generated mindmap (read-only)">
+          <svg class="mm-mode-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="8" cy="8" r="2"/>
+            <circle cx="2.5" cy="2.5" r="1.5"/>
+            <circle cx="13.5" cy="2.5" r="1.5"/>
+            <circle cx="2.5" cy="13.5" r="1.5"/>
+            <circle cx="13.5" cy="13.5" r="1.5"/>
+            <line x1="6.5" y1="6.5" x2="4" y2="4"/>
+            <line x1="9.5" y1="6.5" x2="12" y2="4"/>
+            <line x1="6.5" y1="9.5" x2="4" y2="12"/>
+            <line x1="9.5" y1="9.5" x2="12" y2="12"/>
+          </svg>
+          <span>Auto</span>
+        </button>
+        <button class="mm-mode-btn ${mindmapMode === 'custom' ? 'active' : ''}" data-mode="custom" title="Editable mindmap — drag, type, connect">
+          <svg class="mm-mode-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="1.5" y="6" width="4.5" height="4" rx="0.8"/>
+            <rect x="10" y="2" width="4.5" height="4" rx="0.8"/>
+            <rect x="10" y="10" width="4.5" height="4" rx="0.8"/>
+            <line x1="6" y1="8" x2="10" y2="4"/>
+            <line x1="6" y1="8" x2="10" y2="12"/>
+          </svg>
+          <span>Custom</span>
+        </button>
+      </div>
     </div>
     ${mindmapHtml}
   `;
@@ -2992,13 +3158,48 @@ function renderProject(key) {
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
   });
+  ROOT.querySelectorAll('.mm-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const next = btn.dataset.mode;
+      if (next === mindmapMode) return;
+      setMindmapMode(key, next);
+      render();
+    });
+  });
   // Project PDF button removed — clicking the mindmap center circle
   // opens the project's master PDF instead (see the .mm-center
   // handler below).
   // (workflow + layout toggles removed — see commit notes; both bent and
   // assembled buttons render on every spoke, and layout is always Expand.)
-  // Wire mindmap events (always — only view mode now)
-  _wireProjectMindmap(key, visibleParts, viewMode);
+  if (mindmapMode === 'custom') {
+    // First-paint with LS cache (zero-latency), then upgrade to RTDB.
+    const cached = _loadCustomMindmapLocal(key);
+    ensureEditorBundle().then(async () => {
+      const host = document.getElementById('kme-mount');
+      if (!host) return;
+      // Skip if user already switched modes during async load.
+      if (getMindmapMode(key) !== 'custom') return;
+      // Pull fresh data from RTDB (falls back to cache on error).
+      const fresh = await _loadCustomMindmap(key);
+      host.innerHTML = '';
+      // unmount may throw if the previous mount's container was removed
+      // from the DOM by a re-render — swallow so the new mount still happens.
+      try { window.__kmeInstance?.unmount?.(); } catch {}
+      window.__kmeInstance = window.KitchenMindmapEditor.mount(host, {
+        projectKey: key,
+        initialNodes: fresh.nodes.length ? fresh.nodes : cached.nodes,
+        initialEdges: fresh.edges.length ? fresh.edges : cached.edges,
+        onChange: (data) => _saveCustomMindmap(key, data),
+      });
+    }).catch(err => {
+      const host = document.getElementById('kme-mount');
+      if (host) host.innerHTML = '<p class="loading">Editor failed to load. Check console.</p>';
+      console.error('[kme] bundle load failed', err);
+    });
+  } else {
+    // Wire mindmap events (Auto mode only)
+    _wireProjectMindmap(key, visibleParts, viewMode);
+  }
 
   // Master-group collapsible
   ROOT.querySelectorAll('.master-header').forEach(h => {
