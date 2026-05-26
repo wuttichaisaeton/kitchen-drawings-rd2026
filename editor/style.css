@@ -162,6 +162,53 @@
 .kme-center.kme-selected {
   box-shadow: 0 0 0 5px rgba(74, 144, 226, 0.55), 0 6px 24px rgba(0, 0, 0, 0.5);
 }
+
+/* Center in collapsed state — slight pulse to hint "click to expand". */
+.kme-center.kme-center-collapsed {
+  box-shadow:
+    0 0 0 4px rgba(74, 144, 226, 0.18),
+    0 0 24px 6px rgba(74, 144, 226, 0.35),
+    0 6px 24px rgba(0, 0, 0, 0.5);
+  animation: kmeCenterPulse 2s ease-in-out infinite;
+}
+@keyframes kmeCenterPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 4px rgba(74, 144, 226, 0.18),
+      0 0 24px 6px rgba(74, 144, 226, 0.30),
+      0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px rgba(74, 144, 226, 0.28),
+      0 0 36px 10px rgba(74, 144, 226, 0.50),
+      0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* ── Expand / collapse animation ───────────────────────────────── */
+/* When .kme-collapsed sits on the editor root, every non-center node
+   shrinks and fades toward the project center. Clicking the center
+   again removes the class and React Flow's existing transform
+   transitions bring them back into place. */
+.kme-root.kme-collapsed .react-flow__node:not(.react-flow__node-project) {
+  opacity: 0;
+  transform-origin: center center;
+  pointer-events: none;
+  /* Scale uses translate(-50%, -50%) tweak because React Flow already
+     applies its own translate() to position the node — appending
+     a scale() factor multiplies into that without disturbing it. */
+}
+.kme-root .react-flow__node:not(.react-flow__node-project) {
+  transition: opacity 0.45s ease, filter 0.45s ease;
+}
+.kme-root.kme-collapsed .react-flow__edge {
+  opacity: 0;
+  pointer-events: none;
+}
+.kme-root .react-flow__edge {
+  transition: opacity 0.45s ease;
+}
 .kme-center-icon {
   width: 44px;
   height: 44px;

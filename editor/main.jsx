@@ -50,17 +50,28 @@ async function openInFusion(urn, fallbackUrl) {
 // code below. Click opens the project's master PDF (same as the SVG
 // .mm-center click used to). Admin can drag it; workshop view-only.
 function ProjectCenterNode({ id, data, selected }) {
-  const { label, code, projectKey } = data;
+  const { label, code, projectKey, collapsed, onToggleCollapsed } = data;
   const displayCode = code || label || projectKey;
+  // Defer single-click action so a double-click can pre-empt it. UX:
+  //   single click → toggle expand/collapse (balls in / balls out)
+  //   double click → open the project's master PDF
+  const clickTimerRef = useRef(null);
   const onClickCenter = useCallback((e) => {
     e.stopPropagation();
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
+    clickTimerRef.current = setTimeout(() => {
+      clickTimerRef.current = null;
+      onToggleCollapsed?.();
+    }, 220);
+  }, [onToggleCollapsed]);
+  const onDoubleClickCenter = useCallback((e) => {
+    e.stopPropagation();
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current);
+      clickTimerRef.current = null;
+    }
     const pk = projectKey || code || label;
     if (!pk) return;
-    // projectPdfUrl resolves the project's master PDF by direct code
-    // match first, then by scanning manifest.auto_generated for any
-    // entry with pdf="<projectKey>.pdf". Plain pdfUrlForCode misses
-    // projects whose master PDF is named after the assembly part
-    // (e.g. 1LLVB2-11AAAA.pdf for project 100VB0-110000).
     const api = window.kdAPI || {};
     const url = api.projectPdfUrl?.(pk) || api.pdfUrlForCode?.(pk);
     if (url) window.open(url, '_blank', 'noopener');
@@ -68,11 +79,14 @@ function ProjectCenterNode({ id, data, selected }) {
   }, [projectKey, code, label]);
   const cls = ['kme-center'];
   if (selected) cls.push('kme-selected');
-  // Only the circle is rendered — no flex wrapper — so the node's
-  // bounding box is exactly the circle, putting visual center at the
-  // React Flow anchor point.
+  if (collapsed) cls.push('kme-center-collapsed');
   return (
-    <div className={cls.join(' ')} onClick={onClickCenter} title={`Open project PDF (${displayCode})`}>
+    <div
+      className={cls.join(' ')}
+      onClick={onClickCenter}
+      onDoubleClick={onDoubleClickCenter}
+      title={`Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF (${displayCode})`}
+    >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
       <svg className="kme-center-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/>
@@ -405,11 +419,36 @@ function FloatingEdge({ id, source, target, markerEnd, style }) {
 const edgeTypes = { floating: FloatingEdge };
 
 // ── Main editor ─────────────────────────────────────────────────────
+// Collapsed state per project — persisted in localStorage so reopening
+// the project view remembers whether it was last expanded or collapsed.
+const LS_COLLAPSED = 'kme_collapsed_v1';
+function _getCollapsed(pk) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_COLLAPSED) || '{}');
+    return !!all[pk];
+  } catch { return false; }
+}
+function _setCollapsed(pk, val) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_COLLAPSED) || '{}');
+    if (val) all[pk] = true; else delete all[pk];
+    localStorage.setItem(LS_COLLAPSED, JSON.stringify(all));
+  } catch {}
+}
+
 function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState(admin ? 'ready (admin)' : 'view only');
+  const [collapsed, setCollapsedState] = useState(() => _getCollapsed(projectKey));
+  const toggleCollapsed = useCallback(() => {
+    setCollapsedState(c => {
+      const next = !c;
+      _setCollapsed(projectKey, next);
+      return next;
+    });
+  }, [projectKey]);
   const idCounterRef = useRef(0);
 
   const newNodeId = useCallback(() => {
@@ -431,9 +470,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const nodesWithHandlers = useMemo(() => nodes.map((n) => ({
     ...n,
     type: n.data?.kind === 'project' ? 'project' : 'mindmap',
-    data: { ...n.data, onLabelChange, admin },
+    data: {
+      ...n.data,
+      onLabelChange, admin,
+      // ProjectCenterNode uses these for the click toggle UX.
+      ...(n.data?.kind === 'project' ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
+    },
     draggable: admin,
-  })), [nodes, onLabelChange, admin]);
+  })), [nodes, onLabelChange, admin, collapsed, toggleCollapsed]);
 
   const onNodesChange = useCallback((changes) => {
     // View-only: only allow 'select' changes — block drag/dimension/etc.
@@ -533,7 +577,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, [deepLinkCode]);
 
   return (
-    <div className={`kme-root${admin ? '' : ' kme-view-only'}`}>
+    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}`}>
       <div className="kme-toolbar">
         {admin && (
           <>
