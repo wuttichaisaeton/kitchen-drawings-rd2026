@@ -48,6 +48,7 @@ async function openInFusion(urn, fallbackUrl) {
 // .mm-center click used to). Admin can drag it; workshop view-only.
 function ProjectCenterNode({ id, data, selected }) {
   const { label, code, projectKey } = data;
+  const displayCode = code || label || projectKey;
   const onClickCenter = useCallback((e) => {
     e.stopPropagation();
     const pk = projectKey || code || label;
@@ -57,19 +58,18 @@ function ProjectCenterNode({ id, data, selected }) {
   }, [projectKey, code, label]);
   const cls = ['kme-center'];
   if (selected) cls.push('kme-selected');
+  // Only the circle is rendered — no flex wrapper — so the node's
+  // bounding box is exactly the circle, putting visual center at the
+  // React Flow anchor point.
   return (
-    <div className={cls.join(' ')} onClick={onClickCenter} title={`Open project PDF (${code || label})`}>
+    <div className={cls.join(' ')} onClick={onClickCenter} title={`Open project PDF (${displayCode})`}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <div className="kme-center-circle">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {/* 3 stacked cubes (isometric-ish) */}
-          <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/>
-          <path d="M6 11.5 L12 15 L6 18.5 L0.5 15 Z" transform="translate(2.5 0)"/>
-          <path d="M12 11.5 L18 15 L12 18.5 L6.5 15 Z" transform="translate(3 0)"/>
-        </svg>
-        <div className="kme-center-label">PROJECT</div>
-      </div>
-      <div className="kme-center-code">{code || label}</div>
+      <svg className="kme-center-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/>
+        <path d="M6 11.5 L12 15 L6 18.5 L0.5 15 Z" transform="translate(2.5 0)"/>
+        <path d="M12 11.5 L18 15 L12 18.5 L6.5 15 Z" transform="translate(3 0)"/>
+      </svg>
+      <div className="kme-center-code">{displayCode}</div>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
   );

@@ -2093,10 +2093,14 @@ function _buildBomNodes(project, parts, projectKey) {
   // Center "project" node sits at (0,0) and is the click target for the
   // project PDF (same as the old SVG mindmap's .mm-center).
   const ps = (parts || project?.parts || []).filter(p => p && p.code);
+  // Offset by half the circle size so the circle's VISUAL center sits
+  // at (0, 0) — that's where every spoke line points to. React Flow's
+  // position.x/y is the node's top-left corner, not its center.
+  const CENTER_DIAM = 140;
   const center = {
     id: `project:${projectKey}`,
     type: 'mindmap',
-    position: { x: 0, y: 0 },
+    position: { x: -CENTER_DIAM / 2, y: -CENTER_DIAM / 2 },
     draggable: true,
     data: {
       label: project?.name || projectKey,
