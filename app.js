@@ -2168,9 +2168,10 @@ function _buildBomNodes(project, parts, projectKey) {
         const childArcEnd = cursor + (arcEnd - arcStart) * w;
         edges.push({
           id: `e:${partCode}:${child.code}`,
+          type: 'floating',
           source: `bom:${partCode}`,
           target: `bom:${child.code}`,
-          style: { stroke: colors.color, strokeWidth: 1.2, opacity: 0.4 },
+          style: { stroke: colors.color, strokeWidth: 1.2, opacity: 0.5 },
           selectable: false,
         });
         place(child, depth + 1, cursor, childArcEnd);
@@ -2190,9 +2191,10 @@ function _buildBomNodes(project, parts, projectKey) {
     const famKey = _remapFamilyForCode(root.code, root.family);
     edges.push({
       id: `e:proj:${root.code}`,
+      type: 'floating',
       source: `project:${projectKey}`,
       target: `bom:${root.code}`,
-      style: { stroke: _familyColors(famKey).color, strokeWidth: 1.5, opacity: 0.55 },
+      style: { stroke: _familyColors(famKey).color, strokeWidth: 1.6, opacity: 0.65 },
       selectable: false,
     });
     place(root, 0, cursor, rootArcEnd);

@@ -20,6 +20,9 @@ import {
   Handle,
   Position,
   useReactFlow,
+  BaseEdge,
+  getStraightPath,
+  useInternalNode,
 } from '@xyflow/react';
 import './style.css';
 
@@ -341,6 +344,59 @@ function MindmapNode({ id, data, selected }) {
 
 const nodeTypes = { mindmap: MindmapNode, project: ProjectCenterNode };
 
+// ── Floating edge ───────────────────────────────────────────────────
+// Default bezier edges always exit the right Handle of the source and
+// enter the left Handle of the target — fine when nodes line up, ugly
+// when they don't (curves loop around the outside of the layout).
+// FloatingEdge computes the closest point on each node's bounding box
+// in the direction of the other node, giving short straight lines that
+// look like spokes radiating out from the project center.
+
+function _nodeIntersect(intersect, target) {
+  // Where does the line from `target.center` to `intersect.center` cross
+  // `intersect`'s bounding box? Solved analytically — no per-frame DOM.
+  const w = intersect.measured?.width || intersect.width || 140;
+  const h = intersect.measured?.height || intersect.height || 60;
+  const cx = intersect.internals.positionAbsolute.x + w / 2;
+  const cy = intersect.internals.positionAbsolute.y + h / 2;
+  const tw = target.measured?.width || target.width || 140;
+  const th = target.measured?.height || target.height || 60;
+  const tcx = target.internals.positionAbsolute.x + tw / 2;
+  const tcy = target.internals.positionAbsolute.y + th / 2;
+  const w2 = w / 2;
+  const h2 = h / 2;
+  const dx = tcx - cx;
+  const dy = tcy - cy;
+  if (dx === 0 && dy === 0) return { x: cx, y: cy };
+  const absDx = Math.abs(dx);
+  const absDy = Math.abs(dy);
+  // Scale so we hit the box edge exactly
+  const scale = Math.max(absDx / w2, absDy / h2);
+  return { x: cx + dx / scale, y: cy + dy / scale };
+}
+
+function _edgeEnds(source, target) {
+  return {
+    sx: _nodeIntersect(source, target).x,
+    sy: _nodeIntersect(source, target).y,
+    tx: _nodeIntersect(target, source).x,
+    ty: _nodeIntersect(target, source).y,
+  };
+}
+
+function FloatingEdge({ id, source, target, markerEnd, style }) {
+  const sourceNode = useInternalNode(source);
+  const targetNode = useInternalNode(target);
+  if (!sourceNode || !targetNode) return null;
+  const { sx, sy, tx, ty } = _edgeEnds(sourceNode, targetNode);
+  const [edgePath] = getStraightPath({
+    sourceX: sx, sourceY: sy, targetX: tx, targetY: ty,
+  });
+  return <BaseEdge id={id} path={edgePath} markerEnd={markerEnd} style={style} />;
+}
+
+const edgeTypes = { floating: FloatingEdge };
+
 // ── Main editor ─────────────────────────────────────────────────────
 function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode }) {
   const [nodes, setNodes] = useState(initialNodes || []);
@@ -508,6 +564,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           nodes={nodesWithHandlers}
           edges={edges}
           nodeTypes={nodeTypes}
+          edgeTypes={edgeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
