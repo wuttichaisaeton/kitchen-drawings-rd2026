@@ -132,13 +132,15 @@
   vertical-align: baseline;
 }
 /* Multiplier number — the actual count is what workshop cares about,
-   so render it noticeably larger than the leading "x". */
+   so render it noticeably larger than the leading "x" + a high-contrast
+   accent colour so it pops against the dark card background. */
 .kme-node-qty-num {
-  font-size: 18px;
-  font-weight: 700;
-  color: #e6edf3;
-  margin-left: 1px;
+  font-size: 20px;
+  font-weight: 800;
+  color: #ffd166;          /* warm gold — stands out next to red NO-PDF + family colours */
+  margin-left: 2px;
   vertical-align: baseline;
+  text-shadow: 0 0 6px rgba(255, 209, 102, 0.55);
 }
 
 /* View-only (workshop iPad) — cursor stays default, no edit affordance. */
