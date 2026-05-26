@@ -192,17 +192,43 @@ function MindmapNode({ id, data, selected }) {
   // Leaf-click routing — for nodes with no children + a drawing.
   // Routes per feedback_leaf_click_routing: status=missing → Fusion 3D,
   // drawn/stale/deleted → drawing .f2d, fallback to PDF.
-  const onClickBody = useCallback((e) => {
-    if (!isLeaf || !isBom || isWrapper) return;
-    if (e.target.closest('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
-    if (e.detail !== 1) return;  // single click only (dbl-click = edit)
+  //
+  // iPad/touch: synthesized click events have e.detail === 0, so the old
+  // `if (e.detail !== 1) return` guard blocked every leaf tap on workshop
+  // iPads. Replaced with timer-based dblclick suppression for admin (so a
+  // follow-up double-click cancels the route and starts label edit), and
+  // immediate routing for workshop iPad (no edit path to conflict with).
+  const leafClickTimer = useRef(null);
+  const fireLeafRoute = useCallback(() => {
     if (api.routeLeaf) {
       api.routeLeaf({ code, status, urn, drawing_urn });
     } else if (code) {
       const url = api.pdfUrlForCode?.(code);
       if (url) window.open(url, '_blank', 'noopener');
     }
-  }, [isLeaf, isBom, isWrapper, code, status, urn, drawing_urn, api]);
+  }, [api, code, status, urn, drawing_urn]);
+
+  const onClickBody = useCallback((e) => {
+    if (!isLeaf || !isBom || isWrapper) return;
+    if (e.target.closest('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
+    if (admin) {
+      if (leafClickTimer.current) clearTimeout(leafClickTimer.current);
+      leafClickTimer.current = setTimeout(() => {
+        leafClickTimer.current = null;
+        fireLeafRoute();
+      }, 220);
+    } else {
+      fireLeafRoute();
+    }
+  }, [isLeaf, isBom, isWrapper, admin, fireLeafRoute]);
+
+  const onDblClickBody = useCallback((e) => {
+    if (leafClickTimer.current) {
+      clearTimeout(leafClickTimer.current);
+      leafClickTimer.current = null;
+    }
+    startEdit(e);
+  }, [startEdit]);
 
   // Drag-drop PDF upload — admin only, BOM nodes only (and pragmatically
   // only useful on missing ones, though we accept replacement uploads too).
@@ -265,7 +291,7 @@ function MindmapNode({ id, data, selected }) {
       className={cls.join(' ')}
       style={style}
       onClick={onClickBody}
-      onDoubleClick={startEdit}
+      onDoubleClick={onDblClickBody}
       data-code={code || ''}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -722,6 +748,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           nodesConnectable={admin}
           edgesUpdatable={admin}
           elementsSelectable={true}
+          zoomOnPinch={true}
+          panOnDrag={true}
+          zoomOnDoubleClick={false}
+          selectNodesOnDrag={false}
           fitView
           colorMode="dark"
           proOptions={{ hideAttribution: true }}
