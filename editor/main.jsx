@@ -56,8 +56,15 @@ function ProjectCenterNode({ id, data, selected }) {
     e.stopPropagation();
     const pk = projectKey || code || label;
     if (!pk) return;
-    const url = window.kdAPI?.pdfUrlForCode?.(pk);
+    // projectPdfUrl resolves the project's master PDF by direct code
+    // match first, then by scanning manifest.auto_generated for any
+    // entry with pdf="<projectKey>.pdf". Plain pdfUrlForCode misses
+    // projects whose master PDF is named after the assembly part
+    // (e.g. 1LLVB2-11AAAA.pdf for project 100VB0-110000).
+    const api = window.kdAPI || {};
+    const url = api.projectPdfUrl?.(pk) || api.pdfUrlForCode?.(pk);
     if (url) window.open(url, '_blank', 'noopener');
+    else window.alert(`No project PDF found for ${pk}`);
   }, [projectKey, code, label]);
   const cls = ['kme-center'];
   if (selected) cls.push('kme-selected');

@@ -2214,6 +2214,7 @@ function _exposeKdApi() {
     getTimerTotalSeconds, formatDuration,
     getComments,
     pdfUrlForCode,
+    projectPdfUrl,   // direct match + scan auto_generated for <pk>.pdf
     routeLeaf: _routeLeafToFusion,
     uploadPdfFromDrop,
     // Workshop ops should re-render the project header (bent/assembled
