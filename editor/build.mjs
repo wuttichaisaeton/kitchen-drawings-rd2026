@@ -26,7 +26,14 @@ const opts = {
   sourcemap: watch ? 'inline' : false,
   target: ['es2020'],
   logLevel: 'info',
-  define: { 'process.env.NODE_ENV': watch ? '"development"' : '"production"' },
+  define: {
+    'process.env.NODE_ENV': watch ? '"development"' : '"production"',
+    // Visible build stamp in the editor toolbar — lets the workshop iPad
+    // tell at a glance whether it got the new bundle after a deploy. Build
+    // time is per-process so a watch session keeps the same stamp until
+    // restart; CI/prod builds get a fresh stamp every push.
+    '__KME_BUILD__': JSON.stringify(new Date().toISOString().slice(5, 16).replace('T', ' ')),
+  },
 };
 
 if (watch) {

@@ -729,7 +729,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         )}
         <div className="kme-spacer" />
         <div className="kme-status">
-          project: <b>{projectKey || '—'}</b> · {nodes.length} nodes · {edges.length} edges · {status}
+          project: <b>{projectKey || '—'}</b> · {nodes.length} nodes · {edges.length} edges · {status} · <span title="Build timestamp — confirms which bundle is live on this device" style={{ opacity: 0.5 }}>b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}</span>
         </div>
       </div>
       <div className="kme-canvas">
