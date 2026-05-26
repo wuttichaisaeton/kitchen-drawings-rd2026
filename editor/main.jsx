@@ -50,41 +50,18 @@ async function openInFusion(urn, fallbackUrl) {
 // code below. Click opens the project's master PDF (same as the SVG
 // .mm-center click used to). Admin can drag it; workshop view-only.
 function ProjectCenterNode({ id, data, selected }) {
-  const { label, code, projectKey, collapsed, onToggleCollapsed } = data;
+  const { label, code, projectKey, collapsed } = data;
   const displayCode = code || label || projectKey;
-  // Defer single-click action so a double-click can pre-empt it. UX:
-  //   single click → toggle expand/collapse (balls in / balls out)
-  //   double click → open the project's master PDF
-  const clickTimerRef = useRef(null);
-  const onClickCenter = useCallback((e) => {
-    e.stopPropagation();
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-    clickTimerRef.current = setTimeout(() => {
-      clickTimerRef.current = null;
-      onToggleCollapsed?.();
-    }, 220);
-  }, [onToggleCollapsed]);
-  const onDoubleClickCenter = useCallback((e) => {
-    e.stopPropagation();
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current);
-      clickTimerRef.current = null;
-    }
-    const pk = projectKey || code || label;
-    if (!pk) return;
-    const api = window.kdAPI || {};
-    const url = api.projectPdfUrl?.(pk) || api.pdfUrlForCode?.(pk);
-    if (url) window.open(url, '_blank', 'noopener');
-    else window.alert(`No project PDF found for ${pk}`);
-  }, [projectKey, code, label]);
+  // Click handling moved up to ReactFlow.onNodeClick / onNodeDoubleClick
+  // because React Flow's drag detection on the node container intercepts
+  // bubbled clicks in some browsers (admin draggable nodes). The parent
+  // handlers run after RF's own gesture detection so they're reliable.
   const cls = ['kme-center'];
   if (selected) cls.push('kme-selected');
   if (collapsed) cls.push('kme-center-collapsed');
   return (
     <div
       className={cls.join(' ')}
-      onClick={onClickCenter}
-      onDoubleClick={onDoubleClickCenter}
       title={`Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF (${displayCode})`}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
@@ -507,6 +484,33 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     }
   }, [projectKey]);
 
+  // Center click handling at the ReactFlow level — fires AFTER React
+  // Flow's own gesture detection so a click that wasn't part of a drag
+  // is reliably routed here. Single click toggles expand/collapse,
+  // double-click opens the project PDF.
+  const centerClickTimer = useRef(null);
+  const onNodeClick = useCallback((evt, node) => {
+    if (!node?.id?.startsWith('project:')) return;
+    if (centerClickTimer.current) clearTimeout(centerClickTimer.current);
+    centerClickTimer.current = setTimeout(() => {
+      centerClickTimer.current = null;
+      toggleCollapsed();
+    }, 240);
+  }, [toggleCollapsed]);
+  const onNodeDoubleClick = useCallback((evt, node) => {
+    if (!node?.id?.startsWith('project:')) return;
+    if (centerClickTimer.current) {
+      clearTimeout(centerClickTimer.current);
+      centerClickTimer.current = null;
+    }
+    const pk = node.data?.projectKey || projectKey;
+    if (!pk) return;
+    const api = window.kdAPI || {};
+    const url = api.projectPdfUrl?.(pk) || api.pdfUrlForCode?.(pk);
+    if (url) window.open(url, '_blank', 'noopener');
+    else window.alert(`No project PDF found for ${pk}`);
+  }, [projectKey]);
+
   const addNode = useCallback(() => {
     if (!admin) return;
     const id = newNodeId();
@@ -620,6 +624,8 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onSelectionChange={onSelectionChange}
+          onNodeClick={onNodeClick}
+          onNodeDoubleClick={onNodeDoubleClick}
           nodesDraggable={admin}
           nodesConnectable={admin}
           edgesUpdatable={admin}

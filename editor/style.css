@@ -188,26 +188,32 @@
 
 /* ── Expand / collapse animation ───────────────────────────────── */
 /* When .kme-collapsed sits on the editor root, every non-center node
-   shrinks and fades toward the project center. Clicking the center
-   again removes the class and React Flow's existing transform
-   transitions bring them back into place. */
-.kme-root.kme-collapsed .react-flow__node:not(.react-flow__node-project) {
-  opacity: 0;
+   shrinks toward its own center + fades. Visual reads as "balls
+   imploding back" rather than just disappearing. React Flow already
+   sets transform: translate(x,y) on each node container; the inner
+   .kme-node div is the actual visible chrome, so animating IT lets
+   the position transform stay untouched. */
+.kme-root .kme-node,
+.kme-root .kme-center {
   transform-origin: center center;
-  pointer-events: none;
-  /* Scale uses translate(-50%, -50%) tweak because React Flow already
-     applies its own translate() to position the node — appending
-     a scale() factor multiplies into that without disturbing it. */
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.40s ease;
 }
-.kme-root .react-flow__node:not(.react-flow__node-project) {
-  transition: opacity 0.45s ease, filter 0.45s ease;
+.kme-root.kme-collapsed .react-flow__node:not(.react-flow__node-project) {
+  pointer-events: none;
+}
+.kme-root.kme-collapsed .kme-node {
+  transform: scale(0);
+  opacity: 0;
+}
+/* Edges follow the same fade but without scale (they're stroked paths
+   inside SVG — scaling them looks janky). */
+.kme-root .react-flow__edge {
+  transition: opacity 0.45s ease;
 }
 .kme-root.kme-collapsed .react-flow__edge {
   opacity: 0;
   pointer-events: none;
-}
-.kme-root .react-flow__edge {
-  transition: opacity 0.45s ease;
 }
 .kme-center-icon {
   width: 44px;
