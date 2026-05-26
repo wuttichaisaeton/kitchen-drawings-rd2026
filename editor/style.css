@@ -11,6 +11,15 @@
   font-family: 'Flux Architect', system-ui, sans-serif;
 }
 
+/* Force every descendant of the editor (incl. React Flow's own UI:
+   Controls buttons, MiniMap labels, Background grid attribution) to
+   inherit Flux Architect. Prevents xyflow CDN CSS from injecting its
+   own font-family on internal components. */
+.kme-root,
+.kme-root * {
+  font-family: 'Flux Architect', system-ui, sans-serif;
+}
+
 .kme-toolbar {
   display: flex;
   align-items: center;
@@ -114,7 +123,7 @@
   font-size: 10px;
   color: #8b949e;
   margin-left: 6px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: inherit;
 }
 
 /* View-only (workshop iPad) — cursor stays default, no edit affordance. */
@@ -129,7 +138,7 @@
   color: #3fb950;
   font-size: 11px;
   margin-top: 4px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: inherit;
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 3px;
