@@ -2086,10 +2086,12 @@ function _familyColors(famKey) {
 }
 
 function _buildBomNodes(project, parts, projectKey) {
-  // BOM nodes are derived from the project's parts list — same source
-  // the Auto mindmap used. id="bom:<code>" so RTDB overrides key in
-  // cleanly without colliding with Custom n_xxx ids. Plus the center
-  // "project" pseudo-node that the spokes connect to.
+  // Tree-hierarchy layout: walk buildProjectTree, place roots on ring 1,
+  // their children on ring 2, etc. Each parent's children fan out across
+  // a sub-arc centered on the parent. Leaves (no children) flag isLeaf
+  // so the editor renders them dashed and routes click → leaf-to-Fusion.
+  // Center "project" node sits at (0,0) and is the click target for the
+  // project PDF (same as the old SVG mindmap's .mm-center).
   const ps = (parts || project?.parts || []).filter(p => p && p.code);
   const center = {
     id: `project:${projectKey}`,
@@ -2100,37 +2102,99 @@ function _buildBomNodes(project, parts, projectKey) {
       label: project?.name || projectKey,
       code: projectKey,
       kind: 'project',
+      projectKey,
     },
   };
   if (!ps.length) return { nodes: [center], edges: [] };
-  const positions = _radialLayout(ps.length, 0, 0, 480);
-  const nodes = [center, ...ps.map((p, i) => {
-    const famKey = _familyForCode(p.code);
+
+  // Build hierarchical tree using existing logic (handles parent_code +
+  // virtual wrappers + prefix fallback). Same source the SVG mindmap used.
+  const { roots, all } = buildProjectTree(ps, projectKey);
+
+  const nodes = [center];
+  const edges = [];
+  const rings = [320, 560, 760, 940, 1080];  // radii by depth
+
+  // Recursive placement: walk each subtree, allocating an arc to each
+  // node proportional to its leaf count, then placing the node at the
+  // midpoint of its arc on the correct depth ring.
+  function leafCount(n) {
+    if (!n.children?.length) return 1;
+    return n.children.reduce((s, c) => s + leafCount(c), 0);
+  }
+
+  function place(node, depth, arcStart, arcEnd) {
+    const angle = (arcStart + arcEnd) / 2;
+    const r = rings[Math.min(depth, rings.length - 1)];
+    const x = r * Math.cos(angle);
+    const y = r * Math.sin(angle);
+    const famKey = _remapFamilyForCode(node.code, node.family);
     const colors = _familyColors(famKey);
-    return {
-      id: `bom:${p.code}`,
+    const isLeaf = !node.children?.length;
+    const isWrapper = !!node._is_wrapper;
+    const partCode = node.code;
+    const partMissing = !isWrapper && !pdfUrlForCode(partCode);
+    nodes.push({
+      id: `bom:${partCode}`,
       type: 'mindmap',
-      position: positions[i] || { x: 0, y: 0 },
+      position: { x, y },
       data: {
-        label: p.code,
+        label: partCode,
         kind: 'bom',
-        qty: p.qty || 0,
+        qty: node.qty || 0,
         family: famKey,
         color: colors.color,
         tint: colors.tint,
         projectKey,
-        missing: !pdfUrlForCode(p.code),  // no PDF yet — admin can drag one in
+        isLeaf,
+        isWrapper,
+        missing: partMissing && isLeaf,  // wrappers don't get a "no PDF" warning
+        status: node.status,
+        urn: node.urn || null,
+        drawing_urn: node.drawing_urn || null,
       },
-    };
-  })];
-  // Spokes: project center → every BOM node.
-  const edges = ps.map(p => ({
-    id: `e:proj:${p.code}`,
-    source: `project:${projectKey}`,
-    target: `bom:${p.code}`,
-    style: { stroke: _familyColors(_familyForCode(p.code)).color, strokeWidth: 1.5, opacity: 0.55 },
-    selectable: false,
-  }));
+    });
+    // Walk children — divide arc among them by leaf count so dense
+    // subtrees get more room.
+    if (node.children?.length) {
+      const totalLeaves = leafCount(node);
+      let cursor = arcStart;
+      for (const child of node.children) {
+        const w = leafCount(child) / totalLeaves;
+        const childArcEnd = cursor + (arcEnd - arcStart) * w;
+        edges.push({
+          id: `e:${partCode}:${child.code}`,
+          source: `bom:${partCode}`,
+          target: `bom:${child.code}`,
+          style: { stroke: colors.color, strokeWidth: 1.2, opacity: 0.4 },
+          selectable: false,
+        });
+        place(child, depth + 1, cursor, childArcEnd);
+        cursor = childArcEnd;
+      }
+    }
+  }
+
+  // Top-level: divide the full circle among roots, each getting an arc
+  // proportional to its leaf count.
+  const totalRootLeaves = roots.reduce((s, n) => s + leafCount(n), 0) || 1;
+  let cursor = -Math.PI / 2;  // start at top (12 o'clock)
+  for (const root of roots) {
+    const w = leafCount(root) / totalRootLeaves;
+    const rootArcEnd = cursor + Math.PI * 2 * w;
+    // Spoke from project center to each root
+    const famKey = _remapFamilyForCode(root.code, root.family);
+    edges.push({
+      id: `e:proj:${root.code}`,
+      source: `project:${projectKey}`,
+      target: `bom:${root.code}`,
+      style: { stroke: _familyColors(famKey).color, strokeWidth: 1.5, opacity: 0.55 },
+      selectable: false,
+    });
+    place(root, 0, cursor, rootArcEnd);
+    cursor = rootArcEnd;
+  }
+
   return { nodes, edges };
 }
 
@@ -2144,23 +2208,51 @@ function _exposeKdApi() {
     getTimerTotalSeconds, formatDuration,
     getComments,
     pdfUrlForCode,
-    uploadPdfFromDrop,   // admin drag-drop PDF onto a missing node
+    routeLeaf: _routeLeafToFusion,
+    uploadPdfFromDrop,
+    // Workshop ops should re-render the project header (bent/assembled
+    // counters update) without remounting the editor — preserves the
+    // user's in-progress drag positions. Editor reads its own state via
+    // bump() for cell-level updates.
     rerender: () => { try { render(); } catch {} },
   };
 }
 
+const LS_OVERRIDES = 'kd_mindmap_overrides_v1';   // { projectKey: { nodeId: { x?, y?, label? } } }
+
+function _loadOverridesLocal(projectKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_OVERRIDES) || '{}');
+    return all[projectKey] || {};
+  } catch { return {}; }
+}
+function _saveOverridesLocal(projectKey, overrides) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LS_OVERRIDES) || '{}');
+    all[projectKey] = overrides;
+    localStorage.setItem(LS_OVERRIDES, JSON.stringify(all));
+  } catch {}
+}
+
 async function _loadOverrides(projectKey) {
-  // Per-node overrides from RTDB — admin's drags + renames on BOM nodes
-  // (and label edits on Custom too). Schema:
-  //   custom_mindmaps/<pk>/overrides/<nodeId> = { x?, y?, label? }
-  if (!window.firebaseDB) return {};
+  // First-paint comes from LS so a re-render mid-drag (e.g. from a
+  // bent/timer toggle calling render()) doesn't snap nodes back to
+  // their default radial positions. RTDB read upgrades after.
+  const lsCopy = _loadOverridesLocal(projectKey);
+  if (!window.firebaseDB) return lsCopy;
   try {
     const snap = await window.firebaseDB
       .ref(`custom_mindmaps/${projectKey}/overrides`).once('value');
-    return snap.val() || {};
+    const remote = snap.val() || {};
+    // Remote wins for any key it has — but LS keeps in-flight drags that
+    // haven't been flushed yet (those keys live only in LS until the
+    // 500ms debounce fires).
+    const merged = { ...lsCopy, ...remote };
+    _saveOverridesLocal(projectKey, merged);
+    return merged;
   } catch (e) {
     console.warn('[kme] load overrides failed:', e);
-    return {};
+    return lsCopy;
   }
 }
 
@@ -2184,9 +2276,14 @@ function _applyOverrides(nodes, overrides) {
 
 const _overrideWriteTimers = new Map();
 function _saveOverride(projectKey, nodeId, patch) {
-  // Per-node override write — debounced per project (not per node) so
-  // dragging several nodes in a row coalesces into one batch.
+  // LS write first — synchronous, so a re-render triggered by an
+  // unrelated workshop op (bent/timer) reads the in-flight drag
+  // positions back instead of snapping to defaults.
+  const ls = _loadOverridesLocal(projectKey);
+  ls[nodeId] = { ...(ls[nodeId] || {}), ...patch };
+  _saveOverridesLocal(projectKey, ls);
   if (!window.firebaseDB) return;
+  // RTDB write debounced per project so a fast drag doesn't spam.
   const key = projectKey;
   const pending = _overrideWriteTimers.get(key) || { patches: {}, t: null };
   pending.patches[nodeId] = { ...(pending.patches[nodeId] || {}), ...patch };

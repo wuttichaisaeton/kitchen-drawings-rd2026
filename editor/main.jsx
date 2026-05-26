@@ -43,24 +43,32 @@ async function openInFusion(urn, fallbackUrl) {
 }
 
 // ── Project center node ─────────────────────────────────────────────
-// Circle with 3D cubes icon + project label below. Always at the
-// center of the canvas, draggable for admin to recenter.
+// Circle with 3D cubes icon + PROJECT label INSIDE the circle + project
+// code below. Click opens the project's master PDF (same as the SVG
+// .mm-center click used to). Admin can drag it; workshop view-only.
 function ProjectCenterNode({ id, data, selected }) {
-  const { label, code } = data;
+  const { label, code, projectKey } = data;
+  const onClickCenter = useCallback((e) => {
+    e.stopPropagation();
+    const pk = projectKey || code || label;
+    if (!pk) return;
+    const url = window.kdAPI?.pdfUrlForCode?.(pk);
+    if (url) window.open(url, '_blank', 'noopener');
+  }, [projectKey, code, label]);
   const cls = ['kme-center'];
   if (selected) cls.push('kme-selected');
   return (
-    <div className={cls.join(' ')}>
+    <div className={cls.join(' ')} onClick={onClickCenter} title={`Open project PDF (${code || label})`}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
       <div className="kme-center-circle">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          {/* 3 stacked cubes (isometric-ish) — back, front-left, front-right */}
+          {/* 3 stacked cubes (isometric-ish) */}
           <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/>
           <path d="M6 11.5 L12 15 L6 18.5 L0.5 15 Z" transform="translate(2.5 0)"/>
           <path d="M12 11.5 L18 15 L12 18.5 L6.5 15 Z" transform="translate(3 0)"/>
         </svg>
+        <div className="kme-center-label">PROJECT</div>
       </div>
-      <div className="kme-center-label">PROJECT</div>
       <div className="kme-center-code">{code || label}</div>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
@@ -69,7 +77,8 @@ function ProjectCenterNode({ id, data, selected }) {
 
 // ── BOM / Custom node ───────────────────────────────────────────────
 function MindmapNode({ id, data, selected }) {
-  const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family } = data;
+  const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
+          isLeaf, isWrapper, status, urn, drawing_urn } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -178,6 +187,21 @@ function MindmapNode({ id, data, selected }) {
     if (url) window.open(url, '_blank', 'noopener');
   }, [code, api]);
 
+  // Leaf-click routing — for nodes with no children + a drawing.
+  // Routes per feedback_leaf_click_routing: status=missing → Fusion 3D,
+  // drawn/stale/deleted → drawing .f2d, fallback to PDF.
+  const onClickBody = useCallback((e) => {
+    if (!isLeaf || !isBom || isWrapper) return;
+    if (e.target.closest('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
+    if (e.detail !== 1) return;  // single click only (dbl-click = edit)
+    if (api.routeLeaf) {
+      api.routeLeaf({ code, status, urn, drawing_urn });
+    } else if (code) {
+      const url = api.pdfUrlForCode?.(code);
+      if (url) window.open(url, '_blank', 'noopener');
+    }
+  }, [isLeaf, isBom, isWrapper, code, status, urn, drawing_urn, api]);
+
   // Drag-drop PDF upload — admin only, BOM nodes only (and pragmatically
   // only useful on missing ones, though we accept replacement uploads too).
   const onDragOver = useCallback((e) => {
@@ -219,6 +243,8 @@ function MindmapNode({ id, data, selected }) {
   if (selected) cls.push('kme-selected');
   if (linked) cls.push('kme-linked');
   if (isBom) cls.push('kme-bom');
+  if (isLeaf && isBom) cls.push('kme-leaf');
+  if (isWrapper) cls.push('kme-wrapper');
   if (missing && isBom) cls.push('kme-missing');
   if (dragOver) cls.push('kme-drag-over');
   if (uploading) cls.push('kme-uploading');
@@ -234,6 +260,7 @@ function MindmapNode({ id, data, selected }) {
     <div
       className={cls.join(' ')}
       style={style}
+      onClick={onClickBody}
       onDoubleClick={startEdit}
       data-code={code || ''}
       onDragOver={onDragOver}
@@ -284,14 +311,14 @@ function MindmapNode({ id, data, selected }) {
             onClick={onBent}
             title={bent ? 'Mark as not bent' : 'Mark bent'}
           >
-            {bent ? '↧' : '↓'}
+            <img src="icons/bending.svg" alt="bend" />
           </button>
           <button
             className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
             onClick={onAssembled}
             title={assembled ? 'Mark as not assembled' : 'Mark assembled'}
           >
-            ❋
+            🧩
           </button>
           {code && api.pdfUrlForCode?.(code) && (
             <button className="kme-mini kme-pdf" onClick={onOpenPdf} title="Open PDF">📄</button>
