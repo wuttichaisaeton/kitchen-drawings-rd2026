@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-27T06:12:44.010107+00:00",
+  "generated_at": "2026-05-27T22:11:19.813688+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3395,7 +3395,7 @@
       "name": "10WV0N-12OLOR",
       "status": "active",
       "created_at": "2026-05-27T04:46:21.637394+00:00",
-      "updated_at": "2026-05-27T04:46:21.637394+00:00",
+      "updated_at": "2026-05-27T22:11:19.812593+00:00",
       "total_unique_parts": 10,
       "total_qty": 22,
       "parts": [
@@ -3427,10 +3427,10 @@
           "urn": "urn:adsk.wipprod:dm.lineage:yv0KauwdTuCvXbsugja6hg"
         },
         {
-          "code": "FN2BNX-120000",
+          "code": "FN2BN0-000000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FN3-120007",
+          "parent_code": "FN2BNX-120000",
           "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ"
         },
         {

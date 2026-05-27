@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-27T22:11:19.813688+00:00",
+  "generated_at": "2026-05-27T22:12:59.684411+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3473,7 +3473,7 @@
       "name": "10WVON-08OLOR",
       "status": "active",
       "created_at": "2026-05-27T04:46:37.494667+00:00",
-      "updated_at": "2026-05-27T04:46:37.494667+00:00",
+      "updated_at": "2026-05-27T22:12:59.683456+00:00",
       "total_unique_parts": 10,
       "total_qty": 22,
       "parts": [
@@ -3485,10 +3485,9 @@
           "urn": "urn:adsk.wipprod:dm.lineage:hKkiNHBmQNaJ9HM1pN8DUQ"
         },
         {
-          "code": "BM01NO-080000",
+          "code": "BM1NO0-080000",
           "qty": 1,
           "family": "Beam",
-          "parent_code": "BM1NO0-080000",
           "urn": "urn:adsk.wipprod:dm.lineage:s8Uxjx8JQfqZ9TolJ5gkHw"
         },
         {
@@ -3506,10 +3505,10 @@
           "urn": "urn:adsk.wipprod:dm.lineage:MT9vB7GkSFGNlv9DEWgCQw"
         },
         {
-          "code": "FN2BNX-080000",
+          "code": "FN2BNX-120000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FN3-080005",
+          "parent_code": "FN2BNX-080000",
           "urn": "urn:adsk.wipprod:dm.lineage:pwaJNYI6QdWG4uKebGRYYw"
         },
         {
