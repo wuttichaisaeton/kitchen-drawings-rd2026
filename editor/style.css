@@ -320,6 +320,16 @@
   background: rgba(255, 255, 255, 0.08);
   color: #e6edf3;
 }
+/* iPad diagnostic: visible flash on tap so workshop techs can confirm
+   their touch IS reaching the button (separate from whether the action
+   then fires). If a tap shows no flash, the issue is touch reception,
+   not handler logic. */
+.kme-mini:active {
+  background: #d29922 !important;
+  color: #1a1a1a !important;
+  transform: scale(0.94);
+  transition: transform 60ms ease-out;
+}
 .kme-mini.kme-on {
   background: #1f6feb;
   color: #fff;

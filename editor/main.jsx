@@ -148,6 +148,7 @@ function MindmapNode({ id, data, selected }) {
 
   const onBent = useCallback((e) => {
     e.stopPropagation();
+    window.__kmeStatus?.(`tap bent: ${code}`);
     if (!code || !projectKey) return;
     api.markBent?.(projectKey, code, !bent);
     bump();
@@ -155,6 +156,7 @@ function MindmapNode({ id, data, selected }) {
 
   const onAssembled = useCallback((e) => {
     e.stopPropagation();
+    window.__kmeStatus?.(`tap asm: ${code}`);
     if (!code || !projectKey) return;
     api.markAssembled?.(projectKey, code, !assembled);
     bump();
@@ -162,6 +164,7 @@ function MindmapNode({ id, data, selected }) {
 
   const onTimer = useCallback((e) => {
     e.stopPropagation();
+    window.__kmeStatus?.(`tap timer: ${code}`);
     if (!code || !projectKey) return;
     if (timerRunning) api.stopTimer?.(projectKey, code);
     else api.startTimer?.(projectKey, code);
@@ -184,6 +187,7 @@ function MindmapNode({ id, data, selected }) {
 
   const onOpenPdf = useCallback((e) => {
     e.stopPropagation();
+    window.__kmeStatus?.(`tap pdf: ${code}`);
     if (!code) return;
     const url = api.pdfUrlForCode?.(code);
     if (url) window.open(url, '_blank', 'noopener');
@@ -421,6 +425,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [edges, setEdges] = useState(initialEdges || []);
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState(admin ? 'ready (admin)' : 'view only');
+  // iPad diagnostic: expose setStatus globally so mini-button handlers in
+  // MindmapNode (outside this scope) can write to the toolbar status when
+  // tapped. Lets workshop techs verify "yes, my tap fired" without dev tools.
+  useEffect(() => { window.__kmeStatus = setStatus; return () => { delete window.__kmeStatus; }; }, []);
 
   // Two flavours of collapse state, persisted in the same LS entry:
   //   collapsed       — the project center toggle (everything-but-center hidden)
@@ -750,7 +758,9 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           panOnDrag={true}
           zoomOnDoubleClick={false}
           selectNodesOnDrag={false}
-          nodeDragThreshold={6}
+          nodeDragThreshold={20}
+          nodeClickDistance={20}
+          paneClickDistance={20}
           fitView
           colorMode="dark"
           proOptions={{ hideAttribution: true }}
