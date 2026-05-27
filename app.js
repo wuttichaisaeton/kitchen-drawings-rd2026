@@ -2433,6 +2433,10 @@ function _exposeKdApi() {
     projectPdfUrl,   // direct match + scan auto_generated for <pk>.pdf
     routeLeaf: _routeLeafToFusion,
     uploadPdfFromDrop,
+    // Open URL using PWA-standalone-aware logic (navigate same window
+    // on standalone, open new tab in browser). Without this, taps on
+    // PDF in standalone PWA open an invisible off-screen webview.
+    openInNewTab: _openInNewTab,
     // Workshop ops should re-render the project header (bent/assembled
     // counters update) without remounting the editor — preserves the
     // user's in-progress drag positions. Editor reads its own state via
@@ -3767,7 +3771,7 @@ function renderProject(key) {
     el.addEventListener('click', (ev) => {
       // Don't open PDF if user clicked a button inside the row
       if (ev.target.closest('button')) return;
-      if (el.dataset.has === 'true') window.open(el.dataset.url, '_blank', 'noopener');
+      if (el.dataset.has === 'true') _openInNewTab(el.dataset.url);
     });
   });
 
@@ -4183,7 +4187,7 @@ async function _routeLeafToFusion(node) {
   // Drawn + current → open PDF directly
   if (node.status === 'drawn') {
     const url = pdfUrlForCode(node.code);
-    if (url) { window.open(url, '_blank', 'noopener'); return; }
+    if (url) { _openInNewTab(url); return; }
   }
   // Stale (drawing exists but out of date) → open Fusion drawing
   if (node.status === 'stale' && node.drawing_urn) {
@@ -4205,7 +4209,7 @@ async function _routeLeafToFusion(node) {
   }
   // Last-resort fallback — PDF if any (handles stale w/o drawing_urn etc.)
   const url = pdfUrlForCode(node.code);
-  if (url) window.open(url, '_blank', 'noopener');
+  if (url) _openInNewTab(url);
 }
 
 // Decide what to do when user clicks a leaf (no children) node:
@@ -4215,7 +4219,7 @@ async function _routeLeafToFusion(node) {
 async function _doLeafAction(node) {
   const url = pdfUrlForCode(node.code);
   if (url) {
-    window.open(url, '_blank', 'noopener');
+    _openInNewTab(url);
     return;
   }
   if (node.urn) {
@@ -4227,7 +4231,7 @@ async function _doLeafAction(node) {
       if (r.ok) return;
     } catch {}
     // Fallback — open web hub
-    if (node.open_url) window.open(node.open_url, '_blank', 'noopener');
+    if (node.open_url) _openInNewTab(node.open_url);
   }
 }
 
@@ -5052,7 +5056,11 @@ function renderFamily(fam, highlight) {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons — each has its own handler.
       if (ev.target.closest('.part-rename-btn, .part-folder-btn')) return;
-      window.open(el.dataset.url, '_blank', 'noopener');
+      // _openInNewTab handles the iPad PWA standalone case (same-window
+      // navigation) vs browser (new tab). Plain window.open '_blank'
+      // opens an invisible off-screen webview on standalone PWAs —
+      // workshop sees "nothing happens" when tapping the row.
+      _openInNewTab(el.dataset.url);
     });
   });
 
@@ -5233,7 +5241,7 @@ function renderSearch(q) {
         stack = [{ kind: 'project', name: project }];
         render();
       } else if (url) {
-        window.open(url, '_blank', 'noopener');
+        _openInNewTab(url);
       }
     });
   });

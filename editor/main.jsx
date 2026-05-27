@@ -39,7 +39,7 @@ async function openInFusion(urn, fallbackUrl) {
     } catch (e) { /* bridge down → fall through */ }
   }
   if (fallbackUrl) {
-    window.open(fallbackUrl, '_blank', 'noopener');
+    (window.kdAPI?.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(fallbackUrl);
     return { ok: true, via: 'web' };
   }
   return { ok: false };
@@ -243,7 +243,7 @@ function MindmapNode({ id, data, selected }) {
     window.__kmeStatus?.(`tap pdf: ${code}`);
     if (!code) return;
     const url = api.pdfUrlForCode?.(code);
-    if (url) window.open(url, '_blank', 'noopener');
+    if (url) (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
   }, [code, api]);
 
   // Leaf-click routing has moved to Editor.onNodeClick — React Flow's
@@ -682,7 +682,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         api.routeLeaf({ code, status: data.status, urn: data.urn, drawing_urn: data.drawing_urn });
       } else if (code) {
         const url = api.pdfUrlForCode?.(code);
-        if (url) window.open(url, '_blank', 'noopener');
+        if (url) (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
       }
     }
   }, [toggleCollapsed, toggleNodeCollapse]);
@@ -696,7 +696,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     if (!pk) return;
     const api = window.kdAPI || {};
     const url = api.projectPdfUrl?.(pk) || api.pdfUrlForCode?.(pk);
-    if (url) window.open(url, '_blank', 'noopener');
+    if (url) (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
     else window.alert(`No project PDF found for ${pk}`);
   }, [projectKey, toggleCollapsed]);
 
