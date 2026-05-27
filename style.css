@@ -1196,6 +1196,39 @@ main.transit-back {
   transition: transform 0.1s, background 0.15s, border-color 0.15s;
   border: 1px solid var(--fam-color, #232830);
   border-left: 4px solid var(--fam-color, #4a90e2);
+  position: relative;  /* anchor for the admin ✎ rename button */
+}
+
+/* Admin rename button overlaid on the top-right corner of each family
+   chip. Tap = rename folder. iPad-friendly hit target; sits above the
+   card content but doesn't steal the underlying click for non-admin. */
+.family-rename-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e6edf3;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.family-rename-btn:hover {
+  background: rgba(0, 0, 0, 0.55);
+  border-color: rgba(255, 255, 255, 0.40);
+}
+.family-rename-btn:active {
+  background: var(--fam-color, #1f6feb);
+  color: #fff;
+  border-color: var(--fam-color, #1f6feb);
 }
 
 .family-card:active {

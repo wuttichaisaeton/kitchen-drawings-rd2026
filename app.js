@@ -4650,8 +4650,15 @@ function renderLibraryHome() {
   const adminMode = isAdmin();
   const cards = visible.map(fam => {
     const label = familyDisplayLabel(fam);
+    // Admin also gets a visible ✎ button so iPad users don't need to
+    // discover the long-press shortcut. Double-click / long-press still
+    // work as before for muscle-memory.
+    const renameBtn = adminMode
+      ? `<button class="family-rename-btn" data-family-rename="${escapeHtml(fam)}" aria-label="Rename folder" title="Rename folder">✎</button>`
+      : '';
     return `
-    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Double-click to rename · drag to reorder"' : ''}>
+    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Tap ✎ to rename · long-press to rename · drag to reorder"' : ''}>
+      ${renameBtn}
       <div class="family-icon">${familyIcon(fam)}</div>
       <div class="family-name">${escapeHtml(label)}</div>
       <div class="family-count">${by[fam].length} parts</div>
@@ -4663,26 +4670,38 @@ function renderLibraryHome() {
   ROOT.querySelectorAll('.family-card').forEach(el => {
     // Click → drill into family. A long-press in admin (touch-friendly
     // rename) suppresses the click via _suppressClickUntil; a successful
-    // double-click rename also suppresses via the same flag.
+    // double-click rename also suppresses via the same flag. Taps on the
+    // ✎ rename button are also ignored (it has its own handler).
     let _suppressClickUntil = 0;
     el.addEventListener('click', (ev) => {
+      if (ev.target.closest('.family-rename-btn')) return;
       if (Date.now() < _suppressClickUntil) {
         ev.preventDefault(); ev.stopPropagation();
         return;
       }
       navTo({ kind: 'family', name: el.dataset.family });
     });
-    // Admin: double-click OR long-press to rename, drag PDF to upload.
+    // Admin: double-click OR long-press OR ✎ button to rename, drag PDF
+    // to upload.
     if (adminMode) {
       const triggerRename = () => {
         const fam = el.dataset.family;
         const current = familyDisplayLabel(fam);
-        const next = prompt(`Rename chip "${fam}":`, current);
+        const next = prompt(`Rename folder "${fam}":\n\n(Leave empty to reset to the default name.)`, current);
         _suppressClickUntil = Date.now() + 400;  // swallow the click that follows
         if (next === null) return;  // cancelled
         setFamilyLabel(fam, next);  // empty string resets to default key
         render();
       };
+      // Visible ✎ button — explicit rename trigger.
+      const renameBtn = el.querySelector('.family-rename-btn');
+      if (renameBtn) {
+        renameBtn.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          triggerRename();
+        });
+      }
       el.addEventListener('dblclick', (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
