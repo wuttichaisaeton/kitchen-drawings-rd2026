@@ -1434,6 +1434,41 @@ main.transit-back {
   transform: scale(0.99);
 }
 
+/* Admin drag-drop PDF upload — dashed glowing outline shows the row
+   is a valid drop target while a file is dragged over it. Mirrors the
+   family-card drag-over treatment. */
+.part-row.part-row-drag-over {
+  outline: 2px dashed var(--fam-color, #4a90e2);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--fam-color, #4a90e2) 12%, #1a1f24 88%);
+}
+.part-row.part-row-drag-over::after {
+  content: '↓ Drop PDF';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fam-color, #4a90e2);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.part-row { position: relative; }  /* anchor for the ::after */
+.part-row.part-row-uploading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.part-row.part-row-uploading::after {
+  content: 'uploading…';
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #58a6ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* Library deep-link highlight — fired by renderFamily when navigated
    from a mindmap "NO PDF" chip. Auto-removed after 2.5s by the JS
    side; the animation is a one-shot fade so even if the class lingers

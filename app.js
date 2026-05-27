@@ -4974,6 +4974,49 @@ function renderFamily(fam, highlight) {
     });
   });
 
+  // Admin: drag-drop a PDF onto a specific part-row to upload it for
+  // that exact code. Different from family-card drop (which prompts for
+  // the code) — here the code is the row's data-code attribute, so no
+  // prompt is needed. Workshop view doesn't render this handler.
+  if (adminMode) {
+    ROOT.querySelectorAll('.part-row').forEach(rowEl => {
+      rowEl.addEventListener('dragover', (ev) => {
+        if (ev.dataTransfer && [...ev.dataTransfer.items || []].some(i => i.kind === 'file')) {
+          ev.preventDefault();
+          rowEl.classList.add('part-row-drag-over');
+        }
+      });
+      rowEl.addEventListener('dragleave', (ev) => {
+        // Only clear if leaving the row itself (not a child) — dragleave
+        // fires when crossing into children otherwise.
+        if (!rowEl.contains(ev.relatedTarget)) {
+          rowEl.classList.remove('part-row-drag-over');
+        }
+      });
+      rowEl.addEventListener('drop', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();  // prevent the row's "open PDF" click handler from also firing
+        rowEl.classList.remove('part-row-drag-over');
+        const file = ev.dataTransfer?.files?.[0];
+        if (!file) return;
+        if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+          alert('PDF only — got ' + (file.type || file.name));
+          return;
+        }
+        const code = rowEl.dataset.code;
+        if (!code) return;
+        if (!confirm(`Upload "${file.name}" as the drawing for "${code}"?\n\n(Replaces any existing PDF for this code.)`)) return;
+        rowEl.classList.add('part-row-uploading');
+        const ok = await uploadPdfFromDrop(file, code, fam);
+        rowEl.classList.remove('part-row-uploading');
+        if (ok) {
+          // Firebase listener triggers render — force one in case of timing.
+          setTimeout(() => render(), 400);
+        }
+      });
+    });
+  }
+
   // Admin move-to-folder: prompt for target folder name. Typing a new name
   // creates the folder on the fly (renderLibraryHome groups by family, so
   // any family with >=1 part appears as a chip). Empty input clears the
