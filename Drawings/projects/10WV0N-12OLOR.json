@@ -1,0 +1,78 @@
+{
+  "name": "10WV0N-12OLOR",
+  "status": "active",
+  "created_at": "2026-05-27T04:46:21.637394+00:00",
+  "updated_at": "2026-05-27T04:46:21.637394+00:00",
+  "total_unique_parts": 10,
+  "total_qty": 22,
+  "parts": [
+    {
+      "code": "BK1DN1-120000",
+      "qty": 1,
+      "family": "Back-Down",
+      "parent_code": "BK0DN0-120000",
+      "urn": "urn:adsk.wipprod:dm.lineage:i8XrW6uQRb2humHJDBI_WA"
+    },
+    {
+      "code": "BM1NO0-120000",
+      "qty": 1,
+      "family": "Beam",
+      "urn": "urn:adsk.wipprod:dm.lineage:hC3uAnpIR8-ULbhVwuDdAw"
+    },
+    {
+      "code": "BXXTR0-000000",
+      "qty": 4,
+      "family": "Other",
+      "parent_code": "BK2TR1-120000",
+      "urn": "urn:adsk.wipprod:dm.lineage:9nXAHOrYR_-p3w7ylFiTqw"
+    },
+    {
+      "code": "FN0F00-120000",
+      "qty": 1,
+      "family": "Floor",
+      "parent_code": "FN0FN3-120007",
+      "urn": "urn:adsk.wipprod:dm.lineage:yv0KauwdTuCvXbsugja6hg"
+    },
+    {
+      "code": "FN2BNX-120000",
+      "qty": 1,
+      "family": "Floor",
+      "parent_code": "FN0FN3-120007",
+      "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ"
+    },
+    {
+      "code": "SD00NA-080000",
+      "qty": 2,
+      "family": "Side Panel",
+      "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
+    },
+    {
+      "code": "SD0SUP-000000",
+      "qty": 4,
+      "family": "Side Panel",
+      "parent_code": "SD00NA-080000",
+      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+    },
+    {
+      "code": "TS0BV0-000000",
+      "qty": 2,
+      "family": "Top Sup",
+      "parent_code": "TS002H-120000",
+      "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
+    },
+    {
+      "code": "TS1BHH-120000",
+      "qty": 2,
+      "family": "Top Sup",
+      "parent_code": "TS002H-120000",
+      "urn": "urn:adsk.wipprod:dm.lineage:bdrkOWi7RAKqSCOzOvBHJQ"
+    },
+    {
+      "code": "TS2TRX-000000",
+      "qty": 4,
+      "family": "Top Sup",
+      "parent_code": "TS2TR4-120000",
+      "urn": "urn:adsk.wipprod:dm.lineage:4eHNpXzITB2vArQENtyEag"
+    }
+  ]
+}
