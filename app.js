@@ -49,14 +49,13 @@ const LS_FAMILY_ORDER_KEY = 'kd_family_order_v1';    // Array<familyKey> — adm
 // ──────────────────────────────────────────────────────────────────────
 
 function isAdmin() {
-  // User asked (2026-05-27): open every admin-gated feature to all users.
-  // Workshop and admin now see + can use the same UI. If specific items
-  // need to be restricted again later, add a per-item check at the call
-  // site (e.g. `if (!isAdminStrict()) return;`) instead of re-narrowing
-  // this function.
-  return true;
-  // Original (kept for reference + quick rollback):
-  // try { return localStorage.getItem(LS_ADMIN_KEY) === '1'; } catch { return false; }
+  // Per user (2026-05-27): close admin features from workshop again —
+  // worried workshop users would accidentally break shared state
+  // (delete project, move parts to wrong folder, etc.). Workshop sees
+  // only read + the queue-management ops that were explicitly opened
+  // (pin/favorite, drag-reorder projects, drag BOM nodes, mini buttons
+  // for timer/bent/asm/PDF).
+  try { return localStorage.getItem(LS_ADMIN_KEY) === '1'; } catch { return false; }
 }
 
 function setAdmin(on) {
