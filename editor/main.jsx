@@ -76,31 +76,6 @@ function ProjectCenterNode({ id, data, selected }) {
   );
 }
 
-// useNativeTap — attach a native pointerdown listener to a ref so the
-// handler fires reliably on iPad PWA. React Flow + d3-drag capture pointer
-// events on node containers, and the React 18 synthetic event system gets
-// the click only AFTER d3-drag's filter+clickDistance gauntlet. On real
-// iPad, that gauntlet swallows the click. A native pointerdown listener
-// on the button itself runs BEFORE any RF capture and so always fires.
-function useNativeTap(handler, label) {
-  const ref = useRef(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || !handler) return;
-    const fn = (e) => {
-      // Block RF's pointer flow + browser tap-zoom synthesis.
-      e.stopPropagation();
-      window.__kmeStatus?.(`tap ${label}`);
-      // Mini handlers expect an event arg with stopPropagation(); pass the
-      // native event through — it has the same method.
-      handler(e);
-    };
-    el.addEventListener('pointerdown', fn);
-    return () => el.removeEventListener('pointerdown', fn);
-  }, [handler, label]);
-  return ref;
-}
-
 // ── BOM / Custom node ───────────────────────────────────────────────
 function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
@@ -218,21 +193,6 @@ function MindmapNode({ id, data, selected }) {
     if (url) window.open(url, '_blank', 'noopener');
   }, [code, api]);
 
-  const onOpenLibrary = useCallback((e) => {
-    if (e?.stopPropagation) e.stopPropagation();
-    if (code && api.openInLibrary) api.openInLibrary(code);
-  }, [code, api]);
-
-  // Native pointerdown refs — bypass React synthetic events on iPad PWA.
-  // See useNativeTap definition above for rationale.
-  const timerTapRef = useNativeTap(onTimer, `timer ${code || ''}`);
-  const resetTapRef = useNativeTap(onResetTimer, `reset ${code || ''}`);
-  const bentTapRef = useNativeTap(onBent, `bent ${code || ''}`);
-  const asmTapRef = useNativeTap(onAssembled, `asm ${code || ''}`);
-  const pdfTapRef = useNativeTap(onOpenPdf, `pdf ${code || ''}`);
-  const chipTapRef = useNativeTap(onOpenLibrary, `chip ${code || ''}`);
-  const linkBadgeTapRef = useNativeTap(openLink, `link ${fusion_link?.master_code || ''}`);
-
   // Leaf-click routing has moved to Editor.onNodeClick — React Flow's
   // node-click callback fires reliably from RF's own pointer-event handler,
   // whereas an inner-div onClick on iPad PWA gets swallowed when
@@ -322,10 +282,12 @@ function MindmapNode({ id, data, selected }) {
         )}
         {missing && isBom && (
           <span
-            ref={chipTapRef}
             className="kme-missing-badge nodrag nopan"
             title="Open in Library to inspect or drop a PDF"
-            onClick={onOpenLibrary}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (code && api.openInLibrary) api.openInLibrary(code);
+            }}
           >
             ⚠ NO PDF 🔗
           </span>
@@ -340,7 +302,6 @@ function MindmapNode({ id, data, selected }) {
       {isBom && (
         <div className="kme-row kme-row-actions nodrag nopan">
           <button
-            ref={timerTapRef}
             className={`kme-mini kme-timer ${timerRunning ? 'kme-on' : ''}`}
             onClick={onTimer}
             title={timerRunning ? 'Stop timer' : 'Start timer'}
@@ -349,11 +310,10 @@ function MindmapNode({ id, data, selected }) {
             {timerSec > 0 && <span className="kme-timer-elapsed">{api.formatDuration?.(timerSec)}</span>}
           </button>
           {admin && timerSec > 0 && (
-            <button ref={resetTapRef} className="kme-mini kme-timer-reset" onClick={onResetTimer} title="Edit / reset timer">↺</button>
+            <button className="kme-mini kme-timer-reset" onClick={onResetTimer} title="Edit / reset timer">↺</button>
           )}
           <span className="kme-spacer-mini" />
           <button
-            ref={bentTapRef}
             className={`kme-mini kme-bent ${bent ? 'kme-on' : ''}`}
             onClick={onBent}
             title={bent ? 'Mark as not bent' : 'Mark bent'}
@@ -361,7 +321,6 @@ function MindmapNode({ id, data, selected }) {
             <img src="icons/bending.svg" alt="bend" />
           </button>
           <button
-            ref={asmTapRef}
             className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
             onClick={onAssembled}
             title={assembled ? 'Mark as not assembled' : 'Mark assembled'}
@@ -369,13 +328,12 @@ function MindmapNode({ id, data, selected }) {
             🧩
           </button>
           {code && api.pdfUrlForCode?.(code) && (
-            <button ref={pdfTapRef} className="kme-mini kme-pdf" onClick={onOpenPdf} title="Open PDF">📄</button>
+            <button className="kme-mini kme-pdf" onClick={onOpenPdf} title="Open PDF">📄</button>
           )}
         </div>
       )}
       {linked && (
         <div
-          ref={linkBadgeTapRef}
           className="kme-link-badge nodrag nopan"
           title={`Open ${fusion_link.master_code || 'file'} in Fusion`}
           onClick={openLink}
