@@ -363,7 +363,7 @@ function MindmapNode({ id, data, selected }) {
           <button
             className={`kme-mini kme-timer ${timerRunning ? 'kme-on' : ''}`}
             onClick={onTimer}
-            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onTimer(e); } }}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onTimer(e); } }}
             title={timerRunning ? 'Stop timer' : 'Start timer'}
           >
             {timerRunning ? '⏸' : '▶'}
@@ -373,7 +373,7 @@ function MindmapNode({ id, data, selected }) {
             <button
               className="kme-mini kme-timer-reset"
               onClick={onResetTimer}
-              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onResetTimer(e); } }}
+              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onResetTimer(e); } }}
               title="Edit / reset timer"
             >↺</button>
           )}
@@ -381,7 +381,7 @@ function MindmapNode({ id, data, selected }) {
           <button
             className={`kme-mini kme-bent ${bent ? 'kme-on' : ''}`}
             onClick={onBent}
-            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onBent(e); } }}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onBent(e); } }}
             title={bent ? 'Mark as not bent' : 'Mark bent'}
           >
             <img src="icons/bending.svg" alt="bend" />
@@ -389,7 +389,7 @@ function MindmapNode({ id, data, selected }) {
           <button
             className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
             onClick={onAssembled}
-            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onAssembled(e); } }}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onAssembled(e); } }}
             title={assembled ? 'Mark as not assembled' : 'Mark assembled'}
           >
             🧩
@@ -398,7 +398,7 @@ function MindmapNode({ id, data, selected }) {
             <button
               className="kme-mini kme-pdf"
               onClick={onOpenPdf}
-              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onOpenPdf(e); } }}
+              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onOpenPdf(e); } }}
               title="Open PDF"
             >📄</button>
           )}
@@ -848,6 +848,13 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           paneClickDistance={20}
           defaultEdgeOptions={{ type: 'floating', style: { strokeWidth: 1.2, opacity: 0.5 } }}
           fitView
+          /* iPad PWA: cap how small RF can shrink nodes when fitting.
+             Without this, fit-view often lands around 0.55-0.65 which
+             makes 50 px CSS buttons render as ~30 visible px — finger
+             contact area exceeds button bounds. minZoom 0.85 keeps
+             buttons ~42 visible px so a tap lands cleanly. */
+          minZoom={0.85}
+          maxZoom={2.5}
           colorMode="dark"
           proOptions={{ hideAttribution: true }}
         >

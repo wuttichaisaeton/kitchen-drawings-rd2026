@@ -328,16 +328,19 @@
   background: rgba(255, 255, 255, 0.14);
   border: 1px solid rgba(140, 150, 165, 0.65);
   color: #e6edf3;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
-  /* iPad PWA: bump touch targets from ~17-21px to 40px min so finger
-     taps register reliably. touch-action disables the 300ms tap delay
-     + double-tap zoom that WKWebView imposes on tap-targets despite
-     the root's touch-action: manipulation. */
-  padding: 10px 12px;
-  min-height: 40px;
-  min-width: 40px;
+  /* iPad PWA: at React Flow's default fit-view zoom (~0.65), a CSS
+     40px button renders as only ~26 visible px — smaller than the
+     typical finger contact area (~37 px on iPad mini). Bumped to
+     50 CSS = ~32 visible px so partial taps still hit. position:
+     relative + the ::before below expand the actual HIT area to
+     ~60 CSS px (~39 visible) without growing the visual chrome. */
+  padding: 12px 14px;
+  min-height: 50px;
+  min-width: 50px;
   justify-content: center;
+  position: relative;
   touch-action: manipulation;
   border-radius: 4px;
   cursor: pointer;
@@ -351,6 +354,15 @@
   background: rgba(255, 255, 255, 0.25);
   border-color: rgba(255, 255, 255, 0.85);
   color: #fff;
+}
+/* Invisible hit-area expansion — adds ~6 px padding on each side
+   to the touch surface without changing the visual button bounds.
+   Lets a finger that lands slightly off-button still register. */
+.kme-mini::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 10px;
 }
 /* iPad diagnostic: visible flash on tap so workshop techs can confirm
    their touch IS reaching the button (separate from whether the action
