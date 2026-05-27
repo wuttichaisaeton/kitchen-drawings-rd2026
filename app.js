@@ -26,6 +26,7 @@ const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — man
 const LS_FAMILY_LABELS_KEY = 'kd_family_labels_v1';  // {familyKey: customLabel} — admin-edited chip labels
 const LS_DISPLAY_OVERRIDES_KEY = 'kd_display_overrides_v1';  // {originalCode: customLabel} — admin-edited part code display in Library (e.g. fix Fusion-side typos)
 const LS_FAMILY_OVERRIDES_KEY = 'kd_family_overrides_v1';    // {code: customFamilyName} — admin-moved parts to custom folders. Overrides Fusion-side family assignment per code.
+const LS_CUSTOM_FOLDERS_KEY = 'kd_custom_folders_v1';        // [folderName] — admin-created empty folders that should appear in Library home even with 0 parts.
 const LS_FAMILY_ORDER_KEY = 'kd_family_order_v1';    // Array<familyKey> — admin-set chip order
 
 // ──────────────────────────────────────────────────────────────────────
@@ -508,6 +509,11 @@ let _displayOverridesCache = {};
 // renderLibraryHome groups by family, so any family with ≥1 part shows
 // as a chip in the home grid. RTDB-synced so workshop sees the same.
 let _familyOverridesCache = {};
+// custom_folders — admin-created empty folders. Without this list, an
+// empty folder would disappear from the Library home grid as soon as
+// the last part is moved out. Admin can pre-create folder names so the
+// taxonomy is fixed before parts arrive.
+let _customFoldersCache = [];
 
 function initFamilyChipSync() {
   try {
@@ -525,6 +531,10 @@ function initFamilyChipSync() {
   try {
     const r = localStorage.getItem(LS_FAMILY_OVERRIDES_KEY);
     if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _familyOverridesCache = o; }
+  } catch {}
+  try {
+    const r = localStorage.getItem(LS_CUSTOM_FOLDERS_KEY);
+    if (r) { const a = JSON.parse(r); if (Array.isArray(a)) _customFoldersCache = a; }
   } catch {}
   if (!window.firebaseDB) return;
   try {
@@ -550,6 +560,12 @@ function initFamilyChipSync() {
       const raw = snap.val();
       _familyOverridesCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_FAMILY_OVERRIDES_KEY, JSON.stringify(_familyOverridesCache)); } catch {}
+      try { render(); } catch {}
+    });
+    window.firebaseDB.ref('custom_folders').on('value', snap => {
+      const raw = snap.val();
+      _customFoldersCache = Array.isArray(raw) ? raw : [];
+      try { localStorage.setItem(LS_CUSTOM_FOLDERS_KEY, JSON.stringify(_customFoldersCache)); } catch {}
       try { render(); } catch {}
     });
   } catch (e) {
@@ -618,6 +634,35 @@ function setFamilyOverride(code, family) {
     try {
       window.firebaseDB.ref('family_overrides/' + code).set(trimmed ? trimmed : null);
     } catch (e) { console.warn('Firebase family_override write failed:', e); }
+  }
+}
+
+// addCustomFolder / removeCustomFolder — manage the pre-created empty
+// folder list. renderLibraryHome merges this list with the parts-derived
+// family keys so admin can establish a folder taxonomy before any parts
+// land in those folders. Folder names are case-preserving and unique.
+function addCustomFolder(name) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return;
+  if (_customFoldersCache.includes(trimmed)) return;  // already exists
+  _customFoldersCache = [..._customFoldersCache, trimmed];
+  try { localStorage.setItem(LS_CUSTOM_FOLDERS_KEY, JSON.stringify(_customFoldersCache)); } catch {}
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('custom_folders').set(_customFoldersCache); }
+    catch (e) { console.warn('Firebase custom_folders write failed:', e); }
+  }
+}
+
+function removeCustomFolder(name) {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return;
+  const before = _customFoldersCache.length;
+  _customFoldersCache = _customFoldersCache.filter(f => f !== trimmed);
+  if (_customFoldersCache.length === before) return;
+  try { localStorage.setItem(LS_CUSTOM_FOLDERS_KEY, JSON.stringify(_customFoldersCache)); } catch {}
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('custom_folders').set(_customFoldersCache); }
+    catch (e) { console.warn('Firebase custom_folders write failed:', e); }
   }
 }
 
@@ -4635,9 +4680,16 @@ const renderMissingHome = renderTreeHome;
 
 function renderLibraryHome() {
   const by = partsByFamily();
-  const visible = Object.keys(by).filter(f => by[f].length);
+  const adminMode = isAdmin();
+  // Empty admin-created folders should still appear so the taxonomy is
+  // visible even before any parts land in them. Workshop view also sees
+  // these folders (consistency) but they show "0 parts".
+  const visible = Array.from(new Set([
+    ...Object.keys(by).filter(f => by[f].length),
+    ..._customFoldersCache,
+  ]));
 
-  if (!visible.length) {
+  if (!visible.length && !adminMode) {
     ROOT.innerHTML = '<p class="loading">No drawings yet — run CC_DrawingPDF in Fusion first</p>';
     COUNT_EL.textContent = '';
     return;
@@ -4655,9 +4707,9 @@ function renderLibraryHome() {
     return familyOrder(a, b);
   });
 
-  const adminMode = isAdmin();
   const cards = visible.map(fam => {
     const label = familyDisplayLabel(fam);
+    const partsInFam = (by[fam] || []).length;
     // Admin also gets a visible ✎ button so iPad users don't need to
     // discover the long-press shortcut. Double-click / long-press still
     // work as before for muscle-memory.
@@ -4669,13 +4721,44 @@ function renderLibraryHome() {
       ${renameBtn}
       <div class="family-icon">${familyIcon(fam)}</div>
       <div class="family-name">${escapeHtml(label)}</div>
-      <div class="family-count">${by[fam].length} parts</div>
+      <div class="family-count">${partsInFam} parts</div>
     </div>`;
   }).join('');
 
-  ROOT.innerHTML = `<div class="family-grid">${cards}</div>`;
+  // Admin gets a trailing "+ New Family" card to create empty folders.
+  // Tapping it prompts for a name; the new family lands in custom_folders
+  // and shows in the grid next render. Workshop view doesn't see this card.
+  const newFamilyCard = adminMode ? `
+    <div class="family-card family-card-new" data-new-family="1" title="Create a new folder (admin)">
+      <div class="family-icon family-icon-plus">+</div>
+      <div class="family-name">New Family</div>
+      <div class="family-count">create folder</div>
+    </div>` : '';
 
-  ROOT.querySelectorAll('.family-card').forEach(el => {
+  ROOT.innerHTML = `<div class="family-grid">${cards}${newFamilyCard}</div>`;
+
+  // Admin "+ New Family" card — separate handler since it doesn't have a
+  // data-family attribute and shouldn't trigger the drill-into-family
+  // path on the regular family-card loop below.
+  const newFamilyEl = ROOT.querySelector('.family-card-new');
+  if (newFamilyEl) {
+    newFamilyEl.addEventListener('click', () => {
+      const name = prompt(
+        'Create a new folder:\n\n' +
+        `Existing folders: ${visible.join(', ')}\n\n` +
+        'Type a folder name. The folder will appear in Library immediately;\n' +
+        'use the 📁 button on any part-row to move parts into it.');
+      if (!name) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      addCustomFolder(trimmed);
+      // Drill straight into the new folder so admin sees the empty state
+      // + can start moving parts in via 📁.
+      navTo({ kind: 'family', name: trimmed });
+    });
+  }
+
+  ROOT.querySelectorAll('.family-card:not(.family-card-new)').forEach(el => {
     // Click → drill into family. A long-press in admin (touch-friendly
     // rename) suppresses the click via _suppressClickUntil; a successful
     // double-click rename also suppresses via the same flag. Taps on the
@@ -4827,10 +4910,24 @@ function renderFamily(fam, highlight) {
       </div>`;
   }).join('');
 
+  // Empty-folder hint — shown when no parts in this folder. Admin gets a
+  // tip to use 📁 on a part-row elsewhere to move parts in; workshop sees
+  // a neutral "empty" message.
+  const emptyHint = items.length === 0
+    ? `<div class="empty-folder-hint">
+         <div class="empty-folder-icon">📂</div>
+         <div class="empty-folder-title">This folder is empty</div>
+         ${adminMode
+           ? '<div class="empty-folder-tip">Open another folder, tap 📁 on a part to move it here.</div>'
+           : ''}
+       </div>`
+    : '';
+
   ROOT.innerHTML = `
     <button class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span></button>
     <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
     <div class="part-list">${list}</div>
+    ${emptyHint}
   `;
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);

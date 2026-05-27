@@ -1236,6 +1236,49 @@ main.transit-back {
   background: color-mix(in srgb, var(--fam-tint, #1f2530) 70%, white 5%);
 }
 
+/* "+ New Family" card — visually distinct from real folders so admin
+   knows it's an action card, not a folder. Dashed outline + muted
+   colors + larger plus icon. Only rendered in admin mode. */
+.family-card.family-card-new {
+  background: transparent;
+  border: 2px dashed rgba(110, 118, 129, 0.55);
+  border-left: 2px dashed rgba(110, 118, 129, 0.55);
+  color: #8b949e;
+  opacity: 0.75;
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+.family-card.family-card-new:hover {
+  opacity: 1;
+  border-color: rgba(110, 118, 129, 0.85);
+  background: rgba(110, 118, 129, 0.06);
+}
+.family-card.family-card-new:active {
+  opacity: 1;
+  background: rgba(31, 111, 235, 0.10);
+  border-color: #1f6feb;
+  transform: scale(0.97);
+}
+.family-card.family-card-new .family-name,
+.family-card.family-card-new .family-count {
+  color: #8b949e;
+}
+.family-icon.family-icon-plus {
+  font-size: 38px;
+  font-weight: 300;
+  line-height: 1;
+  color: #8b949e;
+}
+
+/* Empty-folder hint — shown when opening a family with 0 parts. */
+.empty-folder-hint {
+  text-align: center;
+  padding: 48px 20px;
+  color: #8b949e;
+}
+.empty-folder-icon { font-size: 56px; opacity: 0.6; margin-bottom: 14px; }
+.empty-folder-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #c9d1d9; }
+.empty-folder-tip { font-size: 13px; opacity: 0.85; line-height: 1.5; }
+
 /* PDF drag-drop affordance (admin) — dashed glowing outline shows the
    chip is a valid drop target while a file is dragged over it. */
 .family-card.drag-over {
