@@ -584,7 +584,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         hasChildren,
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
-      draggable: admin,
+      // Workshop also gets to drag nodes — useful for rearranging the
+      // mindmap to match how the shift is bending today. Position changes
+      // don't persist for workshop (only admin's _saveOverride path persists);
+      // workshop's drags are visual-only and reset on reload.
+      draggable: true,
     };
   }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap]);
 
