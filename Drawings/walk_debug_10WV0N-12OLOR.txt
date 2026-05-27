@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-05-27T11:46:21.636980
+CC_Assembly walk debug — 2026-05-28T05:11:19.812146
 Project: 10WV0N-12OLOR
 Total occurrences visited: 51
 CAM-ALPF tagged components: 0
@@ -35,13 +35,13 @@ depth | SM | CAM | material         | display_name (component)
     2 | SM  |     | ALPF             | TS1BHH-120000 v5:2 (TS1BHH-120000 v5)
     0 |     |     |                  | BM1NO0-120000 v2:1 (BM1NO0-120000 v2)
     1 | SM  |     | ALPF             | BM1NO0-120000 v4:1 (BM1NO0-120000 v4)
-    0 |     |     |                  | FN0FN3-120007 v5:1 (FN0FN3-120007 v5)
+    0 |     |     |                  | FN0FN3-120007 v6:1 (FN0FN3-120007 v6)
     1 | SM  |     | ALPF             | FN0F00-120000 v14:1 (FN0F00-120000 v14)
-    1 |     |     |                  | FN2BNX-120000 v13:3 (FN2BNX-120000 v13)
-    2 | SM  |     | ALPF             | FN2BNX:1 (FN2BNX)
-    1 |     |     |                  | FN2BNX-120000 v13:1 (FN2BNX-120000 v13)
-    1 |     |     |                  | FN2BNX-120000 v13:2 (FN2BNX-120000 v13)
-    1 |     |     |                  | Legs:1 (Legs)
+    1 |     |     |                  | FN2BNX-120000 v15:3 (FN2BNX-120000 v15)
+    2 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
+    1 |     |     |                  | FN2BNX-120000 v15:1 (FN2BNX-120000 v15)
+    1 |     |     |                  | FN2BNX-120000 v15:2 (FN2BNX-120000 v15)
+    1 |     |     |                  | FN0FN3-120007:1 (FN0FN3-120007)
     2 |     |     |                  | Leg-060 v3:1 (Leg-060 v3)
     3 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
     3 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
