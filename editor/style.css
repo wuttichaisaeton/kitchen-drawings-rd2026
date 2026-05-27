@@ -297,12 +297,11 @@
    Keeps the original SVG colors (orange workpiece + steel die + blue
    force arrow) so it stays recognizable as the bending press graphic. */
 .kme-bent img {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   display: block;
-}
-.kme-bent {
-  padding: 2px 4px;   /* a hair more room than the text-only minis */
+  /* Boost icon contrast against the now-brighter button bg */
+  filter: brightness(1.15);
 }
 
 /* ── Rich BOM node rows ──────────────────────────────────────────── */
@@ -322,17 +321,22 @@
 .kme-spacer-mini { flex: 1; }
 
 .kme-mini {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(110, 118, 129, 0.35);
-  color: #8b949e;
-  font-size: 12px;
-  /* iPad PWA: bump touch targets from ~17-21px to 36px min so finger
+  /* Much brighter background + border so workshop techs on iPad mini
+     can actually see the buttons. The previous rgba(255,255,255,0.04)
+     was nearly invisible against the dark node background — fine on
+     desktop with hover, useless on a tablet under workshop lighting. */
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(140, 150, 165, 0.65);
+  color: #e6edf3;
+  font-size: 14px;
+  font-weight: 600;
+  /* iPad PWA: bump touch targets from ~17-21px to 40px min so finger
      taps register reliably. touch-action disables the 300ms tap delay
      + double-tap zoom that WKWebView imposes on tap-targets despite
      the root's touch-action: manipulation. */
-  padding: 8px 10px;
-  min-height: 36px;
-  min-width: 36px;
+  padding: 10px 12px;
+  min-height: 40px;
+  min-width: 40px;
   justify-content: center;
   touch-action: manipulation;
   border-radius: 4px;
@@ -344,8 +348,9 @@
   transition: all 0.12s;
 }
 .kme-mini:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e6edf3;
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.85);
+  color: #fff;
 }
 /* iPad diagnostic: visible flash on tap so workshop techs can confirm
    their touch IS reaching the button (separate from whether the action
