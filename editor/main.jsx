@@ -50,8 +50,54 @@ async function openInFusion(urn, fallbackUrl) {
 // code below. Click opens the project's master PDF (same as the SVG
 // .mm-center click used to). Admin can drag it; workshop view-only.
 function ProjectCenterNode({ id, data, selected }) {
-  const { label, code, projectKey, collapsed } = data;
+  const { label, code, projectKey, collapsed, admin } = data;
   const displayCode = code || label || projectKey;
+  // Admin drag-drop PDF onto the center → uploads as <projectKey>.pdf,
+  // i.e. the project master. Same uploadPdfFromDrop path used by BOM
+  // nodes + Library family cards / part rows. Workshop view-only:
+  // dragOver / drop are no-ops without admin.
+  const [dragOver, setDragOver] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const api = window.kdAPI || {};
+
+  const onDragOver = useCallback((e) => {
+    if (!admin) return;
+    const items = e.dataTransfer?.items;
+    if (!items || ![...items].some(it => it.kind === 'file')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragOver(true);
+  }, [admin]);
+
+  const onDragLeave = useCallback((e) => {
+    e.stopPropagation();
+    setDragOver(false);
+  }, []);
+
+  const onDrop = useCallback(async (e) => {
+    if (!admin || !projectKey) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    const file = e.dataTransfer?.files?.[0];
+    if (!file) return;
+    if (!api.uploadPdfFromDrop) {
+      window.alert('Upload API not available — refresh the page.');
+      return;
+    }
+    setUploading(true);
+    try {
+      // family='' so it lands in 'Custom' family in Library; admin can
+      // 📁-move it elsewhere later if a dedicated "Project Masters"
+      // folder is desired.
+      const ok = await api.uploadPdfFromDrop(file, projectKey, '');
+      if (ok) api.rerender?.();
+    } finally {
+      setUploading(false);
+    }
+  }, [admin, projectKey, api]);
+
   // Click handling moved up to ReactFlow.onNodeClick / onNodeDoubleClick
   // because React Flow's drag detection on the node container intercepts
   // bubbled clicks in some browsers (admin draggable nodes). The parent
@@ -59,10 +105,17 @@ function ProjectCenterNode({ id, data, selected }) {
   const cls = ['kme-center'];
   if (selected) cls.push('kme-selected');
   if (collapsed) cls.push('kme-center-collapsed');
+  if (dragOver) cls.push('kme-center-drag-over');
+  if (uploading) cls.push('kme-center-uploading');
   return (
     <div
       className={cls.join(' ')}
-      title={`Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF (${displayCode})`}
+      title={admin
+        ? `Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF · Drop PDF here to upload as ${displayCode}.pdf`
+        : `Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF (${displayCode})`}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
       <svg className="kme-center-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
