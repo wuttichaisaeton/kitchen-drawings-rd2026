@@ -277,7 +277,16 @@ function MindmapNode({ id, data, selected }) {
           <span className="kme-node-qty">x<span className="kme-node-qty-num">{qty}</span></span>
         )}
         {missing && isBom && (
-          <span className="kme-missing-badge" title="No PDF yet — drag a PDF onto this node to upload">⚠ NO PDF</span>
+          <span
+            className="kme-missing-badge"
+            title="Open in Library to inspect or drop a PDF"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (code && api.openInLibrary) api.openInLibrary(code);
+            }}
+          >
+            ⚠ NO PDF 🔗
+          </span>
         )}
         {uploading && (
           <span className="kme-missing-badge" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
@@ -570,7 +579,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     setStatus(`tap: ${node?.id || '?'}`);
 
     // Inner-button taps have their own handlers; don't double-fire here.
-    if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, [contenteditable="true"]')) return;
+    if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, .kme-missing-badge, [contenteditable="true"]')) return;
 
     if (node?.id?.startsWith('project:')) {
       if (centerClickTimer.current) clearTimeout(centerClickTimer.current);
