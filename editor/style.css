@@ -384,9 +384,23 @@
   color: #f85149;
   font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: 6px 10px;
   border-radius: 6px;
   white-space: nowrap;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.kme-missing-badge:hover {
+  background: rgba(248, 81, 73, 0.28);
+  border-color: rgba(248, 81, 73, 0.5);
+}
+.kme-missing-badge:active {
+  background: rgba(248, 81, 73, 0.36);
 }
 .kme-node.kme-drag-over {
   outline: 2px dashed #58a6ff;
