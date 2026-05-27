@@ -4680,7 +4680,7 @@ function renderFamily(fam) {
     const ver = p.isManual ? '' :
       (p.last_drawn_version > 0 ? `<span class="part-version">v${p.last_drawn_version}</span>` : '');
     return `
-      <div class="part-row" data-url="${escapeHtml(url)}" style="${famVars(fam)}">
+      <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon">${familyIcon(fam)}</span>
         <span class="part-code">${escapeHtml(p.code)}</span>
         ${ver}
