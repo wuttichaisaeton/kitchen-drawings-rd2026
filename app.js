@@ -81,6 +81,24 @@ function updateAdminBadge() {
   } else if (badge) {
     badge.remove();
   }
+  // Workshop users don't manage Library taxonomy — hide the tab so they
+  // can't accidentally drill in and start uploading PDFs / re-filing
+  // parts. Admin (and PWA in admin mode) still sees it.
+  const libTab = document.getElementById('tab-library');
+  if (libTab) {
+    libTab.style.display = isAdmin() ? '' : 'none';
+  }
+  // If a workshop user somehow lands on the Library view (e.g. legacy
+  // URL or auto-switch when no projects yet), bounce them back to
+  // Projects so the empty hidden tab can't trap them.
+  if (!isAdmin() && typeof view !== 'undefined' && view === 'library') {
+    view = 'projects';
+    stack = [];
+    const projTab = document.getElementById('tab-projects');
+    if (projTab) projTab.classList.add('active');
+    if (libTab) libTab.classList.remove('active');
+    try { render(); } catch {}
+  }
 }
 
 // Apply URL flag on page load (clean URL after toggling so it doesn't
@@ -2448,6 +2466,8 @@ function _exposeKdApi() {
     // 2026-05-27-library-link-from-bom-node-design.md §UX Flow.
     openInLibrary(code) {
       if (!code) return;
+      // Workshop can't access Library — chip is informational only.
+      if (!isAdmin()) return;
       // Resolve the destination folder in this order so the chip lands
       // where the user expects:
       //   1. Admin's per-code family_override (Library "📁 move part" set it)
@@ -5255,6 +5275,10 @@ function renderSearch(q) {
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.view;
+    // Belt-and-braces: workshop can't navigate to Library even if the
+    // hidden tab is somehow exposed (devtools, scripted click). Admin
+    // unrestricted.
+    if (v === 'library' && !isAdmin()) return;
     if (v === view) return;
     view = v;
     stack = [];
@@ -5388,13 +5412,18 @@ async function init() {
     applyFamilyRemap();
     updateMissingBadge();
 
-    // If no projects yet, default to Library view
+    // If no projects yet AND user is admin, default to Library view so
+    // they can manage parts. Workshop never lands on Library (the tab
+    // is hidden) — they just see an empty Projects list.
     const hasProjects = manifest.projects && Object.keys(manifest.projects).length > 0;
-    if (!hasProjects) {
+    if (!hasProjects && isAdmin()) {
       view = 'library';
       document.getElementById('tab-projects').classList.remove('active');
       document.getElementById('tab-library').classList.add('active');
     }
+
+    // Ensure tab visibility matches admin state on boot.
+    updateAdminBadge();
 
     render();
 
