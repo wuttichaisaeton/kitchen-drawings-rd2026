@@ -1766,7 +1766,7 @@ function render() {
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
-  if (top.kind === 'family') return renderFamily(top.name);
+  if (top.kind === 'family') return renderFamily(top.name, top.highlight);
   if (top.kind === 'project') return renderProject(top.name);
 }
 
@@ -4670,7 +4670,7 @@ function renderLibraryHome() {
   COUNT_EL.textContent = `${visible.length} families · ${total} parts`;
 }
 
-function renderFamily(fam) {
+function renderFamily(fam, highlight) {
   const items = partsByFamily()[fam] || [];
   const list = items.map(p => {
     // pdfUrlForCode handles uploads (full URL) and aliases; pdfUrl is
@@ -4697,6 +4697,19 @@ function renderFamily(fam) {
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', () => window.open(el.dataset.url, '_blank', 'noopener'));
   });
+
+  // Deep-link from a BOM "NO PDF" chip — scroll + flash the matching row
+  // so the user lands on it. Auto-clears the highlight after 2.5s so
+  // unrelated subsequent renders aren't styled. See spec
+  // docs/superpowers/specs/2026-05-27-library-link-from-bom-node-design.md
+  if (highlight) {
+    const target = ROOT.querySelector(`.part-row[data-code="${CSS.escape(highlight)}"]`);
+    if (target) {
+      target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      target.classList.add('part-row-highlight');
+      setTimeout(() => target.classList.remove('part-row-highlight'), 2500);
+    }
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────
