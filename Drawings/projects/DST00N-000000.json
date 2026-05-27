@@ -1,0 +1,22 @@
+{
+  "name": "DST00N-000000",
+  "status": "active",
+  "created_at": "2026-05-27T01:44:47.781268+00:00",
+  "updated_at": "2026-05-27T01:44:47.781268+00:00",
+  "total_unique_parts": 2,
+  "total_qty": 2,
+  "parts": [
+    {
+      "code": "DST100-000010",
+      "qty": 1,
+      "family": "Drawer",
+      "urn": "urn:adsk.wipprod:dm.lineage:-fd77dJlSXKyluvCiSDbfA"
+    },
+    {
+      "code": "DST200-000010",
+      "qty": 1,
+      "family": "Drawer",
+      "urn": "urn:adsk.wipprod:dm.lineage:-fd77dJlSXKyluvCiSDbfA"
+    }
+  ]
+}
