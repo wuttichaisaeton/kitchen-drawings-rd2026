@@ -1327,6 +1327,26 @@ main.transit-back {
   transform: scale(0.99);
 }
 
+/* Library deep-link highlight — fired by renderFamily when navigated
+   from a mindmap "NO PDF" chip. Auto-removed after 2.5s by the JS
+   side; the animation is a one-shot fade so even if the class lingers
+   the visual cue still subsides. See spec
+   docs/superpowers/specs/2026-05-27-library-link-from-bom-node-design.md */
+.part-row-highlight {
+  outline: 2px solid var(--fam-color, #4a90e2);
+  outline-offset: 1px;
+  animation: kd-highlight-pulse 2.5s ease-out;
+}
+
+@keyframes kd-highlight-pulse {
+  0%   { box-shadow: 0 0 0 0    var(--fam-color, #4a90e2),
+                     0 0 24px   var(--fam-color, #4a90e2); }
+  60%  { box-shadow: 0 0 0 6px  rgba(74, 144, 226, 0.05),
+                     0 0 18px   var(--fam-color, #4a90e2); }
+  100% { box-shadow: 0 0 0 0px  rgba(74, 144, 226, 0),
+                     0 0 0      transparent; }
+}
+
 .part-row .part-icon {
   font-size: 16px;
   opacity: 0.9;
