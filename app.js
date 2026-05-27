@@ -2222,6 +2222,24 @@ function _exposeKdApi() {
     // user's in-progress drag positions. Editor reads its own state via
     // bump() for cell-level updates.
     rerender: () => { try { render(); } catch {} },
+    // Deep-link from a mindmap BOM node's NO PDF chip to the matching
+    // part row in the Library tab. Replaces the nav stack (not push)
+    // so Back goes to Library home, not project mindmap — see spec
+    // 2026-05-27-library-link-from-bom-node-design.md §UX Flow.
+    openInLibrary(code) {
+      if (!code) return;
+      const fam = _remapFamilyForCode(code,
+        (manifest?.auto_generated?.[code]?.family) ||
+        (manifest?.projects && Object.values(manifest.projects)
+          .flatMap(p => p.parts || [])
+          .find(p => p.code === code)?.family));
+      if (!fam) return;
+      view = 'library';
+      document.getElementById('tab-projects')?.classList.remove('active');
+      document.getElementById('tab-library')?.classList.add('active');
+      stack = [{ kind: 'family', name: fam, highlight: code }];
+      render();
+    },
   };
 }
 
