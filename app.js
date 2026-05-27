@@ -726,6 +726,55 @@ const LS_GITHUB_PAT_KEY = 'kd_github_pat_v1';
 
 let _uploadedPdfsCache = {};
 
+// ── Active configuration rows mirrored from Fusion ──────────────────
+// Pushed by CC_SyncOccNames add-in every time the user clicks a row in
+// a wrapper file's Configuration table. Shape:
+//   active_rows/<projectKey>/current = "<row_name>"   (string)
+// The web UI shows a small "Active in Fusion" badge on the project
+// view when there's a matching entry — handy for the workshop to see
+// what variant the designer is currently working on.
+let _activeRowsCache = {};
+
+function initActiveRowsSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('active_rows').on('value', snap => {
+      _activeRowsCache = snap.val() || {};
+      // Only repaint the active-variant badge — full re-render is
+      // overkill for what's a tiny indicator change.
+      try { updateActiveVariantBadge(); } catch {}
+    });
+  } catch (e) {
+    console.warn('Firebase active_rows listener failed:', e);
+  }
+}
+
+function getActiveRowForProject(projectKey) {
+  if (!projectKey) return '';
+  const entry = _activeRowsCache[projectKey];
+  if (!entry) return '';
+  // Stored as { current: "<row>" } OR directly as a string for back-compat.
+  if (typeof entry === 'string') return entry;
+  return entry.current || '';
+}
+
+function updateActiveVariantBadge() {
+  const badge = document.getElementById('active-variant-badge');
+  if (!badge) return;
+  const top = stack[stack.length - 1] || {};
+  if (top.kind !== 'project') {
+    badge.style.display = 'none';
+    return;
+  }
+  const active = getActiveRowForProject(top.name);
+  if (active) {
+    badge.textContent = `● Active in Fusion: ${active}`;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
 function initUploadedPdfsSync() {
   if (!window.firebaseDB) return;
   try {
@@ -3600,6 +3649,7 @@ function renderProject(key) {
   ROOT.innerHTML = `
     <button class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span></button>
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
+    <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
     <div class="bent-summary">
       <div class="bent-row">
         <span class="bent-label"><span class="icon-bend"></span> Bending</span>
@@ -3624,6 +3674,10 @@ function renderProject(key) {
     </div>
     ${mindmapHtml}
   `;
+
+  // Paint the "Active in Fusion" badge from cached RTDB data. The
+  // subscription in initActiveRowsSync re-runs this on every push.
+  try { updateActiveVariantBadge(); } catch {}
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
   ROOT.querySelector('#toggle-complete').addEventListener('click', () => {
@@ -5372,6 +5426,7 @@ async function init() {
   initPinnedSync();
   initFamilyChipSync();
   initUploadedPdfsSync();
+  initActiveRowsSync();
   initBentSync();
   initAssembledSync();
   // One-shot push of any pre-existing localStorage bent/assembled
