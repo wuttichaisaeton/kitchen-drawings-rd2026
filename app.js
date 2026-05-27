@@ -2025,16 +2025,16 @@ function renderProjectsHome() {
       <div class="progress-bar bent-bar" title="Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
       <div class="progress-bar assembled-bar" title="🧩 Assembly"><div class="progress-fill" style="width:${p.assembled_pct}%"></div></div>
     `;
-    // Pin + drag-handle are admin-only — bending technicians on the
-    // workshop iPad shouldn't be able to reorder or favourite projects.
+    // Pin + delete stay admin-only (they change persisted state in ways
+    // workshop shouldn't be able to). Drag-reorder is now open to everyone
+    // per user request — workshop techs sort the queue however suits the
+    // shift's bending order.
     const adminMode = isAdmin();
     const pinTitle = p.pinned ? 'Unpin from top' : 'Pin to top';
     const pinBtn = adminMode
       ? `<button class="pin-btn ${p.pinned ? 'on' : ''}" data-project="${escapeHtml(p.key)}" aria-label="${pinTitle}" title="${pinTitle}">${p.pinned ? '★' : '☆'}</button>`
       : (p.pinned ? `<span class="pin-btn on" aria-hidden="true">★</span>` : '');
-    const dragHandle = adminMode
-      ? `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`
-      : '';
+    const dragHandle = `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`;
     // Admin delete project — soft-delete only. Parts in Library stay;
     // admin can re-add the project later (currently no UI for restore,
     // but the data is preserved under deleted_projects/<pk> for manual
@@ -2089,11 +2089,11 @@ function renderProjectsHome() {
 
   // Drag-and-drop reorder (Sortable.js — touch-friendly for iPad).
   // Records the new visual order into localStorage, then re-renders so
-  // the sort logic in projectList() reflects the manual order.
-  // Drag-reorder is admin-only — bending technicians on the workshop
-  // iPad shouldn't accidentally rearrange the queue.
+  // the sort logic in projectList() reflects the manual order. Open to
+  // everyone (including workshop iPad) per user request — workshop sorts
+  // by bending order; the manual rank persists via saveProjectOrder.
   const listEl = ROOT.querySelector('.project-list');
-  if (listEl && window.Sortable && isAdmin()) {
+  if (listEl && window.Sortable) {
     Sortable.create(listEl, {
       animation: 150,
       handle: '.drag-handle',
