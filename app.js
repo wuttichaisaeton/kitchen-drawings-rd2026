@@ -2356,11 +2356,19 @@ function _exposeKdApi() {
     // 2026-05-27-library-link-from-bom-node-design.md §UX Flow.
     openInLibrary(code) {
       if (!code) return;
-      const fam = _remapFamilyForCode(code,
+      // Resolve the destination folder in this order so the chip lands
+      // where the user expects:
+      //   1. Admin's per-code family_override (Library "📁 move part" set it)
+      //   2. Fusion-side family + UI remap (_remapFamilyForCode)
+      // Without step 1, a part that the admin moved to "MyCustomFolder"
+      // would still open the original Fusion-assigned folder when the
+      // chip is tapped — confusing because the part isn't there anymore.
+      const fusionFam = _remapFamilyForCode(code,
         (manifest?.auto_generated?.[code]?.family) ||
         (manifest?.projects && Object.values(manifest.projects)
           .flatMap(p => p.parts || [])
           .find(p => p.code === code)?.family));
+      const fam = effectiveFamily(code, fusionFam);
       if (!fam) return;
       view = 'library';
       document.getElementById('tab-projects')?.classList.remove('active');
