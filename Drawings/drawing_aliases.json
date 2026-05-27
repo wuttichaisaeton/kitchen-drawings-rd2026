@@ -2,7 +2,34 @@
   "_doc": "Drawing aliases — codes that share one workshop drawing. Two mechanisms: (1) 'groups' = explicit arrays of codes that share. (2) 'prefix_shares' = code prefixes; any code starting with '<prefix>-' shares with every other same-prefix code. Both look up the manifest auto_generated[] entry of a sibling when the code itself has no entry. Master URN stays per-code.",
   "version": 1,
   "groups": [
-    ["FN1BLA-110000", "FN2BNX-110000"]
+    [
+      "FN0B00-000000",
+      "FN1BLA-080000",
+      "FN1BLA-110000",
+      "FN2BLA-040000",
+      "FN2BLA-050000",
+      "FN2BLA-060000",
+      "FN2BLA-070000",
+      "FN2BLA-080000",
+      "FN2BLA-090000",
+      "FN2BLA-100000",
+      "FN2BLA-110000",
+      "FN2BLA-120000",
+      "FN2BNX-015000",
+      "FN2BNX-020000",
+      "FN2BNX-030000",
+      "FN2BNX-040000",
+      "FN2BNX-050000",
+      "FN2BNX-060000",
+      "FN2BNX-070000",
+      "FN2BNX-080000",
+      "FN2BNX-090000",
+      "FN2BNX-100000",
+      "FN2BNX-110000",
+      "FN2BNX-120000",
+      "FN3BLA-080000",
+      "FN3BLA-110000"
+    ]
   ],
   "prefix_shares": [
     "BK1DN1",
