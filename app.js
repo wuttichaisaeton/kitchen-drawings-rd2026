@@ -24,6 +24,7 @@ const LS_ADMIN_KEY = 'kd_admin_v1';               // '1' if this device is owner
 const LS_PINNED_KEY = 'kd_pinned_projects_v1';    // Set<projectKey> — pinned projects float to top
 const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — manual drag order (truthy projects come first in this order)
 const LS_FAMILY_LABELS_KEY = 'kd_family_labels_v1';  // {familyKey: customLabel} — admin-edited chip labels
+const LS_DISPLAY_OVERRIDES_KEY = 'kd_display_overrides_v1';  // {originalCode: customLabel} — admin-edited part code display in Library (e.g. fix Fusion-side typos)
 const LS_FAMILY_ORDER_KEY = 'kd_family_order_v1';    // Array<familyKey> — admin-set chip order
 
 // ──────────────────────────────────────────────────────────────────────
@@ -493,6 +494,12 @@ function saveProjectOrder(arr) {
 // shared state via Firebase listener. Pattern mirrors pin/order.
 let _familyLabelsCache = {};
 let _familyOrderCache = [];
+// display_overrides — admin-edited display label per part code. Use case:
+// Fusion side emitted "BM0IN0-080000" but admin typed it wrong; should
+// read "BM1N00-080000" in Library. The original code stays as the data
+// key (so PDF lookup / RTDB references continue to work); only what the
+// user SEES changes. RTDB-synced so all devices share the same fixes.
+let _displayOverridesCache = {};
 
 function initFamilyChipSync() {
   try {
@@ -502,6 +509,10 @@ function initFamilyChipSync() {
   try {
     const r = localStorage.getItem(LS_FAMILY_ORDER_KEY);
     if (r) { const a = JSON.parse(r); if (Array.isArray(a)) _familyOrderCache = a; }
+  } catch {}
+  try {
+    const r = localStorage.getItem(LS_DISPLAY_OVERRIDES_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _displayOverridesCache = o; }
   } catch {}
   if (!window.firebaseDB) return;
   try {
@@ -515,6 +526,12 @@ function initFamilyChipSync() {
       const arr = snap.val();
       _familyOrderCache = Array.isArray(arr) ? arr : [];
       try { localStorage.setItem(LS_FAMILY_ORDER_KEY, JSON.stringify(_familyOrderCache)); } catch {}
+      try { render(); } catch {}
+    });
+    window.firebaseDB.ref('display_overrides').on('value', snap => {
+      const raw = snap.val();
+      _displayOverridesCache = (raw && typeof raw === 'object') ? raw : {};
+      try { localStorage.setItem(LS_DISPLAY_OVERRIDES_KEY, JSON.stringify(_displayOverridesCache)); } catch {}
       try { render(); } catch {}
     });
   } catch (e) {
@@ -536,6 +553,32 @@ function setFamilyLabel(famKey, label) {
       window.firebaseDB.ref('family_labels/' + famKey)
         .set(trimmed ? trimmed : null);
     } catch (e) { console.warn('Firebase label write failed:', e); }
+  }
+}
+
+// displayCodeFor — admin's display-override for a part code. The original
+// code remains the underlying data key (PDF lookup, RTDB, BOM cross-refs);
+// only the user-visible label changes. Returns the original code when no
+// override is set. See _displayOverridesCache for the storage rationale.
+function displayCodeFor(code) {
+  if (!code) return code;
+  return _displayOverridesCache[code] || code;
+}
+
+function setDisplayOverride(code, label) {
+  if (!code) return;
+  const trimmed = (label || '').trim();
+  // Empty label OR a label that matches the original = remove the override
+  // (workshop sees the original code again).
+  const useOverride = trimmed && trimmed !== code;
+  if (useOverride) _displayOverridesCache[code] = trimmed;
+  else delete _displayOverridesCache[code];
+  try { localStorage.setItem(LS_DISPLAY_OVERRIDES_KEY, JSON.stringify(_displayOverridesCache)); } catch {}
+  if (window.firebaseDB) {
+    try {
+      window.firebaseDB.ref('display_overrides/' + code)
+        .set(useOverride ? trimmed : null);
+    } catch (e) { console.warn('Firebase display_override write failed:', e); }
   }
 }
 
@@ -4690,18 +4733,28 @@ function renderLibraryHome() {
 
 function renderFamily(fam, highlight) {
   const items = partsByFamily()[fam] || [];
+  const adminMode = isAdmin();
   const list = items.map(p => {
     // pdfUrlForCode handles uploads (full URL) and aliases; pdfUrl is
     // only correct for manifest entries whose filename happens to live
     // next to index.html.
     const url = pdfUrlForCode(p.code) || pdfUrl(p);
+    const display = displayCodeFor(p.code);
+    const isRenamed = display !== p.code;
+    const codeTitle = isRenamed ? ` title="Original: ${escapeHtml(p.code)}"` : '';
     const ver = p.isManual ? '' :
       (p.last_drawn_version > 0 ? `<span class="part-version">v${p.last_drawn_version}</span>` : '');
+    // Admin gets a pencil button on the right to rename (display only —
+    // the underlying p.code stays as the data key for PDF / RTDB).
+    const renameBtn = adminMode
+      ? `<button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>`
+      : '';
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon">${familyIcon(fam)}</span>
-        <span class="part-code">${escapeHtml(p.code)}</span>
+        <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${ver}
+        ${renameBtn}
       </div>`;
   }).join('');
 
@@ -4713,7 +4766,25 @@ function renderFamily(fam, highlight) {
 
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
   ROOT.querySelectorAll('.part-row').forEach(el => {
-    el.addEventListener('click', () => window.open(el.dataset.url, '_blank', 'noopener'));
+    el.addEventListener('click', (ev) => {
+      // Ignore clicks on the rename button — it has its own handler.
+      if (ev.target.closest('.part-rename-btn')) return;
+      window.open(el.dataset.url, '_blank', 'noopener');
+    });
+  });
+
+  // Admin rename: prompt for new display label. Empty / equal-to-original
+  // clears the override. Re-render to show the new label.
+  ROOT.querySelectorAll('.part-rename-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.renameCode;
+      const current = displayCodeFor(code);
+      const next = prompt(`Rename display for "${code}":\n\n(Leave empty or match the original to reset.)\n\nThis only changes what shows on screen — Fusion data stays untouched.`, current);
+      if (next === null) return;
+      setDisplayOverride(code, next);
+      render();
+    });
   });
 
   // Deep-link from a BOM "NO PDF" chip — scroll + flash the matching row

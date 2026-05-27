@@ -1347,6 +1347,33 @@ main.transit-back {
                      0 0 0      transparent; }
 }
 
+/* Admin rename button on each part row — only rendered when isAdmin().
+   Tap to edit display label. Iconography matches Library family chip
+   long-press rename intent (admin-only edits to shared display state). */
+.part-rename-btn {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(110, 118, 129, 0.4);
+  color: #8b949e;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 15px;
+  font-family: inherit;
+  min-width: 44px;
+  min-height: 36px;
+  touch-action: manipulation;
+  transition: background 120ms ease, color 120ms ease;
+}
+.part-rename-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  color: #e6edf3;
+}
+.part-rename-btn:active {
+  background: rgba(31, 111, 235, 0.30);
+  color: #fff;
+}
+
 .part-row .part-icon {
   font-size: 16px;
   opacity: 0.9;
