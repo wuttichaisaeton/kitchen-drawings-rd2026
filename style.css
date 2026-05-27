@@ -1231,6 +1231,37 @@ main.transit-back {
   border-color: var(--fam-color, #1f6feb);
 }
 
+/* Delete button — only rendered when folder is empty. Sits to the left
+   of the rename button. Red on press to signal destructive intent. */
+.family-delete-btn {
+  position: absolute;
+  top: 6px;
+  right: 48px;  /* leaves space for the ✎ rename button at right: 6px */
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e6edf3;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.family-delete-btn:hover {
+  background: rgba(248, 81, 73, 0.30);
+  border-color: rgba(248, 81, 73, 0.6);
+}
+.family-delete-btn:active {
+  background: #f85149;
+  color: #fff;
+  border-color: #f85149;
+}
+
 .family-card:active {
   transform: scale(0.97);
   background: color-mix(in srgb, var(--fam-tint, #1f2530) 70%, white 5%);

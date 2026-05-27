@@ -4712,13 +4712,18 @@ function renderLibraryHome() {
     const partsInFam = (by[fam] || []).length;
     // Admin also gets a visible ✎ button so iPad users don't need to
     // discover the long-press shortcut. Double-click / long-press still
-    // work as before for muscle-memory.
+    // work as before for muscle-memory. A 🗑 button appears on empty
+    // folders only — non-empty folders need parts moved out first.
     const renameBtn = adminMode
       ? `<button class="family-rename-btn" data-family-rename="${escapeHtml(fam)}" aria-label="Rename folder" title="Rename folder">✎</button>`
       : '';
+    const deleteBtn = (adminMode && partsInFam === 0)
+      ? `<button class="family-delete-btn" data-family-delete="${escapeHtml(fam)}" aria-label="Delete folder" title="Delete this empty folder">🗑</button>`
+      : '';
     return `
-    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Tap ✎ to rename · long-press to rename · drag to reorder"' : ''}>
+    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Tap ✎ to rename · 🗑 to delete (empty only) · long-press to rename · drag to reorder"' : ''}>
       ${renameBtn}
+      ${deleteBtn}
       <div class="family-icon">${familyIcon(fam)}</div>
       <div class="family-name">${escapeHtml(label)}</div>
       <div class="family-count">${partsInFam} parts</div>
@@ -4765,13 +4770,29 @@ function renderLibraryHome() {
     // ✎ rename button are also ignored (it has its own handler).
     let _suppressClickUntil = 0;
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.family-rename-btn')) return;
+      if (ev.target.closest('.family-rename-btn, .family-delete-btn')) return;
       if (Date.now() < _suppressClickUntil) {
         ev.preventDefault(); ev.stopPropagation();
         return;
       }
       navTo({ kind: 'family', name: el.dataset.family });
     });
+    // Admin: 🗑 delete button (only rendered when folder is empty).
+    const deleteBtn = el.querySelector('.family-delete-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        const fam = deleteBtn.dataset.familyDelete;
+        const label = familyDisplayLabel(fam);
+        if (!confirm(`Delete folder "${label}"?\n\nThis removes the empty folder from Library. If you renamed it earlier, the rename is also cleared.`)) return;
+        removeCustomFolder(fam);
+        // Also clear any label rename for this folder — the folder itself
+        // is gone, so a stale label would orphan in the cache.
+        if (_familyLabelsCache[fam]) setFamilyLabel(fam, '');
+        render();
+      });
+    }
     // Admin: double-click OR long-press OR ✎ button to rename, drag PDF
     // to upload.
     if (adminMode) {
