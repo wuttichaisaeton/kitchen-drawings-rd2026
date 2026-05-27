@@ -341,6 +341,12 @@ function MindmapNode({ id, data, selected }) {
               e.stopPropagation();
               if (code && api.openInLibrary) api.openInLibrary(code);
             }}
+            onPointerDown={(e) => {
+              if (e.pointerType === 'touch') {
+                e.stopPropagation();
+                if (code && api.openInLibrary) api.openInLibrary(code);
+              }
+            }}
           >
             ⚠ NO PDF 🔗
           </span>
@@ -357,18 +363,25 @@ function MindmapNode({ id, data, selected }) {
           <button
             className={`kme-mini kme-timer ${timerRunning ? 'kme-on' : ''}`}
             onClick={onTimer}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onTimer(e); } }}
             title={timerRunning ? 'Stop timer' : 'Start timer'}
           >
             {timerRunning ? '⏸' : '▶'}
             {timerSec > 0 && <span className="kme-timer-elapsed">{api.formatDuration?.(timerSec)}</span>}
           </button>
           {admin && timerSec > 0 && (
-            <button className="kme-mini kme-timer-reset" onClick={onResetTimer} title="Edit / reset timer">↺</button>
+            <button
+              className="kme-mini kme-timer-reset"
+              onClick={onResetTimer}
+              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onResetTimer(e); } }}
+              title="Edit / reset timer"
+            >↺</button>
           )}
           <span className="kme-spacer-mini" />
           <button
             className={`kme-mini kme-bent ${bent ? 'kme-on' : ''}`}
             onClick={onBent}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onBent(e); } }}
             title={bent ? 'Mark as not bent' : 'Mark bent'}
           >
             <img src="icons/bending.svg" alt="bend" />
@@ -376,12 +389,18 @@ function MindmapNode({ id, data, selected }) {
           <button
             className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
             onClick={onAssembled}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onAssembled(e); } }}
             title={assembled ? 'Mark as not assembled' : 'Mark assembled'}
           >
             🧩
           </button>
           {code && api.pdfUrlForCode?.(code) && (
-            <button className="kme-mini kme-pdf" onClick={onOpenPdf} title="Open PDF">📄</button>
+            <button
+              className="kme-mini kme-pdf"
+              onClick={onOpenPdf}
+              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); onOpenPdf(e); } }}
+              title="Open PDF"
+            >📄</button>
           )}
         </div>
       )}
@@ -390,6 +409,7 @@ function MindmapNode({ id, data, selected }) {
           className="kme-link-badge nodrag nopan"
           title={`Open ${fusion_link.master_code || 'file'} in Fusion`}
           onClick={openLink}
+          onPointerDown={(e) => { if (e.pointerType === 'touch') { e.stopPropagation(); openLink(e); } }}
         >
           ⧉ {fusion_link.master_code || 'linked'}
         </div>
