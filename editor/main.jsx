@@ -555,7 +555,15 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
 
   const onConnect = useCallback((conn) => {
     if (!admin) return;
-    setEdges((eds) => addEdge({ ...conn, id: `e_${Date.now().toString(36)}` }, eds));
+    // type: 'floating' = the FloatingEdge component (getStraightPath).
+    // Match auto-generated edge style so user-drawn connectors look the
+    // same as the spokes/branches built by buildAutoMindmap.
+    setEdges((eds) => addEdge({
+      ...conn,
+      id: `e_${Date.now().toString(36)}`,
+      type: 'floating',
+      style: { stroke: '#8b949e', strokeWidth: 1.2, opacity: 0.5 },
+    }, eds));
   }, [admin]);
 
   const onSelectionChange = useCallback(({ nodes: selNodes }) => {
@@ -761,6 +769,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           nodeDragThreshold={20}
           nodeClickDistance={20}
           paneClickDistance={20}
+          defaultEdgeOptions={{ type: 'floating', style: { strokeWidth: 1.2, opacity: 0.5 } }}
           fitView
           colorMode="dark"
           proOptions={{ hideAttribution: true }}

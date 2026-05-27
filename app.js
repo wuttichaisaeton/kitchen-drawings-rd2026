@@ -3506,7 +3506,15 @@ function renderProject(key) {
       admin,
       deepLinkCode: deepCode,
       initialNodes: [...bomNodes, ...customNodes],
-      initialEdges: [...bom.edges, ...(fresh.edges || [])],
+      // Normalize stored custom edges to use floating (straight) edges —
+      // older entries may have been saved without a type, which falls back
+      // to React Flow's bezier curve. Per user request, every edge should
+      // render as a straight line with the standard weight.
+      initialEdges: [...bom.edges, ...((fresh.edges || []).map(e => ({
+        ...e,
+        type: e.type || 'floating',
+        style: { strokeWidth: 1.2, opacity: 0.5, ...(e.style || {}) },
+      })))],
       onChange: (data) => {
         // Split changes: BOM + project center → overrides path;
         // Custom nodes go through the existing _saveCustomMindmap path.
