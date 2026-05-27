@@ -25,6 +25,7 @@ const LS_PINNED_KEY = 'kd_pinned_projects_v1';    // Set<projectKey> — pinned 
 const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — manual drag order (truthy projects come first in this order)
 const LS_FAMILY_LABELS_KEY = 'kd_family_labels_v1';  // {familyKey: customLabel} — admin-edited chip labels
 const LS_DISPLAY_OVERRIDES_KEY = 'kd_display_overrides_v1';  // {originalCode: customLabel} — admin-edited part code display in Library (e.g. fix Fusion-side typos)
+const LS_FAMILY_OVERRIDES_KEY = 'kd_family_overrides_v1';    // {code: customFamilyName} — admin-moved parts to custom folders. Overrides Fusion-side family assignment per code.
 const LS_FAMILY_ORDER_KEY = 'kd_family_order_v1';    // Array<familyKey> — admin-set chip order
 
 // ──────────────────────────────────────────────────────────────────────
@@ -500,6 +501,13 @@ let _familyOrderCache = [];
 // key (so PDF lookup / RTDB references continue to work); only what the
 // user SEES changes. RTDB-synced so all devices share the same fixes.
 let _displayOverridesCache = {};
+// family_overrides — admin-moved parts to custom folders. Use case:
+// Fusion classifier dumps unknown codes into the "Other" bucket, but
+// admin (who knows what they actually are) wants to file them into a
+// custom folder. Typing a new folder name creates it on the fly —
+// renderLibraryHome groups by family, so any family with ≥1 part shows
+// as a chip in the home grid. RTDB-synced so workshop sees the same.
+let _familyOverridesCache = {};
 
 function initFamilyChipSync() {
   try {
@@ -513,6 +521,10 @@ function initFamilyChipSync() {
   try {
     const r = localStorage.getItem(LS_DISPLAY_OVERRIDES_KEY);
     if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _displayOverridesCache = o; }
+  } catch {}
+  try {
+    const r = localStorage.getItem(LS_FAMILY_OVERRIDES_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _familyOverridesCache = o; }
   } catch {}
   if (!window.firebaseDB) return;
   try {
@@ -532,6 +544,12 @@ function initFamilyChipSync() {
       const raw = snap.val();
       _displayOverridesCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_DISPLAY_OVERRIDES_KEY, JSON.stringify(_displayOverridesCache)); } catch {}
+      try { render(); } catch {}
+    });
+    window.firebaseDB.ref('family_overrides').on('value', snap => {
+      const raw = snap.val();
+      _familyOverridesCache = (raw && typeof raw === 'object') ? raw : {};
+      try { localStorage.setItem(LS_FAMILY_OVERRIDES_KEY, JSON.stringify(_familyOverridesCache)); } catch {}
       try { render(); } catch {}
     });
   } catch (e) {
@@ -579,6 +597,27 @@ function setDisplayOverride(code, label) {
       window.firebaseDB.ref('display_overrides/' + code)
         .set(useOverride ? trimmed : null);
     } catch (e) { console.warn('Firebase display_override write failed:', e); }
+  }
+}
+
+// effectiveFamily — admin's per-code folder assignment overrides
+// whatever Fusion + _remapFamilyForCode decided. If no override set,
+// returns the fallback (caller passes the post-remap family).
+function effectiveFamily(code, fallback) {
+  if (code && _familyOverridesCache[code]) return _familyOverridesCache[code];
+  return fallback || 'Other';
+}
+
+function setFamilyOverride(code, family) {
+  if (!code) return;
+  const trimmed = (family || '').trim();
+  if (trimmed) _familyOverridesCache[code] = trimmed;
+  else delete _familyOverridesCache[code];
+  try { localStorage.setItem(LS_FAMILY_OVERRIDES_KEY, JSON.stringify(_familyOverridesCache)); } catch {}
+  if (window.firebaseDB) {
+    try {
+      window.firebaseDB.ref('family_overrides/' + code).set(trimmed ? trimmed : null);
+    } catch (e) { console.warn('Firebase family_override write failed:', e); }
   }
 }
 
@@ -1671,16 +1710,17 @@ function partsByFamily() {
   const seen = new Set();
   const auto = manifest.auto_generated || {};
   for (const [code, entry] of Object.entries(auto)) {
-    const fam = entry.family || 'Other';
+    // Admin's per-code folder override wins over Fusion-emitted family.
+    const fam = effectiveFamily(code, entry.family || 'Other');
     if (!out[fam]) out[fam] = [];
-    out[fam].push({ code, ...entry });
+    out[fam].push({ code, ...entry, family: fam });
     seen.add(code);
   }
   // Surface Firebase-uploaded PDFs (admin drag-drop). Render under the
   // family the upload was tagged to (or 'Custom' if unknown).
   for (const [code, up] of Object.entries(_uploadedPdfsCache || {})) {
     if (seen.has(code)) continue;
-    const fam = up.family || 'Custom';
+    const fam = effectiveFamily(code, up.family || 'Custom');
     if (!out[fam]) out[fam] = [];
     out[fam].push({
       code,
@@ -1704,7 +1744,7 @@ function partsByFamily() {
       if (!Array.isArray(project.parts)) continue;
       for (const p of project.parts) {
         if (seen.has(p.code)) continue;
-        const fam = p.family || 'Other';
+        const fam = effectiveFamily(p.code, p.family || 'Other');
         if (!out[fam]) out[fam] = [];
         // If a sibling upload covers this code via prefix-share or an
         // explicit group, pdfUrlForCode returns a non-empty URL — mark
@@ -4745,16 +4785,18 @@ function renderFamily(fam, highlight) {
     const ver = p.isManual ? '' :
       (p.last_drawn_version > 0 ? `<span class="part-version">v${p.last_drawn_version}</span>` : '');
     // Admin gets a pencil button on the right to rename (display only —
-    // the underlying p.code stays as the data key for PDF / RTDB).
-    const renameBtn = adminMode
-      ? `<button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>`
+    // the underlying p.code stays as the data key for PDF / RTDB), and a
+    // folder button to move the part to a different family chip.
+    const adminBtns = adminMode
+      ? `<button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
+         <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>`
       : '';
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon">${familyIcon(fam)}</span>
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${ver}
-        ${renameBtn}
+        ${adminBtns}
       </div>`;
   }).join('');
 
@@ -4767,8 +4809,8 @@ function renderFamily(fam, highlight) {
   ROOT.querySelector('.back-btn').addEventListener('click', navBack);
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
-      // Ignore clicks on the rename button — it has its own handler.
-      if (ev.target.closest('.part-rename-btn')) return;
+      // Ignore clicks on admin buttons — each has its own handler.
+      if (ev.target.closest('.part-rename-btn, .part-folder-btn')) return;
       window.open(el.dataset.url, '_blank', 'noopener');
     });
   });
@@ -4783,6 +4825,35 @@ function renderFamily(fam, highlight) {
       const next = prompt(`Rename display for "${code}":\n\n(Leave empty or match the original to reset.)\n\nThis only changes what shows on screen — Fusion data stays untouched.`, current);
       if (next === null) return;
       setDisplayOverride(code, next);
+      render();
+    });
+  });
+
+  // Admin move-to-folder: prompt for target folder name. Typing a new name
+  // creates the folder on the fly (renderLibraryHome groups by family, so
+  // any family with >=1 part appears as a chip). Empty input clears the
+  // override so the part goes back to its Fusion-assigned folder.
+  ROOT.querySelectorAll('.part-folder-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.folderCode;
+      const allFolders = Object.keys(partsByFamily()).sort();
+      const currentFolder = effectiveFamily(code, '');
+      const next = prompt(
+        `Move "${code}" to folder:\n\n` +
+        `Current: ${currentFolder || '(Fusion default)'}\n` +
+        `Existing folders: ${allFolders.join(', ')}\n\n` +
+        `Type folder name (existing or new — typing a new name creates it).\n` +
+        `Leave empty to reset to Fusion's classification.`,
+        currentFolder);
+      if (next === null) return;
+      setFamilyOverride(code, next);
+      // After moving, navigate to the new folder so admin sees the result.
+      const target = next.trim();
+      if (target && target !== fam) {
+        // Replace top of stack with the new family
+        stack[stack.length - 1] = { kind: 'family', name: target, highlight: code };
+      }
       render();
     });
   });

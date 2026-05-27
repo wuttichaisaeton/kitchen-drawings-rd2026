@@ -1347,11 +1347,11 @@ main.transit-back {
                      0 0 0      transparent; }
 }
 
-/* Admin rename button on each part row — only rendered when isAdmin().
-   Tap to edit display label. Iconography matches Library family chip
-   long-press rename intent (admin-only edits to shared display state). */
-.part-rename-btn {
-  margin-left: auto;
+/* Admin per-row buttons — only rendered when isAdmin().
+   ✎ rename display label · 📁 move to folder (creates new on the fly).
+   Matched sizing so the two buttons sit neatly together on the right. */
+.part-rename-btn,
+.part-folder-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(110, 118, 129, 0.4);
   color: #8b949e;
@@ -1365,11 +1365,16 @@ main.transit-back {
   touch-action: manipulation;
   transition: background 120ms ease, color 120ms ease;
 }
-.part-rename-btn:hover {
+.part-rename-btn { margin-left: auto; }
+.part-folder-btn { margin-left: 6px; }
+
+.part-rename-btn:hover,
+.part-folder-btn:hover {
   background: rgba(255, 255, 255, 0.10);
   color: #e6edf3;
 }
-.part-rename-btn:active {
+.part-rename-btn:active,
+.part-folder-btn:active {
   background: rgba(31, 111, 235, 0.30);
   color: #fff;
 }
