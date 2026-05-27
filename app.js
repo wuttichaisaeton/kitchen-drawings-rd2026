@@ -2025,15 +2025,12 @@ function renderProjectsHome() {
       <div class="progress-bar bent-bar" title="Bending"><div class="progress-fill" style="width:${p.bent_pct}%"></div></div>
       <div class="progress-bar assembled-bar" title="🧩 Assembly"><div class="progress-fill" style="width:${p.assembled_pct}%"></div></div>
     `;
-    // Pin + delete stay admin-only (they change persisted state in ways
-    // workshop shouldn't be able to). Drag-reorder is now open to everyone
-    // per user request — workshop techs sort the queue however suits the
-    // shift's bending order.
+    // Workshop + admin both get pin/drag now — queue-management ops
+    // every user benefits from. Delete stays admin-only (destructive
+    // and reversible only via the RTDB console).
     const adminMode = isAdmin();
     const pinTitle = p.pinned ? 'Unpin from top' : 'Pin to top';
-    const pinBtn = adminMode
-      ? `<button class="pin-btn ${p.pinned ? 'on' : ''}" data-project="${escapeHtml(p.key)}" aria-label="${pinTitle}" title="${pinTitle}">${p.pinned ? '★' : '☆'}</button>`
-      : (p.pinned ? `<span class="pin-btn on" aria-hidden="true">★</span>` : '');
+    const pinBtn = `<button class="pin-btn ${p.pinned ? 'on' : ''}" data-project="${escapeHtml(p.key)}" aria-label="${pinTitle}" title="${pinTitle}">${p.pinned ? '★' : '☆'}</button>`;
     const dragHandle = `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`;
     // Admin delete project — soft-delete only. Parts in Library stay;
     // admin can re-add the project later (currently no UI for restore,
