@@ -20,6 +20,7 @@ const LS_COMMENTS_KEY = 'kd_comments_v1';        // { partCode: [{text, time}] }
 const LS_COMMENTS_OPEN_KEY = 'kd_comments_open_v1';  // Set<partCode>: which rows have comments panel expanded
 const LS_TIMERS_KEY = 'kd_timers_v1';             // { projectKey: { partCode: { sessions, active_start } } }
 const LS_DELETED_KEY = 'kd_deleted_drawings_v1';  // { partCode: epoch_ms }  — soft-deleted drawings (workshop "redo this")
+const LS_DELETED_PROJECTS_KEY = 'kd_deleted_projects_v1';  // { projectKey: { time } } — soft-deleted projects (admin hides from list; parts stay visible in Library)
 const LS_ADMIN_KEY = 'kd_admin_v1';               // '1' if this device is owner (เอ๋); only owner sees delete/edit buttons
 const LS_PINNED_KEY = 'kd_pinned_projects_v1';    // Set<projectKey> — pinned projects float to top
 const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — manual drag order (truthy projects come first in this order)
@@ -1720,6 +1721,64 @@ function restoreDrawing(code) {
   render();
 }
 
+// deleted_projects — admin hides whole projects from the Projects list.
+// Parts in the project's BOM STAY in their Library families (the user
+// asked: "admin can delete project, but parts stay — admin removes
+// parts manually"). Soft-delete pattern mirrors deleted_drawings so
+// the project can be restored later if needed.
+let deletedProjectsCache = {};
+
+function _loadDeletedProjects() {
+  try {
+    const raw = localStorage.getItem(LS_DELETED_PROJECTS_KEY);
+    return raw ? (JSON.parse(raw) || {}) : {};
+  } catch { return {}; }
+}
+function _saveDeletedProjects(all) {
+  try { localStorage.setItem(LS_DELETED_PROJECTS_KEY, JSON.stringify(all)); } catch {}
+}
+deletedProjectsCache = _loadDeletedProjects();
+
+function initDeletedProjectsSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('deleted_projects').on('value', snap => {
+      deletedProjectsCache = snap.val() || {};
+      _saveDeletedProjects(deletedProjectsCache);
+      try { render(); } catch {}
+    }, err => console.warn('Firebase deleted_projects listener error:', err));
+  } catch (e) {
+    console.warn('Failed to attach deleted_projects listener:', e);
+  }
+}
+
+function isProjectSoftDeleted(pk) {
+  return !!(pk && deletedProjectsCache[pk] && deletedProjectsCache[pk].time);
+}
+
+function softDeleteProject(pk) {
+  if (!pk) return;
+  const payload = { time: Date.now() };
+  deletedProjectsCache[pk] = payload;
+  _saveDeletedProjects(deletedProjectsCache);
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('deleted_projects/' + pk).set(payload); }
+    catch (e) { console.warn('softDeleteProject failed:', e); }
+  }
+  render();
+}
+
+function restoreProject(pk) {
+  if (!pk) return;
+  delete deletedProjectsCache[pk];
+  _saveDeletedProjects(deletedProjectsCache);
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('deleted_projects/' + pk).remove(); }
+    catch (e) { console.warn('restoreProject failed:', e); }
+  }
+  render();
+}
+
 function _updateTickerState() {
   // Start/stop the 1s tick interval based on whether any timer is running.
   let anyRunning = false;
@@ -1830,7 +1889,13 @@ function projectList() {
   const bentSet = loadBentSet();
   const assembledSet = loadAssembledSet();
   const pinnedSet = loadPinnedSet();
-  const items = Object.entries(projects).map(([key, p]) => {
+  // Soft-deleted projects are hidden from the list (admin still sees
+  // them if we render them with a "restore" affordance — not yet wired;
+  // for now, simple hide). Parts in the project's BOM continue to
+  // appear in Library families unchanged.
+  const items = Object.entries(projects)
+    .filter(([key]) => !isProjectSoftDeleted(key))
+    .map(([key, p]) => {
     const parts = p.parts || [];
     // A part is "drawn" if pdfUrlForCode resolves to a URL — covers
     // manifest entries (Fusion-exported), direct web uploads, and
@@ -1970,6 +2035,13 @@ function renderProjectsHome() {
     const dragHandle = adminMode
       ? `<span class="drag-handle" aria-hidden="true" title="Drag to reorder">⋮⋮</span>`
       : '';
+    // Admin delete project — soft-delete only. Parts in Library stay;
+    // admin can re-add the project later (currently no UI for restore,
+    // but the data is preserved under deleted_projects/<pk> for manual
+    // restore via RTDB).
+    const deleteBtn = adminMode
+      ? `<button class="project-delete-btn" data-delete-project="${escapeHtml(p.key)}" aria-label="Delete project" title="Hide this project from the list (parts stay in Library)">🗑</button>`
+      : '';
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -1980,15 +2052,16 @@ function renderProjectsHome() {
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
         </div>
         ${pinBtn}
+        ${deleteBtn}
       </div>`;
   }).join('');
 
   ROOT.innerHTML = `<div class="project-list">${html}</div>`;
 
-  // Card click → drill into project (but ignore clicks on pin button and drag handle).
+  // Card click → drill into project (but ignore clicks on pin, drag, or delete).
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn, .drag-handle')) return;
+      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn')) return;
       navTo({ kind: 'project', name: el.dataset.project });
     });
   });
@@ -1999,6 +2072,18 @@ function renderProjectsHome() {
       ev.stopPropagation();
       togglePinned(btn.dataset.project);
       render();
+    });
+  });
+
+  // Admin: 🗑 hide project from list (soft-delete). Parts in the
+  // project's BOM stay in Library — the user explicitly asked for this
+  // ("admin removes parts manually"). Restore is RTDB-only for now.
+  ROOT.querySelectorAll('.project-delete-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const pk = btn.dataset.deleteProject;
+      if (!confirm(`Hide project "${pk}" from the list?\n\nParts in the BOM will STAY in their Library folders — you can remove individual parts later if needed.\n\n(This is reversible from the RTDB at deleted_projects/${pk}.)`)) return;
+      softDeleteProject(pk);
     });
   });
 
@@ -5248,6 +5333,7 @@ async function init() {
   initCommentsSync();
   initTimersSync();
   initDeletedDrawingsSync();
+  initDeletedProjectsSync();
   initPinnedSync();
   initFamilyChipSync();
   initUploadedPdfsSync();

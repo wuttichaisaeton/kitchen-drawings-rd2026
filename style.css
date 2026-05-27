@@ -324,6 +324,38 @@ h1 {
 .pin-btn.on:hover { color: #ffd97a; background: rgba(242, 200, 112, 0.15); }
 .pin-btn:active { transform: scale(0.9); }
 
+/* Admin delete project — soft-delete, sits to the right of the pin
+   button. Red on hover/active to signal destructive intent. */
+.project-delete-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-size: 18px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.project-delete-btn:hover {
+  color: #f85149;
+  border-color: rgba(248, 81, 73, 0.4);
+  background: rgba(248, 81, 73, 0.08);
+}
+.project-delete-btn:active {
+  transform: scale(0.9);
+  background: #f85149;
+  color: #fff;
+  border-color: #f85149;
+}
+
 /* ── Sortable.js dragging visuals ── */
 .project-card-ghost {
   opacity: 0.3;
