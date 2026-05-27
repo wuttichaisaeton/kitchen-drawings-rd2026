@@ -278,7 +278,7 @@ function MindmapNode({ id, data, selected }) {
         )}
         {missing && isBom && (
           <span
-            className="kme-missing-badge nodrag"
+            className="kme-missing-badge nodrag nopan"
             title="Open in Library to inspect or drop a PDF"
             onClick={(e) => {
               e.stopPropagation();
@@ -289,14 +289,14 @@ function MindmapNode({ id, data, selected }) {
           </span>
         )}
         {uploading && (
-          <span className="kme-missing-badge nodrag" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
+          <span className="kme-missing-badge nodrag nopan" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
         )}
         {comments.length > 0 && (
           <span className="kme-comment-count" title={`${comments.length} comments`}>💬{comments.length}</span>
         )}
       </div>
       {isBom && (
-        <div className="kme-row kme-row-actions nodrag">
+        <div className="kme-row kme-row-actions nodrag nopan">
           <button
             className={`kme-mini kme-timer ${timerRunning ? 'kme-on' : ''}`}
             onClick={onTimer}
@@ -330,7 +330,7 @@ function MindmapNode({ id, data, selected }) {
       )}
       {linked && (
         <div
-          className="kme-link-badge nodrag"
+          className="kme-link-badge nodrag nopan"
           title={`Open ${fusion_link.master_code || 'file'} in Fusion`}
           onClick={openLink}
         >
