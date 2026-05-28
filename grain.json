@@ -1,0 +1,90 @@
+{
+  "rows": [
+    {
+      "pattern": "*Tr*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "BK*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "BM*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "DSB7/8-B*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "DSB7/8-F*",
+      "grain": "V",
+      "thickness": "1"
+    },
+    {
+      "pattern": "DVS*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "DVX*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "FN*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "FN1*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "FN2*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "FN3*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "SD*",
+      "grain": "H",
+      "thickness": "1"
+    },
+    {
+      "pattern": "*Sup*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "SH*",
+      "grain": "H",
+      "thickness": ""
+    },
+    {
+      "pattern": "TP*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "TS*",
+      "grain": "ANY",
+      "thickness": "1"
+    },
+    {
+      "pattern": "X*",
+      "grain": "ANY",
+      "thickness": "1"
+    }
+  ],
+  "generated_from": "NestingTool/grain.xlsx"
+}

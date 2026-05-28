@@ -35,6 +35,8 @@
                           // until that lands. User 2026-05-28 wanted UI
                           // parity with the Python tool's twin toggles.
     gap: 2,
+    grainMap: null,       // populated by _loadGrainMap once per session
+    sidebarWidth: null,   // px — null = use CSS default; admin can drag to resize
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     currentSheetIdx: 0,
     rootEl: null,     // <main id="root"> at the time we opened
@@ -306,9 +308,89 @@
         part.grain = (meta.grain || part.grain || 'ANY').toUpperCase();
       }
     }
+
+    // Apply grain.json rules — same pattern table the Python tool reads
+    // from NestingTool/grain.xlsx. User edits the xlsx; a one-shot
+    // conversion writes drawings-ui/grain.json next to it. Patterns:
+    // exact > XX wildcard > longest prefix > longest suffix > longest
+    // substring (matches Python's lookup_in_map priority).
+    if (!S.grainMap) {
+      try {
+        const resp = await fetch('grain.json?v=' + Date.now(), { cache: 'no-store' });
+        if (resp.ok) {
+          const json = await resp.json();
+          S.grainMap = _buildPatternMap(json.rows || []);
+        }
+      } catch (e) {
+        console.warn('[kdNest] grain.json fetch failed (continuing without):', e);
+      }
+    }
+    if (S.grainMap) {
+      for (const part of byCode.values()) {
+        const looked = _lookupPattern(part.code, S.grainMap);
+        if (looked && looked.grain) part.grain = looked.grain;
+        // Thickness override mirrors the Python behaviour — grain.xlsx
+        // can pin the value when Fusion's export is wrong (BM* = 1mm).
+        if (looked && looked.thickness && !part.thickness) {
+          const t = parseFloat(looked.thickness.replace(/mm/i, ''));
+          if (!isNaN(t)) part.thickness = t;
+        }
+      }
+    }
+
     S.projectKey = projectKey;
     S.projectName = project.name || projectKey;
     S.parts = [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
+  }
+
+  // ── grain.json → pattern map ──────────────────────────────────────
+  // Mirror Python's _add_pattern_to_map / lookup_in_map structure so
+  // the workshop sees the same H/V/ANY assignments on both tools.
+  function _buildPatternMap(rows) {
+    const m = { exact: {}, prefix: [], xx: [], substring: [], suffix: [] };
+    for (const row of rows) {
+      const pattern = String(row.pattern || '').trim();
+      if (!pattern) continue;
+      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '' };
+      const starts = pattern.startsWith('*');
+      const ends = pattern.endsWith('*');
+      if (starts && ends && pattern.length > 2) {
+        const sub = pattern.replace(/^\*+|\*+$/g, '').replace(/[-_]+$/, '').toLowerCase();
+        if (sub) m.substring.push([sub, value]);
+      } else if (starts) {
+        const suf = pattern.replace(/^\*+/, '').replace(/[-_]+$/, '').toLowerCase();
+        if (suf) m.suffix.push([suf, value]);
+      } else if (ends) {
+        const pre = pattern.replace(/\*+$/, '').replace(/[-_]+$/, '').toLowerCase();
+        if (pre) m.prefix.push([pre, value]);
+      } else if (/XX/.test(pattern)) {
+        const re = new RegExp(
+          '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/XX/g, '..') + '(\\s|$|-|_)',
+          'i'
+        );
+        m.xx.push([re, value]);
+      } else {
+        m.exact[pattern] = value;
+        const clean = pattern.replace(/\s+v\d+$/, '');
+        if (clean !== pattern) m.exact[clean] = value;
+      }
+    }
+    // Sort longer patterns first — more-specific match wins.
+    m.prefix.sort((a, b) => b[0].length - a[0].length);
+    m.suffix.sort((a, b) => b[0].length - a[0].length);
+    m.substring.sort((a, b) => b[0].length - a[0].length);
+    return m;
+  }
+
+  function _lookupPattern(name, m) {
+    if (!m || !name) return null;
+    if (m.exact[name]) return m.exact[name];
+    const lower = name.toLowerCase();
+    for (const [re, val] of m.xx) if (re.test(name)) return val;
+    for (const [pre, val] of m.prefix) if (lower.startsWith(pre)) return val;
+    for (const [suf, val] of m.suffix) if (lower.endsWith(suf)) return val;
+    for (const [sub, val] of m.substring) if (lower.indexOf(sub) >= 0) return val;
+    return null;
   }
 
   // ════════════════════════════════════════════════════════════════════
@@ -858,9 +940,17 @@
       ? `${Math.round(curSheet.sw)}×${Math.round(curSheet.sh)} mm · ${curSheet.placements.length} parts`
       : 'Run Nesting to layout';
 
+    // Admin-only sidebar splitter — drag the strip between sidebar
+    // and canvas to resize. Workshop staff don't need it; admins do
+    // (user 2026-05-28: 'ให้ admin ขยาย ย่อ side panel ได้').
+    const isAdminUser = (typeof window.isAdmin === 'function' && window.isAdmin());
+    const sidebarStyle = (S.sidebarWidth && isAdminUser)
+      ? ` style="width:${S.sidebarWidth}px"`
+      : '';
+
     return `
       <div class="kdnest-shell">
-        <aside class="kdnest-sidebar">
+        <aside class="kdnest-sidebar"${sidebarStyle}>
           <div class="kdnest-header">
             <button class="kdnest-back" id="kdnest-back" title="Back to project">←</button>
             <div class="kdnest-title">
@@ -905,6 +995,7 @@
             ${partsRows || '<div class="kdnest-empty">No parts in this project</div>'}
           </div>
         </aside>
+        ${isAdminUser ? '<div class="kdnest-splitter" id="kdnest-splitter" title="Drag to resize the sidebar (admin only)"></div>' : ''}
         <main class="kdnest-canvas-wrap">
           <div class="kdnest-canvas-top">
             <span class="kdnest-canvas-info">Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}</span>
@@ -1016,7 +1107,53 @@
         _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
       }
     }, { passive: true });
+
+    // Admin sidebar splitter — pointer-driven drag-resize. Width
+    // persists to localStorage so the choice survives reload + tab
+    // switches. Bounds: 280px (still readable) ↔ 60% of window width.
+    const splitter = $('#kdnest-splitter');
+    const sidebar = S.rootEl.querySelector('.kdnest-sidebar');
+    if (splitter && sidebar) {
+      let dragging = false;
+      let shellRect = null;
+      const MIN_W = 280;
+      const onMove = (ev) => {
+        if (!dragging || !shellRect) return;
+        const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+        const maxW = Math.max(MIN_W + 40, Math.round(window.innerWidth * 0.6));
+        let w = Math.max(MIN_W, Math.min(maxW, x - shellRect.left));
+        sidebar.style.width = w + 'px';
+        S.sidebarWidth = w;
+      };
+      const onUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        try { localStorage.setItem(_LS_SIDEBAR_W, String(S.sidebarWidth || '')); }
+        catch (e) {}
+        // Canvas needs a redraw since its container resized.
+        const canvas = $('#kdnest-canvas');
+        if (canvas && S.flatSheets[S.currentSheetIdx]) {
+          _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
+        }
+      };
+      splitter.addEventListener('pointerdown', (ev) => {
+        ev.preventDefault();
+        dragging = true;
+        const shell = S.rootEl.querySelector('.kdnest-shell');
+        shellRect = shell ? shell.getBoundingClientRect() : { left: 0 };
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+      });
+    }
   }
+
+  const _LS_SIDEBAR_W = 'kd_nest_sidebar_w_v1';
 
   // ════════════════════════════════════════════════════════════════════
   //  Public API
@@ -1027,6 +1164,11 @@
     if (!S.rootEl) return;
     S.prevHtml = S.rootEl.innerHTML;
     S.rootEl.innerHTML = `<p class="loading">Loading nesting workspace…</p>`;
+    // Restore the admin's preferred sidebar width.
+    try {
+      const w = parseInt(localStorage.getItem(_LS_SIDEBAR_W) || '', 10);
+      if (!isNaN(w) && w >= 280) S.sidebarWidth = w;
+    } catch (e) {}
     try {
       await _loadProjectParts(projectKey);
       _refreshView();

@@ -3494,11 +3494,38 @@ footer {
   font-size: 12px;
 }
 
+/* Admin-only sidebar splitter — drag the strip to resize the parts
+   sidebar. 6px wide with a centered hover indicator so it's findable
+   on iPad too. User 2026-05-28: 'ให้ admin ขยาย ย่อ side panel ได้'. */
+.kdnest-splitter {
+  width: 6px;
+  background: #1c2530;
+  cursor: col-resize;
+  flex: 0 0 auto;
+  position: relative;
+  transition: background 0.12s;
+}
+.kdnest-splitter:hover,
+.kdnest-splitter:active { background: #2a3a4f; }
+.kdnest-splitter::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 36px;
+  background: #2a3a4f;
+  border-radius: 2px;
+}
+.kdnest-splitter:hover::after { background: #4ea3cc; }
+
 .kdnest-canvas-wrap {
   flex: 1;
   display: flex;
   flex-direction: column;
   background: #07090d;
+  min-width: 0;
 }
 .kdnest-canvas-top {
   display: flex;
