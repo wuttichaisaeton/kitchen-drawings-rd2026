@@ -528,6 +528,114 @@ function dxfsForProject(projectKey) {
 //   - Row click downloads the DXF (single) or opens a sub-popover (N>1)
 // Dismissed by outside-click, Escape, or scroll — same teardown contract
 // as _renderDxfPopover so no orphan document listeners are left behind.
+// ── DXF preview modal ────────────────────────────────────────────────
+// Lazy-loaded JS DXF parser/renderer. ~200 KB; loaded only when the
+// user clicks a DXF row to preview (saves data on workshop iPads that
+// never preview). Once loaded the script attaches `window.Dxf` (the
+// `dxf` npm package's UMD build).
+let _dxfLibPromise = null;
+function ensureDxfLib() {
+  if (window.Dxf || window.dxf) return Promise.resolve();
+  if (_dxfLibPromise) return _dxfLibPromise;
+  _dxfLibPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/dxf@5.1.1/dist/dxf.min.js';
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = (e) => {
+      _dxfLibPromise = null;
+      reject(new Error('DXF library failed to load (network / CDN issue)'));
+    };
+    document.head.appendChild(s);
+  });
+  return _dxfLibPromise;
+}
+
+// Open a modal showing the DXF rendered as inline SVG, plus metadata
+// (thickness, grain, material) and a download button. Closed on
+// Escape, outside-click, or the ✕ button.
+async function _renderDxfPreviewModal(dxf) {
+  if (!dxf || !dxf.url) return;
+  const filename = dxf.filename || `${dxf.stem || 'file'}.dxf`;
+  const thMm = dxf.thickness_mm ? `${dxf.thickness_mm}mm` : '?';
+  const grain = dxf.grain || '-';
+  const material = dxf.material || 'ALPF';
+  const ago = _formatTimeAgo(dxf.uploaded_at) || '';
+  const sizeKb = dxf.size_bytes ? `${Math.round(dxf.size_bytes / 1024)} KB` : '';
+
+  // Build modal frame
+  const modal = document.createElement('div');
+  modal.className = 'dxf-preview-modal';
+  modal.innerHTML = `
+    <div class="dxf-preview-backdrop"></div>
+    <div class="dxf-preview-frame" role="dialog" aria-label="DXF preview">
+      <div class="dxf-preview-header">
+        <span class="dxf-preview-title">📐 ${escapeHtml(filename)}</span>
+        <button class="dxf-preview-close" aria-label="Close">✕</button>
+      </div>
+      <div class="dxf-preview-meta">
+        Thickness: <strong>${escapeHtml(thMm)}</strong> ·
+        Material: <strong>${escapeHtml(material)}</strong> ·
+        Grain: <strong>${escapeHtml(grain)}</strong>
+        ${sizeKb ? ` · <span class="dxf-preview-size">${escapeHtml(sizeKb)}</span>` : ''}
+        ${ago ? ` · uploaded ${escapeHtml(ago)}` : ''}
+      </div>
+      <div class="dxf-preview-body">
+        <div class="dxf-preview-loading">Loading DXF preview…</div>
+      </div>
+      <div class="dxf-preview-footer">
+        <button class="dxf-preview-download-btn">⬇ Download ${escapeHtml(filename)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const body = modal.querySelector('.dxf-preview-body');
+  const close = () => {
+    modal.remove();
+    document.removeEventListener('keydown', onKey);
+  };
+  const onKey = (ev) => { if (ev.key === 'Escape') close(); };
+  modal.querySelector('.dxf-preview-close').addEventListener('click', close);
+  modal.querySelector('.dxf-preview-backdrop').addEventListener('click', close);
+  modal.querySelector('.dxf-preview-download-btn').addEventListener('click', () => {
+    _downloadFile(dxf.url, filename);
+  });
+  document.addEventListener('keydown', onKey);
+
+  // Lazy-load lib + fetch DXF text + render to SVG.
+  try {
+    await ensureDxfLib();
+    const lib = window.Dxf || window.dxf;
+    if (!lib || typeof lib.toSVG !== 'function') {
+      throw new Error('DXF library loaded but toSVG() not available');
+    }
+    const resp = await fetch(dxf.url, { cache: 'force-cache' });
+    if (!resp.ok) throw new Error(`fetch ${resp.status}`);
+    const text = await resp.text();
+    const parsed = lib.parseString(text);
+    const svg = lib.toSVG(parsed);
+    body.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'dxf-preview-svg-wrap';
+    wrap.innerHTML = svg;
+    // Force the SVG to fit the container.
+    const svgEl = wrap.querySelector('svg');
+    if (svgEl) {
+      svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svgEl.style.width = '100%';
+      svgEl.style.height = '100%';
+      svgEl.style.maxHeight = '100%';
+    }
+    body.appendChild(wrap);
+  } catch (e) {
+    body.innerHTML = `
+      <div class="dxf-preview-error">
+        Couldn't render preview: ${escapeHtml(String(e.message || e))}.<br>
+        <span class="dxf-preview-error-hint">Download the file to open it in your CAD viewer.</span>
+      </div>`;
+  }
+}
+
 // ── Role-specific project views ─────────────────────────────────────
 // Laser-cut workers + bending workers don't need the hierarchical
 // mindmap — they need a flat aggregate of "how many of code X to
@@ -642,8 +750,9 @@ function _renderCutList(parts, projectKey) {
 }
 
 function _wireCutList(parts, projectKey) {
-  // Row click → if the part has a DXF, download it; else surface a
-  // tooltip-style toast to explain the no-DXF state.
+  // Row click → open DXF preview modal (single file) or per-part
+  // popover (multi-file). Was 'immediate download' before; user
+  // 2026-05-28 'กดเข้าไปแล้ว ดู dxf ไม่ได้' — they expect a preview.
   ROOT.querySelectorAll('.cut-row').forEach(row => {
     row.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -655,9 +764,11 @@ function _wireCutList(parts, projectKey) {
         return;
       }
       if (dxfs.length === 1) {
-        _downloadFile(dxfs[0].url, dxfs[0].filename || `${dxfs[0].stem}.dxf`);
+        _renderDxfPreviewModal(dxfs[0]);
       } else {
-        _renderDxfPopover(row, dxfs);
+        // Multi-DXF: still use the existing popover-of-files; user
+        // picks one → that one opens in the preview modal.
+        _renderDxfPopover(row, dxfs, (item) => _renderDxfPreviewModal(item));
       }
     });
   });
@@ -1031,15 +1142,23 @@ function _renderProjectDxfModal(triggerBtn, projectKey, project, parts) {
 // (project-wide 📐 DXFs button). Auto-dismissed by outside-click,
 // Escape, or scroll — every close path runs the same teardown so no
 // orphan document listeners are ever left behind.
-function _renderDxfPopover(triggerBtn, list) {
+function _renderDxfPopover(triggerBtn, list, onSelect) {
   // Only one popover open at a time — remove any prior one first.
   document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
+
+  // onSelect(item): optional callback fired when a row is clicked.
+  // Defaults to immediate download for back-compat with the Library
+  // view's per-master 📐 button. Cut List passes a callback that
+  // opens the new DXF preview modal instead.
+  const handler = typeof onSelect === 'function'
+    ? onSelect
+    : (item) => _downloadFile(item.url, item.filename || (item.stem + '.dxf'));
 
   const pop = document.createElement('div');
   pop.className = 'part-dxf-popover';
   pop.setAttribute('role', 'menu');
-  pop.innerHTML = list.map((item) => `
-    <button class="part-dxf-popover-row" data-dxf-url="${escapeHtml(item.url)}" data-dxf-name="${escapeHtml(item.filename || item.stem + '.dxf')}" role="menuitem">
+  pop.innerHTML = list.map((item, idx) => `
+    <button class="part-dxf-popover-row" data-idx="${idx}" data-dxf-name="${escapeHtml(item.filename || item.stem + '.dxf')}" role="menuitem">
       <span class="part-dxf-popover-icon">📐</span>
       <span class="part-dxf-popover-name">${escapeHtml(item.filename || item.stem + '.dxf')}</span>
     </button>
@@ -1060,7 +1179,8 @@ function _renderDxfPopover(triggerBtn, list) {
   pop.querySelectorAll('.part-dxf-popover-row').forEach(row => {
     row.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      _downloadFile(row.dataset.dxfUrl, row.dataset.dxfName);
+      const item = list[parseInt(row.dataset.idx, 10)];
+      if (item) handler(item);
       if (close) close(); else pop.remove();
     });
   });
@@ -4720,7 +4840,10 @@ function renderProject(key) {
   const _showAssemblyPill  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showMarkComplete  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showFilters       = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
-  const _showAllPdf        = _adminAll || _isAsm || _isBend || (!_isLaser && !_isBend && !_isAsm);
+  // All PDF visible to every role — laser worker needs reference
+  // drawings while cutting (per user 2026-05-28: 'งาน Laser ต้องกด
+  // ดู All pdf (แบบพับ) ไม่ได้'). Was hidden for laser-only before.
+  const _showAllPdf        = true;
   const _showDxfsBtn       = _adminAll || _isLaser || (!_isLaser && !_isBend && !_isAsm);
 
   let bodyHtml;
