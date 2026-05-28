@@ -56,6 +56,13 @@
       polys: null,      // {outer: [[x,y],...], holes: [[[x,y]...], ...]}
       bbox: null,       // [minX, minY, maxX, maxY] in DXF coords
       dxfUrl: '',
+      dxfMeta: null,    // FULL RTDB uploaded_dxfs entry — passed verbatim
+                        // to _renderDxfPreviewModal when user hits 👁 so
+                        // the modal renders the same uploaded_at / size
+                        // / filename text as the Laser cut list does
+                        // (user 2026-05-28: 'BK1DN1-120000 view ยังไม่
+                        // ถูก sync มาจาก Laser' was the divergence —
+                        // Nesting was passing a synthesised meta).
       dxfLoaded: false,
       dxfError: null,
     };
@@ -304,6 +311,7 @@
       const meta = dxfsAll[part.code];
       if (meta) {
         part.dxfUrl = meta.url || '';
+        part.dxfMeta = meta;  // verbatim — used by 👁 view button
         part.thickness = meta.thickness_mm || 0;
         part.grain = (meta.grain || part.grain || 'ANY').toUpperCase();
       }
@@ -1072,19 +1080,20 @@
         _refreshView();
       });
       // View part — open DXF preview modal for this part's source DXF.
-      // Reuses app.js's _renderDxfPreviewModal if exposed; else falls
-      // back to opening the raw URL.
+      // Hand the FULL RTDB metadata to the modal (same object the Laser
+      // cut list passes) so all derived fields — uploaded_at "10m ago",
+      // size_bytes "19 KB", filename — match between the two views.
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
         if (!part.dxfUrl) return;
         if (typeof window._renderDxfPreviewModal === 'function') {
-          window._renderDxfPreviewModal({
+          const dxfArg = part.dxfMeta ? part.dxfMeta : {
             url: part.dxfUrl,
             filename: `${part.code}.dxf`,
             thickness_mm: part.thickness,
             grain: part.grain,
             material: 'ALPF',
-            uploaded_at: Date.now(),
-          });
+          };
+          window._renderDxfPreviewModal(dxfArg);
         } else {
           window.open(part.dxfUrl, '_blank');
         }
