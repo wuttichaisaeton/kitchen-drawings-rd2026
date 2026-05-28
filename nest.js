@@ -37,6 +37,12 @@
     gap: 2,
     grainMap: null,       // populated by _loadGrainMap once per session
     sidebarWidth: null,   // px — null = use CSS default; admin can drag to resize
+    highlightCode: null,  // when set, draw a glow ring around every
+                          // placement with this code on the current sheet —
+                          // turned on by the 📍 'View @ sheet' button so
+                          // the user can spot WHERE on the sheet that
+                          // part ended up (user 2026-05-28: 'view@sheet
+                          // ให้ทำ Hilight ด้วย').
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     currentSheetIdx: 0,
     rootEl: null,     // <main id="root"> at the time we opened
@@ -666,72 +672,106 @@
     const palette = ['#4ecca3', '#ffa726', '#e74c3c', '#9b59b6',
                      '#3498db', '#f1c40f', '#1abc9c', '#e67e22',
                      '#16a085', '#c0392b'];
+    const dpr = window.devicePixelRatio || 1;
     sheet.placements.forEach(function (pl, i) {
       const colour = palette[i % palette.length];
-      // Sheet coords → canvas coords (flip Y because DXF is y-up)
+      const isHighlight = (S.highlightCode && pl.code === S.highlightCode);
+      // Sheet coords → canvas coords (flip Y because DXF is y-up).
       function toCanvas(x, y) {
         return [offX + x * scale, offY + (sheet.sh - y) * scale];
       }
-      // Compute rotated bbox-rectangle outline so the user can see the
-      // placement footprint when polys aren't loaded.
       const w = (pl.rot === 90 || pl.rot === 270) ? pl.h : pl.w;
       const h = (pl.rot === 90 || pl.rot === 270) ? pl.w : pl.h;
       const [cx, cy] = toCanvas(pl.x, pl.y + h);
-      ctx.fillStyle = colour + '33';
-      ctx.fillRect(cx, cy, w * scale, h * scale);
-      ctx.strokeStyle = colour;
-      ctx.lineWidth = 1.5 * (window.devicePixelRatio || 1);
-      ctx.strokeRect(cx, cy, w * scale, h * scale);
-      // Polygon outer if available — gives the user the real outline.
-      if (pl.polys && pl.polys.outer && pl.polys.outer.length > 1) {
-        const [bMinX, bMinY] = [pl.bbox[0], pl.bbox[1]];
+
+      // Transform a DXF point through the rotation + translation to
+      // canvas pixels. Shared by outer + holes so the polygon stays
+      // glued together however rot/pos changes.
+      const bMinX = pl.bbox ? pl.bbox[0] : 0;
+      const bMinY = pl.bbox ? pl.bbox[1] : 0;
+      function transform(px, py) {
+        let lx = px - bMinX, ly = py - bMinY;
+        if (pl.rot === 90)  { const t = lx; lx = -ly + pl.w;  ly = t; }
+        if (pl.rot === 180) { lx = pl.w - lx; ly = pl.h - ly; }
+        if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.h - t; }
+        return toCanvas(pl.x + lx, pl.y + ly);
+      }
+
+      const havePoly = pl.polys && pl.polys.outer && pl.polys.outer.length > 1;
+      if (havePoly) {
+        // Real outer profile — what the user 2026-05-28 asked for:
+        // 'ไม่เอา กรอบ 4 สี่เหลี่ยม เอาเป็นรูปจริงของชิ้นงาน'.
+        // Filled translucent + outlined; highlight thickens the stroke
+        // and washes a brighter glow under it.
         ctx.beginPath();
         for (let k = 0; k < pl.polys.outer.length; k++) {
-          const [px, py] = pl.polys.outer[k];
-          // Translate so bbox origin = (0,0); rotate; offset to (pl.x, pl.y)
-          let lx = px - bMinX, ly = py - bMinY;
-          if (pl.rot === 90)  { const t = lx; lx = -ly + pl.w;  ly = t; }
-          if (pl.rot === 180) { lx = pl.w - lx; ly = pl.h - ly; }
-          if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.h - t; }
-          const [ax, ay] = toCanvas(pl.x + lx, pl.y + ly);
-          if (k === 0) ctx.moveTo(ax, ay);
-          else         ctx.lineTo(ax, ay);
+          const [ax, ay] = transform(pl.polys.outer[k][0], pl.polys.outer[k][1]);
+          if (k === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
         }
         ctx.closePath();
+        ctx.fillStyle = colour + (isHighlight ? '55' : '22');
+        ctx.fill();
+        if (isHighlight) {
+          ctx.save();
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = 14 * dpr;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 4 * dpr;
+          ctx.stroke();
+          ctx.restore();
+        }
         ctx.strokeStyle = colour;
-        ctx.lineWidth = 1 * (window.devicePixelRatio || 1);
+        ctx.lineWidth = (isHighlight ? 2.5 : 1.2) * dpr;
+        ctx.stroke();
+      } else {
+        // Fallback: draw the bbox rectangle. Only happens when the DXF
+        // had no parseable outer loop (rare — mostly very old files).
+        ctx.beginPath();
+        ctx.rect(cx, cy, w * scale, h * scale);
+        ctx.fillStyle = colour + (isHighlight ? '55' : '22');
+        ctx.fill();
+        if (isHighlight) {
+          ctx.save();
+          ctx.shadowColor = '#fff';
+          ctx.shadowBlur = 14 * dpr;
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 4 * dpr;
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = (isHighlight ? 2.5 : 1.2) * dpr;
         ctx.stroke();
       }
-      // Holes (INTERIOR_PROFILES) — small dots / outlines
-      if (pl.polys && pl.polys.holes) {
+
+      // Holes (INTERIOR_PROFILES) — outlines so the user can see
+      // drilled openings without confusing them for cut paths.
+      if (pl.polys && pl.polys.holes && pl.polys.holes.length) {
         ctx.strokeStyle = colour + 'aa';
-        ctx.lineWidth = 0.6 * (window.devicePixelRatio || 1);
+        ctx.lineWidth = 0.6 * dpr;
         for (const hole of pl.polys.holes) {
           if (hole.length < 2) continue;
-          const [bMinX, bMinY] = [pl.bbox[0], pl.bbox[1]];
           ctx.beginPath();
           for (let k = 0; k < hole.length; k++) {
-            const [px, py] = hole[k];
-            let lx = px - bMinX, ly = py - bMinY;
-            if (pl.rot === 90)  { const t = lx; lx = -ly + pl.w;  ly = t; }
-            if (pl.rot === 180) { lx = pl.w - lx; ly = pl.h - ly; }
-            if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.h - t; }
-            const [ax, ay] = toCanvas(pl.x + lx, pl.y + ly);
-            if (k === 0) ctx.moveTo(ax, ay);
-            else         ctx.lineTo(ax, ay);
+            const [ax, ay] = transform(hole[k][0], hole[k][1]);
+            if (k === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
           }
           ctx.stroke();
         }
       }
-      // Label: #N code
-      ctx.fillStyle = '#e8eef5';
-      ctx.font = `${12 * (window.devicePixelRatio || 1)}px "Flux Architect", monospace`;
+
+      // Label: #N code — centred. Tiny placements get a 9px font so
+      // a row of triangles still gets readable IDs instead of one
+      // smear of overlapping text.
+      const labelTextLen = (`#${i + 1} ${pl.code}`).length;
+      const drawW = w * scale, drawH = h * scale;
+      const fits = drawW > 60 * dpr && drawH > 14 * dpr;
+      ctx.fillStyle = isHighlight ? '#fffce8' : '#e8eef5';
+      const fontPx = (fits ? 11 : 9) * dpr;
+      ctx.font = `${isHighlight ? 'bold ' : ''}${fontPx}px "Flux Architect", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      const labelX = cx + (w * scale) / 2;
-      const labelY = cy + (h * scale) / 2;
-      const text = `#${i + 1} ${pl.code}`;
-      ctx.fillText(text, labelX, labelY);
+      ctx.fillText(`#${i + 1} ${pl.code}`, cx + drawW / 2, cy + drawH / 2);
     });
   }
 
@@ -1099,13 +1139,22 @@
         }
       });
       // View @ sheet — jump to whichever sheet currently has this
-      // part placed. Disabled (gray) until Run Nesting has assigned
-      // a sheet for the code.
+      // part placed AND highlight every placement of this code on
+      // that sheet (white glow + thick stroke). 3-second auto-clear
+      // so the highlight doesn't linger and confuse a later glance.
       row.querySelector('.kdnest-part-onsheet')?.addEventListener('click', e => {
         const idx = parseInt(e.currentTarget.dataset.sheet, 10);
         if (idx >= 0 && idx < S.flatSheets.length) {
           S.currentSheetIdx = idx;
+          S.highlightCode = part.code;
           _refreshView();
+          // Auto-clear after a few seconds so the next click on a row
+          // doesn't get a confusing stale-highlight from the previous.
+          clearTimeout(window.__kdNestHighlightTO);
+          window.__kdNestHighlightTO = setTimeout(() => {
+            S.highlightCode = null;
+            _refreshView();
+          }, 3500);
         }
       });
     });
