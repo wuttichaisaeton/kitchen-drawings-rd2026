@@ -3293,6 +3293,79 @@ footer {
   font-style: italic;
 }
 
+/* Nest tab home — project picker shown when admin selects the
+   ▶ Nest tab. Lists every project; ready rows (≥1 DXF uploaded) are
+   clickable, no-DXF rows are dimmed + disabled with a hint. User
+   2026-05-28: 'nest ให้ย้ายไปต่อ library admin ใช้ได้คนเดียว'. */
+.nest-home {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.nest-home-banner {
+  font-size: 18px;
+  font-weight: 700;
+  color: #4ecca3;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.nest-home-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: #889bb3;
+}
+.nest-home-empty {
+  padding: 32px 0;
+  text-align: center;
+  color: #5d7290;
+}
+.nest-home-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.nest-home-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 16px;
+  align-items: center;
+  background: #0f1620;
+  border: 1px solid #1c2530;
+  color: #cad6e6;
+  padding: 14px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s;
+}
+.nest-home-row:hover:not(:disabled) {
+  background: #14202e;
+  border-color: #2a3a4f;
+}
+.nest-home-row.no-dxf {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.nest-home-name {
+  font-family: "Flux Architect", monospace;
+  font-size: 15px;
+  font-weight: 700;
+}
+.nest-home-stats {
+  font-size: 12px;
+  color: #889bb3;
+}
+.nest-home-cta {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2ecc71;
+  text-align: right;
+}
+.nest-home-row.no-dxf .nest-home-cta { color: #f39c12; }
+
 /* ════════════════════════════════════════════════════════════════════
    Web Nesting workspace (kdNest, nest.js) — 2026-05-28
    Full-page replacement for the Python Nesting Tool. Sidebar with

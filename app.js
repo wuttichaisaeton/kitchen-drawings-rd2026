@@ -10,7 +10,7 @@ let manifest = null;
 let families = null;
 let missingData = null;  // { scanned_at, project_name, count, missing: [{name,urn,family,folder_path,open_url}] }
 
-let view = 'projects';   // 'projects' | 'library' | 'missing'
+let view = 'projects';   // 'projects' | 'library' | 'nest' | 'missing'
 let stack = [];          // navigation stack ('home' | {kind:'family', name} | {kind:'project', name})
 
 const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
@@ -91,15 +91,24 @@ function updateAdminBadge() {
   if (libTab) {
     libTab.style.display = isAdmin() ? '' : 'none';
   }
-  // If a workshop user somehow lands on the Library view (e.g. legacy
-  // URL or auto-switch when no projects yet), bounce them back to
-  // Projects so the empty hidden tab can't trap them.
-  if (!isAdmin() && typeof view !== 'undefined' && view === 'library') {
+  // Nest tab — admin-only too (user 2026-05-28: 'nest ให้ย้ายไปต่อ
+  // library admin ใช้ได้คนเดียว'). The Nest workspace itself can be
+  // demanding (browser-side DXF parse + pack) and producing wrong
+  // nests has real cost, so we keep it gated behind the admin flag.
+  const nestTab = document.getElementById('tab-nest');
+  if (nestTab) {
+    nestTab.style.display = isAdmin() ? '' : 'none';
+  }
+  // If a workshop user somehow lands on a gated view (e.g. legacy URL
+  // or auto-switch when no projects yet), bounce them back to Projects
+  // so the empty hidden tab can't trap them.
+  if (!isAdmin() && typeof view !== 'undefined' && (view === 'library' || view === 'nest')) {
     view = 'projects';
     stack = [];
     const projTab = document.getElementById('tab-projects');
     if (projTab) projTab.classList.add('active');
     if (libTab) libTab.classList.remove('active');
+    if (nestTab) nestTab.classList.remove('active');
     try { render(); } catch {}
   }
 }
@@ -3323,11 +3332,84 @@ function render() {
   _updateHeaderBack();
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
+    if (view === 'nest')     return renderNestHome();
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
   if (top.kind === 'family') return renderFamily(top.name, top.highlight);
   if (top.kind === 'project') return renderProject(top.name);
+}
+
+// Project picker for the Nest tab (admin only). Lists every project
+// that has ≥1 uploaded DXF, shows uploaded-DXF count + total parts,
+// click → kdNest.openProject(key). User 2026-05-28: 'nest ให้ย้าย
+// ไปต่อ library admin ใช้ได้คนเดียว'.
+function renderNestHome() {
+  if (!isAdmin()) {
+    ROOT.innerHTML = '<div class="error">Nesting workspace is admin-only.</div>';
+    return;
+  }
+  const projects = manifest?.projects || {};
+  const entries = Object.entries(projects).map(([key, p]) => {
+    const parts = Array.isArray(p.parts) ? p.parts : [];
+    const totalQty = parts.reduce((s, x) => s + (x.qty || 0), 0);
+    const dxfCount = parts.filter(x => x && x.code && dxfsForMasterCode(x.code).length > 0).length;
+    return {
+      key,
+      name: p.name || key,
+      uniqueParts: parts.length,
+      totalQty,
+      dxfCount,
+      ready: dxfCount > 0,
+    };
+  });
+  // Ready (has DXFs) first; then by name.
+  entries.sort((a, b) => (b.ready - a.ready) || a.name.localeCompare(b.name));
+  // Apply search filter if user typed.
+  const q = (SEARCH.value || '').trim().toLowerCase();
+  const filtered = q
+    ? entries.filter(e => e.name.toLowerCase().includes(q) || e.key.toLowerCase().includes(q))
+    : entries;
+
+  if (!filtered.length) {
+    ROOT.innerHTML = `
+      <div class="nest-home">
+        <div class="nest-home-banner">▶ Nesting Workspace</div>
+        <div class="nest-home-empty">No projects to nest yet${q ? ` matching "${escapeHtml(q)}"` : ''}.</div>
+      </div>`;
+    COUNT_EL.textContent = '';
+    return;
+  }
+
+  const rows = filtered.map(e => `
+    <button class="nest-home-row ${e.ready ? '' : 'no-dxf'}" data-key="${escapeHtml(e.key)}"
+            ${e.ready ? '' : 'disabled aria-disabled="true"'}>
+      <span class="nest-home-name">${escapeHtml(e.name)}</span>
+      <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
+      <span class="nest-home-cta">${e.ready ? '▶ Nest' : '⚠ no DXFs'}</span>
+    </button>`).join('');
+
+  ROOT.innerHTML = `
+    <div class="nest-home">
+      <div class="nest-home-banner">
+        ▶ Nesting Workspace
+        <span class="nest-home-sub">Pick a project — workspace opens in-browser. Admin only.</span>
+      </div>
+      <div class="nest-home-rows">${rows}</div>
+    </div>`;
+  COUNT_EL.textContent = `${filtered.length} project${filtered.length === 1 ? '' : 's'}`;
+
+  ROOT.querySelectorAll('.nest-home-row').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.key;
+      if (!key) return;
+      if (window.kdNest && typeof window.kdNest.openProject === 'function') {
+        window.kdNest.openProject(key);
+      } else {
+        alert('Nesting workspace not loaded — refresh the page.');
+      }
+    });
+  });
 }
 
 function navTo(node) {
@@ -5136,8 +5218,12 @@ function renderProject(key) {
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>` : ''}
         ${_showDxfsBtn ? `
         <button class="filter-btn project-cut-sheets-btn" id="project-cut-sheets-btn" data-project-key="${escapeHtml(key)}" title="Nested cut sheets uploaded for this project — from NestingTool's Save Sheets to Project or admin drag-drop">📐 Cut Sheets (${cutSheetsForProject(key).length})</button>` : ''}
-        ${(_adminAll || _isLaser) ? `
-        <button class="filter-btn nest-btn" id="open-nest-btn" data-project-key="${escapeHtml(key)}" title="Open in-browser Nesting workspace — replaces the standalone Python tool">▶ Nest</button>` : ''}
+        ${'' /* ▶ Nest button moved to its own admin-only tab next to
+              Library (user 2026-05-28: 'nest ให้ย้ายไปต่อ library admin
+              ใช้ได้คนเดียว'). Tab handler in renderNestHome shows a
+              project picker + delegates to kdNest.openProject. Leaving
+              this placeholder so re-reading the template diff makes the
+              move obvious. */}
         <!-- Active-in-Fusion badge moved inline with the action buttons
              per user 2026-05-28. Shown when CC_SyncOccNames has pushed
              an active row for THIS project key — OR for any of its
@@ -5177,17 +5263,8 @@ function renderProject(key) {
     ev.stopPropagation();
     _renderCutSheetsModal(ev.currentTarget, key, project);
   });
-  // Web Nesting workspace (2026-05-28) — replaces the standalone
-  // Python Nesting Tool. Loads parts + DXFs from RTDB, packs in-
-  // browser, uploads nested layouts to cut_sheets/<projectKey>/<id>.
-  ROOT.querySelector('#open-nest-btn')?.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    if (window.kdNest && typeof window.kdNest.openProject === 'function') {
-      window.kdNest.openProject(key);
-    } else {
-      alert('Nesting workspace not loaded — refresh the page.');
-    }
-  });
+  // ▶ Nest moved to its own admin-only tab (renderNestHome). No
+  // per-project button handler needed here anymore.
   // Cut List / Bend List get their own wiring + skip the React Flow
   // editor entirely. Mount the role-specific handlers when the body
   // we rendered was that view; otherwise fall through to the editor.
@@ -6860,10 +6937,10 @@ function renderSearch(q) {
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.view;
-    // Belt-and-braces: workshop can't navigate to Library even if the
-    // hidden tab is somehow exposed (devtools, scripted click). Admin
-    // unrestricted.
-    if (v === 'library' && !isAdmin()) return;
+    // Belt-and-braces: workshop can't navigate to Library OR Nest even
+    // if the hidden tab is somehow exposed (devtools, scripted click).
+    // Admin unrestricted.
+    if ((v === 'library' || v === 'nest') && !isAdmin()) return;
     if (v === view) return;
     view = v;
     stack = [];
@@ -6872,7 +6949,9 @@ document.querySelectorAll('.tab').forEach(btn => {
     document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b === btn));
     SEARCH.placeholder = view === 'projects'
       ? 'Search project or part…'
-      : 'Search part code…';
+      : (view === 'nest'
+          ? 'Search project to nest…'
+          : 'Search part code…');
     render();
   });
 });
