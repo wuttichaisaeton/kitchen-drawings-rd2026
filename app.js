@@ -597,12 +597,43 @@ function _renderCutList(parts, projectKey) {
   const totalDxfs = dxfsForProject(projectKey).length;
   const totalReady = aggregated.filter(p => dxfsForMasterCode(p.code).length > 0).length;
 
+  // Waiting-for-DXF banner — Laser worker opens the project and sees
+  // either '📐 ready' rows (can download + cut) or '⚠ no DXF' rows
+  // (must wait). When NOTHING is ready yet, surface the upstream step
+  // explicitly so they're not left wondering what to do. Inspired by
+  // user 2026-05-28: 'งานเลเซอร์ ที่ยังไม่ได้มี file dxf ต้องทำยังไง'.
+  const waitingBanner = totalDxfs === 0 ? `
+    <div class="cut-waiting">
+      <div class="cut-waiting-icon">⏳</div>
+      <div class="cut-waiting-body">
+        <div class="cut-waiting-title">Waiting for DXFs</div>
+        <div class="cut-waiting-text">
+          The designer hasn't uploaded the laser-cut files for this project yet.
+          You can see what's coming below — but you can't download or cut until DXFs land.
+        </div>
+        <div class="cut-waiting-hint">
+          <strong>For the designer:</strong> open the Fusion file, run CC_Laser,
+          then click <strong>📤 Save to Project</strong> in NestingTool to publish here.
+        </div>
+      </div>
+    </div>` : (totalReady < aggregated.length ? `
+    <div class="cut-waiting cut-waiting-partial">
+      <div class="cut-waiting-icon">⏳</div>
+      <div class="cut-waiting-body">
+        <div class="cut-waiting-title">${aggregated.length - totalReady} of ${aggregated.length} parts still missing DXFs</div>
+        <div class="cut-waiting-text">
+          ${totalReady} parts are ready to cut — the rest are pending upload.
+        </div>
+      </div>
+    </div>` : '');
+
   return `
     <div class="cut-list">
       <div class="cut-list-banner">
         <span class="cut-list-title">🔥 Cut List</span>
         <span class="cut-list-summary">${aggregated.length} unique · ${totalQty} pcs · 📐 ${totalReady}/${aggregated.length} parts have DXFs · ${totalDxfs} files uploaded</span>
       </div>
+      ${waitingBanner}
       <div class="cut-sections">${sectionsHtml || '<div class="cut-empty">No parts in this project</div>'}</div>
       <div class="cut-list-actions">
         <button id="cut-download-all-btn" class="action-btn cut-action" ${totalDxfs === 0 ? 'disabled' : ''}>⬇ Download all ${totalDxfs} DXFs</button>
