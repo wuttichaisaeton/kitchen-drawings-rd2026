@@ -2958,24 +2958,25 @@ footer {
   display: grid;
   /* icon · code · qty · 👁 view PDF · ▶ bend toggle */
   grid-template-columns: auto 1fr auto auto auto;
-  gap: 12px;
+  gap: 16px;
   align-items: center;
-  padding: 8px 10px;
-  border-radius: 6px;
+  padding: 14px 16px;
+  border-radius: 8px;
   transition: background 0.12s;
 }
 /* 👁 view PDF button — opens the bending drawing in a new tab so the
    worker can read bend dimensions while marking the row done.
-   User 2026-05-28: 'bending กดดู view pdf แต่ละ Part ได้'. */
+   User 2026-05-28: 'bending กดดู view pdf แต่ละ Part ได้' + 'ขอปุ่มใหญ่ๆ
+   เพราะมีพื้นที่เหลือเยอะมาก' — workshop iPad tap targets. */
 .bend-view-btn {
   background: rgba(93, 187, 99, 0.1);
   border: 1px solid rgba(93, 187, 99, 0.35);
   color: #cad6e6;
-  width: 32px;
-  height: 32px;
+  width: 52px;
+  height: 52px;
   padding: 0;
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: 8px;
+  font-size: 22px;
   cursor: pointer;
   font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
                "Noto Color Emoji", sans-serif;
@@ -2985,37 +2986,41 @@ footer {
 .bend-row:hover { background: rgba(93, 187, 99, 0.05); }
 .bend-row.is-bent { opacity: 0.55; }
 .bend-row.is-bent .bend-code { text-decoration: line-through; }
-.bend-icon { font-size: 16px; opacity: 0.9; }
+.bend-icon { font-size: 22px; opacity: 0.9; }
 .bend-code {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
-  font-size: 13px;
+  font-size: 17px;
 }
 /* Same prominent qty pill as Cut List, tinted green for bending. */
 .bend-qty {
   display: inline-block;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #5dbb63;
   background: rgba(93, 187, 99, 0.15);
   border: 1px solid rgba(93, 187, 99, 0.4);
-  padding: 3px 10px;
-  border-radius: 12px;
-  min-width: 44px;
+  padding: 6px 16px;
+  border-radius: 14px;
+  min-width: 64px;
   text-align: center;
 }
 .bend-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 8px;
+  padding: 14px 28px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(93, 187, 99, 0.4);
   color: #88aab1;
-  border-radius: 6px;
-  font-size: 12px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.12s, color 0.12s;
+  min-width: 140px;
+  justify-content: center;
 }
 .bend-toggle:hover {
   background: rgba(93, 187, 99, 0.15);
@@ -3027,8 +3032,8 @@ footer {
   border-color: #5dbb63;
 }
 .bend-toggle .icon-bend {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
 }
 .bend-empty {
   padding: 20px;
