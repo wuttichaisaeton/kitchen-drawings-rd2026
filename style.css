@@ -1588,14 +1588,15 @@ main.transit-back {
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.05s ease;
-  min-height: 32px;
-  min-width: 32px;
+  min-height: 40px;
+  min-width: 40px;
 }
 .part-dxf-btn:hover { background: #144e5e; }
 .part-dxf-btn:active { transform: scale(0.96); }
 
 /* --- DXF download popover (N > 1) --- */
 .part-dxf-popover {
+  position: fixed;
   z-index: 9999;
   background: #1a2628;
   border: 1px solid #2a4a52;
