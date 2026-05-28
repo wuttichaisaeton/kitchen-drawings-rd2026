@@ -25,17 +25,18 @@
     parts: [],        // see _newPart()
     sheetStock: [
       // Defaults requested 2026-05-28:
-      //   1. 3050 × 1525  qty 1
-      //   2. 3050 × 1220  qty 1
-      //   3. 2440 × 1220  qty 1
-      //   4. empty (free row for the user to type custom dims)
+      //   3050 × 1525  qty 1  thickness 1  label '10x5'  (10ft × 5ft)
+      //   3050 × 1220  qty 1  thickness 1  label '10x4'  (10ft × 4ft)
+      //   2440 × 1220  qty 1  thickness 1  label '8x4'   (8ft × 4ft)
+      //   custom (W,H,qty,thickness all editable)
       // Row order = priority; ↑/↓ buttons reorder. Rows with w=0
-      // or h=0 are skipped by the packer, so the empty 4th row only
-      // becomes usable once the user fills it in.
-      { w: 3050, h: 1525, qty: 1, label: '5×10' },
-      { w: 3050, h: 1220, qty: 1, label: '5×8' },
-      { w: 2440, h: 1220, qty: 1, label: '4×8' },
-      { w: 0,    h: 0,    qty: 0, label: '(custom)' },
+      // or h=0 are skipped by the packer. Thickness gates which
+      // parts each row can hold — a 0.8mm sheet only takes 0.8mm
+      // parts even if a row above it has a 1mm sheet that fits.
+      { w: 3050, h: 1525, qty: 1, thickness: 1, label: '10x5' },
+      { w: 3050, h: 1220, qty: 1, thickness: 1, label: '10x4' },
+      { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4'  },
+      { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)' },
     ],
     mode: 'Auto',
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
@@ -705,9 +706,41 @@
       alert('No usable sheet stock — fill in at least one row with W, H and qty.');
       return;
     }
-    const result = _nestMultiSheet(pieces, activeStock, S.gap, S.mode);
+
+    // Group pieces by thickness so a 0.8mm BM part can't get nested
+    // onto a 1mm stock sheet (and vice versa). User 2026-05-28 asked
+    // for thickness per stock row precisely so the cut shop doesn't
+    // mix gauges. Stock is filtered per group — a row with
+    // thickness=1 only takes thickness=1 pieces. Pieces whose
+    // thickness has no matching stock row land in 'unplaced'.
+    function thickKey(t) {
+      const n = typeof t === 'number' ? t : parseFloat(String(t).replace(/[^\d.]/g, ''));
+      return isNaN(n) ? '?' : String(Math.round(n * 100) / 100);
+    }
+    const byThick = new Map();
+    for (const piece of pieces) {
+      const k = thickKey(piece.thickness);
+      if (!byThick.has(k)) byThick.set(k, []);
+      byThick.get(k).push(piece);
+    }
+
+    const allSheets = [];
+    const allUnplaced = [];
+    for (const [tk, group] of byThick) {
+      const stockForThick = activeStock.filter(s => thickKey(s.thickness ?? 1) === tk);
+      if (stockForThick.length === 0) {
+        allUnplaced.push(...group);
+        continue;
+      }
+      const r = _nestMultiSheet(group, stockForThick, S.gap, S.mode);
+      for (const s of r.sheets) {
+        allSheets.push({ ...s, thick: tk });
+      }
+      allUnplaced.push(...r.unplaced);
+    }
+    const result = { sheets: allSheets, unplaced: allUnplaced };
     S.flatSheets = result.sheets.map(s => ({
-      thick: s.placements[0] ? s.placements[0].thickness : '',
+      thick: s.thick,
       sw: s.sw, sh: s.sh, placements: s.placements,
     }));
     S.currentSheetIdx = 0;
@@ -1070,11 +1103,13 @@
       <div class="kdnest-stock-row" data-i="${i}">
         <button class="kdnest-stock-up"   data-i="${i}" title="Higher priority (try this size first)" ${upDisabled}>↑</button>
         <button class="kdnest-stock-down" data-i="${i}" title="Lower priority"                       ${downDisabled}>↓</button>
-        <input type="number" data-i="${i}" data-k="w"   value="${s.w || ''}"   min="0" class="kdnest-stock-dim" placeholder="W">
+        <input type="number" data-i="${i}" data-k="w"         value="${s.w || ''}"        min="0" class="kdnest-stock-dim"   placeholder="W">
         <span>×</span>
-        <input type="number" data-i="${i}" data-k="h"   value="${s.h || ''}"   min="0" class="kdnest-stock-dim" placeholder="H">
-        <span>mm · qty</span>
-        <input type="number" data-i="${i}" data-k="qty" value="${s.qty || 0}"         class="kdnest-stock-qty" title="-1 = unlimited">
+        <input type="number" data-i="${i}" data-k="h"         value="${s.h || ''}"        min="0" class="kdnest-stock-dim"   placeholder="H">
+        <span>mm</span>
+        <input type="number" data-i="${i}" data-k="qty"       value="${s.qty || 0}"               class="kdnest-stock-qty"   title="qty — use -1 for unlimited">
+        <input type="number" data-i="${i}" data-k="thickness" value="${s.thickness ?? 1}" min="0" step="0.1" class="kdnest-stock-thick" title="Thickness (mm) — only parts of this thickness get nested onto this stock">
+        <span class="kdnest-stock-thick-suffix">mm</span>
         <span class="kdnest-stock-label">${_esc(s.label || '')}</span>
       </div>`;
     }).join('');
@@ -1082,7 +1117,7 @@
     const sheetNavInfo = nSheets ? `${S.currentSheetIdx + 1} / ${nSheets}` : '0 / 0';
     const curSheet = S.flatSheets[S.currentSheetIdx];
     const sheetSubLine = curSheet
-      ? `${Math.round(curSheet.sw)}×${Math.round(curSheet.sh)} mm · ${curSheet.placements.length} parts`
+      ? `${Math.round(curSheet.sw)}×${Math.round(curSheet.sh)} mm${curSheet.thick && curSheet.thick !== '?' ? ` · ${curSheet.thick}mm` : ''} · ${curSheet.placements.length} parts`
       : 'Run Nesting to layout';
 
     // Admin-only sidebar splitter — drag the strip between sidebar
@@ -1183,7 +1218,7 @@
     });
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
-    S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty').forEach(el => {
+    S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty, .kdnest-stock-thick').forEach(el => {
       el.addEventListener('change', e => {
         const i = parseInt(e.target.dataset.i, 10);
         const k = e.target.dataset.k;

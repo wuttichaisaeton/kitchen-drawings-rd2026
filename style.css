@@ -3411,10 +3411,27 @@ footer {
   background: #1c2735;
   border: 1px solid #2a3a4f;
   color: #cad6e6;
-  width: 48px;
+  width: 44px;
   padding: 3px 6px;
   border-radius: 4px;
   font-size: 12px;
+}
+/* Thickness column — gates which parts each stock row can hold.
+   User 2026-05-28 asked for per-row thickness so the packer never
+   mixes gauges on one sheet. Default 1mm. */
+.kdnest-stock-thick {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  width: 44px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.kdnest-stock-thick-suffix {
+  color: #889bb3;
+  font-size: 11px;
+  margin-left: -2px;
 }
 .kdnest-stock-label {
   color: #889bb3;
