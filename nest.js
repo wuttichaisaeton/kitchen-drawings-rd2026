@@ -1200,8 +1200,42 @@
     S.currentSheetIdx = 0;
   }
 
+  // Eagerly load grain.json once at module init so the Laser cut list
+  // (rendered by app.js) can call lookupGrain() synchronously without
+  // having to await its own fetch. Promise is also exposed so callers
+  // can wait if they need a guaranteed-ready map.
+  const _grainReady = (async () => {
+    try {
+      const resp = await fetch('grain.json?v=' + Date.now(), { cache: 'no-store' });
+      if (resp.ok) {
+        const json = await resp.json();
+        S.grainMap = _buildPatternMap(json.rows || []);
+      }
+    } catch (e) {
+      console.warn('[kdNest] grain.json initial load failed:', e);
+    }
+  })();
+
+  function lookupGrain(code) {
+    const looked = _lookupPattern(code, S.grainMap);
+    return looked && looked.grain ? looked.grain : null;
+  }
+
+  function grainGlyph(g) {
+    if (g === 'H')   return { ch: '─', cls: 'kdnest-grain-h',   title: 'H — horizontal' };
+    if (g === 'V')   return { ch: '│', cls: 'kdnest-grain-v',   title: 'V — vertical' };
+    if (g === 'ANY') return { ch: '✱', cls: 'kdnest-grain-any', title: 'ANY — any rotation' };
+    return { ch: '?', cls: 'kdnest-grain-q', title: '? — grain not set' };
+  }
+
   window.kdNest = {
     openProject: openProject,
     close: close,
+    // Shared state for app.js (Laser cut list etc.) so all views
+    // present the same H/V/ANY badge per part without re-implementing
+    // the pattern-matching priority.
+    lookupGrain: lookupGrain,
+    grainGlyph: grainGlyph,
+    grainReady: _grainReady,
   };
 })();

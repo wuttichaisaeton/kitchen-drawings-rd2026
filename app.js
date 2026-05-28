@@ -726,10 +726,29 @@ function _renderCutList(parts, projectKey) {
         const status = ready
           ? `<span class="cut-status cut-ok" title="${dxfs.length} DXF available">📐 ready${dxfs.length > 1 ? ` ×${dxfs.length}` : ''}</span>`
           : `<span class="cut-status cut-none" title="No DXF uploaded yet — run NestingTool's Save to Project">⚠ no DXF</span>`;
+        // Shared grain badge — pulled from grain.json via kdNest so
+        // workers see the same H/V/ANY mark here as in the Nesting
+        // workspace (user 2026-05-28: 'part view ให้ sync ข้อมูล
+        // ระหว่าง Laser & Nesting').
+        let grainCell = '';
+        if (window.kdNest && typeof window.kdNest.lookupGrain === 'function') {
+          const g = window.kdNest.lookupGrain(p.code) || '?';
+          const gly = window.kdNest.grainGlyph(g);
+          grainCell = `<span class="cut-grain ${gly.cls}" title="${gly.title}">${gly.ch}</span>`;
+        }
+        // Explicit 👁 view button mirrors the Nesting sidebar — gives
+        // the worker a click-target distinct from the whole-row click
+        // (which still opens the preview), so they can hover the row
+        // to read it without accidentally triggering anything.
+        const viewBtn = ready
+          ? `<button class="cut-view-btn" title="View DXF preview" data-code="${escapeHtml(p.code)}">👁</button>`
+          : '<span class="cut-view-spacer"></span>';
         return `
           <div class="cut-row ${ready ? '' : 'cut-row-missing'}" data-code="${escapeHtml(p.code)}" ${ready ? '' : 'aria-disabled="true"'}>
             <span class="cut-code">${escapeHtml(p.code)}</span>
             <span class="cut-qty">× ${p.qty || 0}</span>
+            ${grainCell}
+            ${viewBtn}
             ${status}
           </div>`;
       }).join('');
@@ -814,6 +833,31 @@ function _wireCutList(parts, projectKey) {
       }
     });
   });
+  // 👁 explicit view button — same handler, but stops the click from
+  // bubbling so it doesn't also fire the row handler. Reuses
+  // _renderDxfPreviewModal exactly like the Nesting workspace does.
+  ROOT.querySelectorAll('.cut-view-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.code;
+      const dxfs = dxfsForMasterCode(code);
+      if (dxfs.length === 0) return;
+      if (dxfs.length === 1) _renderDxfPreviewModal(dxfs[0]);
+      else _renderDxfPopover(btn, dxfs, (item) => _renderDxfPreviewModal(item));
+    });
+  });
+
+  // If kdNest's grain.json fetch was still in flight when this row
+  // batch rendered, the grain cells will all be ? — repaint once the
+  // map lands so the badges flip to H/V/ANY. Bound ONCE per page
+  // lifetime (flag never resets) so the callback can't chain into
+  // an infinite render loop.
+  if (window.kdNest && window.kdNest.grainReady && !window.__kdNestGrainBound) {
+    window.__kdNestGrainBound = true;
+    window.kdNest.grainReady.then(() => {
+      try { render(); } catch (e) {}
+    });
+  }
 
   // Admin drag-drop for "NO DXF" rows. When Fusion's DXF Creator
   // exports under a leaf name (e.g. FN2BN0-000000.dxf) but the BOM
