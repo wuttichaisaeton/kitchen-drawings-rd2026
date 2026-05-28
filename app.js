@@ -5127,12 +5127,20 @@ function renderFamily(fam, highlight) {
     const ver = p.isManual ? '' :
       (p.last_drawn_version > 0 ? `<span class="part-version">v${p.last_drawn_version}</span>` : '');
     // Admin gets a pencil button on the right to rename (display only —
-    // the underlying p.code stays as the data key for PDF / RTDB), and a
-    // folder button to move the part to a different family chip.
-    const adminBtns = adminMode
-      ? `<button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
-         <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>`
-      : '';
+    // the underlying p.code stays as the data key for PDF / RTDB), a
+    // folder button to move the part to a different family chip, AND a
+    // DXF button to download the laser-cut source files. The DXF button
+    // is only present if at least one DXF has been uploaded for this
+    // master code (CC_Laser pushed metadata into uploaded_dxfs).
+    let adminBtns = '';
+    if (adminMode) {
+      const dxfList = dxfsForMasterCode(p.code);
+      const dxfBtn = dxfList.length > 0
+        ? `<button class="part-dxf-btn" data-dxf-code="${escapeHtml(p.code)}" aria-label="${dxfList.length === 1 ? 'Download DXF' : 'Download DXFs'}" title="${dxfList.length === 1 ? 'Download laser-cut DXF' : `Download one of ${dxfList.length} DXFs`}">📐${dxfList.length > 1 ? ' ' + dxfList.length : ''}</button>`
+        : '';
+      adminBtns = `<button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
+         <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>${dxfBtn}`;
+    }
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon">${familyIcon(fam)}</span>
@@ -5166,7 +5174,7 @@ function renderFamily(fam, highlight) {
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons — each has its own handler.
-      if (ev.target.closest('.part-rename-btn, .part-folder-btn')) return;
+      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn')) return;
       // _openInNewTab handles the iPad PWA standalone case (same-window
       // navigation) vs browser (new tab). Plain window.open '_blank'
       // opens an invisible off-screen webview on standalone PWAs —
