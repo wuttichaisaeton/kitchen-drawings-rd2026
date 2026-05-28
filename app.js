@@ -4132,14 +4132,20 @@ function _applyOverrides(nodes, overrides) {
   return nodes.map(n => {
     const o = overrides[n.id];
     if (!o) return n;
+    const hasPosOverride = o.x != null && o.y != null;
     return {
       ...n,
-      position: (o.x != null && o.y != null)
+      position: hasPosOverride
         ? { x: Number(o.x), y: Number(o.y) }
         : n.position,
       data: {
         ...n.data,
         ...(o.label != null ? { label: o.label } : {}),
+        // Flag so the editor's checklist-mode compact-position override
+        // knows to step aside — user 2026-05-28: 'ให้ แอดมิน ย้าย node
+        // ได้'. Without this, a drag persisted via _saveOverride would
+        // be undone on the next render by the compactByVariantId pull.
+        ...(hasPosOverride ? { hasPosOverride: true } : {}),
       },
     };
   });

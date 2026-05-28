@@ -393,7 +393,7 @@ function MindmapNode({ id, data, selected }) {
           >
             🧩
           </button>
-          {code && api.pdfUrlForCode?.(code) && (
+          {code && !isVariantRoot && !isWrapper && api.pdfUrlForCode?.(code) && (
             <button
               className="kme-mini kme-pdf"
               onClick={onOpenPdf}
@@ -684,8 +684,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     // (the node is a collapsed variant root, or its parent variant is
     // collapsed), stack it at the variant's compact position. CSS
     // transition on .react-flow__node transform animates the slide.
+    // SKIPPED when the node carries data.hasPosOverride (admin has
+    // dragged it before) — preserves admin layout per user 2026-05-28:
+    // 'ให้ แอดมิน ย้าย node ได้'.
     let position = n.position;
-    if (inChecklistMode) {
+    if (inChecklistMode && !n.data?.hasPosOverride) {
       if (n.data?.isVariantRoot && compactByVariantId.has(n.id)) {
         position = compactByVariantId.get(n.id);
       } else if (n.data?.variantNodeId && compactByVariantId.has(n.data.variantNodeId)) {
@@ -955,7 +958,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           onSelectionChange={onSelectionChange}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
-          nodesDraggable={true}
+          nodesDraggable={admin}
           nodesConnectable={admin}
           edgesUpdatable={admin}
           elementsSelectable={true}
