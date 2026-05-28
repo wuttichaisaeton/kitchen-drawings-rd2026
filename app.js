@@ -2884,8 +2884,13 @@ function _buildBomNodes(project, parts, projectKey) {
     const isWrapper = !!node._is_wrapper;
     const partCode = node.code;
     const partMissing = !isWrapper && !pdfUrlForCode(partCode);
+    // React Flow ID uses the COMPOUND code+variant_root key so a part
+    // that appears in multiple variants gets distinct nodes (per user
+    // 2026-05-28 'ชื่อจะซ้ำไม่เป็นไร'). Falls back to plain code when
+    // the project has no variants — preserves stale-link compatibility.
+    const nodeKey = node._id || `${partCode}::`;
     nodes.push({
-      id: `bom:${partCode}`,
+      id: `bom:${nodeKey}`,
       type: 'mindmap',
       position: { x, y },
       data: {
@@ -2912,11 +2917,12 @@ function _buildBomNodes(project, parts, projectKey) {
       for (const child of node.children) {
         const w = leafCount(child) / totalLeaves;
         const childArcEnd = cursor + (arcEnd - arcStart) * w;
+        const childKey = child._id || `${child.code}::`;
         edges.push({
-          id: `e:${partCode}:${child.code}`,
+          id: `e:${nodeKey}:${childKey}`,
           type: 'floating',
-          source: `bom:${partCode}`,
-          target: `bom:${child.code}`,
+          source: `bom:${nodeKey}`,
+          target: `bom:${childKey}`,
           style: { stroke: colors.color, strokeWidth: 1.2, opacity: 0.5 },
           selectable: false,
         });
@@ -2933,13 +2939,15 @@ function _buildBomNodes(project, parts, projectKey) {
   for (const root of roots) {
     const w = leafCount(root) / totalRootLeaves;
     const rootArcEnd = cursor + Math.PI * 2 * w;
-    // Spoke from project center to each root
+    // Spoke from project center to each root — uses compound key so
+    // the edge target matches the node id place() emits.
     const famKey = _remapFamilyForCode(root.code, root.family);
+    const rootKey = root._id || `${root.code}::`;
     edges.push({
-      id: `e:proj:${root.code}`,
+      id: `e:proj:${rootKey}`,
       type: 'floating',
       source: `project:${projectKey}`,
-      target: `bom:${root.code}`,
+      target: `bom:${rootKey}`,
       style: { stroke: _familyColors(famKey).color, strokeWidth: 1.6, opacity: 0.65 },
       selectable: false,
     });
@@ -3165,6 +3173,15 @@ function setProjectMindmapCenter(projectKey, code) {
 // rules as the Library Tree tab (0/X positions = wildcards). Returns
 // { roots, all } same as buildLibraryTree, but preserves qty + project
 // context. Soft-deleted parts use status 'deleted'.
+// Build a unique-per-(code, variant_root) tree node identity.
+// Plain code can repeat across variants (e.g. SD00NA-080000 lives in
+// both 10WVON-08OLOR and 10WVON-12OLOR per Fusion's tree). Keying
+// nodes by ``${code}::${variant_root}`` lets the mindmap show the
+// part twice, once under each variant's subtree, with its own qty.
+function _nodeId(code, variantRoot) {
+  return `${code}::${variantRoot || ''}`;
+}
+
 function buildProjectTree(parts, projectKey) {
   const auto = manifest.auto_generated || {};
   const nodes = parts.map(p => {
@@ -3227,40 +3244,60 @@ function buildProjectTree(parts, projectKey) {
   //       to anchor the tree.
   //   (c) Prefix/wildcard matching on code (legacy fallback for projects
   //       built before parent_code was emitted).
-  const byCode = new Map(nodes.map(n => [n.code, n]));
-
-  // Pass 1 — auto-create virtual wrappers for any parent_code that isn't
-  // in the BOM. Without this, the explicit links in pass 2 wouldn't have
-  // anywhere to attach.
-  const wrapperCodes = new Set();
-  for (const node of nodes) {
-    if (node._parent_code && !byCode.has(node._parent_code)) {
-      wrapperCodes.add(node._parent_code);
-    }
+  // Index by COMPOUND key (code + variant_root) so the same code can
+  // appear twice in the parts list (once per variant) without one
+  // overwriting the other. Wrappers live under the same variant as
+  // their child leaves — created in Pass 1, one per (parent_code,
+  // variant_root) pair.
+  for (const n of nodes) {
+    n._id = _nodeId(n.code, n._variant_root);
   }
-  for (const wc of wrapperCodes) {
+  const byId = new Map(nodes.map(n => [n._id, n]));
+
+  // Pass 1 — auto-create virtual wrappers per (parent_code, variant_root)
+  // so the wrapper count matches the variant structure. BK0DN0-080000
+  // belongs under 10WVON-08OLOR; BK0DN0-120000 under 10WVON-12OLOR.
+  // Without per-variant wrapper IDs, both leaves would collapse to the
+  // same wrapper node.
+  const wrapperKeys = new Set();
+  for (const node of nodes) {
+    if (!node._parent_code) continue;
+    const parentId = _nodeId(node._parent_code, node._variant_root);
+    if (!byId.has(parentId)) wrapperKeys.add(parentId + '\0' + (node._variant_root || ''));
+  }
+  for (const wkey of wrapperKeys) {
+    const [parentId, vr] = wkey.split('\0');
+    // parentId is `${code}::${vr}` — split back to retrieve code
+    const wc = parentId.slice(0, parentId.lastIndexOf('::'));
     const wrapper = {
       code: wc,
       qty: 0,
       _prefix: wc.split('-')[0],
       _parent_code: null,
+      _variant_root: vr || null,
       family: _remapFamilyForCode(wc, 'Other'),
       pdf: null,
       page: 1,
       status: 'wrapper',
       _is_wrapper: true,
+      _is_variant_root: false,
+      _id: parentId,
       children: [],
       parent: null,
     };
     nodes.push(wrapper);
-    byCode.set(wc, wrapper);
+    byId.set(parentId, wrapper);
   }
 
-  // Pass 2 — explicit parent_code links (every parent now exists in byCode).
+  // Pass 2 — explicit parent_code links scoped by variant_root, so
+  // BK1DN1-080000 (variant 08) attaches to BK0DN0-080000@08, not to
+  // BK0DN0-080000@12 if such existed.
   for (const node of nodes) {
     if (node.parent) continue;
-    if (node._parent_code && byCode.has(node._parent_code)) {
-      const par = byCode.get(node._parent_code);
+    if (!node._parent_code) continue;
+    const parentId = _nodeId(node._parent_code, node._variant_root);
+    if (byId.has(parentId)) {
+      const par = byId.get(parentId);
       node.parent = par;
       par.children.push(node);
     }
@@ -3364,8 +3401,9 @@ function buildProjectTree(parts, projectKey) {
         children: [],
         parent: null,
       };
+      vNode._id = _nodeId(vNode.code, null);  // variants live above any variant context
       nodes.push(vNode);
-      byCode.set(vr, vNode);
+      byId.set(vNode._id, vNode);
       variantNodes.set(vr, vNode);
     }
     node.parent = vNode;
