@@ -4380,21 +4380,34 @@ function renderProject(key) {
   const groups = groupPartsByMaster(visibleParts, auto);
   const collapsed = loadCollapsed();
 
-  // Role-specific body: laser/bend workers get a flat aggregated list
-  // (the user 2026-05-28 said the hierarchical mindmap is for assembly
-  // — 'งานเลเซอร์/งานพับ ต้องการทราบจำนวนซะมากกว่า'). Default + admin
-  // + assemble role keep the React Flow mindmap which shows variant
-  // hierarchy + part-to-wrapper relationships.
+  // Role-based view gating (2026-05-28 — user said 'แยกหน้ากันไปเลย
+  // ให้ชัดเจน'). Each non-admin role sees a curated subset of the
+  // project page so workshop staff focus on their task; admin keeps
+  // god-mode visibility across every panel.
+  //
+  // Role 'workshop' (default, no role chip) — the legacy public iPad
+  // mode — keeps the full layout MINUS admin-only edit buttons (that
+  // gating lives elsewhere). Other roles strip what isn't theirs.
+  const _role = getRole();
+  const _adminAll = isAdmin();
+  const _isLaser  = _role === 'laser';
+  const _isBend   = _role === 'bend';
+  const _isAsm    = _role === 'assemble';
+  // Visibility flags — admin overrides every role-specific gate.
+  const _showBendingPill   = _adminAll || _isAsm || _isBend || (!_isLaser && !_isBend && !_isAsm);
+  const _showAssemblyPill  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
+  const _showMarkComplete  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
+  const _showFilters       = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
+  const _showAllPdf        = _adminAll || _isAsm || _isBend || (!_isLaser && !_isBend && !_isAsm);
+  const _showDxfsBtn       = _adminAll || _isLaser || (!_isLaser && !_isBend && !_isAsm);
+
   let bodyHtml;
-  if (isLaserUser()) {
+  if (_isLaser) {
     bodyHtml = _renderCutList(visibleParts, key);
-  } else if (isBendUser()) {
+  } else if (_isBend) {
     bodyHtml = _renderBendList(visibleParts, key);
   } else {
-    // Unified editor — React Flow shows BOM nodes (from manifest) +
-    // Custom nodes (from RTDB) in the same canvas. Admin edits, workshop
-    // views. The legacy _renderProjectMindmapHtml SVG path is dead but
-    // kept in the file for now in case we need to fall back.
+    // Assembly role + workshop default + admin → React Flow mindmap.
     bodyHtml = '<div id="kme-mount" class="kme-mount-host"><p class="loading">Loading editor…</p></div>';
   }
 
@@ -4420,24 +4433,30 @@ function renderProject(key) {
   ROOT.innerHTML = `
     <div class="project-summary-row">
       <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
+      ${_showBendingPill ? `
       <div class="progress-inline bent-mini">
         <span class="bent-label"><span class="icon-bend"></span> Bending</span>
         <div class="progress-bar bent-bar"><div class="progress-fill" style="width:${bentPct}%"></div></div>
         <span class="bent-stat">${bentCount}/${parts.length} · ${bentPct}%</span>
-      </div>
+      </div>` : ''}
+      ${_showAssemblyPill ? `
       <div class="progress-inline assembled-mini">
         <span class="bent-label assembled-label">🧩 Assembly</span>
         <div class="progress-bar assembled-bar"><div class="progress-fill" style="width:${assembledPct}%"></div></div>
         <span class="bent-stat">${assembledCount}/${parts.length} · ${assembledPct}%</span>
-      </div>
+      </div>` : ''}
+      ${_showMarkComplete ? `
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
         ${completed ? '↺ Re-activate' : '✓ Mark Completed'}
-      </button>
+      </button>` : ''}
       <div class="filter-group">
+        ${_showFilters ? `
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
-        <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
-        <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
-        <button class="filter-btn project-dxf-btn" id="project-dxf-btn" data-project-key="${escapeHtml(key)}" title="View / download laser-cut DXFs uploaded for this project (from NestingTool's Save to Project button or admin drag-drop)">📐 DXFs (${dxfsForProject(key).length})</button>
+        <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>` : ''}
+        ${_showAllPdf ? `
+        <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>` : ''}
+        ${_showDxfsBtn ? `
+        <button class="filter-btn project-dxf-btn" id="project-dxf-btn" data-project-key="${escapeHtml(key)}" title="View / download laser-cut DXFs uploaded for this project (from NestingTool's Save to Project button or admin drag-drop)">📐 DXFs (${dxfsForProject(key).length})</button>` : ''}
         <!-- Active-in-Fusion badge moved inline with the action buttons
              per user 2026-05-28. Shown when CC_SyncOccNames has pushed
              an active row for THIS project key — OR for any of its
@@ -4455,7 +4474,8 @@ function renderProject(key) {
 
   // Note: header Back button click is wired ONCE at app init (see the
   // bottom of this file). No per-view rewiring needed.
-  ROOT.querySelector('#toggle-complete').addEventListener('click', () => {
+  // Optional-chain everything since role gating may strip elements.
+  ROOT.querySelector('#toggle-complete')?.addEventListener('click', () => {
     markCompleted(key, !completed);
     render();
   });
