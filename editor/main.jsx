@@ -655,6 +655,30 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     return map;
   }, [inChecklistMode, nodes, collapsedNodes]);
 
+  // Auto-fit-view on expand/collapse — when the user clicks a variant
+  // open, the kids fan out to radius 720+ and the viewport no longer
+  // frames everything. User 2026-05-28: 'ย่อก็ไม่ได้ ขยายก็ไม่ได้' on
+  // mobile because they couldn't see where the kids went. fitView()
+  // smoothly re-frames the current visible nodes whenever the collapse
+  // set changes in checklist mode. Skips the initial mount (the
+  // <ReactFlow fitView> prop handles that).
+  const rf = useReactFlow();
+  const fittedOnceRef = useRef(false);
+  useEffect(() => {
+    if (!inChecklistMode) return;
+    if (!fittedOnceRef.current) {
+      // First render — let ReactFlow's built-in fitView prop handle it.
+      fittedOnceRef.current = true;
+      return;
+    }
+    // Wait for the position-transition (800ms CSS) to settle before
+    // measuring, otherwise fitView frames the OLD positions.
+    const t = setTimeout(() => {
+      try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {}
+    }, 850);
+    return () => clearTimeout(t);
+  }, [collapsedNodes, inChecklistMode, rf]);
+
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
   // too because contentEditable + double-click-to-edit are per-node UX.
@@ -949,12 +973,15 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           paneClickDistance={20}
           defaultEdgeOptions={{ type: 'floating', style: { strokeWidth: 1.2, opacity: 0.5 } }}
           fitView
-          /* iPad PWA: cap how small RF can shrink nodes when fitting.
-             Without this, fit-view often lands around 0.55-0.65 which
-             makes 50 px CSS buttons render as ~30 visible px — finger
-             contact area exceeds button bounds. minZoom 0.85 keeps
-             buttons ~42 visible px so a tap lands cleanly. */
-          minZoom={0.85}
+          /* minZoom needs to be loose enough that a phone can pinch
+             out to see both variants (at ±720 in expanded checklist
+             mode → 1440 px wide layout vs 375 px iPhone viewport).
+             0.85 was the iPad-buttons-stay-tappable limit but blocks
+             mobile users from ever seeing the whole expanded picture.
+             0.25 lets a phone fit a 1440 px layout into ~360 px and
+             still has plenty of room to pinch back in for tapping
+             targets. User 2026-05-28: 'ย่อก็ไม่ได้ ขยายก็ไม่ได้'. */
+          minZoom={0.25}
           maxZoom={2.5}
           colorMode="dark"
           proOptions={{ hideAttribution: true }}

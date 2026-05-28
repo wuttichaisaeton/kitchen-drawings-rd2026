@@ -281,6 +281,23 @@
      Already inherits the kmeParentPulse animation from kme-parent-collapsed. */
 }
 
+/* ── Mobile-friendly React Flow controls ────────────────────────── */
+/* Default xyflow Controls buttons are ~24px square — finger taps land
+   imprecisely on phones. Bump them up on touch viewports so the
+   zoom/fit-view/lock targets are workshop-iPad sized. */
+.kme-root .react-flow__controls {
+  gap: 4px;
+}
+.kme-root .react-flow__controls-button {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+}
+.kme-root .react-flow__controls-button svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* ── Compact-when-collapsed position slide ──────────────────────── */
 /* React Flow positions each node via `transform: translate(x, y)` on
    the outer .react-flow__node wrapper. We transition that transform
