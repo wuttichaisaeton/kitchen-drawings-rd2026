@@ -990,11 +990,20 @@ function _renderBendList(parts, projectKey) {
   const rows = aggregated.map(p => {
     const bent = isBent(projectKey, p.code);
     const fam = _remapFamilyForCode(p.code, p.family) || 'Other';
+    // Bending workers need the part DRAWING (PDF) to read bend dims —
+    // not the DXF. Resolve via pdfUrlForCode (auto_generated +
+    // uploaded_pdfs cache + alias-prefix fallback). User 2026-05-28:
+    // 'bending กดดู view pdf แต่ละ Part ได้'.
+    const pdfHref = pdfUrlForCode(p.code) || '';
+    const viewBtn = pdfHref
+      ? `<button class="bend-view-btn" data-url="${escapeHtml(pdfHref)}" title="View bending drawing PDF">👁</button>`
+      : `<button class="bend-view-btn" disabled title="No drawing PDF for this part yet">👁</button>`;
     return `
       <div class="bend-row ${bent ? 'is-bent' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="bend-icon">${familyIcon(fam)}</span>
         <span class="bend-code">${escapeHtml(p.code)}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
+        ${viewBtn}
         <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
           ${bent ? '<span class="icon-bend"></span> done' : '<span class="icon-bend"></span> bend'}
         </button>
@@ -1020,6 +1029,16 @@ function _wireBendList(parts, projectKey) {
       markBent(projectKey, code, !currently);
       // Re-render so the row + banner counter update.
       render();
+    });
+  });
+  // 👁 view bending drawing PDF — opens via _openInNewTab so iPad PWA
+  // standalone gets same-window nav (window.open '_blank' silently
+  // opens off-screen on standalone), browser gets a new tab.
+  ROOT.querySelectorAll('.bend-view-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const url = btn.dataset.url;
+      if (url) _openInNewTab(url);
     });
   });
 }

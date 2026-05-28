@@ -2956,13 +2956,32 @@ footer {
 .bend-rows { padding-top: 6px; }
 .bend-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  /* icon · code · qty · 👁 view PDF · ▶ bend toggle */
+  grid-template-columns: auto 1fr auto auto auto;
   gap: 12px;
   align-items: center;
   padding: 8px 10px;
   border-radius: 6px;
   transition: background 0.12s;
 }
+/* 👁 view PDF button — opens the bending drawing in a new tab so the
+   worker can read bend dimensions while marking the row done.
+   User 2026-05-28: 'bending กดดู view pdf แต่ละ Part ได้'. */
+.bend-view-btn {
+  background: rgba(93, 187, 99, 0.1);
+  border: 1px solid rgba(93, 187, 99, 0.35);
+  color: #cad6e6;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 6px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+               "Noto Color Emoji", sans-serif;
+}
+.bend-view-btn:hover:not(:disabled) { background: rgba(93, 187, 99, 0.22); }
+.bend-view-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 .bend-row:hover { background: rgba(93, 187, 99, 0.05); }
 .bend-row.is-bent { opacity: 0.55; }
 .bend-row.is-bent .bend-code { text-decoration: line-through; }
