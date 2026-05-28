@@ -393,7 +393,7 @@ function MindmapNode({ id, data, selected }) {
           >
             🧩
           </button>
-          {code && !isVariantRoot && !isWrapper && api.pdfUrlForCode?.(code) && (
+          {code && api.pdfUrlForCode?.(code) && (
             <button
               className="kme-mini kme-pdf"
               onClick={onOpenPdf}
