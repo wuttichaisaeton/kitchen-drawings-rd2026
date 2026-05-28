@@ -736,7 +736,25 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const onNodesChange = useCallback((changes) => {
     // View-only: only allow 'select' changes — block drag/dimension/etc.
     const allowed = admin ? changes : changes.filter(c => c.type === 'select');
-    setNodes((nds) => applyNodeChanges(allowed, nds));
+    setNodes((nds) => {
+      let next = applyNodeChanges(allowed, nds);
+      // Mark any node admin drags as having a position override so the
+      // checklist-mode compactByVariantId pull steps aside on next
+      // render. Without this, dragging a variant pulls it visually but
+      // the next collapsedNodes-triggered recompute snaps it back to
+      // ±220. User 2026-05-28: 'admin ย้าย node ได้'.
+      if (admin) {
+        const moved = new Set(
+          allowed.filter(c => c.type === 'position').map(c => c.id)
+        );
+        if (moved.size) {
+          next = next.map(n => moved.has(n.id)
+            ? { ...n, data: { ...n.data, hasPosOverride: true } }
+            : n);
+        }
+      }
+      return next;
+    });
   }, [admin]);
 
   const onEdgesChange = useCallback((changes) => {
