@@ -746,15 +746,18 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
   // Outside checklist mode keep the existing instant-hide semantics.
+  // hiddenAnchors (tap-3 hide) also makes the spoke disappear — user
+  // 2026-05-28 'เส้นโยงก็หายไปด้วย'.
   const visibleEdges = useMemo(() => edges.map(e => {
-    const endpointHidden = hiddenIds.has(e.source) || hiddenIds.has(e.target);
+    const endpointHidden = hiddenIds.has(e.source) || hiddenIds.has(e.target)
+      || hiddenAnchors.has(e.source) || hiddenAnchors.has(e.target);
     if (inChecklistMode) {
       return endpointHidden
         ? { ...e, style: { ...(e.style || {}), opacity: 0, transition: 'opacity 0.6s ease' } }
         : { ...e, style: { ...(e.style || {}), transition: 'opacity 0.8s ease' } };
     }
     return { ...e, hidden: endpointHidden };
-  }), [edges, hiddenIds, inChecklistMode]);
+  }), [edges, hiddenIds, inChecklistMode, hiddenAnchors]);
 
   const onNodesChange = useCallback((changes) => {
     // View-only: only allow 'select' changes — block drag/dimension/etc.
