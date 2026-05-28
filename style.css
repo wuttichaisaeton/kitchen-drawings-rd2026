@@ -2611,3 +2611,203 @@ footer {
   color: #8b949e;
   margin: 0;
 }
+
+/* ─── Cut List (laser role) ───────────────────────────────────────── */
+/* Aggregated flat parts list that replaces the React Flow mindmap
+   when the user is in the 🔥 LASER role. Grouped by family for the
+   way laser workers think about cutting. */
+
+.cut-list {
+  background: #1a1f24;
+  border: 1px solid #232830;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+.cut-list-banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #232830;
+}
+.cut-list-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffa726;
+}
+.cut-list-summary {
+  font-size: 12px;
+  color: #88aab1;
+}
+.cut-section {
+  margin-top: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+}
+.cut-section[open] { background: rgba(255, 167, 38, 0.03); }
+.cut-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  user-select: none;
+  list-style: none;
+}
+.cut-section-header::-webkit-details-marker { display: none; }
+.cut-section-title { color: #ddd; display: flex; align-items: center; gap: 6px; }
+.cut-section-stats { color: #88aab1; font-size: 11px; font-weight: 500; }
+.cut-rows { padding: 2px 6px 8px; }
+.cut-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cut-row:hover:not(.cut-row-missing) { background: rgba(255, 167, 38, 0.08); }
+.cut-row-missing { cursor: default; opacity: 0.6; }
+.cut-row-shake { animation: badge-shake 0.4s ease-in-out; }
+.cut-code {
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+.cut-qty {
+  font-size: 12px;
+  color: #88aab1;
+  min-width: 36px;
+  text-align: right;
+}
+.cut-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.cut-status.cut-ok {
+  background: rgba(78, 204, 163, 0.15);
+  color: #4ecca3;
+  border: 1px solid rgba(78, 204, 163, 0.3);
+}
+.cut-status.cut-none {
+  background: rgba(255, 193, 7, 0.10);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+.cut-list-actions {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #232830;
+  display: flex;
+  gap: 8px;
+}
+.cut-action {
+  background: rgba(255, 167, 38, 0.10);
+  color: #ffa726;
+  border: 1px solid rgba(255, 167, 38, 0.35);
+}
+.cut-action:hover:not([disabled]) {
+  background: rgba(255, 167, 38, 0.18);
+}
+.cut-action[disabled] { opacity: 0.4; cursor: not-allowed; }
+.cut-empty {
+  padding: 20px;
+  text-align: center;
+  color: #88aab1;
+  font-size: 12px;
+}
+
+/* ─── Bend List (bending role) ────────────────────────────────────── */
+/* Flat list with a per-part Bent toggle. Replaces the mindmap when
+   the user is in the ⊕ BENDING role. Aggregates qty across variants. */
+
+.bend-list {
+  background: #1a1f24;
+  border: 1px solid #232830;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-top: 10px;
+}
+.bend-list-banner {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #232830;
+}
+.bend-list-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #5dbb63;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bend-list-summary { font-size: 12px; color: #88aab1; }
+.bend-rows { padding-top: 6px; }
+.bend-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 6px;
+  transition: background 0.12s;
+}
+.bend-row:hover { background: rgba(93, 187, 99, 0.05); }
+.bend-row.is-bent { opacity: 0.55; }
+.bend-row.is-bent .bend-code { text-decoration: line-through; }
+.bend-icon { font-size: 16px; opacity: 0.9; }
+.bend-code {
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+}
+.bend-qty {
+  font-size: 12px;
+  color: #88aab1;
+  min-width: 36px;
+  text-align: right;
+}
+.bend-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(93, 187, 99, 0.4);
+  color: #88aab1;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+}
+.bend-toggle:hover {
+  background: rgba(93, 187, 99, 0.15);
+  color: #5dbb63;
+}
+.bend-toggle.on {
+  background: rgba(93, 187, 99, 0.20);
+  color: #5dbb63;
+  border-color: #5dbb63;
+}
+.bend-toggle .icon-bend {
+  width: 14px;
+  height: 14px;
+}
+.bend-empty {
+  padding: 20px;
+  text-align: center;
+  color: #88aab1;
+  font-size: 12px;
+}

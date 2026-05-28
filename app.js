@@ -476,6 +476,166 @@ function dxfsForProject(projectKey) {
 //   - Row click downloads the DXF (single) or opens a sub-popover (N>1)
 // Dismissed by outside-click, Escape, or scroll — same teardown contract
 // as _renderDxfPopover so no orphan document listeners are left behind.
+// ── Role-specific project views ─────────────────────────────────────
+// Laser-cut workers + bending workers don't need the hierarchical
+// mindmap — they need a flat aggregate of "how many of code X to
+// cut/bend". These helpers replace the React Flow editor body for
+// their respective roles. See updateRoleBadge for how role state
+// switches what renderProject renders.
+
+// Aggregate parts list across variants — sums qty when the same code
+// appears multiple times. Returns objects keyed by code with summed
+// qty and the family copied from the first occurrence.
+function _aggregatePartsByCode(parts) {
+  const m = new Map();
+  for (const p of parts || []) {
+    if (!p || !p.code) continue;
+    const existing = m.get(p.code);
+    if (existing) {
+      existing.qty += (p.qty || 0);
+    } else {
+      m.set(p.code, { code: p.code, qty: p.qty || 0, family: p.family || 'Other', urn: p.urn || null });
+    }
+  }
+  return [...m.values()];
+}
+
+function _renderCutList(parts, projectKey) {
+  const aggregated = _aggregatePartsByCode(parts);
+
+  // Group by remapped family — same chip taxonomy the Library uses, so
+  // a laser worker sees parts the way they navigate the library.
+  const byFamily = new Map();
+  for (const p of aggregated) {
+    const fam = _remapFamilyForCode(p.code, p.family) || 'Other';
+    if (!byFamily.has(fam)) byFamily.set(fam, []);
+    byFamily.get(fam).push(p);
+  }
+
+  const sectionsHtml = [...byFamily.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([fam, ps]) => {
+      ps.sort((a, b) => a.code.localeCompare(b.code));
+      const famDxfCount = ps.filter(p => dxfsForMasterCode(p.code).length > 0).length;
+      const famQty = ps.reduce((s, p) => s + (p.qty || 0), 0);
+      const rows = ps.map(p => {
+        const dxfs = dxfsForMasterCode(p.code);
+        const ready = dxfs.length > 0;
+        const status = ready
+          ? `<span class="cut-status cut-ok" title="${dxfs.length} DXF available">📐 ready${dxfs.length > 1 ? ` ×${dxfs.length}` : ''}</span>`
+          : `<span class="cut-status cut-none" title="No DXF uploaded yet — run NestingTool's Save to Project">⚠ no DXF</span>`;
+        return `
+          <div class="cut-row ${ready ? '' : 'cut-row-missing'}" data-code="${escapeHtml(p.code)}" ${ready ? '' : 'aria-disabled="true"'}>
+            <span class="cut-code">${escapeHtml(p.code)}</span>
+            <span class="cut-qty">× ${p.qty || 0}</span>
+            ${status}
+          </div>`;
+      }).join('');
+      return `
+        <details class="cut-section" open>
+          <summary class="cut-section-header">
+            <span class="cut-section-title">${familyIcon(fam)} ${escapeHtml(fam)}</span>
+            <span class="cut-section-stats">${ps.length} parts · ${famQty} pcs · 📐 ${famDxfCount}/${ps.length}</span>
+          </summary>
+          <div class="cut-rows">${rows}</div>
+        </details>`;
+    }).join('');
+
+  const totalQty = aggregated.reduce((s, p) => s + (p.qty || 0), 0);
+  const totalDxfs = dxfsForProject(projectKey).length;
+  const totalReady = aggregated.filter(p => dxfsForMasterCode(p.code).length > 0).length;
+
+  return `
+    <div class="cut-list">
+      <div class="cut-list-banner">
+        <span class="cut-list-title">🔥 Cut List</span>
+        <span class="cut-list-summary">${aggregated.length} unique · ${totalQty} pcs · 📐 ${totalReady}/${aggregated.length} parts have DXFs · ${totalDxfs} files uploaded</span>
+      </div>
+      <div class="cut-sections">${sectionsHtml || '<div class="cut-empty">No parts in this project</div>'}</div>
+      <div class="cut-list-actions">
+        <button id="cut-download-all-btn" class="action-btn cut-action" ${totalDxfs === 0 ? 'disabled' : ''}>⬇ Download all ${totalDxfs} DXFs</button>
+      </div>
+    </div>`;
+}
+
+function _wireCutList(parts, projectKey) {
+  // Row click → if the part has a DXF, download it; else surface a
+  // tooltip-style toast to explain the no-DXF state.
+  ROOT.querySelectorAll('.cut-row').forEach(row => {
+    row.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = row.dataset.code;
+      const dxfs = dxfsForMasterCode(code);
+      if (dxfs.length === 0) {
+        row.classList.add('cut-row-shake');
+        setTimeout(() => row.classList.remove('cut-row-shake'), 400);
+        return;
+      }
+      if (dxfs.length === 1) {
+        _downloadFile(dxfs[0].url, dxfs[0].filename || `${dxfs[0].stem}.dxf`);
+      } else {
+        _renderDxfPopover(row, dxfs);
+      }
+    });
+  });
+  // Download-all: fire one download per DXF, spaced 250 ms so the
+  // browser doesn't dedupe.
+  ROOT.querySelector('#cut-download-all-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const dxfList = dxfsForProject(projectKey);
+    dxfList.forEach((item, i) => {
+      setTimeout(() => {
+        _downloadFile(item.url, item.filename || `${item.stem}.dxf`);
+      }, i * 250);
+    });
+  });
+}
+
+function _renderBendList(parts, projectKey) {
+  const aggregated = _aggregatePartsByCode(parts);
+  aggregated.sort((a, b) => a.code.localeCompare(b.code));
+  const total = aggregated.length;
+  const bentList = aggregated.filter(p => isBent(projectKey, p.code));
+  const pct = total ? Math.round(bentList.length * 100 / total) : 0;
+
+  const rows = aggregated.map(p => {
+    const bent = isBent(projectKey, p.code);
+    const fam = _remapFamilyForCode(p.code, p.family) || 'Other';
+    return `
+      <div class="bend-row ${bent ? 'is-bent' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+        <span class="bend-icon">${familyIcon(fam)}</span>
+        <span class="bend-code">${escapeHtml(p.code)}</span>
+        <span class="bend-qty">× ${p.qty || 0}</span>
+        <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
+          ${bent ? '<span class="icon-bend"></span> done' : '<span class="icon-bend"></span> bend'}
+        </button>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="bend-list">
+      <div class="bend-list-banner">
+        <span class="bend-list-title"><span class="icon-bend"></span> Bend List</span>
+        <span class="bend-list-summary">${bentList.length}/${total} done · ${pct}%</span>
+      </div>
+      <div class="bend-rows">${rows || '<div class="bend-empty">No parts in this project</div>'}</div>
+    </div>`;
+}
+
+function _wireBendList(parts, projectKey) {
+  ROOT.querySelectorAll('.bend-toggle').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.code;
+      const currently = isBent(projectKey, code);
+      markBent(projectKey, code, !currently);
+      // Re-render so the row + banner counter update.
+      render();
+    });
+  });
+}
+
+
 function _renderProjectDxfModal(triggerBtn, projectKey, project, parts) {
   document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
 
@@ -4210,11 +4370,23 @@ function renderProject(key) {
   const groups = groupPartsByMaster(visibleParts, auto);
   const collapsed = loadCollapsed();
 
-  // Unified editor — React Flow shows BOM nodes (from manifest) +
-  // Custom nodes (from RTDB) in the same canvas. Admin edits, workshop
-  // views. The legacy _renderProjectMindmapHtml SVG path is dead but
-  // kept in the file for now in case we need to fall back.
-  const mindmapHtml = '<div id="kme-mount" class="kme-mount-host"><p class="loading">Loading editor…</p></div>';
+  // Role-specific body: laser/bend workers get a flat aggregated list
+  // (the user 2026-05-28 said the hierarchical mindmap is for assembly
+  // — 'งานเลเซอร์/งานพับ ต้องการทราบจำนวนซะมากกว่า'). Default + admin
+  // + assemble role keep the React Flow mindmap which shows variant
+  // hierarchy + part-to-wrapper relationships.
+  let bodyHtml;
+  if (isLaserUser()) {
+    bodyHtml = _renderCutList(visibleParts, key);
+  } else if (isBendUser()) {
+    bodyHtml = _renderBendList(visibleParts, key);
+  } else {
+    // Unified editor — React Flow shows BOM nodes (from manifest) +
+    // Custom nodes (from RTDB) in the same canvas. Admin edits, workshop
+    // views. The legacy _renderProjectMindmapHtml SVG path is dead but
+    // kept in the file for now in case we need to fall back.
+    bodyHtml = '<div id="kme-mount" class="kme-mount-host"><p class="loading">Loading editor…</p></div>';
+  }
 
   const totalQtyAll = project.total_qty != null
     ? project.total_qty
@@ -4264,7 +4436,7 @@ function renderProject(key) {
         <span id="active-variant-badge" class="active-variant-badge filter-btn-inline" style="display:none"></span>
       </div>
     </div>
-    ${mindmapHtml}
+    ${bodyHtml}
   `;
 
   // Paint the "Active in Fusion" badge from cached RTDB data. The
@@ -4295,6 +4467,18 @@ function renderProject(key) {
     ev.stopPropagation();
     _renderProjectDxfModal(ev.currentTarget, key, project, parts);
   });
+  // Cut List / Bend List get their own wiring + skip the React Flow
+  // editor entirely. Mount the role-specific handlers when the body
+  // we rendered was that view; otherwise fall through to the editor.
+  if (isLaserUser()) {
+    _wireCutList(visibleParts, key);
+    return;
+  }
+  if (isBendUser()) {
+    _wireBendList(visibleParts, key);
+    return;
+  }
+
   // Unified editor mount — always React Flow.
   // Composes: project center pseudo-node + BOM nodes (auto-spoked) +
   // Custom nodes (RTDB). Workshop iPad gets the same view but editing
