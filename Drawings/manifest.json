@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-05-28T05:27:01.117964+00:00",
+  "generated_at": "2026-05-28T05:48:10.507676+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3551,9 +3551,9 @@
       "name": "Bung 01",
       "status": "active",
       "created_at": "2026-05-28T02:02:54.294964+00:00",
-      "updated_at": "2026-05-28T05:27:01.117017+00:00",
-      "total_unique_parts": 14,
-      "total_qty": 28,
+      "updated_at": "2026-05-28T05:48:10.506596+00:00",
+      "total_unique_parts": 17,
+      "total_qty": 50,
       "parts": [
         {
           "code": "BK1DN1-080000",
@@ -3583,7 +3583,7 @@
         },
         {
           "code": "BXXTR0-000000",
-          "qty": 4,
+          "qty": 8,
           "family": "Other",
           "parent_code": "BK2TR1-120000",
           "urn": "urn:adsk.wipprod:dm.lineage:9nXAHOrYR_-p3w7ylFiTqw"
@@ -3604,28 +3604,50 @@
         },
         {
           "code": "FN2BNX-080000",
-          "qty": 1,
+          "qty": 3,
           "family": "Floor",
           "parent_code": "FN0FN3-080005",
           "urn": "urn:adsk.wipprod:dm.lineage:pwaJNYI6QdWG4uKebGRYYw"
         },
         {
           "code": "FN2BNX-120000",
-          "qty": 1,
+          "qty": 3,
           "family": "Floor",
           "parent_code": "FN0FN3-120007",
           "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ"
         },
         {
           "code": "SD00NA-080000",
-          "qty": 6,
+          "qty": 4,
           "family": "Side Panel",
           "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
         },
         {
-          "code": "TS002H-120000",
-          "qty": 2,
+          "code": "SD0SUP-000000",
+          "qty": 8,
+          "family": "Side Panel",
+          "parent_code": "SD00NA-080000",
+          "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+        },
+        {
+          "code": "SH0S11-080046",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "SH0S10-080046",
+          "urn": "urn:adsk.wipprod:dm.lineage:YDYumfxURhqjSGPMNr42Kg"
+        },
+        {
+          "code": "SH0S12-080000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "SH0S10-080046",
+          "urn": "urn:adsk.wipprod:dm.lineage:0zKN-EYKSAeeKy1IoC15Uw"
+        },
+        {
+          "code": "TS0BV0-000000",
+          "qty": 4,
           "family": "Top Sup",
+          "parent_code": "TS002H-120000",
           "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
         },
         {
@@ -3643,10 +3665,10 @@
           "urn": "urn:adsk.wipprod:dm.lineage:bdrkOWi7RAKqSCOzOvBHJQ"
         },
         {
-          "code": "TS2TR4-120000",
-          "qty": 4,
+          "code": "TS2TRX-000000",
+          "qty": 8,
           "family": "Top Sup",
-          "parent_code": "TS002H-120000",
+          "parent_code": "TS2TR4-120000",
           "urn": "urn:adsk.wipprod:dm.lineage:4eHNpXzITB2vArQENtyEag"
         }
       ]
