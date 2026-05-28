@@ -1356,8 +1356,25 @@ h1 {
 }
 
 main {
-  padding: 14px;
+  padding: 10px 14px;
   animation: pageFade 0.2s ease-out;
+}
+
+/* Project page — make the mindmap / cut-list / bend-list canvas fill
+   every pixel below the sticky header. Without this the canvas was
+   capped at 70vh, leaving ~30% of viewport unused below the body.
+   Per user 2026-05-28 'ทำกรอบในการแสดง ให้เต็มพื้นที่หน้าจอ'. */
+.project-summary-row + .kme-mount-host,
+.project-summary-row + .cut-list,
+.project-summary-row + .bend-list,
+/* Some renders inject the Active-in-Fusion badge between the summary
+   row and the body — match either ordering. */
+.active-variant-badge + .kme-mount-host,
+.active-variant-badge + .cut-list,
+.active-variant-badge + .bend-list {
+  /* 160px ≈ sticky header (~70) + project summary row (~70) + gap.
+     Tune if the header height changes. */
+  min-height: calc(100vh - 160px);
 }
 
 @keyframes pageFade {
@@ -2593,8 +2610,10 @@ footer {
    remaining vertical space without clobbering the project header. */
 .kme-mount-host {
   position: relative;
+  /* Height switched to flex on the project page (see selector above).
+     Keep 70vh as a fallback for any other page that still uses this
+     class without the project-summary-row context. */
   min-height: 70vh;
-  height: 70vh;
   width: 100%;
   background: #0d1117;
   border: 1px solid #30363d;
@@ -2623,7 +2642,21 @@ footer {
   border-radius: 8px;
   padding: 12px 14px;
   margin-top: 10px;
+  /* Full-height scroller — header sticks at the top of the box as the
+     part list grows. The selector above sets min-height: calc(100vh -
+     160px) so the box always fills the viewport below the project
+     summary row, even on a short part list. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+.cut-list .cut-list-banner { flex: 0 0 auto; }
+.cut-list .cut-sections {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+.cut-list .cut-list-actions { flex: 0 0 auto; }
 .cut-list-banner {
   display: flex;
   align-items: baseline;
@@ -2735,6 +2768,16 @@ footer {
   border-radius: 8px;
   padding: 12px 14px;
   margin-top: 10px;
+  /* Full-height scroller — see .cut-list comment. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.bend-list .bend-list-banner { flex: 0 0 auto; }
+.bend-list .bend-rows {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
 }
 .bend-list-banner {
   display: flex;
