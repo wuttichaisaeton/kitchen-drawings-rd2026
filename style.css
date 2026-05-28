@@ -3281,6 +3281,17 @@ footer {
 .dxf-preview-download-btn:hover {
   background: rgba(78, 204, 163, 0.18);
 }
+/* Shown in place of the download button when the current role can't
+   download per-part DXFs (user 2026-05-28: 'PDF/DXF กดดูได้ แต่
+   ดาวน์โหลด admin เท่านั้น; laser ดาวน์โหลดได้แค่ Cut Sheets'). */
+.dxf-preview-view-only,
+.cut-action-hint {
+  display: inline-block;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #889bb3;
+  font-style: italic;
+}
 
 /* ════════════════════════════════════════════════════════════════════
    Web Nesting workspace (kdNest, nest.js) — 2026-05-28

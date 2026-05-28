@@ -575,6 +575,17 @@ function ensureDxfLib() {
 // Exposed on window so sibling modules (nest.js) can open the DXF
 // preview without duplicating the modal code.
 window._renderDxfPreviewModal = _renderDxfPreviewModal;
+// Per user 2026-05-28: 'PDF/DXF กดดูได้ทุก role แต่ดาวน์โหลด admin
+// เท่านั้น; เลเซอร์ดาวน์โหลดได้เฉพาะ Cut Sheets'. The DXF preview
+// modal here is for per-PART DXFs (uploaded_dxfs/) — laser does not
+// get a download button. Cut Sheets modal is a separate code path
+// and keeps its laser-accessible download.
+function _canDownloadPartDxf() {
+  return isAdmin();
+}
+function _canDownloadCutSheet() {
+  return isAdmin() || isLaserUser();
+}
 async function _renderDxfPreviewModal(dxf) {
   if (!dxf || !dxf.url) return;
   const filename = dxf.filename || `${dxf.stem || 'file'}.dxf`;
@@ -605,7 +616,9 @@ async function _renderDxfPreviewModal(dxf) {
         <div class="dxf-preview-loading">Loading DXF preview…</div>
       </div>
       <div class="dxf-preview-footer">
-        <button class="dxf-preview-download-btn">⬇ Download ${escapeHtml(filename)}</button>
+        ${_canDownloadPartDxf()
+          ? `<button class="dxf-preview-download-btn">⬇ Download ${escapeHtml(filename)}</button>`
+          : `<span class="dxf-preview-view-only">View only — download disabled for this role</span>`}
       </div>
     </div>`;
   document.body.appendChild(modal);
@@ -618,7 +631,7 @@ async function _renderDxfPreviewModal(dxf) {
   const onKey = (ev) => { if (ev.key === 'Escape') close(); };
   modal.querySelector('.dxf-preview-close').addEventListener('click', close);
   modal.querySelector('.dxf-preview-backdrop').addEventListener('click', close);
-  modal.querySelector('.dxf-preview-download-btn').addEventListener('click', () => {
+  modal.querySelector('.dxf-preview-download-btn')?.addEventListener('click', () => {
     _downloadFile(dxf.url, filename);
   });
   document.addEventListener('keydown', onKey);
@@ -805,7 +818,9 @@ function _renderCutList(parts, projectKey) {
       ${waitingBanner}
       <div class="cut-sections">${sectionsHtml || '<div class="cut-empty">No parts in this project</div>'}</div>
       <div class="cut-list-actions">
-        <button id="cut-download-all-btn" class="action-btn cut-action" ${totalDxfs === 0 ? 'disabled' : ''}>⬇ Download all ${totalDxfs} DXFs</button>
+        ${_canDownloadPartDxf()
+          ? `<button id="cut-download-all-btn" class="action-btn cut-action" ${totalDxfs === 0 ? 'disabled' : ''}>⬇ Download all ${totalDxfs} DXFs</button>`
+          : '<span class="cut-action-hint">View only — for laser cuts download from 📐 Cut Sheets above</span>'}
       </div>
     </div>`;
 }
@@ -5054,12 +5069,12 @@ function renderProject(key) {
   const _showAssemblyPill  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showMarkComplete  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showFilters       = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
-  // All PDF — bending drawings reference. Laser worker does NOT need
-  // it (clarified by user 2026-05-28: 'เลเซอร์ ต้องไม่เห็น All PDF').
-  // Admin overlay does NOT override this — when an admin toggles into
-  // laser role to see what a laser worker sees, the button must stay
-  // hidden too. Visible to every other role (bend, assemble, workshop).
-  const _showAllPdf        = !_isLaser;
+  // All PDF — generates a MERGED PDF download. Per user 2026-05-28
+  // download-gate update: 'PDF ทั้งหมดกดดูได้ แต่ดาวน์โหลดไม่ได้
+  // ทำได้เฉพาะแอดมิน'. Per-part PDFs still visible to every role via
+  // 👁 view buttons (open in new tab — workshop can read on iPad);
+  // only the bulk-download button is admin-gated now.
+  const _showAllPdf        = _adminAll;
   const _showDxfsBtn       = _adminAll || _isLaser || (!_isLaser && !_isBend && !_isAsm);
 
   let bodyHtml;
