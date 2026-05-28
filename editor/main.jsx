@@ -842,14 +842,19 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: 'กลับบ้าน' — re-collapse THIS node only (other
-          // anchors stay untouched) and zoom the camera back to the
-          // project center. The earlier 'zoom into the tapped node'
-          // version was visually backwards — user expected to go
-          // HOME, not to dive INTO the variant. Frame the project
-          // node so it fills the viewport like the initial landing.
-          // User 2026-05-28: tap 3 ยังใช้ไม่ได้ (2 attempts now —
-          // user wants the camera to return to BUNG 01 center).
+          // 3rd tap: 'กลับบ้าน' — re-collapse THIS node only and
+          // frame the project + every anchor (variants) together,
+          // returning the user to the initial 3-node (or N+1-node)
+          // home view. User's annotated screenshot 2026-05-28 drew
+          // an arrow from the tapped variant UP to project center,
+          // i.e. the home is the project AND its anchors visible
+          // side-by-side — not a zoom INTO any one node.
+          //
+          // Sibling anchors keep their collapse state (per the
+          // 'เฉพาะตัวนั้นๆเอง' rule). Only their kids' visibility
+          // depends on those still-expanded states; fitView ignores
+          // them because we explicitly pass nodes=[project + all
+          // isVariantRoot anchors].
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
             const next = new Set(prev);
@@ -857,16 +862,16 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             _persistCollapse(collapsed, next);
             return next;
           });
-          const projectNode = nodes.find(n => n.data?.kind === 'project');
+          const homeNodes = nodes.filter(n =>
+            n.data?.kind === 'project' || n.data?.isVariantRoot
+          ).map(n => ({ id: n.id }));
           setTimeout(() => {
             try {
-              if (projectNode) {
+              if (homeNodes.length) {
                 rf.fitView({
-                  nodes: [{ id: projectNode.id }],
+                  nodes: homeNodes,
                   duration: 600,
-                  padding: 1.5,
-                  minZoom: 0.4,
-                  maxZoom: 1.2,
+                  padding: 0.20,
                 });
               } else {
                 rf.fitView({ duration: 600, padding: 0.20 });
