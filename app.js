@@ -5309,31 +5309,35 @@ function renderFamily(fam, highlight) {
     pop.style.top  = (r.bottom + 4) + 'px';
     pop.style.right = (window.innerWidth - r.right) + 'px';
 
-    // Row click → download + dismiss
+    // Shared teardown — removes the popover and all three document listeners.
+    // Called by the row-click handler, outside-click dismiss, Escape, and scroll
+    // so that every close path runs the same cleanup (no orphan listeners).
+    let close; // declared here so the row-click closure can reference it
+
+    // Row click → download + close (uses shared close() once it is assigned)
     pop.querySelectorAll('.part-dxf-popover-row').forEach(row => {
       row.addEventListener('click', (ev) => {
         ev.stopPropagation();
         _downloadFile(row.dataset.dxfUrl, row.dataset.dxfName);
-        pop.remove();
+        if (close) close(); else pop.remove(); // close is always set before any user click
       });
     });
 
     // Outside-click dismiss — attach on next tick so the opening click
     // doesn't immediately dismiss the popover it just opened.
     setTimeout(() => {
-      const dismiss = (ev) => {
-        if (!pop.contains(ev.target)) {
-          pop.remove();
-          document.removeEventListener('click',     dismiss, true);
-          document.removeEventListener('keydown',   onKey);
-          window.removeEventListener('scroll',      onScroll, true);
-        }
+      close = () => {
+        pop.remove();
+        document.removeEventListener('click',   dismiss, true);
+        document.removeEventListener('keydown', onKey);
+        window.removeEventListener('scroll',    onScroll, true);
       };
-      const onKey = (ev) => { if (ev.key === 'Escape') dismiss({ target: document.body }); };
-      const onScroll = () => dismiss({ target: document.body });
-      document.addEventListener('click',     dismiss, true);
-      document.addEventListener('keydown',   onKey);
-      window.addEventListener('scroll',      onScroll, true);
+      const dismiss  = (ev) => { if (!pop.contains(ev.target)) close(); };
+      const onKey    = (ev) => { if (ev.key === 'Escape') close(); };
+      const onScroll = () => close();
+      document.addEventListener('click',   dismiss, true);
+      document.addEventListener('keydown', onKey);
+      window.addEventListener('scroll',    onScroll, true);
     }, 0);
 
     return pop;
