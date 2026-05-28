@@ -1029,7 +1029,7 @@ function _renderBendList(parts, projectKey) {
         <span class="bend-qty">× ${p.qty || 0}</span>
         ${viewBtn}
         <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
-          ${bent ? '<span class="icon-bend"></span> done' : '<span class="icon-bend"></span> bend'}
+          <span class="icon-bend"></span>
         </button>
       </div>`;
   }).join('');

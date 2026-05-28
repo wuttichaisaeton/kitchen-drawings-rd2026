@@ -2957,10 +2957,10 @@ footer {
 .bend-row {
   display: grid;
   /* icon · code · qty · 👁 view PDF · ▶ bend toggle */
-  grid-template-columns: auto 1fr auto auto auto;
-  gap: 16px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 10px;
   align-items: center;
-  padding: 14px 16px;
+  padding: 12px 12px;
   border-radius: 8px;
   transition: background 0.12s;
 }
@@ -2991,36 +2991,38 @@ footer {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 17px;
 }
-/* Same prominent qty pill as Cut List, tinted green for bending. */
+/* Qty — plain number, no pill background. User 2026-05-28:
+   'ตัวคูณไม่ต้องมีกรอบ'. Keeps size + green colour so it still
+   reads at a glance, but the box framing went away to free up
+   horizontal space on mobile (iPhone clipped the row). */
 .bend-qty {
   display: inline-block;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
   color: #5dbb63;
-  background: rgba(93, 187, 99, 0.15);
-  border: 1px solid rgba(93, 187, 99, 0.4);
-  padding: 6px 16px;
-  border-radius: 14px;
-  min-width: 64px;
+  padding: 0 4px;
+  min-width: 48px;
   text-align: center;
 }
+/* Bend toggle — icon-only square, matches .bend-view-btn dimensions.
+   Text label removed (user 2026-05-28: 'ไม่ต้องมีตัวอักษรคำว่า Bend')
+   because the row was overflowing the iPhone viewport. Done vs not-done
+   is conveyed by .on tint + the row's .is-bent line-through on the
+   code text. */
 .bend-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 28px;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(93, 187, 99, 0.4);
   color: #88aab1;
   border-radius: 8px;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
   cursor: pointer;
   font-family: inherit;
   transition: background 0.12s, color 0.12s;
-  min-width: 140px;
-  justify-content: center;
 }
 .bend-toggle:hover {
   background: rgba(93, 187, 99, 0.15);
@@ -3032,8 +3034,8 @@ footer {
   border-color: #5dbb63;
 }
 .bend-toggle .icon-bend {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
 }
 .bend-empty {
   padding: 20px;
