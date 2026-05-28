@@ -359,6 +359,120 @@ function dxfsForProject(projectKey) {
   return out;
 }
 
+// Project-level DXF rollup modal. Built fresh each click so it always
+// reflects the latest uploaded_dxfs cache. Shows:
+//   - Project name + summary line (parts to cut, DXFs uploaded)
+//   - One row per BOM part: code · qty · DXF status (📐 N or ⚠ none)
+//   - Row click downloads the DXF (single) or opens a sub-popover (N>1)
+// Dismissed by outside-click, Escape, or scroll — same teardown contract
+// as _renderDxfPopover so no orphan document listeners are left behind.
+function _renderProjectDxfModal(triggerBtn, projectKey, project, parts) {
+  document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
+
+  const ps = (parts || []).filter(p => p && p.code);
+  const totalQty = ps.reduce((s, p) => s + (p.qty || 0), 0);
+  const dxfList = dxfsForProject(projectKey);
+  const projectName = (project && project.name) || projectKey;
+
+  // Build a per-part lookup of which DXFs cover that master_code so the
+  // body rows can show status + ferry a download URL per row.
+  const partRows = ps.map(p => {
+    const dxfs = dxfsForMasterCode(p.code);
+    const status = dxfs.length === 0
+      ? `<span class="pdxf-status pdxf-none" title="No DXF uploaded">⚠ no DXF</span>`
+      : `<span class="pdxf-status pdxf-ok" title="${dxfs.length} DXF file${dxfs.length === 1 ? '' : 's'} available">📐 ${dxfs.length}</span>`;
+    return `
+      <button class="pdxf-row" role="menuitem"
+              data-code="${escapeHtml(p.code)}"
+              ${dxfs.length === 0 ? 'disabled' : ''}>
+        <span class="pdxf-code">${escapeHtml(p.code)}</span>
+        <span class="pdxf-qty">× ${p.qty || 0}</span>
+        ${status}
+      </button>`;
+  }).join('');
+
+  const pop = document.createElement('div');
+  pop.className = 'part-dxf-popover pdxf-project-modal';
+  pop.setAttribute('role', 'menu');
+  pop.innerHTML = `
+    <div class="pdxf-header">
+      <div class="pdxf-title">📐 ${escapeHtml(projectName)}</div>
+      <div class="pdxf-sub">${ps.length} unique part${ps.length === 1 ? '' : 's'} · ${totalQty} pcs to cut · ${dxfList.length} DXF file${dxfList.length === 1 ? '' : 's'} uploaded</div>
+    </div>
+    <div class="pdxf-body">${partRows || '<div class="pdxf-empty">No parts in this project</div>'}</div>
+    ${dxfList.length > 0 ? `
+    <div class="pdxf-footer">
+      <button class="pdxf-all-btn" data-action="download-all">⬇ Download all ${dxfList.length} DXF${dxfList.length === 1 ? '' : 's'}</button>
+    </div>` : `
+    <div class="pdxf-footer pdxf-footer-empty">
+      No DXFs uploaded yet — run NestingTool → 📤 Save to Project.
+    </div>`}
+  `;
+  document.body.appendChild(pop);
+
+  // Position below the button, right-aligned. Cap height so long
+  // project BOMs don't overflow the viewport.
+  const r = triggerBtn.getBoundingClientRect();
+  pop.style.position = 'fixed';
+  pop.style.top    = (r.bottom + 4) + 'px';
+  pop.style.right  = (window.innerWidth - r.right) + 'px';
+  pop.style.maxHeight = `${Math.max(280, window.innerHeight - r.bottom - 20)}px`;
+  pop.style.overflowY = 'auto';
+
+  let close;
+
+  // Per-part row click → download DXF(s) for that master_code.
+  pop.querySelectorAll('.pdxf-row').forEach(row => {
+    row.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = row.dataset.code;
+      const dxfs = dxfsForMasterCode(code);
+      if (dxfs.length === 0) return;
+      if (dxfs.length === 1) {
+        _downloadFile(dxfs[0].url, dxfs[0].filename || `${dxfs[0].stem}.dxf`);
+      } else {
+        // For multi-DXF, kick the existing per-part popover via a
+        // temporary anchor — anchor on this row so it appears next to it.
+        _renderDxfPopover(row, dxfs);
+      }
+      if (close) close();
+    });
+  });
+
+  // Download-all button — iterates project DXFs and triggers a download
+  // for each. Browsers may dedupe consecutive downloads, so we space
+  // them with a tiny delay to give each one a chance to register.
+  const allBtn = pop.querySelector('.pdxf-all-btn');
+  if (allBtn) {
+    allBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      dxfList.forEach((item, i) => {
+        setTimeout(() => {
+          _downloadFile(item.url, item.filename || `${item.stem}.dxf`);
+        }, i * 250);
+      });
+      if (close) close();
+    });
+  }
+
+  setTimeout(() => {
+    close = () => {
+      pop.remove();
+      document.removeEventListener('click',   dismiss, true);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll',    onScroll, true);
+    };
+    const dismiss  = (ev) => { if (!pop.contains(ev.target)) close(); };
+    const onKey    = (ev) => { if (ev.key === 'Escape') close(); };
+    const onScroll = () => close();
+    document.addEventListener('click',   dismiss, true);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll',    onScroll, true);
+  }, 0);
+
+  return pop;
+}
+
 // Build a DXF popover anchored below the trigger button. Reusable across
 // the Library family view (per-master 📐 button) and the Project view
 // (project-wide 📐 DXFs button). Auto-dismissed by outside-click,
@@ -3843,6 +3957,10 @@ function renderProject(key) {
   // Project summary row (2026-05-28 layout consolidation): the title +
   // both progress timelines (Bending + Assembly) share one line instead
   // of stacking. On mobile widths the flex container wraps gracefully.
+  // Project summary + actions consolidated into a single row (2026-05-28):
+  // title · counts · Bending pill · Assembly pill · Mark Completed ·
+  // filter chips · All PDF · DXFs. Wraps gracefully on narrow screens.
+  // Drops one full row off the page versus the previous stacked layout.
   ROOT.innerHTML = `
     <div class="project-summary-row">
       <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
@@ -3856,9 +3974,6 @@ function renderProject(key) {
         <div class="progress-bar assembled-bar"><div class="progress-fill" style="width:${assembledPct}%"></div></div>
         <span class="bent-stat">${assembledCount}/${parts.length} · ${assembledPct}%</span>
       </div>
-    </div>
-    <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
-    <div class="project-actions">
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
         ${completed ? '↺ Re-activate' : '✓ Mark Completed'}
       </button>
@@ -3869,6 +3984,7 @@ function renderProject(key) {
         <button class="filter-btn project-dxf-btn" id="project-dxf-btn" data-project-key="${escapeHtml(key)}" title="View / download laser-cut DXFs uploaded for this project (from NestingTool's Save to Project button or admin drag-drop)">📐 DXFs (${dxfsForProject(key).length})</button>
       </div>
     </div>
+    <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
     ${mindmapHtml}
   `;
 
@@ -3892,28 +4008,13 @@ function renderProject(key) {
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
   });
-  // Project-level DXFs popover. The button is always rendered (so users
-  // know the feature exists) but clicking it with zero uploads pops a
-  // tiny "nothing uploaded yet" hint instead of an empty menu.
+  // Project-level DXFs popover — rich rollup (2026-05-28):
+  // Header   : Project name + uploaded-count + cut total
+  // Body rows: one per BOM part with code · qty · DXF status badge
+  // Click row: download (when 1 DXF) or sub-popover (when N>1)
   ROOT.querySelector('#project-dxf-btn')?.addEventListener('click', (ev) => {
     ev.stopPropagation();
-    const list = dxfsForProject(key);
-    if (list.length === 0) {
-      const btn = ev.currentTarget;
-      // Quick toast — surfaces the empty state without a full modal.
-      const tip = document.createElement('div');
-      tip.className = 'part-dxf-popover';
-      tip.style.padding = '10px 14px';
-      tip.textContent = 'No DXFs uploaded for this project yet. Upload via NestingTool → 📤 Save to Project.';
-      document.body.appendChild(tip);
-      const r = btn.getBoundingClientRect();
-      tip.style.position = 'fixed';
-      tip.style.top  = (r.bottom + 4) + 'px';
-      tip.style.right = (window.innerWidth - r.right) + 'px';
-      setTimeout(() => tip.remove(), 3500);
-      return;
-    }
-    _renderDxfPopover(ev.currentTarget, list);
+    _renderProjectDxfModal(ev.currentTarget, key, project, parts);
   });
   // Unified editor mount — always React Flow.
   // Composes: project center pseudo-node + BOM nodes (auto-spoked) +

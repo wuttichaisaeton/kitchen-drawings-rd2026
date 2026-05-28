@@ -1718,6 +1718,110 @@ main.transit-back {
   text-overflow: ellipsis;
 }
 
+/* Project DXF rollup modal — wider popover with title, per-part rows,
+   and a download-all footer. Reuses .part-dxf-popover frame so it
+   inherits the same backdrop / dismiss behavior, then overrides for
+   the richer layout. */
+.pdxf-project-modal {
+  min-width: 360px;
+  max-width: 480px;
+  padding: 0;        /* header/body have their own padding */
+}
+.pdxf-header {
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #2a4a52;
+}
+.pdxf-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #4ecca3;
+  letter-spacing: 0.3px;
+}
+.pdxf-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #88aab1;
+}
+.pdxf-body {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.pdxf-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #d6ecf0;
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+  font-family: inherit;
+}
+.pdxf-row:hover:not([disabled]) { background: #243a3f; }
+.pdxf-row:active:not([disabled]) { background: #2c474d; }
+.pdxf-row[disabled] { cursor: default; opacity: 0.55; }
+.pdxf-code {
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+.pdxf-qty {
+  font-size: 12px;
+  color: #88aab1;
+  min-width: 36px;
+  text-align: right;
+}
+.pdxf-status {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+.pdxf-status.pdxf-ok {
+  background: rgba(78, 204, 163, 0.15);
+  color: #4ecca3;
+  border: 1px solid rgba(78, 204, 163, 0.3);
+}
+.pdxf-status.pdxf-none {
+  background: rgba(255, 193, 7, 0.10);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+.pdxf-footer {
+  padding: 8px 12px;
+  border-top: 1px solid #2a4a52;
+}
+.pdxf-footer-empty {
+  font-size: 11px;
+  color: #88aab1;
+  text-align: center;
+}
+.pdxf-all-btn {
+  width: 100%;
+  padding: 8px 10px;
+  background: rgba(78, 204, 163, 0.10);
+  color: #4ecca3;
+  border: 1px solid rgba(78, 204, 163, 0.35);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pdxf-all-btn:hover { background: rgba(78, 204, 163, 0.18); }
+.pdxf-empty {
+  padding: 18px;
+  text-align: center;
+  color: #88aab1;
+  font-size: 12px;
+}
+
 .part-row .part-icon {
   font-size: 16px;
   opacity: 0.9;
