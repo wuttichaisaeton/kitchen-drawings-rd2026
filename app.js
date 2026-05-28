@@ -719,6 +719,206 @@ function _wireBendList(parts, projectKey) {
 }
 
 
+// ── Cut Sheets modal ─────────────────────────────────────────────────
+// Top-level project DXFs are NESTED cut layouts, not per-part files.
+// Modal shows: list of sheets (filename, thickness, parts_count,
+// uploaded_at), per-row download. Admin extras: drag-drop area to
+// add new sheets + per-row delete.
+
+const _CUT_SHEETS_REPO_PATH = 'CutSheets';   // GitHub path prefix
+const _CUT_SHEETS_GH_PUBLIC = 'https://raw.githubusercontent.com/wuttichaisaeton/kitchen-drawings-rd2026/main';
+
+function _renderCutSheetsModal(triggerBtn, projectKey, project) {
+  document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
+
+  const sheets = cutSheetsForProject(projectKey);
+  const projectName = (project && project.name) || projectKey;
+  const adminMode = isAdmin();
+
+  const rowsHtml = sheets.length
+    ? sheets.map(s => {
+        const filename = s.filename || `${s.id}.dxf`;
+        const thMm = s.thickness_mm ? `${s.thickness_mm}mm` : '?mm';
+        const parts = s.parts_count ? `${s.parts_count} parts` : '?';
+        const sz = (s.sheet_w_mm && s.sheet_h_mm) ? `${s.sheet_w_mm}×${s.sheet_h_mm}mm` : '';
+        const ago = _formatTimeAgo(s.uploaded_at) || '';
+        const via = s.uploaded_via ? ` · via ${escapeHtml(s.uploaded_via)}` : '';
+        return `
+          <div class="cs-row" data-id="${escapeHtml(s.id)}" data-url="${escapeHtml(s.url || '')}" data-filename="${escapeHtml(filename)}">
+            <div class="cs-row-main">
+              <span class="cs-filename">${escapeHtml(filename)}</span>
+              <span class="cs-meta">${thMm} · ${parts}${sz ? ' · ' + sz : ''}</span>
+              <span class="cs-sub">${escapeHtml(ago)}${via}</span>
+            </div>
+            <button class="cs-download-btn" data-action="download">⬇</button>
+            ${adminMode ? `<button class="cs-delete-btn" data-action="delete" title="Delete cut sheet">✕</button>` : ''}
+          </div>`;
+      }).join('')
+    : '<div class="cs-empty">No cut sheets uploaded yet. ' +
+      (adminMode
+        ? 'Drag a .dxf file into the area below — or run NestingTool → Save Sheets to Project.'
+        : 'Waiting for the designer to upload nested cut sheets.') +
+      '</div>';
+
+  const pop = document.createElement('div');
+  pop.className = 'part-dxf-popover cs-modal';
+  pop.setAttribute('role', 'menu');
+  pop.innerHTML = `
+    <div class="pdxf-header">
+      <div class="pdxf-title">📐 Cut Sheets — ${escapeHtml(projectName)}</div>
+      <div class="pdxf-sub">${sheets.length} sheet${sheets.length === 1 ? '' : 's'} uploaded</div>
+    </div>
+    <div class="cs-body">${rowsHtml}</div>
+    ${adminMode ? `
+    <div class="cs-dropzone" id="cs-dropzone">
+      <span class="cs-dropzone-icon">📥</span>
+      <span class="cs-dropzone-text">Drop .dxf files here to add a cut sheet</span>
+      <input type="file" id="cs-file-input" accept=".dxf" multiple style="display:none">
+      <button class="cs-browse-btn" id="cs-browse-btn">or browse…</button>
+    </div>` : ''}
+  `;
+  document.body.appendChild(pop);
+
+  const r = triggerBtn.getBoundingClientRect();
+  pop.style.position = 'fixed';
+  pop.style.top    = (r.bottom + 4) + 'px';
+  pop.style.right  = (window.innerWidth - r.right) + 'px';
+  pop.style.maxHeight = `${Math.max(360, window.innerHeight - r.bottom - 20)}px`;
+  pop.style.overflowY = 'auto';
+
+  let close;
+
+  // Row click → download (anywhere except buttons)
+  pop.querySelectorAll('.cs-row').forEach(row => {
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('.cs-delete-btn')) return;  // delete handled separately
+      ev.stopPropagation();
+      _downloadFile(row.dataset.url, row.dataset.filename);
+    });
+  });
+
+  // Admin: delete handler
+  if (adminMode) {
+    pop.querySelectorAll('.cs-delete-btn').forEach(btn => {
+      btn.addEventListener('click', async (ev) => {
+        ev.stopPropagation();
+        const row = btn.closest('.cs-row');
+        if (!row) return;
+        if (!confirm(`Delete cut sheet "${row.dataset.filename}"?\n\nThis removes the RTDB entry; the GitHub file is left in the repo as an archive.`)) return;
+        const id = row.dataset.id;
+        try {
+          await window.firebaseDB.ref(`cut_sheets/${projectKey}/${id}`).remove();
+          row.remove();
+        } catch (e) {
+          alert(`Delete failed: ${e.message || e}`);
+        }
+      });
+    });
+
+    // Drag-drop + browse
+    const zone = pop.querySelector('#cs-dropzone');
+    const fileInput = pop.querySelector('#cs-file-input');
+    const browseBtn = pop.querySelector('#cs-browse-btn');
+    if (zone && fileInput) {
+      const onFiles = async (files) => {
+        for (const f of files) {
+          if (!/\.dxf$/i.test(f.name)) {
+            alert(`Skipped "${f.name}" — only .dxf files accepted.`);
+            continue;
+          }
+          zone.classList.add('cs-uploading');
+          zone.querySelector('.cs-dropzone-text').textContent = `Uploading ${f.name}…`;
+          try {
+            await _uploadCutSheet(projectKey, f);
+          } catch (e) {
+            alert(`Upload failed for ${f.name}: ${e.message || e}`);
+          }
+          zone.classList.remove('cs-uploading');
+          zone.querySelector('.cs-dropzone-text').textContent = 'Drop .dxf files here to add a cut sheet';
+        }
+        // Re-open modal to reflect new sheets
+        if (close) close();
+        setTimeout(() => triggerBtn.click(), 100);
+      };
+      zone.addEventListener('dragover', (ev) => { ev.preventDefault(); zone.classList.add('cs-drag-over'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('cs-drag-over'));
+      zone.addEventListener('drop', (ev) => {
+        ev.preventDefault();
+        zone.classList.remove('cs-drag-over');
+        onFiles(ev.dataTransfer.files);
+      });
+      browseBtn?.addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', () => onFiles(fileInput.files));
+    }
+  }
+
+  setTimeout(() => {
+    close = () => {
+      pop.remove();
+      document.removeEventListener('click',   dismiss, true);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll',    onScroll, true);
+    };
+    const dismiss  = (ev) => {
+      // Don't dismiss when interacting with drag/drop or file picker.
+      if (!pop.contains(ev.target)) close();
+    };
+    const onKey    = (ev) => { if (ev.key === 'Escape') close(); };
+    const onScroll = () => {};   // don't auto-close on scroll inside modal
+    document.addEventListener('click',   dismiss, true);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll',    onScroll, true);
+  }, 0);
+
+  return pop;
+}
+
+// Upload a single cut sheet — GitHub Contents API + RTDB metadata.
+// Naming: timestamped path so re-uploading same name doesn't collide.
+async function _uploadCutSheet(projectKey, file) {
+  const pat = getGitHubPat();
+  if (!pat) throw new Error('GitHub PAT not set');
+
+  // Timestamp-based id + filename. Format: 2026-05-28_15-30-45
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const ts = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  const safeProject = projectKey.replace(/[^A-Za-z0-9._-]+/g, '_');
+  const id = `${safeProject}_${ts}`;
+  const filename = `${safeProject}_${ts}.dxf`;
+  const path = `${_CUT_SHEETS_REPO_PATH}/${encodeURIComponent(safeProject)}/${id}.dxf`;
+
+  const content = await fileToBase64(file);
+  const resp = await _ghContentsRequest(path, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `Cut sheet: ${filename}`,
+      content,
+      branch: 'main',
+    }),
+  });
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    throw new Error(`GitHub PUT failed ${resp.status}: ${errBody.slice(0, 200)}`);
+  }
+  const url = `${_CUT_SHEETS_GH_PUBLIC}/${path}`;
+  const meta = {
+    url,
+    filename,
+    thickness_mm: 0,        // unknown for admin drops; NestingTool sets this
+    parts_count: 0,         // ditto
+    sheet_w_mm: 0,
+    sheet_h_mm: 0,
+    uploaded_at: Date.now(),
+    uploaded_via: 'admin-drop',
+    original_filename: file.name,
+    size_bytes: file.size,
+  };
+  await window.firebaseDB.ref(`cut_sheets/${projectKey}/${id}`).set(meta);
+  return { id, url, meta };
+}
+
 function _renderProjectDxfModal(triggerBtn, projectKey, project, parts) {
   document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
 
@@ -1462,6 +1662,45 @@ function initUploadedPdfsSync() {
   } catch (e) {
     console.warn('Firebase uploaded_pdfs listener failed:', e);
   }
+}
+
+// ── Cut Sheets (nested cut layouts) ────────────────────────────────
+// Separate concept from per-part DXFs (uploaded_dxfs). A cut sheet
+// is a NESTED layout — multiple parts arranged on one stock sheet,
+// ready for the laser machine. Source: NestingTool's "Save Sheets
+// to Project" button (one upload per output sheet) OR admin drag-
+// drop on the web. Per user 2026-05-28: 'ปุ่ม dxfs ด้านบน ให้เป็น
+// การรวมชิ้นงานเพื่อการตัด ที่ส่งมาจาก nesting หรือ admin นำมาวาง'.
+//
+// RTDB schema: cut_sheets/<projectKey>/<id> = {
+//   url, filename, thickness_mm, parts_count, sheet_w_mm, sheet_h_mm,
+//   uploaded_at, uploaded_via
+// }
+let _cutSheetsCache = {};
+
+function initCutSheetsSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('cut_sheets').on('value', snap => {
+      _cutSheetsCache = snap.val() || {};
+      try { render(); } catch {}
+    });
+  } catch (e) {
+    console.warn('Firebase cut_sheets listener failed:', e);
+  }
+}
+
+function cutSheetsForProject(projectKey) {
+  if (!projectKey || !_cutSheetsCache) return [];
+  const bucket = _cutSheetsCache[projectKey];
+  if (!bucket) return [];
+  const out = [];
+  for (const [id, meta] of Object.entries(bucket)) {
+    if (meta) out.push({ id, ...meta });
+  }
+  // Latest upload first — workshop wants the freshest nest at top.
+  out.sort((a, b) => (b.uploaded_at || 0) - (a.uploaded_at || 0));
+  return out;
 }
 
 function initUploadedDxfsSync() {
@@ -4539,7 +4778,7 @@ function renderProject(key) {
         ${_showAllPdf ? `
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>` : ''}
         ${_showDxfsBtn ? `
-        <button class="filter-btn project-dxf-btn" id="project-dxf-btn" data-project-key="${escapeHtml(key)}" title="View / download laser-cut DXFs uploaded for this project (from NestingTool's Save to Project button or admin drag-drop)">📐 DXFs (${dxfsForProject(key).length})</button>` : ''}
+        <button class="filter-btn project-cut-sheets-btn" id="project-cut-sheets-btn" data-project-key="${escapeHtml(key)}" title="Nested cut sheets uploaded for this project — from NestingTool's Save Sheets to Project or admin drag-drop">📐 Cut Sheets (${cutSheetsForProject(key).length})</button>` : ''}
         <!-- Active-in-Fusion badge moved inline with the action buttons
              per user 2026-05-28. Shown when CC_SyncOccNames has pushed
              an active row for THIS project key — OR for any of its
@@ -4572,13 +4811,12 @@ function renderProject(key) {
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
   });
-  // Project-level DXFs popover — rich rollup (2026-05-28):
-  // Header   : Project name + uploaded-count + cut total
-  // Body rows: one per BOM part with code · qty · DXF status badge
-  // Click row: download (when 1 DXF) or sub-popover (when N>1)
-  ROOT.querySelector('#project-dxf-btn')?.addEventListener('click', (ev) => {
+  // Project-level Cut Sheets modal (2026-05-28): nested cut layouts
+  // uploaded for THIS project. Distinct from per-row per-part DXFs.
+  // Source: NestingTool's Save Sheets + admin drag-drop.
+  ROOT.querySelector('#project-cut-sheets-btn')?.addEventListener('click', (ev) => {
     ev.stopPropagation();
-    _renderProjectDxfModal(ev.currentTarget, key, project, parts);
+    _renderCutSheetsModal(ev.currentTarget, key, project);
   });
   // Cut List / Bend List get their own wiring + skip the React Flow
   // editor entirely. Mount the role-specific handlers when the body
@@ -6372,6 +6610,7 @@ async function init() {
   initFamilyChipSync();
   initUploadedPdfsSync();
   initUploadedDxfsSync();
+  initCutSheetsSync();
   initActiveRowsSync();
   initBentSync();
   initAssembledSync();

@@ -2955,3 +2955,103 @@ footer {
   color: #88aab1;
   font-size: 12px;
 }
+
+/* ─── Cut Sheets modal ───────────────────────────────────────────── */
+/* Nested cut layouts uploaded via NestingTool's Save Sheets to Project
+   or admin drag-drop. Distinct from the per-part .pdxf-* modal. */
+
+.cs-modal {
+  min-width: 400px;
+  max-width: 540px;
+  padding: 0;
+}
+.cs-body {
+  padding: 6px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.cs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.cs-row:hover { background: #243a3f; }
+.cs-row-main { flex: 1 1 auto; min-width: 0; }
+.cs-filename {
+  display: block;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: #d6ecf0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cs-meta {
+  display: block;
+  font-size: 11px;
+  color: #4ecca3;
+  margin-top: 2px;
+}
+.cs-sub {
+  display: block;
+  font-size: 10px;
+  color: #88aab1;
+  margin-top: 1px;
+}
+.cs-download-btn,
+.cs-delete-btn {
+  background: transparent;
+  border: 1px solid #3a4a4f;
+  color: #d6ecf0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-family: inherit;
+}
+.cs-download-btn:hover { background: rgba(78, 204, 163, 0.15); border-color: #4ecca3; color: #4ecca3; }
+.cs-delete-btn:hover   { background: rgba(194, 85, 85, 0.15); border-color: #c25555; color: #c25555; }
+
+.cs-empty {
+  padding: 20px;
+  text-align: center;
+  color: #88aab1;
+  font-size: 12px;
+}
+
+.cs-dropzone {
+  margin: 6px;
+  padding: 14px;
+  border: 2px dashed #3a4a4f;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cs-dropzone.cs-drag-over,
+.cs-dropzone.cs-uploading {
+  background: rgba(78, 204, 163, 0.10);
+  border-color: #4ecca3;
+}
+.cs-dropzone-icon { font-size: 22px; }
+.cs-dropzone-text { font-size: 12px; color: #88aab1; }
+.cs-browse-btn {
+  background: rgba(78, 204, 163, 0.10);
+  color: #4ecca3;
+  border: 1px solid rgba(78, 204, 163, 0.35);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.cs-browse-btn:hover { background: rgba(78, 204, 163, 0.18); }
