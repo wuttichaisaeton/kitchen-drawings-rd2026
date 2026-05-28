@@ -3978,11 +3978,17 @@ function _buildBomNodes(project, parts, projectKey) {
   // Tuning table per spec §2.1.4 — keeps adjacent clusters apart on
   // the variant ring. n covers ALL top-level roots so a project with
   // many independent leaves still gets enough breathing room.
+  // 2026-05-28 v2: bumped subR0 (was 360) — when a variant has 8+
+  // direct children at depth 1, the per-kid arc at radius 360 produces
+  // center-to-center distances of ~150-180 px, less than the ~140 px
+  // card width → cards visually overlapped. User said 'และซ้อนกัน'.
+  // Larger subR0 trades viewport size for breathing room (mobile pans
+  // and the new minZoom 0.25 means the layout still fits a pinch-out).
   const tuning =
-    n <= 2  ? { variantRing: 720,  subR0: 360, sweepDeg: 270 } :
-    n <= 5  ? { variantRing: 1100, subR0: 360, sweepDeg: 240 } :
-    n <= 10 ? { variantRing: 1800, subR0: 380, sweepDeg: 200 } :
-              { variantRing: 2200, subR0: 340, sweepDeg: 160 };
+    n <= 2  ? { variantRing: 720,  subR0: 480, sweepDeg: 270 } :
+    n <= 5  ? { variantRing: 1100, subR0: 460, sweepDeg: 240 } :
+    n <= 10 ? { variantRing: 1800, subR0: 460, sweepDeg: 200 } :
+              { variantRing: 2200, subR0: 420, sweepDeg: 160 };
   const subRings = [
     tuning.subR0,
     tuning.subR0 * 1.5,
