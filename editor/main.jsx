@@ -842,12 +842,15 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: home — re-collapse JUST THIS node (so its kids
-          // tuck back) and fitView. User 2026-05-28: 'เฉพาะตัวนั้นๆ
-          // เองไม่เกี่ยวกับตัวอื่น' — don't touch other anchors'
-          // collapse state. If this node is already collapsed (after
-          // tap 2), the setCollapsedNodes is a no-op and we just
-          // run fitView.
+          // 3rd tap: home — re-collapse JUST THIS node and zoom in
+          // on it so the user gets a clear visible 'this is its
+          // home' confirmation. fitView with nodes:[{id}] frames a
+          // SPECIFIC node rather than the whole layout, so we
+          // actually see the camera move toward this node.
+          // User 2026-05-28: 'เฉพาะตัวนั้นๆ เองไม่เกี่ยวกับตัวอื่น'
+          // (other anchors stay where they are) + 'tap 3 ยังใช้
+          // ไม่ได้' (previous whole-layout fitView didn't visually
+          // change anything when only this node had moved).
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
             const next = new Set(prev);
@@ -856,7 +859,15 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             return next;
           });
           setTimeout(() => {
-            try { rf.fitView({ duration: 600, padding: 0.20 }); } catch {}
+            try {
+              rf.fitView({
+                nodes: [{ id: node.id }],
+                duration: 600,
+                padding: 0.6,
+                minZoom: 0.5,
+                maxZoom: 1.4,
+              });
+            } catch {}
           }, 250);
         } else {
           toggleNodeCollapse(node.id);
