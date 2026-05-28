@@ -37,30 +37,30 @@
 </head>
 <body>
   <header>
+    <!-- One-row header (2026-05-28 layout shrink): brand · Back · Tabs
+         · Search · date · Admin/Role badges all share .header-row's
+         flex line. The .header-controls wrapper uses display:contents
+         so its children participate directly in the parent flex
+         (keeps the existing CSS selectors like .header-controls .tabs
+         working without restyling). -->
     <div class="header-row">
       <h1><span class="brand-icon" aria-hidden="true"></span>Kitchen <span class="brand-sub">by Rough Design</span></h1>
+      <div class="header-controls">
+        <button id="header-back-btn" class="back-btn" aria-label="Back" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div class="tabs">
+          <button id="tab-projects" class="tab active" data-view="projects">📋 Projects</button>
+          <button id="tab-library"  class="tab"        data-view="library">📦 Library</button>
+        </div>
+        <div class="search-wrap">
+          <input id="search" type="search" placeholder="Search…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <button id="search-clear" type="button" aria-label="Clear">✕</button>
+        </div>
+      </div>
       <span id="updated" class="updated"></span>
-    </div>
-    <!-- Single header controls row — Back · Projects · Library · Search
-         all on one line (2026-05-28 layout simplification: cut header
-         height from 4 rows to 2 by merging the previously separate
-         tabs / back-row / search-wrap into this flex container).
-         The Back button is hidden via inline style until stack.length>0;
-         see _updateHeaderBack() in app.js. -->
-    <div class="header-controls">
-      <button id="header-back-btn" class="back-btn" aria-label="Back" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 12H5M12 19l-7-7 7-7"/>
-        </svg>
-      </button>
-      <div class="tabs">
-        <button id="tab-projects" class="tab active" data-view="projects">📋 Projects</button>
-        <button id="tab-library"  class="tab"        data-view="library">📦 Library</button>
-      </div>
-      <div class="search-wrap">
-        <input id="search" type="search" placeholder="Search…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
-        <button id="search-clear" type="button" aria-label="Clear">✕</button>
-      </div>
     </div>
   </header>
 

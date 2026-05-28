@@ -73,9 +73,12 @@ header {
 .header-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* No justify-content: space-between — every child sizes naturally;
+     .header-controls .search-wrap (flex:1) absorbs the leftover width
+     so the date + admin/role badges still sit flush right. */
   margin-bottom: 10px;
   gap: 12px;
+  flex-wrap: wrap;
 }
 
 h1 {
@@ -219,11 +222,12 @@ h1 {
    header is shorter and the search stays glued to the same plane as
    the nav. Search grows to take the remaining width; everything else
    sits at its natural size. */
+/* display: contents — the wrapper's box is dropped from layout so its
+   children (back btn, tabs, search) participate directly in the parent
+   .header-row flex. Keeps the .header-controls .foo selectors valid
+   without restyling. */
 .header-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0;
+  display: contents;
 }
 /* Inside the combined row the Back button shrinks to a compact icon-
    only square (no "Back" text — the arrow is universally recognised
