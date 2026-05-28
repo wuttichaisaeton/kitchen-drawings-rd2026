@@ -377,7 +377,14 @@ function MindmapNode({ id, data, selected }) {
         )}
       </div>
       {isBom && (
-        <div className="kme-row kme-row-actions nodrag nopan">
+        // `nodrag` removed from the row container so the empty space
+        // around the buttons stays draggable — user 2026-05-28:
+        // 'ให้สามารถจับบนพื้นที่ว่าง แล้วย้าย ได้'. The buttons
+        // themselves still stop propagation in their onPointerDown
+        // handlers so tapping 🧩/📄 doesn't accidentally start a
+        // drag, and `nopan` stays so finger-pans across the buttons
+        // don't pan the canvas.
+        <div className="kme-row kme-row-actions nopan">
           {/* Timer ▶ and bent ⬇ buttons removed from the assembly
               mindmap (user 2026-05-28: 'ที assembly ไม่ควรมีปุ่ม งานพับ
               และจับเวลา'). The Bending role has its own dedicated
