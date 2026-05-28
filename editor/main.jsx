@@ -842,17 +842,19 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: home — reset to initial state. Re-collapses
-          // every anchor (project + 2 variants for Bung 01) and
-          // frames the project so the user lands back on the
-          // 'starter' 3-node view. fitView runs after the collapse
-          // settle so it measures the post-reset bounding box.
-          const allAnchors = nodes
-            .filter(n => n.data?.isVariantRoot)
-            .map(n => n.id);
-          const fullCollapsed = new Set(allAnchors);
-          setCollapsedNodes(fullCollapsed);
-          _persistCollapse(collapsed, fullCollapsed);
+          // 3rd tap: home — re-collapse JUST THIS node (so its kids
+          // tuck back) and fitView. User 2026-05-28: 'เฉพาะตัวนั้นๆ
+          // เองไม่เกี่ยวกับตัวอื่น' — don't touch other anchors'
+          // collapse state. If this node is already collapsed (after
+          // tap 2), the setCollapsedNodes is a no-op and we just
+          // run fitView.
+          setCollapsedNodes(prev => {
+            if (prev.has(node.id)) return prev;
+            const next = new Set(prev);
+            next.add(node.id);
+            _persistCollapse(collapsed, next);
+            return next;
+          });
           setTimeout(() => {
             try { rf.fitView({ duration: 600, padding: 0.20 }); } catch {}
           }, 250);
