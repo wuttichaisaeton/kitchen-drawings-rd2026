@@ -3359,6 +3359,24 @@ footer {
   font-size: 12px;
   color: #cad6e6;
 }
+/* Strip the up/down spinner arrows from EVERY number input in the
+   Nesting workspace + sheet stock dialog. The spinners overlapped the
+   last digit and made values hard to read (user 2026-05-28: 'ตัวปรับ
+   ขึ้นลงเอาออก บังตัวอักษร ใช้พิมพ์เอาได้'). Workshop staff type the
+   number directly anyway. Cross-browser: Chrome / Safari hide the
+   inner+outer spin buttons via -webkit-appearance, Firefox needs
+   appearance: textfield on the input itself. */
+.kdnest-shell input[type="number"]::-webkit-inner-spin-button,
+.kdnest-shell input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+.kdnest-shell input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
 .kdnest-stock-dim {
   background: #1c2735;
   border: 1px solid #2a3a4f;
