@@ -849,43 +849,34 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: 'กลับบ้าน' — collapse every anchor (so the kids
-          // of each variant tuck back to the variant's compact
-          // position) and frame the project + all anchors. The user
-          // has now rejected three sub-variants of this:
-          //   (a) zoom into the tapped node — wrong direction
-          //   (b) zoom into the project center only — overshoots
-          //   (c) frame project + anchors but leave other variants
-          //       expanded — kids of those siblings stayed visible
-          //       and the layout didn't actually look like home.
-          // The home view is the project + N tightly-grouped
-          // variant cards, all collapsed, no kids visible. To get
-          // there reliably we re-collapse every isVariantRoot
-          // anchor (the 'เฉพาะตัวนั้นๆเอง' rule was about TAP
-          // toggling — tap 3 is the explicit reset gesture and the
-          // user wants it to actually reset).
-          const allAnchors = nodes
-            .filter(n => n.data?.isVariantRoot)
-            .map(n => n.id);
-          const fullCollapsed = new Set(allAnchors);
-          setCollapsedNodes(fullCollapsed);
-          _persistCollapse(collapsed, fullCollapsed);
-          const homeNodes = nodes.filter(n =>
-            n.data?.kind === 'project' || n.data?.isVariantRoot
-          ).map(n => ({ id: n.id }));
+          // 3rd tap: 'กลับบ้าน' — re-collapse JUST THIS node (other
+          // anchors keep their state per 'Interactive เฉพาะของตัวเอง')
+          // and zoom the camera tight on the project center so the
+          // tapped variant slides off-screen. User's annotated
+          // screenshot 2026-05-28 shows tap 3 result = ONLY the
+          // project bubble visible, all variants out of frame.
+          // We're not hiding nodes, just framing project tightly.
+          setCollapsedNodes(prev => {
+            if (prev.has(node.id)) return prev;
+            const next = new Set(prev);
+            next.add(node.id);
+            _persistCollapse(collapsed, next);
+            return next;
+          });
+          const projectNode = nodes.find(n => n.data?.kind === 'project');
           setTimeout(() => {
             try {
-              if (homeNodes.length) {
+              if (projectNode) {
                 rf.fitView({
-                  nodes: homeNodes,
+                  nodes: [{ id: projectNode.id }],
                   duration: 600,
-                  padding: 0.20,
+                  padding: 0.15,
                 });
               } else {
-                rf.fitView({ duration: 600, padding: 0.20 });
+                rf.fitView({ duration: 600, padding: 0.15 });
               }
             } catch {}
-          }, 300);
+          }, 250);
         } else {
           toggleNodeCollapse(node.id);
         }
