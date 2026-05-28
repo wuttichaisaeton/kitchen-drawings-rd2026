@@ -955,6 +955,52 @@ h1 {
 
 /* --- Progress bar (BOM page header + project card) --- */
 
+/* Project summary row — title + Bending + Assembly progress lined up
+   horizontally (2026-05-28). The bars are slim 90-px versions so all
+   three pieces fit on one line on desktop; on narrow screens the flex
+   container wraps so the bars drop below the title rather than getting
+   crushed. */
+.project-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.project-summary-row .section-title {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.progress-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  background: #1a1f24;
+  border: 1px solid #232830;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.progress-inline .bent-label {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.progress-inline .progress-bar {
+  width: 90px;
+  height: 6px;
+  margin-top: 0;           /* override default that was for stacked layout */
+  flex: 0 0 90px;
+}
+.progress-inline .bent-stat {
+  white-space: nowrap;
+  min-width: 70px;
+  text-align: right;
+}
+
+/* Legacy bent-summary block — no longer rendered as of 2026-05-28
+   (kept here in case some other view still references the class). */
 .bent-summary {
   background: #1a1f24;
   padding: 12px 14px;

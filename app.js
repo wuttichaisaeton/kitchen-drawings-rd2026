@@ -3714,21 +3714,24 @@ function renderProject(key) {
   // Back button moved to the header (#header-back-row) — see
   // _updateHeaderBack() — so it sits above the search box uniformly
   // across views instead of being repeated inside each ROOT layout.
+  // Project summary row (2026-05-28 layout consolidation): the title +
+  // both progress timelines (Bending + Assembly) share one line instead
+  // of stacking. On mobile widths the flex container wraps gracefully.
   ROOT.innerHTML = `
-    <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
-    <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
-    <div class="bent-summary">
-      <div class="bent-row">
+    <div class="project-summary-row">
+      <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
+      <div class="progress-inline bent-mini">
         <span class="bent-label"><span class="icon-bend"></span> Bending</span>
+        <div class="progress-bar bent-bar"><div class="progress-fill" style="width:${bentPct}%"></div></div>
         <span class="bent-stat">${bentCount}/${parts.length} · ${bentPct}%</span>
       </div>
-      <div class="progress-bar large bent-bar"><div class="progress-fill" style="width:${bentPct}%"></div></div>
-      <div class="bent-row">
+      <div class="progress-inline assembled-mini">
         <span class="bent-label assembled-label">🧩 Assembly</span>
+        <div class="progress-bar assembled-bar"><div class="progress-fill" style="width:${assembledPct}%"></div></div>
         <span class="bent-stat">${assembledCount}/${parts.length} · ${assembledPct}%</span>
       </div>
-      <div class="progress-bar large assembled-bar"><div class="progress-fill" style="width:${assembledPct}%"></div></div>
     </div>
+    <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
     <div class="project-actions">
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
         ${completed ? '↺ Re-activate' : '✓ Mark Completed'}
