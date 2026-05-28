@@ -134,7 +134,7 @@ function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
           isLeaf, isWrapper, status, urn, drawing_urn,
           isCollapsedParent, hasChildren,
-          isVariantRoot, inChecklistMode, faded } = data;
+          isVariantRoot, inChecklistMode, faded, ensureCollapsed } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -213,8 +213,16 @@ function MindmapNode({ id, data, selected }) {
     window.__kmeStatus?.(`tap asm: ${code}`);
     if (!code || !projectKey) return;
     api.markAssembled?.(projectKey, code, !assembled);
+    // Auto-collapse a parent (variant/anchor) when it's marked as
+    // assembled — its subtree tucks back so the user sees progress.
+    // User 2026-05-28: 'อันนี้ที่ถูกติ๊กปุ่ม assembly อันนั้นจะถูก
+    // ย่อกลับมาอัตโนมัติ'. Leaf parts already fade out via the
+    // existing kme-faded rule; this branch covers parents.
+    if (!assembled && hasChildren && ensureCollapsed && id) {
+      ensureCollapsed(id);
+    }
     bump();
-  }, [code, projectKey, assembled, api, bump]);
+  }, [code, projectKey, assembled, api, bump, hasChildren, ensureCollapsed, id]);
 
   const onTimer = useCallback((e) => {
     e.stopPropagation();
@@ -543,6 +551,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     });
   }, [_persistCollapse, collapsed]);
 
+  // Idempotent 'make sure this node is collapsed'. Used when the user
+  // marks a parent (variant/anchor) as assembled — the subtree should
+  // tuck itself back automatically. User 2026-05-28: 'อันนี้ที่ถูก
+  // ติ๊กปุ่ม assembly อันนั้นจะถูกย่อกลับมาอัตโนมัติ'.
+  const ensureCollapsed = useCallback((nodeId) => {
+    setCollapsedNodes(prev => {
+      if (prev.has(nodeId)) return prev;
+      const next = new Set(prev);
+      next.add(nodeId);
+      _persistCollapse(collapsed, next);
+      return next;
+    });
+  }, [_persistCollapse, collapsed]);
+
   // Children map for the current edge set → subtree descent.
   // Recomputed on every nodes/edges change but cheap (O(E)).
   const descendantMap = useMemo(() => {
@@ -732,6 +754,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         isCollapsedParent,
         hasChildren,
         inChecklistMode,
+        ensureCollapsed,
         faded: hiddenByTap3 || (inChecklistMode ? isHidden : false),
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
@@ -741,7 +764,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // workshop's drags are visual-only and reset on reload.
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
