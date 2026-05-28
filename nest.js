@@ -207,13 +207,12 @@
     }
 
     let minX = +Infinity, minY = +Infinity, maxX = -Infinity, maxY = -Infinity;
-    const outerCandidates = [];
-    const interior = [];
+    const outerStrokes = [];   // every OUTER-layer polyline / line / arc
+    const interior = [];       // every INTERIOR-layer entity
     for (const e of parsed.entities) {
       const pts = entityPoints(e);
       if (!pts || pts.length < 2) continue;
       const layer = String(e.layer || '');
-      // Only cut-path layers contribute to bbox.
       if (isCutLayer(layer)) {
         for (const [x, y] of pts) {
           if (x < minX) minX = x;
@@ -223,19 +222,25 @@
         }
       }
       if (/OUTER/i.test(layer)) {
-        outerCandidates.push(pts);
+        outerStrokes.push(pts);
       } else if (/INTERIOR/i.test(layer)) {
         interior.push(pts);
       } else {
-        // Render-only — won't affect bbox.
-        outerCandidates.push(pts);
+        // Untagged cut content — assume outer.
+        outerStrokes.push(pts);
       }
     }
 
     const bbox = isFinite(minX) ? [minX, minY, maxX, maxY] : null;
-    // Outer = the longest-perimeter loop among candidates — proxy for
-    // "outer profile". DXFs from Fusion's Sheet Metal DXF Creator
-    // always have an OUTER_PROFILES layer with one closed loop.
+
+    // The renderer wants ONE 'outer' polyline to draw as a filled
+    // closed shape (single LWPOLYLINE = the common Fusion case), AND
+    // a list of additional strokes to draw on top for parts whose
+    // cut path is made of disconnected lines + splines (e.g.
+    // BK1DN1-120000.dxf has 24 LINE + 16 SPLINE entities on
+    // OUTER_PROFILES — no single LWPOLYLINE). Without ``strokes``
+    // those parts rendered with just a stub of a line, losing their
+    // outline (user 2026-05-28: 'BK1DN1-120000 ไม่มีรูป Part').
     function perim(pts) {
       let p = 0;
       for (let i = 1; i < pts.length; i++) {
@@ -245,10 +250,24 @@
       }
       return p;
     }
-    let outer = outerCandidates.length
-      ? outerCandidates.reduce((a, b) => (perim(b) > perim(a) ? b : a))
-      : [];
-    return { outer, holes: interior, bbox };
+    // Treat a polyline as 'closed' for fill purposes only if its
+    // start and end are within 1mm — Fusion's LWPOLYLINEs are
+    // usually start==end exact, but float jitter can push them apart.
+    let outer = [];
+    let strokes = [];
+    if (outerStrokes.length === 1) {
+      // Single polyline — most Fusion exports. Use as outer; no
+      // extra strokes needed.
+      outer = outerStrokes[0];
+    } else if (outerStrokes.length > 1) {
+      // Multi-piece outer (BK1DN1-120000 style). Pick the LONGEST
+      // segment as the 'outer' candidate so labels + transforms still
+      // work, then draw every segment via ``strokes`` so the user sees
+      // the whole part outline.
+      outer = outerStrokes.reduce((a, b) => (perim(b) > perim(a) ? b : a));
+      strokes = outerStrokes;
+    }
+    return { outer, strokes, holes: interior, bbox };
   }
 
   // ── Fetch + parse DXFs in parallel ─────────────────────────────────
@@ -269,7 +288,7 @@
         const text = await resp.text();
         const parsed = window.dxf.parseString(text);
         const ex = _extractPolygons(parsed);
-        p.polys = { outer: ex.outer, holes: ex.holes };
+        p.polys = { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes };
         p.bbox = ex.bbox;
         if (ex.bbox) {
           // Default W/H to the bbox dimensions; user can override.
@@ -427,8 +446,11 @@
       this.W = W; this.H = H;
       this.free = [{ x: 0, y: 0, w: W, h: H }];
     }
-    place(w, h) {
-      let best = null;  // {x, y, short, long}
+    bestFit(w, h) {
+      // Pure scoring — does NOT mutate free_rects. Returns
+      // {x, y, short, long} or null. Used by the caller to compare
+      // rotations BEFORE committing to a placement.
+      let best = null;
       for (const r of this.free) {
         if (r.w >= w && r.h >= h) {
           const lx = r.w - w, ly = r.h - h;
@@ -440,9 +462,16 @@
           }
         }
       }
-      if (!best) return null;
-      this._split(best.x, best.y, w, h);
-      return [best.x, best.y];
+      return best;
+    }
+    commit(x, y, w, h) {
+      this._split(x, y, w, h);
+      return [x, y];
+    }
+    place(w, h) {
+      const b = this.bestFit(w, h);
+      if (!b) return null;
+      return this.commit(b.x, b.y, w, h);
     }
     _split(x, y, w, h) {
       const next = [];
@@ -557,6 +586,7 @@
     }
 
     function runOne(modeStr) {
+      const use_maxrects = (modeStr === 'MaxRects');
       const sorted = pieces.slice().sort((a, b) => (b.w * b.h) - (a.w * a.h));
       const stockCopy = stock.map(s => ({ ...s }));
       const sheets = [];
@@ -570,18 +600,44 @@
           const placed = [];
           const stillLeft = [];
           for (const piece of remaining) {
+            // Evaluate EVERY allowed rotation, keep the one whose
+            // best-free-rect leftover short side is smallest (BSSF).
+            // The previous code broke on the first rotation that fit,
+            // which often picked an awful position when a 90° rotate
+            // would have nested into a snug gap — that's a big part
+            // of why the layout looked 'มั่วหนัก' (user 2026-05-28).
+            // MaxRectsPacker has bestFit() that scores without
+            // mutating; Skyline still falls through to single-rot try.
+            if (use_maxrects) {
+              let best = null;
+              for (const rot of piece.rots) {
+                const rw = (rot === 90 || rot === 270) ? piece.h + gap : piece.w + gap;
+                const rh = (rot === 90 || rot === 270) ? piece.w + gap : piece.h + gap;
+                const fit = packer.bestFit(rw, rh);
+                if (!fit) continue;
+                if (best === null
+                    || fit.short < best.fit.short
+                    || (fit.short === best.fit.short && fit.long < best.fit.long)) {
+                  best = { rot, rw, rh, fit };
+                }
+              }
+              if (best) {
+                const [x, y] = packer.commit(best.fit.x, best.fit.y, best.rw, best.rh);
+                placed.push({ ...piece, x, y, rot: best.rot });
+              } else {
+                stillLeft.push(piece);
+              }
+              continue;
+            }
+            // Skyline path — simpler, place() is destructive so we
+            // still break on first fit.
             let wasPlaced = false;
             for (const rot of piece.rots) {
               const rw = (rot === 90 || rot === 270) ? piece.h + gap : piece.w + gap;
               const rh = (rot === 90 || rot === 270) ? piece.w + gap : piece.h + gap;
               const pos = packer.place(rw, rh);
               if (pos) {
-                placed.push({
-                  ...piece,
-                  x: pos[0],
-                  y: pos[1],
-                  rot: rot,
-                });
+                placed.push({ ...piece, x: pos[0], y: pos[1], rot });
                 wasPlaced = true;
                 break;
               }
@@ -770,6 +826,25 @@
           ctx.beginPath();
           for (let k = 0; k < hole.length; k++) {
             const [ax, ay] = transform(hole[k][0], hole[k][1]);
+            if (k === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
+          }
+          ctx.stroke();
+        }
+      }
+      // Multi-piece outer strokes — parts like BK1DN1-120000 whose
+      // outer profile is a chain of separate LINE + SPLINE entities
+      // (no single LWPOLYLINE). The single ``outer`` poly we drew
+      // above caught only one segment; this stroke pass paints the
+      // rest so the user sees the complete outline. Skipped when
+      // outer is the single polyline (havePoly is enough on its own).
+      if (pl.polys && pl.polys.strokes && pl.polys.strokes.length > 1) {
+        ctx.strokeStyle = colour;
+        ctx.lineWidth = (isHighlight ? 2.2 : 1.0) * dpr;
+        for (const seg of pl.polys.strokes) {
+          if (seg.length < 2) continue;
+          ctx.beginPath();
+          for (let k = 0; k < seg.length; k++) {
+            const [ax, ay] = transform(seg[k][0], seg[k][1]);
             if (k === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
           }
           ctx.stroke();
