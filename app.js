@@ -528,6 +528,20 @@ function dxfsForProject(projectKey) {
 //   - Row click downloads the DXF (single) or opens a sub-popover (N>1)
 // Dismissed by outside-click, Escape, or scroll — same teardown contract
 // as _renderDxfPopover so no orphan document listeners are left behind.
+// Convert a kitchen-drawings-rd2026.github.io URL to its jsdelivr
+// equivalent so XHR fetches succeed under CORS. github.io doesn't
+// emit Access-Control-Allow-Origin for raw files; jsdelivr does.
+// Falls through unchanged for non-Pages URLs.
+function _githubPagesToJsdelivr(url) {
+  if (!url) return url;
+  const m = url.match(/^https?:\/\/([^./]+)\.github\.io\/(.*)$/);
+  if (!m) return url;
+  const repoName = m[1];
+  const path = m[2];
+  // Hard-coded owner — every project URL routes through wuttichaisaeton.
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/${repoName}@main/${path}`;
+}
+
 // ── DXF preview modal ────────────────────────────────────────────────
 // Lazy-loaded JS DXF parser/renderer. ~200 KB; loaded only when the
 // user clicks a DXF row to preview (saves data on workshop iPads that
@@ -535,11 +549,15 @@ function dxfsForProject(projectKey) {
 // `dxf` npm package's UMD build).
 let _dxfLibPromise = null;
 function ensureDxfLib() {
-  if (window.Dxf || window.dxf) return Promise.resolve();
+  if (window.dxf) return Promise.resolve();
   if (_dxfLibPromise) return _dxfLibPromise;
   _dxfLibPromise = new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://unpkg.com/dxf@5.1.1/dist/dxf.min.js';
+    // jsdelivr serves the bundled UMD build; unpkg occasionally
+    // refuses cross-origin script loads from sandboxed preview
+    // environments, jsdelivr is more permissive. The library
+    // exposes the global `dxf` (lowercase).
+    s.src = 'https://cdn.jsdelivr.net/npm/dxf@5.1.1/dist/dxf.min.js';
     s.async = true;
     s.onload = resolve;
     s.onerror = (e) => {
@@ -605,11 +623,17 @@ async function _renderDxfPreviewModal(dxf) {
   // Lazy-load lib + fetch DXF text + render to SVG.
   try {
     await ensureDxfLib();
-    const lib = window.Dxf || window.dxf;
+    const lib = window.dxf;
     if (!lib || typeof lib.toSVG !== 'function') {
       throw new Error('DXF library loaded but toSVG() not available');
     }
-    const resp = await fetch(dxf.url, { cache: 'force-cache' });
+    // GitHub Pages doesn't send CORS headers for raw file requests,
+    // so XHR fetches against the github.io URL fail. jsdelivr serves
+    // the same repo content WITH CORS headers — rewrite the URL just
+    // for the preview fetch. Download button keeps the github.io URL
+    // because the browser handles `download` attribute without CORS.
+    const fetchUrl = _githubPagesToJsdelivr(dxf.url);
+    const resp = await fetch(fetchUrl, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`fetch ${resp.status}`);
     const text = await resp.text();
     const parsed = lib.parseString(text);

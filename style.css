@@ -3150,6 +3150,22 @@ footer {
   background: #f4f4f0;     /* light background so DXF strokes are visible */
   border-radius: 4px;
 }
+/* The dxf library writes stroke-width as a percentage of the viewBox
+   (0.1%), which collapses to a sub-pixel line at preview size and
+   renders blank. Force a constant pixel width that doesn't scale
+   with the SVG viewBox transform. */
+.dxf-preview-svg-wrap svg path,
+.dxf-preview-svg-wrap svg line,
+.dxf-preview-svg-wrap svg polyline,
+.dxf-preview-svg-wrap svg polygon,
+.dxf-preview-svg-wrap svg circle,
+.dxf-preview-svg-wrap svg ellipse,
+.dxf-preview-svg-wrap svg rect {
+  stroke: #1a1f24 !important;
+  stroke-width: 1.4px !important;
+  fill: none !important;
+  vector-effect: non-scaling-stroke;
+}
 .dxf-preview-loading {
   color: #88aab1;
   font-size: 13px;
