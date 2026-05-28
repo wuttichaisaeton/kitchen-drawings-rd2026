@@ -726,6 +726,12 @@ const LS_GITHUB_PAT_KEY = 'kd_github_pat_v1';
 
 let _uploadedPdfsCache = {};
 
+// ── Uploaded DXF cache (admin-only, mirrors uploaded_pdfs pattern) ──
+// Keyed by <dxf_stem> (per-panel). Each value carries a `master_code`
+// field that ties it to a Library row's data-code. Multi-panel masters
+// have N entries — see dxfsForMasterCode() below for the lookup.
+let _uploadedDxfsCache = {};
+
 // ── Active configuration rows mirrored from Fusion ──────────────────
 // Pushed by CC_SyncOccNames add-in every time the user clicks a row in
 // a wrapper file's Configuration table. Shape:
@@ -784,6 +790,22 @@ function initUploadedPdfsSync() {
     });
   } catch (e) {
     console.warn('Firebase uploaded_pdfs listener failed:', e);
+  }
+}
+
+function initUploadedDxfsSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('uploaded_dxfs').on('value', snap => {
+      _uploadedDxfsCache = snap.val() || {};
+      // Workshop never sees the 📐 button — skip the full render so a
+      // burst of uploads doesn't repaint the workshop iPad needlessly.
+      if (isAdmin()) {
+        try { render(); } catch {}
+      }
+    });
+  } catch (e) {
+    console.warn('Firebase uploaded_dxfs listener failed:', e);
   }
 }
 
@@ -5426,6 +5448,7 @@ async function init() {
   initPinnedSync();
   initFamilyChipSync();
   initUploadedPdfsSync();
+  initUploadedDxfsSync();
   initActiveRowsSync();
   initBentSync();
   initAssembledSync();
