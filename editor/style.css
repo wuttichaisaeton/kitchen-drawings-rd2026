@@ -243,6 +243,43 @@
   transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
               opacity 0.40s ease;
 }
+
+/* ── Checklist-mode fade (assembly view) ──────────────────────────── */
+/* When a part is hidden because (a) its variant is collapsed, or (b)
+   it's been marked assembled, kme-faded applies an opacity+scale fade
+   on the inner div. Position transforms on React Flow's outer wrapper
+   stay untouched. User 2026-05-28: 'ให้ท่าค่อยๆแตกออกไป ไม่ต้องเร็ว
+   ให้เขามองทัน'.
+   Asymmetric durations: 800ms when bringing a part back in (fade-IN
+   uses the base rule above which we extend to 0.80s opacity for the
+   checklist case), 600ms when fading out (defined here).
+   Pointer-events disabled so faded nodes are click-through — workshop
+   can't accidentally tap an invisible 🧩 button. */
+.kme-root .kme-node.kme-faded {
+  opacity: 0;
+  transform: scale(0.55);
+  pointer-events: none;
+  transition: transform 0.60s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.60s ease;
+}
+/* Fade-IN (when going FROM faded → visible) reads the BASE rule's
+   transition value, so we bump it just for kme-bom nodes in checklist
+   mode. 0.80s + slight stagger via cubic-bezier feels generous. */
+.kme-root .kme-node.kme-bom {
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.80s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Variant root nodes always show — they're the click target that
+   brings the kids back in. Slight pulsing hint that they're tappable. */
+.kme-root .kme-node.kme-variant-root {
+  cursor: pointer;
+}
+.kme-root .kme-node.kme-variant-root.kme-parent-collapsed {
+  /* Reuse the existing collapsed-parent glow but tinted toward the
+     family's color so each cabinet's variant card looks distinct.
+     Already inherits the kmeParentPulse animation from kme-parent-collapsed. */
+}
 .kme-root.kme-collapsed .react-flow__node:not(.react-flow__node-project) {
   pointer-events: none;
 }

@@ -3869,6 +3869,11 @@ function _buildBomNodes(project, parts, projectKey) {
         projectKey,
         isLeaf,
         isWrapper,
+        // Mark variant-root nodes so the editor's checklist mode can:
+        //   (a) seed them into the initially-collapsed set on first
+        //       open of an assembly view, and
+        //   (b) recognise clicks on them as expand/collapse toggles.
+        isVariantRoot: !!node._is_variant_root,
         missing: partMissing && isLeaf,
         status: node.status,
         urn: node.urn || null,
@@ -5380,25 +5385,26 @@ function renderProject(key) {
     markCompleted(key, !completed);
     render();
   });
+  // Reset buttons: always show the confirm so workshop staff can clear
+  // experimental state freely. The display count is parts-based (matches
+  // the progress bar), but the reset itself wipes ALL keys for the
+  // project in cache + RTDB — including wrappers (e.g. BK0DN0-080000)
+  // that get tapped via the mindmap but aren't in the BOM parts[] list.
   ROOT.querySelector('#reset-bent-btn')?.addEventListener('click', () => {
-    if (!bentCount) {
-      // Nothing to reset — silent. Don't spam a confirm dialog when
-      // the bar is already 0/N.
-      return;
-    }
+    const live = bentCountForProject(key, parts);
     const ok = window.confirm(
       `Reset bending progress for "${project.name || key}"?\n\n` +
-      `This clears ${bentCount}/${parts.length} bent flags. Cannot be undone.`
+      `This clears ${live}/${parts.length} bent flags. Cannot be undone.`
     );
     if (!ok) return;
     resetBentForProject(key);
     render();
   });
   ROOT.querySelector('#reset-assembled-btn')?.addEventListener('click', () => {
-    if (!assembledCount) return;
+    const live = assembledCountForProject(key, parts);
     const ok = window.confirm(
       `Reset assembly progress + timers for "${project.name || key}"?\n\n` +
-      `This clears ${assembledCount}/${parts.length} assembled flags AND all accumulated timer sessions. Cannot be undone.`
+      `This clears ${live}/${parts.length} assembled flags AND all accumulated timer sessions. Cannot be undone.`
     );
     if (!ok) return;
     resetAssembledForProject(key);

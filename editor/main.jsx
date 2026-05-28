@@ -133,7 +133,8 @@ function ProjectCenterNode({ id, data, selected }) {
 function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
           isLeaf, isWrapper, status, urn, drawing_urn,
-          isCollapsedParent, hasChildren } = data;
+          isCollapsedParent, hasChildren,
+          isVariantRoot, inChecklistMode, faded } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -289,6 +290,16 @@ function MindmapNode({ id, data, selected }) {
     }
   }, [admin, isBom, code, family, api]);
 
+  // Checklist-mode fade: applied when (a) the editor flagged this node
+  // hidden because its variant is collapsed, or (b) the part has been
+  // marked assembled. Variant-root nodes themselves never fade — they
+  // are the click target that brings the kids back in.
+  // `assembled` was already read above (line ~150) for the existing
+  // green-tint indicator; reuse it here so a tap on 🧩 fades the node
+  // out on the next local re-render via bump().
+  const isFadedNode = isBom && !isVariantRoot &&
+    (faded || (inChecklistMode && assembled));
+
   const cls = ['kme-node'];
   if (selected) cls.push('kme-selected');
   if (linked) cls.push('kme-linked');
@@ -301,6 +312,8 @@ function MindmapNode({ id, data, selected }) {
   if (!admin) cls.push('kme-view-only');
   if (hasChildren && isBom) cls.push('kme-parent');
   if (isCollapsedParent) cls.push('kme-parent-collapsed');
+  if (isVariantRoot) cls.push('kme-variant-root');
+  if (isFadedNode) cls.push('kme-faded');
 
   // Family color drives border + bottom tint
   const style = isBom && color ? {
@@ -583,11 +596,46 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     )));
   }, []);
 
+  // Assembly checklist mode is active when the tree carries variant-root
+  // nodes (CC_Assembly emits them post-2026-05-28). In checklist mode:
+  //   • Variants start collapsed on first open of a project — only the
+  //     project center + variant cards show, parts are tucked away.
+  //   • Clicking a variant fades its kids in.
+  //   • Clicking 🧩 on a part marks assembled AND fades the part out
+  //     (still toggleable from any non-checklist view).
+  const inChecklistMode = useMemo(
+    () => nodes.some(n => n.data?.isVariantRoot),
+    [nodes]);
+
+  // First-open seed: if the project has variants and no per-node collapse
+  // state has ever been persisted (kd_project_collapse_v1 entry is empty
+  // for nodes), preset every variant id into the collapsed set so the
+  // initial view is "project + variants only". A user who then expands
+  // some variants stores that explicit choice; the seed never runs again
+  // for this project unless they hit Reset (which clears the LS entry).
+  const seededProjectRef = useRef(null);
+  useEffect(() => {
+    if (!inChecklistMode) return;
+    if (seededProjectRef.current === projectKey) return;
+    seededProjectRef.current = projectKey;
+    if (collapsedNodes.size > 0) return;
+    const variantIds = nodes.filter(n => n.data?.isVariantRoot).map(n => n.id);
+    if (!variantIds.length) return;
+    const seeded = new Set(variantIds);
+    setCollapsedNodes(seeded);
+    _persistCollapse(collapsed, seeded);
+  }, [inChecklistMode, projectKey, nodes, collapsedNodes, collapsed, _persistCollapse]);
+
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
   // too because contentEditable + double-click-to-edit are per-node UX.
   // Pick component type from data.kind — 'project' → ProjectCenterNode,
   // anything else → MindmapNode (handles BOM + Custom).
+  //
+  // Checklist-mode hiding uses `data.faded` instead of React Flow's
+  // `hidden: true` so the node stays in the DOM and the CSS opacity
+  // transition can animate it on/off. `hidden: true` removes the node
+  // from React Flow's render entirely, which means no exit animation.
   const nodesWithHandlers = useMemo(() => nodes.map((n) => {
     const isProject = n.data?.kind === 'project';
     const isHidden = hiddenIds.has(n.id);
@@ -596,12 +644,17 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     return {
       ...n,
       type: isProject ? 'project' : 'mindmap',
-      hidden: isHidden,
+      // In checklist mode, keep BOM nodes in the DOM and let CSS handle
+      // visibility (smooth fade). Outside checklist mode, fall back to
+      // React Flow's hidden mechanism (instant, lower DOM cost).
+      hidden: inChecklistMode ? false : isHidden,
       data: {
         ...n.data,
         onLabelChange, admin,
         isCollapsedParent,
         hasChildren,
+        inChecklistMode,
+        faded: inChecklistMode ? isHidden : false,
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
       // Workshop also gets to drag nodes — useful for rearranging the
@@ -610,14 +663,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // workshop's drags are visual-only and reset on reload.
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode]);
 
-  // Edges: hide if either endpoint is in hiddenIds (so a collapsed
-  // parent's subtree-edges disappear with the nodes).
-  const visibleEdges = useMemo(() => edges.map(e => ({
-    ...e,
-    hidden: hiddenIds.has(e.source) || hiddenIds.has(e.target),
-  })), [edges, hiddenIds]);
+  // Edges: in checklist mode keep them in the SVG but fade their stroke
+  // when either endpoint is hidden (lets the line shrink with the node).
+  // Outside checklist mode keep the existing instant-hide semantics.
+  const visibleEdges = useMemo(() => edges.map(e => {
+    const endpointHidden = hiddenIds.has(e.source) || hiddenIds.has(e.target);
+    if (inChecklistMode) {
+      return endpointHidden
+        ? { ...e, style: { ...(e.style || {}), opacity: 0, transition: 'opacity 0.6s ease' } }
+        : { ...e, style: { ...(e.style || {}), transition: 'opacity 0.8s ease' } };
+    }
+    return { ...e, hidden: endpointHidden };
+  }), [edges, hiddenIds, inChecklistMode]);
 
   const onNodesChange = useCallback((changes) => {
     // View-only: only allow 'select' changes — block drag/dimension/etc.
