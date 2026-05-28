@@ -3278,11 +3278,9 @@ function buildProjectTree(parts, projectKey) {
   // Pass 4 — virtual variant_root nodes. CC_Assembly (2026-05-28+)
   // stamps each leaf with the immediate-child-of-project-root code
   // (e.g. all parts under "10WVON-08OLOR:1" get
-  // _variant_root='10WVON-08OLOR'). For every still-rootless node that
-  // carries a variant_root, create — or reuse — a synthetic variant
-  // node and attach the node as its child. The variant nodes become
-  // the SOLE roots, giving the React Flow mindmap the two-level
-  // structure the user asked for:
+  // _variant_root='10WVON-08OLOR'). For every still-rootless node we
+  // resolve a variant_root and attach it under a synthetic variant
+  // node. Final shape:
   //
   //   project center
   //     ├─ 10WVON-08OLOR (variant)
@@ -3291,21 +3289,50 @@ function buildProjectTree(parts, projectKey) {
   //     └─ 10WVON-12OLOR (variant)
   //         └─ … similar subtree …
   //
-  // Older JSONs without variant_root flow through unchanged.
+  // The tricky case is virtual WRAPPERS (created in Pass 1). They
+  // don't carry _variant_root themselves — they're synthesized from
+  // a parent_code reference — so we walk their descendants depth-first
+  // to find the first leaf with one. First-seen wins; for a wrapper
+  // whose descendants split across variants (rare in practice) this
+  // attaches it to whichever variant the walk visited first.
+  //
+  // Older JSONs without variant_root flow through unchanged: this
+  // pass simply finds no variant_root anywhere and does nothing.
+  function _resolveVariantRoot(node) {
+    if (node._variant_root) return node._variant_root;
+    // DFS over descendants. Iterative so a deep wrapper chain doesn't
+    // blow the stack — guarded by an explicit visited set in case of
+    // cycles in malformed data.
+    const visited = new Set();
+    const stack = [...node.children];
+    while (stack.length) {
+      const n = stack.pop();
+      if (visited.has(n.code)) continue;
+      visited.add(n.code);
+      if (n._variant_root) return n._variant_root;
+      for (const c of (n.children || [])) stack.push(c);
+    }
+    return null;
+  }
+
   const variantNodes = new Map();
-  for (const node of nodes) {
-    if (node.parent) continue;
-    if (!node._variant_root) continue;
-    if (node.code === node._variant_root) continue;  // self-reference
-    let vr = variantNodes.get(node._variant_root);
-    if (!vr) {
-      vr = {
-        code: node._variant_root,
+  // Snapshot nodes array — the loop mutates nodes/byCode when it
+  // creates new variant nodes, and we don't want to iterate over them
+  // (they're handled separately as the new roots).
+  const rootlessSnapshot = nodes.filter(n => !n.parent);
+  for (const node of rootlessSnapshot) {
+    const vr = _resolveVariantRoot(node);
+    if (!vr) continue;
+    if (node.code === vr) continue;  // would self-reference
+    let vNode = variantNodes.get(vr);
+    if (!vNode) {
+      vNode = {
+        code: vr,
         qty: 0,
-        _prefix: node._variant_root.split('-')[0],
+        _prefix: vr.split('-')[0],
         _parent_code: null,
         _variant_root: null,
-        family: _remapFamilyForCode(node._variant_root, 'Other'),
+        family: _remapFamilyForCode(vr, 'Other'),
         pdf: null,
         page: 1,
         urn: null,
@@ -3316,12 +3343,12 @@ function buildProjectTree(parts, projectKey) {
         children: [],
         parent: null,
       };
-      nodes.push(vr);
-      byCode.set(vr.code, vr);
-      variantNodes.set(node._variant_root, vr);
+      nodes.push(vNode);
+      byCode.set(vr, vNode);
+      variantNodes.set(vr, vNode);
     }
-    node.parent = vr;
-    vr.children.push(node);
+    node.parent = vNode;
+    vNode.children.push(node);
   }
 
   function sortKids(n) {
