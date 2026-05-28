@@ -3855,8 +3855,13 @@ function _buildBomNodes(project, parts, projectKey) {
   }
 
   // Emit a BOM node at (x, y). Returns the node's compound key so callers
-  // can wire edges. Pulled out so both layout modes share it.
-  function emitNode(node, x, y) {
+  // can wire edges. Both real variant roots (from CC_Assembly's Pass 4)
+  // and top-level legacy parents with children get marked as anchors
+  // via opts.forceIsAnchor so checklist mode treats them identically.
+  // opts.anchorNodeId lets recursive placeSubtree calls thread the
+  // ancestor anchor id down so kids carry the right variantNodeId.
+  function emitNode(node, x, y, opts) {
+    opts = opts || {};
     const famKey = _remapFamilyForCode(node.code, node.family);
     const colors = _familyColors(famKey);
     const isLeaf = !node.children?.length;
@@ -3867,14 +3872,27 @@ function _buildBomNodes(project, parts, projectKey) {
     // 2026-05-28 'ชื่อจะซ้ำไม่เป็นไร'). Falls back to plain code when
     // the project has no variants — preserves stale-link compatibility.
     const nodeKey = node._id || `${node.code}::`;
-    // Variant id this node descends from, for the editor's compact-mode
-    // position override. Variant-roots themselves get null (they ARE the
-    // anchor). Non-variant kids carry their variant_root → editor uses
-    // it to figure out where to stack the kid when its variant is
-    // collapsed in checklist mode.
-    const variantNodeId = node._is_variant_root
-      ? null
-      : (node._variant_root ? `bom:${node._variant_root}::` : null);
+    // isVariantRoot flag — true for real variant roots AND for any
+    // top-level parent that the layout is treating as a cluster anchor
+    // (user 2026-05-28: 'Auto-cluster ตาม parent_code: ทุก top-level
+    // master ที่มี children = ก้อน (collapsible)').
+    const isVariantRoot = opts.forceIsAnchor != null
+      ? !!opts.forceIsAnchor
+      : !!node._is_variant_root;
+    // variantNodeId points at the cluster anchor this node descends
+    // from. For an anchor itself: null. For a descendant: the anchor's
+    // React Flow id, passed in via opts.anchorNodeId. Falls back to the
+    // legacy variant_root code-derived id when no anchor is threaded.
+    let variantNodeId;
+    if (isVariantRoot) {
+      variantNodeId = null;
+    } else if (opts.anchorNodeId) {
+      variantNodeId = opts.anchorNodeId;
+    } else if (node._variant_root) {
+      variantNodeId = `bom:${node._variant_root}::`;
+    } else {
+      variantNodeId = null;
+    }
     nodes.push({
       id: `bom:${nodeKey}`,
       type: 'mindmap',
@@ -3893,7 +3911,7 @@ function _buildBomNodes(project, parts, projectKey) {
         //   (a) seed them into the initially-collapsed set on first
         //       open of an assembly view, and
         //   (b) recognise clicks on them as expand/collapse toggles.
-        isVariantRoot: !!node._is_variant_root,
+        isVariantRoot,
         variantNodeId,
         missing: partMissing && isLeaf,
         status: node.status,
@@ -3924,12 +3942,16 @@ function _buildBomNodes(project, parts, projectKey) {
   // is 1-indexed: a direct child of the cluster anchor is depth 1, its
   // grandchild depth 2, etc. The anchor itself must be emitted by the
   // caller before calling this.
-  function placeSubtree(node, cx, cy, rings, depth, arcStart, arcEnd) {
+  // anchorNodeId threads the cluster anchor's React Flow id down through
+  // the recursion so every descendant carries variantNodeId pointing at
+  // the right anchor. Lets compact mode stack the whole subtree on the
+  // anchor when it's collapsed.
+  function placeSubtree(node, cx, cy, rings, depth, arcStart, arcEnd, anchorNodeId) {
     const angle = (arcStart + arcEnd) / 2;
     const r = rings[Math.min(depth - 1, rings.length - 1)];
     const x = cx + r * Math.cos(angle);
     const y = cy + r * Math.sin(angle);
-    const { nodeKey, color } = emitNode(node, x, y);
+    const { nodeKey, color } = emitNode(node, x, y, { anchorNodeId });
     if (node.children?.length) {
       const totalLeaves = leafCount(node);
       let cursor = arcStart;
@@ -3938,91 +3960,70 @@ function _buildBomNodes(project, parts, projectKey) {
         const childArcEnd = cursor + (arcEnd - arcStart) * w;
         const childKey = child._id || `${child.code}::`;
         emitEdge(`bom:${nodeKey}`, childKey, color, false);
-        placeSubtree(child, cx, cy, rings, depth + 1, cursor, childArcEnd);
+        placeSubtree(child, cx, cy, rings, depth + 1, cursor, childArcEnd, anchorNodeId);
         cursor = childArcEnd;
       }
     }
   }
 
-  const hasVariants = roots.some(r => r._is_variant_root);
+  // ── Unified Option A layout for all projects ─────────────────────
+  // Cluster anchors = top-level roots that either (a) are real variant
+  // roots from CC_Assembly's Pass 4, or (b) have children (legacy
+  // projects without variant_root data still get clusterable structure
+  // via their parent_code wrappers — user 2026-05-28: 'Auto-cluster
+  // ตาม parent_code: ทุก top-level master ที่มี children = ก้อน').
+  // Roots that are top-level leaves (no children) just sit on the
+  // outer ring with no sub-cluster and never fade in checklist mode.
+  const n = roots.length;
+  // Tuning table per spec §2.1.4 — keeps adjacent clusters apart on
+  // the variant ring. n covers ALL top-level roots so a project with
+  // many independent leaves still gets enough breathing room.
+  const tuning =
+    n <= 2  ? { variantRing: 720,  subR0: 360, sweepDeg: 270 } :
+    n <= 5  ? { variantRing: 1100, subR0: 360, sweepDeg: 240 } :
+    n <= 10 ? { variantRing: 1800, subR0: 380, sweepDeg: 200 } :
+              { variantRing: 2200, subR0: 340, sweepDeg: 160 };
+  const subRings = [
+    tuning.subR0,
+    tuning.subR0 * 1.5,
+    tuning.subR0 * 1.95,
+    tuning.subR0 * 2.4,
+  ];
+  const sweep = tuning.sweepDeg * Math.PI / 180;
 
-  if (hasVariants) {
-    // ── Option A · local radial per variant ────────────────────────
-    const n = roots.length;
-    // Tuning table per spec §2.1.4 — keeps adjacent clusters apart.
-    const tuning =
-      n <= 2  ? { variantRing: 720,  subR0: 360, sweepDeg: 270 } :
-      n <= 5  ? { variantRing: 1100, subR0: 360, sweepDeg: 240 } :
-      n <= 10 ? { variantRing: 1800, subR0: 380, sweepDeg: 200 } :
-                { variantRing: 2200, subR0: 340, sweepDeg: 160 };
-    const subRings = [
-      tuning.subR0,
-      tuning.subR0 * 1.5,
-      tuning.subR0 * 1.95,
-      tuning.subR0 * 2.4,
-    ];
-    const sweep = tuning.sweepDeg * Math.PI / 180;
+  for (let i = 0; i < n; i++) {
+    const root = roots[i];
+    // Placement: n=2 → ±x axis (matches the standard 2-variant kitchen
+    // layout); n≥3 → evenly around a circle starting from 12 o'clock.
+    const va = (n === 1) ? 0
+            : (n === 2) ? ((i === 0) ? Math.PI : 0)
+            :             ((i / n) * 2 * Math.PI - Math.PI / 2);
+    const vx = tuning.variantRing * Math.cos(va);
+    const vy = tuning.variantRing * Math.sin(va);
+    // Anchor = real variant root OR top-level parent with children.
+    const isAnchor = !!root._is_variant_root || !!root.children?.length;
+    const { nodeKey: rootKey, color: rootColor } = emitNode(root, vx, vy, {
+      forceIsAnchor: isAnchor,
+    });
+    emitEdge(`project:${projectKey}`, rootKey, rootColor, true);
 
-    for (let i = 0; i < n; i++) {
-      const root = roots[i];
-      // Variant placement: n=2 puts them on the ±x axis (left+right
-      // — matches the standard 2-variant kitchen layout); n≥3 wraps
-      // them around a circle starting from 12 o'clock.
-      const va = (n === 1) ? 0
-              : (n === 2) ? ((i === 0) ? Math.PI : 0)
-              :             ((i / n) * 2 * Math.PI - Math.PI / 2);
-      const vx = tuning.variantRing * Math.cos(va);
-      const vy = tuning.variantRing * Math.sin(va);
-      const { nodeKey: variantKey, color: variantColor } = emitNode(root, vx, vy);
-      // Strong spoke from project center to variant
-      emitEdge(`project:${projectKey}`, variantKey, variantColor, true);
-
-      // Children of the variant fan out into a sub-arc centred on the
-      // outward direction (the angle from project center → variant).
-      // That keeps the cluster leaning away from the project, so edges
-      // from project→variant and variant→part don't visually clash.
-      if (root.children?.length) {
-        const totalLeaves = leafCount(root);
-        const arcStart = va - sweep / 2;
-        const arcEnd = va + sweep / 2;
-        let cursor = arcStart;
-        for (const child of root.children) {
-          const w = leafCount(child) / totalLeaves;
-          const childArcEnd = cursor + (arcEnd - arcStart) * w;
-          const childKey = child._id || `${child.code}::`;
-          emitEdge(`bom:${variantKey}`, childKey, variantColor, false);
-          placeSubtree(child, vx, vy, subRings, 1, cursor, childArcEnd);
-          cursor = childArcEnd;
-        }
+    // Children fan out in a sub-arc centred on the outward direction
+    // (the angle from project → anchor). Keeps the cluster leaning
+    // away from the project so edges from project→anchor and
+    // anchor→part don't visually clash.
+    if (root.children?.length) {
+      const totalLeaves = leafCount(root);
+      const arcStart = va - sweep / 2;
+      const arcEnd = va + sweep / 2;
+      let cursor = arcStart;
+      for (const child of root.children) {
+        const w = leafCount(child) / totalLeaves;
+        const childArcEnd = cursor + (arcEnd - arcStart) * w;
+        const childKey = child._id || `${child.code}::`;
+        emitEdge(`bom:${rootKey}`, childKey, rootColor, false);
+        placeSubtree(child, vx, vy, subRings, 1, cursor, childArcEnd, `bom:${rootKey}`);
+        cursor = childArcEnd;
       }
-    }
-  } else {
-    // ── Legacy global-ring (no _is_variant_root in tree) ──────────
-    const rings = [320, 560, 760, 940, 1080];
-    const totalRootLeaves = roots.reduce((s, n) => s + leafCount(n), 0) || 1;
-    let cursor = -Math.PI / 2;
-    for (const root of roots) {
-      const w = leafCount(root) / totalRootLeaves;
-      const rootArcEnd = cursor + Math.PI * 2 * w;
-      const angle = (cursor + rootArcEnd) / 2;
-      const r = rings[0];
-      const rx = r * Math.cos(angle);
-      const ry = r * Math.sin(angle);
-      const { nodeKey: rootKey, color } = emitNode(root, rx, ry);
-      emitEdge(`project:${projectKey}`, rootKey, color, true);
-      if (root.children?.length) {
-        const totalLeaves = leafCount(root);
-        let cur = cursor;
-        for (const child of root.children) {
-          const cw = leafCount(child) / totalLeaves;
-          const childArcEnd = cur + (rootArcEnd - cursor) * cw;
-          const childKey = child._id || `${child.code}::`;
-          emitEdge(`bom:${rootKey}`, childKey, color, false);
-          placeSubtree(child, 0, 0, rings.slice(1), 1, cur, childArcEnd);
-          cur = childArcEnd;
-        }
-      }
-      cursor = rootArcEnd;
     }
   }
 
