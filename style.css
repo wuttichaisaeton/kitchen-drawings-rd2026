@@ -1106,6 +1106,29 @@ h1 {
   min-width: 70px;
   text-align: right;
 }
+/* ↻ Reset button — sits inside each .progress-inline pill, visible to
+   admin + the relevant role (bend / asm). User 2026-05-28: 'ในช่วงแรก
+   ผมจะให้แต่ละฝ่าย ทดลอง จะได้กด มี reset ได้'. Tinted danger so it
+   reads as a destructive action without being too loud. */
+.reset-progress-btn {
+  margin-left: 4px;
+  padding: 4px 10px;
+  background: rgba(220, 80, 80, 0.08);
+  border: 1px solid rgba(220, 80, 80, 0.35);
+  color: #d57878;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.reset-progress-btn:hover {
+  background: rgba(220, 80, 80, 0.18);
+  color: #ff9a9a;
+  border-color: rgba(220, 80, 80, 0.6);
+}
 
 /* Legacy bent-summary block — no longer rendered as of 2026-05-28
    (kept here in case some other view still references the class). */

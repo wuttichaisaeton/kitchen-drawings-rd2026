@@ -2616,6 +2616,48 @@ function markAssembled(projectKey, code, done) {
   _mirrorAssembledToLocal();
 }
 
+// Bulk reset helpers for the "↻ Reset" buttons in each role's project
+// view (user 2026-05-28: 'ในช่วงแรก ผมจะให้แต่ละฝ่าย ทดลอง จะได้กด มี
+// reset ได้'). Clears every per-(project, part) entry for the given
+// projectKey from both the in-memory cache and the RTDB mirror so the
+// progress bar snaps back to 0/N.
+function resetBentForProject(projectKey) {
+  if (!projectKey) return 0;
+  const prefix = `${projectKey}::`;
+  const keys = Object.keys(_bentCache).filter(k => k.startsWith(prefix));
+  for (const k of keys) delete _bentCache[k];
+  _mirrorBentToLocal();
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref(`bent_status/${projectKey}`).remove(); }
+    catch (e) { console.warn('Firebase bent reset failed:', e); }
+  }
+  return keys.length;
+}
+
+function resetAssembledForProject(projectKey) {
+  if (!projectKey) return 0;
+  const prefix = `${projectKey}::`;
+  const keys = Object.keys(_assembledCache).filter(k => k.startsWith(prefix));
+  for (const k of keys) delete _assembledCache[k];
+  _mirrorAssembledToLocal();
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref(`assembled_status/${projectKey}`).remove(); }
+    catch (e) { console.warn('Firebase assembled reset failed:', e); }
+  }
+  // Wipe timers for this project too — assembly time tracking is part
+  // of the same workflow, and a 'fresh start' for the team should
+  // include accumulated time.
+  if (timersCache[projectKey]) {
+    delete timersCache[projectKey];
+    saveCachedTimers(timersCache);
+  }
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref(`timers/${projectKey}`).remove(); }
+    catch (e) { console.warn('Firebase timers reset failed:', e); }
+  }
+  return keys.length;
+}
+
 function _propagateBentUp(projectKey, startCode) {
   // Walk every project the part appears in (usually just one) and find
   // the parent of `startCode` via buildProjectTree. Recurse up while
@@ -5199,12 +5241,14 @@ function renderProject(key) {
         <span class="bent-label"><span class="icon-bend"></span> Bending</span>
         <div class="progress-bar bent-bar"><div class="progress-fill" style="width:${bentPct}%"></div></div>
         <span class="bent-stat">${bentCount}/${parts.length} · ${bentPct}%</span>
+        ${(_adminAll || _isBend) ? `<button class="reset-progress-btn" id="reset-bent-btn" title="Reset bending progress for this project">↻ Reset</button>` : ''}
       </div>` : ''}
       ${_showAssemblyPill ? `
       <div class="progress-inline assembled-mini">
         <span class="bent-label assembled-label">🧩 Assembly</span>
         <div class="progress-bar assembled-bar"><div class="progress-fill" style="width:${assembledPct}%"></div></div>
         <span class="bent-stat">${assembledCount}/${parts.length} · ${assembledPct}%</span>
+        ${(_adminAll || _isAsm) ? `<button class="reset-progress-btn" id="reset-assembled-btn" title="Reset assembly progress + timers for this project">↻ Reset</button>` : ''}
       </div>` : ''}
       ${_showMarkComplete ? `
       <button class="action-btn ${completed ? '' : 'danger'}" id="toggle-complete">
@@ -5244,6 +5288,30 @@ function renderProject(key) {
   // Optional-chain everything since role gating may strip elements.
   ROOT.querySelector('#toggle-complete')?.addEventListener('click', () => {
     markCompleted(key, !completed);
+    render();
+  });
+  ROOT.querySelector('#reset-bent-btn')?.addEventListener('click', () => {
+    if (!bentCount) {
+      // Nothing to reset — silent. Don't spam a confirm dialog when
+      // the bar is already 0/N.
+      return;
+    }
+    const ok = window.confirm(
+      `Reset bending progress for "${project.name || key}"?\n\n` +
+      `This clears ${bentCount}/${parts.length} bent flags. Cannot be undone.`
+    );
+    if (!ok) return;
+    resetBentForProject(key);
+    render();
+  });
+  ROOT.querySelector('#reset-assembled-btn')?.addEventListener('click', () => {
+    if (!assembledCount) return;
+    const ok = window.confirm(
+      `Reset assembly progress + timers for "${project.name || key}"?\n\n` +
+      `This clears ${assembledCount}/${parts.length} assembled flags AND all accumulated timer sessions. Cannot be undone.`
+    );
+    if (!ok) return;
+    resetAssembledForProject(key);
     render();
   });
   ROOT.querySelectorAll('.filter-btn').forEach(btn => {
