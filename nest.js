@@ -30,6 +30,10 @@
     ],
     mode: 'Auto',
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
+    dontRemember: false,  // Phase 2 toggle — pre-wired UI, packer doesn't
+                          // track remnants yet so both flags are no-ops
+                          // until that lands. User 2026-05-28 wanted UI
+                          // parity with the Python tool's twin toggles.
     gap: 2,
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     currentSheetIdx: 0,
@@ -848,9 +852,13 @@
               <input id="kdnest-gap" type="number" value="${S.gap}" min="0" step="1">
               <span>mm</span>
             </label>
-            <label class="kdnest-skip-lab">
+            <label class="kdnest-skip-lab" title="Skip = packer won't USE saved remnants for this run">
               <input id="kdnest-skip" type="checkbox" ${S.skipRemnants ? 'checked' : ''}>
               Skip remnants
+            </label>
+            <label class="kdnest-skip-lab" title="Don't remember = this run won't ADD new remnants to the saved pool (testing-friendly)">
+              <input id="kdnest-dont-remember" type="checkbox" ${S.dontRemember ? 'checked' : ''}>
+              Don't remember
             </label>
           </div>
           <div class="kdnest-stock">
@@ -903,6 +911,7 @@
     $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; });
     $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; });
     $('#kdnest-skip')?.addEventListener('change', e => { S.skipRemnants = e.target.checked; });
+    $('#kdnest-dont-remember')?.addEventListener('change', e => { S.dontRemember = e.target.checked; });
     $('#kdnest-parts-all')?.addEventListener('click', () => {
       S.parts.forEach(p => { p.selected = true; }); _refreshView();
     });
