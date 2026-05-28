@@ -5069,12 +5069,15 @@ function renderProject(key) {
   const _showAssemblyPill  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showMarkComplete  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showFilters       = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
-  // All PDF — generates a MERGED PDF download. Per user 2026-05-28
-  // download-gate update: 'PDF ทั้งหมดกดดูได้ แต่ดาวน์โหลดไม่ได้
-  // ทำได้เฉพาะแอดมิน'. Per-part PDFs still visible to every role via
-  // 👁 view buttons (open in new tab — workshop can read on iPad);
-  // only the bulk-download button is admin-gated now.
-  const _showAllPdf        = _adminAll;
+  // All PDF — merges every part's drawing into ONE navigable PDF
+  // opened in a new tab (not auto-saved). Per user 2026-05-28:
+  //   ✓ admin: full access
+  //   ✓ bending: needs the sequential viewer for the day's work
+  //     ('ในหัวข้อ bending ให้สามารถ ดู all pdf ได้')
+  //   ✗ laser: not relevant — they use Cut Sheets
+  //   ✗ workshop / assemble: keep hidden (less clutter; if needed
+  //     they ask admin for the merged copy)
+  const _showAllPdf        = _adminAll || _isBend;
   const _showDxfsBtn       = _adminAll || _isLaser || (!_isLaser && !_isBend && !_isAsm);
 
   let bodyHtml;
