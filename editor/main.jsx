@@ -609,15 +609,23 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     return descOf;
   }, [edges]);
 
-  // hiddenIds = union of descendants of every collapsed parent.
+  // hiddenIds = union of descendants of every collapsed parent AND
+  // every tap-3-hidden anchor. The latter is what makes a hidden
+  // parent's whole subtree disappear together (user 2026-05-28:
+  // 'tab 3 คือ โชว์พร้อมเส้น หายหรือซ่อน พร้อมเส้น' — hiding the
+  // parent should drag its kids' edges along with it).
   const hiddenIds = useMemo(() => {
     const out = new Set();
     for (const id of collapsedNodes) {
       const descs = descendantMap.get(id);
       if (descs) for (const d of descs) out.add(d);
     }
+    for (const id of hiddenAnchors) {
+      const descs = descendantMap.get(id);
+      if (descs) for (const d of descs) out.add(d);
+    }
     return out;
-  }, [collapsedNodes, descendantMap]);
+  }, [collapsedNodes, descendantMap, hiddenAnchors]);
 
   const idCounterRef = useRef(0);
 
