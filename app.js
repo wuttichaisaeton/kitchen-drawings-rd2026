@@ -281,6 +281,18 @@ function _renderAdminRoleSwitcher() {
       params.delete('role');
       dirty = true;
     }
+    // Deep-link `?p=Bung+01` auto-navigates straight into that project
+    // once the manifest loads. Combined with ?role=assemble this gives
+    // the admin a single URL to send each cabinet team — they tap it
+    // and land in the right project's assembly view without scrolling
+    // a project list. Stashed in window so the manifest-load handler
+    // can pick it up after data arrives (the project may not exist
+    // yet at flag-parse time).
+    if (params.has('p')) {
+      window.__kdInitialProject = params.get('p') || '';
+      params.delete('p');
+      dirty = true;
+    }
     if (dirty) {
       const qs = params.toString();
       const cleanUrl = window.location.origin + window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
@@ -3855,6 +3867,14 @@ function _buildBomNodes(project, parts, projectKey) {
     // 2026-05-28 'ชื่อจะซ้ำไม่เป็นไร'). Falls back to plain code when
     // the project has no variants — preserves stale-link compatibility.
     const nodeKey = node._id || `${node.code}::`;
+    // Variant id this node descends from, for the editor's compact-mode
+    // position override. Variant-roots themselves get null (they ARE the
+    // anchor). Non-variant kids carry their variant_root → editor uses
+    // it to figure out where to stack the kid when its variant is
+    // collapsed in checklist mode.
+    const variantNodeId = node._is_variant_root
+      ? null
+      : (node._variant_root ? `bom:${node._variant_root}::` : null);
     nodes.push({
       id: `bom:${nodeKey}`,
       type: 'mindmap',
@@ -3874,6 +3894,7 @@ function _buildBomNodes(project, parts, projectKey) {
         //       open of an assembly view, and
         //   (b) recognise clicks on them as expand/collapse toggles.
         isVariantRoot: !!node._is_variant_root,
+        variantNodeId,
         missing: partMissing && isLeaf,
         status: node.status,
         urn: node.urn || null,
@@ -7293,6 +7314,16 @@ async function init() {
     // Manifest is loaded so the project lookup will succeed.
     _applyDeepLinkFromHash();
     window.addEventListener('hashchange', _applyDeepLinkFromHash);
+
+    // ?p=<projectKey> auto-navigate (see applyUrlFlags above for the
+    // parse step). Lets admin send each cabinet team a single deep
+    // link straight into their project — `?role=assemble&p=Bung+01`.
+    const initialProject = window.__kdInitialProject;
+    if (initialProject && manifest.projects && manifest.projects[initialProject]) {
+      stack.push({ kind: 'project', name: initialProject });
+      window.__kdInitialProject = null;
+      render();
+    }
   } catch (e) {
     ROOT.innerHTML = `<div class="error">Failed to load data: ${escapeHtml(e.message)}<br><br>Check MANIFEST_URL in config.js</div>`;
   }

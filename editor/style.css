@@ -280,6 +280,18 @@
      family's color so each cabinet's variant card looks distinct.
      Already inherits the kmeParentPulse animation from kme-parent-collapsed. */
 }
+
+/* ── Compact-when-collapsed position slide ──────────────────────── */
+/* React Flow positions each node via `transform: translate(x, y)` on
+   the outer .react-flow__node wrapper. We transition that transform
+   in checklist mode so variants visibly slide between their compact
+   (close to project) and expanded (Option A radius) positions when
+   the user toggles them. User 2026-05-28: 'เอาแบบใกล้ๆกันก่อนได้ไหม
+   แล้วค่อยๆขยายออกเมื่อต้องการใช้พื้นที่'.
+   `:not(.dragging)` avoids lagging the drag handler. */
+.kme-root.kme-checklist .react-flow__node:not(.dragging) {
+  transition: transform 0.80s cubic-bezier(0.16, 1, 0.3, 1);
+}
 .kme-root.kme-collapsed .react-flow__node:not(.react-flow__node-project) {
   pointer-events: none;
 }

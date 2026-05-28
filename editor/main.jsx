@@ -626,6 +626,35 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     _persistCollapse(collapsed, seeded);
   }, [inChecklistMode, projectKey, nodes, collapsedNodes, collapsed, _persistCollapse]);
 
+  // Compact-mode positions for collapsed variants: keep them close to the
+  // project center so a freshly-opened mindmap fits a phone viewport
+  // without zooming out (user 2026-05-28: 'เริ่มต้นไกลบนมือถือจะอ่าน
+  // ลำบาก'). When the user expands a variant, its position transitions
+  // out to the original Option A radius (~720) and the kids fade in
+  // alongside. Kids of a collapsed variant stack on the variant's
+  // compact position so they (a) animate outward from the variant on
+  // expand and (b) don't bloat React Flow's auto-fit bounding box.
+  const COMPACT_RADIUS = 220;
+  const compactByVariantId = useMemo(() => {
+    if (!inChecklistMode) return new Map();
+    const map = new Map();
+    for (const n of nodes) {
+      if (!n.data?.isVariantRoot) continue;
+      if (!collapsedNodes.has(n.id)) continue;
+      const x0 = n.position?.x || 0;
+      const y0 = n.position?.y || 0;
+      // Preserve the variant's angular direction from the project so
+      // 2 variants stay on the ±x axis, 3+ stay on their clock-face
+      // arrangement — just pulled closer in.
+      const angle = (x0 === 0 && y0 === 0) ? 0 : Math.atan2(y0, x0);
+      map.set(n.id, {
+        x: COMPACT_RADIUS * Math.cos(angle),
+        y: COMPACT_RADIUS * Math.sin(angle),
+      });
+    }
+    return map;
+  }, [inChecklistMode, nodes, collapsedNodes]);
+
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
   // too because contentEditable + double-click-to-edit are per-node UX.
@@ -641,8 +670,21 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     const isHidden = hiddenIds.has(n.id);
     const isCollapsedParent = collapsedNodes.has(n.id);
     const hasChildren = (descendantMap.get(n.id)?.size || 0) > 0;
+    // Compact position override — when in checklist mode AND
+    // (the node is a collapsed variant root, or its parent variant is
+    // collapsed), stack it at the variant's compact position. CSS
+    // transition on .react-flow__node transform animates the slide.
+    let position = n.position;
+    if (inChecklistMode) {
+      if (n.data?.isVariantRoot && compactByVariantId.has(n.id)) {
+        position = compactByVariantId.get(n.id);
+      } else if (n.data?.variantNodeId && compactByVariantId.has(n.data.variantNodeId)) {
+        position = compactByVariantId.get(n.data.variantNodeId);
+      }
+    }
     return {
       ...n,
+      position,
       type: isProject ? 'project' : 'mindmap',
       // In checklist mode, keep BOM nodes in the DOM and let CSS handle
       // visibility (smooth fade). Outside checklist mode, fall back to
@@ -663,7 +705,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // workshop's drags are visual-only and reset on reload.
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
@@ -849,7 +891,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, [deepLinkCode]);
 
   return (
-    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}`}>
+    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}`}>
       <div className="kme-toolbar">
         {admin && (
           <>
