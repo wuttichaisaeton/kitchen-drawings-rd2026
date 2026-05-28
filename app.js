@@ -22,6 +22,7 @@ const LS_TIMERS_KEY = 'kd_timers_v1';             // { projectKey: { partCode: {
 const LS_DELETED_KEY = 'kd_deleted_drawings_v1';  // { partCode: epoch_ms }  — soft-deleted drawings (workshop "redo this")
 const LS_DELETED_PROJECTS_KEY = 'kd_deleted_projects_v1';  // { projectKey: { time } } — soft-deleted projects (admin hides from list; parts stay visible in Library)
 const LS_ADMIN_KEY = 'kd_admin_v1';               // '1' if this device is owner (เอ๋); only owner sees delete/edit buttons
+const LS_ROLE_KEY = 'kd_role_v1';                 // workshop|laser|bend|assemble — role tints what's visible (orthogonal to admin overlay)
 const LS_PINNED_KEY = 'kd_pinned_projects_v1';    // Set<projectKey> — pinned projects float to top
 const LS_PROJECT_ORDER_KEY = 'kd_project_order_v1'; // Array<projectKey> — manual drag order (truthy projects come first in this order)
 const LS_FAMILY_LABELS_KEY = 'kd_family_labels_v1';  // {familyKey: customLabel} — admin-edited chip labels
@@ -101,21 +102,109 @@ function updateAdminBadge() {
   }
 }
 
-// Apply URL flag on page load (clean URL after toggling so it doesn't
-// stay around in browser history with the admin flag).
-(function applyUrlAdminFlag() {
+// ──────────────────────────────────────────────────────────────────────
+// Role system — orthogonal to the admin flag (2026-05-28).
+// Default = 'workshop' (current view-only behavior). Other roles tint
+// what each user sees:
+//   • 'laser'    — งานตัด Laser. Focus on DXFs + nesting status.
+//   • 'bend'     — งานพับ. Focus on Bending kanban.
+//   • 'assemble' — งานประกอบ. Focus on Assembly kanban + comments.
+//   • 'admin'    — separate overlay flag (LS_ADMIN_KEY) that adds edit
+//                  buttons on top of any role.
+//
+// Toggle:
+//   • Visit  ?role=laser    → enable on this device (persists)
+//   • Visit  ?role=workshop → reset to default
+//   • Type   :laser         in search box → enable
+//   • Type   :laser off     in search box → reset to workshop
+//
+// Each role's actual UI differences are implemented per-feature — this
+// section only provides the plumbing (state + helpers + chip + URL
+// + search hooks). User-driven per-role visibility rules slot in later.
+// ──────────────────────────────────────────────────────────────────────
+
+const ROLES = {
+  workshop: { label: 'Workshop', emoji: '👁',  color: '#888'    },
+  laser:    { label: 'Laser',    emoji: '🔥', color: '#d29922' },
+  bend:     { label: 'Bending',  emoji: '⊕',  color: '#5dbb63' },
+  assemble: { label: 'Assembly', emoji: '🧩', color: '#e07a5f' },
+};
+const ROLE_KEYS = Object.keys(ROLES);
+const DEFAULT_ROLE = 'workshop';
+
+function getRole() {
+  try {
+    const v = localStorage.getItem(LS_ROLE_KEY) || DEFAULT_ROLE;
+    return ROLES[v] ? v : DEFAULT_ROLE;
+  } catch { return DEFAULT_ROLE; }
+}
+
+function setRole(role) {
+  if (!ROLES[role]) role = DEFAULT_ROLE;
+  try {
+    if (role === DEFAULT_ROLE) localStorage.removeItem(LS_ROLE_KEY);
+    else localStorage.setItem(LS_ROLE_KEY, role);
+  } catch {}
+  updateRoleBadge();
+}
+
+function isLaserUser()    { return getRole() === 'laser'; }
+function isBendUser()     { return getRole() === 'bend'; }
+function isAssembleUser() { return getRole() === 'assemble'; }
+function isWorkshopRole() { return getRole() === 'workshop'; }
+
+function updateRoleBadge() {
+  let badge = document.getElementById('role-badge');
+  const headerRow = document.querySelector('.header-row');
+  const role = getRole();
+  if (role !== DEFAULT_ROLE) {
+    const r = ROLES[role];
+    if (!badge && headerRow) {
+      badge = document.createElement('span');
+      badge.id = 'role-badge';
+      badge.className = 'role-badge';
+      headerRow.appendChild(badge);
+    }
+    if (badge) {
+      badge.textContent = `${r.emoji} ${r.label}`;
+      badge.style.background = r.color + '22';
+      badge.style.color = r.color;
+      badge.style.borderColor = r.color + '88';
+      badge.title = `Role: ${r.label} — type ":${role} off" in search box to reset.`;
+    }
+  } else if (badge) {
+    badge.remove();
+  }
+  // Visibility hooks land here later — keep this central so per-role
+  // tweaks (hide a tab, swap default filter, etc.) can be added by
+  // appending to this function instead of scattering checks everywhere.
+}
+
+// Apply URL flags on page load (admin + role). Clean URL after toggling
+// so flags don't persist in browser history.
+(function applyUrlFlags() {
   try {
     const params = new URLSearchParams(window.location.search);
+    let dirty = false;
     if (params.has('admin')) {
       const v = params.get('admin');
       if (v === '1' || v === 'on' || v === 'true') setAdmin(true);
       else if (v === '0' || v === 'off' || v === 'false') setAdmin(false);
       params.delete('admin');
+      dirty = true;
+    }
+    if (params.has('role')) {
+      const v = (params.get('role') || '').toLowerCase();
+      setRole(v);
+      params.delete('role');
+      dirty = true;
+    }
+    if (dirty) {
       const qs = params.toString();
       const cleanUrl = window.location.origin + window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
       window.history.replaceState({}, '', cleanUrl);
     }
-  } catch (e) { console.warn('admin flag parse failed:', e); }
+  } catch (e) { console.warn('flag parse failed:', e); }
 })();
 
 // ──────────────────────────────────────────────────────────────────────
@@ -5741,6 +5830,26 @@ SEARCH.addEventListener('input', () => {
     render();
     return;
   }
+  // Role triggers — :laser, :bend, :assemble, :workshop. Append "off"
+  // to reset to default (workshop). Mirrors the admin pattern. The
+  // ROLES table is the single source of truth so adding a new role
+  // here doesn't need a new branch.
+  for (const r of ROLE_KEYS) {
+    if (q === `:${r}` || q === `:${r} on`) {
+      setRole(r);
+      SEARCH.value = '';
+      updateSearchClear();
+      render();
+      return;
+    }
+    if (q === `:${r} off` || q === `:${r} 0`) {
+      setRole(DEFAULT_ROLE);
+      SEARCH.value = '';
+      updateSearchClear();
+      render();
+      return;
+    }
+  }
   if (!q) {
     render();
     return;
@@ -5762,6 +5871,8 @@ SEARCH_CLEAR.addEventListener('click', () => {
 async function init() {
   // Show admin badge if this device was previously toggled into admin mode.
   updateAdminBadge();
+  // Show role chip if this device is set to a non-default role.
+  updateRoleBadge();
 
   // Connect to Firebase Realtime DB for shared comments + timers + soft-
   // deleted drawings (real-time sync across devices). Falls back to

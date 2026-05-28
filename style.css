@@ -147,6 +147,22 @@ h1 {
   box-shadow: 0 1px 4px rgba(255, 107, 53, 0.4);
 }
 
+/* Role chip — sits next to the admin badge in the header row. Color +
+   background are set inline by updateRoleBadge() so each role gets its
+   own tint without a CSS rule per role. Hidden when role=workshop
+   (the default). */
+.role-badge {
+  font-size: 10px;
+  padding: 3px 8px;
+  margin-left: 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: help;
+}
+
 .tabs {
   display: flex;
   gap: 6px;
