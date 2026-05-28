@@ -3,140 +3,169 @@
   "status": "active",
   "created_at": "2026-05-28T02:02:54.294964+00:00",
   "updated_at": "2026-05-28T02:29:29.432976+00:00",
-  "total_unique_parts": 15,
-  "total_qty": 28,
+  "total_unique_parts": 17,
+  "total_qty": 50,
   "parts": [
     {
       "code": "BK1DN1-080000",
-      "qty": 1,
       "family": "Back-Down",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "BK0DN0-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:hKkiNHBmQNaJ9HM1pN8DUQ"
+      "urn": "urn:adsk.wipprod:dm.lineage:hKkiNHBmQNaJ9HM1pN8DUQ",
+      "qty": 1,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "BM1NO0-080000",
-      "qty": 1,
       "family": "Beam",
-      "variant_root": "10WVON-08OLOR",
-      "urn": "urn:adsk.wipprod:dm.lineage:s8Uxjx8JQfqZ9TolJ5gkHw"
+      "urn": "urn:adsk.wipprod:dm.lineage:s8Uxjx8JQfqZ9TolJ5gkHw",
+      "qty": 1,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "BXXTR0-000000",
-      "qty": 4,
       "family": "Other",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "BK2TR1-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:Ara0SuvHTMi5vUIvrh2CkQ"
+      "urn": "urn:adsk.wipprod:dm.lineage:Ara0SuvHTMi5vUIvrh2CkQ",
+      "qty": 4,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "FN0F00-080000",
-      "qty": 1,
       "family": "Floor",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "FN0FN3-080005",
-      "urn": "urn:adsk.wipprod:dm.lineage:MT9vB7GkSFGNlv9DEWgCQw"
+      "urn": "urn:adsk.wipprod:dm.lineage:MT9vB7GkSFGNlv9DEWgCQw",
+      "qty": 1,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "FN2BNX-080000",
-      "qty": 1,
       "family": "Floor",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "FN0FN3-080005",
-      "urn": "urn:adsk.wipprod:dm.lineage:pwaJNYI6QdWG4uKebGRYYw"
+      "urn": "urn:adsk.wipprod:dm.lineage:pwaJNYI6QdWG4uKebGRYYw",
+      "qty": 3,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "SD00NA-080000",
-      "qty": 1,
       "family": "Side Panel",
-      "variant_root": "10WVON-08OLOR",
-      "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
+      "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w",
+      "qty": 4,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "SD0SUP-000000",
-      "qty": 2,
       "family": "Side Panel",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "SD00NA-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA",
+      "qty": 4,
+      "variant_root": "10WVON-08OLOR"
+    },
+    {
+      "code": "SH0S11-080046",
+      "family": "Other",
+      "qty": 1,
+      "variant_root": "10WVON-08OLOR"
+    },
+    {
+      "code": "SH0S12-080000",
+      "family": "Other",
+      "qty": 1,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "TS0BV0-000000",
-      "qty": 2,
       "family": "Top Sup",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "TS002H-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
+      "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw",
+      "qty": 2,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "TS1BHH-080000",
-      "qty": 2,
       "family": "Top Sup",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "TS002H-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:i8NRkqxjRoWzza-oYOeIQw"
+      "urn": "urn:adsk.wipprod:dm.lineage:i8NRkqxjRoWzza-oYOeIQw",
+      "qty": 2,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "TS2TRX-000000",
-      "qty": 4,
       "family": "Top Sup",
-      "variant_root": "10WVON-08OLOR",
       "parent_code": "TS2TR4-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:28VLFffKTye7RPik2IVLIA"
+      "urn": "urn:adsk.wipprod:dm.lineage:28VLFffKTye7RPik2IVLIA",
+      "qty": 4,
+      "variant_root": "10WVON-08OLOR"
     },
     {
       "code": "BK1DN1-120000",
-      "qty": 1,
       "family": "Back-Down",
-      "variant_root": "10WVON-12OLOR",
       "parent_code": "BK0DN0-120000",
-      "urn": "urn:adsk.wipprod:dm.lineage:i8XrW6uQRb2humHJDBI_WA"
+      "urn": "urn:adsk.wipprod:dm.lineage:i8XrW6uQRb2humHJDBI_WA",
+      "qty": 1,
+      "variant_root": "10WVON-12OLOR"
     },
     {
       "code": "BM1NO0-120000",
-      "qty": 1,
       "family": "Beam",
-      "variant_root": "10WVON-12OLOR",
-      "urn": "urn:adsk.wipprod:dm.lineage:hC3uAnpIR8-ULbhVwuDdAw"
+      "urn": "urn:adsk.wipprod:dm.lineage:hC3uAnpIR8-ULbhVwuDdAw",
+      "qty": 1,
+      "variant_root": "10WVON-12OLOR"
+    },
+    {
+      "code": "BXXTR0-000000",
+      "family": "Other",
+      "parent_code": "BK2TR1-080000",
+      "urn": "urn:adsk.wipprod:dm.lineage:Ara0SuvHTMi5vUIvrh2CkQ",
+      "qty": 4,
+      "variant_root": "10WVON-12OLOR"
     },
     {
       "code": "FN0F00-120000",
-      "qty": 1,
       "family": "Floor",
-      "variant_root": "10WVON-12OLOR",
       "parent_code": "FN0FN3-120007",
-      "urn": "urn:adsk.wipprod:dm.lineage:yv0KauwdTuCvXbsugja6hg"
+      "urn": "urn:adsk.wipprod:dm.lineage:yv0KauwdTuCvXbsugja6hg",
+      "qty": 1,
+      "variant_root": "10WVON-12OLOR"
     },
     {
       "code": "FN2BN0-000000",
-      "qty": 1,
       "family": "Floor",
-      "variant_root": "10WVON-12OLOR",
       "parent_code": "FN2BNX-120000",
-      "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ"
-    },
-    {
-      "code": "SD00NA-080000",
-      "qty": 1,
-      "family": "Side Panel",
-      "variant_root": "10WVON-12OLOR",
-      "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
+      "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ",
+      "qty": 3,
+      "variant_root": "10WVON-12OLOR"
     },
     {
       "code": "SD0SUP-000000",
-      "qty": 2,
       "family": "Side Panel",
-      "variant_root": "10WVON-12OLOR",
       "parent_code": "SD00NA-080000",
-      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA",
+      "qty": 4,
+      "variant_root": "10WVON-12OLOR"
+    },
+    {
+      "code": "TS0BV0-000000",
+      "family": "Top Sup",
+      "parent_code": "TS002H-080000",
+      "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw",
+      "qty": 2,
+      "variant_root": "10WVON-12OLOR"
     },
     {
       "code": "TS1BHH-120000",
-      "qty": 2,
       "family": "Top Sup",
-      "variant_root": "10WVON-12OLOR",
       "parent_code": "TS002H-120000",
-      "urn": "urn:adsk.wipprod:dm.lineage:bdrkOWi7RAKqSCOzOvBHJQ"
+      "urn": "urn:adsk.wipprod:dm.lineage:bdrkOWi7RAKqSCOzOvBHJQ",
+      "qty": 2,
+      "variant_root": "10WVON-12OLOR"
+    },
+    {
+      "code": "TS2TRX-000000",
+      "family": "Top Sup",
+      "parent_code": "TS2TR4-080000",
+      "urn": "urn:adsk.wipprod:dm.lineage:28VLFffKTye7RPik2IVLIA",
+      "qty": 4,
+      "variant_root": "10WVON-12OLOR"
     }
   ]
 }
