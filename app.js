@@ -240,6 +240,7 @@ function _openInNewTab(url) {
 // application/octet-stream) land in the user's Downloads folder rather
 // than rendering inline as text.
 function _downloadFile(url, suggestedName) {
+  if (!url) { console.warn('[dxf] _downloadFile called with empty url'); return; }
   const a = document.createElement('a');
   a.href = url;
   a.download = suggestedName || '';
@@ -5283,9 +5284,64 @@ function renderFamily(fam, highlight) {
     });
   });
 
+  // Build a DXF popover anchored below the trigger button. Returns the
+  // popover element so the caller can wire up its own dismiss handlers.
+  // Closed via outside-click, Escape, or scroll.
+  function _renderDxfPopover(triggerBtn, list) {
+    // Remove any prior popover (only one at a time)
+    document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
+
+    const pop = document.createElement('div');
+    pop.className = 'part-dxf-popover';
+    pop.setAttribute('role', 'menu');
+    pop.innerHTML = list.map((item, i) => `
+      <button class="part-dxf-popover-row" data-dxf-url="${escapeHtml(item.url)}" data-dxf-name="${escapeHtml(item.filename || item.stem + '.dxf')}" role="menuitem">
+        <span class="part-dxf-popover-icon">📐</span>
+        <span class="part-dxf-popover-name">${escapeHtml(item.filename || item.stem + '.dxf')}</span>
+      </button>
+    `).join('');
+
+    document.body.appendChild(pop);
+
+    // Position below the button, right-aligned
+    const r = triggerBtn.getBoundingClientRect();
+    pop.style.position = 'fixed';
+    pop.style.top  = (r.bottom + 4) + 'px';
+    pop.style.right = (window.innerWidth - r.right) + 'px';
+
+    // Row click → download + dismiss
+    pop.querySelectorAll('.part-dxf-popover-row').forEach(row => {
+      row.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        _downloadFile(row.dataset.dxfUrl, row.dataset.dxfName);
+        pop.remove();
+      });
+    });
+
+    // Outside-click dismiss — attach on next tick so the opening click
+    // doesn't immediately dismiss the popover it just opened.
+    setTimeout(() => {
+      const dismiss = (ev) => {
+        if (!pop.contains(ev.target)) {
+          pop.remove();
+          document.removeEventListener('click',     dismiss, true);
+          document.removeEventListener('keydown',   onKey);
+          window.removeEventListener('scroll',      onScroll, true);
+        }
+      };
+      const onKey = (ev) => { if (ev.key === 'Escape') dismiss({ target: document.body }); };
+      const onScroll = () => dismiss({ target: document.body });
+      document.addEventListener('click',     dismiss, true);
+      document.addEventListener('keydown',   onKey);
+      window.addEventListener('scroll',      onScroll, true);
+    }, 0);
+
+    return pop;
+  }
+
   // Admin DXF button: N=1 triggers direct download, N>1 opens a popover
-  // anchored to the button. Popover landing in Task 5; for now, N=1 path
-  // only — N>1 will fall through to console.warn until Task 5.
+  // anchored below the button. One row per DXF, filename-sorted (stable
+  // ordering across re-renders). Outside-click, Escape, or scroll dismiss.
   ROOT.querySelectorAll('.part-dxf-btn').forEach(btn => {
     btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -5296,10 +5352,7 @@ function renderFamily(fam, highlight) {
         _downloadFile(list[0].url, list[0].filename || `${list[0].stem}.dxf`);
         return;
       }
-      // N > 1 — popover lands in Task 5. Temporary fallback so testing
-      // doesn't break: download the first file with a console warning.
-      console.warn(`[dxf] N=${list.length}, popover not yet implemented — downloading first only`);
-      _downloadFile(list[0].url, list[0].filename || `${list[0].stem}.dxf`);
+      _renderDxfPopover(btn, list);
     });
   });
 
