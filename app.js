@@ -2076,9 +2076,22 @@ function projectList() {
 // Rendering — top-level dispatch
 // ──────────────────────────────────────────────────────────────────────
 
+// Toggle the header Back button row based on whether the user has
+// drilled into any view. Sat above the search box (header-back-row in
+// index.html) so Back is the FIRST control the user reaches with their
+// thumb on mobile — moved up from the in-content position 2026-05-28.
+function _updateHeaderBack() {
+  const row = document.getElementById('header-back-row');
+  if (!row) return;
+  row.style.display = stack.length > 0 ? '' : 'none';
+}
+
 function render() {
   // Migrate legacy 'missing' view (Tree tab — removed 2026-05-24) → projects
   if (view === 'missing') view = 'projects';
+  // Always sync the header Back button visibility before painting the
+  // view — every render either reveals or hides it based on stack depth.
+  _updateHeaderBack();
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
     return renderLibraryHome();
@@ -3698,8 +3711,10 @@ function renderProject(key) {
   const assembledCount = assembledCountForProject(key, parts);
   const assembledPct = parts.length ? Math.round((assembledCount * 100) / parts.length) : 0;
 
+  // Back button moved to the header (#header-back-row) — see
+  // _updateHeaderBack() — so it sits above the search box uniformly
+  // across views instead of being repeated inside each ROOT layout.
   ROOT.innerHTML = `
-    <button class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span></button>
     <h2 class="section-title">${escapeHtml(project.name || key)}<span class="count">${parts.length} unique · ${totalQtyAll} pcs · ${groups.size} masters</span></h2>
     <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
     <div class="bent-summary">
@@ -3731,7 +3746,8 @@ function renderProject(key) {
   // subscription in initActiveRowsSync re-runs this on every push.
   try { updateActiveVariantBadge(); } catch {}
 
-  ROOT.querySelector('.back-btn').addEventListener('click', navBack);
+  // Note: header Back button click is wired ONCE at app init (see the
+  // bottom of this file). No per-view rewiring needed.
   ROOT.querySelector('#toggle-complete').addEventListener('click', () => {
     markCompleted(key, !completed);
     render();
@@ -5178,14 +5194,14 @@ function renderFamily(fam, highlight) {
        </div>`
     : '';
 
+  // Back button is in the header (#header-back-row) — see
+  // _updateHeaderBack(). No inline button rendered here.
   ROOT.innerHTML = `
-    <button class="back-btn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span></button>
     <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
     <div class="part-list">${list}</div>
     ${emptyHint}
   `;
 
-  ROOT.querySelector('.back-btn').addEventListener('click', navBack);
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons — each has its own handler.
@@ -5616,6 +5632,12 @@ async function init() {
 
     // Ensure tab visibility matches admin state on boot.
     updateAdminBadge();
+
+    // Header Back button — wired once at init. The inline back-btn
+    // inside ROOT views was removed 2026-05-28 in favor of this single
+    // header instance shown/hidden via _updateHeaderBack().
+    const headerBack = document.getElementById('header-back-btn');
+    if (headerBack) headerBack.addEventListener('click', navBack);
 
     render();
 

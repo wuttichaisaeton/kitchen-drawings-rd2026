@@ -186,6 +186,18 @@ h1 {
 
 .tab:active { transform: scale(0.97); }
 
+/* Header Back row — wraps the Back button so it sits as its own line
+   above the search box. Only visible when stack.length > 0 (controlled
+   by _updateHeaderBack in app.js). The button itself uses .back-btn
+   styles defined further down. */
+.header-back-row {
+  margin: 0 0 8px 0;
+}
+.header-back-row .back-btn {
+  /* No bottom margin here — the row container handles spacing. */
+  margin-bottom: 0;
+}
+
 .search-wrap {
   position: relative;
 }
