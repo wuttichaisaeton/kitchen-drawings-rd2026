@@ -797,6 +797,8 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   //   landed inside a workshop-op button (handled by that button's own
   //   onClick + stopPropagation).
   const centerClickTimer = useRef(null);
+  // Per-anchor tap counter for the expand → collapse → home cycle.
+  const tapCycleRef = useRef({ id: null, count: 0, last: 0 });
   const onNodeClick = useCallback((evt, node) => {
     // iPad-diagnostic: surface the tap event in the toolbar so we can
     // tell from the device whether onNodeClick fires at all (workshop
@@ -820,7 +822,34 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     const isWrapper = !!data.isWrapper;
 
     if (isBom && hasChildren) {
-      toggleNodeCollapse(node.id);
+      // 3-tap cycle on a parent node (variants + wrappers in
+      // checklist mode). User 2026-05-28:
+      //   tap 1 = ขยาย (expand)
+      //   tap 2 = ย่อ (collapse)
+      //   tap 3 = กลับบ้าน (fitView — frame the whole layout)
+      // Cycle resets when the user taps a different node, or after
+      // 8 seconds of silence on this one.
+      const cur = tapCycleRef.current;
+      const now = performance.now ? performance.now() : 0;
+      const sameNode = cur.id === node.id;
+      const fresh = !sameNode || (now - cur.last) > 8000;
+      if (fresh) {
+        cur.id = node.id;
+        cur.count = 1;
+        cur.last = now;
+        toggleNodeCollapse(node.id);
+      } else {
+        cur.count += 1;
+        cur.last = now;
+        if (cur.count % 3 === 0) {
+          // 3rd tap: home — frame everything visible. Don't toggle
+          // collapse state on this tap so the user lands on a clean
+          // 'whole picture' view (tap 4 will start a new expand).
+          try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {}
+        } else {
+          toggleNodeCollapse(node.id);
+        }
+      }
       return;
     }
 
