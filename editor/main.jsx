@@ -213,16 +213,17 @@ function MindmapNode({ id, data, selected }) {
     window.__kmeStatus?.(`tap asm: ${code}`);
     if (!code || !projectKey) return;
     api.markAssembled?.(projectKey, code, !assembled);
-    // Auto-collapse a parent (variant/anchor) when it's marked as
-    // assembled — its subtree tucks back so the user sees progress.
-    // User 2026-05-28: 'อันนี้ที่ถูกติ๊กปุ่ม assembly อันนั้นจะถูก
-    // ย่อกลับมาอัตโนมัติ'. Leaf parts already fade out via the
-    // existing kme-faded rule; this branch covers parents.
-    if (!assembled && hasChildren && ensureCollapsed && id) {
+    // When marking assembled (not un-marking), hide the node + its
+    // edges — same mechanism as the tap-3 home gesture. User
+    // 2026-05-28: 'ย่อเฉพาะ node นั้น (node หาย เส้นหาย) ลักษณะ
+    // การทำงาน คล้ายปุ่มที่ 3'. Applies to leaves AND parents; the
+    // editor's ensureCollapsed handles both the kids-fade-via-
+    // collapsedNodes path and the node-fade-via-hiddenAnchors path.
+    if (!assembled && ensureCollapsed && id) {
       ensureCollapsed(id);
     }
     bump();
-  }, [code, projectKey, assembled, api, bump, hasChildren, ensureCollapsed, id]);
+  }, [code, projectKey, assembled, api, bump, ensureCollapsed, id]);
 
   const onTimer = useCallback((e) => {
     e.stopPropagation();
@@ -495,9 +496,10 @@ function _readCollapsedState(pk) {
     return {
       center: !!entry.center,
       nodes: new Set(Array.isArray(entry.nodes) ? entry.nodes : []),
+      hidden: new Set(Array.isArray(entry.hidden) ? entry.hidden : []),
     };
   } catch {
-    return { center: false, nodes: new Set() };
+    return { center: false, nodes: new Set(), hidden: new Set() };
   }
 }
 function _writeCollapsedState(pk, state) {
@@ -505,8 +507,16 @@ function _writeCollapsedState(pk, state) {
     const all = JSON.parse(localStorage.getItem(LS_COLLAPSED) || '{}');
     const center = !!state.center;
     const nodes = [...(state.nodes || new Set())];
-    if (center || nodes.length) all[pk] = { ...(center ? { center: true } : {}), ...(nodes.length ? { nodes } : {}) };
-    else delete all[pk];
+    const hidden = [...(state.hidden || new Set())];
+    if (center || nodes.length || hidden.length) {
+      all[pk] = {
+        ...(center ? { center: true } : {}),
+        ...(nodes.length ? { nodes } : {}),
+        ...(hidden.length ? { hidden } : {}),
+      };
+    } else {
+      delete all[pk];
+    }
     localStorage.setItem(LS_COLLAPSED, JSON.stringify(all));
   } catch {}
 }
@@ -551,16 +561,23 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     });
   }, [_persistCollapse, collapsed]);
 
-  // Idempotent 'make sure this node is collapsed'. Used when the user
-  // marks a parent (variant/anchor) as assembled — the subtree should
-  // tuck itself back automatically. User 2026-05-28: 'อันนี้ที่ถูก
-  // ติ๊กปุ่ม assembly อันนั้นจะถูกย่อกลับมาอัตโนมัติ'.
+  // Idempotent 'make sure this node is collapsed AND hidden'. Used
+  // when the user marks a node as assembled — the node and its spoke
+  // should both fade out, mirroring the tap-3 home gesture. User
+  // 2026-05-28: 'ย่อเฉพาะ node นั้น (node หาย เส้นหาย) ลักษณะ การ
+  // ทำงาน คล้ายปุ่มที่ 3'. Tap project center re-shows them.
   const ensureCollapsed = useCallback((nodeId) => {
     setCollapsedNodes(prev => {
       if (prev.has(nodeId)) return prev;
       const next = new Set(prev);
       next.add(nodeId);
       _persistCollapse(collapsed, next);
+      return next;
+    });
+    setHiddenAnchors(prev => {
+      if (prev.has(nodeId)) return prev;
+      const next = new Set(prev);
+      next.add(nodeId);
       return next;
     });
   }, [_persistCollapse, collapsed]);
@@ -632,10 +649,26 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // initial view is "project + variants only". A user who then expands
   // some variants stores that explicit choice; the seed never runs again
   // for this project unless they hit Reset (which clears the LS entry).
-  // Anchors that have been hidden by the tap-3 'home' gesture.
-  // Session-local — cleared by tapping the project center (which
-  // also doubles as the 'bring everything back' gesture).
-  const [hiddenAnchors, setHiddenAnchors] = useState(() => new Set());
+  // Anchors that have been hidden by the tap-3 'home' gesture OR
+  // by ticking the 🧩 button. Persisted in the SAME LS entry as
+  // collapsedNodes so a render() triggered by a Firebase listener
+  // (initAssembledSync re-renders on every assembled change → would
+  // remount the editor + wipe useState if we kept this in memory
+  // only) doesn't lose the hide state.
+  const [hiddenAnchors, setHiddenAnchorsRaw] = useState(
+    () => _readCollapsedState(projectKey).hidden);
+  // Wrap to persist to the same LS entry as collapsedNodes — the
+  // useEffect that mirrors collapsedNodes uses the latest hidden too.
+  const setHiddenAnchors = useCallback((updater) => {
+    setHiddenAnchorsRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        const cur = _readCollapsedState(projectKey);
+        _writeCollapsedState(projectKey, { ...cur, hidden: next });
+      } catch {}
+      return next;
+    });
+  }, [projectKey]);
   const seededProjectRef = useRef(null);
   useEffect(() => {
     if (!inChecklistMode) return;
