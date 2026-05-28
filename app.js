@@ -127,10 +127,17 @@ function updateAdminBadge() {
 // (gradient pill + drop shadow) so role status is just as glanceable
 // as the admin flag. gradStart / gradEnd flow through to a 135°
 // linear-gradient; shadow is the gradEnd at ~40% alpha.
+//
+// Icon: pass `iconClass` when the role has a dedicated SVG icon
+// (rendered via a CSS background-image on a <span>). Otherwise the
+// plain `emoji` field renders as a unicode glyph. Bending uses the
+// project's existing press-brake icon (icons/bending.svg) per the
+// user request 2026-05-28 — same icon already shown on the bent
+// kanban buttons and the Bending pill summary.
 const ROLES = {
   workshop: { label: 'Workshop', emoji: '👁',  color: '#888',    gradStart: '#888',    gradEnd: '#666'    },
   laser:    { label: 'Laser',    emoji: '🔥', color: '#d29922', gradStart: '#ffa726', gradEnd: '#d29922' },
-  bend:     { label: 'Bending',  emoji: '⊕',  color: '#5dbb63', gradStart: '#7ed87b', gradEnd: '#3f9447' },
+  bend:     { label: 'Bending',  iconClass: 'icon-bend', color: '#5dbb63', gradStart: '#7ed87b', gradEnd: '#3f9447' },
   assemble: { label: 'Assembly', emoji: '🧩', color: '#e07a5f', gradStart: '#ff8a65', gradEnd: '#c24d32' },
 };
 const ROLE_KEYS = Object.keys(ROLES);
@@ -173,7 +180,13 @@ function updateRoleBadge() {
       // Render text in uppercase to mirror "🔓 ADMIN" — same chunky
       // visual weight so the user instantly recognizes "I'm in <X>
       // mode" without parsing the label.
-      badge.textContent = `${r.emoji} ${r.label.toUpperCase()}`;
+      //
+      // Two icon styles supported: an inline <span class="icon-...">
+      // (CSS-backed SVG, used for Bending) or a plain unicode emoji.
+      const iconHtml = r.iconClass
+        ? `<span class="${r.iconClass}" aria-hidden="true"></span>`
+        : (r.emoji || '');
+      badge.innerHTML = `${iconHtml} ${escapeHtml(r.label.toUpperCase())}`;
       badge.style.background = `linear-gradient(135deg, ${r.gradStart}, ${r.gradEnd})`;
       badge.style.color = '#fff';
       badge.style.borderColor = 'transparent';

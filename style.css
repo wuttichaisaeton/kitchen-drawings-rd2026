@@ -163,6 +163,16 @@ h1 {
   letter-spacing: 0.04em;
   white-space: nowrap;
   cursor: help;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Icon inside the role chip — same SVG-as-background pattern as the
+   stand-alone .icon-bend, but sized to fit the chip's small label. */
+.role-badge .icon-bend {
+  width: 14px;
+  height: 14px;
+  vertical-align: 0;
 }
 
 .tabs {
