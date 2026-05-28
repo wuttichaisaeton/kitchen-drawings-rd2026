@@ -3354,11 +3354,32 @@ footer {
 .kdnest-stock-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   margin-bottom: 4px;
   font-size: 12px;
   color: #cad6e6;
 }
+/* ↑ ↓ priority buttons — the packer walks the stock list top-to-
+   bottom, so moving a row up means 'try this size first'. User
+   2026-05-28 wanted all 4 rows reorderable. */
+.kdnest-stock-up,
+.kdnest-stock-down {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  line-height: 1;
+}
+.kdnest-stock-up:hover:not(:disabled),
+.kdnest-stock-down:hover:not(:disabled) { background: #243349; }
+.kdnest-stock-up:disabled,
+.kdnest-stock-down:disabled { opacity: 0.3; cursor: not-allowed; }
 /* Strip the up/down spinner arrows from EVERY number input in the
    Nesting workspace + sheet stock dialog. The spinners overlapped the
    last digit and made values hard to read (user 2026-05-28: 'ตัวปรับ

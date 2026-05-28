@@ -24,9 +24,18 @@
     projectName: '',
     parts: [],        // see _newPart()
     sheetStock: [
-      // Default stock — user can extend via the Sheet Stock dialog.
-      { w: 1525, h: 3050, qty: -1, label: '5×10' },  // -1 = unlimited
-      { w: 1220, h: 2440, qty: -1, label: '4×8'  },
+      // Defaults requested 2026-05-28:
+      //   1. 3050 × 1525  qty 1
+      //   2. 3050 × 1220  qty 1
+      //   3. 2440 × 1220  qty 1
+      //   4. empty (free row for the user to type custom dims)
+      // Row order = priority; ↑/↓ buttons reorder. Rows with w=0
+      // or h=0 are skipped by the packer, so the empty 4th row only
+      // becomes usable once the user fills it in.
+      { w: 3050, h: 1525, qty: 1, label: '5×10' },
+      { w: 3050, h: 1220, qty: 1, label: '5×8' },
+      { w: 2440, h: 1220, qty: 1, label: '4×8' },
+      { w: 0,    h: 0,    qty: 0, label: '(custom)' },
     ],
     mode: 'Auto',
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
@@ -633,7 +642,14 @@
       alert('No parts to nest — check selection / DXF loading status.');
       return;
     }
-    const result = _nestMultiSheet(pieces, S.sheetStock, S.gap, S.mode);
+    // Skip zero-sized stock rows (the always-present empty 4th row,
+    // or any row the user blanked out). Preserve order = priority.
+    const activeStock = S.sheetStock.filter(s => s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1));
+    if (activeStock.length === 0) {
+      alert('No usable sheet stock — fill in at least one row with W, H and qty.');
+      return;
+    }
+    const result = _nestMultiSheet(pieces, activeStock, S.gap, S.mode);
     S.flatSheets = result.sheets.map(s => ({
       thick: s.placements[0] ? s.placements[0].thickness : '',
       sw: s.sw, sh: s.sh, placements: s.placements,
@@ -972,15 +988,21 @@
         </div>`;
     }).join('');
 
-    const sheetStockRows = S.sheetStock.map((s, i) => `
-      <div class="kdnest-stock-row">
-        <input type="number" data-i="${i}" data-k="w" value="${s.w}" min="1" class="kdnest-stock-dim">
+    const sheetStockRows = S.sheetStock.map((s, i) => {
+      const upDisabled = i === 0 ? 'disabled' : '';
+      const downDisabled = i === S.sheetStock.length - 1 ? 'disabled' : '';
+      return `
+      <div class="kdnest-stock-row" data-i="${i}">
+        <button class="kdnest-stock-up"   data-i="${i}" title="Higher priority (try this size first)" ${upDisabled}>↑</button>
+        <button class="kdnest-stock-down" data-i="${i}" title="Lower priority"                       ${downDisabled}>↓</button>
+        <input type="number" data-i="${i}" data-k="w"   value="${s.w || ''}"   min="0" class="kdnest-stock-dim" placeholder="W">
         <span>×</span>
-        <input type="number" data-i="${i}" data-k="h" value="${s.h}" min="1" class="kdnest-stock-dim">
+        <input type="number" data-i="${i}" data-k="h"   value="${s.h || ''}"   min="0" class="kdnest-stock-dim" placeholder="H">
         <span>mm · qty</span>
-        <input type="number" data-i="${i}" data-k="qty" value="${s.qty}" class="kdnest-stock-qty" title="-1 = unlimited">
+        <input type="number" data-i="${i}" data-k="qty" value="${s.qty || 0}"         class="kdnest-stock-qty" title="-1 = unlimited">
         <span class="kdnest-stock-label">${_esc(s.label || '')}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     const sheetNavInfo = nSheets ? `${S.currentSheetIdx + 1} / ${nSheets}` : '0 / 0';
     const curSheet = S.flatSheets[S.currentSheetIdx];
@@ -1084,13 +1106,40 @@
     $('#kdnest-parts-none')?.addEventListener('click', () => {
       S.parts.forEach(p => { p.selected = false; }); _refreshView();
     });
-    // Sheet-stock editors
+    // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
+    // stock list in order, so moving a row up = 'try this size first'.
     S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty').forEach(el => {
       el.addEventListener('change', e => {
         const i = parseInt(e.target.dataset.i, 10);
         const k = e.target.dataset.k;
         if (!isNaN(i) && S.sheetStock[i]) {
           S.sheetStock[i][k] = parseFloat(e.target.value) || 0;
+          // Once the user fills the custom row, drop its '(custom)'
+          // label so it doesn't read 'custom' forever after.
+          if ((k === 'w' || k === 'h') && S.sheetStock[i].w > 0
+              && S.sheetStock[i].h > 0 && S.sheetStock[i].label === '(custom)') {
+            S.sheetStock[i].label = '';
+          }
+        }
+      });
+    });
+    S.rootEl.querySelectorAll('.kdnest-stock-up').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.i, 10);
+        if (i > 0) {
+          const arr = S.sheetStock;
+          [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+          _refreshView();
+        }
+      });
+    });
+    S.rootEl.querySelectorAll('.kdnest-stock-down').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const i = parseInt(e.currentTarget.dataset.i, 10);
+        if (i < S.sheetStock.length - 1) {
+          const arr = S.sheetStock;
+          [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+          _refreshView();
         }
       });
     });
