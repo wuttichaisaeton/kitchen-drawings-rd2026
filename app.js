@@ -2076,14 +2076,14 @@ function projectList() {
 // Rendering — top-level dispatch
 // ──────────────────────────────────────────────────────────────────────
 
-// Toggle the header Back button row based on whether the user has
-// drilled into any view. Sat above the search box (header-back-row in
-// index.html) so Back is the FIRST control the user reaches with their
-// thumb on mobile — moved up from the in-content position 2026-05-28.
+// Toggle the header Back button based on whether the user has drilled
+// into any view. The button lives inline in the single .header-controls
+// row alongside the tabs + search box (2026-05-28 layout: one row, not
+// four). Hidden via inline display:none until stack.length > 0.
 function _updateHeaderBack() {
-  const row = document.getElementById('header-back-row');
-  if (!row) return;
-  row.style.display = stack.length > 0 ? '' : 'none';
+  const btn = document.getElementById('header-back-btn');
+  if (!btn) return;
+  btn.style.display = stack.length > 0 ? '' : 'none';
 }
 
 function render() {

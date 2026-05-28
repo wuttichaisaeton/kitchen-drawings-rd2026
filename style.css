@@ -186,16 +186,44 @@ h1 {
 
 .tab:active { transform: scale(0.97); }
 
-/* Header Back row — wraps the Back button so it sits as its own line
-   above the search box. Only visible when stack.length > 0 (controlled
-   by _updateHeaderBack in app.js). The button itself uses .back-btn
-   styles defined further down. */
-.header-back-row {
-  margin: 0 0 8px 0;
+/* Single header controls row — Back · Tabs · Search all on one line.
+   Replaces the previous 3-row stack (tabs / back / search) so the
+   header is shorter and the search stays glued to the same plane as
+   the nav. Search grows to take the remaining width; everything else
+   sits at its natural size. */
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
 }
-.header-back-row .back-btn {
-  /* No bottom margin here — the row container handles spacing. */
-  margin-bottom: 0;
+/* Inside the combined row the Back button shrinks to a compact icon-
+   only square (no "Back" text — the arrow is universally recognised
+   and we need the horizontal real estate). */
+.header-controls .back-btn {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  margin: 0;
+}
+.header-controls .back-btn span {
+  /* Hide the literal "Back" word — too wide in this compact layout. */
+  display: none;
+}
+/* Tabs container packs left, doesn't grow. Override the global
+   .tab { flex: 1 } so each tab sizes to its content rather than
+   collapsing to zero inside this non-full-width parent. */
+.header-controls .tabs {
+  flex: 0 0 auto;
+  margin: 0;
+}
+.header-controls .tab {
+  flex: 0 0 auto;
+}
+/* Search wrap takes whatever horizontal space remains. */
+.header-controls .search-wrap {
+  flex: 1 1 auto;
+  min-width: 120px;   /* still tappable on narrow phones */
 }
 
 .search-wrap {
