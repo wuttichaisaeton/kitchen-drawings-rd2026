@@ -290,15 +290,19 @@ function MindmapNode({ id, data, selected }) {
     }
   }, [admin, isBom, code, family, api]);
 
-  // Checklist-mode fade: applied when (a) the editor flagged this node
-  // hidden because its variant is collapsed, or (b) the part has been
-  // marked assembled. Variant-root nodes themselves never fade — they
-  // are the click target that brings the kids back in.
-  // `assembled` was already read above (line ~150) for the existing
-  // green-tint indicator; reuse it here so a tap on 🧩 fades the node
-  // out on the next local re-render via bump().
-  const isFadedNode = isBom && !isVariantRoot &&
-    (faded || (inChecklistMode && assembled));
+  // Checklist-mode fade: applied when
+  //   (a) editor flagged this node hidden because its variant is
+  //       collapsed (kids of a collapsed parent),
+  //   (b) the part has been marked assembled, or
+  //   (c) the tap-3 'home' gesture hid this anchor (variant root
+  //       itself — user 2026-05-28 'กดครั้งที่ 3 SH0S10 จะหายไป').
+  // The first two never apply to variant roots themselves; the third
+  // explicitly does. data.faded is the editor's umbrella flag that
+  // covers (a) and (c); local `assembled` handles (b) for kids.
+  const isFadedNode = isBom && (
+    (isVariantRoot && faded) ||
+    (!isVariantRoot && (faded || (inChecklistMode && assembled)))
+  );
 
   const cls = ['kme-node'];
   if (selected) cls.push('kme-selected');
@@ -606,6 +610,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // initial view is "project + variants only". A user who then expands
   // some variants stores that explicit choice; the seed never runs again
   // for this project unless they hit Reset (which clears the LS entry).
+  // Anchors that have been hidden by the tap-3 'home' gesture.
+  // Session-local — cleared by tapping the project center (which
+  // also doubles as the 'bring everything back' gesture).
+  const [hiddenAnchors, setHiddenAnchors] = useState(() => new Set());
   const seededProjectRef = useRef(null);
   useEffect(() => {
     if (!inChecklistMode) return;
@@ -702,6 +710,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         position = compactByVariantId.get(n.data.variantNodeId);
       }
     }
+    // Hidden-by-tap-3: the anchor itself was hidden, OR a descendant
+    // of a hidden anchor. Independent of the existing checklist-mode
+    // collapse/fade so a normally-visible anchor can still be hidden
+    // and a normally-faded kid can still be hidden (no double-faded
+    // edge case to worry about — once kme-faded is applied opacity
+    // hits 0 either way).
+    const hiddenByTap3 = hiddenAnchors.has(n.id)
+      || (n.data?.variantNodeId && hiddenAnchors.has(n.data.variantNodeId));
     return {
       ...n,
       position,
@@ -716,7 +732,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         isCollapsedParent,
         hasChildren,
         inChecklistMode,
-        faded: inChecklistMode ? isHidden : false,
+        faded: hiddenByTap3 || (inChecklistMode ? isHidden : false),
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
       // Workshop also gets to drag nodes — useful for rearranging the
@@ -725,7 +741,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // workshop's drags are visual-only and reset on reload.
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
@@ -816,6 +832,12 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, .kme-missing-badge, [contenteditable="true"]')) return;
 
     if (node?.id?.startsWith('project:')) {
+      // Project center tap also un-hides any anchors that were
+      // hidden via the tap-3 'home' gesture — gives the user a
+      // single recoverable handle to bring everything back. User
+      // 2026-05-28: tap 3 hides the variant; tapping BUNG 01 brings
+      // them back.
+      if (hiddenAnchors.size) setHiddenAnchors(new Set());
       if (centerClickTimer.current) clearTimeout(centerClickTimer.current);
       centerClickTimer.current = setTimeout(() => {
         centerClickTimer.current = null;
@@ -849,13 +871,18 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: 'กลับบ้าน' — re-collapse JUST THIS node (other
-          // anchors keep their state per 'Interactive เฉพาะของตัวเอง')
-          // and zoom the camera tight on the project center so the
-          // tapped variant slides off-screen. User's annotated
-          // screenshot 2026-05-28 shows tap 3 result = ONLY the
-          // project bubble visible, all variants out of frame.
-          // We're not hiding nodes, just framing project tightly.
+          // 3rd tap: 'กลับบ้าน' = HIDE this node. User 2026-05-28
+          // ('ไม่เกี่ยวกับซูมเลย กดครั้งที่ 3 SH0S10-080046 จะหายไป')
+          // — literally fade the tapped anchor (and any descendant
+          // that was attached to it) out of view. The view doesn't
+          // pan. Other anchors keep their position and state per
+          // 'Interactive เฉพาะของตัวเอง'.
+          //
+          // First force the node into the collapsed set so its kids
+          // stack on it (or stay tucked), then add it to
+          // hiddenAnchors so the CSS kme-faded class applies. To
+          // bring it back, tap the project-center bubble — that
+          // gesture clears hiddenAnchors.
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
             const next = new Set(prev);
@@ -863,20 +890,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             _persistCollapse(collapsed, next);
             return next;
           });
-          const projectNode = nodes.find(n => n.data?.kind === 'project');
-          setTimeout(() => {
-            try {
-              if (projectNode) {
-                rf.fitView({
-                  nodes: [{ id: projectNode.id }],
-                  duration: 600,
-                  padding: 0.15,
-                });
-              } else {
-                rf.fitView({ duration: 600, padding: 0.15 });
-              }
-            } catch {}
-          }, 250);
+          setHiddenAnchors(prev => {
+            const next = new Set(prev);
+            next.add(node.id);
+            return next;
+          });
         } else {
           toggleNodeCollapse(node.id);
         }
