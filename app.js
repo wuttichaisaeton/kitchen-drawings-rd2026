@@ -65,6 +65,8 @@ function setAdmin(on) {
     else localStorage.removeItem(LS_ADMIN_KEY);
   } catch {}
   updateAdminBadge();
+  // Show / hide the admin-only role switcher.
+  try { _renderAdminRoleSwitcher(); } catch {}
 }
 
 function updateAdminBadge() {
@@ -196,9 +198,49 @@ function updateRoleBadge() {
   } else if (badge) {
     badge.remove();
   }
-  // Visibility hooks land here later — keep this central so per-role
-  // tweaks (hide a tab, swap default filter, etc.) can be added by
-  // appending to this function instead of scattering checks everywhere.
+  // Render the admin role switcher: 4 mini buttons that let the admin
+  // preview each role without typing magic words. Shown only when
+  // admin mode is on; auto-hides otherwise.
+  _renderAdminRoleSwitcher();
+}
+
+// Admin-only role switcher — appears in the header row when isAdmin()
+// is true. Lets the admin preview each role's view by clicking a
+// button instead of typing ":<role>" in the search box.
+function _renderAdminRoleSwitcher() {
+  let bar = document.getElementById('role-switcher');
+  const headerRow = document.querySelector('.header-row');
+  if (!isAdmin()) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar && headerRow) {
+    bar = document.createElement('div');
+    bar.id = 'role-switcher';
+    bar.className = 'role-switcher';
+    headerRow.appendChild(bar);
+  }
+  if (!bar) return;
+  const active = getRole();
+  // ROLE_KEYS includes 'workshop' (the default) so admin can flip back
+  // to the public iPad view via the same control.
+  bar.innerHTML = ROLE_KEYS.map(rk => {
+    const r = ROLES[rk];
+    const iconHtml = r.iconClass
+      ? `<span class="${r.iconClass}" aria-hidden="true"></span>`
+      : (r.emoji || '');
+    const isActive = rk === active;
+    const style = isActive
+      ? `background: linear-gradient(135deg, ${r.gradStart}, ${r.gradEnd}); color: #fff; border-color: transparent; box-shadow: 0 1px 4px ${r.gradEnd}66;`
+      : '';
+    return `<button class="role-switch-btn ${isActive ? 'active' : ''}" data-role="${rk}" style="${style}" title="Preview ${r.label} role">${iconHtml} ${escapeHtml(r.label.toUpperCase())}</button>`;
+  }).join('');
+  bar.querySelectorAll('.role-switch-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setRole(btn.dataset.role);
+      render();
+    });
+  });
 }
 
 // Apply URL flags on page load (admin + role). Clean URL after toggling

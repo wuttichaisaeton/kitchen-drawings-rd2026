@@ -170,6 +170,43 @@ h1 {
   align-items: center;
   gap: 4px;
 }
+
+/* Admin role switcher — 4 mini buttons (workshop/laser/bend/assemble)
+   that let the admin preview each role's view without typing magic
+   words. Shown only when isAdmin() is true (see _renderAdminRoleSwitcher
+   in app.js). Inactive buttons are muted grey; active button gets
+   the per-role gradient + drop shadow so it pops. */
+.role-switcher {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+  flex-wrap: wrap;
+}
+.role-switch-btn {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 1px solid #3a3f44;
+  background: rgba(255, 255, 255, 0.04);
+  color: #aaa;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.role-switch-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.role-switch-btn .icon-bend {
+  width: 12px;
+  height: 12px;
+}
 /* Icon inside the role chip — same SVG-as-background pattern as the
    stand-alone .icon-bend, but sized to fit the chip's small label. */
 .role-badge .icon-bend {
@@ -2713,11 +2750,21 @@ footer {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
 }
+/* Qty badge — strong contrast so the count is the first thing the
+   eye lands on (per user 2026-05-28 'ตัวเลขเรื่องของจำนวน ให้ชัด
+   เจนที่สุด'). Pill background, bold + amber so it stands apart
+   from the muted code text. */
 .cut-qty {
-  font-size: 12px;
-  color: #88aab1;
-  min-width: 36px;
-  text-align: right;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #ffa726;
+  background: rgba(255, 167, 38, 0.15);
+  border: 1px solid rgba(255, 167, 38, 0.4);
+  padding: 3px 10px;
+  border-radius: 12px;
+  min-width: 44px;
+  text-align: center;
 }
 .cut-status {
   font-size: 11px;
@@ -2815,11 +2862,18 @@ footer {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
 }
+/* Same prominent qty pill as Cut List, tinted green for bending. */
 .bend-qty {
-  font-size: 12px;
-  color: #88aab1;
-  min-width: 36px;
-  text-align: right;
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #5dbb63;
+  background: rgba(93, 187, 99, 0.15);
+  border: 1px solid rgba(93, 187, 99, 0.4);
+  padding: 3px 10px;
+  border-radius: 12px;
+  min-width: 44px;
+  text-align: center;
 }
 .bend-toggle {
   display: inline-flex;
