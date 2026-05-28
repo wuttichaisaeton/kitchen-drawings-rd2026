@@ -482,7 +482,11 @@ h1 {
 .filter-group {
   display: flex;
   gap: 6px;
-  margin-left: auto;
+  /* No margin-left: auto — keep this group in natural flow with the
+     rest of the project-summary-row. The earlier right-push made the
+     wrapped second line right-aligned, which the user flagged on
+     2026-05-28 (wanted left alignment to match the title row above). */
+  flex-wrap: wrap;
 }
 
 .filter-btn {
