@@ -1574,6 +1574,63 @@ main.transit-back {
   color: #fff;
 }
 
+/* --- DXF download button (admin Library row) --- */
+/* Cyan to differentiate from ✎ (white) and 📁 (white). Size matches
+   the other admin chips so the row's vertical rhythm stays consistent. */
+.part-dxf-btn {
+  margin-left: 8px;
+  padding: 6px 10px;
+  background: #0e3a45;
+  color: #5fd4e8;
+  border: 1px solid #145265;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+  min-height: 32px;
+  min-width: 32px;
+}
+.part-dxf-btn:hover { background: #144e5e; }
+.part-dxf-btn:active { transform: scale(0.96); }
+
+/* --- DXF download popover (N > 1) --- */
+.part-dxf-popover {
+  z-index: 9999;
+  background: #1a2628;
+  border: 1px solid #2a4a52;
+  border-radius: 10px;
+  padding: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.part-dxf-popover-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #d6ecf0;
+  padding: 10px 12px;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.part-dxf-popover-row:hover { background: #243a3f; }
+.part-dxf-popover-row:active { background: #2c474d; }
+.part-dxf-popover-icon { font-size: 16px; opacity: 0.85; }
+.part-dxf-popover-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .part-row .part-icon {
   font-size: 16px;
   opacity: 0.9;
