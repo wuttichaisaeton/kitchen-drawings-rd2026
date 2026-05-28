@@ -637,6 +637,21 @@ async function _renderDxfPreviewModal(dxf) {
     if (!resp.ok) throw new Error(`fetch ${resp.status}`);
     const text = await resp.text();
     const parsed = lib.parseString(text);
+    // Strip bend/fold lines — Fusion's DXF Creator emits them on layers
+    // like "Bend Up" / "Bend Down" / "Bend" / "Fold". Laser worker
+    // previewing the cut path doesn't want those visual overlays.
+    // (เอ๋ 2026-05-28: "ดูรูป dxf ต้องไม่มีเส้นพับ".)
+    const _isBendLayer = (name) => /(bend|fold|flex)/i.test(String(name || ''));
+    if (parsed && Array.isArray(parsed.entities)) {
+      parsed.entities = parsed.entities.filter(e => !_isBendLayer(e && e.layer));
+    }
+    if (parsed && parsed.blocks && typeof parsed.blocks === 'object') {
+      for (const blk of Object.values(parsed.blocks)) {
+        if (blk && Array.isArray(blk.entities)) {
+          blk.entities = blk.entities.filter(e => !_isBendLayer(e && e.layer));
+        }
+      }
+    }
     const svg = lib.toSVG(parsed);
     body.innerHTML = '';
     const wrap = document.createElement('div');
@@ -796,6 +811,72 @@ function _wireCutList(parts, projectKey) {
       }
     });
   });
+
+  // Admin drag-drop for "NO DXF" rows. When Fusion's DXF Creator
+  // exports under a leaf name (e.g. FN2BN0-000000.dxf) but the BOM
+  // walk promotes the part to the wrapper code (FN2BNX-120000), the
+  // wrapper row shows ⚠ NO DXF even though a DXF exists on disk. Admin
+  // can drag the file straight onto the row to fix it without going
+  // back into Fusion. Per user 2026-05-28: 'ให้ผมลากเข้ามาได้ไหม'.
+  // We DON'T call getGitHubPat() here — it would prompt on every page
+  // load. The prompt only fires when the user actually drops a file
+  // (deferred to _uploadPartDxf). The affordance is offered regardless
+  // of PAT state; first drop triggers the one-time setup prompt.
+  if (isAdmin()) {
+    ROOT.querySelectorAll('.cut-row.cut-row-missing').forEach(row => {
+      row.classList.add('cut-row-droppable');
+      const code = row.dataset.code;
+      row.addEventListener('dragenter', ev => {
+        ev.preventDefault();
+        row.classList.add('cut-row-drag-over');
+      });
+      row.addEventListener('dragover', ev => {
+        ev.preventDefault();
+        ev.dataTransfer.dropEffect = 'copy';
+      });
+      row.addEventListener('dragleave', () => {
+        row.classList.remove('cut-row-drag-over');
+      });
+      row.addEventListener('drop', async ev => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        row.classList.remove('cut-row-drag-over');
+        const files = [...(ev.dataTransfer?.files || [])]
+          .filter(f => /\.dxf$/i.test(f.name));
+        if (files.length === 0) {
+          alert('Drop a .dxf file onto this row.');
+          return;
+        }
+        if (files.length > 1) {
+          alert('Drop only one .dxf at a time.');
+          return;
+        }
+        const file = files[0];
+        const status = row.querySelector('.cut-status');
+        const prevHtml = status ? status.outerHTML : '';
+        if (status) {
+          status.outerHTML = `<span class="cut-status cut-uploading">⏫ uploading…</span>`;
+        }
+        try {
+          await _uploadPartDxf(projectKey, code, file);
+          // RTDB listener will refresh the row on next render; show a
+          // confirmation in place until that lands so user sees it
+          // worked immediately.
+          const fresh = row.querySelector('.cut-status');
+          if (fresh) {
+            fresh.outerHTML = `<span class="cut-status cut-ok">📐 ready</span>`;
+          }
+          row.classList.remove('cut-row-missing', 'cut-row-droppable');
+        } catch (e) {
+          console.error('[cut-row drop] upload failed:', e);
+          alert(`Upload failed for ${code}: ${e.message || e}`);
+          const fresh = row.querySelector('.cut-status');
+          if (fresh && prevHtml) fresh.outerHTML = prevHtml;
+        }
+      });
+    });
+  }
+
   // Download-all: fire one download per DXF, spaced 250 ms so the
   // browser doesn't dedupe.
   ROOT.querySelector('#cut-download-all-btn')?.addEventListener('click', (ev) => {
@@ -807,6 +888,49 @@ function _wireCutList(parts, projectKey) {
       }, i * 250);
     });
   });
+}
+
+// Upload a single per-part DXF the same way CC_Laser's dxf_uploader.py
+// does: PUT to GitHub at Drawings/dxf/<code>/<code>.dxf (the path the
+// drawings-ui Pages site resolves DXF URLs from) and set
+// uploaded_dxfs/<code> in RTDB so the cut-list row flips to ✓ ready.
+// Reuses the admin PAT, fileToBase64, and _ghContentsRequest helpers
+// already used by the project-level cut-sheet drop zone.
+async function _uploadPartDxf(projectKey, code, file) {
+  const pat = getGitHubPat();
+  if (!pat) throw new Error('GitHub PAT not set — open admin settings');
+  const safeCode = encodeURIComponent(code);
+  const repoPath = `Drawings/dxf/${safeCode}/${safeCode}.dxf`;
+  const content = await fileToBase64(file);
+  const resp = await _ghContentsRequest(repoPath, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      message: `Admin drop: upload DXF for ${code}`,
+      content,
+      branch: 'main',
+    }),
+  });
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    throw new Error(`GitHub PUT ${resp.status}: ${errBody.slice(0, 200)}`);
+  }
+  const url = `${_CUT_SHEETS_GH_PUBLIC}/${repoPath}`;
+  const metadata = {
+    url,
+    filename: `${code}.dxf`,
+    master_code: code,
+    project: projectKey,
+    size_bytes: file.size,
+    thickness_mm: 0,
+    material: 'ALPF',
+    grain: '',
+    uploaded_at: Date.now(),
+    uploaded_via: 'admin-drop',
+    original_filename: file.name,
+  };
+  await window.firebaseDB.ref(`uploaded_dxfs/${code}`).set(metadata);
+  return { code, url, metadata };
 }
 
 function _renderBendList(parts, projectKey) {
@@ -4864,10 +4988,12 @@ function renderProject(key) {
   const _showAssemblyPill  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showMarkComplete  = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
   const _showFilters       = _adminAll || _isAsm || (!_isLaser && !_isBend && !_isAsm);
-  // All PDF visible to every role — laser worker needs reference
-  // drawings while cutting (per user 2026-05-28: 'งาน Laser ต้องกด
-  // ดู All pdf (แบบพับ) ไม่ได้'). Was hidden for laser-only before.
-  const _showAllPdf        = true;
+  // All PDF — bending drawings reference. Laser worker does NOT need
+  // it (clarified by user 2026-05-28: 'เลเซอร์ ต้องไม่เห็น All PDF').
+  // Admin overlay does NOT override this — when an admin toggles into
+  // laser role to see what a laser worker sees, the button must stay
+  // hidden too. Visible to every other role (bend, assemble, workshop).
+  const _showAllPdf        = !_isLaser;
   const _showDxfsBtn       = _adminAll || _isLaser || (!_isLaser && !_isBend && !_isAsm);
 
   let bodyHtml;

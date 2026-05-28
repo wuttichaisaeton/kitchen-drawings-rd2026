@@ -2793,6 +2793,26 @@ footer {
 .cut-row:hover:not(.cut-row-missing) { background: rgba(255, 167, 38, 0.08); }
 .cut-row-missing { cursor: default; opacity: 0.6; }
 .cut-row-shake { animation: badge-shake 0.4s ease-in-out; }
+/* Admin drag-drop on NO DXF rows — visible drop target so the user
+   knows they can drop a file. Dashed border in the warning color
+   matches the ⚠ no DXF badge so the affordance reads as "fix this". */
+.cut-row-droppable {
+  cursor: copy;
+  opacity: 0.85;
+  outline: 1px dashed rgba(255, 193, 7, 0.35);
+  outline-offset: -2px;
+}
+.cut-row-drag-over {
+  background-color: rgba(255, 193, 7, 0.18) !important;
+  outline: 2px dashed #ffc107;
+  outline-offset: -2px;
+  opacity: 1;
+}
+.cut-status.cut-uploading {
+  background: rgba(78, 163, 204, 0.15);
+  color: #4ea3cc;
+  border: 1px solid rgba(78, 163, 204, 0.3);
+}
 .cut-code {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
