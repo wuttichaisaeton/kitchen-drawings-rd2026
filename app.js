@@ -235,6 +235,20 @@ function _openInNewTab(url) {
   }
 }
 
+// Trigger a browser download for a remote URL. Uses an anchor element
+// with the `download` attribute so .dxf files (which Pages serves as
+// application/octet-stream) land in the user's Downloads folder rather
+// than rendering inline as text.
+function _downloadFile(url, suggestedName) {
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = suggestedName || '';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 function pdfUrl(entry) {
   if (entry.isManual) {
     return window.APP_CONFIG.MANUAL_BASE_URL + encodeURIComponent(entry.filename);
@@ -5266,6 +5280,26 @@ function renderFamily(fam, highlight) {
         stack[stack.length - 1] = { kind: 'family', name: target, highlight: code };
       }
       render();
+    });
+  });
+
+  // Admin DXF button: N=1 triggers direct download, N>1 opens a popover
+  // anchored to the button. Popover landing in Task 5; for now, N=1 path
+  // only — N>1 will fall through to console.warn until Task 5.
+  ROOT.querySelectorAll('.part-dxf-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.dxfCode;
+      const list = dxfsForMasterCode(code);
+      if (list.length === 0) return;  // race: render saw N>=1 but cache cleared since
+      if (list.length === 1) {
+        _downloadFile(list[0].url, list[0].filename || `${list[0].stem}.dxf`);
+        return;
+      }
+      // N > 1 — popover lands in Task 5. Temporary fallback so testing
+      // doesn't break: download the first file with a console warning.
+      console.warn(`[dxf] N=${list.length}, popover not yet implemented — downloading first only`);
+      _downloadFile(list[0].url, list[0].filename || `${list[0].stem}.dxf`);
     });
   });
 
