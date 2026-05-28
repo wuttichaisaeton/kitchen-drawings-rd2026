@@ -2874,6 +2874,7 @@ function buildProjectTree(parts, projectKey) {
       qty: p.qty || 1,
       _prefix: p.code.split('-')[0],
       _parent_code: p.parent_code || null,  // from CC_Assembly hierarchy
+      _variant_root: p.variant_root || null,  // from CC_Assembly (since 2026-05-28) — immediate child of project root
       family: p.family || 'Other',
       pdf: entry ? entry.pdf : null,
       page: entry ? (entry.page_number || 1) : 1,
@@ -2886,6 +2887,7 @@ function buildProjectTree(parts, projectKey) {
       drawing_urn: entry ? (entry.drawing_urn || null) : null,
       status,
       _is_wrapper: false,
+      _is_variant_root: false,
       children: [],
       parent: null,
     };
@@ -2969,6 +2971,55 @@ function buildProjectTree(parts, projectKey) {
       node.parent = best;
       best.children.push(node);
     }
+  }
+
+  // Pass 4 — virtual variant_root nodes. CC_Assembly (2026-05-28+)
+  // stamps each leaf with the immediate-child-of-project-root code
+  // (e.g. all parts under "10WVON-08OLOR:1" get
+  // _variant_root='10WVON-08OLOR'). For every still-rootless node that
+  // carries a variant_root, create — or reuse — a synthetic variant
+  // node and attach the node as its child. The variant nodes become
+  // the SOLE roots, giving the React Flow mindmap the two-level
+  // structure the user asked for:
+  //
+  //   project center
+  //     ├─ 10WVON-08OLOR (variant)
+  //     │   ├─ FN0FN3-080005 (wrapper) → parts…
+  //     │   └─ BK0DN0-080000 (wrapper) → parts…
+  //     └─ 10WVON-12OLOR (variant)
+  //         └─ … similar subtree …
+  //
+  // Older JSONs without variant_root flow through unchanged.
+  const variantNodes = new Map();
+  for (const node of nodes) {
+    if (node.parent) continue;
+    if (!node._variant_root) continue;
+    if (node.code === node._variant_root) continue;  // self-reference
+    let vr = variantNodes.get(node._variant_root);
+    if (!vr) {
+      vr = {
+        code: node._variant_root,
+        qty: 0,
+        _prefix: node._variant_root.split('-')[0],
+        _parent_code: null,
+        _variant_root: null,
+        family: _remapFamilyForCode(node._variant_root, 'Other'),
+        pdf: null,
+        page: 1,
+        urn: null,
+        drawing_urn: null,
+        status: 'wrapper',
+        _is_wrapper: true,
+        _is_variant_root: true,
+        children: [],
+        parent: null,
+      };
+      nodes.push(vr);
+      byCode.set(vr.code, vr);
+      variantNodes.set(node._variant_root, vr);
+    }
+    node.parent = vr;
+    vr.children.push(node);
   }
 
   function sortKids(n) {
