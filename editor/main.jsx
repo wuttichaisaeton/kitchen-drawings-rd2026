@@ -842,15 +842,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: home — re-collapse JUST THIS node and zoom in
-          // on it so the user gets a clear visible 'this is its
-          // home' confirmation. fitView with nodes:[{id}] frames a
-          // SPECIFIC node rather than the whole layout, so we
-          // actually see the camera move toward this node.
-          // User 2026-05-28: 'เฉพาะตัวนั้นๆ เองไม่เกี่ยวกับตัวอื่น'
-          // (other anchors stay where they are) + 'tap 3 ยังใช้
-          // ไม่ได้' (previous whole-layout fitView didn't visually
-          // change anything when only this node had moved).
+          // 3rd tap: 'กลับบ้าน' — re-collapse THIS node only (other
+          // anchors stay untouched) and zoom the camera back to the
+          // project center. The earlier 'zoom into the tapped node'
+          // version was visually backwards — user expected to go
+          // HOME, not to dive INTO the variant. Frame the project
+          // node so it fills the viewport like the initial landing.
+          // User 2026-05-28: tap 3 ยังใช้ไม่ได้ (2 attempts now —
+          // user wants the camera to return to BUNG 01 center).
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
             const next = new Set(prev);
@@ -858,15 +857,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             _persistCollapse(collapsed, next);
             return next;
           });
+          const projectNode = nodes.find(n => n.data?.kind === 'project');
           setTimeout(() => {
             try {
-              rf.fitView({
-                nodes: [{ id: node.id }],
-                duration: 600,
-                padding: 0.6,
-                minZoom: 0.5,
-                maxZoom: 1.4,
-              });
+              if (projectNode) {
+                rf.fitView({
+                  nodes: [{ id: projectNode.id }],
+                  duration: 600,
+                  padding: 1.5,
+                  minZoom: 0.4,
+                  maxZoom: 1.2,
+                });
+              } else {
+                rf.fitView({ duration: 600, padding: 0.20 });
+              }
             } catch {}
           }, 250);
         } else {
