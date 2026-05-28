@@ -572,6 +572,9 @@ function ensureDxfLib() {
 // Open a modal showing the DXF rendered as inline SVG, plus metadata
 // (thickness, grain, material) and a download button. Closed on
 // Escape, outside-click, or the ✕ button.
+// Exposed on window so sibling modules (nest.js) can open the DXF
+// preview without duplicating the modal code.
+window._renderDxfPreviewModal = _renderDxfPreviewModal;
 async function _renderDxfPreviewModal(dxf) {
   if (!dxf || !dxf.url) return;
   const filename = dxf.filename || `${dxf.stem || 'file'}.dxf`;

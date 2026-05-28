@@ -3407,14 +3407,67 @@ footer {
 }
 .kdnest-part {
   display: grid;
-  grid-template-columns: 18px 28px minmax(110px, 1fr) 56px 12px 56px 44px 64px 18px;
+  /* sel · #N · code · w · × · h · qty · grain · 👁 · 📍 · status
+     Sized so the whole row fits in a 360-wide sidebar without
+     clipping the new emoji buttons off the right edge (user
+     2026-05-28 saw 👁 📍 missing because sidebar was 404px and
+     a wider grid pushed them past the visible boundary). */
+  grid-template-columns: 16px 24px minmax(60px, 1fr) 44px 8px 44px 32px 24px 24px 24px 14px;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   padding: 4px 0;
   font-size: 12px;
   color: #cad6e6;
   border-bottom: 1px solid #131c28;
 }
+/* Grain glyph button — symbols match the Python Nesting Tool legend
+   (─ H / │ V / ✱ ANY / ? unknown) so a worker switching tools reads
+   the same code at a glance. Click cycles ? → H → V → ANY → H. */
+.kdnest-part-grain {
+  font-family: "Segoe UI Symbol", "Flux Architect", monospace;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  border-radius: 4px;
+  width: 100%;
+  height: 22px;
+  padding: 0;
+  color: #cad6e6;
+  line-height: 18px;
+}
+.kdnest-part-grain.kdnest-grain-h   { color: #2ecc71; }
+.kdnest-part-grain.kdnest-grain-v   { color: #3498db; }
+.kdnest-part-grain.kdnest-grain-any { color: #888888; }
+.kdnest-part-grain.kdnest-grain-q   { background: #c0392b; border-color: #c0392b; color: #fff; }
+.kdnest-part-grain:hover { background: #243349; }
+.kdnest-part-grain.kdnest-grain-q:hover { background: #a83224; }
+
+/* Per-row action buttons: 👁 view DXF · 📍 jump to sheet with this
+   part placed (disabled until Run Nesting has assigned a sheet).
+   Explicit emoji font stack required — Flux Architect doesn't ship
+   emoji glyphs, so the button shape rendered but the emoji itself
+   came out invisible (user 2026-05-28). */
+.kdnest-part-view,
+.kdnest-part-onsheet {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  width: 100%;
+  height: 22px;
+  padding: 0;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+               "Noto Color Emoji", sans-serif;
+}
+.kdnest-part-view:hover:not(:disabled),
+.kdnest-part-onsheet:hover:not(:disabled) { background: #243349; }
+.kdnest-part-view:disabled,
+.kdnest-part-onsheet:disabled { opacity: 0.35; cursor: not-allowed; }
 .kdnest-part-num { color: #889bb3; font-size: 11px; }
 .kdnest-part-code { font-family: "Flux Architect", monospace; }
 .kdnest-part input[type="number"],

@@ -792,15 +792,40 @@
     const loadedDxfs = S.parts.filter(p => p.dxfLoaded).length;
     const errorDxfs = S.parts.filter(p => p.dxfError).length;
 
+    // Grain symbols match the Python Nesting Tool + grain.xlsx legend
+    // so a worker glancing at either tool sees the same mark per row:
+    //   ─  = H  (horizontal — locked to 0/180 rotations)
+    //   │  = V  (vertical — locked to 90/270 rotations)
+    //   ✱  = ANY (any orientation — packer free to rotate)
+    //   ?  = unknown (no grain set yet)
+    // Click cycles ? → H → V → ANY → H ... — same as Python's
+    // _toggle_grain.
+    function grainGlyph(g) {
+      if (g === 'H')   return { ch: '─', cls: 'kdnest-grain-h',   title: 'H — horizontal' };
+      if (g === 'V')   return { ch: '│', cls: 'kdnest-grain-v',   title: 'V — vertical' };
+      if (g === 'ANY') return { ch: '✱', cls: 'kdnest-grain-any', title: 'ANY — any rotation' };
+      return { ch: '?', cls: 'kdnest-grain-q', title: '? — grain not set' };
+    }
+
+    // Look up sheet index of the first placement for this code, so the
+    // 📍 View@sheet button knows where to jump. -1 = not placed yet.
+    function findSheetIdx(code) {
+      for (let i = 0; i < S.flatSheets.length; i++) {
+        if (S.flatSheets[i].placements.some(pl => pl.code === code)) return i;
+      }
+      return -1;
+    }
+
     const partsRows = S.parts.map((p, i) => {
       const status = p.dxfLoaded
         ? `<span class="kdnest-part-ok" title="DXF loaded">✓</span>`
         : p.dxfError
           ? `<span class="kdnest-part-err" title="${_esc(p.dxfError)}">⚠</span>`
           : `<span class="kdnest-part-load" title="loading…">⋯</span>`;
-      const grainOpts = ['ANY','H','V']
-        .map(g => `<option value="${g}" ${g === p.grain ? 'selected' : ''}>${g}</option>`)
-        .join('');
+      const g = grainGlyph(p.grain);
+      const onSheetIdx = findSheetIdx(p.code);
+      const viewDisabled = !p.dxfUrl;
+      const sheetDisabled = onSheetIdx < 0;
       return `
         <div class="kdnest-part" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
@@ -810,7 +835,9 @@
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H">
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
-          <select class="kdnest-part-grain" title="Grain: ANY rotates freely, H locks horizontal, V locks vertical">${grainOpts}</select>
+          <button class="kdnest-part-grain ${g.cls}" data-grain="${p.grain}" title="${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
+          <button class="kdnest-part-view" title="View this part's DXF preview" ${viewDisabled ? 'disabled' : ''}>👁</button>
+          <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>
           ${status}
         </div>`;
     }).join('');
@@ -945,8 +972,41 @@
       row.querySelector('.kdnest-part-qty')?.addEventListener('change', e => {
         part.qty = parseInt(e.target.value, 10) || 0;
       });
-      row.querySelector('.kdnest-part-grain')?.addEventListener('change', e => {
-        part.grain = e.target.value;
+      // Grain toggle — click cycles ? → H → V → ANY → H ...
+      // Matches the Python tool's _toggle_grain behavior so a worker
+      // switching between tools sees the same interaction.
+      row.querySelector('.kdnest-part-grain')?.addEventListener('click', () => {
+        const cycle = { '?': 'H', 'H': 'V', 'V': 'ANY', 'ANY': 'H' };
+        part.grain = cycle[part.grain] || 'H';
+        _refreshView();
+      });
+      // View part — open DXF preview modal for this part's source DXF.
+      // Reuses app.js's _renderDxfPreviewModal if exposed; else falls
+      // back to opening the raw URL.
+      row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
+        if (!part.dxfUrl) return;
+        if (typeof window._renderDxfPreviewModal === 'function') {
+          window._renderDxfPreviewModal({
+            url: part.dxfUrl,
+            filename: `${part.code}.dxf`,
+            thickness_mm: part.thickness,
+            grain: part.grain,
+            material: 'ALPF',
+            uploaded_at: Date.now(),
+          });
+        } else {
+          window.open(part.dxfUrl, '_blank');
+        }
+      });
+      // View @ sheet — jump to whichever sheet currently has this
+      // part placed. Disabled (gray) until Run Nesting has assigned
+      // a sheet for the code.
+      row.querySelector('.kdnest-part-onsheet')?.addEventListener('click', e => {
+        const idx = parseInt(e.currentTarget.dataset.sheet, 10);
+        if (idx >= 0 && idx < S.flatSheets.length) {
+          S.currentSheetIdx = idx;
+          _refreshView();
+        }
       });
     });
     // Canvas redraw on resize.
