@@ -95,12 +95,17 @@
       }
     }
   </script>
-  <!-- app.js cache-busted per-minute (shared bucket with style.css). -->
+  <!-- app.js + nest.js cache-busted per-minute (shared bucket with
+       style.css). nest.js loads BEFORE app.js so app.js can hand off
+       to kdNest.openProject(projectKey) when the Nesting button is hit. -->
   <script>
     (function() {
-      var s = document.createElement('script');
-      s.src = 'app.js?v=' + (window.__KD_CACHE_V || Math.floor(Date.now() / 60000));
-      document.body.appendChild(s);
+      var v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
+      ['nest.js', 'app.js'].forEach(function(name) {
+        var s = document.createElement('script');
+        s.src = name + '?v=' + v;
+        document.body.appendChild(s);
+      });
     })();
   </script>
 </body>

@@ -5052,6 +5052,8 @@ function renderProject(key) {
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>` : ''}
         ${_showDxfsBtn ? `
         <button class="filter-btn project-cut-sheets-btn" id="project-cut-sheets-btn" data-project-key="${escapeHtml(key)}" title="Nested cut sheets uploaded for this project — from NestingTool's Save Sheets to Project or admin drag-drop">📐 Cut Sheets (${cutSheetsForProject(key).length})</button>` : ''}
+        ${(_adminAll || _isLaser) ? `
+        <button class="filter-btn nest-btn" id="open-nest-btn" data-project-key="${escapeHtml(key)}" title="Open in-browser Nesting workspace — replaces the standalone Python tool">▶ Nest</button>` : ''}
         <!-- Active-in-Fusion badge moved inline with the action buttons
              per user 2026-05-28. Shown when CC_SyncOccNames has pushed
              an active row for THIS project key — OR for any of its
@@ -5090,6 +5092,17 @@ function renderProject(key) {
   ROOT.querySelector('#project-cut-sheets-btn')?.addEventListener('click', (ev) => {
     ev.stopPropagation();
     _renderCutSheetsModal(ev.currentTarget, key, project);
+  });
+  // Web Nesting workspace (2026-05-28) — replaces the standalone
+  // Python Nesting Tool. Loads parts + DXFs from RTDB, packs in-
+  // browser, uploads nested layouts to cut_sheets/<projectKey>/<id>.
+  ROOT.querySelector('#open-nest-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (window.kdNest && typeof window.kdNest.openProject === 'function') {
+      window.kdNest.openProject(key);
+    } else {
+      alert('Nesting workspace not loaded — refresh the page.');
+    }
   });
   // Cut List / Bend List get their own wiring + skip the React Flow
   // editor entirely. Mount the role-specific handlers when the body
@@ -6897,6 +6910,9 @@ async function init() {
       fetchJson('families.json'),
     ]);
     manifest = m;
+    // Expose for sibling modules (nest.js etc) that need the same
+    // projects + parts data without re-fetching.
+    window.kdManifest = manifest;
     families = f;
     UPDATED.textContent = fmtDate(manifest.generated_at);
 
