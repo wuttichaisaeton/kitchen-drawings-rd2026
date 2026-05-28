@@ -1072,6 +1072,58 @@ function getActiveRowForProject(projectKey) {
   return entry.current || '';
 }
 
+// Full RTDB object for a project key — { current, urn, dataFileName,
+// row_changed_at, last_saved_at, last_saved_row, ... } or {} when
+// nothing's been pushed. Used by the badge for click-to-open (needs
+// urn) + saved-ago footer (needs last_saved_at).
+function getActiveRowDataForProject(projectKey) {
+  if (!projectKey) return {};
+  const entry = _activeRowsCache[projectKey];
+  if (!entry) return {};
+  if (typeof entry === 'string') return { current: entry };
+  return entry;
+}
+
+// Human-readable "Nm ago" formatter for last_saved_at. Kept short so
+// the badge stays compact in the action row.
+function _formatTimeAgo(msEpoch) {
+  if (!msEpoch) return '';
+  const diff = Date.now() - msEpoch;
+  if (diff < 0) return 'just now';
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  return `${day}d ago`;
+}
+
+// Click handler — fires the local Fusion bridge to open the wrapper
+// file behind the active row. Same /open?urn= endpoint the mindmap
+// leaf-click flow uses.
+async function _onActiveVariantBadgeClick(ev) {
+  ev.stopPropagation();
+  const badge = ev.currentTarget;
+  const urn = badge.getAttribute('data-urn') || '';
+  if (!urn) {
+    badge.classList.add('badge-shake');
+    setTimeout(() => badge.classList.remove('badge-shake'), 400);
+    return;
+  }
+  try {
+    const r = await fetch(
+      `http://127.0.0.1:8765/open?urn=${encodeURIComponent(urn)}`,
+      { method: 'GET', mode: 'cors' });
+    if (!r.ok) throw new Error(`bridge HTTP ${r.status}`);
+  } catch (e) {
+    badge.classList.add('badge-shake');
+    setTimeout(() => badge.classList.remove('badge-shake'), 400);
+    console.warn('Active-in-Fusion bridge open failed:', e);
+  }
+}
+
 function updateActiveVariantBadge() {
   const badge = document.getElementById('active-variant-badge');
   if (!badge) return;
@@ -1080,14 +1132,61 @@ function updateActiveVariantBadge() {
     badge.style.display = 'none';
     return;
   }
-  const active = getActiveRowForProject(top.name);
-  if (active) {
-    badge.textContent = `● Active in Fusion: ${active}`;
-    badge.style.display = '';
-  } else {
+
+  // Two-level lookup so an active row pushed under a SUB-PROJECT
+  // (variant_root, e.g. '10WVON-08OLOR') still surfaces on the umbrella
+  // project's page (e.g. 'Bung 01'). Why this exists: the user observed
+  // 2026-05-28 that the badge worked when viewing 10WVON-08OLOR but
+  // didn't appear on Bung 01 because CC_SyncOccNames pushes under the
+  // open document's name, not the umbrella file's. Falling back to the
+  // project's parts[].variant_root set bridges the two views.
+  let data = getActiveRowDataForProject(top.name);
+  if (!data.current) {
+    const project = (manifest.projects || {})[top.name];
+    if (project && Array.isArray(project.parts)) {
+      const variants = [];
+      const seen = new Set();
+      for (const p of project.parts) {
+        if (p && p.variant_root && !seen.has(p.variant_root)) {
+          seen.add(p.variant_root);
+          variants.push(p.variant_root);
+        }
+      }
+      // First variant with an active row wins (insertion order, stable
+      // across reloads since parts[] order is stable).
+      for (const vr of variants) {
+        const vd = getActiveRowDataForProject(vr);
+        if (vd.current) { data = vd; break; }
+      }
+    }
+  }
+
+  const active = data.current || '';
+  if (!active) {
     badge.style.display = 'none';
+    return;
+  }
+
+  let label = `● Active in Fusion: ${active}`;
+  const savedAgo = _formatTimeAgo(data.last_saved_at);
+  if (savedAgo) label += ` · saved ${savedAgo}`;
+  badge.textContent = label;
+  badge.style.display = '';
+  badge.setAttribute('data-urn', data.urn || '');
+  badge.title = data.dataFileName
+    ? `Click to open ${data.dataFileName} in Fusion`
+    : 'Click to open in Fusion';
+  if (!badge.getAttribute('data-click-bound')) {
+    badge.addEventListener('click', _onActiveVariantBadgeClick);
+    badge.setAttribute('data-click-bound', '1');
   }
 }
+
+// Refresh the relative "saved Nm ago" suffix every 30 s. The underlying
+// timestamp doesn't change but the relative phrase ticks forward.
+setInterval(() => {
+  try { updateActiveVariantBadge(); } catch {}
+}, 30 * 1000);
 
 function initUploadedPdfsSync() {
   if (!window.firebaseDB) return;
@@ -4071,9 +4170,14 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
         <button class="filter-btn project-dxf-btn" id="project-dxf-btn" data-project-key="${escapeHtml(key)}" title="View / download laser-cut DXFs uploaded for this project (from NestingTool's Save to Project button or admin drag-drop)">📐 DXFs (${dxfsForProject(key).length})</button>
+        <!-- Active-in-Fusion badge moved inline with the action buttons
+             per user 2026-05-28. Shown when CC_SyncOccNames has pushed
+             an active row for THIS project key — OR for any of its
+             variant_roots (sub-assemblies). Hidden via display:none by
+             updateActiveVariantBadge() when nothing's active. -->
+        <span id="active-variant-badge" class="active-variant-badge filter-btn-inline" style="display:none"></span>
       </div>
     </div>
-    <div id="active-variant-badge" class="active-variant-badge" style="display:none"></div>
     ${mindmapHtml}
   `;
 

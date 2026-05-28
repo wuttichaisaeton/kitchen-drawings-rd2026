@@ -962,11 +962,46 @@ h1 {
   border: 1px solid #2a5a5c;
   letter-spacing: 0.3px;
   animation: pulse-active-variant 2.4s ease-in-out infinite;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+}
+
+/* Inline variant — shrinks the badge to fit alongside .filter-btn
+   chips in the project's action row. The free-standing version
+   (used elsewhere) keeps the larger size. */
+.active-variant-badge.filter-btn-inline {
+  padding: 6px 10px;
+  font-size: 12px;
+  margin: 0;
+}
+
+.active-variant-badge:hover {
+  background: linear-gradient(90deg, #244747 0%, #1d3434 100%);
+  border-color: #4ecca3;
+}
+.active-variant-badge:active {
+  transform: scale(0.97);
+}
+
+/* Shake feedback for when the bridge is unreachable (Fusion not
+   running) or the badge has no URN attached yet. */
+.active-variant-badge.badge-shake {
+  animation: pulse-active-variant 2.4s ease-in-out infinite,
+             badge-shake 0.4s ease-in-out;
 }
 
 @keyframes pulse-active-variant {
   0%, 100% { box-shadow: 0 0 0 0 rgba(78, 204, 163, 0.0); }
   50%      { box-shadow: 0 0 0 4px rgba(78, 204, 163, 0.15); }
+}
+
+@keyframes badge-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-4px); }
+  40%      { transform: translateX(4px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
 }
 
 /* --- Progress bar (BOM page header + project card) --- */
