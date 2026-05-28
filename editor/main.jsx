@@ -315,8 +315,13 @@ function MindmapNode({ id, data, selected }) {
   if (isVariantRoot) cls.push('kme-variant-root');
   if (isFadedNode) cls.push('kme-faded');
 
-  // Family color drives border + bottom tint
-  const style = isBom && color ? {
+  // Family color drives border + bottom tint on real BOM leaves. Skip
+  // for variant/anchor/wrapper cards (containers, not parts) — user
+  // 2026-05-28: '2 อันนี้เอาออก' pointing at qty badge + yellow family
+  // stripe. Containers stay neutral so the colored chrome only appears
+  // on cards that represent real workshop work.
+  const skipFamilyChrome = isVariantRoot || isWrapper;
+  const style = isBom && color && !skipFamilyChrome ? {
     borderColor: color,
     background: `linear-gradient(180deg, #161b22 60%, ${tint || '#161b22'} 100%)`,
   } : undefined;
@@ -343,7 +348,7 @@ function MindmapNode({ id, data, selected }) {
         >
           {label}
         </div>
-        {isBom && qty != null && (
+        {isBom && qty != null && !isVariantRoot && !isWrapper && (
           <span className="kme-node-qty">x<span className="kme-node-qty-num">{qty}</span></span>
         )}
         {missing && isBom && (
