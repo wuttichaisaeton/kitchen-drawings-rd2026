@@ -170,6 +170,16 @@ function updateRoleBadge() {
   let badge = document.getElementById('role-badge');
   const headerRow = document.querySelector('.header-row');
   const role = getRole();
+  // When admin mode is on the dedicated role switcher already highlights
+  // the active role with its gradient — showing the chip too produced a
+  // duplicate (user noted on 2026-05-28: 'มีปุ่ม ASSEMBLY 2 อัน').
+  // Drop the redundant chip in admin mode; non-admin users still get
+  // the chip as their only role indicator.
+  if (isAdmin()) {
+    if (badge) badge.remove();
+    _renderAdminRoleSwitcher();
+    return;
+  }
   if (role !== DEFAULT_ROLE) {
     const r = ROLES[role];
     if (!badge && headerRow) {
