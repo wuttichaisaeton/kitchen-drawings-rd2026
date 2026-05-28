@@ -313,6 +313,21 @@ function pdfUrlForCode(code) {
   return '';
 }
 
+// Return all uploaded DXFs whose master_code matches the given Library
+// row code. Returns an array (possibly empty) sorted by filename so the
+// popover ordering is stable across re-renders.
+function dxfsForMasterCode(masterCode) {
+  if (!masterCode || !_uploadedDxfsCache) return [];
+  const out = [];
+  for (const [stem, meta] of Object.entries(_uploadedDxfsCache)) {
+    if (meta && meta.master_code === masterCode) {
+      out.push({ stem, ...meta });
+    }
+  }
+  out.sort((a, b) => (a.filename || a.stem).localeCompare(b.filename || b.stem));
+  return out;
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   try {
