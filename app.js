@@ -123,11 +123,15 @@ function updateAdminBadge() {
 // + search hooks). User-driven per-role visibility rules slot in later.
 // ──────────────────────────────────────────────────────────────────────
 
+// Role chip palette — each entry mirrors the .admin-badge visual
+// (gradient pill + drop shadow) so role status is just as glanceable
+// as the admin flag. gradStart / gradEnd flow through to a 135°
+// linear-gradient; shadow is the gradEnd at ~40% alpha.
 const ROLES = {
-  workshop: { label: 'Workshop', emoji: '👁',  color: '#888'    },
-  laser:    { label: 'Laser',    emoji: '🔥', color: '#d29922' },
-  bend:     { label: 'Bending',  emoji: '⊕',  color: '#5dbb63' },
-  assemble: { label: 'Assembly', emoji: '🧩', color: '#e07a5f' },
+  workshop: { label: 'Workshop', emoji: '👁',  color: '#888',    gradStart: '#888',    gradEnd: '#666'    },
+  laser:    { label: 'Laser',    emoji: '🔥', color: '#d29922', gradStart: '#ffa726', gradEnd: '#d29922' },
+  bend:     { label: 'Bending',  emoji: '⊕',  color: '#5dbb63', gradStart: '#7ed87b', gradEnd: '#3f9447' },
+  assemble: { label: 'Assembly', emoji: '🧩', color: '#e07a5f', gradStart: '#ff8a65', gradEnd: '#c24d32' },
 };
 const ROLE_KEYS = Object.keys(ROLES);
 const DEFAULT_ROLE = 'workshop';
@@ -166,10 +170,14 @@ function updateRoleBadge() {
       headerRow.appendChild(badge);
     }
     if (badge) {
-      badge.textContent = `${r.emoji} ${r.label}`;
-      badge.style.background = r.color + '22';
-      badge.style.color = r.color;
-      badge.style.borderColor = r.color + '88';
+      // Render text in uppercase to mirror "🔓 ADMIN" — same chunky
+      // visual weight so the user instantly recognizes "I'm in <X>
+      // mode" without parsing the label.
+      badge.textContent = `${r.emoji} ${r.label.toUpperCase()}`;
+      badge.style.background = `linear-gradient(135deg, ${r.gradStart}, ${r.gradEnd})`;
+      badge.style.color = '#fff';
+      badge.style.borderColor = 'transparent';
+      badge.style.boxShadow = `0 1px 4px ${r.gradEnd}66`;
       badge.title = `Role: ${r.label} — type ":${role} off" in search box to reset.`;
     }
   } else if (badge) {
