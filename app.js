@@ -3431,7 +3431,14 @@ function buildProjectTree(parts, projectKey) {
     const wc = parentId.slice(0, parentId.lastIndexOf('::'));
     const wrapper = {
       code: wc,
-      qty: 0,
+      // qty=1: a virtual wrapper represents ONE sub-assembly instance
+      // in this project. CC_Assembly only counts ALPF leaves, so the
+      // wrapper itself isn't in the BOM and qty is otherwise unknown.
+      // 1 is the right default — sub-assemblies that appear N times
+      // in a Fusion tree don't currently come through this codepath.
+      // (User flagged on 2026-05-28 that 0 was confusing — "ประกอบแล้ว
+      // ก็ต้องได้เท่ากับหนึ่งชิ้นงาน").
+      qty: 1,
       _prefix: wc.split('-')[0],
       _parent_code: null,
       _variant_root: vr || null,
@@ -3546,7 +3553,10 @@ function buildProjectTree(parts, projectKey) {
     if (!vNode) {
       vNode = {
         code: vr,
-        qty: 0,
+        // qty=1 for the same reason wrappers get it (see Pass 1
+        // comment). A variant node represents ONE instance of the
+        // top-level sub-assembly under the project root.
+        qty: 1,
         _prefix: vr.split('-')[0],
         _parent_code: null,
         _variant_root: null,
