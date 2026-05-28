@@ -373,32 +373,13 @@ function MindmapNode({ id, data, selected }) {
       </div>
       {isBom && (
         <div className="kme-row kme-row-actions nodrag nopan">
-          <button
-            className={`kme-mini kme-timer ${timerRunning ? 'kme-on' : ''}`}
-            onClick={onTimer}
-            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onTimer(e); } }}
-            title={timerRunning ? 'Stop timer' : 'Start timer'}
-          >
-            {timerRunning ? '⏸' : '▶'}
-            {timerSec > 0 && <span className="kme-timer-elapsed">{api.formatDuration?.(timerSec)}</span>}
-          </button>
-          {admin && timerSec > 0 && (
-            <button
-              className="kme-mini kme-timer-reset"
-              onClick={onResetTimer}
-              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onResetTimer(e); } }}
-              title="Edit / reset timer"
-            >↺</button>
-          )}
-          <span className="kme-spacer-mini" />
-          <button
-            className={`kme-mini kme-bent ${bent ? 'kme-on' : ''}`}
-            onClick={onBent}
-            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onBent(e); } }}
-            title={bent ? 'Mark as not bent' : 'Mark bent'}
-          >
-            <img src="icons/bending.svg" alt="bend" />
-          </button>
+          {/* Timer ▶ and bent ⬇ buttons removed from the assembly
+              mindmap (user 2026-05-28: 'ที assembly ไม่ควรมีปุ่ม งานพับ
+              และจับเวลา'). The Bending role has its own dedicated
+              bend-list surface; timer was a never-used artifact. The
+              remaining buttons are 🧩 assembled + 📄 PDF — the two
+              the cabinet team actually needs. Whole-card tap still
+              toggles expand/collapse via React Flow's onNodeClick. */}
           <button
             className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
             onClick={onAssembled}
