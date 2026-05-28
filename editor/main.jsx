@@ -842,10 +842,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         cur.count += 1;
         cur.last = now;
         if (cur.count % 3 === 0) {
-          // 3rd tap: home — frame everything visible. Don't toggle
-          // collapse state on this tap so the user lands on a clean
-          // 'whole picture' view (tap 4 will start a new expand).
-          try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {}
+          // 3rd tap: home — reset to initial state. Re-collapses
+          // every anchor (project + 2 variants for Bung 01) and
+          // frames the project so the user lands back on the
+          // 'starter' 3-node view. fitView runs after the collapse
+          // settle so it measures the post-reset bounding box.
+          const allAnchors = nodes
+            .filter(n => n.data?.isVariantRoot)
+            .map(n => n.id);
+          const fullCollapsed = new Set(allAnchors);
+          setCollapsedNodes(fullCollapsed);
+          _persistCollapse(collapsed, fullCollapsed);
+          setTimeout(() => {
+            try { rf.fitView({ duration: 600, padding: 0.20 }); } catch {}
+          }, 250);
         } else {
           toggleNodeCollapse(node.id);
         }
@@ -875,7 +885,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         if (url) (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
       }
     }
-  }, [toggleCollapsed, toggleNodeCollapse]);
+  }, [toggleCollapsed, toggleNodeCollapse, nodes, rf, collapsed, _persistCollapse]);
   const onNodeDoubleClick = useCallback((evt, node) => {
     if (!node?.id?.startsWith('project:')) return;
     if (centerClickTimer.current) {
