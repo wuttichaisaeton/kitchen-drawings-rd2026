@@ -343,6 +343,81 @@ function dxfsForMasterCode(masterCode) {
   return out;
 }
 
+// Return all uploaded DXFs tagged with the given project key. NestingTool
+// stamps ``project: <key>`` into the RTDB metadata when it uploads via
+// the "📤 Save to Project" button, so each DXF can be looked up by either
+// its master_code (Library view) or its source project (Project view).
+function dxfsForProject(projectKey) {
+  if (!projectKey || !_uploadedDxfsCache) return [];
+  const out = [];
+  for (const [stem, meta] of Object.entries(_uploadedDxfsCache)) {
+    if (meta && meta.project === projectKey) {
+      out.push({ stem, ...meta });
+    }
+  }
+  out.sort((a, b) => (a.filename || a.stem).localeCompare(b.filename || b.stem));
+  return out;
+}
+
+// Build a DXF popover anchored below the trigger button. Reusable across
+// the Library family view (per-master 📐 button) and the Project view
+// (project-wide 📐 DXFs button). Auto-dismissed by outside-click,
+// Escape, or scroll — every close path runs the same teardown so no
+// orphan document listeners are ever left behind.
+function _renderDxfPopover(triggerBtn, list) {
+  // Only one popover open at a time — remove any prior one first.
+  document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
+
+  const pop = document.createElement('div');
+  pop.className = 'part-dxf-popover';
+  pop.setAttribute('role', 'menu');
+  pop.innerHTML = list.map((item) => `
+    <button class="part-dxf-popover-row" data-dxf-url="${escapeHtml(item.url)}" data-dxf-name="${escapeHtml(item.filename || item.stem + '.dxf')}" role="menuitem">
+      <span class="part-dxf-popover-icon">📐</span>
+      <span class="part-dxf-popover-name">${escapeHtml(item.filename || item.stem + '.dxf')}</span>
+    </button>
+  `).join('');
+
+  document.body.appendChild(pop);
+
+  // Position below the button, right-aligned to the trigger.
+  const r = triggerBtn.getBoundingClientRect();
+  pop.style.position = 'fixed';
+  pop.style.top   = (r.bottom + 4) + 'px';
+  pop.style.right = (window.innerWidth - r.right) + 'px';
+
+  // Shared teardown — declared up-front so the row-click closure can
+  // call it before the setTimeout-bound dismiss handlers ever run.
+  let close;
+
+  pop.querySelectorAll('.part-dxf-popover-row').forEach(row => {
+    row.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _downloadFile(row.dataset.dxfUrl, row.dataset.dxfName);
+      if (close) close(); else pop.remove();
+    });
+  });
+
+  // Attach dismiss handlers on next tick so the opening click doesn't
+  // bubble up and immediately close the popover it just opened.
+  setTimeout(() => {
+    close = () => {
+      pop.remove();
+      document.removeEventListener('click',   dismiss, true);
+      document.removeEventListener('keydown', onKey);
+      window.removeEventListener('scroll',    onScroll, true);
+    };
+    const dismiss  = (ev) => { if (!pop.contains(ev.target)) close(); };
+    const onKey    = (ev) => { if (ev.key === 'Escape') close(); };
+    const onScroll = () => close();
+    document.addEventListener('click',   dismiss, true);
+    document.addEventListener('keydown', onKey);
+    window.addEventListener('scroll',    onScroll, true);
+  }, 0);
+
+  return pop;
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   try {
@@ -3740,6 +3815,7 @@ function renderProject(key) {
         <button class="filter-btn ${filter === 'all' ? 'active' : ''}" data-filter="all">All (${parts.length})</button>
         <button class="filter-btn ${filter === 'missing' ? 'active' : ''}" data-filter="missing">⚠️ Missing (${missingCount})</button>
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>
+        <button class="filter-btn project-dxf-btn" id="project-dxf-btn" data-project-key="${escapeHtml(key)}" title="View / download laser-cut DXFs uploaded for this project (from NestingTool's Save to Project button or admin drag-drop)">📐 DXFs (${dxfsForProject(key).length})</button>
       </div>
     </div>
     ${mindmapHtml}
@@ -3764,6 +3840,29 @@ function renderProject(key) {
   });
   ROOT.querySelector('#all-pdf-btn')?.addEventListener('click', () => {
     buildAllProjectPdf(key);
+  });
+  // Project-level DXFs popover. The button is always rendered (so users
+  // know the feature exists) but clicking it with zero uploads pops a
+  // tiny "nothing uploaded yet" hint instead of an empty menu.
+  ROOT.querySelector('#project-dxf-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const list = dxfsForProject(key);
+    if (list.length === 0) {
+      const btn = ev.currentTarget;
+      // Quick toast — surfaces the empty state without a full modal.
+      const tip = document.createElement('div');
+      tip.className = 'part-dxf-popover';
+      tip.style.padding = '10px 14px';
+      tip.textContent = 'No DXFs uploaded for this project yet. Upload via NestingTool → 📤 Save to Project.';
+      document.body.appendChild(tip);
+      const r = btn.getBoundingClientRect();
+      tip.style.position = 'fixed';
+      tip.style.top  = (r.bottom + 4) + 'px';
+      tip.style.right = (window.innerWidth - r.right) + 'px';
+      setTimeout(() => tip.remove(), 3500);
+      return;
+    }
+    _renderDxfPopover(ev.currentTarget, list);
   });
   // Unified editor mount — always React Flow.
   // Composes: project center pseudo-node + BOM nodes (auto-spoked) +
@@ -5302,65 +5401,6 @@ function renderFamily(fam, highlight) {
       render();
     });
   });
-
-  // Build a DXF popover anchored below the trigger button. Returns the
-  // popover element so the caller can wire up its own dismiss handlers.
-  // Closed via outside-click, Escape, or scroll.
-  function _renderDxfPopover(triggerBtn, list) {
-    // Remove any prior popover (only one at a time)
-    document.querySelectorAll('.part-dxf-popover').forEach(p => p.remove());
-
-    const pop = document.createElement('div');
-    pop.className = 'part-dxf-popover';
-    pop.setAttribute('role', 'menu');
-    pop.innerHTML = list.map((item, i) => `
-      <button class="part-dxf-popover-row" data-dxf-url="${escapeHtml(item.url)}" data-dxf-name="${escapeHtml(item.filename || item.stem + '.dxf')}" role="menuitem">
-        <span class="part-dxf-popover-icon">📐</span>
-        <span class="part-dxf-popover-name">${escapeHtml(item.filename || item.stem + '.dxf')}</span>
-      </button>
-    `).join('');
-
-    document.body.appendChild(pop);
-
-    // Position below the button, right-aligned
-    const r = triggerBtn.getBoundingClientRect();
-    pop.style.position = 'fixed';
-    pop.style.top  = (r.bottom + 4) + 'px';
-    pop.style.right = (window.innerWidth - r.right) + 'px';
-
-    // Shared teardown — removes the popover and all three document listeners.
-    // Called by the row-click handler, outside-click dismiss, Escape, and scroll
-    // so that every close path runs the same cleanup (no orphan listeners).
-    let close; // declared here so the row-click closure can reference it
-
-    // Row click → download + close (uses shared close() once it is assigned)
-    pop.querySelectorAll('.part-dxf-popover-row').forEach(row => {
-      row.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        _downloadFile(row.dataset.dxfUrl, row.dataset.dxfName);
-        if (close) close(); else pop.remove(); // close is always set before any user click
-      });
-    });
-
-    // Outside-click dismiss — attach on next tick so the opening click
-    // doesn't immediately dismiss the popover it just opened.
-    setTimeout(() => {
-      close = () => {
-        pop.remove();
-        document.removeEventListener('click',   dismiss, true);
-        document.removeEventListener('keydown', onKey);
-        window.removeEventListener('scroll',    onScroll, true);
-      };
-      const dismiss  = (ev) => { if (!pop.contains(ev.target)) close(); };
-      const onKey    = (ev) => { if (ev.key === 'Escape') close(); };
-      const onScroll = () => close();
-      document.addEventListener('click',   dismiss, true);
-      document.addEventListener('keydown', onKey);
-      window.addEventListener('scroll',    onScroll, true);
-    }, 0);
-
-    return pop;
-  }
 
   // Admin DXF button: N=1 triggers direct download, N>1 opens a popover
   // anchored below the button. One row per DXF, filename-sorted (stable
