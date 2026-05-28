@@ -798,9 +798,18 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       return;
     }
 
-    // Leaf BOM — route to PDF / Fusion. Per feedback_leaf_click_routing:
-    // status=missing → Fusion 3D, drawn/stale/deleted → drawing .f2d,
-    // fallback to PDF. window.kdAPI.routeLeaf encapsulates the rules.
+    // In checklist mode (assembly view) the user explicitly wants
+    // 'กดหน้าจอ กรอบสี่เหลี่ยมใหญ่ หมายถึง ย่อ หรือขยายเท่านั้น' +
+    // 'กดดู PDF ได้เฉพาะปุ่ม PDF' (user 2026-05-28). So leaf taps are
+    // a no-op here — the 📄 button is the only way to open a PDF, and
+    // routeLeaf-to-Fusion is the designer's path which they reach from
+    // the workshop role (no checklist mode active there).
+    if (data.inChecklistMode) return;
+
+    // Outside checklist mode: leaf BOM → route to PDF / Fusion. Per
+    // feedback_leaf_click_routing: status=missing → Fusion 3D,
+    // drawn/stale/deleted → drawing .f2d, fallback to PDF.
+    // window.kdAPI.routeLeaf encapsulates the rules.
     if (isBom && !hasChildren && !isWrapper) {
       const code = data.label;
       const api = window.kdAPI || {};
