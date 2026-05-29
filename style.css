@@ -2871,8 +2871,8 @@ footer {
 .cut-rows { padding: 2px 6px 8px; }
 .cut-row {
   display: grid;
-  /* code · qty · grain · status (status doubles as the view button) */
-  grid-template-columns: 1fr auto 28px auto;
+  /* #N · code · qty · grain · status (status doubles as the view button) */
+  grid-template-columns: auto 1fr auto 28px auto;
   gap: 10px;
   align-items: center;
   padding: 6px 10px;
@@ -2923,6 +2923,15 @@ footer {
   outline: 2px dashed #ffc107;
   outline-offset: -2px;
   opacity: 1;
+}
+/* Nesting part number (#N) — leading cell, matches the Nest workspace's
+   numbering so a worker can cross-reference a part between the two views. */
+.cut-num {
+  color: #6e7b8a;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  min-width: 2.4em;
+  text-align: right;
 }
 .cut-status.cut-uploading {
   background: rgba(78, 163, 204, 0.15);

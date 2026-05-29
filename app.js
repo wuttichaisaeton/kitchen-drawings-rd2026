@@ -810,6 +810,17 @@ function _aggregatePartsByCode(parts) {
 function _renderCutList(parts, projectKey) {
   const aggregated = _aggregatePartsByCode(parts);
 
+  // Nesting part number (#N): 1-based rank of the code in the alphabetically
+  // sorted unique-code list — the SAME rule the Nest workspace uses
+  // (nest.js:572 sorts S.parts by code.localeCompare, labels rows #i+1), so
+  // these numbers match the nest without coupling to it. Sort a COPY so the
+  // family grouping/order below is untouched. (user 2026-05-30 'cutlist ต้อง
+  // sync number มาจาก nesting')
+  const _nestNumberByCode = new Map();
+  [...aggregated]
+    .sort((a, b) => a.code.localeCompare(b.code))
+    .forEach((p, i) => _nestNumberByCode.set(p.code, i + 1));
+
   // Group by remapped family — same chip taxonomy the Library uses, so
   // a laser worker sees parts the way they navigate the library.
   const byFamily = new Map();
@@ -849,6 +860,7 @@ function _renderCutList(parts, projectKey) {
         }
         return `
           <div class="cut-row ${ready ? '' : 'cut-row-missing'}" data-code="${escapeHtml(p.code)}" ${ready ? '' : 'aria-disabled="true"'}>
+            <span class="cut-num">#${_nestNumberByCode.get(p.code)}</span>
             <span class="cut-code">${escapeHtml(p.code)}</span>
             <span class="cut-qty">× ${p.qty || 0}</span>
             ${grainCell}
