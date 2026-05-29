@@ -445,3 +445,18 @@ preview (RTDB left clean). Deployed 4859b9c.
 **NEEDS:** if you build remnant AUTO-capture from finished nests, write to the
 same `nest_remnants` schema (add a `sourceSheet`/`img` field if you want the
 real layout thumbnail — I used a proportional rect preview for now).
+
+---
+
+## [2026-05-30 21:00] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — sheet label/packing polish (3 asks from เอ๋ screenshots).
+
+(1) Merged label is plain canvas text now (dropped the dark pill — looked like
+an image). (2) Label merge is OVERLAP-based (measured text boxes), same code,
+union-find — fixes garbled ID stacks on thin vertical strips, any size.
+(3) Auto runs rectangle packers FIRST (MaxRects, Bottom, BL, Left), true-shape
+LAST → default matches the desktop tool + leaves a cleaner rectangular
+leftover; true-shape only wins on a strict sheet saving. Verified Bung 01:
+Auto→[39,10] (rect), merges TS2TRX ×7 / BXXTR0 ×6 / TS0BV0 ×4 / TS1BHH ×2.
+All in _drawSheet label pass + the Auto runner order — no touch to your
+highlight/keyboard code. **NEEDS:** nothing.
