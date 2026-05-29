@@ -524,14 +524,13 @@
     // exact > XX wildcard > longest prefix > longest suffix > longest
     // substring (matches Python's lookup_in_map priority).
     if (!S.grainMap) {
+      // grain_rules (RTDB, edited in the 🧬 Grain modal) is the live source;
+      // grain.json is the seed when RTDB is empty. _loadGrainRows does both.
       try {
-        const resp = await fetch('grain.json?v=' + Date.now(), { cache: 'no-store' });
-        if (resp.ok) {
-          const json = await resp.json();
-          S.grainMap = _buildPatternMap(json.rows || []);
-        }
+        await _loadGrainRows();
+        _grainRowsToMap();
       } catch (e) {
-        console.warn('[kdNest] grain.json fetch failed (continuing without):', e);
+        console.warn('[kdNest] grain rules load failed (continuing without):', e);
       }
     }
     if (S.grainMap) {
@@ -550,6 +549,132 @@
     S.projectKey = projectKey;
     S.projectName = project.name || projectKey;
     S.parts = [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
+  }
+
+  // ── Grain rules editor (RTDB grain_rules, seeded from grain.json) ─────
+  // Edit grain/thickness on the web instead of opening grain.xlsx. Stored
+  // at RTDB grain_rules = { rows:[{pattern,grain,thickness}], updated_at }.
+  // Phase B (Fusion) syncs this back to grain.xlsx + grain.json for the
+  // desktop/laser side. (user 2026-05-29)
+  function _grainCh(g) {
+    g = String(g || '').toUpperCase();
+    return g === 'H' ? '─' : g === 'V' ? '│' : '✱';
+  }
+  function _grainNext(g) {
+    g = String(g || '').toUpperCase();
+    return g === 'H' ? 'V' : g === 'V' ? 'ANY' : 'H';
+  }
+  async function _loadGrainRows() {
+    if (S.grainRows) return S.grainRows;
+    let rows = null;
+    try {
+      if (window.firebaseDB) {
+        const snap = await window.firebaseDB.ref('grain_rules').once('value');
+        const v = snap.val();
+        if (v && Array.isArray(v.rows) && v.rows.length) rows = v.rows;
+      }
+    } catch (e) { console.warn('[kdNest] grain_rules read failed:', e); }
+    if (!rows) {
+      try {
+        const resp = await fetch('grain.json?v=' + Date.now(), { cache: 'no-store' });
+        if (resp.ok) { const j = await resp.json(); rows = j.rows || []; }
+      } catch (e) { console.warn('[kdNest] grain.json seed failed:', e); }
+    }
+    S.grainRows = (rows || []).map(r => ({
+      pattern: String(r.pattern || ''),
+      grain: String(r.grain || 'ANY').toUpperCase(),
+      thickness: (r.thickness == null ? '' : String(r.thickness)),
+    }));
+    return S.grainRows;
+  }
+  function _grainRowsToMap() {
+    if (S.grainRows) S.grainMap = _buildPatternMap(S.grainRows);
+  }
+  function _applyGrainToParts() {
+    if (!S.grainMap) return;
+    for (const part of S.parts) {
+      const looked = _lookupPattern(part.code, S.grainMap);
+      if (looked && looked.grain) part.grain = looked.grain;
+      if (looked && looked.thickness) {
+        const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
+        if (!isNaN(t)) part.thickness = t;
+      }
+    }
+  }
+  async function _saveGrainRows() {
+    const clean = (S.grainRows || []).filter(r => String(r.pattern).trim());
+    S.grainRows = clean;
+    if (window.firebaseDB) {
+      await window.firebaseDB.ref('grain_rules').set({ rows: clean, updated_at: Date.now() });
+    }
+    _grainRowsToMap();
+    _applyGrainToParts();
+  }
+  function _openGrainModal() {
+    _loadGrainRows().then(_renderGrainModal)
+      .catch(e => alert('Grain load failed: ' + (e.message || e)));
+  }
+  function _renderGrainModal() {
+    document.querySelectorAll('.kdng-modal').forEach(m => m.remove());
+    const rows = S.grainRows || [];
+    const cell = (r, i) => `
+      <div class="kdng-row" data-i="${i}">
+        <input class="kdng-pat" data-i="${i}" value="${_esc(r.pattern)}" placeholder="BK*" spellcheck="false">
+        <button class="kdng-grain" data-i="${i}" title="grain — click to cycle H / V / ANY">${_grainCh(r.grain)}</button>
+        <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="mm" inputmode="decimal">
+        <button class="kdng-del" data-i="${i}" title="delete rule">✕</button>
+      </div>`;
+    const half = Math.ceil(rows.length / 2);
+    const colA = rows.slice(0, half).map((r, i) => cell(r, i)).join('');
+    const colB = rows.slice(half).map((r, i) => cell(r, i + half)).join('');
+    const modal = document.createElement('div');
+    modal.className = 'kdng-modal';
+    modal.innerHTML = `
+      <div class="kdng-backdrop"></div>
+      <div class="kdng-box">
+        <div class="kdng-head">🧬 Grain rules
+          <span class="kdng-sub">pattern → grain · thickness · ${rows.length} rules · shared</span>
+        </div>
+        <div class="kdng-grid">
+          <div class="kdng-col">${colA || '<div class="kdng-empty">no rules — + Add</div>'}</div>
+          <div class="kdng-col">${colB}</div>
+        </div>
+        <div class="kdng-foot">
+          <button id="kdng-add" class="kdnest-mini">+ Add</button>
+          <span class="kdng-spacer"></span>
+          <button id="kdng-cancel" class="kdnest-btn">Cancel</button>
+          <button id="kdng-save" class="kdnest-btn kdnest-btn-run">💾 Save</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    const q = sel => modal.querySelector(sel);
+    const discard = () => { S.grainRows = null; modal.remove(); };
+    q('.kdng-backdrop').addEventListener('click', discard);
+    q('#kdng-cancel').addEventListener('click', discard);
+    modal.querySelectorAll('.kdng-pat').forEach(el => el.addEventListener('input', e => {
+      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].pattern = e.target.value;
+    }));
+    modal.querySelectorAll('.kdng-th').forEach(el => el.addEventListener('input', e => {
+      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].thickness = e.target.value;
+    }));
+    modal.querySelectorAll('.kdng-grain').forEach(el => el.addEventListener('click', e => {
+      const i = +e.currentTarget.dataset.i;
+      if (S.grainRows[i]) {
+        S.grainRows[i].grain = _grainNext(S.grainRows[i].grain);
+        e.currentTarget.textContent = _grainCh(S.grainRows[i].grain);
+      }
+    }));
+    modal.querySelectorAll('.kdng-del').forEach(el => el.addEventListener('click', e => {
+      const i = +e.currentTarget.dataset.i; S.grainRows.splice(i, 1); _renderGrainModal();
+    }));
+    q('#kdng-add').addEventListener('click', () => {
+      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '' }); _renderGrainModal();
+    });
+    q('#kdng-save').addEventListener('click', async () => {
+      const btn = q('#kdng-save'); btn.disabled = true; btn.textContent = '💾 Saving…';
+      try { await _saveGrainRows(); modal.remove(); _refreshView(); }
+      catch (err) { alert('Save failed: ' + (err.message || err)); btn.disabled = false; btn.textContent = '💾 Save'; }
+    });
   }
 
   // ── grain.json → pattern map ──────────────────────────────────────
@@ -1334,6 +1459,7 @@
           <div class="kdnest-actions">
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run">▶ Run Nesting</button>
             <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'}>📤 Save sheets to Laser</button>
+            <button id="kdnest-grain" class="kdnest-btn kdnest-btn-grain" title="Edit grain / thickness rules (shared — no Excel needed)">🧬 Grain</button>
           </div>
           <div class="kdnest-parts">
             <div class="kdnest-parts-head">
@@ -1369,6 +1495,7 @@
     $('#kdnest-back')?.addEventListener('click', close);
     $('#kdnest-run')?.addEventListener('click', _runNesting);
     $('#kdnest-save-sheets')?.addEventListener('click', _saveSheetsToLaser);
+    $('#kdnest-grain')?.addEventListener('click', _openGrainModal);
     $('#kdnest-prev')?.addEventListener('click', () => {
       if (S.currentSheetIdx > 0) { S.currentSheetIdx--; _refreshView(); }
     });
