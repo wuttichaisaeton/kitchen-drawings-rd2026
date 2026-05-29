@@ -1189,6 +1189,37 @@
     return { sheets, unplaced: remaining };
   }
 
+  // Largest all-zero (empty) axis-aligned rectangle in a binary occupancy grid.
+  // Standard "maximal rectangle in a binary matrix": per row, treat consecutive
+  // empty cells upward as histogram bar heights, then largest-rectangle-in-
+  // histogram via a monotonic stack. O(gw*gh). Returns the biggest empty rect in
+  // CELLS: { gx, gy, w, h, area }. Used to score how big a reusable rectangular
+  // offcut a layout leaves. (2026-05-30 Max Remnant mode)
+  function _largestEmptyRect(occ, gw, gh) {
+    const heights = new Int32Array(gw);
+    let best = { gx: 0, gy: 0, w: 0, h: 0, area: 0 };
+    for (let y = 0; y < gh; y++) {
+      for (let x = 0; x < gw; x++) {
+        heights[x] = occ[y * gw + x] ? 0 : heights[x] + 1;
+      }
+      const stack = [];   // {x, h} with strictly increasing h
+      for (let x = 0; x <= gw; x++) {
+        const h = x < gw ? heights[x] : 0;
+        let start = x;
+        while (stack.length && stack[stack.length - 1].h >= h) {
+          const top = stack.pop();
+          const area = top.h * (x - top.x);
+          if (area > best.area) {
+            best = { gx: top.x, gy: y - top.h + 1, w: x - top.x, h: top.h, area };
+          }
+          start = top.x;
+        }
+        stack.push({ x: start, h });
+      }
+    }
+    return best;
+  }
+
   // ── Driver: pack onto multiple sheet sizes ─────────────────────────
   function _nestMultiSheet(pieces, stock, gap, mode) {
     // pieces: [{code, w, h, rots:[0,90,...], qty}]
