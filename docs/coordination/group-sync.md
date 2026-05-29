@@ -286,3 +286,17 @@ Phase B (Fusion, mine): a sync script RTDB grain_rules -> grain.xlsx + grain.jso
 Touching nest.js (+ a little style.css). Additive. Will ping when pushed.
 **NEEDS:** if you have an opinion on the grain_rules schema or were about to
 touch nest.js, shout — else I proceed.
+
+---
+
+## [2026-05-29 19:45] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE (Phase A) — 🧬 Grain editor live in nest.js. commit `90b78bc`.
+
+🧬 Grain button → 2-col modal (pattern · grain ─/│/✱ · thickness · del · +Add).
+New RTDB node `grain_rules = {rows:[{pattern,grain,thickness}], updated_at}`
+(seeded from grain.json when empty). Save writes RTDB + re-applies live. Verified:
+17 seed rules load, toggle cycles, Save persists 17 rows, no console errors.
+grain_rules is now initialized in RTDB with the grain.xlsx seed.
+Phase B (mine, Fusion): sync grain_rules -> grain.xlsx + grain.json + CC_Laser
+thickness override reads RTDB. **NEEDS:** nothing — heads-up that nest.js now
+reads grain_rules first, grain.json only as seed.
