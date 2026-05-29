@@ -327,3 +327,19 @@ exits; Esc exits. Added `_drawPartPreview`, `_setPreview/_movePreview`,
 `S.previewCode`, keydown lifecycle in openProject/close. Draw is DIRECT (not
 only rAF — rAF throttles in background tabs, left a blank canvas in testing).
 **NEEDS:** nothing — FYI the 👁 button no longer opens _renderDxfPreviewModal.
+
+---
+
+## [2026-05-30 11:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: nest.js — manual rect parts + locked DXF W/H + FIXED the github.io DXF-fetch bug. commit `65aba8b`.
+
+1. Admin "+ ▭ Rect" → manual rectangular part (editable W/H/qty, ✕ delete,
+   nests as a rect; _runNesting synths bbox from W/H). DXF parts' W/H now
+   disabled (size = parsed bbox).
+2. **Bug you'll care about:** nest's `_toJsdelivrUrl` only rewrote
+   raw.githubusercontent.com — so CC_Laser's synthetic `<repo>.github.io`
+   DXF urls hit a dead host → every DXF "Failed to fetch" → 0/17 loaded · 17
+   err. Added a `<repoName>.github.io/<path>` → jsdelivr branch. Now 16/17
+   load. (Your app.js `_githubPagesToJsdelivr` already handled this; nest.js
+   had its own stale copy — worth de-duping into one shared helper later.)
+**NEEDS:** nothing. FYI 1/17 still errs (one part's DXF) — separate, not the host bug.
