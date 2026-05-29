@@ -61,6 +61,19 @@
     closing: false,
   };
 
+  // Admin-added rectangular part — no DXF, editable W/H, nests as a plain
+  // rectangle. (user 2026-05-30 'เพิ่ม row admin เพิ่ม Part สี่เหลี่ยมเอง')
+  function _newManualPart() {
+    S._manualSeq = (S._manualSeq || 0) + 1;
+    return {
+      code: 'RECT-' + S._manualSeq,
+      qty: 1, selected: true, manual: true,
+      w: 0, h: 0, grain: 'ANY', thickness: 1,
+      polys: null, bbox: null, dxfUrl: '', dxfMeta: null,
+      dxfLoaded: true,   // nothing to fetch — ready immediately
+    };
+  }
+
   function _newPart(code, qty) {
     return {
       code: code,
@@ -110,11 +123,18 @@
   // here so nest.js doesn't depend on app.js's internal scope.
   function _toJsdelivrUrl(url) {
     if (!url) return url;
-    const m = String(url).match(
+    let m = String(url).match(
       /^https?:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/
     );
-    if (!m) return url;
-    return `https://cdn.jsdelivr.net/gh/${m[1]}/${m[2]}@${m[3]}/${m[4]}`;
+    if (m) return `https://cdn.jsdelivr.net/gh/${m[1]}/${m[2]}@${m[3]}/${m[4]}`;
+    // CC_Laser writes the DXF url as the SYNTHETIC host
+    // `<repoName>.github.io/<path>` — that host doesn't resolve (it's a
+    // (repoName, path) encoding, see group-sync 2026-05-29). Map it to the
+    // jsdelivr mirror of the real repo. Without this every CC_Laser DXF
+    // failed to fetch → "0/N DXF LOADED · ⚠ N ERR". (fix 2026-05-30)
+    m = String(url).match(/^https?:\/\/([^./]+)\.github\.io\/(.+)$/);
+    if (m) return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/${m[1]}@main/${m[2]}`;
+    return url;
   }
 
   // ── Polygon extraction from parsed DXF ─────────────────────────────
@@ -992,14 +1012,16 @@
     const pieces = [];
     for (const p of S.parts) {
       if (!p.selected) continue;
-      if (!p.bbox || p.w <= 0 || p.h <= 0) continue;
+      if (p.w <= 0 || p.h <= 0) continue;
+      if (!p.bbox && !p.manual) continue;   // DXF parts need a parsed bbox; manual synth one
+      const bbox = p.bbox || [0, 0, p.w, p.h];
       const rots = (p.grain === 'H') ? [0, 180]
                  : (p.grain === 'V') ? [90, 270]
                  :                     [0, 90, 180, 270];
       for (let i = 0; i < p.qty; i++) {
         pieces.push({
           code: p.code, w: p.w, h: p.h, rots: rots,
-          polys: p.polys, bbox: p.bbox, thickness: p.thickness,
+          polys: p.polys, bbox: bbox, thickness: p.thickness,
         });
       }
     }
@@ -1471,26 +1493,32 @@
     }
 
     const partsRows = S.parts.map((p, i) => {
-      const status = p.dxfLoaded
-        ? `<span class="kdnest-part-ok" title="DXF loaded">✓</span>`
-        : p.dxfError
-          ? `<span class="kdnest-part-err" title="${_esc(p.dxfError)}">⚠</span>`
-          : `<span class="kdnest-part-load" title="loading…">⋯</span>`;
+      const status = p.manual
+        ? `<button class="kdnest-part-del" title="Remove this manual part">✕</button>`
+        : p.dxfLoaded
+          ? `<span class="kdnest-part-ok" title="DXF loaded">✓</span>`
+          : p.dxfError
+            ? `<span class="kdnest-part-err" title="${_esc(p.dxfError)}">⚠</span>`
+            : `<span class="kdnest-part-load" title="loading…">⋯</span>`;
       const g = grainGlyph(p.grain);
       const onSheetIdx = findSheetIdx(p.code);
       const viewDisabled = !p.dxfUrl;
       const sheetDisabled = onSheetIdx < 0;
+      // DXF parts: W/H come from the parsed bbox — lock them so a stray edit
+      // can't desync the size from the actual cut geometry. Manual rectangles
+      // stay editable. (user 2026-05-30)
+      const whLock = p.manual ? '' : ' disabled title="size comes from the DXF — locked"';
       return `
-        <div class="kdnest-part" data-code="${_esc(p.code)}">
+        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
-          <span class="kdnest-part-code">${_esc(p.code)}</span>
-          <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="W">
+          <span class="kdnest-part-code">${p.manual ? '▭ ' : ''}${_esc(p.code)}</span>
+          <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="W"${whLock}>
           <span class="kdnest-x">×</span>
-          <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H">
+          <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
           <button class="kdnest-part-grain ${g.cls}" data-grain="${p.grain}" title="${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
-          <button class="kdnest-part-view" title="View this part's DXF preview" ${viewDisabled ? 'disabled' : ''}>👁</button>
+          <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
           <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>
           ${status}
         </div>`;
@@ -1579,6 +1607,7 @@
             <div class="kdnest-parts-head">
               <button id="kdnest-parts-all" class="kdnest-mini">All</button>
               <button id="kdnest-parts-none" class="kdnest-mini">None</button>
+              ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
               <span class="kdnest-parts-count">${totalUnique} / ${S.parts.length} · ${totalPcs} pcs</span>
             </div>
             ${partsRows || '<div class="kdnest-empty">No parts in this project</div>'}
@@ -1629,6 +1658,14 @@
     });
     $('#kdnest-parts-none')?.addEventListener('click', () => {
       S.parts.forEach(p => { p.selected = false; }); _refreshView();
+    });
+    $('#kdnest-add-rect')?.addEventListener('click', () => {
+      S.parts.push(_newManualPart());
+      _refreshView();
+      // focus the new row's W field so the admin can type dimensions right away
+      const rows = S.rootEl.querySelectorAll('.kdnest-part-manual .kdnest-part-w');
+      const last = rows[rows.length - 1];
+      if (last) last.focus();
     });
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
@@ -1700,6 +1737,12 @@
       // flips through parts; a sheet ‹/› or Run Nesting returns to the nest.
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
         _setPreview(part.code);
+      });
+      // ✕ remove a manual rectangular part
+      row.querySelector('.kdnest-part-del')?.addEventListener('click', () => {
+        S.parts = S.parts.filter(x => x !== part);
+        if (S.previewCode === part.code) S.previewCode = null;
+        _refreshView();
       });
       // View @ sheet — jump to whichever sheet currently has this
       // part placed AND highlight every placement of this code on
