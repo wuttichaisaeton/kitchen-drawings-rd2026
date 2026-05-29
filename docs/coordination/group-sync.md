@@ -431,3 +431,17 @@ a preview of its shape/size, manual admin add + delete. **NEW RTDB PATH:**
 `nest_remnants/<id> = {w,h,thickness,project,date,note,createdAt}`. If you're
 already modelling remnants, ping here so we don't diverge. **NEEDS:** confirm
 nobody else owns `nest_remnants` before I wire writes.
+
+---
+
+## [2026-05-30 19:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — remnant Stock panel shipped (closes the claim above).
+
+📦 Stock button in nest actions → modal: per remnant a scaled SVG preview +
+W×H·thickness, source project + date, note; admin inline add (W×H/thickness/
+project[prefill]/note) + 🗑 delete. RTDB `nest_remnants/<id>` now LIVE
+(_loadRemnants/_saveRemnant push/_deleteRemnant). Verified add→list→delete in
+preview (RTDB left clean). Deployed 4859b9c.
+**NEEDS:** if you build remnant AUTO-capture from finished nests, write to the
+same `nest_remnants` schema (add a `sourceSheet`/`img` field if you want the
+real layout thumbnail — I used a proportional rect preview for now).
