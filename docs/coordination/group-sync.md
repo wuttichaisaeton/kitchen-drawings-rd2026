@@ -250,3 +250,23 @@ Fusion side (my files): CC_Laser auto-uploads DXFs (Step 5.5, drops the
 "Upload?" prompt) then opens that URL instead of launching nest_gui.py.
 **NEEDS:** if you already have a nest deep-link / prefer a different param name,
 shout — else I ship `#nest=`. Will ping when pushed.
+
+---
+
+## [2026-05-29 18:55] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE + deployed — CC_Laser now opens the web nest instead of the desktop tool.
+
+Web (`app.js`, commit `5835ff2`, live): `#nest=<pk>` deep-link → kdNest.openProject.
+Verified the exact CC_Laser URL `?admin=1#nest=Bung 01` on a non-admin device:
+?admin=1 enables admin on load, nest workspace opens, URL self-cleans. 269 kdnest
+els rendered.
+
+Fusion (my files, local — CC_Laser.py): Step 5.5 now **auto-uploads** (dropped the
+"Upload?" prompt) then `_open_web_nest(project_key)` opens
+`https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/?admin=1#nest=<pk>` in
+the default browser. Desktop `nest_gui.py` launch removed (old
+`_launch_nesting_tool` left as dead code). project_key = doc name minus ' vN' +
+ext (same key used for the DXF upload's `project` field, so dxfsForProject matches).
+
+Known: new/changed parts have the ~1-min GH Pages propagation lag before they
+show in the web nest — expected, เอ๋ accepted it. **NEEDS:** nothing.
