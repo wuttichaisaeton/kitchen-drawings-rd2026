@@ -567,6 +567,15 @@ function _writeCollapsedState(pk, state) {
   } catch {}
 }
 
+// Per-project viewport cache (module-level so it survives the editor's
+// frequent remounts — the Firebase assembled/bent/comment listeners call
+// app.js render() which rebuilds #kme-mount). Without this, every remount
+// re-ran React Flow's fitView prop and the view jumped back to center every
+// time a part was ticked. We fit only on the FIRST open of a project; after
+// that the user's own pan/zoom (and the Zoom-fit button) own the viewport.
+// User 2026-05-29: 'ไม่ต้องยุ่งเรื่อง pan zoom ... ให้ user จัดการเอง'.
+const _vpCache = {};
+
 function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode, autoFullscreen }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
@@ -861,24 +870,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     } catch {}
   }, [rf]);
 
-  const fittedOnceRef = useRef(false);
-  useEffect(() => {
-    if (!inChecklistMode) return;
-    if (!fittedOnceRef.current) {
-      // First render — let ReactFlow's built-in fitView prop handle it.
-      fittedOnceRef.current = true;
-      return;
-    }
-    // 🧩 assemble toggle set this — keep the view exactly where it is so the
-    // worker doesn't lose their place when ticking parts done.
-    if (skipFitRef.current) { skipFitRef.current = false; return; }
-    // Wait for the position-transition (800ms CSS) to settle before
-    // measuring, otherwise fitView frames the OLD positions.
-    const t = setTimeout(() => {
-      fitNow({ duration: 600 });
-    }, 850);
-    return () => clearTimeout(t);
-  }, [collapsedNodes, inChecklistMode, fitNow]);
+  // NO auto-fit on expand/collapse/🧩/tap-3 anymore. The view only moves
+  // when the USER pans/zooms or taps the Zoom-fit button. User 2026-05-29:
+  // 'ไม่ต้องยุ่งเรื่อง pan zoom ... มีปุ่ม zoom fit แล้ว ให้ user จัดการเอง'.
+  // (skipFitRef is now a no-op leftover; harmless.)
 
   // "Show all" — single recoverable handle that brings EVERYTHING back
   // regardless of how it got hidden: clears the center collapse, every
@@ -1352,10 +1347,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           nodeClickDistance={20}
           paneClickDistance={20}
           defaultEdgeOptions={{ type: 'floating', style: { strokeWidth: 1.2, opacity: 0.5 } }}
-          fitView
-          /* Cap the initial fit-zoom on phones too so a many-node Show-all
-             layout doesn't open at 0.25 with untappable buttons. */
+          /* Fit ONLY on the first open of a project; on later remounts
+             (Firebase sync) restore the cached viewport so the view never
+             jumps. After that the user owns pan/zoom (+ the Zoom-fit button).
+             onMoveEnd caches every pan/zoom so the restore is up to date. */
+          fitView={!_vpCache[projectKey]}
           fitViewOptions={{ padding: 0.12, minZoom: (typeof window !== 'undefined' && window.innerWidth < 700) ? 0.6 : 0.1 }}
+          defaultViewport={_vpCache[projectKey] || undefined}
+          onMoveEnd={(_e, vp) => { if (projectKey && vp) _vpCache[projectKey] = vp; }}
           /* minZoom needs to be loose enough that a phone can pinch
              out to see both variants (at ±720 in expanded checklist
              mode → 1440 px wide layout vs 375 px iPhone viewport).
