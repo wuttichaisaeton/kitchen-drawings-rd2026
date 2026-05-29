@@ -3966,71 +3966,82 @@ function _buildBomNodes(project, parts, projectKey) {
     }
   }
 
-  // ── Unified Option A layout for all projects ─────────────────────
-  // Cluster anchors = top-level roots that either (a) are real variant
-  // roots from CC_Assembly's Pass 4, or (b) have children (legacy
-  // projects without variant_root data still get clusterable structure
-  // via their parent_code wrappers — user 2026-05-28: 'Auto-cluster
-  // ตาม parent_code: ทุก top-level master ที่มี children = ก้อน').
-  // Roots that are top-level leaves (no children) just sit on the
-  // outer ring with no sub-cluster and never fade in checklist mode.
-  const n = roots.length;
-  // Tuning table per spec §2.1.4 — keeps adjacent clusters apart on
-  // the variant ring. n covers ALL top-level roots so a project with
-  // many independent leaves still gets enough breathing room.
-  // 2026-05-28 v2: bumped subR0 (was 360) — when a variant has 8+
-  // direct children at depth 1, the per-kid arc at radius 360 produces
-  // center-to-center distances of ~150-180 px, less than the ~140 px
-  // card width → cards visually overlapped. User said 'และซ้อนกัน'.
-  // Larger subR0 trades viewport size for breathing room (mobile pans
-  // and the new minZoom 0.25 means the layout still fits a pinch-out).
-  const tuning =
-    n <= 2  ? { variantRing: 720,  subR0: 480, sweepDeg: 270 } :
-    n <= 5  ? { variantRing: 1100, subR0: 460, sweepDeg: 240 } :
-    n <= 10 ? { variantRing: 1800, subR0: 460, sweepDeg: 200 } :
-              { variantRing: 2200, subR0: 420, sweepDeg: 160 };
-  const subRings = [
-    tuning.subR0,
-    tuning.subR0 * 1.5,
-    tuning.subR0 * 1.95,
-    tuning.subR0 * 2.4,
-  ];
-  const sweep = tuning.sweepDeg * Math.PI / 180;
+  // ── Radial tree layout (2026-05-29 rewrite) ──────────────────────
+  // Goals (user 2026-05-29): tidy, even gaps, as CLOSE to the project
+  // center as possible, and NEVER overlapping. Standard radial tree:
+  //   • every leaf gets an equal angular slot (plus a small gap between
+  //     top-level clusters so variants read as separate "ก้อน");
+  //   • an internal node sits at the angular MIDPOINT of its subtree
+  //     (parents inner / children outer = clear hierarchy);
+  //   • ring radius grows one even step per depth;
+  //   • the outer ring radius is scaled to the leaf count so adjacent
+  //     leaf cards always clear MIN_SPACING center-to-center — this is
+  //     what guarantees no overlap, while keeping the whole map as
+  //     compact as that constraint allows.
+  // Node moves stay admin-only (onNodesChange drops non-admin position
+  // changes), so this auto-layout is the canonical arrangement.
+  const CARD_W = 168;                 // ~node card width
+  const CARD_H = 70;                  // ~node card height
+  const MIN_SPACING = CARD_W + 26;    // min center-to-center on a ring
 
-  for (let i = 0; i < n; i++) {
-    const root = roots[i];
-    // Placement: n=2 → ±x axis (matches the standard 2-variant kitchen
-    // layout); n≥3 → evenly around a circle starting from 12 o'clock.
-    const va = (n === 1) ? 0
-            : (n === 2) ? ((i === 0) ? Math.PI : 0)
-            :             ((i / n) * 2 * Math.PI - Math.PI / 2);
-    const vx = tuning.variantRing * Math.cos(va);
-    const vy = tuning.variantRing * Math.sin(va);
-    // Anchor = real variant root OR top-level parent with children.
-    const isAnchor = !!root._is_variant_root || !!root.children?.length;
-    const { nodeKey: rootKey, color: rootColor } = emitNode(root, vx, vy, {
-      forceIsAnchor: isAnchor,
-    });
-    emitEdge(`project:${projectKey}`, rootKey, rootColor, true);
+  function maxDepthOf(node, d) {
+    if (!node.children?.length) return d;
+    return Math.max(...node.children.map((c) => maxDepthOf(c, d + 1)));
+  }
+  const maxDepth = Math.max(1, ...roots.map((r) => maxDepthOf(r, 1)));
+  const totalLeaves = roots.reduce((s, r) => s + leafCount(r), 0) || 1;
 
-    // Children fan out in a sub-arc centred on the outward direction
-    // (the angle from project → anchor). Keeps the cluster leaning
-    // away from the project so edges from project→anchor and
-    // anchor→part don't visually clash.
-    if (root.children?.length) {
-      const totalLeaves = leafCount(root);
-      const arcStart = va - sweep / 2;
-      const arcEnd = va + sweep / 2;
-      let cursor = arcStart;
-      for (const child of root.children) {
-        const w = leafCount(child) / totalLeaves;
-        const childArcEnd = cursor + (arcEnd - arcStart) * w;
-        const childKey = child._id || `${child.code}::`;
-        emitEdge(`bom:${rootKey}`, childKey, rootColor, false);
-        placeSubtree(child, vx, vy, subRings, 1, cursor, childArcEnd, `bom:${rootKey}`);
-        cursor = childArcEnd;
+  // Gap between top-level clusters, in leaf-slot widths (0 for a single
+  // cluster so it isn't pushed off-center).
+  const CLUSTER_GAP = roots.length > 1 ? 0.7 : 0;
+  const effLeaves = totalLeaves + CLUSTER_GAP * roots.length;
+  const slot = (2 * Math.PI) / effLeaves;   // radians per leaf
+
+  // Outer radius so leaf slots clear MIN_SPACING; floored so a tiny tree
+  // isn't cramped, capped so a huge one stays sane.
+  const Router = Math.min(2600, Math.max(340, MIN_SPACING / slot));
+  // One even ring step per depth — never tighter than a card height + gap
+  // so stacked rings can't overlap vertically either.
+  const RING_STEP = Math.max(Router / maxDepth, CARD_H + 85);
+
+  // Pass 1 — assign every node an angle. Post-order: place a leaf into the
+  // next slot, an internal node at the midpoint of its subtree's span.
+  let leafCursor = -Math.PI / 2;   // start at 12 o'clock
+  function assignAngles(node) {
+    if (!node.children?.length) {
+      node._ang = leafCursor + slot / 2;
+      leafCursor += slot;
+      return;
+    }
+    const start = leafCursor;
+    for (const c of node.children) assignAngles(c);
+    node._ang = (start + leafCursor) / 2;
+  }
+  for (const root of roots) {
+    assignAngles(root);
+    leafCursor += CLUSTER_GAP * slot;   // breathing room before next cluster
+  }
+
+  // Pass 2 — place each node on its depth ring at its assigned angle and
+  // wire the edges. Top roots (depth 1) connect to the project center.
+  function placeRadial(node, depth, anchorNodeId, parentSourceId, parentColor, isTopRoot) {
+    const r = RING_STEP * depth;
+    const x = r * Math.cos(node._ang);
+    const y = r * Math.sin(node._ang);
+    const isAnchor = !!node._is_variant_root || !!node.children?.length;
+    const { nodeKey, color } = emitNode(node, x, y,
+      isTopRoot ? { forceIsAnchor: isAnchor } : { anchorNodeId });
+    if (isTopRoot) emitEdge(`project:${projectKey}`, nodeKey, color, true);
+    else emitEdge(parentSourceId, nodeKey, parentColor || color, false);
+    const myAnchor = isTopRoot ? `bom:${nodeKey}` : anchorNodeId;
+    if (node.children?.length) {
+      for (const c of node.children) {
+        placeRadial(c, depth + 1, myAnchor, `bom:${nodeKey}`, color, false);
       }
     }
+  }
+  for (const root of roots) {
+    placeRadial(root, 1, null, null, null, true);
   }
 
   return { nodes, edges };
