@@ -6207,27 +6207,59 @@ async function _routeLeafToFusion(node) {
     const url = pdfUrlForCode(node.code);
     if (url) { _openInNewTab(url); return; }
   }
+  // Track bridge attempt outcome so we can surface a useful message
+  // when every path fails (the silent `catch {}` was hiding the most
+  // common failure mode: CC_DrawingLauncher add-in not running, or
+  // user on a device other than the admin PC).
+  let bridgeAttempted = false;
+  let bridgeError = null;
   // Stale (drawing exists but out of date) → open Fusion drawing
   if (node.status === 'stale' && node.drawing_urn) {
+    bridgeAttempted = true;
     try {
       const r = await fetch(
         `http://127.0.0.1:8765/open?urn=${encodeURIComponent(node.drawing_urn)}`,
         { method: 'GET', mode: 'cors' });
       if (r.ok) return;
-    } catch {}
+      bridgeError = `HTTP ${r.status}`;
+    } catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
   // Missing / deleted / fallback → open Fusion 3D master
   if (node.urn) {
+    bridgeAttempted = true;
     try {
       const r = await fetch(
         `http://127.0.0.1:8765/open?urn=${encodeURIComponent(node.urn)}`,
         { method: 'GET', mode: 'cors' });
       if (r.ok) return;
-    } catch {}
+      bridgeError = `HTTP ${r.status}`;
+    } catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
   // Last-resort fallback — PDF if any (handles stale w/o drawing_urn etc.)
   const url = pdfUrlForCode(node.code);
-  if (url) _openInNewTab(url);
+  if (url) { _openInNewTab(url); return; }
+
+  // Nothing worked — tell the user WHY instead of failing silently.
+  if (bridgeAttempted) {
+    alert(
+      `Couldn't open "${node.code || 'this part'}" in Fusion.\n\n` +
+      `The local bridge at http://127.0.0.1:8765 didn't respond:\n` +
+      `  ${bridgeError}\n\n` +
+      `Checks:\n` +
+      `1. Are you on the same PC as Fusion?\n` +
+      `   (the bridge only listens on localhost — iPad can't reach it)\n` +
+      `2. Is the CC_DrawingLauncher add-in Running in Fusion?\n` +
+      `   Design workspace → Utilities → Add-ins → look for CC_DrawingLauncher\n` +
+      `3. No PDF exists for this code yet either — export one via\n` +
+      `   CC_DrawingPDF in Fusion so workshop can read it.`
+    );
+  } else if (!node.urn) {
+    alert(
+      `"${node.code || 'this part'}" has no Fusion URN saved.\n\n` +
+      `Re-run CC_Assembly in Fusion for this project so the URN is\n` +
+      `written into the manifest, then refresh this page.`
+    );
+  }
 }
 
 // Decide what to do when user clicks a leaf (no children) node:
