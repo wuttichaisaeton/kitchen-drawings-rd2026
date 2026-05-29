@@ -134,7 +134,7 @@ function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
           isLeaf, isWrapper, status, urn, drawing_urn,
           isCollapsedParent, hasChildren,
-          isVariantRoot, inChecklistMode, faded, ensureCollapsed, revealAll } = data;
+          isVariantRoot, inChecklistMode, faded, ensureCollapsed, releaseNode, revealAll } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -213,17 +213,20 @@ function MindmapNode({ id, data, selected }) {
     window.__kmeStatus?.(`tap asm: ${code}`);
     if (!code || !projectKey) return;
     api.markAssembled?.(projectKey, code, !assembled);
-    // When marking assembled (not un-marking), hide the node + its
-    // edges — same mechanism as the tap-3 home gesture. User
-    // 2026-05-28: 'ย่อเฉพาะ node นั้น (node หาย เส้นหาย) ลักษณะ
-    // การทำงาน คล้ายปุ่มที่ 3'. Applies to leaves AND parents; the
-    // editor's ensureCollapsed handles both the kids-fade-via-
-    // collapsedNodes path and the node-fade-via-hiddenAnchors path.
-    if (!assembled && ensureCollapsed && id) {
-      ensureCollapsed(id);
+    // 🧩 toggles the node's visibility through the SAME hiddenAnchors path
+    // as the tap-3 home gesture (user 2026-05-29: 'click 3 หรือ Tab 3
+    // ทำงานเหมือนกัน'):
+    //   • marking complete → ensureCollapsed → hide node + its edge (and
+    //     tuck its subtree). Tapping the parent / project-center brings it
+    //     back, exactly like a tap-3-hidden node.
+    //   • un-marking → releaseNode → bring the node + edge back so the
+    //     toggle reverses cleanly.
+    if (id) {
+      if (!assembled) { ensureCollapsed?.(id); }
+      else { releaseNode?.(id); }
     }
     bump();
-  }, [code, projectKey, assembled, api, bump, ensureCollapsed, id]);
+  }, [code, projectKey, assembled, api, bump, ensureCollapsed, releaseNode, id]);
 
   const onTimer = useCallback((e) => {
     e.stopPropagation();
@@ -308,12 +311,15 @@ function MindmapNode({ id, data, selected }) {
   // The first two never apply to variant roots themselves; the third
   // explicitly does. data.faded is the editor's umbrella flag that
   // covers (a) and (c); local `assembled` handles (b) for kids.
-  // revealAll (Show all) suppresses every fade source — including the
-  // assembled-part fade — so the full map is visible. (2026-05-29)
-  const isFadedNode = !revealAll && isBom && (
-    (isVariantRoot && faded) ||
-    (!isVariantRoot && (faded || (inChecklistMode && assembled)))
-  );
+  // Fade source = the editor's umbrella `faded` flag only (collapse +
+  // tap-3/🧩 hiddenAnchors). The standalone `assembled` fade was removed
+  // 2026-05-29: marking 🧩 hides the node via the SAME hiddenAnchors path
+  // as tap-3 (see onAssembled → ensureCollapsed), so clicking the parent
+  // (which clears hiddenAnchors) brings it back identically. An
+  // independent assembled fade kept the node invisible after the parent
+  // tap, so 🧩 and tap-3 behaved differently. revealAll (Show all) still
+  // overrides everything.
+  const isFadedNode = !revealAll && isBom && faded;
 
   const cls = ['kme-node'];
   if (selected) cls.push('kme-selected');
@@ -624,6 +630,26 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     });
   }, [_persistCollapse, collapsed, setRevealAll]);
 
+  // Inverse of ensureCollapsed — un-hide a node (and re-show its subtree):
+  // drop it from BOTH collapsedNodes and hiddenAnchors. Used when the user
+  // UN-marks 🧩 so the toggle reverses (node + edge come back), mirroring
+  // how tapping the project center clears hiddenAnchors. (2026-05-29)
+  const releaseNode = useCallback((nodeId) => {
+    setCollapsedNodes(prev => {
+      if (!prev.has(nodeId)) return prev;
+      const next = new Set(prev);
+      next.delete(nodeId);
+      _persistCollapse(collapsed, next);
+      return next;
+    });
+    setHiddenAnchors(prev => {
+      if (!prev.has(nodeId)) return prev;
+      const next = new Set(prev);
+      next.delete(nodeId);
+      return next;
+    });
+  }, [_persistCollapse, collapsed]);
+
   // Children map for the current edge set → subtree descent.
   // Recomputed on every nodes/edges change but cheap (O(E)).
   const descendantMap = useMemo(() => {
@@ -873,6 +899,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         hasChildren,
         inChecklistMode,
         ensureCollapsed,
+        releaseNode,
         revealAll,
         // revealAll wins over every fade source so Show all truly shows all.
         faded: revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false)),
@@ -884,7 +911,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // workshop's drags are visual-only and reset on reload.
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, revealAll]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
