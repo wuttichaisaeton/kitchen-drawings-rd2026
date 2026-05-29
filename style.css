@@ -1697,6 +1697,46 @@ main.transit-back {
   margin-left: 6px;
 }
 
+/* Family view (Library drill-in) gets a bigger, bolder title so the
+   user has a clear "you are in <family>" cue. User 2026-05-29 reported
+   the default 16px was too subtle to anchor the page after navigating
+   in from a mindmap code click. Inline color: var(--fam-color) (set in
+   renderFamily) gives the family its signature accent. */
+.section-title-family {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  margin: 0 0 8px;
+}
+.section-title-family .count {
+  font-size: 13px;
+  opacity: 0.55;
+  font-weight: 500;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+/* Source breadcrumb — rendered when the user navigated in via
+   openInLibrary (mindmap code-text click, NO PDF chip). Tells them the
+   exact code that landed them here so they can find it in the list
+   below (which auto-highlights via .part-row-highlight + scrollIntoView). */
+.family-breadcrumb {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  color: #889bb3;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+.family-breadcrumb strong {
+  color: #c9d6e6;
+  font-weight: 700;
+}
+
 .part-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

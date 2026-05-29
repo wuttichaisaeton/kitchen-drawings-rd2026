@@ -7124,8 +7124,21 @@ function renderFamily(fam, highlight) {
 
   // Back button is in the header (#header-back-row) — see
   // _updateHeaderBack(). No inline button rendered here.
+  //
+  // Source breadcrumb — when admin drills in via openInLibrary (from a
+  // mindmap code-text click or the NO PDF chip), the stack carries a
+  // `highlight` field with the originating code. Surface it so the user
+  // knows *why* they landed here and which row to look for. Also serves
+  // as a way back to "where I came from" mentally even though there's no
+  // direct nav button.  User 2026-05-29: 'กดเข้า Part แล้วต้องมี title
+  // ด้านบนด้วยซิ ไม่งั้นไปต่อไม่ถูก'.
+  const breadcrumb = highlight
+    ? `<div class="family-breadcrumb" title="The part you tapped — scroll for the highlighted row">↩ from <strong>${escapeHtml(highlight)}</strong></div>`
+    : '';
+
   ROOT.innerHTML = `
-    <h2 class="section-title" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
+    <h2 class="section-title section-title-family" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
+    ${breadcrumb}
     <div class="part-list">${list}</div>
     ${emptyHint}
   `;
