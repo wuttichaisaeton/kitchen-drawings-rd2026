@@ -4354,6 +4354,13 @@ function _exposeKdApi() {
     isTimerRunning, startTimer, stopTimer, resetTimer,
     getTimerTotalSeconds, formatDuration,
     getComments,
+    // Per-code comment write (read side getComments already exposed). Used by
+    // the assembly checklist panel's inline comment thread. (2026-05-30)
+    addComment,
+    // Aggregated parts for the project: unique code + summed qty across
+    // variants (real parts only — wrappers aren't in project.parts). Drives
+    // the assembly checklist list. (2026-05-30)
+    assemblyParts: (pk) => _aggregatePartsByCode((manifest.projects?.[pk]?.parts) || []),
     pdfUrlForCode,
     projectPdfUrl,   // direct match + scan auto_generated for <pk>.pdf
     routeLeaf: _routeLeafToFusion,
