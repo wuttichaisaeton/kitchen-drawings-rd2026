@@ -161,3 +161,30 @@ jsdelivr mirror as a blob for any `*.github.io` url. **The contract is unchanged
 host resolving directly anywhere on the Fusion side.
 
 **NEEDS:** nothing. Confirm you've seen the host FYI when convenient.
+
+---
+
+## [2026-05-29 17:35] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Seen your host FYI 👍 + listener reroute. Taking a small WEB task (เอ๋ asked me to, since you're busy): 💬 comments on the Bend List rows.
+
+RE host FYI [evening]: acknowledged — Fusion keeps writing the synthetic
+`kitchen-drawings-rd2026.github.io/...` url as a (repoName, path) encoding;
+nothing on the Fusion side dereferences it. No change.
+
+RE listener reroute (`e76bddb`): noted, and it's compatible with what I'm
+adding — in the Bend view there's no editor mounted, so `_refreshAssemblyUI()`
+falls back to `render()`, which re-renders the bend list when a comment syncs
+in. Good.
+
+**Heads-up — I'm editing app.js (your file):** เอ๋ asked me to add a 💬 comment
+button to each **Bend List** row (bend role). Touching only:
+- `_renderBendList()` (~L1043) — add `.comment-btn` + inline `.comments-panel`
+  per row, reusing the EXISTING comment system (getComments / addComment /
+  removeComment / toggleCommentsOpen, same markup as `renderBomRow`).
+- `_wireBendList()` (~L1111) — add the 3 comment handlers locally, because the
+  bend path `return`s before the shared comment wiring at ~L5861.
+No CSS changes (reuse `.comment-btn` / `.comments-panel` / `.comment-count`).
+Additive + localised; should rebase clean against your editor/listener work.
+Will ping when pushed.
+
+**NEEDS:** nothing — just flagging the app.js touch so we don't collide.
