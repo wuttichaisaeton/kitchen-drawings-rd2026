@@ -140,6 +140,10 @@ function MindmapNode({ id, data, selected }) {
   const linked = !!fusion_link;
   const code = isBom ? label : null;
   const labelRef = useRef(null);
+  // Guards against a single tap firing an action twice (e.g. onClick AND a
+  // synthesized touch event both landing) — for the 🧩 toggle that would
+  // toggle on→off and look like "nothing happened". (2026-05-29)
+  const lastFireRef = useRef(0);
   const [editing, setEditing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -211,6 +215,9 @@ function MindmapNode({ id, data, selected }) {
 
   const onAssembled = useCallback((e) => {
     e.stopPropagation();
+    const now = Date.now();
+    if (now - lastFireRef.current < 400) { window.__kmeStatus?.(`asm dup-skip: ${code}`); return; }
+    lastFireRef.current = now;
     window.__kmeStatus?.(`tap asm: ${code}`);
     if (!code || !projectKey) return;
     api.markAssembled?.(projectKey, code, !assembled);
@@ -254,6 +261,9 @@ function MindmapNode({ id, data, selected }) {
 
   const onOpenPdf = useCallback((e) => {
     e.stopPropagation();
+    const now = Date.now();
+    if (now - lastFireRef.current < 400) return;
+    lastFireRef.current = now;
     window.__kmeStatus?.(`tap pdf: ${code}`);
     if (!code) return;
     const url = api.pdfUrlForCode?.(code);
@@ -1353,6 +1363,16 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               </svg>
               <span>Show all</span>
             </button>
+          </Panel>
+          {/* Diagnostic strip (bottom-center) — visible to everyone so the
+              workshop phone can read which build it's on and whether taps
+              reach the handlers. `status` updates via window.__kmeStatus on
+              every node/button tap. Temporary while chasing the iPhone
+              button issue (2026-05-29). */}
+          <Panel position="bottom-center">
+            <div className="kme-diag">
+              b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'} · {status}
+            </div>
           </Panel>
           {/* Back to the project list — only while fullscreen (the app
               header that normally holds the ← arrow is hidden). Top-left,
