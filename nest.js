@@ -787,7 +787,7 @@
     modal.className = 'kdstock-modal';
     modal.innerHTML = '<div class="kdstock-backdrop"></div>'
       + '<div class="kdstock-box">'
-      + '<div class="kdstock-head">\ud83d\udce6 Remnant stock'
+      + '<div class="kdstock-head">\ud83d\udce6 Remnants Stock'
       + '<span class="kdstock-sub">' + (S.remnants || []).length + ' offcuts \u00b7 shared</span></div>'
       + '<div class="kdstock-list">' + (list || '<div class="kdstock-empty">No remnants yet' + (admin ? ' \u2014 add one below' : '') + '</div>') + '</div>'
       + addForm
@@ -1974,7 +1974,7 @@
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run">▶ Run Nesting</button>
             <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'}>📤 Save sheets to Laser</button>
             <button id="kdnest-grain" class="kdnest-btn kdnest-btn-grain" title="Edit grain / thickness rules (shared — no Excel needed)">🧬 Grain</button>
-            <button id="kdnest-stock" class="kdnest-btn kdnest-btn-stock" title="Remnant offcut stock — view / add / delete">📦 Stock</button>
+            <button id="kdnest-stock" class="kdnest-btn kdnest-btn-stock" title="Remnant offcut stock — view / add / delete">📦 Remnants Stock</button>
           </div>
           <div class="kdnest-parts">
             <div class="kdnest-parts-head">
