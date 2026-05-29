@@ -5506,7 +5506,15 @@ function renderProject(key) {
     const bomNodes = _applyOverrides(bom.nodes, overrides);
     // Custom nodes layer overrides too so renames live in one place.
     const customNodes = _applyOverrides(fresh.nodes || [], overrides);
-    const admin = isAdmin();
+    // The mindmap editor treats `admin` as "may edit / move / show toolbar".
+    // The Assembly view is a pure worker surface — even if this device has
+    // the admin flag set (เอ๋'s own phone), entering via the Assembly role
+    // must NOT allow moving nodes and should open straight into fullscreen.
+    // So gate the editor's admin powers off whenever a worker role is active
+    // (assemble). Node arranging happens in the default/admin view.
+    // User 2026-05-29: 'เข้าทาง Link Assembly ไม่ควรขยับ node ได้ ... ต้องเข้า
+    // ทางช่อง admin เท่านั้น'.
+    const admin = isAdmin() && !isAssembleUser();
     host.innerHTML = '';
     try { window.__kmeInstance?.unmount?.(); } catch {}
     // Deep-link highlight — when hash has #project=X&code=Y, find the
