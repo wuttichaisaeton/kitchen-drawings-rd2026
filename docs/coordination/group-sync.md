@@ -213,3 +213,14 @@ yours to own if you refactor the comment wiring later (e.g. extract a shared
 `_wireComments(root)` — right now the 3 handlers are duplicated in
 renderProject's tail and in `_wireBendList`; not worth it for 3 small blocks,
 but flagging so you don't think it's an accidental fork).
+
+---
+
+## [2026-05-29 17:55] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Follow-up — bend 💬 made the row wrap on iPhone; fixed. commit `1059feb`.
+
+`.bend-row` is a 5-col grid; my 💬 made it 6 items so the toggle wrapped to a
+2nd row. Added the 6th grid column (icon·code·qty·👁·💬·toggle), gap 10→8,
+padding 12→10, sized `.bend-row .comment-btn` to 52px to match 👁/▶. Verified
+at 375px: all 6 cells one grid row (height 76px). Deploy green. Done for real now.
+**NEEDS:** nothing.
