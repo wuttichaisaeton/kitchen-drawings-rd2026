@@ -1202,9 +1202,9 @@
       const bMinY = pl.bbox ? pl.bbox[1] : 0;
       function transform(px, py) {
         let lx = px - bMinX, ly = py - bMinY;
-        if (pl.rot === 90)  { const t = lx; lx = -ly + pl.w;  ly = t; }
+        if (pl.rot === 90)  { const t = lx; lx = -ly + pl.h;  ly = t; }
         if (pl.rot === 180) { lx = pl.w - lx; ly = pl.h - ly; }
-        if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.h - t; }
+        if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.w - t; }
         return toCanvas(pl.x + lx, pl.y + ly);
       }
 
@@ -1418,9 +1418,9 @@
       const [bMinX, bMinY] = [pl.bbox[0], pl.bbox[1]];
       function transform(px, py) {
         let lx = px - bMinX, ly = py - bMinY;
-        if (pl.rot === 90)  { const t = lx; lx = -ly + pl.w;  ly = t; }
+        if (pl.rot === 90)  { const t = lx; lx = -ly + pl.h;  ly = t; }
         if (pl.rot === 180) { lx = pl.w - lx; ly = pl.h - ly; }
-        if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.h - t; }
+        if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.w - t; }
         return [pl.x + lx, pl.y + ly];
       }
       lwpolyline(pl.polys.outer.map(([x,y]) => transform(x,y)), 'OUTER_PROFILES');
@@ -1452,6 +1452,7 @@
         _drawPartPreview(canvas, part);
         requestAnimationFrame(() => _drawPartPreview(canvas, part));
       } else if (S.flatSheets[S.currentSheetIdx]) {
+        _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
         requestAnimationFrame(() => _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]));
       }
     }
@@ -1910,6 +1911,23 @@
     return { ch: '?', cls: 'kdnest-grain-q', title: '? — grain not set' };
   }
 
+  // Fetch + parse a single DXF url into {polys, bbox} — the exact same
+  // pipeline _loadAllDxfs uses per part. Exposed so app.js's Laser
+  // cut-list preview renders identically to the Nest preview (clean cut
+  // path, bend layers stripped) instead of the cluttered toSVG dump.
+  async function loadPartPreview(dxfUrl) {
+    await _ensureDxfLib();
+    if (!dxfUrl) throw new Error('No DXF uploaded yet');
+    const resp = await fetch(_toJsdelivrUrl(dxfUrl), { cache: 'force-cache' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const parsed = window.dxf.parseString(await resp.text());
+    const ex = _extractPolygons(parsed);
+    return {
+      polys: { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes },
+      bbox: ex.bbox,
+    };
+  }
+
   window.kdNest = {
     openProject: openProject,
     close: close,
@@ -1919,5 +1937,10 @@
     lookupGrain: lookupGrain,
     grainGlyph: grainGlyph,
     grainReady: _grainReady,
+    // Shared part preview — app.js's Laser cut-list VIEW reuses these so
+    // it looks exactly like the Nest's single-part preview (user
+    // 2026-05-30: 'view ใน Part ของ Laser ก็ให้เหมือน view ที่ Nest').
+    loadPartPreview: loadPartPreview,
+    drawPart: _drawPartPreview,
   };
 })();

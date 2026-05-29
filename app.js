@@ -667,109 +667,120 @@ function _canDownloadPartDxf() {
 function _canDownloadCutSheet() {
   return isAdmin() || isLaserUser();
 }
-async function _renderDxfPreviewModal(dxf) {
+// Per-part DXF preview modal. Renders the part on a <canvas> using the
+// SAME pipeline as the Nest's single-part preview (window.kdNest) so the
+// Laser worker sees an identical clean cut-path (bend layers stripped,
+// holes shown) instead of the old cluttered toSVG dump. User 2026-05-30:
+// 'view ใน Part ของ Laser ก็ให้เหมือน view ที่ Nest และใช้ keyboard ขึ้นลง'.
+//
+// `nav` (optional) = { codes:[...orderedCodes], code:'<current>' } enables
+// ↑/↓ (and ‹/›) cycling between sibling parts without closing the modal —
+// each step loads dxfsForMasterCode(code)[0].
+async function _renderDxfPreviewModal(dxf, nav) {
   if (!dxf || !dxf.url) return;
-  const filename = dxf.filename || `${dxf.stem || 'file'}.dxf`;
-  const thMm = dxf.thickness_mm ? `${dxf.thickness_mm}mm` : '?';
-  const grain = dxf.grain || '-';
-  const material = dxf.material || 'ALPF';
-  const ago = _formatTimeAgo(dxf.uploaded_at) || '';
-  const sizeKb = dxf.size_bytes ? `${Math.round(dxf.size_bytes / 1024)} KB` : '';
+  const navCodes = (nav && Array.isArray(nav.codes) && nav.codes.length) ? nav.codes : null;
+  let navCode = (nav && nav.code) || dxf.code || dxf.master_code || null;
 
-  // Build modal frame
   const modal = document.createElement('div');
   modal.className = 'dxf-preview-modal';
   modal.innerHTML = `
     <div class="dxf-preview-backdrop"></div>
     <div class="dxf-preview-frame" role="dialog" aria-label="DXF preview">
       <div class="dxf-preview-header">
-        <span class="dxf-preview-title">📐 ${escapeHtml(filename)}</span>
+        <span class="dxf-preview-title"></span>
         <button class="dxf-preview-close" aria-label="Close">✕</button>
       </div>
-      <div class="dxf-preview-meta">
-        Thickness: <strong>${escapeHtml(thMm)}</strong> ·
-        Material: <strong>${escapeHtml(material)}</strong> ·
-        Grain: <strong>${escapeHtml(grain)}</strong>
-        ${sizeKb ? ` · <span class="dxf-preview-size">${escapeHtml(sizeKb)}</span>` : ''}
-        ${ago ? ` · uploaded ${escapeHtml(ago)}` : ''}
-      </div>
+      <div class="dxf-preview-meta"></div>
       <div class="dxf-preview-body">
-        <div class="dxf-preview-loading">Loading DXF preview…</div>
+        <canvas class="dxf-preview-canvas"></canvas>
       </div>
-      <div class="dxf-preview-footer">
-        ${_canDownloadPartDxf()
-          ? `<button class="dxf-preview-download-btn">⬇ Download ${escapeHtml(filename)}</button>`
-          : `<span class="dxf-preview-view-only">View only — download disabled for this role</span>`}
-      </div>
+      <div class="dxf-preview-footer"></div>
     </div>`;
   document.body.appendChild(modal);
 
-  const body = modal.querySelector('.dxf-preview-body');
-  const close = () => {
-    modal.remove();
-    document.removeEventListener('keydown', onKey);
+  const titleEl = modal.querySelector('.dxf-preview-title');
+  const metaEl  = modal.querySelector('.dxf-preview-meta');
+  const footEl  = modal.querySelector('.dxf-preview-footer');
+  const canvas  = modal.querySelector('.dxf-preview-canvas');
+
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (ev) => {
+    if (ev.key === 'Escape') { close(); return; }
+    if (!navCodes) return;
+    if (ev.key === 'ArrowDown' || ev.key === 'ArrowRight') { ev.preventDefault(); step(1); }
+    else if (ev.key === 'ArrowUp' || ev.key === 'ArrowLeft') { ev.preventDefault(); step(-1); }
   };
-  const onKey = (ev) => { if (ev.key === 'Escape') close(); };
   modal.querySelector('.dxf-preview-close').addEventListener('click', close);
   modal.querySelector('.dxf-preview-backdrop').addEventListener('click', close);
-  modal.querySelector('.dxf-preview-download-btn')?.addEventListener('click', () => {
-    _downloadFile(dxf.url, filename);
-  });
   document.addEventListener('keydown', onKey);
 
-  // Lazy-load lib + fetch DXF text + render to SVG.
-  try {
-    await ensureDxfLib();
-    const lib = window.dxf;
-    if (!lib || typeof lib.toSVG !== 'function') {
-      throw new Error('DXF library loaded but toSVG() not available');
-    }
-    // GitHub Pages doesn't send CORS headers for raw file requests,
-    // so XHR fetches against the github.io URL fail. jsdelivr serves
-    // the same repo content WITH CORS headers — rewrite the URL just
-    // for the preview fetch. Download button keeps the github.io URL
-    // because the browser handles `download` attribute without CORS.
-    const fetchUrl = _githubPagesToJsdelivr(dxf.url);
-    const resp = await fetch(fetchUrl, { cache: 'force-cache' });
-    if (!resp.ok) throw new Error(`fetch ${resp.status}`);
-    const text = await resp.text();
-    const parsed = lib.parseString(text);
-    // Strip bend/fold lines — Fusion's DXF Creator emits them on layers
-    // like "Bend Up" / "Bend Down" / "Bend" / "Fold". Laser worker
-    // previewing the cut path doesn't want those visual overlays.
-    // (เอ๋ 2026-05-28: "ดูรูป dxf ต้องไม่มีเส้นพับ".)
-    const _isBendLayer = (name) => /(bend|fold|flex)/i.test(String(name || ''));
-    if (parsed && Array.isArray(parsed.entities)) {
-      parsed.entities = parsed.entities.filter(e => !_isBendLayer(e && e.layer));
-    }
-    if (parsed && parsed.blocks && typeof parsed.blocks === 'object') {
-      for (const blk of Object.values(parsed.blocks)) {
-        if (blk && Array.isArray(blk.entities)) {
-          blk.entities = blk.entities.filter(e => !_isBendLayer(e && e.layer));
-        }
-      }
-    }
-    const svg = lib.toSVG(parsed);
-    body.innerHTML = '';
-    const wrap = document.createElement('div');
-    wrap.className = 'dxf-preview-svg-wrap';
-    wrap.innerHTML = svg;
-    // Force the SVG to fit the container.
-    const svgEl = wrap.querySelector('svg');
-    if (svgEl) {
-      svgEl.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-      svgEl.style.width = '100%';
-      svgEl.style.height = '100%';
-      svgEl.style.maxHeight = '100%';
-    }
-    body.appendChild(wrap);
-  } catch (e) {
-    body.innerHTML = `
-      <div class="dxf-preview-error">
-        Couldn't render preview: ${escapeHtml(String(e.message || e))}.<br>
-        <span class="dxf-preview-error-hint">Download the file to open it in your CAD viewer.</span>
-      </div>`;
+  function step(delta) {
+    if (!navCodes) return;
+    let idx = navCodes.indexOf(navCode);
+    if (idx < 0) idx = 0;
+    idx = Math.max(0, Math.min(navCodes.length - 1, idx + delta));
+    if (navCodes[idx] === navCode) return;
+    navCode = navCodes[idx];
+    const dxfs = (typeof dxfsForMasterCode === 'function') ? dxfsForMasterCode(navCode) : [];
+    if (dxfs.length) load(dxfs[0]);
   }
+
+  async function load(d) {
+    const filename = d.filename || `${d.stem || 'file'}.dxf`;
+    const thMm = d.thickness_mm ? `${d.thickness_mm}mm` : '?';
+    const grain = d.grain || '-';
+    const material = d.material || 'ALPF';
+    const ago = _formatTimeAgo(d.uploaded_at) || '';
+    const sizeKb = d.size_bytes ? `${Math.round(d.size_bytes / 1024)} KB` : '';
+
+    titleEl.textContent = `📐 ${filename}`;
+    metaEl.innerHTML = `
+      Thickness: <strong>${escapeHtml(thMm)}</strong> ·
+      Material: <strong>${escapeHtml(material)}</strong> ·
+      Grain: <strong>${escapeHtml(grain)}</strong>
+      ${sizeKb ? ` · <span class="dxf-preview-size">${escapeHtml(sizeKb)}</span>` : ''}
+      ${ago ? ` · uploaded ${escapeHtml(ago)}` : ''}`;
+
+    const navIdx = navCodes ? navCodes.indexOf(navCode) : -1;
+    footEl.innerHTML = `
+      ${navCodes ? `
+        <span class="dxf-preview-nav">
+          <button class="dxf-nav-prev" aria-label="Previous part" title="Previous part (↑)" ${navIdx <= 0 ? 'disabled' : ''}>‹</button>
+          <span class="dxf-nav-pos">${navIdx + 1} / ${navCodes.length}</span>
+          <button class="dxf-nav-next" aria-label="Next part" title="Next part (↓)" ${navIdx >= navCodes.length - 1 ? 'disabled' : ''}>›</button>
+          <span class="dxf-nav-hint">↑ / ↓ to browse</span>
+        </span>` : ''}
+      ${_canDownloadPartDxf()
+        ? `<button class="dxf-preview-download-btn">⬇ Download ${escapeHtml(filename)}</button>`
+        : `<span class="dxf-preview-view-only">View only — download disabled for this role</span>`}`;
+    footEl.querySelector('.dxf-nav-prev')?.addEventListener('click', () => step(-1));
+    footEl.querySelector('.dxf-nav-next')?.addEventListener('click', () => step(1));
+    footEl.querySelector('.dxf-preview-download-btn')?.addEventListener('click', () => _downloadFile(d.url, filename));
+
+    // Draw via the shared Nest preview renderer. The part starts with no
+    // polys → drawPart paints a "DXF not loaded yet…" placeholder; once
+    // the fetch+parse resolves we fill polys/bbox and redraw.
+    const part = { code: navCode, polys: null, bbox: null };
+    const drawNow = () => { try { window.kdNest && window.kdNest.drawPart(canvas, part); } catch (e) {} };
+    drawNow();
+    try {
+      if (!window.kdNest || typeof window.kdNest.loadPartPreview !== 'function') {
+        throw new Error('preview engine unavailable');
+      }
+      const r = await window.kdNest.loadPartPreview(d.url);
+      part.polys = r.polys; part.bbox = r.bbox;
+      if (!r.bbox) part.dxfError = 'No cut geometry found';
+      drawNow();
+      // Second paint next frame in case the canvas hadn't been laid out
+      // (clientWidth 0) on the synchronous first draw.
+      requestAnimationFrame(drawNow);
+    } catch (e) {
+      part.dxfError = String(e.message || e);
+      drawNow();
+    }
+  }
+
+  await load(dxf);
 }
 
 // ── Role-specific project views ─────────────────────────────────────
@@ -908,6 +919,12 @@ function _wireCutList(parts, projectKey) {
   // Row click → open DXF preview modal (single file) or per-part
   // popover (multi-file). Was 'immediate download' before; user
   // 2026-05-28 'กดเข้าไปแล้ว ดู dxf ไม่ได้' — they expect a preview.
+  // Ordered list of codes with ≥1 DXF, in the on-screen row order — feeds
+  // the preview modal's ↑/↓ part-cycling so the laser worker can browse
+  // the whole cut list without re-clicking each row.
+  const navCodes = [...ROOT.querySelectorAll('.cut-row')]
+    .map(r => r.dataset.code)
+    .filter(code => dxfsForMasterCode(code).length > 0);
   ROOT.querySelectorAll('.cut-row').forEach(row => {
     row.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -918,12 +935,13 @@ function _wireCutList(parts, projectKey) {
         setTimeout(() => row.classList.remove('cut-row-shake'), 400);
         return;
       }
+      const navCtx = { codes: navCodes, code };
       if (dxfs.length === 1) {
-        _renderDxfPreviewModal(dxfs[0]);
+        _renderDxfPreviewModal(dxfs[0], navCtx);
       } else {
         // Multi-DXF: still use the existing popover-of-files; user
-        // picks one → that one opens in the preview modal.
-        _renderDxfPopover(row, dxfs, (item) => _renderDxfPreviewModal(item));
+        // picks one → that one opens in the preview modal (with nav).
+        _renderDxfPopover(row, dxfs, (item) => _renderDxfPreviewModal(item, navCtx));
       }
     });
   });

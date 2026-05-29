@@ -3303,6 +3303,10 @@ button.cut-status:focus-visible {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
   width: 100%;
   max-width: 900px;
+  /* Fixed height so the flex body has space to fill — the <canvas> has
+     no intrinsic height (defaults to 150px) and would otherwise collapse.
+     The SVG renderer used to supply intrinsic size; the canvas doesn't. */
+  height: 80vh;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -3399,12 +3403,51 @@ button.cut-status:focus-visible {
   line-height: 1.5;
 }
 .dxf-preview-error-hint { color: #88aab1; font-size: 11px; }
+/* Canvas-rendered part preview (shared with the Nest single-part view via
+   window.kdNest.drawPart). Replaces the old toSVG dump. */
+.dxf-preview-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 4px;
+}
 .dxf-preview-footer {
   padding: 10px 16px;
   border-top: 1px solid #2a4a52;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 12px;
 }
+/* Part-cycling nav (↑/↓) — sits at the left of the footer, download right. */
+.dxf-preview-nav {
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #88aab1;
+  font-size: 12px;
+}
+.dxf-nav-prev,
+.dxf-nav-next {
+  background: rgba(78, 204, 163, 0.10);
+  color: #4ecca3;
+  border: 1px solid rgba(78, 204, 163, 0.35);
+  border-radius: 6px;
+  width: 30px;
+  height: 28px;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+}
+.dxf-nav-prev:hover:not(:disabled),
+.dxf-nav-next:hover:not(:disabled) { background: rgba(78, 204, 163, 0.20); }
+.dxf-nav-prev:disabled,
+.dxf-nav-next:disabled { opacity: 0.35; cursor: default; }
+.dxf-nav-pos { color: #d6ecf0; font-weight: 600; min-width: 46px; text-align: center; }
+.dxf-nav-hint { font-size: 11px; opacity: 0.7; }
+@media (max-width: 480px) { .dxf-nav-hint { display: none; } }
 .dxf-preview-download-btn {
   background: rgba(78, 204, 163, 0.10);
   color: #4ecca3;
