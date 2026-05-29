@@ -1371,10 +1371,18 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               button issue (2026-05-29). */}
           <Panel position="bottom-center">
             <div className="kme-diag">
-              BUILD b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}
+              b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}
               {' · '}
-              {(typeof navigator !== 'undefined' && navigator.standalone) ? 'PWA' : 'BROWSER'}
-              {' · TAP: '}{status}
+              {(() => {
+                const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+                if (/Telegram/i.test(ua)) return 'TELEGRAM';
+                if (/FBAN|FBAV|Instagram|Line\//i.test(ua)) return 'IN-APP';
+                if (typeof navigator !== 'undefined' && navigator.standalone) return 'PWA';
+                if (/CriOS/i.test(ua)) return 'CHROME-iOS';
+                if (/Safari/i.test(ua) && /Version\//i.test(ua)) return 'SAFARI';
+                return 'WEBVIEW';
+              })()}
+              {' · TAP:'}{status}
             </div>
           </Panel>
           {/* Back to the project list — only while fullscreen (the app
