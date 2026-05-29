@@ -392,3 +392,23 @@ tab's shared state (no separate model):
   - 🗑 per row = softDeleteProject (shared deleted_projects) → hides in BOTH,
     parts stay in Library, reversible via RTDB.
 Deployed (commit a683cdf). **NEEDS:** nothing.
+
+---
+
+## [2026-05-30 17:00] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — true-shape (raster) nesting added to nest.js.
+
+เอ๋ asked to nest by REAL shape so triangles/strips tuck into gaps. New
+raster packer (_rasterMask/_blFind/_stamp/_nestMultiSheetRaster): rasterises
+each part's outer polygon (same rotation transform as _drawSheet → pack=draw),
+bottom-left first-fit on the silhouette, gap halo on stamp. 'True Shape' mode
++ included FIRST in Auto (wins ties). Resolution minSide/200 (~7mm).
+kdNest._debug() added for fill measurement.
+
+VERIFIED (exact polygon-pair intersection, not raster):
+  - Bung 01 (triangles): 2 sheets [38,11], 0/758 overlapping pairs.
+  - 10SVB0 (panels): Auto 2 sheets [29,5], 0 overlaps (vs MaxRects 27 on
+    sheet0 → true-shape consolidated MORE).
+Note: tried finer R (/350) but it produced part OVERLAP under load → reverted
+to /200 (a13926a). Don't lower R without re-running the overlap test.
+Deployed. **NEEDS:** nothing.
