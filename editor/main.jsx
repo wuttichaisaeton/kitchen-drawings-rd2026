@@ -569,6 +569,104 @@ function FloatingEdge({ id, source, target, markerEnd, style }) {
 
 const edgeTypes = { floating: FloatingEdge };
 
+// ── Assembly checklist panel ────────────────────────────────────────
+// Assembly checklist — a flat, tick-as-you-build list mounted bottom-left on
+// the canvas. Ticks write the SAME assembled_status the 🧩 node toggle uses;
+// comments reuse the per-code comments system. Re-reads whenever `nonce`
+// (the editor's extSyncNonce) bumps — which app.js does on every assembled or
+// comment Firebase write — so ticks/comments from the mindmap or another
+// device show here with no remount. (2026-05-30)
+function ChecklistPanel({ projectKey, nonce }) {
+  const api = window.kdAPI || {};
+  const [open, setOpen] = useState(false);
+  const [openCode, setOpenCode] = useState(null);   // row whose comments are expanded
+  const [draft, setDraft] = useState('');
+
+  // Stable aggregated parts list (changes only when the project changes).
+  const parts = useMemo(
+    () => (api.assemblyParts ? api.assemblyParts(projectKey) : []),
+    [projectKey]
+  );
+
+  // Touch `nonce` so React re-runs reads of isAssembled/getComments below
+  // after a Firebase tick/comment lands. No local mirror needed.
+  void nonce;
+
+  if (!open) {
+    return (
+      <button className="kme-checklist-btn" onClick={() => setOpen(true)} title="Assembly checklist">
+        <svg className="kme-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M6 3.5h7.5M6 8h7.5M6 12.5h7.5"/>
+          <path d="M2 3.3l1 1 1.6-1.8M2 7.8l1 1 1.6-1.8M2 12.3l1 1 1.6-1.8"/>
+        </svg>
+        <span>Checklist</span>
+      </button>
+    );
+  }
+
+  const total = parts.length;
+  const done = parts.filter(p => api.isAssembled?.(projectKey, p.code)).length;
+
+  const toggle = (code) => {
+    const next = !api.isAssembled?.(projectKey, code);
+    api.markAssembled?.(projectKey, code, next);
+  };
+  const submitComment = (code) => {
+    const t = draft.trim();
+    if (!t) return;
+    api.addComment?.(code, t);
+    setDraft('');
+  };
+
+  return (
+    <div className="kme-checklist">
+      <div className="kme-checklist-head">
+        <span className="kme-checklist-title">Checklist</span>
+        <span className="kme-checklist-progress">{done}/{total}</span>
+        <button className="kme-checklist-close" onClick={() => setOpen(false)} title="Close">✕</button>
+      </div>
+      <div className="kme-checklist-list">
+        {parts.map(p => {
+          const checked = !!api.isAssembled?.(projectKey, p.code);
+          const comments = api.getComments?.(p.code) || [];
+          const expanded = openCode === p.code;
+          return (
+            <div key={p.code} className={'kme-checklist-row' + (checked ? ' is-done' : '')}>
+              <label className="kme-checklist-main">
+                <input type="checkbox" checked={checked} onChange={() => toggle(p.code)} />
+                <span className="kme-checklist-code">{p.code}</span>
+                <span className="kme-checklist-qty">×{p.qty}</span>
+              </label>
+              <button
+                className="kme-checklist-cmt-toggle"
+                onClick={() => { setOpenCode(expanded ? null : p.code); setDraft(''); }}
+                title="Comments"
+              >💬{comments.length ? ' ' + comments.length : ''}</button>
+              {expanded && (
+                <div className="kme-checklist-thread">
+                  {comments.map((c, i) => (
+                    <div key={c._key || i} className="kme-cmt">{c.text}</div>
+                  ))}
+                  <div className="kme-cmt-add">
+                    <input
+                      className="kme-cmt-input"
+                      value={draft}
+                      onChange={e => setDraft(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') submitComment(p.code); }}
+                      placeholder="เพิ่ม comment…"
+                    />
+                    <button className="kme-cmt-send" onClick={() => submitComment(p.code)}>Add</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Main editor ─────────────────────────────────────────────────────
 // Collapsed state per project — persisted in localStorage so reopening
 // the project view remembers what was collapsed last time.
@@ -1480,6 +1578,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               </svg>
               <span>Show all</span>
             </button>
+          </Panel>
+          {/* Assembly checklist — bottom-left, always mounted. Shows a
+              collapsed button by default; click opens the flat tick-list.
+              Ticks write to assembled_status (same path as 🧩 node toggle).
+              nonce=extSyncNonce re-renders the list when a Firebase tick
+              lands so ticks from another device appear immediately. (2026-05-30) */}
+          <Panel position="bottom-left">
+            <ChecklistPanel projectKey={projectKey} nonce={extSyncNonce} />
           </Panel>
           {/* Back to the project list — only while fullscreen (the app
               header that normally holds the ← arrow is hidden). Top-left,
