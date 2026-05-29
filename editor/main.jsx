@@ -567,7 +567,7 @@ function _writeCollapsedState(pk, state) {
   } catch {}
 }
 
-function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode }) {
+function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode, autoFullscreen }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
   // When set, the next collapse-driven fitView is skipped so the view stays
@@ -601,13 +601,12 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [revealAll, setRevealAllState] = useState(
     () => _readCollapsedState(projectKey).revealAll);
 
-  // Fullscreen canvas — opt-in (2-step), NOT auto. Opening a project lands
-  // on the normal view first (app header + Back arrow + project info); the
-  // worker taps an empty spot on the canvas to expand to fullscreen when
-  // they want the max work area, and taps again to come back. User 2026-05-29
-  // reverted the auto-on-open behavior: 'กลับไปแบบเดิม 2 step ดีกว่า'.
-  // In-memory only (a transient view state, not worth persisting).
-  const [fullscreen, setFullscreen] = useState(false);
+  // Fullscreen canvas. The Assembly view opens straight into it
+  // (autoFullscreen=true, set by role in app.js — user 2026-05-29 'กดจาก
+  // Project แล้ว Full screen เลย, มี icon back อยู่แล้ว'); the default/admin
+  // editing view opens normal so the toolbar stays in reach. Tapping an empty
+  // spot on the canvas toggles it either way. In-memory only.
+  const [fullscreen, setFullscreen] = useState(!!autoFullscreen);
 
   const _persistCollapse = useCallback((c, set) => {
     // Preserve hidden + seeded + revealAll across collapse toggles —

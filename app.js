@@ -5506,15 +5506,16 @@ function renderProject(key) {
     const bomNodes = _applyOverrides(bom.nodes, overrides);
     // Custom nodes layer overrides too so renames live in one place.
     const customNodes = _applyOverrides(fresh.nodes || [], overrides);
-    // The mindmap editor treats `admin` as "may edit / move / show toolbar".
-    // The Assembly view is a pure worker surface — even if this device has
-    // the admin flag set (เอ๋'s own phone), entering via the Assembly role
-    // must NOT allow moving nodes and should open straight into fullscreen.
-    // So gate the editor's admin powers off whenever a worker role is active
-    // (assemble). Node arranging happens in the default/admin view.
-    // User 2026-05-29: 'เข้าทาง Link Assembly ไม่ควรขยับ node ได้ ... ต้องเข้า
-    // ทางช่อง admin เท่านั้น'.
-    const admin = isAdmin() && !isAssembleUser();
+    // `admin` = full editor powers (edit / move / toolbar) — straight off the
+    // device admin flag. (The earlier '&& !isAssembleUser()' gate was reverted
+    // 2026-05-29 per user: it was suspected of hiding the node buttons.)
+    const admin = isAdmin();
+    // Auto-fullscreen is a VIEW preference tied to the role, not to
+    // permissions: the Assembly view opens straight into fullscreen (Back
+    // handles navigation — user 2026-05-29 'กดจาก Project แล้ว Full screen
+    // เลย'), while the default/admin editing view opens normal so the toolbar
+    // stays in reach. Tapping empty canvas still toggles it either way.
+    const autoFullscreen = isAssembleUser();
     host.innerHTML = '';
     try { window.__kmeInstance?.unmount?.(); } catch {}
     // Deep-link highlight — when hash has #project=X&code=Y, find the
@@ -5575,6 +5576,7 @@ function renderProject(key) {
     window.__kmeInstance = window.KitchenMindmapEditor.mount(host, {
       projectKey: key,
       admin,
+      autoFullscreen,
       deepLinkCode: deepCode,
       initialNodes: [...bomNodes, ...customNodes],
       initialEdges,
