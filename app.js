@@ -241,9 +241,14 @@ function _renderAdminRoleSwitcher() {
   }
   if (!bar) return;
   const active = getRole();
-  // ROLE_KEYS includes 'workshop' (the default) so admin can flip back
-  // to the public iPad view via the same control.
-  bar.innerHTML = ROLE_KEYS.map(rk => {
+  // Workshop is the implicit "no chip pressed" default — user 2026-05-29
+  // 'เอา workshop ออก ไม่ได้ใช้ทำอะไร'. We only render chips for the
+  // explicit roles (Laser / Bending / Assembly). To still let admin flip
+  // back to Workshop, the click handler treats a second click on the
+  // already-active chip as a toggle-off to DEFAULT_ROLE. URL ?role=workshop
+  // + the ":laser off" search-box magic word still work as before.
+  const chipKeys = ROLE_KEYS.filter(rk => rk !== DEFAULT_ROLE);
+  bar.innerHTML = chipKeys.map(rk => {
     const r = ROLES[rk];
     const iconHtml = r.iconClass
       ? `<span class="${r.iconClass}" aria-hidden="true"></span>`
@@ -252,11 +257,18 @@ function _renderAdminRoleSwitcher() {
     const style = isActive
       ? `background: linear-gradient(135deg, ${r.gradStart}, ${r.gradEnd}); color: #fff; border-color: transparent; box-shadow: 0 1px 4px ${r.gradEnd}66;`
       : '';
-    return `<button class="role-switch-btn ${isActive ? 'active' : ''}" data-role="${rk}" style="${style}" title="Preview ${r.label} role">${iconHtml} ${escapeHtml(r.label.toUpperCase())}</button>`;
+    const title = isActive
+      ? `${r.label} active — click again to return to default (Workshop)`
+      : `Preview ${r.label} role`;
+    return `<button class="role-switch-btn ${isActive ? 'active' : ''}" data-role="${rk}" style="${style}" title="${escapeHtml(title)}">${iconHtml} ${escapeHtml(r.label.toUpperCase())}</button>`;
   }).join('');
   bar.querySelectorAll('.role-switch-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      setRole(btn.dataset.role);
+      const clicked = btn.dataset.role;
+      // Second click on the already-active chip toggles back to Workshop
+      // (the default view) since the standalone Workshop chip is gone.
+      const next = clicked === getRole() ? DEFAULT_ROLE : clicked;
+      setRole(next);
       render();
     });
   });
