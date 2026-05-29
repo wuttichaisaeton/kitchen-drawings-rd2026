@@ -1404,12 +1404,20 @@
       return;
     }
     const [minX, minY, maxX, maxY] = bbox;
-    const pw = (maxX - minX) || 1, ph = (maxY - minY) || 1;
+    const pw0 = (maxX - minX) || 1, ph0 = (maxY - minY) || 1;
+    // Rotate the preview to reflect grain: V = part runs vertically (placed
+    // at 90 deg), H / ANY = native. (user 2026-05-30 'กด grain แล้วภาพไม่หมุนตาม')
+    const grot = (part && part.grain === 'V') ? 90 : 0;
+    const mapPt = (x, y) => {
+      const u = x - minX, v = y - minY;
+      return (grot === 90) ? [-v + ph0, u] : [u, v];
+    };
+    const fw = (grot === 90) ? ph0 : pw0, fh = (grot === 90) ? pw0 : ph0;
     const pad = 44 * dpr;
-    const scale = Math.min((cw - 2 * pad) / pw, (ch - 2 * pad) / ph);
-    const drawW = pw * scale, drawH = ph * scale;
+    const scale = Math.min((cw - 2 * pad) / fw, (ch - 2 * pad) / fh);
+    const drawW = fw * scale, drawH = fh * scale;
     const offX = (cw - drawW) / 2, offY = (ch - drawH) / 2;
-    const tx = (x, y) => [offX + (x - minX) * scale, offY + (maxY - y) * scale];  // flip Y
+    const tx = (x, y) => { const m = mapPt(x, y); return [offX + m[0] * scale, offY + (fh - m[1]) * scale]; };  // flip Y
     const colour = '#4ecca3';
     const trace = (pts, close) => {
       ctx.beginPath();
@@ -2108,7 +2116,7 @@
       row.querySelector('.kdnest-part-grain')?.addEventListener('click', () => {
         const cycle = { '?': 'H', 'H': 'V', 'V': 'ANY', 'ANY': 'H' };
         part.grain = cycle[part.grain] || 'H';
-        _refreshView();
+        _setPreview(part.code);   // preview this part so the grain rotation is visible
       });
       // View part — open DXF preview modal for this part's source DXF.
       // Hand the FULL RTDB metadata to the modal (same object the Laser
