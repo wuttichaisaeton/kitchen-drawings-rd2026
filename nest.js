@@ -716,6 +716,114 @@
   // ── grain.json → pattern map ──────────────────────────────────────
   // Mirror Python's _add_pattern_to_map / lookup_in_map structure so
   // the workshop sees the same H/V/ANY assignments on both tools.
+  // -- Remnant stock (RTDB nest_remnants) ----------------------------
+  // Offcuts left from earlier cuts. Admin records them here (size +
+  // which project/day they came from) so leftovers get reused. User
+  // 2026-05-30 wanted a 'Stock' button: view source project/date, a
+  // preview of the size, manual add + delete. RTDB nest_remnants/<id>
+  // = {w,h,thickness,project,date,note,createdAt}.
+  async function _loadRemnants() {
+    S.remnants = [];
+    if (!window.firebaseDB) return;
+    try {
+      const snap = await window.firebaseDB.ref('nest_remnants').once('value');
+      const val = snap.val() || {};
+      S.remnants = Object.keys(val).map(id => Object.assign({ id: id }, val[id]))
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    } catch (e) { console.warn('[kdNest] nest_remnants read failed:', e); }
+  }
+  async function _saveRemnant(obj) {
+    if (!window.firebaseDB) throw new Error('No database connection');
+    const ref = window.firebaseDB.ref('nest_remnants').push();
+    await ref.set(obj);
+    return ref.key;
+  }
+  async function _deleteRemnant(id) {
+    if (!window.firebaseDB || !id) return;
+    await window.firebaseDB.ref('nest_remnants/' + id).remove();
+  }
+  function _remnantPreview(r) {
+    const BW = 132, BH = 82, pad = 16;
+    const w = +r.w || 1, h = +r.h || 1;
+    const sc = Math.min((BW - 2 * pad) / w, (BH - 2 * pad) / h);
+    const rw = Math.max(4, w * sc), rh = Math.max(4, h * sc);
+    const x = (BW - rw) / 2, y = (BH - rh) / 2;
+    return '<svg class="kdstock-prev" width="' + BW + '" height="' + BH + '" viewBox="0 0 ' + BW + ' ' + BH + '">'
+      + '<rect x="0" y="0" width="' + BW + '" height="' + BH + '" fill="#0b1117"/>'
+      + '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + rw.toFixed(1) + '" height="' + rh.toFixed(1) + '" fill="#4ecca322" stroke="#4ecca3" stroke-width="1.5"/>'
+      + '<text x="' + (BW / 2) + '" y="' + (BH / 2) + '" fill="#cfe7ee" font-size="11" text-anchor="middle" dominant-baseline="middle" font-family="monospace">' + Math.round(w) + '\u00d7' + Math.round(h) + '</text>'
+      + '</svg>';
+  }
+  function _openStockModal() {
+    _loadRemnants().then(_renderStockModal).catch(e => alert('Stock load failed: ' + (e.message || e)));
+  }
+  function _renderStockModal() {
+    document.querySelectorAll('.kdstock-modal').forEach(m => m.remove());
+    const admin = (typeof window.isAdmin === 'function' && window.isAdmin());
+    const list = (S.remnants || []).map(function (r) {
+      const dims = Math.round(+r.w || 0) + '\u00d7' + Math.round(+r.h || 0)
+        + (r.thickness ? ' \u00b7 ' + _esc(String(r.thickness)) + 'mm' : '');
+      const prov = [r.project ? _esc(r.project) : '', r.date ? _esc(r.date) : ''].filter(Boolean).join(' \u00b7 ');
+      return '<div class="kdstock-card" data-id="' + _esc(r.id) + '">'
+        + _remnantPreview(r)
+        + '<div class="kdstock-info">'
+        + '<div class="kdstock-dims">' + dims + '</div>'
+        + '<div class="kdstock-prov">' + (prov || '\u2014') + '</div>'
+        + (r.note ? '<div class="kdstock-note">' + _esc(r.note) + '</div>' : '')
+        + '</div>'
+        + (admin ? '<button class="kdstock-del" data-id="' + _esc(r.id) + '" title="Delete remnant">\ud83d\uddd1</button>' : '')
+        + '</div>';
+    }).join('');
+    const addForm = admin ? (
+      '<div class="kdstock-add">'
+      + '<input id="kdstock-w" type="number" min="0" placeholder="W"><span>\u00d7</span>'
+      + '<input id="kdstock-h" type="number" min="0" placeholder="H">'
+      + '<input id="kdstock-th" type="number" min="0" step="0.1" value="1" title="thickness mm">'
+      + '<input id="kdstock-proj" type="text" placeholder="Project" value="' + _esc(S.projectName || '') + '">'
+      + '<input id="kdstock-note" type="text" placeholder="Note (optional)">'
+      + '<button id="kdstock-add-btn" class="kdnest-btn kdnest-btn-run">+ Add</button>'
+      + '</div>') : '';
+    const modal = document.createElement('div');
+    modal.className = 'kdstock-modal';
+    modal.innerHTML = '<div class="kdstock-backdrop"></div>'
+      + '<div class="kdstock-box">'
+      + '<div class="kdstock-head">\ud83d\udce6 Remnant stock'
+      + '<span class="kdstock-sub">' + (S.remnants || []).length + ' offcuts \u00b7 shared</span></div>'
+      + '<div class="kdstock-list">' + (list || '<div class="kdstock-empty">No remnants yet' + (admin ? ' \u2014 add one below' : '') + '</div>') + '</div>'
+      + addForm
+      + '<div class="kdstock-foot"><span class="kdng-spacer"></span><button id="kdstock-close" class="kdnest-btn">Close</button></div>'
+      + '</div>';
+    document.body.appendChild(modal);
+    const q = sel => modal.querySelector(sel);
+    const close = () => modal.remove();
+    q('.kdstock-backdrop').addEventListener('click', close);
+    q('#kdstock-close').addEventListener('click', close);
+    modal.querySelectorAll('.kdstock-del').forEach(function (el) {
+      el.addEventListener('click', async function () {
+        const id = el.dataset.id;
+        if (!confirm('Delete this remnant from stock?')) return;
+        try { await _deleteRemnant(id); await _loadRemnants(); _renderStockModal(); }
+        catch (e) { alert('Delete failed: ' + (e.message || e)); }
+      });
+    });
+    const addBtn = q('#kdstock-add-btn');
+    if (addBtn) addBtn.addEventListener('click', async function () {
+      const w = parseFloat(q('#kdstock-w').value), h = parseFloat(q('#kdstock-h').value);
+      if (!(w > 0) || !(h > 0)) { alert('Enter W and H (mm).'); return; }
+      const obj = {
+        w: w, h: h,
+        thickness: parseFloat(q('#kdstock-th').value) || 1,
+        project: (q('#kdstock-proj').value || '').trim(),
+        note: (q('#kdstock-note').value || '').trim(),
+        date: new Date().toISOString().slice(0, 10),
+        createdAt: Date.now(),
+      };
+      addBtn.disabled = true; addBtn.textContent = 'Saving...';
+      try { await _saveRemnant(obj); await _loadRemnants(); _renderStockModal(); }
+      catch (e) { alert('Save failed: ' + (e.message || e)); addBtn.disabled = false; addBtn.textContent = '+ Add'; }
+    });
+  }
+
   function _buildPatternMap(rows) {
     const m = { exact: {}, prefix: [], xx: [], substring: [], suffix: [] };
     for (const row of rows) {
@@ -1866,6 +1974,7 @@
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run">▶ Run Nesting</button>
             <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'}>📤 Save sheets to Laser</button>
             <button id="kdnest-grain" class="kdnest-btn kdnest-btn-grain" title="Edit grain / thickness rules (shared — no Excel needed)">🧬 Grain</button>
+            <button id="kdnest-stock" class="kdnest-btn kdnest-btn-stock" title="Remnant offcut stock — view / add / delete">📦 Stock</button>
           </div>
           <div class="kdnest-parts">
             <div class="kdnest-parts-head">
@@ -1903,6 +2012,7 @@
     $('#kdnest-run')?.addEventListener('click', _runNesting);
     $('#kdnest-save-sheets')?.addEventListener('click', _saveSheetsToLaser);
     $('#kdnest-grain')?.addEventListener('click', _openGrainModal);
+    $('#kdnest-stock')?.addEventListener('click', _openStockModal);
     $('#kdnest-prev')?.addEventListener('click', () => {
       const wasPreview = !!S.previewCode; S.previewCode = null;   // ‹ exits preview
       if (S.currentSheetIdx > 0) { S.currentSheetIdx--; _refreshView(); }
