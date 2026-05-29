@@ -414,8 +414,13 @@ function MindmapNode({ id, data, selected }) {
               remaining buttons are 🧩 assembled + 📄 PDF — the two
               the cabinet team actually needs. Whole-card tap still
               toggles expand/collapse via React Flow's onNodeClick. */}
+          {/* `nodrag` is REQUIRED: without it React Flow treats a touch on
+              the button as the start of a node drag and swallows the tap on
+              iPad/iPhone (worked on desktop because a mouse click with no
+              movement still fires). `nopan` stops a finger-press from panning
+              the canvas. User 2026-05-29: 'ที่มือถือใช้การไม่ได้'. */}
           <button
-            className={`kme-mini kme-assembled ${assembled ? 'kme-on' : ''}`}
+            className={`kme-mini kme-assembled nodrag nopan ${assembled ? 'kme-on' : ''}`}
             onClick={onAssembled}
             onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onAssembled(e); } }}
             title={assembled ? 'Mark as not assembled' : 'Mark assembled'}
@@ -424,7 +429,7 @@ function MindmapNode({ id, data, selected }) {
           </button>
           {code && api.pdfUrlForCode?.(code) && (
             <button
-              className="kme-mini kme-pdf"
+              className="kme-mini kme-pdf nodrag nopan"
               onClick={onOpenPdf}
               onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); onOpenPdf(e); } }}
               title="Open PDF"
