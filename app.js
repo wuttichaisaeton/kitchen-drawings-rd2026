@@ -369,6 +369,21 @@ function _buildDrawingAliasIndex(aliasData) {
 
 // Return the code whose manifest entry should represent `code`'s drawing.
 // Falls back to `code` itself if no alias has a manifest entry either.
+// Pattern-based wrapper alias for shared drawings. Codes matching
+// FN_B__-___000 (any FN-family drawer wrapper ending in -???000) all
+// reuse the canonical drawing of FN0B00-000000 — drawer-front geometry
+// only varies in derived dimensions, so one master drawing covers
+// every wrapper. User 2026-05-29: 'ถ้าเป็น FN_B__-___000 ให้ใช้
+// file pdf ของ FN0B00-000000 เลย'. Self-mapping (FN0B00-000000 itself
+// matches the pattern but returns its own code) keeps _effectiveDrawing
+// Code's fallthrough safe.
+function _patternAliasForDrawing(code) {
+  if (/^FN.B..-...000$/.test(code) && code !== 'FN0B00-000000') {
+    return 'FN0B00-000000';
+  }
+  return code;
+}
+
 function _effectiveDrawingCode(code) {
   const auto = (manifest && manifest.auto_generated) || {};
   if (auto[code]) return code;  // self has the drawing — use as-is
@@ -390,6 +405,11 @@ function _effectiveDrawingCode(code) {
       if (otherCode.startsWith(prefix + '-')) return otherCode;
     }
   }
+  // 3. Pattern alias (last resort). Returns the alias even when it has
+  //    no auto entry so downstream upload-cache lookups in
+  //    pdfUrlForCode can still match the alias target.
+  const patternAlias = _patternAliasForDrawing(code);
+  if (patternAlias !== code) return patternAlias;
   return code;
 }
 

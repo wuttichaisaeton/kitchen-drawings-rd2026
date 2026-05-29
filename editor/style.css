@@ -709,6 +709,28 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   min-width: 80px;
 }
 
+/* Admin: code text is a clickable link → opens the part in the Library
+   tab (single click, deferred ~280ms so a double-click can still enter
+   edit mode and cancel the queued navigation). Workshop sees the row
+   click → Fusion-3D route as before; .kme-view-only at :272 keeps the
+   default cursor on that path. User 2026-05-29. */
+.kme-root:not(.kme-view-only) .kme-node-label {
+  cursor: pointer;
+}
+.kme-root:not(.kme-view-only) .kme-node-label:hover {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(255, 255, 255, 0.55);
+}
+/* While editing, don't underline + use the text caret cursor — the
+   contentEditable focus state owns the affordance. */
+.kme-root:not(.kme-view-only) .kme-node-label[contenteditable="true"] {
+  cursor: text;
+}
+.kme-root:not(.kme-view-only) .kme-node-label[contenteditable="true"]:hover {
+  text-decoration: none;
+}
+
 .kme-node-label[contenteditable="true"]:focus {
   background: #0d1117;
   padding: 2px 4px;

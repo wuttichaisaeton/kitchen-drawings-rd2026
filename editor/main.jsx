@@ -144,6 +144,10 @@ function MindmapNode({ id, data, selected }) {
   // synthesized touch event both landing) — for the 🧩 toggle that would
   // toggle on→off and look like "nothing happened". (2026-05-29)
   const lastFireRef = useRef(0);
+  // Defers admin's single-click → openInLibrary on the label so a double-
+  // click (→ enter edit mode) can cancel us before navigation fires.
+  // Cleared by the outer onDoubleClick handler. (2026-05-29)
+  const navTimeoutRef = useRef(null);
   const [editing, setEditing] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -371,7 +375,16 @@ function MindmapNode({ id, data, selected }) {
     <div
       className={cls.join(' ')}
       style={style}
-      onDoubleClick={startEdit}
+      onDoubleClick={(e) => {
+        // Cancel any queued single-click Library navigation on the label
+        // (first click of this double-click) — admin wants to edit, not
+        // navigate. Then enter edit mode as before.
+        if (navTimeoutRef.current) {
+          clearTimeout(navTimeoutRef.current);
+          navTimeoutRef.current = null;
+        }
+        startEdit(e);
+      }}
       data-code={code || ''}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
@@ -386,6 +399,40 @@ function MindmapNode({ id, data, selected }) {
           suppressContentEditableWarning
           onBlur={commit}
           onKeyDown={onKeyDown}
+          onClick={(e) => {
+            // Admin clicks the code text → drill into the part's
+            // Library entry. User 2026-05-29: 'admin ถ้ากดที่ตัวอักษร
+            // เช่น FN1BLA-120000 ให้ Link ไปที่อยู่ใน Library เลย'.
+            // Workshop's click bubbles up to React Flow's onNodeClick
+            // (Fusion-3D route — unchanged). Edit-mode owns the click
+            // for caret placement. Single-click is deferred ~280ms so
+            // a double-click (outer handler) can cancel us before nav.
+            if (!admin || editing || !code) return;
+            e.stopPropagation();
+            if (navTimeoutRef.current) {
+              clearTimeout(navTimeoutRef.current);
+              navTimeoutRef.current = null;
+            }
+            // Second click of a double-click — bail; the outer
+            // onDoubleClick is about to fire startEdit.
+            if (e.detail >= 2) return;
+            navTimeoutRef.current = setTimeout(() => {
+              navTimeoutRef.current = null;
+              api.openInLibrary?.(code);
+            }, 280);
+          }}
+          onPointerDown={(e) => {
+            // Touch path — mirror the NO PDF chip's pattern. Tap the
+            // label = navigate immediately (touch doesn't deliver a
+            // useful double-tap counter, and admin label-editing on
+            // touch is rare; they can use desktop).
+            if (e.pointerType === 'touch' && admin && !editing && code) {
+              e.preventDefault();
+              e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
+              api.openInLibrary?.(code);
+            }
+          }}
         >
           {label}
         </div>
