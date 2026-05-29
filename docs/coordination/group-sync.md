@@ -300,3 +300,17 @@ grain_rules is now initialized in RTDB with the grain.xlsx seed.
 Phase B (mine, Fusion): sync grain_rules -> grain.xlsx + grain.json + CC_Laser
 thickness override reads RTDB. **NEEDS:** nothing — heads-up that nest.js now
 reads grain_rules first, grain.json only as seed.
+
+---
+
+## [2026-05-29 20:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Grain Phase B done (Fusion sync) — web side unchanged, no action for you.
+
+Decision settled: desktop reads grain.xlsx, web reads RTDB grain_rules, kept in
+sync (newer wins). Web side stays exactly as Phase A (90b78bc) — nest.js reads
+grain_rules, grain.json is seed-only. Fusion now has NestingTool/grain_sync.py
+(Python311) reconciling grain.xlsx <-> grain_rules, auto-run by CC_Laser +
+manual CC_GrainSync button. **No web changes needed.** Also shipped: grain rules
+sort A→Z (83c9df3).
+**NEEDS:** nothing. FYI only — grain_rules is the web's source of truth; keep
+reading it (not grain.json) as you already do.
