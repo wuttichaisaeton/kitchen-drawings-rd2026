@@ -905,11 +905,13 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         faded: revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false)),
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
-      // Workshop also gets to drag nodes — useful for rearranging the
-      // mindmap to match how the shift is bending today. Position changes
-      // don't persist for workshop (only admin's _saveOverride path persists);
-      // workshop's drags are visual-only and reset on reload.
-      draggable: true,
+      // Only admin (เอ๋) may MOVE nodes — the layout is theirs to own.
+      // Workers (assemble/laser/bend/workshop) stay fully interactive
+      // (tap to expand/collapse, 🧩, tap-3 hide) but can't drag, so they
+      // don't accidentally shove the map around. User 2026-05-29:
+      // 'ช่างประกอบ กด interactive node ได้ทุกอย่าง ยกเว้นย้าย'. onNodeClick
+      // still fires when draggable is false, so taps keep working.
+      draggable: admin,
     };
   }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll]);
 
