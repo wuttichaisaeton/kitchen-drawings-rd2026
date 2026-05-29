@@ -1220,6 +1220,106 @@
     return best;
   }
 
+  // A part is a gap-fill candidate iff it can rotate freely (grain ANY → 4 rots)
+  // and is small relative to the sheet. Tunable. (2026-05-30 Max Remnant)
+  const HYBRID_FILL_AREA_FRAC = 0.08;
+
+  // "Max Remnant": pick the layout that leaves the largest reusable rectangular
+  // offcut. Generates candidates (the 4 rectangle packers + a gap-filled variant
+  // that tucks small ANY parts into interior gaps), scores each by its largest
+  // empty rectangle (true-shape grid), and returns the best by
+  // (fewest unplaced, fewest sheets, largest remnant). Reuses _rasterMask /
+  // _blFind / _stamp / _largestEmptyRect — no new collision code. (2026-05-30)
+  function _nestMultiSheetMaxRemnant(pieces, stock, gap) {
+    const minSide = Math.min.apply(null, stock.map(s => Math.min(s.w, s.h)).concat([1525]));
+    const R = Math.max(5, Math.round(minSide / 200));
+    const dCells = gap > 0 ? Math.max(1, Math.round(gap / R)) : 0;
+    const maskCache = new Map();
+    function maskOf(p, rot) {
+      const key = p.code + '|' + rot + '|' + Math.round(p.w) + 'x' + Math.round(p.h);
+      let m = maskCache.get(key);
+      if (!m) { m = _rasterMask(p, rot, R); maskCache.set(key, m); }
+      return m;
+    }
+    const bboxArea = p => (p.w || 0) * (p.h || 0);
+
+    function trueOcc(sheet) {
+      const gw = Math.ceil(sheet.sw / R), gh = Math.ceil(sheet.sh / R);
+      const occ = new Uint8Array(gw * gh);
+      for (const pl of sheet.placements) {
+        _stamp(occ, gw, gh, maskOf(pl, pl.rot), Math.round(pl.x / R), Math.round(pl.y / R), dCells);
+      }
+      return { occ, gw, gh };
+    }
+
+    function remnantArea(candidate) {
+      let best = 0;
+      for (const sheet of candidate.sheets) {
+        const { occ, gw, gh } = trueOcc(sheet);
+        const r = _largestEmptyRect(occ, gw, gh);
+        const mm = r.area * R * R;
+        if (mm > best) best = mm;
+      }
+      return best;
+    }
+
+    function gapFill(candidate) {
+      const sheets = candidate.sheets.map(s => ({ ...s, placements: s.placements.slice() }));
+      for (const sheet of sheets) {
+        const gw = Math.ceil(sheet.sw / R), gh = Math.ceil(sheet.sh / R);
+        const occ = new Uint8Array(gw * gh);
+        const fillCap = HYBRID_FILL_AREA_FRAC * sheet.sw * sheet.sh;
+        const isFill = pl => Array.isArray(pl.rots) && pl.rots.length === 4 && bboxArea(pl) <= fillCap;
+        const big = sheet.placements.filter(pl => !isFill(pl));
+        const fill = sheet.placements.filter(isFill).sort((a, b) => bboxArea(b) - bboxArea(a));
+        for (const pl of big) _stamp(occ, gw, gh, maskOf(pl, pl.rot), Math.round(pl.x / R), Math.round(pl.y / R), dCells);
+        const out = big.slice();
+        for (const f of fill) {
+          let pick = null;
+          for (const rot of f.rots) {
+            const m = maskOf(f, rot);
+            const pos = _blFind(occ, gw, gh, m);
+            if (pos && (pick === null || pos.gy < pick.gy || (pos.gy === pick.gy && pos.gx < pick.gx))) {
+              pick = { rot, m, gx: pos.gx, gy: pos.gy };
+            }
+          }
+          if (pick) {
+            _stamp(occ, gw, gh, pick.m, pick.gx, pick.gy, dCells);
+            out.push({ ...f, x: pick.gx * R, y: pick.gy * R, rot: pick.rot });
+          } else {
+            _stamp(occ, gw, gh, maskOf(f, f.rot), Math.round(f.x / R), Math.round(f.y / R), dCells);
+            out.push(f);
+          }
+        }
+        sheet.placements = out;
+      }
+      return { sheets, unplaced: candidate.unplaced };
+    }
+
+    const rectCands = ['MaxRects', 'Bottom', 'BL Corner', 'Left'].map(m => _nestMultiSheet(pieces, stock, gap, m));
+    let bestRect = null;
+    for (const c of rectCands) {
+      if (bestRect === null || c.unplaced.length < bestRect.unplaced.length
+          || (c.unplaced.length === bestRect.unplaced.length && c.sheets.length < bestRect.sheets.length)) {
+        bestRect = c;
+      }
+    }
+    const candidates = rectCands.slice();
+    if (bestRect) candidates.push(gapFill(bestRect));
+
+    let winner = null, ws = null;
+    for (const c of candidates) {
+      const s = { unplaced: c.unplaced.length, sheets: c.sheets.length, remnant: remnantArea(c) };
+      if (winner === null
+          || s.unplaced < ws.unplaced
+          || (s.unplaced === ws.unplaced && s.sheets < ws.sheets)
+          || (s.unplaced === ws.unplaced && s.sheets === ws.sheets && s.remnant > ws.remnant)) {
+        winner = c; ws = s;
+      }
+    }
+    return winner || { sheets: [], unplaced: pieces.slice() };
+  }
+
   // ── Driver: pack onto multiple sheet sizes ─────────────────────────
   function _nestMultiSheet(pieces, stock, gap, mode) {
     // pieces: [{code, w, h, rots:[0,90,...], qty}]
@@ -1227,6 +1327,7 @@
     // Returns: {sheets: [{sw, sh, placements:[{...}]}], unplaced: [...]}
 
     if (mode === 'True Shape') return _nestMultiSheetRaster(pieces, stock, gap);
+    if (mode === 'Max Remnant') return _nestMultiSheetMaxRemnant(pieces, stock, gap);
 
     function makePacker(sw, sh, m) {
       return m === 'MaxRects' ? new MaxRectsPacker(sw, sh)
