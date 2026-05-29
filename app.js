@@ -3599,7 +3599,12 @@ function renderNestHome() {
     return;
   }
   const projects = manifest?.projects || {};
-  const entries = Object.entries(projects).map(([key, p]) => {
+  const entries = Object.entries(projects)
+    // Sync with the Projects tab: a project hidden there (soft-delete,
+    // RTDB deleted_projects) must not show here either. User 2026-05-30:
+    // 'ที่ลบโปรเจกต์งานทิ้งไปแล้ว ที่ nest ลบด้วย'.
+    .filter(([key]) => !isProjectSoftDeleted(key))
+    .map(([key, p]) => {
     const parts = Array.isArray(p.parts) ? p.parts : [];
     const totalQty = parts.reduce((s, x) => s + (x.qty || 0), 0);
     const dxfCount = parts.filter(x => x && x.code && dxfsForMasterCode(x.code).length > 0).length;
@@ -3613,14 +3618,20 @@ function renderNestHome() {
       pinned: isPinned(key),   // shared with Projects view (_pinnedCache)
     };
   });
-  // Pinned (favorited) first; then ready (has DXFs); then by name. Mirrors
-  // the Projects-tab priority so a star toggled here surfaces the row to
-  // the top of BOTH lists.
-  entries.sort((a, b) =>
-    (b.pinned - a.pinned) ||
-    (b.ready - a.ready) ||
-    a.name.localeCompare(b.name)
-  );
+  // Order mirrors the Projects tab so reordering syncs BOTH ways: pinned
+  // band first, then the shared manual rank (project_order — what the
+  // ▲/▼ buttons and the Projects drag write), then ready (has DXFs), then
+  // name for anything still unranked.
+  const manualOrder = loadProjectOrder();
+  const rankMap = new Map(manualOrder.map((k, i) => [k, i]));
+  entries.sort((a, b) => {
+    if (a.pinned !== b.pinned) return b.pinned - a.pinned;
+    const ra = rankMap.has(a.key) ? rankMap.get(a.key) : Infinity;
+    const rb = rankMap.has(b.key) ? rankMap.get(b.key) : Infinity;
+    if (ra !== rb) return ra - rb;
+    if (a.ready !== b.ready) return b.ready - a.ready;
+    return a.name.localeCompare(b.name);
+  });
   // Apply search filter if user typed.
   const q = (SEARCH.value || '').trim().toLowerCase();
   const filtered = q
@@ -3637,7 +3648,8 @@ function renderNestHome() {
     return;
   }
 
-  const rows = filtered.map(e => {
+  const orderedKeys = filtered.map(e => e.key);   // visual order for ▲/▼
+  const rows = filtered.map((e, i) => {
     // Row is a <div role="button"> instead of a real <button> so we can
     // nest a clickable .pin-btn inside it (button-in-button is invalid
     // HTML). Click + keydown handlers wire it up below; aria-disabled
@@ -3650,14 +3662,20 @@ function renderNestHome() {
       e.pinned ? 'pinned' : '',
     ].filter(Boolean).join(' ');
     const pinTitle = e.pinned ? 'Unpin from top' : 'Pin to top';
+    const isFirst = i === 0, isLast = i === filtered.length - 1;
     return `
     <div class="${cls}" data-key="${escapeHtml(e.key)}" role="button" tabindex="0"
          ${e.ready ? '' : 'aria-disabled="true"'}>
+      <span class="nest-move">
+        <button class="nest-move-btn nest-up" data-key="${escapeHtml(e.key)}" aria-label="Move up" title="Move up" ${isFirst ? 'disabled' : ''}>▲</button>
+        <button class="nest-move-btn nest-down" data-key="${escapeHtml(e.key)}" aria-label="Move down" title="Move down" ${isLast ? 'disabled' : ''}>▼</button>
+      </span>
       <span class="nest-home-name">${escapeHtml(e.name)}</span>
       <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
       <span class="nest-home-cta">${e.ready ? '▶ Nest' : '⚠ no DXFs'}</span>
       <button class="pin-btn ${e.pinned ? 'on' : ''}" data-project="${escapeHtml(e.key)}"
               aria-label="${pinTitle}" title="${pinTitle}">${e.pinned ? '★' : '☆'}</button>
+      <button class="nest-del-btn" data-key="${escapeHtml(e.key)}" aria-label="Hide project" title="Hide from list (also hides in Projects)">🗑</button>
     </div>`;
   }).join('');
 
@@ -3684,14 +3702,15 @@ function renderNestHome() {
       alert('Nesting workspace not loaded — refresh the page.');
     }
   };
+  const _ignoreSel = '.pin-btn, .nest-move-btn, .nest-del-btn';
   ROOT.querySelectorAll('.nest-home-row').forEach(row => {
     row.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn')) return;
+      if (ev.target.closest(_ignoreSel)) return;
       _openRow(row);
     });
     row.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter' || ev.key === ' ') {
-        if (ev.target.closest('.pin-btn')) return;
+        if (ev.target.closest(_ignoreSel)) return;
         ev.preventDefault();
         _openRow(row);
       }
@@ -3706,6 +3725,38 @@ function renderNestHome() {
       ev.stopPropagation();
       togglePinned(btn.dataset.project);
       render();
+    });
+  });
+
+  // ▲ / ▼ move — writes the shared manual order (project_order), so a row
+  // moved here ALSO moves in the Projects tab (and vice-versa). We merge
+  // the reordered visible keys with any keys filtered out by search so a
+  // search-active reorder doesn't wipe the hidden rows' ranks.
+  const _moveProject = (key, dir) => {
+    const cur = orderedKeys.slice();
+    const i = cur.indexOf(key);
+    const j = i + dir;
+    if (i < 0 || j < 0 || j >= cur.length) return;
+    [cur[i], cur[j]] = [cur[j], cur[i]];
+    const rest = loadProjectOrder().filter(k => !cur.includes(k));
+    saveProjectOrder([...cur, ...rest]);
+    render();
+  };
+  ROOT.querySelectorAll('.nest-move-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _moveProject(btn.dataset.key, btn.classList.contains('nest-up') ? -1 : 1);
+    });
+  });
+
+  // 🗑 hide — same soft-delete as the Projects tab (RTDB deleted_projects),
+  // so hiding here removes the project from BOTH lists. Parts stay in Library.
+  ROOT.querySelectorAll('.nest-del-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const pk = btn.dataset.key;
+      if (!confirm(`Hide project "${pk}" from the Nest AND Projects lists?\n\nParts stay in the Library. Reversible via RTDB deleted_projects/${pk}.`)) return;
+      softDeleteProject(pk);
     });
   });
 }
