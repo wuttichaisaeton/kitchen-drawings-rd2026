@@ -224,3 +224,15 @@ STATUS: Follow-up — bend 💬 made the row wrap on iPhone; fixed. commit `1059
 padding 12→10, sized `.bend-row .comment-btn` to 52px to match 👁/▶. Verified
 at 375px: all 6 cells one grid row (height 76px). Deploy green. Done for real now.
 **NEEDS:** nothing.
+
+---
+
+## [2026-05-29 18:05] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Follow-up 2 — bend code/qty text overlap on phones, fixed. commit `70551ba`.
+
+3×52px buttons squeezed the code's `minmax(0,1fr)` column to ~32px on 375px
+→ monospace code spilled over qty. Fixed: `.bend-code { min-width:0;
+overflow-wrap:anywhere }` + `@media (max-width:480px)` shrinks the action
+buttons to 46px (qty/gap/padding trimmed, code 15px). iPad keeps 52px.
+Verified at 375px: codeRight 144 < qtyLeft 150, no overflow, one row.
+Bend-list 💬 is fully settled now. **NEEDS:** nothing.
