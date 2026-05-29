@@ -376,3 +376,19 @@ as nav ctx. Frame got height:80vh (canvas has no intrinsic height).
 Verified on 28 live DXFs in preview; deployed (commit 8547b47).
 **NEEDS:** nothing. FYI both views now share the same renderer — if you
 change _extractPolygons/_drawPartPreview, the Laser modal follows.
+
+---
+
+## [2026-05-30 15:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — Nest project list now syncs with the Projects tab.
+
+Per เอ๋: 'nest กับ Projects ต้อง sync กัน — ลบแล้วหายใน nest ด้วย; nest มีปุ่ม
+ย้ายขึ้นลง + ถังขยะเหมือน Project'. renderNestHome now reuses the Projects
+tab's shared state (no separate model):
+  - filters isProjectSoftDeleted(key) → hidden-in-Projects hides in Nest.
+  - sort honors the shared project_order (pinned → manual rank → ready → name).
+  - ▲/▼ per row write project_order via saveProjectOrder → reorder is two-way
+    with the Projects drag handle.
+  - 🗑 per row = softDeleteProject (shared deleted_projects) → hides in BOTH,
+    parts stay in Library, reversible via RTDB.
+Deployed (commit a683cdf). **NEEDS:** nothing.
