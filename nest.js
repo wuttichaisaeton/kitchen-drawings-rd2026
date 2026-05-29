@@ -148,49 +148,169 @@
       if (e && typeof e.extrusionZ === 'number' && e.extrusionZ < 0) return -x;
       return x;
     }
+    // ── Curve flatteners (parity with Python nest_gui.py) ────────────
+    // LWPOLYLINE bulge → arc points. ``bulge`` lives on the START vertex
+    // of each segment (DXF spec); = tan(includedAngle / 4), signed
+    // (+ = CCW). Without this, rounded corners collapse to chords and the
+    // bbox shrinks (e.g. SD0SUP read 75×52 instead of 87×60) AND the
+    // outline can't close → no fill. Mirrors Python _bulge_arc_bbox.
+    // Returns the points AFTER (x0,y0) up to and including (x1,y1).
+    function bulgeArc(x0, y0, x1, y1, bulge) {
+      const dx = x1 - x0, dy = y1 - y0;
+      const chord = Math.hypot(dx, dy);
+      if (chord < 1e-9 || Math.abs(bulge) < 1e-9) return [[x1, y1]];
+      const ang = 4 * Math.atan(bulge);            // signed sweep
+      const half = chord / 2;
+      const r = half / Math.sin(ang / 2);          // signed radius
+      const m = half / Math.tan(ang / 2);          // signed mid→centre dist
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+      const cx = mx - (dy / chord) * m;            // perp to chord (-dy,dx)
+      const cy = my + (dx / chord) * m;
+      const a0 = Math.atan2(y0 - cy, x0 - cx);
+      const R = Math.abs(r);
+      const N = Math.max(2, Math.ceil(Math.abs(ang) / (Math.PI / 12)));  // ~15°/seg
+      const out = [];
+      for (let i = 1; i <= N; i++) {
+        const a = a0 + ang * (i / N);
+        out.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]);
+      }
+      return out;
+    }
+
+    // B-spline (NURBS w/ uniform weights) → flattened points via de Boor.
+    // Fusion emits SPLINE with controlPoints + knots + degree and EMPTY
+    // fitPoints; using raw controlPoints (Bezier hull) overestimates the
+    // bbox. Evaluating the actual curve matches Python's _spline_points
+    // (ezdxf flattening). Falls back to controlPoints if knots malformed.
+    function bsplineFlatten(ctrl, deg, knots, samples) {
+      const n = ctrl.length - 1;
+      if (n < deg || !Array.isArray(knots) || knots.length !== n + deg + 2) {
+        return ctrl.slice();
+      }
+      function evalAt(u) {
+        let s = deg;
+        for (let i = deg; i <= n; i++) {
+          if (u >= knots[i] && u < knots[i + 1]) { s = i; break; }
+          if (i === n) s = n;
+        }
+        const d = [];
+        for (let j = 0; j <= deg; j++) d.push(ctrl[s - deg + j].slice());
+        for (let r = 1; r <= deg; r++) {
+          for (let j = deg; j >= r; j--) {
+            const idx = s - deg + j;
+            const den = knots[idx + deg - r + 1] - knots[idx];
+            const al = den > 1e-12 ? (u - knots[idx]) / den : 0;
+            d[j][0] = (1 - al) * d[j - 1][0] + al * d[j][0];
+            d[j][1] = (1 - al) * d[j - 1][1] + al * d[j][1];
+          }
+        }
+        return d[deg];
+      }
+      const u0 = knots[deg], u1 = knots[n + 1];
+      const M = Math.max(samples || 24, ctrl.length * 4);
+      const out = [];
+      for (let i = 0; i <= M; i++) {
+        try { out.push(evalAt(u0 + (u1 - u0) * (i / M))); } catch (_) { /* skip */ }
+      }
+      return out.length >= 2 ? out : ctrl.slice();
+    }
+
     function entityPoints(e) {
       if (!e || _bendLayer(e.layer)) return null;
       if (e.type === 'LWPOLYLINE' || e.type === 'POLYLINE') {
-        return (e.vertices || []).map(v => [ocsFlipX(e, v.x), v.y]);
+        // Walk segments honouring per-vertex bulge. Build in RAW coords
+        // then OCS-flip x at the end (flipping mid-arc would invert the
+        // bulge handedness).
+        const vs = e.vertices || [];
+        if (!vs.length) return null;
+        const raw = [[vs[0].x, vs[0].y]];
+        const segs = e.closed ? vs.length : vs.length - 1;
+        for (let i = 0; i < segs; i++) {
+          const a = vs[i], b = vs[(i + 1) % vs.length];
+          if (a.bulge && Math.abs(a.bulge) > 1e-9) {
+            for (const p of bulgeArc(a.x, a.y, b.x, b.y, a.bulge)) raw.push(p);
+          } else {
+            raw.push([b.x, b.y]);
+          }
+        }
+        return raw.map(p => [ocsFlipX(e, p[0]), p[1]]);
       }
       if (e.type === 'LINE') {
         return [[ocsFlipX(e, e.start.x), e.start.y],
                 [ocsFlipX(e, e.end.x), e.end.y]];
       }
       if (e.type === 'CIRCLE') {
+        // OCS-flip the WHOLE point (not just the centre) so mirrored
+        // (extrusion=-1) entities land at the right X.
         const N = 32;
         const arr = [];
-        const cx = ocsFlipX(e, e.x);
         for (let i = 0; i <= N; i++) {
           const a = (i / N) * Math.PI * 2;
-          arr.push([cx + e.r * Math.cos(a), e.y + e.r * Math.sin(a)]);
+          arr.push([ocsFlipX(e, e.x + e.r * Math.cos(a)), e.y + e.r * Math.sin(a)]);
         }
         return arr;
       }
       if (e.type === 'ARC') {
-        const N = 24;
-        const a0 = (e.startAngle || 0) * Math.PI / 180;
-        const a1 = (e.endAngle || 0) * Math.PI / 180;
-        const span = a1 < a0 ? (a1 + 2 * Math.PI - a0) : (a1 - a0);
+        // Two fixes vs the old code (2026-05-29):
+        //  (1) start/endAngle are RADIANS in this dxf lib, NOT degrees
+        //      (confirmed: endAngle 6.28 = 2π). The old ×π/180 collapsed
+        //      every arc to a ~0.1mm nub → corner fillets vanished, so
+        //      the outline couldn't close (no fill) and bbox lost the
+        //      fillet extent.
+        //  (2) OCS-flip the WHOLE sampled point, not just the centre —
+        //      for extrusion=-1 the correct WCS map is x→-x per point;
+        //      flipping only the centre swept the arc the wrong way so
+        //      its endpoints missed the neighbouring segments.
+        const a0 = e.startAngle || 0;
+        const a1 = e.endAngle || 0;
+        let span = a1 - a0;
+        while (span < 0) span += 2 * Math.PI;
+        while (span > 2 * Math.PI) span -= 2 * Math.PI;
+        const N = Math.max(2, Math.ceil(span / (Math.PI / 12)));
         const arr = [];
-        const cx = ocsFlipX(e, e.x);
         for (let i = 0; i <= N; i++) {
           const a = a0 + span * (i / N);
-          arr.push([cx + e.r * Math.cos(a), e.y + e.r * Math.sin(a)]);
+          arr.push([ocsFlipX(e, e.x + e.r * Math.cos(a)), e.y + e.r * Math.sin(a)]);
         }
         return arr;
       }
+      if (e.type === 'ELLIPSE') {
+        // center (x,y) + major-axis endpoint vector (majorX,majorY) +
+        // axisRatio (minor/major) + start/end PARAMETER angles (radians,
+        // NOT degrees — confirmed from the dxf lib output). Mirrors
+        // Python _ellipse_points. Missing this dropped FN2BNX's rounded
+        // ends → broken outline + no fill + wrong extent.
+        const A = Math.hypot(e.majorX || 0, e.majorY || 0);
+        if (A < 1e-9) return null;
+        const B = A * (e.axisRatio != null ? e.axisRatio : 1);
+        const rot = Math.atan2(e.majorY || 0, e.majorX || 0);
+        let s = e.startAngle || 0;
+        let en = (e.endAngle == null) ? 2 * Math.PI : e.endAngle;
+        if (en <= s + 1e-9) en += 2 * Math.PI;
+        const cs = Math.cos(rot), sn = Math.sin(rot);
+        const N = Math.max(8, Math.ceil((en - s) / (Math.PI / 24)));
+        const out = [];
+        for (let i = 0; i <= N; i++) {
+          const t = s + (en - s) * (i / N);
+          const ex = A * Math.cos(t), ey = B * Math.sin(t);
+          const px = e.x + ex * cs - ey * sn;
+          const py = e.y + ex * sn + ey * cs;
+          out.push([ocsFlipX(e, px), py]);
+        }
+        return out;
+      }
       if (e.type === 'SPLINE') {
-        // Prefer fitPoints (the curve passes through these) over
-        // controlPoints (Bezier handles, can sit far OUTSIDE the
-        // actual curve — gave a 2x bbox overestimate on Fusion's
-        // BM1NO0 sheet-metal flat patterns 2026-05-28). Fall back
-        // to controlPoints only when no fitPoints present.
+        // Curve passes through fitPoints when present; otherwise evaluate
+        // the actual B-spline from controlPoints+knots+degree (Fusion
+        // ships empty fitPoints). Raw controlPoints overestimate bbox.
         if (Array.isArray(e.fitPoints) && e.fitPoints.length >= 2) {
           return e.fitPoints.map(p => [ocsFlipX(e, p.x), p.y]);
         }
-        if (Array.isArray(e.controlPoints)) {
-          return e.controlPoints.map(p => [ocsFlipX(e, p.x), p.y]);
+        if (Array.isArray(e.controlPoints) && e.controlPoints.length >= 2) {
+          const ctrl = e.controlPoints.map(p => [p.x, p.y]);
+          const deg = e.degree || 3;
+          const pts = bsplineFlatten(ctrl, deg, e.knots, 24);
+          return pts.map(p => [ocsFlipX(e, p[0]), p[1]]);
         }
         return null;
       }
@@ -251,9 +371,50 @@
       }
       return p;
     }
-    // Treat a polyline as 'closed' for fill purposes only if its
-    // start and end are within 1mm — Fusion's LWPOLYLINEs are
-    // usually start==end exact, but float jitter can push them apart.
+    // Stitch disconnected OUTER segments (LINE/ARC/ELLIPSE/SPLINE pieces)
+    // into ONE ordered closed loop by joining endpoints within tol. When
+    // it closes, that loop becomes ``outer`` → the renderer can fill it
+    // (a part with rounded corners exports as many segments, not a single
+    // LWPOLYLINE, so without this it showed an unfilled outline only —
+    // user 2026-05-29 'ถ้าสมบูรณ์ต้องมี fill'). Falls back to the old
+    // longest-segment + draw-all-strokes behaviour if it can't close.
+    function stitchLoop(segments, tol) {
+      const segs = segments.map(s => s.slice()).filter(s => s.length >= 2);
+      if (segs.length < 2) return null;
+      const near = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]) <= tol;
+      const used = new Array(segs.length).fill(false);
+      used[0] = true;
+      let loop = segs[0].slice();
+      let go = true;
+      while (go) {
+        go = false;
+        const tail = loop[loop.length - 1];
+        // Pick the NEAREST unused endpoint within tol, not the first one
+        // found — at a junction several segments sit within tol and
+        // grabbing the wrong branch dead-ends the walk before it closes.
+        let bi = -1, brev = false, bd = Infinity;
+        for (let i = 0; i < segs.length; i++) {
+          if (used[i]) continue;
+          const s = segs[i];
+          const da = Math.hypot(tail[0] - s[0][0], tail[1] - s[0][1]);
+          const db = Math.hypot(tail[0] - s[s.length - 1][0], tail[1] - s[s.length - 1][1]);
+          if (da < bd) { bd = da; bi = i; brev = false; }
+          if (db < bd) { bd = db; bi = i; brev = true; }
+        }
+        if (bi >= 0 && bd <= tol) {
+          const s = brev ? segs[bi].slice().reverse() : segs[bi];
+          for (let k = 1; k < s.length; k++) loop.push(s[k]);
+          used[bi] = true;
+          go = true;
+        }
+      }
+      // Accept only a clean loop: every segment consumed AND end≈start.
+      if (used.every(Boolean) && loop.length >= 4 && near(loop[0], loop[loop.length - 1])) {
+        return loop;
+      }
+      return null;
+    }
+
     let outer = [];
     let strokes = [];
     if (outerStrokes.length === 1) {
@@ -261,12 +422,17 @@
       // extra strokes needed.
       outer = outerStrokes[0];
     } else if (outerStrokes.length > 1) {
-      // Multi-piece outer (BK1DN1-120000 style). Pick the LONGEST
-      // segment as the 'outer' candidate so labels + transforms still
-      // work, then draw every segment via ``strokes`` so the user sees
-      // the whole part outline.
-      outer = outerStrokes.reduce((a, b) => (perim(b) > perim(a) ? b : a));
-      strokes = outerStrokes;
+      const loop = stitchLoop(outerStrokes, 0.5);
+      if (loop) {
+        // Closed contour reassembled → fills correctly.
+        outer = loop;
+      } else {
+        // Couldn't close (genuine gap / multi-island). Keep the LONGEST
+        // segment as the 'outer' candidate so labels + transforms still
+        // work, then draw every segment via ``strokes``.
+        outer = outerStrokes.reduce((a, b) => (perim(b) > perim(a) ? b : a));
+        strokes = outerStrokes;
+      }
     }
     return { outer, strokes, holes: interior, bbox };
   }
