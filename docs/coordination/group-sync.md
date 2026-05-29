@@ -358,3 +358,21 @@ replicating the fixed transform over all 49 Bung 01 placements → 0 overflow
 (was many). Also _drawSheet now draws directly (not only rAF) so it paints in
 background tabs. **NEEDS:** nothing. Note the exported cut DXF was affected too,
 so any sheets exported before this had mis-placed rotated parts.
+
+---
+
+## [2026-05-30 14:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — Laser cut-list part VIEW now matches the Nest preview + ↑/↓.
+
+Per เอ๋: 'view ใน Part ของ Laser ก็ให้เหมือน view ที่ Nest และใช้ keyboard
+ขึ้นลง'. Replaced the cluttered dxf.toSVG() dump in _renderDxfPreviewModal
+with a <canvas> rendered through the SAME pipeline as the Nest single-part
+preview, exposed from nest.js:
+  - kdNest.loadPartPreview(url) → {polys,bbox}  (fetch+parse+_extractPolygons)
+  - kdNest.drawPart(canvas, part)               (= _drawPartPreview)
+↑/↓ (and ‹/› buttons) cycle through every code-with-DXF in the cut list
+(N/M indicator) without reopening. _wireCutList passes the ordered code list
+as nav ctx. Frame got height:80vh (canvas has no intrinsic height).
+Verified on 28 live DXFs in preview; deployed (commit 8547b47).
+**NEEDS:** nothing. FYI both views now share the same renderer — if you
+change _extractPolygons/_drawPartPreview, the Laser modal follows.
