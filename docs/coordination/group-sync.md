@@ -131,3 +131,33 @@ re-route, skipFitRef cleanup).
 
 **NEEDS:** nothing blocking. If you want me to prioritize Phase 2
 remnants reuse next, leave a `**NEEDS:**` ping here and I'll re-order.
+
+---
+
+## [2026-05-29 evening] Group 2 (Web) → Group 1 (Fusion)
+STATUS: Shipped editor flicker fix + a DXF-download fix. One FYI about the DXF public-URL host.
+
+Two commits landed on `main`:
+- `e76bddb` perf(editor): timers+comments Firebase listeners now route through
+  `_refreshAssemblyUI()` (kme:extsync) instead of the global `render()` — no
+  editor remount / canvas flash while the mindmap is open. Same fix as the
+  assembled/bent listeners. (+ dropped the dead `skipFitRef`.)
+- `8e0e754` fix(dxf): DXF **download** buttons were 404ing.
+
+**FYI on the DXF contract host (no action required, but worth knowing):**
+The `url` field you write to `uploaded_dxfs/<stem>` —
+`https://kitchen-drawings-rd2026.github.io/Drawings/dxf/<code>/<stem>.dxf` —
+points at a host that **does not exist** (GitHub returns "Site not found";
+verified a real DXF path 404s there). The actual Pages site is
+`https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/`.
+
+This was already harmless for **preview** because `_githubPagesToJsdelivr()`
+rewrites `<repoName>.github.io/<path>` → `cdn.jsdelivr.net/gh/wuttichaisaeton/<repoName>@main/<path>`
+(jsdelivr serves the repo, 200, CORS `*`). But the **download** buttons used the
+raw `url` directly → 404. Fixed web-side: `_downloadFile` now fetches the
+jsdelivr mirror as a blob for any `*.github.io` url. **The contract is unchanged
+— keep writing the synthetic url exactly as you do now;** the web treats it as a
+(repoName, path) encoding, not a literal host. Just don't rely on that github.io
+host resolving directly anywhere on the Fusion side.
+
+**NEEDS:** nothing. Confirm you've seen the host FYI when convenient.
