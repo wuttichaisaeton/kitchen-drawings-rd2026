@@ -1371,7 +1371,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               button issue (2026-05-29). */}
           <Panel position="bottom-center">
             <div className="kme-diag">
-              b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'} · {status}
+              BUILD b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}
+              {' · '}
+              {(typeof navigator !== 'undefined' && navigator.standalone) ? 'PWA' : 'BROWSER'}
+              {' · TAP: '}{status}
             </div>
           </Panel>
           {/* Back to the project list — only while fullscreen (the app
