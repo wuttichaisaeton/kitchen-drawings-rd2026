@@ -267,7 +267,16 @@ function MindmapNode({ id, data, selected }) {
     window.__kmeStatus?.(`tap pdf: ${code}`);
     if (!code) return;
     const url = api.pdfUrlForCode?.(code);
-    if (url) (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
+    if (!url) return;
+    // On touch, open the PDF in the SAME window. A new-tab / window.open
+    // fired from a touch pointerdown is popup-blocked on iOS — that's why
+    // 📄 "did nothing" on the phone (the toggle button worked because it
+    // opens no window). Same-window navigation isn't blocked; Back returns
+    // to the mindmap. Desktop keeps the new-tab behavior.
+    const isTouch = (typeof window !== 'undefined') &&
+      (('ontouchstart' in window) || (navigator.maxTouchPoints || 0) > 0);
+    if (isTouch) { try { window.location.href = url; return; } catch {} }
+    (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
   }, [code, api]);
 
   // Leaf-click routing has moved to Editor.onNodeClick — React Flow's
@@ -561,6 +570,11 @@ function _writeCollapsedState(pk, state) {
 function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
+  // When set, the next collapse-driven fitView is skipped so the view stays
+  // put. Used by the 🧩 assemble toggle — re-framing on every tick was
+  // disorienting (user 2026-05-29: 'กดปุ่ม complete Assembly ... ไม่ต้อง
+  // zoom ... ดูแล้วจะงงว่ากดอะไรไป'). Variant expand/collapse still re-fits.
+  const skipFitRef = useRef(false);
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState(admin ? 'ready (admin)' : 'view only');
   // iPad diagnostic: expose setStatus globally so mini-button handlers in
@@ -639,6 +653,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // 2026-05-28: 'ย่อเฉพาะ node นั้น (node หาย เส้นหาย) ลักษณะ การ
   // ทำงาน คล้ายปุ่มที่ 3'. Tap project center re-shows them.
   const ensureCollapsed = useCallback((nodeId) => {
+    skipFitRef.current = true;  // 🧩 toggle — don't re-zoom, keep the view still
     setRevealAll(false);  // marking a part assembled re-enables normal hiding
     setCollapsedNodes(prev => {
       if (prev.has(nodeId)) return prev;
@@ -660,6 +675,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // UN-marks 🧩 so the toggle reverses (node + edge come back), mirroring
   // how tapping the project center clears hiddenAnchors. (2026-05-29)
   const releaseNode = useCallback((nodeId) => {
+    skipFitRef.current = true;  // 🧩 un-toggle — keep the view still
     setCollapsedNodes(prev => {
       if (!prev.has(nodeId)) return prev;
       const next = new Set(prev);
@@ -855,6 +871,9 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       fittedOnceRef.current = true;
       return;
     }
+    // 🧩 assemble toggle set this — keep the view exactly where it is so the
+    // worker doesn't lose their place when ticking parts done.
+    if (skipFitRef.current) { skipFitRef.current = false; return; }
     // Wait for the position-transition (800ms CSS) to settle before
     // measuring, otherwise fitView frames the OLD positions.
     const t = setTimeout(() => {
