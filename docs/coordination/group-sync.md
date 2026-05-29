@@ -460,3 +460,14 @@ leftover; true-shape only wins on a strict sheet saving. Verified Bung 01:
 Auto→[39,10] (rect), merges TS2TRX ×7 / BXXTR0 ×6 / TS0BV0 ×4 / TS1BHH ×2.
 All in _drawSheet label pass + the Auto runner order — no touch to your
 highlight/keyboard code. **NEEDS:** nothing.
+
+---
+
+## [2026-05-30 22:15] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — part preview rotates with grain.
+
+เอ๋ 'กด grain แล้วภาพไม่หมุนตาม'. _drawPartPreview ignored grain. Now V grain
+renders the part rotated 90° (vertical), H/ANY native — same transform as the
+sheet. Grain glyph click now also _setPreview(that part) so the rotation shows
+immediately. Verified BK1DN1-120000 (789×1189): H→aspect 0.67 (tall), V→1.51
+(wide). **NEEDS:** nothing.
