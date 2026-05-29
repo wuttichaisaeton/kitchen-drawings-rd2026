@@ -360,13 +360,10 @@ function MindmapNode({ id, data, selected }) {
   if (isVariantRoot) cls.push('kme-variant-root');
   if (isFadedNode) cls.push('kme-faded');
 
-  // Family color drives border + bottom tint on real BOM leaves. Skip
-  // for variant/anchor/wrapper cards (containers, not parts) — user
-  // 2026-05-28: '2 อันนี้เอาออก' pointing at qty badge + yellow family
-  // stripe. Containers stay neutral so the colored chrome only appears
-  // on cards that represent real workshop work.
-  const skipFamilyChrome = isVariantRoot || isWrapper;
-  const style = isBom && color && !skipFamilyChrome ? {
+  // Layer coloring (2026-05-30): every BOM node — including wrapper / variant-
+  // root containers — shows its depth-layer color. (The qty badge + family
+  // stripe removed on 2026-05-28 are separate elements and stay removed.)
+  const style = isBom && color ? {
     borderColor: color,
     background: `linear-gradient(180deg, #161b22 60%, ${tint || '#161b22'} 100%)`,
   } : undefined;
