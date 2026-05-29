@@ -3049,13 +3049,29 @@ button.cut-status:focus-visible {
 .bend-rows { padding-top: 6px; }
 .bend-row {
   display: grid;
-  /* icon · code · qty · 👁 view PDF · ▶ bend toggle */
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-  gap: 10px;
+  /* icon · code · qty · 👁 view PDF · 💬 comments · ▶ bend toggle.
+     6 columns — the 💬 column was added 2026-05-29; without it the
+     toggle wrapped to a 2nd implicit grid row on iPhone. gap tightened
+     8px so all six fit one row on a ~390px viewport (code cell
+     minmax(0,1fr) absorbs the remainder, wraps if needed). */
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  gap: 8px;
   align-items: center;
-  padding: 12px 12px;
+  padding: 12px 10px;
   border-radius: 8px;
   transition: background 0.12s;
+}
+/* 💬 comment button in the bend row — match the 52px tap targets of the
+   👁/▶ squares so the action cluster reads as one consistent group on the
+   workshop iPad. */
+.bend-row .comment-btn {
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
 }
 /* 👁 view PDF button — opens the bending drawing in a new tab so the
    worker can read bend dimensions while marking the row done.
