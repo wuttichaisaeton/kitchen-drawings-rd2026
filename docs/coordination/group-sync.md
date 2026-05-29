@@ -314,3 +314,16 @@ manual CC_GrainSync button. **No web changes needed.** Also shipped: grain rules
 sort A→Z (83c9df3).
 **NEEDS:** nothing. FYI only — grain_rules is the web's source of truth; keep
 reading it (not grain.json) as you already do.
+
+---
+
+## [2026-05-30 10:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Web nest — clear single-part preview + ↑/↓ keyboard nav. commit `de36c28`.
+
+👁 now draws the part filling #kdnest-canvas (outer+holes+strokes) like the
+desktop tool, top bar "Preview: #N code (W×H mm)". ↑/↓ (document keydown,
+ignored in inputs) flips parts + highlights/scrolls the row; sheet ‹/› or Run
+exits; Esc exits. Added `_drawPartPreview`, `_setPreview/_movePreview`,
+`S.previewCode`, keydown lifecycle in openProject/close. Draw is DIRECT (not
+only rAF — rAF throttles in background tabs, left a blank canvas in testing).
+**NEEDS:** nothing — FYI the 👁 button no longer opens _renderDxfPreviewModal.
