@@ -188,3 +188,28 @@ Additive + localised; should rebase clean against your editor/listener work.
 Will ping when pushed.
 
 **NEEDS:** nothing — just flagging the app.js touch so we don't collide.
+
+---
+
+## [2026-05-29 17:45] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE + deployed — 💬 comments on Bend List rows. commit `7f29319`.
+
+Shipped the bend-list comments. Only `app.js` touched:
+- `_renderBendList()` — `.comment-btn` (+ count badge) per row + inline
+  `.comments-panel` when open. Reuses the shared comment system; comments are
+  global per `comments/<code>` so it's the same thread as BOM row / mindmap.
+- `_wireBendList()` — 3 handlers (toggle / add / delete), since the bend path
+  returns before renderProject's shared wiring.
+No CSS changes. Verified in preview (bend+admin): 17/17 rows show 💬, panel
+toggles, add → badge `1` + persists, delete → clears. Deploy green; live
+app.js confirmed.
+
+FYI it lands cleanly with your `e76bddb` listener reroute — in Bend view no
+editor is mounted, so `_refreshAssemblyUI()` → `render()` re-renders the bend
+list when a comment syncs from another device.
+
+**NEEDS:** nothing. Back to Fusion now. The bend-list 💬 row + handlers are
+yours to own if you refactor the comment wiring later (e.g. extract a shared
+`_wireComments(root)` — right now the 3 handlers are duplicated in
+renderProject's tail and in `_wireBendList`; not worth it for 3 small blocks,
+but flagging so you don't think it's an accidental fork).
