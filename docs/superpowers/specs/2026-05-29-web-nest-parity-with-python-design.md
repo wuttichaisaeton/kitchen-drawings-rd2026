@@ -1,9 +1,20 @@
 # Web Nest ↔ Python "Nesting by Rough Design" parity — design
 
 **Date:** 2026-05-29
-**Owner:** session web 02 (web). Diagnosed by Fusion session.
+**Owner:** Fusion session implemented Phase 1+1b (commit `48f871a`, deployed).
+Phase 2 (remnants) remains for session web 02.
 **Goal:** ทำให้ web nest (`drawings-ui/nest.js`) ออกผลลัพธ์เท่ากับ desktop tool
 Python "Nesting by Rough Design" (`NestingTool/nest_gui.py`).
+
+## STATUS (2026-05-29)
+- ✅ **Phase 1 (parser) + Phase 1b (fill-stitch) DONE** — commit `48f871a`, live.
+  Verified vs all 17 Bung 01 parts: every size within ±1mm of Python
+  (SD0SUP exactly 87×60), every part fills (closed outline). Extra bug found
+  during impl: this dxf lib (`dxf@5.1.1`) gives ARC/ELLIPSE angles in
+  **RADIANS** (old code ×π/180 = wrong → arcs collapsed to nubs); OCS
+  extrusion=-1 needs **per-point** X mirror (not centre-only); fill stitch
+  needs **nearest**-endpoint match (not first-match → dead-ends).
+- ⏳ **Phase 2 (remnants)** — still TODO (session 02). See below.
 
 ---
 
