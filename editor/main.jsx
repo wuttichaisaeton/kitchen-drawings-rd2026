@@ -601,14 +601,13 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [revealAll, setRevealAllState] = useState(
     () => _readCollapsedState(projectKey).revealAll);
 
-  // Fullscreen canvas — covers the whole screen (hides the app header +
-  // project summary) so the worker gets the maximum work area. Workers open
-  // a project STRAIGHT into fullscreen (user 2026-05-29: 'เมื่อกดโปรเจคแล้ว
-  // ให้มาที่ full screen เลย'); admin opens normal so they keep the toolbar.
-  // Tapping an empty spot on the canvas toggles it; the in-canvas Back
-  // button (top-left, opposite Show all) leaves to the project list.
+  // Fullscreen canvas — opt-in (2-step), NOT auto. Opening a project lands
+  // on the normal view first (app header + Back arrow + project info); the
+  // worker taps an empty spot on the canvas to expand to fullscreen when
+  // they want the max work area, and taps again to come back. User 2026-05-29
+  // reverted the auto-on-open behavior: 'กลับไปแบบเดิม 2 step ดีกว่า'.
   // In-memory only (a transient view state, not worth persisting).
-  const [fullscreen, setFullscreen] = useState(() => !admin);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const _persistCollapse = useCallback((c, set) => {
     // Preserve hidden + seeded + revealAll across collapse toggles —
