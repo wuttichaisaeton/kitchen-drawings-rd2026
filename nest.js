@@ -1279,8 +1279,12 @@
       // True-shape FIRST so it wins ties (denser interior, cleaner remnant).
       // Skipped on very large BOMs where the raster scan would be slow.
       const runners = [];
+      // Rectangle packers FIRST (desktop-style; leftover stays a clean
+      // rectangle the user can reuse). True-shape LAST -> only wins when it
+      // strictly saves a sheet. (user 2026-05-30 'เหลือพื้นที่ว่างให้เป็น
+      // สี่เหลี่ยม เหมือน Nest บน Desktop')
+      for (const m of ['MaxRects', 'Bottom', 'BL Corner', 'Left']) runners.push(() => runOne(m));
       if (pieces.length <= 150) runners.push(() => _nestMultiSheetRaster(pieces, stock, gap));
-      for (const m of ['MaxRects', 'BL Corner', 'Left', 'Bottom']) runners.push(() => runOne(m));
       for (const run of runners) {
         const r = run();
         if (best === null
@@ -1638,41 +1642,44 @@
     // -- Label pass: merge same-code SMALL parts sitting close together
     // (user 2026-05-30 'รวม Label ... อยู่ใกล้กัน เฉพาะชิ้นเล็กๆ') so a row
     // of triangles reads 'CODE x6' once instead of six overlapping IDs.
-    const CLUSTER_MM = 320;
-    const used = new Array(labels.length).fill(false);
-    const clusters = [];
-    for (let a = 0; a < labels.length; a++) {
-      if (used[a] || !labels[a].small) continue;
-      const group = [a]; used[a] = true;
-      for (let b = a + 1; b < labels.length; b++) {
-        if (used[b] || !labels[b].small || labels[b].code !== labels[a].code) continue;
-        const near = group.some(function (g) {
-          const dx = labels[g].sx - labels[b].sx, dy = labels[g].sy - labels[b].sy;
-          return (dx * dx + dy * dy) <= CLUSTER_MM * CLUSTER_MM;
-        });
-        if (near) { group.push(b); used[b] = true; }
-      }
-      if (group.length >= 2) clusters.push(group); else used[a] = false;
-    }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    clusters.forEach(function (group) {
-      let mx = 0, my = 0, hot = false;
-      group.forEach(function (gi) { mx += labels[gi].lx / group.length; my += labels[gi].ly / group.length; if (labels[gi].isHighlight) hot = true; });
-      const txt = labels[group[0]].code + ' \u00d7' + group.length;
-      const fp = 11 * dpr;
-      ctx.font = 'bold ' + fp + 'px "Flux Architect", monospace';
-      const tw = ctx.measureText(txt).width;
-      ctx.fillStyle = 'rgba(8,14,22,0.80)';
-      ctx.fillRect(mx - tw / 2 - 5 * dpr, my - fp / 2 - 3 * dpr, tw + 10 * dpr, fp + 6 * dpr);
-      ctx.fillStyle = hot ? '#fffce8' : '#e8eef5';
-      ctx.fillText(txt, mx, my);
+    labels.forEach(function (L) {
+      L.fp = (L.fits ? 11 : 9) * dpr;
+      ctx.font = (L.isHighlight ? 'bold ' : '') + L.fp + 'px "Flux Architect", monospace';
+      L.text = '#' + (L.i + 1) + ' ' + L.code;
+      L.tw = ctx.measureText(L.text).width;
+      L.th = L.fp * 1.25;
     });
-    labels.forEach(function (L, idx) {
-      if (used[idx]) return;
-      ctx.fillStyle = L.isHighlight ? '#fffce8' : '#e8eef5';
-      const fontPx = (L.fits ? 11 : 9) * dpr;
-      ctx.font = (L.isHighlight ? 'bold ' : '') + fontPx + 'px "Flux Architect", monospace';
-      ctx.fillText('#' + (L.i + 1) + ' ' + L.code, L.lx, L.ly);
+    // Same-code labels whose TEXT BOXES overlap merge into one 'CODE xN'
+    // (real font, no pill background). Union-find groups transitive
+    // overlaps. (user 2026-05-30 'label รวม font จริงไม่ใช่ภาพ; เหมือนกัน
+    // แล้วซ้อนทับ ให้รวม')
+    const par = labels.map(function (_, i) { return i; });
+    function _find(x) { while (par[x] !== x) { par[x] = par[par[x]]; x = par[x]; } return x; }
+    for (let a = 0; a < labels.length; a++) {
+      for (let b = a + 1; b < labels.length; b++) {
+        if (labels[a].code !== labels[b].code) continue;
+        const A = labels[a], B = labels[b];
+        if (Math.abs(A.lx - B.lx) < (A.tw + B.tw) / 2 + 2 * dpr &&
+            Math.abs(A.ly - B.ly) < (A.th + B.th) / 2) { par[_find(a)] = _find(b); }
+      }
+    }
+    const groups = {};
+    labels.forEach(function (L, i) { const r = _find(i); (groups[r] = groups[r] || []).push(i); });
+    Object.keys(groups).forEach(function (k) {
+      const g = groups[k];
+      if (g.length === 1) {
+        const L = labels[g[0]];
+        ctx.fillStyle = L.isHighlight ? '#fffce8' : '#e8eef5';
+        ctx.font = (L.isHighlight ? 'bold ' : '') + L.fp + 'px "Flux Architect", monospace';
+        ctx.fillText(L.text, L.lx, L.ly);
+        return;
+      }
+      let mx = 0, my = 0, hot = false;
+      g.forEach(function (i) { mx += labels[i].lx / g.length; my += labels[i].ly / g.length; if (labels[i].isHighlight) hot = true; });
+      ctx.fillStyle = hot ? '#fffce8' : '#e8eef5';
+      ctx.font = 'bold ' + (11 * dpr) + 'px "Flux Architect", monospace';
+      ctx.fillText(labels[g[0]].code + ' \u00d7' + g.length, mx, my);
     });
   }
 

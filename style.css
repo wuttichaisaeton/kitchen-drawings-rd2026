@@ -2924,14 +2924,21 @@ footer {
   outline-offset: -2px;
   opacity: 1;
 }
-/* Nesting part number (#N) — leading cell, matches the Nest workspace's
-   numbering so a worker can cross-reference a part between the two views. */
+/* Nesting part number (#N) — a prominent blue pill so it's easy to read and
+   cross-reference against the Nest workspace, distinct from the amber qty pill
+   (user 2026-05-30 'number ทำให้ชัดเจนกว่านี้'). */
 .cut-num {
-  color: #6e7b8a;
+  display: inline-block;
   font-family: ui-monospace, monospace;
-  font-size: 12px;
-  min-width: 2.4em;
-  text-align: right;
+  font-size: 14px;
+  font-weight: 700;
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.15);
+  border: 1px solid rgba(88, 166, 255, 0.4);
+  border-radius: 999px;
+  padding: 1px 9px;
+  min-width: 2.6em;
+  text-align: center;
 }
 .cut-status.cut-uploading {
   background: rgba(78, 163, 204, 0.15);
