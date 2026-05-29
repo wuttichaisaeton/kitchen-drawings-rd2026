@@ -572,13 +572,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [revealAll, setRevealAllState] = useState(
     () => _readCollapsedState(projectKey).revealAll);
 
-  // Fullscreen canvas — tapping an empty spot on the canvas expands the
-  // editor to cover the whole screen (hides the app header + project summary)
-  // so the worker gets the maximum work area. Tap empty again, or the ✕
-  // button, to exit. User 2026-05-29: 'เมื่อ click บริเวณใดของ canvas ให้
-  // ขยายพื้นที่ canvas ให้เต็มหน้าจอ เพราะช่างต้องใช้พื้นที่'. In-memory only
-  // (a transient view state, not worth persisting).
-  const [fullscreen, setFullscreen] = useState(false);
+  // Fullscreen canvas — covers the whole screen (hides the app header +
+  // project summary) so the worker gets the maximum work area. Workers open
+  // a project STRAIGHT into fullscreen (user 2026-05-29: 'เมื่อกดโปรเจคแล้ว
+  // ให้มาที่ full screen เลย'); admin opens normal so they keep the toolbar.
+  // Tapping an empty spot on the canvas toggles it; the in-canvas Back
+  // button (top-left, opposite Show all) leaves to the project list.
+  // In-memory only (a transient view state, not worth persisting).
+  const [fullscreen, setFullscreen] = useState(() => !admin);
 
   const _persistCollapse = useCallback((c, set) => {
     // Preserve hidden + seeded + revealAll across collapse toggles —
@@ -1330,20 +1331,21 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               <span>Show all</span>
             </button>
           </Panel>
-          {/* Exit-fullscreen handle — only while fullscreen. Tapping empty
-              canvas also toggles it, but a visible ✕ makes the way out
-              obvious. */}
+          {/* Back to the project list — only while fullscreen (the app
+              header that normally holds the ← arrow is hidden). Top-left,
+              opposite the Show all button on the right. User 2026-05-29:
+              'ย้ายปุ่ม back มาอยู่ใน full screen คนละฝั่งกับ show all'. */}
           {fullscreen && (
             <Panel position="top-left">
               <button
-                className="kme-fs-exit"
-                onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
-                title="Exit fullscreen"
+                className="kme-fs-back"
+                onClick={(e) => { e.stopPropagation(); (window.kdAPI?.back || (() => {}))(); }}
+                title="Back to projects"
               >
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M10 2h4v4M14 2l-5 5M6 14H2v-4M2 14l5-5"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
-                <span>Exit</span>
+                <span>Back</span>
               </button>
             </Panel>
           )}

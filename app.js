@@ -4041,6 +4041,10 @@ function _buildBomNodes(project, parts, projectKey) {
 // hand-off is a single window object. Keep this small + stable.
 function _exposeKdApi() {
   window.kdAPI = {
+    // Navigate back to the project list — same as the header ← arrow. The
+    // fullscreen mindmap hides that header, so its in-canvas Back button
+    // calls this. (2026-05-29)
+    back: navBack,
     isBent, markBent, isAssembled, markAssembled,
     isTimerRunning, startTimer, stopTimer, resetTimer,
     getTimerTotalSeconds, formatDuration,
