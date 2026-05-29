@@ -4029,16 +4029,25 @@ const _LAYER_HUES = [38, 205, 140, 275, 330];  // L1 gold · L2 blue · L3 green
 const _LAYER_FALLBACK_STEP = 72;               // degrees per layer beyond the curated set
 const _LAYER_SAT = 62;        // border/edge saturation %
 const _LAYER_LIGHT = 60;      // border/edge lightness %
-function _layerColor(depth) {
-  const i = depth - 1;
-  const hue = i < _LAYER_HUES.length
-    ? _LAYER_HUES[i]
-    : ((_LAYER_HUES[0] + i * _LAYER_FALLBACK_STEP) % 360 + 360) % 360;
+// Leaf parts (the dashed tip nodes — actual workshop parts) all share ONE
+// colour regardless of depth, so the final layer reads uniformly instead of
+// some leaves blue (depth 2) and others green (depth 3). Layer colours then
+// only mark the structural/sub-assembly nodes. (user 2026-05-30)
+const _LAYER_LEAF_HUE = 140;  // green
+function _hslPair(hue) {
   return {
     color: `hsl(${hue}, ${_LAYER_SAT}%, ${_LAYER_LIGHT}%)`,  // border + edge stroke
     tint:  `hsl(${hue}, 40%, 18%)`,                          // dark fill endpoint over #161b22
   };
 }
+function _layerColor(depth) {
+  const i = depth - 1;
+  const hue = i < _LAYER_HUES.length
+    ? _LAYER_HUES[i]
+    : ((_LAYER_HUES[0] + i * _LAYER_FALLBACK_STEP) % 360 + 360) % 360;
+  return _hslPair(hue);
+}
+function _leafColor() { return _hslPair(_LAYER_LEAF_HUE); }
 function _familyColors(famKey) {
   const f = (families || {})[famKey] || (families || {})['Other'] || {};
   return { color: f.color || '#888', tint: f.tint || '#262626' };
@@ -4313,7 +4322,8 @@ function _buildBomNodes(project, parts, projectKey) {
       if (depth < 1) continue;                       // skip center (layer 0)
       const node = byId.get(id);
       if (!node || node.data?.kind !== 'bom') continue;
-      const { color, tint } = _layerColor(depth);
+      // Leaf tips all share the leaf colour; structural nodes take their layer.
+      const { color, tint } = node.data.isLeaf ? _leafColor() : _layerColor(depth);
       node.data.color = color;
       node.data.tint = tint;
       node.data.layer = depth;                        // exposed for verification/debug
@@ -4321,7 +4331,9 @@ function _buildBomNodes(project, parts, projectKey) {
     for (const e of edges) {
       const depth = layerOf.get(e.target);
       if (depth == null || depth < 1) continue;
-      e.style = { ...(e.style || {}), stroke: _layerColor(depth).color };
+      const tnode = byId.get(e.target);
+      const stroke = (tnode && tnode.data?.isLeaf ? _leafColor() : _layerColor(depth)).color;
+      e.style = { ...(e.style || {}), stroke };
     }
   }
 
