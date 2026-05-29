@@ -824,7 +824,7 @@ html.kme-fs-on .kme-root { height: 100% !important; }
 }
 .kme-checklist-main input { width: 17px; height: 17px; accent-color: #3fb950; flex: none; }
 .kme-checklist-code {
-  font-family: ui-monospace, monospace; font-size: 12.5px;
+  font-family: 'Flux Architect', ui-monospace, monospace; font-size: 12.5px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .kme-checklist-qty { color: #9aa7b4; font-size: 12px; flex: none; }
@@ -834,6 +834,8 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   font-size: 12px; cursor: pointer; flex: none;
 }
 .kme-checklist-cmt-toggle:hover { color: #e6edf3; }
+.kme-checklist-cmt-toggle.has-cmt { color: #58a6ff; }
+.kme-checklist-cmt-toggle.is-open { color: #e6edf3; background: rgba(56,139,253,0.12); border-radius: 6px; }
 
 .kme-checklist-thread {
   flex-basis: 100%; margin-top: 6px;
@@ -847,7 +849,13 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
   font-size: 12.5px;
 }
-.kme-cmt { color: #cdd9e5; background: #161b22; border-radius: 6px; padding: 4px 8px; }
+.kme-cmt { color: #cdd9e5; background: #161b22; border-radius: 6px; padding: 4px 8px; display: flex; align-items: center; gap: 6px; }
+.kme-cmt-text { flex: 1; min-width: 0; word-break: break-word; }
+.kme-cmt-del { background: none; border: none; color: #6e7681; cursor: pointer; flex: none; font-size: 12px; padding: 0 2px; }
+.kme-cmt-del:hover { color: #f85149; }
+.kme-cmt-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #9aa7b4; margin-bottom: 2px; }
+.kme-cmt-close { background: none; border: none; color: #9aa7b4; cursor: pointer; font-size: 11px; }
+.kme-cmt-close:hover { color: #f85149; }
 .kme-cmt-add { display: flex; gap: 6px; }
 .kme-cmt-input {
   flex: 1; min-width: 0; background: #0d1117; color: #e6edf3;

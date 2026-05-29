@@ -638,21 +638,33 @@ function ChecklistPanel({ projectKey, nonce }) {
                 <span className="kme-checklist-qty">×{p.qty}</span>
               </label>
               <button
-                className="kme-checklist-cmt-toggle"
+                className={'kme-checklist-cmt-toggle' + (comments.length ? ' has-cmt' : '') + (expanded ? ' is-open' : '')}
                 onClick={() => { setOpenCode(expanded ? null : p.code); setDraft(''); }}
-                title="Comments"
+                title={comments.length ? comments.length + ' comment(s)' : 'Add comment'}
               >💬{comments.length ? ' ' + comments.length : ''}</button>
               {expanded && (
                 <div className="kme-checklist-thread">
+                  <div className="kme-cmt-head">
+                    <span>{comments.length} comment{comments.length === 1 ? '' : 's'}</span>
+                    <button className="kme-cmt-close" title="Close (Esc)" onClick={() => { setOpenCode(null); setDraft(''); }}>✕ close</button>
+                  </div>
                   {comments.map((c, i) => (
-                    <div key={c._key || i} className="kme-cmt">{c.text}</div>
+                    <div key={c._key || i} className="kme-cmt">
+                      <span className="kme-cmt-text">{c.text}</span>
+                      <button
+                        className="kme-cmt-del"
+                        title="Delete comment"
+                        onClick={() => { api.deleteComment?.(p.code, c._key != null ? c._key : c.time); }}
+                      >🗑</button>
+                    </div>
                   ))}
                   <div className="kme-cmt-add">
                     <input
                       className="kme-cmt-input"
                       value={draft}
+                      autoFocus
                       onChange={e => setDraft(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') submitComment(p.code); }}
+                      onKeyDown={e => { if (e.key === 'Enter') submitComment(p.code); else if (e.key === 'Escape') { setOpenCode(null); setDraft(''); } }}
                       placeholder="เพิ่ม comment…"
                     />
                     <button className="kme-cmt-send" onClick={() => submitComment(p.code)}>Add</button>

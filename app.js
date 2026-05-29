@@ -4438,6 +4438,8 @@ function _exposeKdApi() {
     // Per-code comment write (read side getComments already exposed). Used by
     // the assembly checklist panel's inline comment thread. (2026-05-30)
     addComment,
+    // Delete a comment (checklist thread 🗑). (2026-05-30)
+    deleteComment: removeComment,
     // Aggregated parts for the project: unique code + summed qty across
     // variants (real parts only — wrappers aren't in project.parts). Drives
     // the assembly checklist list. (2026-05-30)
