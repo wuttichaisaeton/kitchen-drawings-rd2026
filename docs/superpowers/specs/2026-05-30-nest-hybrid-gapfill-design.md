@@ -1,8 +1,13 @@
 # Nesting — Hybrid gap-fill mode
 
+> **SUPERSEDED (2026-05-30)** by `2026-05-30-nest-max-remnant-design.md`. The
+> objective was reframed from "tuck chevrons into gaps" to "leave the largest
+> reusable rectangular offcut"; gap-fill became one technique inside the
+> Max Remnant mode rather than the goal. Kept for history.
+
 **Date:** 2026-05-30
 **Group:** 2 (Web) — `drawings-ui/` · `nest.js`
-**Status:** design approved, pre-implementation
+**Status:** SUPERSEDED — see Max Remnant spec
 
 ## Goal
 
