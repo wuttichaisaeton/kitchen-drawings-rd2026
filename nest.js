@@ -902,11 +902,192 @@
     }
   }
 
+  // ════════════════════════════════════════════════════════════════════
+  //  True-shape (raster) nesting
+  // ════════════════════════════════════════════════════════════════════
+  // The rectangle packers above reserve each part's BOUNDING BOX. For
+  // triangles + L/notched parts that wastes ~half the box, so small parts
+  // can't tuck into a neighbour's empty corner (user 2026-05-30 'เอาชิ้น
+  // เล็กๆเข้ามาแทรกอยู่ภายในได้อีก' → chose True-shape). This packer
+  // rasterises each part's REAL outer polygon into a grid bitmap and
+  // places it bottom-left by testing the actual silhouette for overlap —
+  // so two triangles interlock, a strip slides into a diagonal gap, etc.
+  //
+  // CRITICAL: the rasterisation uses the SAME rotation transform as the
+  // renderer (_drawSheet) so what the packer reserves is exactly what
+  // gets drawn + exported. Placement (x,y) = footprint bottom-left in
+  // sheet mm (y-up), identical to the rectangle packers' output.
+
+  // Build the occupancy mask for one piece at one rotation. Returns
+  // {mw, mh, solid, spans} where solid is the rasterised silhouette and
+  // spans[row] = [[c0,c1), …] contiguous solid runs (fast collision test).
+  function _rasterMask(piece, rot, R) {
+    const bMinX = piece.bbox ? piece.bbox[0] : 0;
+    const bMinY = piece.bbox ? piece.bbox[1] : 0;
+    const pw = piece.w, ph = piece.h;
+    const fw = (rot === 90 || rot === 270) ? ph : pw;   // footprint dims
+    const fh = (rot === 90 || rot === 270) ? pw : ph;
+    const mw = Math.max(1, Math.ceil(fw / R));
+    const mh = Math.max(1, Math.ceil(fh / R));
+    const solid = new Uint8Array(mw * mh);
+    // Same mapping the renderer's transform() applies (local → footprint).
+    function mapPt(px, py) {
+      const u = px - bMinX, v = py - bMinY;
+      if (rot === 90)  return [-v + ph, u];
+      if (rot === 180) return [pw - u, ph - v];
+      if (rot === 270) return [v, pw - u];
+      return [u, v];
+    }
+    const outer = (piece.polys && piece.polys.outer && piece.polys.outer.length > 2)
+      ? piece.polys.outer : null;
+    if (outer) {
+      const pts = outer.map(p => mapPt(p[0], p[1]));
+      for (let gy = 0; gy < mh; gy++) {
+        const Y = (gy + 0.5) * R, xs = [];
+        for (let i = 0; i < pts.length; i++) {
+          const a = pts[i], b = pts[(i + 1) % pts.length];
+          if ((a[1] <= Y && b[1] > Y) || (b[1] <= Y && a[1] > Y)) {
+            xs.push(a[0] + (Y - a[1]) / (b[1] - a[1]) * (b[0] - a[0]));
+          }
+        }
+        xs.sort((p, q) => p - q);
+        for (let k = 0; k + 1 < xs.length; k += 2) {
+          const c0 = Math.max(0, Math.floor(xs[k] / R));
+          const c1 = Math.min(mw, Math.ceil(xs[k + 1] / R));
+          for (let c = c0; c < c1; c++) solid[gy * mw + c] = 1;
+        }
+      }
+    }
+    // Degenerate / no-polygon (manual rect) → fill the whole footprint.
+    let any = false;
+    for (let i = 0; i < solid.length; i++) { if (solid[i]) { any = true; break; } }
+    if (!any) solid.fill(1);
+    // Contiguous spans per row.
+    const spans = [];
+    for (let y = 0; y < mh; y++) {
+      const row = []; let c = 0;
+      while (c < mw) {
+        if (solid[y * mw + c]) { const s = c; while (c < mw && solid[y * mw + c]) c++; row.push([s, c]); }
+        else c++;
+      }
+      spans.push(row);
+    }
+    return { mw, mh, solid, spans };
+  }
+
+  // Bottom-left first-fit on the occupancy grid. Scans rows from the
+  // bottom; within a row advances x, skipping past the blocking column.
+  function _blFind(occ, gw, gh, mask) {
+    const { mw, mh, spans } = mask;
+    if (mw > gw || mh > gh) return null;
+    for (let gy = 0; gy <= gh - mh; gy++) {
+      let gx = 0;
+      while (gx <= gw - mw) {
+        let hit = -1;
+        for (let r = 0; r < mh && hit < 0; r++) {
+          const base = (gy + r) * gw + gx, rowSpans = spans[r];
+          for (let si = 0; si < rowSpans.length; si++) {
+            const s0 = rowSpans[si][0], s1 = rowSpans[si][1];
+            for (let c = s0; c < s1; c++) { if (occ[base + c]) { hit = gx + c; break; } }
+            if (hit >= 0) break;
+          }
+        }
+        if (hit < 0) return { gx, gy };
+        gx = hit + 1;   // safe forward progress past the blocker
+      }
+    }
+    return null;
+  }
+
+  // Stamp a placed part's silhouette + a gap halo into the occupancy grid.
+  function _stamp(occ, gw, gh, mask, gx, gy, dCells) {
+    const { mw, mh, solid } = mask;
+    for (let r = 0; r < mh; r++) {
+      for (let c = 0; c < mw; c++) {
+        if (!solid[r * mw + c]) continue;
+        for (let dy = -dCells; dy <= dCells; dy++) {
+          const sy = gy + r + dy; if (sy < 0 || sy >= gh) continue;
+          const base = sy * gw;
+          for (let dx = -dCells; dx <= dCells; dx++) {
+            const sx = gx + c + dx; if (sx < 0 || sx >= gw) continue;
+            occ[base + sx] = 1;
+          }
+        }
+      }
+    }
+  }
+
+  function _nestMultiSheetRaster(pieces, stock, gap) {
+    // Resolution: ~1/200 of the smaller sheet side, min 5mm. Finer = tighter
+    // + more accurate gap, but quadratically slower.
+    const minSide = Math.min.apply(null, stock.map(s => Math.min(s.w, s.h)).concat([1525]));
+    const R = Math.max(5, Math.round(minSide / 200));
+    const dCells = gap > 0 ? Math.max(1, Math.round(gap / R)) : 0;
+    // Sort by TRUE polygon area desc (big shapes anchor first).
+    function trueArea(p) {
+      const o = p.polys && p.polys.outer;
+      if (!o || o.length < 3) return p.w * p.h;
+      let a = 0;
+      for (let i = 0; i < o.length; i++) { const j = (i + 1) % o.length; a += o[i][0] * o[j][1] - o[j][0] * o[i][1]; }
+      return Math.abs(a) / 2 || p.w * p.h;
+    }
+    const sorted = pieces.slice().sort((a, b) => trueArea(b) - trueArea(a));
+    // Mask cache — identical code+rot+dims share a rasterisation.
+    const maskCache = new Map();
+    function getMask(piece, rot) {
+      const key = piece.code + '|' + rot + '|' + Math.round(piece.w) + 'x' + Math.round(piece.h);
+      let m = maskCache.get(key);
+      if (!m) { m = _rasterMask(piece, rot, R); maskCache.set(key, m); }
+      return m;
+    }
+    const stockCopy = stock.map(s => ({ ...s }));
+    const sheets = [];
+    let remaining = sorted.slice();
+    while (remaining.length) {
+      let placedAny = false;
+      for (let si = 0; si < stockCopy.length; si++) {
+        const s = stockCopy[si];
+        if (s.qty === 0) continue;
+        const gw = Math.ceil(s.w / R), gh = Math.ceil(s.h / R);
+        const occ = new Uint8Array(gw * gh);
+        const placed = [], stillLeft = [];
+        for (const piece of remaining) {
+          let best = null;
+          for (const rot of piece.rots) {
+            const mask = getMask(piece, rot);
+            const pos = _blFind(occ, gw, gh, mask);
+            if (pos && (best === null || pos.gy < best.gy ||
+                        (pos.gy === best.gy && pos.gx < best.gx))) {
+              best = { rot, mask, gx: pos.gx, gy: pos.gy };
+            }
+          }
+          if (best) {
+            _stamp(occ, gw, gh, best.mask, best.gx, best.gy, dCells);
+            placed.push({ ...piece, x: best.gx * R, y: best.gy * R, rot: best.rot });
+          } else {
+            stillLeft.push(piece);
+          }
+        }
+        if (placed.length) {
+          sheets.push({ sw: s.w, sh: s.h, placements: placed });
+          if (s.qty > 0) s.qty -= 1;
+          remaining = stillLeft;
+          placedAny = true;
+          break;
+        }
+      }
+      if (!placedAny) break;
+    }
+    return { sheets, unplaced: remaining };
+  }
+
   // ── Driver: pack onto multiple sheet sizes ─────────────────────────
   function _nestMultiSheet(pieces, stock, gap, mode) {
     // pieces: [{code, w, h, rots:[0,90,...], qty}]
     // stock: [{w, h, qty}]   qty=-1 → unlimited
     // Returns: {sheets: [{sw, sh, placements:[{...}]}], unplaced: [...]}
+
+    if (mode === 'True Shape') return _nestMultiSheetRaster(pieces, stock, gap);
 
     function makePacker(sw, sh, m) {
       return m === 'MaxRects' ? new MaxRectsPacker(sw, sh)
@@ -987,8 +1168,13 @@
 
     if (mode === 'Auto') {
       let best = null;
-      for (const m of ['MaxRects', 'BL Corner', 'Left', 'Bottom']) {
-        const r = runOne(m);
+      // True-shape FIRST so it wins ties (denser interior, cleaner remnant).
+      // Skipped on very large BOMs where the raster scan would be slow.
+      const runners = [];
+      if (pieces.length <= 150) runners.push(() => _nestMultiSheetRaster(pieces, stock, gap));
+      for (const m of ['MaxRects', 'BL Corner', 'Left', 'Bottom']) runners.push(() => runOne(m));
+      for (const run of runners) {
+        const r = run();
         if (best === null
             || r.unplaced.length < best.unplaced.length
             || (r.unplaced.length === best.unplaced.length
@@ -1610,7 +1796,7 @@
           <div class="kdnest-controls">
             <label class="kdnest-mode-lab">Mode
               <select id="kdnest-mode">
-                ${['Auto','MaxRects','BL Corner','Left','Bottom']
+                ${['Auto','True Shape','MaxRects','BL Corner','Left','Bottom']
                   .map(m => `<option value="${m}" ${m === S.mode ? 'selected' : ''}>${m}</option>`).join('')}
               </select>
             </label>
@@ -1984,5 +2170,9 @@
     // 2026-05-30: 'view ใน Part ของ Laser ก็ให้เหมือน view ที่ Nest').
     loadPartPreview: loadPartPreview,
     drawPart: _drawPartPreview,
+    // Diagnostics — returns the live nest state (sheets, parts, pieces).
+    // Used to measure fill ratio / locate interior gaps when tuning the
+    // packer. Harmless (admin-only workspace).
+    _debug: function () { return S; },
   };
 })();
