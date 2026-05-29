@@ -617,6 +617,23 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // spot on the canvas toggles it either way. In-memory only.
   const [fullscreen, setFullscreen] = useState(!!autoFullscreen);
 
+  // External-sync nonce. app.js dispatches a 'kme:extsync' window event when
+  // a Firebase assembled/bent write lands (our own echo OR a remote device's
+  // change) INSTEAD of calling its global render() — render() rebuilds
+  // ROOT.innerHTML, which destroys #kme-mount and remounts this whole editor,
+  // flashing the canvas on every tick. tap-3 feels still precisely because it
+  // never leaves React; routing assembled/bent ticks through this nonce gives
+  // 'complete' the same stillness (user 2026-05-29: 'กด complete ... ไม่ให้
+  // จอกระพริบ เหมือน tab 3'). Bumping it flows into every node's data below so
+  // React Flow re-renders the nodes in place — they re-read api.isAssembled /
+  // api.isBent — with NO unmount and NO viewport reset.
+  const [extSyncNonce, setExtSyncNonce] = useState(0);
+  useEffect(() => {
+    const h = () => setExtSyncNonce(n => n + 1);
+    window.addEventListener('kme:extsync', h);
+    return () => window.removeEventListener('kme:extsync', h);
+  }, []);
+
   const _persistCollapse = useCallback((c, set) => {
     // Preserve hidden + seeded + revealAll across collapse toggles —
     // otherwise a single collapse/expand would wipe the tap-3 hide set,
@@ -979,6 +996,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         // revealAll wins over every fade source so Show all truly shows all.
         faded: revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false)),
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
+        // Bumped by the kme:extsync event so MindmapNode re-reads
+        // api.isAssembled/isBent in place when a Firebase tick lands —
+        // see extSyncNonce above (no remount, no viewport reset).
+        _sync: extSyncNonce,
       },
       // draggable:true for EVERYONE — this is required for the inner-div
       // button taps (🧩 complete, 📄 PDF) to register on iPad/iPhone: when
@@ -991,7 +1012,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // 🧩/📄 button taps for workers).
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll, extSyncNonce]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).

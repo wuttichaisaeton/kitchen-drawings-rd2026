@@ -2704,6 +2704,45 @@ function assembledCountForProject(projectKey, parts) {
   return parts.filter(p => isAssembled(projectKey, p.code)).length;
 }
 
+// ── In-place assembly/bending refresh ──────────────────────────────────
+// A full render() rebuilds ROOT.innerHTML, which destroys #kme-mount and
+// forces the React Flow editor to remount — a visible canvas flash on every
+// tick. The 🧩/tab-3 gestures feel still because they only mutate in-editor
+// state and never call render(). To give 'complete' (and bending ticks) the
+// same stillness (user 2026-05-29: 'กด complete ... ไม่ให้จอกระพริบ เหมือน
+// tab 3'), when a project view with a live editor is on screen we refresh in
+// place: patch the progress pills' width/text directly and ping the editor
+// to re-read assembled/bent state (kme:extsync). NO remount, NO viewport
+// reset. Off the editor view we fall back to a normal render().
+function _updateProgressPills(key) {
+  const project = (manifest.projects || {})[key];
+  if (!project) return;
+  const parts = project.parts || [];
+  const total = parts.length || 0;
+  const setPill = (sel, count) => {
+    const root = document.querySelector(sel);
+    if (!root) return;
+    const pct = total ? Math.round((count * 100) / total) : 0;
+    const fill = root.querySelector('.progress-fill');
+    const stat = root.querySelector('.bent-stat');
+    if (fill) fill.style.width = pct + '%';
+    if (stat) stat.textContent = `${count}/${total} · ${pct}%`;
+  };
+  setPill('.assembled-mini', assembledCountForProject(key, parts));
+  setPill('.bent-mini', bentCountForProject(key, parts));
+}
+
+function _refreshAssemblyUI() {
+  const top = stack[stack.length - 1];
+  const editorLive = !!window.__kmeInstance && !!document.getElementById('kme-mount');
+  if (top && top.kind === 'project' && editorLive) {
+    _updateProgressPills(top.name);
+    try { window.dispatchEvent(new Event('kme:extsync')); } catch {}
+    return;
+  }
+  try { render(); } catch {}
+}
+
 function initBentSync() {
   if (!window.firebaseDB) return;
   try {
@@ -2716,7 +2755,7 @@ function initBentSync() {
         }
       }
       _mirrorBentToLocal();
-      try { render(); } catch {}
+      _refreshAssemblyUI();
     }, err => console.warn('Firebase bent listener error:', err));
   } catch (e) {
     console.warn('Failed to attach bent listener:', e);
@@ -2734,7 +2773,7 @@ function initAssembledSync() {
         }
       }
       _mirrorAssembledToLocal();
-      try { render(); } catch {}
+      _refreshAssemblyUI();
     }, err => console.warn('Firebase assembled listener error:', err));
   } catch (e) {
     console.warn('Failed to attach assembled listener:', e);
