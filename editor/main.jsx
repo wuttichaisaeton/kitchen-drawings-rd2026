@@ -1141,6 +1141,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           // hiddenAnchors so the CSS kme-faded class applies. To
           // bring it back, tap the project-center bubble — that
           // gesture clears hiddenAnchors.
+          skipFitRef.current = true;  // tap-3 hide — keep the view exactly still (user 2026-05-29)
           setRevealAll(false);  // a hide gesture exits reveal-all mode
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
