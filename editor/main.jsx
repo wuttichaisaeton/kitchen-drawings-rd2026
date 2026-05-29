@@ -822,6 +822,21 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // set changes in checklist mode. Skips the initial mount (the
   // <ReactFlow fitView> prop handles that).
   const rf = useReactFlow();
+
+  // fitView, but never zoom out so far that the per-node 🧩/📄 buttons
+  // become untappable on a phone. On a 375px iPhone, fitting all 29 Show-all
+  // nodes drops the zoom to ~0.25, shrinking the (52px) buttons to ~13px —
+  // impossible to hit (iPad's bigger screen fits at a higher zoom, which is
+  // why it worked there). Cap the minimum fit-zoom on small screens so the
+  // buttons stay ~30px+; the worker pans to reach nodes that don't fit.
+  // User 2026-05-29: 'มือถือ ใช้ไม่ได้'.
+  const fitNow = useCallback((opts = {}) => {
+    const small = typeof window !== 'undefined' && window.innerWidth < 700;
+    try {
+      rf.fitView({ padding: 0.12, minZoom: small ? 0.6 : 0.1, ...opts });
+    } catch {}
+  }, [rf]);
+
   const fittedOnceRef = useRef(false);
   useEffect(() => {
     if (!inChecklistMode) return;
@@ -833,10 +848,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     // Wait for the position-transition (800ms CSS) to settle before
     // measuring, otherwise fitView frames the OLD positions.
     const t = setTimeout(() => {
-      try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {}
+      fitNow({ duration: 600 });
     }, 850);
     return () => clearTimeout(t);
-  }, [collapsedNodes, inChecklistMode, rf]);
+  }, [collapsedNodes, inChecklistMode, fitNow]);
 
   // "Show all" — single recoverable handle that brings EVERYTHING back
   // regardless of how it got hidden: clears the center collapse, every
@@ -858,15 +873,15 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     // also survives the remount.
     _writeCollapsedState(projectKey, { center: false, nodes: new Set(), hidden: new Set(), seeded: true, revealAll: true });
     setStatus('show all');
-    setTimeout(() => { try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {} }, 120);
-  }, [projectKey, rf]);
+    setTimeout(() => fitNow({ duration: 600 }), 120);
+  }, [projectKey, fitNow]);
 
   // Tap empty canvas → toggle fullscreen. The canvas grows/shrinks, so
   // re-fit once the CSS size transition settles. (request 2026-05-29 #3)
   const toggleFullscreen = useCallback(() => {
     setFullscreen(f => !f);
-    setTimeout(() => { try { rf.fitView({ duration: 400, padding: 0.12 }); } catch {} }, 360);
-  }, [rf]);
+    setTimeout(() => fitNow({ duration: 400 }), 360);
+  }, [fitNow]);
   const onPaneClick = useCallback(() => { toggleFullscreen(); }, [toggleFullscreen]);
 
   // Inject onLabelChange + admin flag into every node's data so the
@@ -1291,6 +1306,9 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           paneClickDistance={20}
           defaultEdgeOptions={{ type: 'floating', style: { strokeWidth: 1.2, opacity: 0.5 } }}
           fitView
+          /* Cap the initial fit-zoom on phones too so a many-node Show-all
+             layout doesn't open at 0.25 with untappable buttons. */
+          fitViewOptions={{ padding: 0.12, minZoom: (typeof window !== 'undefined' && window.innerWidth < 700) ? 0.6 : 0.1 }}
           /* minZoom needs to be loose enough that a phone can pinch
              out to see both variants (at ±720 in expanded checklist
              mode → 1440 px wide layout vs 375 px iPhone viewport).
