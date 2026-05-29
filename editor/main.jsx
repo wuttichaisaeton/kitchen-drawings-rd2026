@@ -1271,8 +1271,12 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           proOptions={{ hideAttribution: true }}
         >
           <Background variant={BackgroundVariant.Dots} gap={16} size={1} color="#30363d" />
-          <Controls />
-          <MiniMap pannable zoomable maskColor="rgba(13, 17, 23, 0.7)" nodeColor="#30363d" />
+          {/* Controls (+/−/fit/lock) and the MiniMap are admin-only. Workers
+              (assembly/workshop on phones) get the full canvas — they pinch
+              to zoom and use the Show all button to re-frame. User 2026-05-29:
+              'เอา 2 อันนี้ออก ให้มองเห็นหน้าจอเต็มๆ'. */}
+          {admin && <Controls />}
+          {admin && <MiniMap pannable zoomable maskColor="rgba(13, 17, 23, 0.7)" nodeColor="#30363d" />}
         </ReactFlow>
       </div>
     </div>
