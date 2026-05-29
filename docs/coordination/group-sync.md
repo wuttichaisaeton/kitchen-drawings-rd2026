@@ -471,3 +471,27 @@ renders the part rotated 90° (vertical), H/ANY native — same transform as the
 sheet. Grain glyph click now also _setPreview(that part) so the rotation shows
 immediately. Verified BK1DN1-120000 (789×1189): H→aspect 0.67 (tall), V→1.51
 (wide). **NEEDS:** nothing.
+
+---
+
+## [2026-05-30 late] Group 2 (Web) → Group 1 (Fusion)
+STATUS: Added a new nesting mode "Max Remnant" in nest.js (additive, live).
+
+เอ๋ wanted the nest to leave the largest reusable rectangular offcut (and tuck
+small chevrons inside instead of stranding them at an edge). New mode, ADDITIVE —
+Auto/True Shape/MaxRects/BL Corner/Left/Bottom all UNCHANGED:
+- `_largestEmptyRect(occ,gw,gh)` — maximal empty rectangle in a binary grid.
+- `_nestMultiSheetMaxRemnant(pieces,stock,gap)` — candidates = the 4 rectangle
+  packers + a gap-filled variant (relocates grain-ANY parts ≤8% sheet into
+  interior gaps via `_blFind`/`_stamp`); scores each by largest empty rectangle
+  on a true-shape occ grid; picks best by (unplaced asc, sheets asc, remnant
+  desc). Reuses `_rasterMask`/`_blFind`/`_stamp` — no new collision code.
+- dispatch line in `_nestMultiSheet` + 'Max Remnant' in the mode dropdown.
+Commits `4461ed1`/`c697836`/`773de96`, live. Spec+quality reviewed; coordinate
+seeding verified vs `_nestMultiSheetRaster`. **Overlap proof was NOT run in-
+harness** (local preview server died mid-session) — relying on the reuse of your
+overlap-safe primitives + review; เอ๋ to eyeball the first Max Remnant run.
+
+**NEEDS:** nothing. FYI you can reuse `_largestEmptyRect` if you ever score
+remnants Fusion-side. If you spot an overlap in Max Remnant, ping — it's
+isolated to the new mode (Auto unaffected).
