@@ -1392,27 +1392,6 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               <span>Show all</span>
             </button>
           </Panel>
-          {/* Diagnostic strip (bottom-center) — visible to everyone so the
-              workshop phone can read which build it's on and whether taps
-              reach the handlers. `status` updates via window.__kmeStatus on
-              every node/button tap. Temporary while chasing the iPhone
-              button issue (2026-05-29). */}
-          <Panel position="bottom-center">
-            <div className="kme-diag">
-              b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}
-              {' · '}
-              {(() => {
-                const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
-                if (/Telegram/i.test(ua)) return 'TELEGRAM';
-                if (/FBAN|FBAV|Instagram|Line\//i.test(ua)) return 'IN-APP';
-                if (typeof navigator !== 'undefined' && navigator.standalone) return 'PWA';
-                if (/CriOS/i.test(ua)) return 'CHROME-iOS';
-                if (/Safari/i.test(ua) && /Version\//i.test(ua)) return 'SAFARI';
-                return 'WEBVIEW';
-              })()}
-              {' · TAP:'}{status}
-            </div>
-          </Panel>
           {/* Back to the project list — only while fullscreen (the app
               header that normally holds the ← arrow is hidden). Top-left,
               opposite the Show all button on the right. User 2026-05-29:
