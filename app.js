@@ -757,8 +757,14 @@ function _renderCutList(parts, projectKey) {
       const rows = ps.map(p => {
         const dxfs = dxfsForMasterCode(p.code);
         const ready = dxfs.length > 0;
+        // Merged status pill — was two cells (👁 button + readiness
+        // span). User 2026-05-29 asked to combine them: ready rows
+        // become a clickable <button> that opens the preview, dropping
+        // the separate eye affordance. The 📐 glyph already conveys
+        // "this is the DXF". Row click still works as a backup target;
+        // the button's click bubbles up to the row handler.
         const status = ready
-          ? `<span class="cut-status cut-ok" title="${dxfs.length} DXF available">📐 ready${dxfs.length > 1 ? ` ×${dxfs.length}` : ''}</span>`
+          ? `<button type="button" class="cut-status cut-ok" title="View DXF preview${dxfs.length > 1 ? ` (${dxfs.length} files)` : ''}">📐 ready${dxfs.length > 1 ? ` ×${dxfs.length}` : ''}</button>`
           : `<span class="cut-status cut-none" title="No DXF uploaded yet — run NestingTool's Save to Project">⚠ no DXF</span>`;
         // Shared grain badge — pulled from grain.json via kdNest so
         // workers see the same H/V/ANY mark here as in the Nesting
@@ -770,19 +776,11 @@ function _renderCutList(parts, projectKey) {
           const gly = window.kdNest.grainGlyph(g);
           grainCell = `<span class="cut-grain ${gly.cls}" title="${gly.title}">${gly.ch}</span>`;
         }
-        // Explicit 👁 view button mirrors the Nesting sidebar — gives
-        // the worker a click-target distinct from the whole-row click
-        // (which still opens the preview), so they can hover the row
-        // to read it without accidentally triggering anything.
-        const viewBtn = ready
-          ? `<button class="cut-view-btn" title="View DXF preview" data-code="${escapeHtml(p.code)}">👁</button>`
-          : '<span class="cut-view-spacer"></span>';
         return `
           <div class="cut-row ${ready ? '' : 'cut-row-missing'}" data-code="${escapeHtml(p.code)}" ${ready ? '' : 'aria-disabled="true"'}>
             <span class="cut-code">${escapeHtml(p.code)}</span>
             <span class="cut-qty">× ${p.qty || 0}</span>
             ${grainCell}
-            ${viewBtn}
             ${status}
           </div>`;
       }).join('');
@@ -869,19 +867,11 @@ function _wireCutList(parts, projectKey) {
       }
     });
   });
-  // 👁 explicit view button — same handler, but stops the click from
-  // bubbling so it doesn't also fire the row handler. Reuses
-  // _renderDxfPreviewModal exactly like the Nesting workspace does.
-  ROOT.querySelectorAll('.cut-view-btn').forEach(btn => {
-    btn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const code = btn.dataset.code;
-      const dxfs = dxfsForMasterCode(code);
-      if (dxfs.length === 0) return;
-      if (dxfs.length === 1) _renderDxfPreviewModal(dxfs[0]);
-      else _renderDxfPopover(btn, dxfs, (item) => _renderDxfPreviewModal(item));
-    });
-  });
+  // Status-pill click handler removed: the merged <button.cut-status.cut-ok>
+  // is rendered inside the row, so its click bubbles up to the row's
+  // handler above — same _renderDxfPreviewModal path, no duplicated logic.
+  // The separate 👁 cut-view-btn was retired here too; one click target
+  // per row.
 
   // If kdNest's grain.json fetch was still in flight when this row
   // batch rendered, the grain cells will all be ? — repaint once the
@@ -944,10 +934,12 @@ function _wireCutList(parts, projectKey) {
           await _uploadPartDxf(projectKey, code, file);
           // RTDB listener will refresh the row on next render; show a
           // confirmation in place until that lands so user sees it
-          // worked immediately.
+          // worked immediately. Use the same <button> shape as the main
+          // render path so the placeholder looks/behaves consistently
+          // until the listener-driven repaint lands.
           const fresh = row.querySelector('.cut-status');
           if (fresh) {
-            fresh.outerHTML = `<span class="cut-status cut-ok">📐 ready</span>`;
+            fresh.outerHTML = `<button type="button" class="cut-status cut-ok" title="View DXF preview">📐 ready</button>`;
           }
           row.classList.remove('cut-row-missing', 'cut-row-droppable');
         } catch (e) {
