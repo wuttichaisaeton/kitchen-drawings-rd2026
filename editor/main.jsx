@@ -894,6 +894,21 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, [fitNow]);
   const onPaneClick = useCallback(() => { toggleFullscreen(); }, [toggleFullscreen]);
 
+  // Fullscreen WITHOUT position:fixed. The old fixed-position fullscreen
+  // broke React Flow touch hit-testing on iOS (touch clientX/Y and the
+  // pane's getBoundingClientRect live in different coordinate spaces inside
+  // a fixed element, so taps missed every node — confirmed 2026-05-29: the
+  // non-fixed admin view registered taps, the fixed worker view did not).
+  // Instead we hide the app chrome via an <html> class and let the editor
+  // fill the viewport in NORMAL document flow, where touch works. Cleanup
+  // removes the class on unmount so navigating back restores the chrome.
+  useEffect(() => {
+    const el = document.documentElement;
+    if (fullscreen) el.classList.add('kme-fs-on');
+    else el.classList.remove('kme-fs-on');
+    return () => el.classList.remove('kme-fs-on');
+  }, [fullscreen]);
+
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
   // too because contentEditable + double-click-to-edit are per-node UX.
@@ -1241,7 +1256,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           Show all (in the <Panel> below) is their only control, so the
           status line + zoom chrome don't eat their screen. User 2026-05-29:
           'เอาตรงนี้ออก'. */}
-      {admin && <div className="kme-toolbar">
+      {admin && !fullscreen && <div className="kme-toolbar">
         {admin && (
           <>
             <button className="kme-primary" onClick={addNode} title="Add a new node">
@@ -1337,8 +1352,21 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               (assembly/workshop on phones) get the full canvas — they pinch
               to zoom and use the Show all button to re-frame. User 2026-05-29:
               'เอา 2 อันนี้ออก ให้มองเห็นหน้าจอเต็มๆ'. */}
-          {admin && <Controls />}
-          {admin && <MiniMap pannable zoomable maskColor="rgba(13, 17, 23, 0.7)" nodeColor="#30363d" />}
+          {admin && !fullscreen && <Controls />}
+          {admin && !fullscreen && <MiniMap pannable zoomable maskColor="rgba(13, 17, 23, 0.7)" nodeColor="#30363d" />}
+          {/* Zoom-fit — the only zoom control kept in fullscreen (user
+              2026-05-29: 'เหลือไว้แค่ zoom fit'). Pinch handles in/out. */}
+          <Panel position="bottom-right">
+            <button
+              className="kme-fit-btn"
+              onClick={(e) => { e.stopPropagation(); fitNow({ duration: 400 }); }}
+              title="Zoom to fit"
+            >
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M2 5.5V2.5h3M14 5.5V2.5h-3M2 10.5v3h3M14 10.5v3h-3"/>
+              </svg>
+            </button>
+          </Panel>
           {/* Floating Show all — pinned to the canvas viewport via <Panel>,
               so it can't scroll out of reach on a phone (the toolbar above
               the canvas slides under the sticky app header once the worker
