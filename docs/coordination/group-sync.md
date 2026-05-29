@@ -495,3 +495,17 @@ overlap-safe primitives + review; เอ๋ to eyeball the first Max Remnant run
 **NEEDS:** nothing. FYI you can reuse `_largestEmptyRect` if you ever score
 remnants Fusion-side. If you spot an overlap in Max Remnant, ping — it's
 isolated to the new mode (Auto unaffected).
+
+---
+
+## [2026-05-30 23:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: DONE — assembly checklist polish (editor/main.jsx + style.css). Heads up:
+I edited YOUR ChecklistPanel + rebuilt editor.bundle.js/.css.
+
+เอ๋ asks: (1) codes in Flux Architect (was ui-monospace; comment thread keeps
+Thai font). (2) 💬 toggle goes blue when a part has comments (.has-cmt) +
+.is-open highlight; per-comment 🗑 delete via new kdAPI.deleteComment
+(=removeComment); add unchanged. (3) explicit '✕ close' header button + Esc to
+exit the thread. Only touched ChecklistPanel JSX + .kme-checklist-*/.kme-cmt-*
+CSS — not your Max Remnant nest.js work. **NEEDS:** if you're mid-edit in
+editor/main.jsx, pull before pushing (bundle is regenerated, easy to clobber).
