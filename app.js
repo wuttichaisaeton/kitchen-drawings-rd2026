@@ -4207,10 +4207,19 @@ function _exposeKdApi() {
           .find(p => p.code === code)?.family));
       const fam = effectiveFamily(code, fusionFam);
       if (!fam) return;
+      // Stash the CURRENT stack top as the "source" so the family
+      // breadcrumb in renderFamily can offer a one-tap return path.
+      // Only carries 'project' / 'projects' shapes — falling through to
+      // 'library' or 'family' would loop back to ourselves. User
+      // 2026-05-29: 'เป็นปุ่มให้กดกลับไปที่ๆมาได้'.
+      const prevTop = stack[stack.length - 1] || null;
+      const source = (prevTop && (prevTop.kind === 'project' || prevTop.kind === 'projects'))
+        ? { kind: prevTop.kind, name: prevTop.name }
+        : null;
       view = 'library';
       document.getElementById('tab-projects')?.classList.remove('active');
       document.getElementById('tab-library')?.classList.add('active');
-      stack = [{ kind: 'family', name: fam, highlight: code }];
+      stack = [{ kind: 'family', name: fam, highlight: code, source }];
       render();
     },
   };
@@ -7128,12 +7137,19 @@ function renderFamily(fam, highlight) {
   // Source breadcrumb — when admin drills in via openInLibrary (from a
   // mindmap code-text click or the NO PDF chip), the stack carries a
   // `highlight` field with the originating code. Surface it so the user
-  // knows *why* they landed here and which row to look for. Also serves
-  // as a way back to "where I came from" mentally even though there's no
-  // direct nav button.  User 2026-05-29: 'กดเข้า Part แล้วต้องมี title
-  // ด้านบนด้วยซิ ไม่งั้นไปต่อไม่ถูก'.
+  // knows *why* they landed here AND can click to go back to where they
+  // came from (the project view that triggered the nav). User
+  // 2026-05-29: 'กดเข้า Part แล้วต้องมี title ด้านบนด้วยซิ' →
+  // 'เป็นปุ่มให้กดกลับไปที่ๆมาได้'. Source is captured by openInLibrary
+  // — falls back to a non-clickable pill when missing (e.g. deep-link
+  // entry, NO PDF chip from a context without a stack origin).
+  const stackTop = stack[stack.length - 1] || {};
+  const source = stackTop.source || null;
+  const breadcrumbLabel = source ? 'Back to' : 'from';
   const breadcrumb = highlight
-    ? `<div class="family-breadcrumb" title="The part you tapped — scroll for the highlighted row">↩ from <strong>${escapeHtml(highlight)}</strong></div>`
+    ? (source
+        ? `<button type="button" class="family-breadcrumb family-breadcrumb-btn" title="Go back to ${escapeHtml(source.name || source.kind || 'previous')}">↩ Back to <strong>${escapeHtml(source.name || source.kind)}</strong> · ${escapeHtml(highlight)}</button>`
+        : `<div class="family-breadcrumb" title="The part you tapped — scroll for the highlighted row">↩ from <strong>${escapeHtml(highlight)}</strong></div>`)
     : '';
 
   ROOT.innerHTML = `
@@ -7142,6 +7158,22 @@ function renderFamily(fam, highlight) {
     <div class="part-list">${list}</div>
     ${emptyHint}
   `;
+
+  // Wire the breadcrumb back-button (only when source is present).
+  // Restores the source view directly — same shape as openInLibrary's
+  // own stack write, just in reverse.
+  ROOT.querySelector('.family-breadcrumb-btn')?.addEventListener('click', () => {
+    if (!source) return;
+    view = 'projects';
+    document.getElementById('tab-library')?.classList.remove('active');
+    document.getElementById('tab-projects')?.classList.add('active');
+    if (source.kind === 'project' && source.name) {
+      stack = [{ kind: 'projects' }, { kind: 'project', name: source.name }];
+    } else {
+      stack = [{ kind: 'projects' }];
+    }
+    render();
+  });
 
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {

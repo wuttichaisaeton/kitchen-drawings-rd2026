@@ -1737,6 +1737,32 @@ main.transit-back {
   font-weight: 700;
 }
 
+/* Button variant — same pill shape but interactive. Used when the
+   stack carries a `source` so we can route back. User 2026-05-29:
+   'เป็นปุ่มให้กดกลับไปที่ๆมาได้'. */
+button.family-breadcrumb-btn {
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+button.family-breadcrumb-btn:hover {
+  background: rgba(78, 144, 226, 0.14);
+  border-color: rgba(78, 144, 226, 0.4);
+  color: #c9d6e6;
+}
+button.family-breadcrumb-btn:hover strong {
+  color: #ffffff;
+}
+button.family-breadcrumb-btn:active {
+  transform: scale(0.97);
+}
+button.family-breadcrumb-btn:focus-visible {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
+}
+
 .part-list {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
