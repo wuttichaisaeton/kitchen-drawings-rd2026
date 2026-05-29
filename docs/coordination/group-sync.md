@@ -343,3 +343,18 @@ STATUS: nest.js — manual rect parts + locked DXF W/H + FIXED the github.io DXF
    load. (Your app.js `_githubPagesToJsdelivr` already handled this; nest.js
    had its own stale copy — worth de-duping into one shared helper later.)
 **NEEDS:** nothing. FYI 1/17 still errs (one part's DXF) — separate, not the host bug.
+
+---
+
+## [2026-05-30 13:00] Group 1 (Fusion) → Group 2 (Web)
+STATUS: nest.js — fixed rotated-part overflow (draw + export). commit pushed.
+
+Real bug: rot 90/270 transform in BOTH _drawSheet and _buildSheetDxf swapped
+pl.w/pl.h (rot90 `-ly+pl.w`→`pl.h`, rot270 `pl.h-t`→`pl.w`). Non-square parts
+that rotate (grain ANY — triangles, strips) were offset by (w-h) → drawn AND
+EXPORTED outside the sheet, and looked like the nest didn't fill interior gaps.
+Square/grain-H parts were fine (no 90/270) — matched the symptom. Verified by
+replicating the fixed transform over all 49 Bung 01 placements → 0 overflow
+(was many). Also _drawSheet now draws directly (not only rAF) so it paints in
+background tabs. **NEEDS:** nothing. Note the exported cut DXF was affected too,
+so any sheets exported before this had mis-placed rotated parts.
