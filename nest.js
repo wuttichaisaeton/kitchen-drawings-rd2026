@@ -55,6 +55,7 @@
                           // ให้ทำ Hilight ด้วย').
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     currentSheetIdx: 0,
+    previewCode: null,    // single-part preview mode (↑/↓ cycles; null = sheet view)
     rootEl: null,     // <main id="root"> at the time we opened
     prevHtml: null,   // saved so close() can restore
     closing: false,
@@ -984,6 +985,7 @@
   //  Run Nesting
   // ════════════════════════════════════════════════════════════════════
   function _runNesting() {
+    S.previewCode = null;   // running shows the nest result, not a part preview
     // Expand parts into per-instance pieces (qty copies each) and
     // restrict rotations by grain (H = no 90/270, V = no 0/180,
     // ANY = all four).
@@ -1054,6 +1056,82 @@
       console.warn('[kdNest] unplaced pieces:', result.unplaced);
     }
     _refreshView();
+  }
+
+  // ════════════════════════════════════════════════════════════════════
+  //  Single-part preview (desktop-style clear view + ↑/↓ keyboard nav)
+  // ════════════════════════════════════════════════════════════════════
+  // Draw ONE part filling the canvas — outer profile + holes + multi-piece
+  // strokes — so the worker can read it clearly, like the desktop tool's
+  // preview pane. (user 2026-05-30 'view part ชัดเจนเหมือน nest บน desktop')
+  function _drawPartPreview(canvas, part) {
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const cw = canvas.width = canvas.clientWidth * dpr;
+    const ch = canvas.height = canvas.clientHeight * dpr;
+    ctx.fillStyle = '#0b1117';
+    ctx.fillRect(0, 0, cw, ch);
+    const polys = part && part.polys;
+    const bbox = part && part.bbox;
+    if (!polys || !bbox) {
+      ctx.fillStyle = '#88aab1';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${14 * dpr}px "Flux Architect", monospace`;
+      ctx.fillText(part && part.dxfError ? ('DXF error: ' + part.dxfError)
+                   : 'DXF not loaded yet…', cw / 2, ch / 2);
+      return;
+    }
+    const [minX, minY, maxX, maxY] = bbox;
+    const pw = (maxX - minX) || 1, ph = (maxY - minY) || 1;
+    const pad = 44 * dpr;
+    const scale = Math.min((cw - 2 * pad) / pw, (ch - 2 * pad) / ph);
+    const drawW = pw * scale, drawH = ph * scale;
+    const offX = (cw - drawW) / 2, offY = (ch - drawH) / 2;
+    const tx = (x, y) => [offX + (x - minX) * scale, offY + (maxY - y) * scale];  // flip Y
+    const colour = '#4ecca3';
+    const trace = (pts, close) => {
+      ctx.beginPath();
+      for (let k = 0; k < pts.length; k++) {
+        const [ax, ay] = tx(pts[k][0], pts[k][1]);
+        if (k === 0) ctx.moveTo(ax, ay); else ctx.lineTo(ax, ay);
+      }
+      if (close) ctx.closePath();
+    };
+    if (polys.outer && polys.outer.length > 1) {
+      trace(polys.outer, true);
+      ctx.fillStyle = colour + '22'; ctx.fill();
+      ctx.strokeStyle = colour; ctx.lineWidth = 1.8 * dpr; ctx.stroke();
+    }
+    if (polys.strokes && polys.strokes.length > 1) {
+      ctx.strokeStyle = colour; ctx.lineWidth = 1.6 * dpr;
+      for (const seg of polys.strokes) { if (seg.length >= 2) { trace(seg, false); ctx.stroke(); } }
+    }
+    if (polys.holes && polys.holes.length) {
+      ctx.strokeStyle = colour + 'cc'; ctx.lineWidth = 1.0 * dpr;
+      for (const hole of polys.holes) { if (hole.length >= 2) { trace(hole, true); ctx.stroke(); } }
+    }
+  }
+
+  function _scrollPreviewRow() {
+    if (!S.rootEl || !S.previewCode) return;
+    const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
+    if (row) row.scrollIntoView({ block: 'nearest' });
+  }
+  function _setPreview(code) {
+    S.previewCode = code;
+    _refreshView();
+    _scrollPreviewRow();
+  }
+  function _movePreview(delta) {
+    if (!S.parts.length) return;
+    let idx = S.parts.findIndex(p => p.code === S.previewCode);
+    if (idx < 0) idx = (delta > 0 ? -1 : 0);
+    idx = Math.max(0, Math.min(S.parts.length - 1, idx + delta));
+    S.previewCode = S.parts[idx].code;
+    _refreshView();
+    _scrollPreviewRow();
   }
 
   // ════════════════════════════════════════════════════════════════════
@@ -1342,9 +1420,22 @@
     S.rootEl.innerHTML = _viewHtml();
     _wireEvents();
     const canvas = S.rootEl.querySelector('#kdnest-canvas');
-    if (canvas && S.flatSheets[S.currentSheetIdx]) {
+    if (canvas) {
       // Give the canvas a tick to size before draw.
-      requestAnimationFrame(() => _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]));
+      if (S.previewCode) {
+        const part = S.parts.find(p => p.code === S.previewCode);
+        // Draw directly — the canvas is CSS-sized immediately; reading
+        // clientWidth forces layout, so we don't need to wait for rAF
+        // (which can be throttled when the tab isn't foregrounded).
+        _drawPartPreview(canvas, part);
+        requestAnimationFrame(() => _drawPartPreview(canvas, part));
+      } else if (S.flatSheets[S.currentSheetIdx]) {
+        requestAnimationFrame(() => _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]));
+      }
+    }
+    if (S.previewCode) {
+      const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
+      if (row) row.classList.add('kdnest-part-previewing');
     }
   }
 
@@ -1424,6 +1515,14 @@
     }).join('');
 
     const sheetNavInfo = nSheets ? `${S.currentSheetIdx + 1} / ${nSheets}` : '0 / 0';
+    const previewInfo = (() => {
+      if (!S.previewCode) return '';
+      const i = S.parts.findIndex(p => p.code === S.previewCode);
+      const pp = S.parts[i];
+      if (!pp) return '';
+      const dims = (pp.w && pp.h) ? ` (${pp.w}×${pp.h} mm)` : '';
+      return `Preview: #${i + 1} ${_esc(pp.code)}${dims} · ↑/↓ flip · ‹ › exits`;
+    })();
     const curSheet = S.flatSheets[S.currentSheetIdx];
     const sheetSubLine = curSheet
       ? `${Math.round(curSheet.sw)}×${Math.round(curSheet.sh)} mm${curSheet.thick && curSheet.thick !== '?' ? ` · ${curSheet.thick}mm` : ''} · ${curSheet.placements.length} parts`
@@ -1488,7 +1587,7 @@
         ${isAdminUser ? '<div class="kdnest-splitter" id="kdnest-splitter" title="Drag to resize the sidebar (admin only)"></div>' : ''}
         <main class="kdnest-canvas-wrap">
           <div class="kdnest-canvas-top">
-            <span class="kdnest-canvas-info">Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}</span>
+            <span class="kdnest-canvas-info">${S.previewCode ? previewInfo : `Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}`}</span>
             <div class="kdnest-nav">
               <button id="kdnest-prev" class="kdnest-nav-btn" ${nSheets > 0 ? '' : 'disabled'}>‹</button>
               <button id="kdnest-next" class="kdnest-nav-btn" ${nSheets > 0 ? '' : 'disabled'}>›</button>
@@ -1512,10 +1611,14 @@
     $('#kdnest-save-sheets')?.addEventListener('click', _saveSheetsToLaser);
     $('#kdnest-grain')?.addEventListener('click', _openGrainModal);
     $('#kdnest-prev')?.addEventListener('click', () => {
+      const wasPreview = !!S.previewCode; S.previewCode = null;   // ‹ exits preview
       if (S.currentSheetIdx > 0) { S.currentSheetIdx--; _refreshView(); }
+      else if (wasPreview) _refreshView();
     });
     $('#kdnest-next')?.addEventListener('click', () => {
+      const wasPreview = !!S.previewCode; S.previewCode = null;   // › exits preview
       if (S.currentSheetIdx < S.flatSheets.length - 1) { S.currentSheetIdx++; _refreshView(); }
+      else if (wasPreview) _refreshView();
     });
     $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; });
     $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; });
@@ -1593,20 +1696,10 @@
       // Hand the FULL RTDB metadata to the modal (same object the Laser
       // cut list passes) so all derived fields — uploaded_at "10m ago",
       // size_bytes "19 KB", filename — match between the two views.
+      // 👁 → clear in-canvas single-part preview (desktop-style). ↑/↓ then
+      // flips through parts; a sheet ‹/› or Run Nesting returns to the nest.
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
-        if (!part.dxfUrl) return;
-        if (typeof window._renderDxfPreviewModal === 'function') {
-          const dxfArg = part.dxfMeta ? part.dxfMeta : {
-            url: part.dxfUrl,
-            filename: `${part.code}.dxf`,
-            thickness_mm: part.thickness,
-            grain: part.grain,
-            material: 'ALPF',
-          };
-          window._renderDxfPreviewModal(dxfArg);
-        } else {
-          window.open(part.dxfUrl, '_blank');
-        }
+        _setPreview(part.code);
       });
       // View @ sheet — jump to whichever sheet currently has this
       // part placed AND highlight every placement of this code on
@@ -1631,7 +1724,10 @@
     // Canvas redraw on resize.
     window.addEventListener('resize', () => {
       const canvas = $('#kdnest-canvas');
-      if (canvas && S.flatSheets[S.currentSheetIdx]) {
+      if (!canvas) return;
+      if (S.previewCode) {
+        _drawPartPreview(canvas, S.parts.find(p => p.code === S.previewCode));
+      } else if (S.flatSheets[S.currentSheetIdx]) {
         _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
       }
     }, { passive: true });
@@ -1690,6 +1786,19 @@
     if (!projectKey) return;
     S.rootEl = document.getElementById('root');
     if (!S.rootEl) return;
+    // ↑/↓ flips through parts in single-part preview (desktop-style). Bound
+    // to the document so it works anywhere in the workspace; ignored while a
+    // field is focused so the W/H/qty spinners keep their native arrows.
+    if (S._onKeyNav) document.removeEventListener('keydown', S._onKeyNav);
+    S._onKeyNav = (e) => {
+      if (S.closing || !S.rootEl) return;
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.key === 'ArrowDown') { e.preventDefault(); _movePreview(1); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); _movePreview(-1); }
+      else if (e.key === 'Escape' && S.previewCode) { e.preventDefault(); S.previewCode = null; _refreshView(); }
+    };
+    document.addEventListener('keydown', S._onKeyNav);
     S.prevHtml = S.rootEl.innerHTML;
     S.rootEl.innerHTML = `<p class="loading">Loading nesting workspace…</p>`;
     // Restore the admin's preferred sidebar width.
@@ -1726,6 +1835,8 @@
     S.prevHtml = null;
     S.flatSheets = [];
     S.currentSheetIdx = 0;
+    S.previewCode = null;
+    if (S._onKeyNav) { document.removeEventListener('keydown', S._onKeyNav); S._onKeyNav = null; }
   }
 
   // Eagerly load grain.json once at module init so the Laser cut list

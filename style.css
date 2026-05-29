@@ -3735,6 +3735,12 @@ button.cut-status:focus-visible {
   color: #fff;
 }
 .kdnest-btn-grain:hover { background: #6f4dc4; }
+/* Row currently shown in the single-part preview (👁 / ↑↓). */
+.kdnest-part-previewing {
+  background: rgba(78, 204, 163, 0.16);
+  outline: 1px solid #4ecca3;
+  border-radius: 6px;
+}
 
 /* ── 🧬 Grain rules modal — edit grain/thickness on the web (no Excel) ── */
 .kdng-modal {
