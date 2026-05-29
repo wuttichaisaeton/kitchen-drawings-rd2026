@@ -2520,6 +2520,22 @@ function _applyDeepLinkFromHash() {
   let params;
   try { params = new URLSearchParams(raw); }
   catch { return; }
+  // #nest=<pk> → jump straight into a project's web Nesting workspace.
+  // CC_Laser opens `?admin=1#nest=<pk>` after pushing the run's DXFs to the
+  // web, so the laser pipeline lands directly on the nest (replaces the
+  // desktop NestingTool launch — user 2026-05-29). kdNest.openProject is
+  // self-contained (sets up the full-screen nest overlay regardless of the
+  // current view), so no view switch is needed first.
+  const nestPk = params.get('nest');
+  if (nestPk) {
+    if (!manifest || !manifest.projects || !manifest.projects[nestPk]) {
+      console.warn('[deeplink] nest project not in manifest:', nestPk);
+    } else if (window.kdNest && typeof window.kdNest.openProject === 'function') {
+      window.kdNest.openProject(nestPk);
+    }
+    try { history.replaceState({}, '', location.pathname + location.search); } catch {}
+    return;
+  }
   const proj = params.get('project');
   const code = params.get('code');
   if (!proj) return;
