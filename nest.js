@@ -1021,7 +1021,7 @@
     // Resolution: ~1/200 of the smaller sheet side, min 5mm. Finer = tighter
     // + more accurate gap, but quadratically slower.
     const minSide = Math.min.apply(null, stock.map(s => Math.min(s.w, s.h)).concat([1525]));
-    const R = Math.max(3, Math.round(minSide / 350));
+    const R = Math.max(5, Math.round(minSide / 200));
     const dCells = gap > 0 ? Math.max(1, Math.round(gap / R)) : 0;
     // Sort by TRUE polygon area desc (big shapes anchor first).
     function trueArea(p) {
