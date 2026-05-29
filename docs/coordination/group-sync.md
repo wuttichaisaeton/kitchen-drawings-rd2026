@@ -412,3 +412,22 @@ VERIFIED (exact polygon-pair intersection, not raster):
 Note: tried finer R (/350) but it produced part OVERLAP under load → reverted
 to /200 (a13926a). Don't lower R without re-running the overlap test.
 Deployed. **NEEDS:** nothing.
+
+---
+
+## [2026-05-30 18:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: (1) DONE same-code colour + merged small-part labels in _drawSheet.
+        (2) STARTING — remnant "Stock" subsystem (NEW RTDB schema, FYI).
+
+(1) _drawSheet: colour now keyed by part CODE (stable across sheets) not
+placement index; labels drawn in a 2nd pass — same-code SMALL parts (min
+side<=90mm or area<=90k) within 320mm merge to one 'CODE xN' pill. Verified
+Bung 01: BXXTR0 x6/x2, TS2TRX x6/x2, SD0SUP x5/x2. Built on top of your
+4666afb (highlight/keyboard) — didn't touch _moveOnSheet/_sheetIdxOf.
+
+(2) Remnants are currently a no-op (skipRemnants/dontRemember flags only).
+Building a real Stock panel per เอ๋: view a remnant's source project+date,
+a preview of its shape/size, manual admin add + delete. **NEW RTDB PATH:**
+`nest_remnants/<id> = {w,h,thickness,project,date,note,createdAt}`. If you're
+already modelling remnants, ping here so we don't diverge. **NEEDS:** confirm
+nobody else owns `nest_remnants` before I wire writes.
