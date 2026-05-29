@@ -1401,9 +1401,16 @@
     const palette = ['#4ecca3', '#ffa726', '#e74c3c', '#9b59b6',
                      '#3498db', '#f1c40f', '#1abc9c', '#e67e22',
                      '#16a085', '#c0392b'];
+    // Same part code -> same colour, stable across every sheet
+    // (user 2026-05-30 'Part เดียวกัน สีเดียวกัน').
+    const codeColour = {};
+    { let ci = 0; (S.flatSheets && S.flatSheets.length ? S.flatSheets : [sheet]).forEach(function (sh) {
+        sh.placements.forEach(function (p) { if (!(p.code in codeColour)) { codeColour[p.code] = palette[ci % palette.length]; ci++; } });
+      }); }
     const dpr = window.devicePixelRatio || 1;
+    const labels = [];   // drawn in a 2nd pass (on top of shapes + clustered)
     sheet.placements.forEach(function (pl, i) {
-      const colour = palette[i % palette.length];
+      const colour = codeColour[pl.code] || palette[i % palette.length];
       const isHighlight = (S.highlightCode && pl.code === S.highlightCode);
       // Sheet coords → canvas coords (flip Y because DXF is y-up).
       function toCanvas(x, y) {
@@ -1508,18 +1515,56 @@
         }
       }
 
-      // Label: #N code — centred. Tiny placements get a 9px font so
-      // a row of triangles still gets readable IDs instead of one
-      // smear of overlapping text.
-      const labelTextLen = (`#${i + 1} ${pl.code}`).length;
+      // Collect label info; drawn in a 2nd pass so labels sit on top of
+      // every shape and nearby same-code small parts can merge.
       const drawW = w * scale, drawH = h * scale;
-      const fits = drawW > 60 * dpr && drawH > 14 * dpr;
-      ctx.fillStyle = isHighlight ? '#fffce8' : '#e8eef5';
-      const fontPx = (fits ? 11 : 9) * dpr;
-      ctx.font = `${isHighlight ? 'bold ' : ''}${fontPx}px "Flux Architect", monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`#${i + 1} ${pl.code}`, cx + drawW / 2, cy + drawH / 2);
+      labels.push({
+        i: i, code: pl.code, isHighlight: isHighlight,
+        small: (Math.min(w, h) <= 90 || (w * h) <= 90000),
+        lx: cx + drawW / 2, ly: cy + drawH / 2,
+        sx: pl.x + w / 2, sy: pl.y + h / 2,
+        fits: drawW > 60 * dpr && drawH > 14 * dpr,
+      });
+    });
+
+    // -- Label pass: merge same-code SMALL parts sitting close together
+    // (user 2026-05-30 'รวม Label ... อยู่ใกล้กัน เฉพาะชิ้นเล็กๆ') so a row
+    // of triangles reads 'CODE x6' once instead of six overlapping IDs.
+    const CLUSTER_MM = 320;
+    const used = new Array(labels.length).fill(false);
+    const clusters = [];
+    for (let a = 0; a < labels.length; a++) {
+      if (used[a] || !labels[a].small) continue;
+      const group = [a]; used[a] = true;
+      for (let b = a + 1; b < labels.length; b++) {
+        if (used[b] || !labels[b].small || labels[b].code !== labels[a].code) continue;
+        const near = group.some(function (g) {
+          const dx = labels[g].sx - labels[b].sx, dy = labels[g].sy - labels[b].sy;
+          return (dx * dx + dy * dy) <= CLUSTER_MM * CLUSTER_MM;
+        });
+        if (near) { group.push(b); used[b] = true; }
+      }
+      if (group.length >= 2) clusters.push(group); else used[a] = false;
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    clusters.forEach(function (group) {
+      let mx = 0, my = 0, hot = false;
+      group.forEach(function (gi) { mx += labels[gi].lx / group.length; my += labels[gi].ly / group.length; if (labels[gi].isHighlight) hot = true; });
+      const txt = labels[group[0]].code + ' \u00d7' + group.length;
+      const fp = 11 * dpr;
+      ctx.font = 'bold ' + fp + 'px "Flux Architect", monospace';
+      const tw = ctx.measureText(txt).width;
+      ctx.fillStyle = 'rgba(8,14,22,0.80)';
+      ctx.fillRect(mx - tw / 2 - 5 * dpr, my - fp / 2 - 3 * dpr, tw + 10 * dpr, fp + 6 * dpr);
+      ctx.fillStyle = hot ? '#fffce8' : '#e8eef5';
+      ctx.fillText(txt, mx, my);
+    });
+    labels.forEach(function (L, idx) {
+      if (used[idx]) return;
+      ctx.fillStyle = L.isHighlight ? '#fffce8' : '#e8eef5';
+      const fontPx = (L.fits ? 11 : 9) * dpr;
+      ctx.font = (L.isHighlight ? 'bold ' : '') + fontPx + 'px "Flux Architect", monospace';
+      ctx.fillText('#' + (L.i + 1) + ' ' + L.code, L.lx, L.ly);
     });
   }
 
