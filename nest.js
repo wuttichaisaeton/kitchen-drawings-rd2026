@@ -1231,6 +1231,8 @@
   // (fewest unplaced, fewest sheets, largest remnant). Reuses _rasterMask /
   // _blFind / _stamp / _largestEmptyRect — no new collision code. (2026-05-30)
   function _nestMultiSheetMaxRemnant(pieces, stock, gap) {
+    // NOTE: user-selected mode — unlike Auto's raster (gated at <=150 pieces),
+    // there is no piece-count guard here; very large BOMs will be slower.
     const minSide = Math.min.apply(null, stock.map(s => Math.min(s.w, s.h)).concat([1525]));
     const R = Math.max(5, Math.round(minSide / 200));
     const dCells = gap > 0 ? Math.max(1, Math.round(gap / R)) : 0;
@@ -1305,6 +1307,8 @@
       }
     }
     const candidates = rectCands.slice();
+    // gapFill is seeded only from bestRect (the sheet-minimising rect layout),
+    // not from every candidate — a deliberate perf/quality tradeoff.
     if (bestRect) candidates.push(gapFill(bestRect));
 
     let winner = null, ws = null;
@@ -2096,7 +2100,7 @@
           <div class="kdnest-controls">
             <label class="kdnest-mode-lab">Mode
               <select id="kdnest-mode">
-                ${['Auto','True Shape','MaxRects','BL Corner','Left','Bottom']
+                ${['Auto','True Shape','MaxRects','BL Corner','Left','Bottom','Max Remnant']
                   .map(m => `<option value="${m}" ${m === S.mode ? 'selected' : ''}>${m}</option>`).join('')}
               </select>
             </label>
