@@ -4020,14 +4020,20 @@ function _familyForCode(code) {
   return _remapFamilyForCode(code, fam);
 }
 // Layer palette — node + edge color by depth from the Project center.
-// HSL ramp so ANY depth resolves to a color (no cap); deeper layers keep
-// rotating hue. Tweak these four constants to restyle every layer at once.
-const _LAYER_BASE_HUE = 38;   // layer 1 ≈ gold
-const _LAYER_HUE_STEP = 48;   // degrees added per deeper layer
+// Curated, maximally-distinct hues for the first several layers so adjacent
+// rings never look alike (gold → blue → green → purple → pink). The old even
+// hue ramp put layer 2 (yellow-green) right next to layer 3 (green) and they
+// were hard to tell apart (user 2026-05-30). Beyond the curated set, fall back
+// to a wide hue rotation so ANY depth still resolves to a color (no cap).
+const _LAYER_HUES = [38, 205, 140, 275, 330];  // L1 gold · L2 blue · L3 green · L4 purple · L5 pink
+const _LAYER_FALLBACK_STEP = 72;               // degrees per layer beyond the curated set
 const _LAYER_SAT = 62;        // border/edge saturation %
 const _LAYER_LIGHT = 60;      // border/edge lightness %
 function _layerColor(depth) {
-  const hue = ((_LAYER_BASE_HUE + (depth - 1) * _LAYER_HUE_STEP) % 360 + 360) % 360;
+  const i = depth - 1;
+  const hue = i < _LAYER_HUES.length
+    ? _LAYER_HUES[i]
+    : ((_LAYER_HUES[0] + i * _LAYER_FALLBACK_STEP) % 360 + 360) % 360;
   return {
     color: `hsl(${hue}, ${_LAYER_SAT}%, ${_LAYER_LIGHT}%)`,  // border + edge stroke
     tint:  `hsl(${hue}, 40%, 18%)`,                          // dark fill endpoint over #161b22
