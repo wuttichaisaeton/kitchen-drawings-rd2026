@@ -14,6 +14,7 @@ import {
   Background,
   BackgroundVariant,
   MiniMap,
+  Panel,
   addEdge,
   applyNodeChanges,
   applyEdgeChanges,
@@ -1277,6 +1278,31 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               'เอา 2 อันนี้ออก ให้มองเห็นหน้าจอเต็มๆ'. */}
           {admin && <Controls />}
           {admin && <MiniMap pannable zoomable maskColor="rgba(13, 17, 23, 0.7)" nodeColor="#30363d" />}
+          {/* Floating Show all — pinned to the canvas viewport via <Panel>,
+              so it can't scroll out of reach on a phone (the toolbar above
+              the canvas slides under the sticky app header once the worker
+              pans). User 2026-05-29: assembly screen MUST keep Show all
+              reachable. Always rendered so every role can re-frame. */}
+          <Panel position="top-right">
+            <button
+              className="kme-showall kme-showall-float"
+              onClick={showAll}
+              title="Show every node — clears all hide/collapse and re-frames the whole map"
+            >
+              <svg className="kme-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="8" cy="8" r="2.1"/>
+                <circle cx="3" cy="3" r="1.4"/>
+                <circle cx="13" cy="3" r="1.4"/>
+                <circle cx="3" cy="13" r="1.4"/>
+                <circle cx="13" cy="13" r="1.4"/>
+                <line x1="6.4" y1="6.4" x2="4" y2="4"/>
+                <line x1="9.6" y1="6.4" x2="12" y2="4"/>
+                <line x1="6.4" y1="9.6" x2="4" y2="12"/>
+                <line x1="9.6" y1="9.6" x2="12" y2="12"/>
+              </svg>
+              <span>Show all</span>
+            </button>
+          </Panel>
         </ReactFlow>
       </div>
     </div>
