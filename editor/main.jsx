@@ -1332,7 +1332,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           onSelectionChange={onSelectionChange}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
-          onPaneClick={onPaneClick}
+          /* No onPaneClick fullscreen toggle — tapping the canvas anywhere
+             keeps you in fullscreen; only the Back button leaves (it
+             unmounts the editor → the kme-fs-on class is cleared → back to
+             the project list). User 2026-05-29: 'กดตรงไหนก็ยังอยู่ full
+             screen, ต้องกด Back เท่านั้นถึงจะออก'. */
           /* nodesDraggable=true for all so touch taps on a node's inner
              buttons (🧩/📄) aren't swallowed as pane interactions on iPad.
              Non-admin moves are still blocked in onNodesChange. */
@@ -1418,7 +1422,17 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             <Panel position="top-left">
               <button
                 className="kme-fs-back"
-                onClick={(e) => { e.stopPropagation(); (window.kdAPI?.back || (() => {}))(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Leave fullscreen + go to the project list. Clear the
+                  // <html> class explicitly: app.js detaches #kme-mount from
+                  // the DOM without calling root.unmount(), so the editor's
+                  // useEffect cleanup never fires — without this the project
+                  // list would render with its header still hidden.
+                  document.documentElement.classList.remove('kme-fs-on');
+                  setFullscreen(false);
+                  (window.kdAPI?.back || (() => {}))();
+                }}
                 title="Back to projects"
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
