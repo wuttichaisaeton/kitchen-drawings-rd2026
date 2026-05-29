@@ -4019,6 +4019,20 @@ function _familyForCode(code) {
   const fam = auto[code]?.family || 'Other';
   return _remapFamilyForCode(code, fam);
 }
+// Layer palette — node + edge color by depth from the Project center.
+// HSL ramp so ANY depth resolves to a color (no cap); deeper layers keep
+// rotating hue. Tweak these four constants to restyle every layer at once.
+const _LAYER_BASE_HUE = 38;   // layer 1 ≈ gold
+const _LAYER_HUE_STEP = 48;   // degrees added per deeper layer
+const _LAYER_SAT = 62;        // border/edge saturation %
+const _LAYER_LIGHT = 60;      // border/edge lightness %
+function _layerColor(depth) {
+  const hue = ((_LAYER_BASE_HUE + (depth - 1) * _LAYER_HUE_STEP) % 360 + 360) % 360;
+  return {
+    color: `hsl(${hue}, ${_LAYER_SAT}%, ${_LAYER_LIGHT}%)`,  // border + edge stroke
+    tint:  `hsl(${hue}, 40%, 18%)`,                          // dark fill endpoint over #161b22
+  };
+}
 function _familyColors(famKey) {
   const f = (families || {})[famKey] || (families || {})['Other'] || {};
   return { color: f.color || '#888', tint: f.tint || '#262626' };
