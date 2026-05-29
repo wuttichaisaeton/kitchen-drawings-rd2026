@@ -572,6 +572,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [revealAll, setRevealAllState] = useState(
     () => _readCollapsedState(projectKey).revealAll);
 
+  // Fullscreen canvas — tapping an empty spot on the canvas expands the
+  // editor to cover the whole screen (hides the app header + project summary)
+  // so the worker gets the maximum work area. Tap empty again, or the ✕
+  // button, to exit. User 2026-05-29: 'เมื่อ click บริเวณใดของ canvas ให้
+  // ขยายพื้นที่ canvas ให้เต็มหน้าจอ เพราะช่างต้องใช้พื้นที่'. In-memory only
+  // (a transient view state, not worth persisting).
+  const [fullscreen, setFullscreen] = useState(false);
+
   const _persistCollapse = useCallback((c, set) => {
     // Preserve hidden + seeded + revealAll across collapse toggles —
     // otherwise a single collapse/expand would wipe the tap-3 hide set,
@@ -847,6 +855,14 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     setTimeout(() => { try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {} }, 120);
   }, [projectKey, rf]);
 
+  // Tap empty canvas → toggle fullscreen. The canvas grows/shrinks, so
+  // re-fit once the CSS size transition settles. (request 2026-05-29 #3)
+  const toggleFullscreen = useCallback(() => {
+    setFullscreen(f => !f);
+    setTimeout(() => { try { rf.fitView({ duration: 400, padding: 0.12 }); } catch {} }, 360);
+  }, [rf]);
+  const onPaneClick = useCallback(() => { toggleFullscreen(); }, [toggleFullscreen]);
+
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
   // too because contentEditable + double-click-to-edit are per-node UX.
@@ -906,13 +922,16 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         faded: revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false)),
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
-      // Only admin (เอ๋) may MOVE nodes — the layout is theirs to own.
-      // Workers (assemble/laser/bend/workshop) stay fully interactive
-      // (tap to expand/collapse, 🧩, tap-3 hide) but can't drag, so they
-      // don't accidentally shove the map around. User 2026-05-29:
-      // 'ช่างประกอบ กด interactive node ได้ทุกอย่าง ยกเว้นย้าย'. onNodeClick
-      // still fires when draggable is false, so taps keep working.
-      draggable: admin,
+      // draggable:true for EVERYONE — this is required for the inner-div
+      // button taps (🧩 complete, 📄 PDF) to register on iPad/iPhone: when
+      // a node is NOT draggable, React Flow treats the touch as a pane
+      // interaction and SWALLOWS the inner onClick (see the note by
+      // onOpenPdf). Workers still can't MOVE anything because onNodesChange
+      // drops every non-'select' change for non-admin — so the layout is
+      // safe. User 2026-05-29: 'ช่างประกอบ ... ยกเว้นย้าย' + 'ต้องให้
+      // interactive ทำงานด้วย' (the previous draggable:admin broke the
+      // 🧩/📄 button taps for workers).
+      draggable: true,
     };
   }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll]);
 
@@ -1186,8 +1205,12 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, [deepLinkCode]);
 
   return (
-    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}`}>
-      <div className="kme-toolbar">
+    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}${fullscreen ? ' kme-fullscreen' : ''}`}>
+      {/* Toolbar is admin-only. Workers get a clean canvas — the floating
+          Show all (in the <Panel> below) is their only control, so the
+          status line + zoom chrome don't eat their screen. User 2026-05-29:
+          'เอาตรงนี้ออก'. */}
+      {admin && <div className="kme-toolbar">
         {admin && (
           <>
             <button className="kme-primary" onClick={addNode} title="Add a new node">
@@ -1232,7 +1255,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         <div className="kme-status">
           project: <b>{projectKey || '—'}</b> · {nodes.length} nodes · {edges.length} edges · {status} · <span title="Build timestamp — confirms which bundle is live on this device" style={{ opacity: 0.5 }}>b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}</span>
         </div>
-      </div>
+      </div>}
       <div className="kme-canvas">
         <ReactFlow
           nodes={nodesWithHandlers}
@@ -1245,7 +1268,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           onSelectionChange={onSelectionChange}
           onNodeClick={onNodeClick}
           onNodeDoubleClick={onNodeDoubleClick}
-          nodesDraggable={admin}
+          onPaneClick={onPaneClick}
+          /* nodesDraggable=true for all so touch taps on a node's inner
+             buttons (🧩/📄) aren't swallowed as pane interactions on iPad.
+             Non-admin moves are still blocked in onNodesChange. */
+          nodesDraggable={true}
           nodesConnectable={admin}
           edgesUpdatable={admin}
           elementsSelectable={true}
@@ -1303,6 +1330,23 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               <span>Show all</span>
             </button>
           </Panel>
+          {/* Exit-fullscreen handle — only while fullscreen. Tapping empty
+              canvas also toggles it, but a visible ✕ makes the way out
+              obvious. */}
+          {fullscreen && (
+            <Panel position="top-left">
+              <button
+                className="kme-fs-exit"
+                onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
+                title="Exit fullscreen"
+              >
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M10 2h4v4M14 2l-5 5M6 14H2v-4M2 14l5-5"/>
+                </svg>
+                <span>Exit</span>
+              </button>
+            </Panel>
+          )}
         </ReactFlow>
       </div>
     </div>
