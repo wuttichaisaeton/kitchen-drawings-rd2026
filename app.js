@@ -454,8 +454,36 @@ function _openInNewTab(url) {
 // with the `download` attribute so .dxf files (which Pages serves as
 // application/octet-stream) land in the user's Downloads folder rather
 // than rendering inline as text.
-function _downloadFile(url, suggestedName) {
+async function _downloadFile(url, suggestedName) {
   if (!url) { console.warn('[dxf] _downloadFile called with empty url'); return; }
+  // The DXF `url` field uses the synthetic kitchen-drawings-rd2026.github.io
+  // host (see _githubPagesToJsdelivr) — that host doesn't exist, so hitting it
+  // directly 404s, and a cross-origin <a download> ignores the suggested name
+  // anyway. For those, fetch the jsdelivr mirror (returns 200, CORS-enabled,
+  // same trick the preview path uses) as a blob and download via an object URL
+  // so the file actually lands with the right name. Any non-github.io URL
+  // (raw.githubusercontent PDFs etc.) keeps the plain-anchor path unchanged.
+  const mirror = _githubPagesToJsdelivr(url);
+  if (mirror !== url) {
+    try {
+      const resp = await fetch(mirror, { cache: 'force-cache' });
+      if (!resp.ok) throw new Error('fetch ' + resp.status);
+      const blob = await resp.blob();
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = suggestedName || mirror.split('/').pop() || '';
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objUrl), 10000);
+      return;
+    } catch (e) {
+      console.warn('[dxf] jsdelivr blob download failed, falling back to direct link:', e);
+      // fall through to the plain anchor below (best-effort)
+    }
+  }
   const a = document.createElement('a');
   a.href = url;
   a.download = suggestedName || '';
