@@ -74,6 +74,18 @@
   background: #388bfd;
 }
 
+/* Show all — recovery handle that un-hides every node. Amber accent so
+   it reads as the "get my map back" button when everything's collapsed. */
+.kme-toolbar button.kme-showall {
+  background: #2b2410;
+  border-color: #6b531a;
+  color: #f0c674;
+}
+.kme-toolbar button.kme-showall:hover {
+  background: #3a3014;
+  border-color: #8a6d22;
+}
+
 .kme-toolbar .kme-spacer { flex: 1; }
 
 .kme-toolbar .kme-status {

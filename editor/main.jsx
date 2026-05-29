@@ -609,6 +609,32 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     return descOf;
   }, [edges]);
 
+  // Anchors that have been hidden by the tap-3 'home' gesture OR
+  // by ticking the 🧩 button. Persisted in the SAME LS entry as
+  // collapsedNodes so a render() triggered by a Firebase listener
+  // (initAssembledSync re-renders on every assembled change → would
+  // remount the editor + wipe useState if we kept this in memory
+  // only) doesn't lose the hide state.
+  //
+  // MUST be declared before the hiddenIds useMemo below — that memo
+  // reads hiddenAnchors, so a later declaration is a temporal-dead-zone
+  // crash ("Cannot access 'hiddenAnchors' before initialization") that
+  // blanks the whole mindmap. Regression fixed 2026-05-29.
+  const [hiddenAnchors, setHiddenAnchorsRaw] = useState(
+    () => _readCollapsedState(projectKey).hidden);
+  // Wrap to persist to the same LS entry as collapsedNodes — the
+  // useEffect that mirrors collapsedNodes uses the latest hidden too.
+  const setHiddenAnchors = useCallback((updater) => {
+    setHiddenAnchorsRaw(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      try {
+        const cur = _readCollapsedState(projectKey);
+        _writeCollapsedState(projectKey, { ...cur, hidden: next });
+      } catch {}
+      return next;
+    });
+  }, [projectKey]);
+
   // hiddenIds = union of descendants of every collapsed parent AND
   // every tap-3-hidden anchor. The latter is what makes a hidden
   // parent's whole subtree disappear together (user 2026-05-28:
@@ -657,26 +683,6 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // initial view is "project + variants only". A user who then expands
   // some variants stores that explicit choice; the seed never runs again
   // for this project unless they hit Reset (which clears the LS entry).
-  // Anchors that have been hidden by the tap-3 'home' gesture OR
-  // by ticking the 🧩 button. Persisted in the SAME LS entry as
-  // collapsedNodes so a render() triggered by a Firebase listener
-  // (initAssembledSync re-renders on every assembled change → would
-  // remount the editor + wipe useState if we kept this in memory
-  // only) doesn't lose the hide state.
-  const [hiddenAnchors, setHiddenAnchorsRaw] = useState(
-    () => _readCollapsedState(projectKey).hidden);
-  // Wrap to persist to the same LS entry as collapsedNodes — the
-  // useEffect that mirrors collapsedNodes uses the latest hidden too.
-  const setHiddenAnchors = useCallback((updater) => {
-    setHiddenAnchorsRaw(prev => {
-      const next = typeof updater === 'function' ? updater(prev) : updater;
-      try {
-        const cur = _readCollapsedState(projectKey);
-        _writeCollapsedState(projectKey, { ...cur, hidden: next });
-      } catch {}
-      return next;
-    });
-  }, [projectKey]);
   const seededProjectRef = useRef(null);
   useEffect(() => {
     if (!inChecklistMode) return;
@@ -742,6 +748,24 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     }, 850);
     return () => clearTimeout(t);
   }, [collapsedNodes, inChecklistMode, rf]);
+
+  // "Show all" — single recoverable handle that brings EVERYTHING back
+  // regardless of how it got hidden: clears the center collapse, every
+  // collapsed subtree, AND every tap-3 / 🧩 hidden anchor, then wipes the
+  // persisted LS entry so a reload stays fully expanded. Added 2026-05-29
+  // after the whole mindmap disappeared (variants seeded-collapsed in
+  // checklist mode + tap-3 hides stacked up) and the only recovery was the
+  // non-obvious "tap the project-center bubble" gesture. setHiddenAnchorsRaw
+  // (the unwrapped setter) avoids a redundant LS write — the explicit
+  // _writeCollapsedState below is the single source of the cleared state.
+  const showAll = useCallback(() => {
+    setCollapsedState(false);
+    setCollapsedNodes(new Set());
+    setHiddenAnchorsRaw(new Set());
+    _writeCollapsedState(projectKey, { center: false, nodes: new Set(), hidden: new Set() });
+    setStatus('show all');
+    setTimeout(() => { try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {} }, 120);
+  }, [projectKey, rf]);
 
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
@@ -1104,6 +1128,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             </button>
           </>
         )}
+        <button className="kme-showall" onClick={showAll} title="Show every node — clears all hide/collapse and re-frames the whole map">
+          <svg className="kme-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="8" cy="8" r="2.1"/>
+            <circle cx="3" cy="3" r="1.4"/>
+            <circle cx="13" cy="3" r="1.4"/>
+            <circle cx="3" cy="13" r="1.4"/>
+            <circle cx="13" cy="13" r="1.4"/>
+            <line x1="6.4" y1="6.4" x2="4" y2="4"/>
+            <line x1="9.6" y1="6.4" x2="12" y2="4"/>
+            <line x1="6.4" y1="9.6" x2="4" y2="12"/>
+            <line x1="9.6" y1="9.6" x2="12" y2="12"/>
+          </svg>
+          <span>Show all</span>
+        </button>
         <div className="kme-spacer" />
         <div className="kme-status">
           project: <b>{projectKey || '—'}</b> · {nodes.length} nodes · {edges.length} edges · {status} · <span title="Build timestamp — confirms which bundle is live on this device" style={{ opacity: 0.5 }}>b{typeof __KME_BUILD__ !== 'undefined' ? __KME_BUILD__ : '?'}</span>
