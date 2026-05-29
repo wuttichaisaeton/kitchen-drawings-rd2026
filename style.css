@@ -3072,7 +3072,7 @@ button.cut-status:focus-visible {
 }
 
 /* ─── Cut Sheets modal ───────────────────────────────────────────── */
-/* Nested cut layouts uploaded via NestingTool's Save Sheets to Project
+/* Nested cut layouts uploaded via NestingTool's Save sheets to Laser
    or admin drag-drop. Distinct from the per-part .pdxf-* modal. */
 
 .cs-modal {

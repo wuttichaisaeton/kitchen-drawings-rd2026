@@ -900,9 +900,12 @@
   }
 
   // ════════════════════════════════════════════════════════════════════
-  //  Save Sheets → cut_sheets/<projectKey>/<id>
+  //  Save sheets to Laser → cut_sheets/<projectKey>/<id>
+  //  (button label was 'Save Sheets to Project' through 2026-05-29 —
+  //   renamed because the destination is the Laser-role 📐 Cut Sheets
+  //   panel on the same project, not a generic 'project drop'.)
   // ════════════════════════════════════════════════════════════════════
-  async function _saveSheetsToProject() {
+  async function _saveSheetsToLaser() {
     if (!S.flatSheets.length) {
       alert('No nested sheets — click ▶ Run Nesting first.');
       return;
@@ -973,7 +976,7 @@
       }
     }
     if (btn) { btn.disabled = false; btn.textContent = origText; }
-    alert(`Save Sheets to Project '${S.projectName}'\n\nUploaded: ${ok}\nFailed:   ${fail}` +
+    alert(`Save sheets to Laser — '${S.projectName}'\n\nUploaded: ${ok}\nFailed:   ${fail}` +
           (firstErr ? `\n\nFirst error: ${firstErr}` : ''));
   }
 
@@ -1164,7 +1167,7 @@
           </div>
           <div class="kdnest-actions">
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run">▶ Run Nesting</button>
-            <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'}>📤 Save Sheets to Project</button>
+            <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'}>📤 Save sheets to Laser</button>
           </div>
           <div class="kdnest-parts">
             <div class="kdnest-parts-head">
@@ -1199,7 +1202,7 @@
     const $ = sel => S.rootEl.querySelector(sel);
     $('#kdnest-back')?.addEventListener('click', close);
     $('#kdnest-run')?.addEventListener('click', _runNesting);
-    $('#kdnest-save-sheets')?.addEventListener('click', _saveSheetsToProject);
+    $('#kdnest-save-sheets')?.addEventListener('click', _saveSheetsToLaser);
     $('#kdnest-prev')?.addEventListener('click', () => {
       if (S.currentSheetIdx > 0) { S.currentSheetIdx--; _refreshView(); }
     });
