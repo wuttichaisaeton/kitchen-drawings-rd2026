@@ -4284,6 +4284,42 @@ function _buildBomNodes(project, parts, projectKey) {
     placeRadial(root, 1, null, null, null, true);
   }
 
+  // Post-build pass: depth = hops from the Project center along the directed
+  // center→child edges. Recolor every BOM node (incl wrapper / variant-root
+  // containers) and each incoming edge by layer. Center stays its blue anchor.
+  function _applyLayerColors(nodes, edges, centerId) {
+    const adj = new Map();
+    for (const e of edges) {
+      if (!adj.has(e.source)) adj.set(e.source, []);
+      adj.get(e.source).push(e.target);
+    }
+    const layerOf = new Map([[centerId, 0]]);
+    const queue = [centerId];
+    while (queue.length) {
+      const id = queue.shift();
+      const d = layerOf.get(id);
+      for (const t of (adj.get(id) || [])) {
+        if (!layerOf.has(t)) { layerOf.set(t, d + 1); queue.push(t); }
+      }
+    }
+    const byId = new Map(nodes.map(n => [n.id, n]));
+    for (const [id, depth] of layerOf) {
+      if (depth < 1) continue;                       // skip center (layer 0)
+      const node = byId.get(id);
+      if (!node || node.data?.kind !== 'bom') continue;
+      const { color, tint } = _layerColor(depth);
+      node.data.color = color;
+      node.data.tint = tint;
+      node.data.layer = depth;                        // exposed for verification/debug
+    }
+    for (const e of edges) {
+      const depth = layerOf.get(e.target);
+      if (depth == null || depth < 1) continue;
+      e.style = { ...(e.style || {}), stroke: _layerColor(depth).color };
+    }
+  }
+
+  _applyLayerColors(nodes, edges, `project:${projectKey}`);
   return { nodes, edges };
 }
 
