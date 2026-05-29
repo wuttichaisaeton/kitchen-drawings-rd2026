@@ -2888,8 +2888,11 @@ function initCommentsSync() {
       }
       commentsCache = next;
       saveCachedComments(commentsCache);
-      // Re-render to reflect new comments from other devices
-      try { render(); } catch {}
+      // Reflect new comments from other devices. In-place refresh so a remote
+      // comment landing while the mindmap editor is open doesn't remount it
+      // (canvas flash); off the editor (where comment panels show) this falls
+      // through to a full render(). Same fix as the assembled/bent listeners.
+      _refreshAssemblyUI();
     }, err => {
       console.warn('Firebase comments listener error:', err);
     });
@@ -3003,7 +3006,11 @@ function initTimersSync() {
       timersCache = snapshot.val() || {};
       saveCachedTimers(timersCache);
       _updateTickerState();
-      try { render(); } catch {}
+      // In-place refresh so a timer write landing while the mindmap editor is
+      // open doesn't remount it (canvas flash); off the editor (cut list /
+      // project view, where timers actually show) this falls through to a full
+      // render(). Same fix as the assembled/bent listeners. (2026-05-29)
+      _refreshAssemblyUI();
     }, err => console.warn('Firebase timers listener error:', err));
   } catch (e) {
     console.warn('Failed to attach timers listener:', e);

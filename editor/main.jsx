@@ -638,11 +638,6 @@ const _vpCache = {};
 function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode, autoFullscreen }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
-  // When set, the next collapse-driven fitView is skipped so the view stays
-  // put. Used by the 🧩 assemble toggle — re-framing on every tick was
-  // disorienting (user 2026-05-29: 'กดปุ่ม complete Assembly ... ไม่ต้อง
-  // zoom ... ดูแล้วจะงงว่ากดอะไรไป'). Variant expand/collapse still re-fits.
-  const skipFitRef = useRef(false);
   const [selectedId, setSelectedId] = useState(null);
   const [status, setStatus] = useState(admin ? 'ready (admin)' : 'view only');
   // iPad diagnostic: expose setStatus globally so mini-button handlers in
@@ -736,7 +731,6 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // 2026-05-28: 'ย่อเฉพาะ node นั้น (node หาย เส้นหาย) ลักษณะ การ
   // ทำงาน คล้ายปุ่มที่ 3'. Tap project center re-shows them.
   const ensureCollapsed = useCallback((nodeId) => {
-    skipFitRef.current = true;  // 🧩 toggle — don't re-zoom, keep the view still
     setRevealAll(false);  // marking a part assembled re-enables normal hiding
     setCollapsedNodes(prev => {
       if (prev.has(nodeId)) return prev;
@@ -758,7 +752,6 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // UN-marks 🧩 so the toggle reverses (node + edge come back), mirroring
   // how tapping the project center clears hiddenAnchors. (2026-05-29)
   const releaseNode = useCallback((nodeId) => {
-    skipFitRef.current = true;  // 🧩 un-toggle — keep the view still
     setCollapsedNodes(prev => {
       if (!prev.has(nodeId)) return prev;
       const next = new Set(prev);
@@ -949,7 +942,6 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // NO auto-fit on expand/collapse/🧩/tap-3 anymore. The view only moves
   // when the USER pans/zooms or taps the Zoom-fit button. User 2026-05-29:
   // 'ไม่ต้องยุ่งเรื่อง pan zoom ... มีปุ่ม zoom fit แล้ว ให้ user จัดการเอง'.
-  // (skipFitRef is now a no-op leftover; harmless.)
 
   // "Show all" — single recoverable handle that brings EVERYTHING back
   // regardless of how it got hidden: clears the center collapse, every
@@ -1216,7 +1208,6 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           // hiddenAnchors so the CSS kme-faded class applies. To
           // bring it back, tap the project-center bubble — that
           // gesture clears hiddenAnchors.
-          skipFitRef.current = true;  // tap-3 hide — keep the view exactly still (user 2026-05-29)
           setRevealAll(false);  // a hide gesture exits reveal-all mode
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
