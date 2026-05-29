@@ -2,6 +2,29 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
+  <!-- Discourage caching of the app shell itself so a freshly deployed
+       index.html is fetched on launch. Belt-and-suspenders with the
+       network-first service worker below (sw.js). -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <!-- Network-first service worker: once installed, every deploy reaches
+       the workshop phones on next launch without deleting/re-adding the
+       home-screen icon. Reloads once when a new SW takes control so the
+       fresh bundle is in effect immediately. -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      });
+      var __kdReloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', function () {
+        if (__kdReloaded) return;
+        __kdReloaded = true;
+        window.location.reload();
+      });
+    }
+  </script>
   <!-- maximum-scale=1 + user-scalable=no: iPad PWA otherwise hijacks
        pinch gestures as page-level zoom, which beats React Flow to it
        and prevents the mindmap canvas from zooming. Workshop iPad never
