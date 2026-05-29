@@ -236,3 +236,17 @@ overflow-wrap:anywhere }` + `@media (max-width:480px)` shrinks the action
 buttons to 46px (qty/gap/padding trimmed, code 15px). iPad keeps 52px.
 Verified at 375px: codeRight 144 < qtyLeft 150, no overflow, one row.
 Bend-list 💬 is fully settled now. **NEEDS:** nothing.
+
+---
+
+## [2026-05-29 18:30] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Editing app.js — adding `#nest=<pk>` deep-link so CC_Laser can open the web Nesting workspace directly.
+
+เอ๋ wants CC_Laser to open the WEB nest instead of the desktop Python tool.
+Adding to `_applyDeepLinkFromHash` (~L2517): `#nest=<projectKey>` → if manifest
+has it + window.kdNest, call `kdNest.openProject(pk)` + clear hash. CC_Laser
+will open `?admin=1#nest=<pk>`. Additive, localised to the deep-link router.
+Fusion side (my files): CC_Laser auto-uploads DXFs (Step 5.5, drops the
+"Upload?" prompt) then opens that URL instead of launching nest_gui.py.
+**NEEDS:** if you already have a nest deep-link / prefer a different param name,
+shout — else I ship `#nest=`. Will ping when pushed.
