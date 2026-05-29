@@ -619,7 +619,7 @@ function ChecklistPanel({ projectKey, nonce }) {
   };
 
   return (
-    <div className="kme-checklist">
+    <div className="kme-checklist-panel">
       <div className="kme-checklist-head">
         <span className="kme-checklist-title">Checklist</span>
         <span className="kme-checklist-progress">{done}/{total}</span>

@@ -788,10 +788,11 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   box-shadow: 0 2px 10px rgba(0,0,0,0.45);
   -webkit-tap-highlight-color: transparent;
 }
-.kme-checklist-btn:hover { border-color: #4a90e2; }
+.kme-checklist-btn:hover { border-color: #388bfd; }
+.kme-checklist-btn:active { transform: scale(0.94); }
 .kme-checklist-btn .kme-btn-icon { width: 16px; height: 16px; }
 
-.kme-checklist {
+.kme-checklist-panel {
   width: 300px; max-width: 78vw; max-height: 60vh;
   display: flex; flex-direction: column;
   background: #11161d; color: #e6edf3;
@@ -808,6 +809,7 @@ html.kme-fs-on .kme-root { height: 100% !important; }
 .kme-checklist-close {
   margin-left: auto; background: none; border: none;
   color: #9aa7b4; font-size: 15px; cursor: pointer; line-height: 1;
+  padding: 4px 8px;
 }
 .kme-checklist-close:hover { color: #e6edf3; }
 
@@ -839,8 +841,9 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   display: flex; flex-direction: column; gap: 4px;
 }
 /* Comments are the ONE place Thai is allowed — use a Thai-capable fallback
-   stack (Flux Architect can't render Thai). */
-.kme-cmt, .kme-cmt-input {
+   stack (Flux Architect can't render Thai). Qualified with thread ancestor
+   to beat the .kme-root * wildcard without relying solely on source order. */
+.kme-checklist-thread .kme-cmt, .kme-checklist-thread .kme-cmt-input {
   font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
   font-size: 12.5px;
 }
