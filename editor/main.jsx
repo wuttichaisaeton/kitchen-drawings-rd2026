@@ -395,15 +395,27 @@ function MindmapNode({ id, data, selected }) {
         {missing && isBom && (
           <span
             className="kme-missing-badge nodrag nopan"
-            title="Open in Library to inspect or drop a PDF"
+            title="No PDF yet — tap to open the 3D master in Fusion"
             onClick={(e) => {
               e.stopPropagation();
-              if (code && api.openInLibrary) api.openInLibrary(code);
+              // Route to Fusion 3D via the localhost bridge (same path
+              // the leaf-body click uses). Per user 2026-05-28: the
+              // 'no PDF, open the model instead' affordance was missing
+              // — the chip becomes that affordance now. iPad shows a
+              // clear error from _routeLeafToFusion explaining the
+              // bridge isn't reachable from there.
+              if (api.routeLeaf) {
+                api.routeLeaf({ code, status, urn, drawing_urn });
+              }
             }}
             onPointerDown={(e) => {
               if (e.pointerType === 'touch') {
+                e.preventDefault();
                 e.stopPropagation();
-                if (code && api.openInLibrary) api.openInLibrary(code);
+                e.nativeEvent.stopImmediatePropagation();
+                if (api.routeLeaf) {
+                  api.routeLeaf({ code, status, urn, drawing_urn });
+                }
               }
             }}
           >
