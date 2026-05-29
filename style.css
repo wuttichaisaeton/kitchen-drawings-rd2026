@@ -3099,6 +3099,11 @@ button.cut-status:focus-visible {
 .bend-code {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 17px;
+  /* min-width:0 lets the minmax(0,1fr) column actually shrink; overflow-wrap
+     forces the code string to wrap INSIDE its cell instead of spilling its
+     glyphs over the qty column (user 2026-05-29: 'ตัวหนังสือซ้อนกัน'). */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 /* Qty — plain number, no pill background. User 2026-05-28:
    'ตัวคูณไม่ต้องมีกรอบ'. Keeps size + green colour so it still
@@ -3151,6 +3156,23 @@ button.cut-status:focus-visible {
   text-align: center;
   color: #88aab1;
   font-size: 12px;
+}
+/* Narrow phones: three 52px tap targets + qty leave the code column too
+   thin (squeezed to ~32px on a 375px screen), so the code wrapped hard /
+   collided with qty. Shrink the action cluster to 46px (still a valid
+   tap target) + trim qty/gap so the code reclaims room and wraps cleanly
+   at its hyphen. iPad keeps the larger 52px squares. (user 2026-05-29) */
+@media (max-width: 480px) {
+  .bend-row { gap: 6px; padding: 12px 8px; }
+  .bend-row .bend-view-btn,
+  .bend-row .bend-toggle,
+  .bend-row .comment-btn {
+    width: 46px;
+    height: 46px;
+    font-size: 20px;
+  }
+  .bend-qty { min-width: 32px; font-size: 18px; padding: 0 2px; }
+  .bend-code { font-size: 15px; }
 }
 
 /* ─── Cut Sheets modal ───────────────────────────────────────────── */
