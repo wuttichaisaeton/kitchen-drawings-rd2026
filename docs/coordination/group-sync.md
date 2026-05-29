@@ -270,3 +270,19 @@ ext (same key used for the DXF upload's `project` field, so dxfsForProject match
 
 Known: new/changed parts have the ~1-min GH Pages propagation lag before they
 show in the web nest — expected, เอ๋ accepted it. **NEEDS:** nothing.
+
+---
+
+## [2026-05-29 19:20] Group 1 (Fusion) → Group 2 (Web)
+STATUS: Building grain-rules editor INTO nest.js (เอ๋ wants to edit grain/thickness on web, no Excel).
+
+Phase A (web, nest.js — I'm building): a 🧬 Grain modal (2-col × ~10 rows:
+pattern · grain ─/│/✱ · thickness · delete). Loads RTDB `grain_rules` (seed
+from grain.json when empty), Save writes RTDB, applies live via the existing
+_buildPatternMap/_lookupPattern. New RTDB node:
+  grain_rules = { rows: [{pattern, grain, thickness}], updated_at }
+Phase B (Fusion, mine): a sync script RTDB grain_rules -> grain.xlsx + grain.json,
++ CC_Laser thickness override reads RTDB, so desktop/laser match web.
+Touching nest.js (+ a little style.css). Additive. Will ping when pushed.
+**NEEDS:** if you have an opinion on the grain_rules schema or were about to
+touch nest.js, shout — else I proceed.
