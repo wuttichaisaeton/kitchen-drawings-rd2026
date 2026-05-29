@@ -1155,6 +1155,38 @@
     _refreshView();
     _scrollPreviewRow();
   }
+  // Sheet index of the first placement of `code`. Module-scoped twin of the
+  // findSheetIdx() local inside _refreshView so the keyboard nav below can
+  // reach it. -1 = not placed on any sheet yet.
+  function _sheetIdxOf(code) {
+    for (let i = 0; i < S.flatSheets.length; i++) {
+      if (S.flatSheets[i].placements.some(pl => pl.code === code)) return i;
+    }
+    return -1;
+  }
+  // ↑/↓ while a part is highlighted on its sheet (📍 View@sheet): step to the
+  // prev/next PLACED part, jump to its sheet, and re-highlight — so the worker
+  // can browse where each part landed without leaving the sheet view (user
+  // 2026-05-30 'Part@sheet ใช้ Keyboard ขึ้นลงได้เหมือนกัน'). Skips parts not
+  // yet placed; clamps at the ends like _movePreview.
+  function _moveOnSheet(delta) {
+    if (!S.parts.length || !S.flatSheets.length) return;
+    let idx = S.parts.findIndex(p => p.code === S.highlightCode);
+    if (idx < 0) idx = (delta > 0 ? -1 : S.parts.length);
+    let next = -1;
+    for (let step = idx + delta; step >= 0 && step < S.parts.length; step += delta) {
+      if (_sheetIdxOf(S.parts[step].code) >= 0) { next = step; break; }
+    }
+    if (next < 0) return;  // no placed part in that direction — stay put
+    const code = S.parts[next].code;
+    S.highlightCode = code;
+    S.currentSheetIdx = _sheetIdxOf(code);
+    _refreshView();
+    // Keep the glow lit while browsing; re-arm the same 3.5s auto-clear the
+    // 📍 button uses so it fades a few seconds after the last keypress.
+    clearTimeout(window.__kdNestHighlightTO);
+    window.__kdNestHighlightTO = setTimeout(() => { S.highlightCode = null; _refreshView(); }, 3500);
+  }
 
   // ════════════════════════════════════════════════════════════════════
   //  Canvas render
@@ -1838,9 +1870,19 @@
       if (S.closing || !S.rootEl) return;
       const t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
-      if (e.key === 'ArrowDown') { e.preventDefault(); _movePreview(1); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); _movePreview(-1); }
-      else if (e.key === 'Escape' && S.previewCode) { e.preventDefault(); S.previewCode = null; _refreshView(); }
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const delta = e.key === 'ArrowDown' ? 1 : -1;
+        // In single-part preview → flip parts. While a part is highlighted on
+        // its sheet (📍) → browse placed parts on their sheets. Otherwise fall
+        // back to entering the single-part preview.
+        if (S.previewCode) _movePreview(delta);
+        else if (S.highlightCode) _moveOnSheet(delta);
+        else _movePreview(delta);
+      } else if (e.key === 'Escape') {
+        if (S.previewCode) { e.preventDefault(); S.previewCode = null; _refreshView(); }
+        else if (S.highlightCode) { e.preventDefault(); clearTimeout(window.__kdNestHighlightTO); S.highlightCode = null; _refreshView(); }
+      }
     };
     document.addEventListener('keydown', S._onKeyNav);
     S.prevHtml = S.rootEl.innerHTML;
