@@ -1075,6 +1075,7 @@ function _renderBendList(parts, projectKey) {
   const bentList = aggregated.filter(p => isBent(projectKey, p.code));
   const pct = total ? Math.round(bentList.length * 100 / total) : 0;
 
+  const admin = isAdmin();
   const rows = aggregated.map(p => {
     const bent = isBent(projectKey, p.code);
     const fam = _remapFamilyForCode(p.code, p.family) || 'Other';
@@ -1086,16 +1087,42 @@ function _renderBendList(parts, projectKey) {
     const viewBtn = pdfHref
       ? `<button class="bend-view-btn" data-url="${escapeHtml(pdfHref)}" title="View bending drawing PDF">👁</button>`
       : `<button class="bend-view-btn" disabled title="No drawing PDF for this part yet">👁</button>`;
+    // 💬 comments — reuse the shared per-part comment system (same as the
+    // BOM row). Comments are global per part code (comments/<code>), so a
+    // note left in bending is the same thread the assembler/admin sees.
+    // (user 2026-05-29: 'เพิ่ม icon comments สำหรับงานพับ แต่ละตัว')
+    const comments = getComments(p.code);
+    const cOpen = isCommentsOpen(p.code);
+    const cBadgeHtml = comments.length > 0
+      ? `<span class="comment-count">${comments.length}</span>`
+      : '';
+    const commentsPanel = cOpen ? `
+      <div class="comments-panel" data-code="${escapeHtml(p.code)}">
+        <ul class="comments-list">
+          ${comments.length ? comments.map(c => `
+            <li class="comment-item">
+              <span class="comment-time">${escapeHtml(fmtCommentTime(c.time))}</span>
+              <span class="comment-text">${escapeHtml(c.text)}</span>
+              ${admin ? `<button class="comment-del" data-code="${escapeHtml(p.code)}" data-id="${escapeHtml(c._key || String(c.time))}" aria-label="Delete">✕</button>` : ''}
+            </li>`).join('') : '<li class="comment-empty">No comments yet</li>'}
+        </ul>
+        <form class="comment-input-wrap" data-code="${escapeHtml(p.code)}">
+          <input class="comment-input" type="text" placeholder="พิมพ์ comment / type a note…" autocomplete="off">
+          <button type="submit" class="comment-add">+ Add</button>
+        </form>
+      </div>` : '';
     return `
-      <div class="bend-row ${bent ? 'is-bent' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+      <div class="bend-row ${bent ? 'is-bent' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="bend-icon">${familyIcon(fam)}</span>
         <span class="bend-code">${escapeHtml(p.code)}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
         ${viewBtn}
+        <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
           <span class="icon-bend"></span>
         </button>
-      </div>`;
+      </div>
+      ${commentsPanel}`;
   }).join('');
 
   return `
@@ -1127,6 +1154,42 @@ function _wireBendList(parts, projectKey) {
       ev.stopPropagation();
       const url = btn.dataset.url;
       if (url) _openInNewTab(url);
+    });
+  });
+  // 💬 Comment handlers — the bend path returns before renderProject's
+  // shared comment wiring (~L5861), so wire the same 3 actions here.
+  // Reuses the global comment helpers; render() re-renders the bend list.
+  ROOT.querySelectorAll('.comment-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      toggleCommentsOpen(btn.dataset.code);
+      render();
+    });
+  });
+  ROOT.querySelectorAll('.comment-input-wrap').forEach(form => {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const input = form.querySelector('.comment-input');
+      const code = form.dataset.code;
+      if (input && code && input.value.trim()) {
+        addComment(code, input.value);
+        input.value = '';
+        render();
+      }
+    });
+  });
+  ROOT.querySelectorAll('.comment-del').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      const code = btn.dataset.code;
+      const id = btn.dataset.id;
+      if (code && id) {
+        const asNum = Number(id);
+        removeComment(code, !isNaN(asNum) && /^\d+$/.test(id) ? asNum : id);
+        render();
+      }
     });
   });
 }
