@@ -3358,7 +3358,8 @@ footer {
 }
 .nest-home-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  /* name (flex) · stats · cta · pin */
+  grid-template-columns: 1fr auto auto auto;
   gap: 16px;
   align-items: center;
   background: #0f1620;
@@ -3371,13 +3372,36 @@ footer {
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s;
 }
-.nest-home-row:hover:not(:disabled) {
+/* Row is now a <div role="button">; gate hover on .no-dxf class
+   instead of the :disabled pseudo (only valid on form elements). */
+.nest-home-row:not(.no-dxf):hover {
   background: #14202e;
   border-color: #2a3a4f;
+}
+.nest-home-row:focus-visible {
+  outline: 2px solid #4a90e2;
+  outline-offset: 2px;
 }
 .nest-home-row.no-dxf {
   opacity: 0.5;
   cursor: not-allowed;
+}
+/* Pinned row — yellow rail + warm tint, mirrors .project-card.pinned.
+   The pin button stays clickable even on .no-dxf rows so admins can
+   favorite a project before its DXFs are exported. */
+.nest-home-row.pinned {
+  border-color: #f2c870;
+  background: #221d10;
+  box-shadow: inset 3px 0 0 0 #f2c870;
+}
+.nest-home-row.pinned:not(.no-dxf):hover {
+  background: #2a230f;
+}
+.nest-home-row .pin-btn {
+  /* Keep the pin clickable on disabled (.no-dxf) rows — reset the
+     cursor + pointer-events that the parent dimmer applies. */
+  cursor: pointer;
+  pointer-events: auto;
 }
 .nest-home-name {
   font-family: "Flux Architect", monospace;

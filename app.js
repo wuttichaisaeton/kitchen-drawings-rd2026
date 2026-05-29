@@ -3454,10 +3454,17 @@ function renderNestHome() {
       totalQty,
       dxfCount,
       ready: dxfCount > 0,
+      pinned: isPinned(key),   // shared with Projects view (_pinnedCache)
     };
   });
-  // Ready (has DXFs) first; then by name.
-  entries.sort((a, b) => (b.ready - a.ready) || a.name.localeCompare(b.name));
+  // Pinned (favorited) first; then ready (has DXFs); then by name. Mirrors
+  // the Projects-tab priority so a star toggled here surfaces the row to
+  // the top of BOTH lists.
+  entries.sort((a, b) =>
+    (b.pinned - a.pinned) ||
+    (b.ready - a.ready) ||
+    a.name.localeCompare(b.name)
+  );
   // Apply search filter if user typed.
   const q = (SEARCH.value || '').trim().toLowerCase();
   const filtered = q
@@ -3474,13 +3481,29 @@ function renderNestHome() {
     return;
   }
 
-  const rows = filtered.map(e => `
-    <button class="nest-home-row ${e.ready ? '' : 'no-dxf'}" data-key="${escapeHtml(e.key)}"
-            ${e.ready ? '' : 'disabled aria-disabled="true"'}>
+  const rows = filtered.map(e => {
+    // Row is a <div role="button"> instead of a real <button> so we can
+    // nest a clickable .pin-btn inside it (button-in-button is invalid
+    // HTML). Click + keydown handlers wire it up below; aria-disabled
+    // gates the open action when there are no DXFs, but the pin button
+    // still works (admin may want to favorite a project that hasn't
+    // exported yet).
+    const cls = [
+      'nest-home-row',
+      e.ready ? '' : 'no-dxf',
+      e.pinned ? 'pinned' : '',
+    ].filter(Boolean).join(' ');
+    const pinTitle = e.pinned ? 'Unpin from top' : 'Pin to top';
+    return `
+    <div class="${cls}" data-key="${escapeHtml(e.key)}" role="button" tabindex="0"
+         ${e.ready ? '' : 'aria-disabled="true"'}>
       <span class="nest-home-name">${escapeHtml(e.name)}</span>
       <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
       <span class="nest-home-cta">${e.ready ? '▶ Nest' : '⚠ no DXFs'}</span>
-    </button>`).join('');
+      <button class="pin-btn ${e.pinned ? 'on' : ''}" data-project="${escapeHtml(e.key)}"
+              aria-label="${pinTitle}" title="${pinTitle}">${e.pinned ? '★' : '☆'}</button>
+    </div>`;
+  }).join('');
 
   ROOT.innerHTML = `
     <div class="nest-home">
@@ -3492,15 +3515,41 @@ function renderNestHome() {
     </div>`;
   COUNT_EL.textContent = `${filtered.length} project${filtered.length === 1 ? '' : 's'}`;
 
-  ROOT.querySelectorAll('.nest-home-row').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const key = btn.dataset.key;
-      if (!key) return;
-      if (window.kdNest && typeof window.kdNest.openProject === 'function') {
-        window.kdNest.openProject(key);
-      } else {
-        alert('Nesting workspace not loaded — refresh the page.');
+  // Row open — skip if the click was on the pin button (pin has its own
+  // handler below). aria-disabled rows (no DXFs) don't open. Keyboard
+  // Enter/Space activates the same as click since the row is a div now.
+  const _openRow = (row) => {
+    if (row.getAttribute('aria-disabled') === 'true') return;
+    const key = row.dataset.key;
+    if (!key) return;
+    if (window.kdNest && typeof window.kdNest.openProject === 'function') {
+      window.kdNest.openProject(key);
+    } else {
+      alert('Nesting workspace not loaded — refresh the page.');
+    }
+  };
+  ROOT.querySelectorAll('.nest-home-row').forEach(row => {
+    row.addEventListener('click', (ev) => {
+      if (ev.target.closest('.pin-btn')) return;
+      _openRow(row);
+    });
+    row.addEventListener('keydown', (ev) => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        if (ev.target.closest('.pin-btn')) return;
+        ev.preventDefault();
+        _openRow(row);
       }
+    });
+  });
+
+  // Pin / unpin — toggles the shared _pinnedCache (same Firebase path as
+  // the Projects-tab star). Re-render so the row jumps to the new sort
+  // position immediately.
+  ROOT.querySelectorAll('.nest-home-row .pin-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      togglePinned(btn.dataset.project);
+      render();
     });
   });
 }
