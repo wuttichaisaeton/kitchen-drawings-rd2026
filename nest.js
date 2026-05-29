@@ -564,6 +564,19 @@
     g = String(g || '').toUpperCase();
     return g === 'H' ? 'V' : g === 'V' ? 'ANY' : 'H';
   }
+  // Sort rules A->Z by pattern (user 2026-05-29 'grain ให้เรียงตามตัวอักษร');
+  // blank-pattern rows (freshly added, not yet typed) sink to the bottom.
+  function _sortGrainRows() {
+    if (!Array.isArray(S.grainRows)) return;
+    S.grainRows.sort((a, b) => {
+      const pa = String(a.pattern || '').trim();
+      const pb = String(b.pattern || '').trim();
+      if (!pa && !pb) return 0;
+      if (!pa) return 1;
+      if (!pb) return -1;
+      return pa.localeCompare(pb, undefined, { sensitivity: 'base' });
+    });
+  }
   async function _loadGrainRows() {
     if (S.grainRows) return S.grainRows;
     let rows = null;
@@ -604,8 +617,9 @@
   async function _saveGrainRows() {
     const clean = (S.grainRows || []).filter(r => String(r.pattern).trim());
     S.grainRows = clean;
+    _sortGrainRows();                       // persist in A->Z pattern order
     if (window.firebaseDB) {
-      await window.firebaseDB.ref('grain_rules').set({ rows: clean, updated_at: Date.now() });
+      await window.firebaseDB.ref('grain_rules').set({ rows: S.grainRows, updated_at: Date.now() });
     }
     _grainRowsToMap();
     _applyGrainToParts();
@@ -616,6 +630,7 @@
   }
   function _renderGrainModal() {
     document.querySelectorAll('.kdng-modal').forEach(m => m.remove());
+    _sortGrainRows();
     const rows = S.grainRows || [];
     const cell = (r, i) => `
       <div class="kdng-row" data-i="${i}">
