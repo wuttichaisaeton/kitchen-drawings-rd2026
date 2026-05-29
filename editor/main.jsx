@@ -134,7 +134,7 @@ function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
           isLeaf, isWrapper, status, urn, drawing_urn,
           isCollapsedParent, hasChildren,
-          isVariantRoot, inChecklistMode, faded, ensureCollapsed } = data;
+          isVariantRoot, inChecklistMode, faded, ensureCollapsed, revealAll } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -308,7 +308,9 @@ function MindmapNode({ id, data, selected }) {
   // The first two never apply to variant roots themselves; the third
   // explicitly does. data.faded is the editor's umbrella flag that
   // covers (a) and (c); local `assembled` handles (b) for kids.
-  const isFadedNode = isBom && (
+  // revealAll (Show all) suppresses every fade source — including the
+  // assembled-part fade — so the full map is visible. (2026-05-29)
+  const isFadedNode = !revealAll && isBom && (
     (isVariantRoot && faded) ||
     (!isVariantRoot && (faded || (inChecklistMode && assembled)))
   );
@@ -497,9 +499,18 @@ function _readCollapsedState(pk) {
       center: !!entry.center,
       nodes: new Set(Array.isArray(entry.nodes) ? entry.nodes : []),
       hidden: new Set(Array.isArray(entry.hidden) ? entry.hidden : []),
+      // `seeded` records that the checklist auto-collapse has run once (or
+      // that the user explicitly hit Show all). It distinguishes "fresh
+      // project, never seeded" (→ collapse variants) from "user chose to
+      // expand everything" (→ leave it expanded). Without it, a Firebase-
+      // sync remount with an empty collapse set re-seeds and snaps the
+      // variants shut, stranding grandchildren faded. (regression 2026-05-29)
+      seeded: !!entry.seeded,
+      // `revealAll` = Show all override that also un-hides assembled parts.
+      revealAll: !!entry.revealAll,
     };
   } catch {
-    return { center: false, nodes: new Set(), hidden: new Set() };
+    return { center: false, nodes: new Set(), hidden: new Set(), seeded: false, revealAll: false };
   }
 }
 function _writeCollapsedState(pk, state) {
@@ -508,11 +519,15 @@ function _writeCollapsedState(pk, state) {
     const center = !!state.center;
     const nodes = [...(state.nodes || new Set())];
     const hidden = [...(state.hidden || new Set())];
-    if (center || nodes.length || hidden.length) {
+    const seeded = !!state.seeded;
+    const revealAll = !!state.revealAll;
+    if (center || nodes.length || hidden.length || seeded || revealAll) {
       all[pk] = {
         ...(center ? { center: true } : {}),
         ...(nodes.length ? { nodes } : {}),
         ...(hidden.length ? { hidden } : {}),
+        ...(seeded ? { seeded: true } : {}),
+        ...(revealAll ? { revealAll: true } : {}),
       };
     } else {
       delete all[pk];
@@ -539,19 +554,45 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   const [collapsedNodes, setCollapsedNodes] = useState(
     () => _readCollapsedState(projectKey).nodes);
 
+  // "Reveal all" — Show all also un-hides ASSEMBLED parts (which normally
+  // fade to opacity 0 in checklist mode to show progress). Without this,
+  // Show all clears collapse/hide but assembled parts stay invisible, so
+  // the user sees empty gaps where done parts used to be and reports them
+  // as missing (user 2026-05-29: 'Show all คือ โชว์ทั้งหมด'). Persisted so
+  // a Firebase-sync remount doesn't re-fade them. Any collapse/hide gesture
+  // (or marking a part assembled) turns it back off so normal checklist
+  // hiding resumes. (regression 2026-05-29)
+  const [revealAll, setRevealAllState] = useState(
+    () => _readCollapsedState(projectKey).revealAll);
+
   const _persistCollapse = useCallback((c, set) => {
-    _writeCollapsedState(projectKey, { center: c, nodes: set });
+    // Preserve hidden + seeded + revealAll across collapse toggles —
+    // otherwise a single collapse/expand would wipe the tap-3 hide set,
+    // the seeded flag (re-arming the auto-seed → variants snap shut), or
+    // the reveal-all flag.
+    const cur = _readCollapsedState(projectKey);
+    _writeCollapsedState(projectKey, { center: c, nodes: set, hidden: cur.hidden, seeded: cur.seeded, revealAll: cur.revealAll });
+  }, [projectKey]);
+
+  // Persisting setter for revealAll. Reads the current LS entry so it
+  // doesn't clobber center/nodes/hidden/seeded.
+  const setRevealAll = useCallback((v) => {
+    setRevealAllState(v);
+    const cur = _readCollapsedState(projectKey);
+    _writeCollapsedState(projectKey, { ...cur, revealAll: !!v });
   }, [projectKey]);
 
   const toggleCollapsed = useCallback(() => {
+    setRevealAll(false);  // a hide gesture exits reveal-all mode
     setCollapsedState(c => {
       const next = !c;
       _persistCollapse(next, collapsedNodes);
       return next;
     });
-  }, [_persistCollapse, collapsedNodes]);
+  }, [_persistCollapse, collapsedNodes, setRevealAll]);
 
   const toggleNodeCollapse = useCallback((nodeId) => {
+    setRevealAll(false);  // tapping a parent to collapse/expand exits reveal-all mode
     setCollapsedNodes(prev => {
       const next = new Set(prev);
       if (next.has(nodeId)) next.delete(nodeId);
@@ -559,7 +600,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       _persistCollapse(collapsed, next);
       return next;
     });
-  }, [_persistCollapse, collapsed]);
+  }, [_persistCollapse, collapsed, setRevealAll]);
 
   // Idempotent 'make sure this node is collapsed AND hidden'. Used
   // when the user marks a node as assembled — the node and its spoke
@@ -567,6 +608,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // 2026-05-28: 'ย่อเฉพาะ node นั้น (node หาย เส้นหาย) ลักษณะ การ
   // ทำงาน คล้ายปุ่มที่ 3'. Tap project center re-shows them.
   const ensureCollapsed = useCallback((nodeId) => {
+    setRevealAll(false);  // marking a part assembled re-enables normal hiding
     setCollapsedNodes(prev => {
       if (prev.has(nodeId)) return prev;
       const next = new Set(prev);
@@ -580,7 +622,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       next.add(nodeId);
       return next;
     });
-  }, [_persistCollapse, collapsed]);
+  }, [_persistCollapse, collapsed, setRevealAll]);
 
   // Children map for the current edge set → subtree descent.
   // Recomputed on every nodes/edges change but cheap (O(E)).
@@ -688,12 +730,18 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     if (!inChecklistMode) return;
     if (seededProjectRef.current === projectKey) return;
     seededProjectRef.current = projectKey;
+    // Auto-seed (collapse all variants) only ONCE per project, ever. The
+    // persisted `seeded` flag — set here and by Show all — means a later
+    // remount with an empty collapse set is treated as "user expanded
+    // everything" rather than "fresh project", so we don't snap the
+    // variants shut and strand their kids faded. (regression 2026-05-29)
+    if (_readCollapsedState(projectKey).seeded) return;
     if (collapsedNodes.size > 0) return;
     const variantIds = nodes.filter(n => n.data?.isVariantRoot).map(n => n.id);
     if (!variantIds.length) return;
     const seeded = new Set(variantIds);
     setCollapsedNodes(seeded);
-    _persistCollapse(collapsed, seeded);
+    _writeCollapsedState(projectKey, { center: collapsed, nodes: seeded, seeded: true });
   }, [inChecklistMode, projectKey, nodes, collapsedNodes, collapsed, _persistCollapse]);
 
   // Compact-mode positions for collapsed variants: keep them close to the
@@ -762,7 +810,12 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     setCollapsedState(false);
     setCollapsedNodes(new Set());
     setHiddenAnchorsRaw(new Set());
-    _writeCollapsedState(projectKey, { center: false, nodes: new Set(), hidden: new Set() });
+    setRevealAllState(true);  // also un-hide ASSEMBLED parts (opacity-0 in checklist mode)
+    // seeded:true so the checklist auto-seed treats this as a deliberate
+    // "expand everything" — a Firebase-sync remount won't re-collapse.
+    // revealAll:true so the assembled-part fade is suppressed and that
+    // also survives the remount.
+    _writeCollapsedState(projectKey, { center: false, nodes: new Set(), hidden: new Set(), seeded: true, revealAll: true });
     setStatus('show all');
     setTimeout(() => { try { rf.fitView({ duration: 600, padding: 0.12 }); } catch {} }, 120);
   }, [projectKey, rf]);
@@ -820,7 +873,9 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         hasChildren,
         inChecklistMode,
         ensureCollapsed,
-        faded: hiddenByTap3 || (inChecklistMode ? isHidden : false),
+        revealAll,
+        // revealAll wins over every fade source so Show all truly shows all.
+        faded: revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false)),
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
       },
       // Workshop also gets to drag nodes — useful for rearranging the
@@ -829,7 +884,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // workshop's drags are visual-only and reset on reload.
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, revealAll]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
@@ -974,6 +1029,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           // hiddenAnchors so the CSS kme-faded class applies. To
           // bring it back, tap the project-center bubble — that
           // gesture clears hiddenAnchors.
+          setRevealAll(false);  // a hide gesture exits reveal-all mode
           setCollapsedNodes(prev => {
             if (prev.has(node.id)) return prev;
             const next = new Set(prev);
