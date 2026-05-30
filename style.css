@@ -4666,10 +4666,14 @@ html[data-theme="sketch"] .bend-row:not(.bent-done) .bend-code {
    Overrides v1's plain-paper .kme-node with warm pastels rotated by the
    nth child, a pin-tilt, and an inked offset shadow. Project-centre bubble
    stays a clean inked ring (handled below). */
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project) { background-color: #fbe79f !important; transform: rotate(-1deg); }
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project) { background-color: #bcdcef !important; transform: rotate(0.8deg); }
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project) { background-color: #f4c6cd !important; transform: rotate(-0.6deg); }
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) { background-color: #cbe7a6 !important; transform: rotate(1deg); }
+/* Post-it colours only — NO transform. A transform on the RF node's inner
+   card overrides the Default scale() used by the collapse + assembled-fade
+   animation (and rotate broke hit-testing), so 🧩 mark-complete looked dead.
+   Colour + inked border + offset shadow still read as a post-it. (fix 2026-05-31) */
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project) { background-color: #fbe79f !important; }
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project) { background-color: #bcdcef !important; }
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project) { background-color: #f4c6cd !important; }
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) { background-color: #cbe7a6 !important; }
 html[data-theme="sketch"] .kme-node:not(.kme-project) {
   border: 2px solid var(--pen) !important;
   border-radius: 3px 11px 4px 10px / 10px 4px 11px 3px !important;
@@ -4677,8 +4681,10 @@ html[data-theme="sketch"] .kme-node:not(.kme-project) {
   color: var(--ink) !important;
 }
 html[data-theme="sketch"] .kme-node:not(.kme-project) * { color: var(--ink) !important; }
-/* Assembled/faded nodes: keep them legible (cross out instead of vanish). */
-html[data-theme="sketch"] .kme-node.kme-faded { opacity: 0.85 !important; }
+/* Assembled/faded nodes follow the Default fade (opacity:0 + scale) so 🧩
+   mark-complete gives the SAME visual feedback as the dark theme — the node
+   fades away; re-show by tapping the project centre. (fix 2026-05-31:
+   the old opacity:0.85 override made mark-complete look like it did nothing.) */
 
 /* (D) Sketch depth — inked offset shadow on the page surfaces (hand-drawn). */
 html[data-theme="sketch"] .project-card,
