@@ -727,3 +727,15 @@ The post-it transform:rotate() on .kme-node tilted the card off React Flow's
 layout box so onNodeClick's 3-tap expand/collapse/hide cycle landed wrong in
 Sketch only. Removed rotate on RF nodes (kept colour/border/shadow). style.css
 only, no rebuild. Live. NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: fix - Sketch mindmap node clicks dead (vignette overlay over canvas). commit 66cb2c5.
+
+In Sketch the post-it nodes wouldn't respond to taps (edges did). The paper
+vignette overlay (body::before fixed z-index:9998 mix-blend-mode:multiply) covered
+the whole React Flow canvas (fullscreen editor is z-index:1); a fixed blend-mode
+layer blocks RF node hit-testing on iPad even with pointer-events:none. Fix: hide
+the vignette while the editor is fullscreen (body.kme-fs-on). style.css only,
+no rebuild. Earlier v8 (remove node rotate) was a red herring. Live. NEEDS: nothing.
