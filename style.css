@@ -4770,3 +4770,19 @@ html[data-theme="sketch"] .kme-checklist-panel {
   box-shadow: 4px 5px 0 rgba(27,24,21,0.25) !important;
 }
 html[data-theme="sketch"] .kme-checklist-row { background-color: var(--paper) !important; border-color: var(--faint) !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   v7 (2026-05-31) — mindmap node click = empty-space click (FIX).
+   เอ๋ 'onNodeClick = expand/collapse ... ตอนนี้ไม่ถูก และ Tab 3 หายไป'.
+   Tapping the CODE TEXT routed the event through .kme-node-label, which did
+   not behave identically to tapping the empty card body — so React Flow's
+   onNodeClick 3-tap cycle (tap1 expand · tap2 collapse · tap3 hide) didn't
+   accumulate when you tapped the label. Make the label transparent to
+   pointer events so a tap on the text passes straight through to the card =
+   exactly like tapping empty space. Re-enable pointer events only while the
+   label is being edited (contentEditable) so caret placement still works.
+   Applies in BOTH themes (this is behaviour, not theming). Overrides the
+   bundle (style.css loads after editor.bundle.css). No editor rebuild needed.
+   ════════════════════════════════════════════════════════════════════ */
+.kme-node-label { pointer-events: none !important; }
+.kme-node-label[contenteditable="true"] { pointer-events: auto !important; }
