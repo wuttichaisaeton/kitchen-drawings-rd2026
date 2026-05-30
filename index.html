@@ -56,6 +56,16 @@
       window.__KD_CACHE_V = v;
     })();
   </script>
+  <!-- Apply the saved theme BEFORE paint to avoid a flash. Default = dark
+       (the base stylesheet), so workshop devices are unaffected unless a
+       user picks another theme. (2026-05-30 theme system) -->
+  <script>
+    (function () {
+      try {
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('kd_theme_v1') || 'dark');
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <header>
@@ -84,6 +94,7 @@
         </div>
       </div>
       <span id="updated" class="updated"></span>
+      <button id="theme-btn" class="theme-btn" title="Theme" aria-label="Theme">🎨</button>
     </div>
   </header>
 
@@ -117,6 +128,51 @@
         console.warn('Firebase init failed:', e);
       }
     }
+  </script>
+  <!-- Theme picker: 🎨 header button -> menu of themes. Self-contained,
+       independent of app.js render() (header is static), persists per
+       device. Add a theme = one THEMES entry + a html[data-theme="x"]
+       block in style.css. (2026-05-30) -->
+  <script>
+    (function () {
+      var THEMES = [
+        { id: 'dark',   label: 'Default - Dark' },
+        { id: 'sketch', label: 'Sketch - pencil' }
+      ];
+      var KEY = 'kd_theme_v1';
+      function cur() { try { return localStorage.getItem(KEY) || 'dark'; } catch (e) { return 'dark'; } }
+      function apply(id) {
+        document.documentElement.setAttribute('data-theme', id);
+        try { localStorage.setItem(KEY, id); } catch (e) {}
+      }
+      var btn = document.getElementById('theme-btn');
+      if (!btn) return;
+      var menu = null;
+      function close() {
+        if (menu) { menu.remove(); menu = null; document.removeEventListener('click', onDoc, true); }
+      }
+      function onDoc(e) { if (menu && !menu.contains(e.target) && e.target !== btn) close(); }
+      function open() {
+        close();
+        var c = cur();
+        menu = document.createElement('div');
+        menu.className = 'theme-menu';
+        THEMES.forEach(function (t) {
+          var o = document.createElement('button');
+          o.className = 'theme-opt' + (t.id === c ? ' is-active' : '');
+          o.textContent = (t.id === c ? '✓ ' : ' ') + t.label;
+          o.addEventListener('click', function () { apply(t.id); close(); });
+          menu.appendChild(o);
+        });
+        document.body.appendChild(menu);
+        var r = btn.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.top = (r.bottom + 6) + 'px';
+        menu.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+        setTimeout(function () { document.addEventListener('click', onDoc, true); }, 0);
+      }
+      btn.addEventListener('click', function (e) { e.stopPropagation(); if (menu) close(); else open(); });
+    })();
   </script>
   <!-- app.js + nest.js cache-busted per-minute (shared bucket with
        style.css). nest.js loads BEFORE app.js so app.js can hand off

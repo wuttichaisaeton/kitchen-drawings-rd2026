@@ -4149,3 +4149,219 @@ button.cut-status:focus-visible {
 .kdnest-part.kdnest-part-review {
   border-left: 3px solid #c86e1e;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   THEME SYSTEM (2026-05-30, request: selectable themes incl. sketch)
+   Default = Dark = the base styles above (no [data-theme] needed).
+   Themes are opt-in via the header picker, persisted in localStorage
+   (kd_theme_v1) + applied as data-theme on <html>. Add a theme later:
+   add a THEMES entry in index.html + a html[data-theme="x"] block here.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Theme picker control (base/dark; sketch tweaks it below). */
+.theme-btn {
+  background: #2a2f34; color: #e4e4e4; border: 1px solid #3a3f44;
+  border-radius: 8px; padding: 6px 9px; cursor: pointer; font-size: 15px;
+  line-height: 1; flex: none;
+}
+.theme-btn:hover { background: #3a3f44; }
+.theme-menu {
+  background: #1a1f24; border: 1px solid #3a3f44; border-radius: 10px;
+  padding: 6px; display: flex; flex-direction: column; gap: 4px; z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.45); min-width: 190px;
+}
+.theme-opt {
+  background: none; border: 0; color: #e4e4e4; text-align: left;
+  padding: 9px 11px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  white-space: nowrap; font-family: inherit;
+}
+.theme-opt:hover { background: rgba(255,255,255,0.08); }
+.theme-opt.is-active { color: #4a90e2; font-weight: 700; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   SKETCH THEME — hand-drawn pencil-on-paper. Pencil shading (diagonal
+   hatch), faint pencil lines, bold black pen outlines on emphasis, all in
+   Flux Architect. Technique: (1) reset every surface to transparent +
+   graphite ink, then (2) repaint real surfaces as paper cards with inked,
+   slightly-wobbly hand-drawn borders.
+   ───────────────────────────────────────────────────────────────────── */
+html[data-theme="sketch"] {
+  --paper:    #efe7d6;
+  --paper2:   #f7f2e7;
+  --ink:      #2a2620;
+  --ink-soft: #6f6757;
+  --pen:      #1b1815;
+  --faint:    #c7bda6;
+  --accent:   #b23a2b;
+  --blue:     #2d557d;
+  --hatch:    rgba(40,33,20,0.05);
+  --wob:      16px 22px 14px 20px / 20px 14px 22px 16px;
+  --wob2:     10px 14px 8px 12px / 12px 8px 14px 10px;
+  --pen-sh:   2px 2px 0 rgba(27,24,21,0.20);
+}
+
+html[data-theme="sketch"] body,
+html[data-theme="sketch"] #root,
+html[data-theme="sketch"] main {
+  background-color: var(--paper) !important;
+  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+  color: var(--ink) !important;
+}
+
+/* Reset: strip dark fills/glows off everything; keep art + mask-icons. */
+html[data-theme="sketch"] body *:not(svg):not(svg *):not(img):not([class*="icon"]) {
+  background-color: transparent !important;
+  color: var(--ink) !important;
+  border-color: var(--faint) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="sketch"] header {
+  background-color: var(--paper2) !important;
+  border-bottom: 2px solid var(--pen) !important;
+}
+html[data-theme="sketch"] footer {
+  background-color: var(--paper2) !important;
+  border-top: 1px solid var(--faint) !important;
+}
+html[data-theme="sketch"] h1,
+html[data-theme="sketch"] h1 .brand-sub { color: var(--pen) !important; }
+
+/* Card / panel / row surfaces — paper, inked wobble border, light hatch. */
+html[data-theme="sketch"] .project-card,
+html[data-theme="sketch"] .card,
+html[data-theme="sketch"] .bom-row,
+html[data-theme="sketch"] .tree-row,
+html[data-theme="sketch"] .cut-list,
+html[data-theme="sketch"] .cut-row,
+html[data-theme="sketch"] .cut-section,
+html[data-theme="sketch"] .cut-waiting,
+html[data-theme="sketch"] .pdxf-popover,
+html[data-theme="sketch"] .part-dxf-popover,
+html[data-theme="sketch"] .cs-modal,
+html[data-theme="sketch"] .cs-row,
+html[data-theme="sketch"] .kdstock-frame,
+html[data-theme="sketch"] .kdstock-card,
+html[data-theme="sketch"] .kdjobs-row,
+html[data-theme="sketch"] .dxf-preview-frame,
+html[data-theme="sketch"] .mm-comment-panel,
+html[data-theme="sketch"] .comment-item,
+html[data-theme="sketch"] .kdnest-sidebar,
+html[data-theme="sketch"] .kdnest-part,
+html[data-theme="sketch"] .kdnest-stock-row,
+html[data-theme="sketch"] .theme-menu {
+  background-color: var(--paper2) !important;
+  border: 2px solid var(--pen) !important;
+  border-radius: var(--wob) !important;
+  box-shadow: var(--pen-sh) !important;
+  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+}
+
+/* Buttons — inked paper chips with a hand-drawn outline + hard offset. */
+html[data-theme="sketch"] button,
+html[data-theme="sketch"] .tab,
+html[data-theme="sketch"] .action-btn,
+html[data-theme="sketch"] .filter-btn,
+html[data-theme="sketch"] .mini,
+html[data-theme="sketch"] .back-btn,
+html[data-theme="sketch"] .kdnest-btn,
+html[data-theme="sketch"] .theme-btn,
+html[data-theme="sketch"] .theme-opt,
+html[data-theme="sketch"] .comment-add,
+html[data-theme="sketch"] .kdjobs-load,
+html[data-theme="sketch"] .kdjobs-del,
+html[data-theme="sketch"] .cs-download-btn {
+  background-color: var(--paper2) !important;
+  color: var(--pen) !important;
+  border: 2px solid var(--pen) !important;
+  border-radius: var(--wob2) !important;
+  box-shadow: var(--pen-sh) !important;
+  font-weight: 700;
+}
+html[data-theme="sketch"] button:hover,
+html[data-theme="sketch"] .tab:hover,
+html[data-theme="sketch"] .action-btn:hover,
+html[data-theme="sketch"] .kdnest-btn:hover { background-color: #ece3cd !important; }
+html[data-theme="sketch"] button:active,
+html[data-theme="sketch"] .tab:active {
+  box-shadow: 0 0 0 rgba(0,0,0,0) !important;
+  transform: translate(1px, 1px);
+}
+
+/* Inputs — paper field, inked border, graphite text. */
+html[data-theme="sketch"] input,
+html[data-theme="sketch"] textarea,
+html[data-theme="sketch"] select,
+html[data-theme="sketch"] .search-wrap,
+html[data-theme="sketch"] #search,
+html[data-theme="sketch"] .comment-input,
+html[data-theme="sketch"] .kme-cmt-input {
+  background-color: var(--paper) !important;
+  color: var(--ink) !important;
+  border: 1.5px solid var(--pen) !important;
+  border-radius: var(--wob2) !important;
+}
+html[data-theme="sketch"] ::placeholder { color: var(--ink-soft) !important; }
+
+/* Active tab = red-pencil emphasis. */
+html[data-theme="sketch"] .tab.active {
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 2.5px 2.5px 0 rgba(178,58,43,0.30) !important;
+}
+
+/* Faint pencil dividers. */
+html[data-theme="sketch"] hr,
+html[data-theme="sketch"] .divider { border-color: var(--faint) !important; }
+
+/* Secondary / muted text -> faded pencil. */
+html[data-theme="sketch"] .updated,
+html[data-theme="sketch"] .brand-sub,
+html[data-theme="sketch"] .cut-list-summary,
+html[data-theme="sketch"] .kdnest-title-sub,
+html[data-theme="sketch"] .pdxf-sub,
+html[data-theme="sketch"] .kdjobs-meta,
+html[data-theme="sketch"] #count { color: var(--ink-soft) !important; }
+
+/* Warning banners — keep colour code as ink-on-tinted-paper. */
+html[data-theme="sketch"] .kdnest-warn--unplaced {
+  background-color: #f3dcd6 !important; border: 2px solid #a8392a !important;
+  color: #7a2418 !important; border-radius: var(--wob) !important;
+}
+html[data-theme="sketch"] .kdnest-warn--review {
+  background-color: #f5e3cf !important; border: 2px solid #b5701f !important;
+  color: #7a4a12 !important; border-radius: var(--wob) !important;
+}
+html[data-theme="sketch"] .kdnest-warn--unplaced *,
+html[data-theme="sketch"] .kdnest-warn--review * { color: inherit !important; }
+
+/* MINDMAP — React Flow nodes/edges live in the same document, so style.css
+   reaches them; no editor rebuild needed. Paper cards + pen edges. */
+html[data-theme="sketch"] .react-flow,
+html[data-theme="sketch"] .react-flow__renderer,
+html[data-theme="sketch"] .mindmap-wrapper,
+html[data-theme="sketch"] .mindmap-canvas {
+  background-color: var(--paper) !important;
+  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+}
+html[data-theme="sketch"] .kme-node {
+  background-color: var(--paper2) !important;
+  background-image: none !important;
+  border: 2px solid var(--pen) !important;
+  border-radius: var(--wob2) !important;
+  box-shadow: var(--pen-sh) !important;
+  color: var(--ink) !important;
+}
+html[data-theme="sketch"] .kme-node-label,
+html[data-theme="sketch"] .kme-node-qty,
+html[data-theme="sketch"] .kme-node-qty-num { color: var(--pen) !important; }
+html[data-theme="sketch"] .react-flow__edge-path { stroke: var(--pen) !important; stroke-width: 1.6 !important; }
+html[data-theme="sketch"] .react-flow__handle { background: var(--pen) !important; border-color: var(--pen) !important; }
+html[data-theme="sketch"] .kme-node.kme-project,
+html[data-theme="sketch"] .kme-project {
+  background-color: var(--paper2) !important;
+  border: 2.5px solid var(--pen) !important;
+}
+html[data-theme="sketch"] .theme-menu { box-shadow: var(--pen-sh) !important; }
+html[data-theme="sketch"] .theme-opt.is-active { color: var(--accent) !important; }
