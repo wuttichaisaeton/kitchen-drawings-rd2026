@@ -2276,6 +2276,58 @@
     }
   }
 
+  // ── Warning predicates (pure; shared by the banners + per-row markers) ──
+  // Grain is "uncertain" when it fell through to the default ANY because no
+  // DXF-meta grain and no grain rule ever set it (grainExplicit stays false).
+  // (user 2026-05-30 'เตือนเรื่องแนว grain ที่ไม่แน่ใจ')
+  function _isGrainUncertain(p) {
+    return !!(p && p.selected && !p.manual && !p.grainExplicit);
+  }
+  // Shoelace area of a polygon ([[x,y],...]) — used to spot degenerate outlines.
+  function _polyArea(pts) {
+    if (!Array.isArray(pts) || pts.length < 3) return 0;
+    let a = 0;
+    for (let i = 0, n = pts.length; i < n; i++) {
+      const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % n];
+      a += x1 * y2 - x2 * y1;
+    }
+    return Math.abs(a) / 2;
+  }
+  // "Looks weird" reasons for a selected part (empty array = nothing to flag).
+  // Checks: no DXF · DXF parse error / degenerate outline · parsed bbox vs the
+  // size encoded in the 13-char code (…WWWHHH, 10mm units), ±10mm tolerance.
+  // (user 2026-05-30 'ชิ้นนี้ดูแปลกๆ ให้เข้าไปดูหน่อย / ชิ้นนี้ไม่มี DXF')
+  function _reviewReasons(p) {
+    const out = [];
+    if (!p || !p.selected || p.manual) return out;
+    if (!p.dxfUrl) { out.push('no DXF'); return out; }   // can't cut → nothing else to check
+    if (p.dxfError) { out.push('DXF error: ' + p.dxfError); return out; }
+    if (p.dxfLoaded) {
+      const outer = p.polys && p.polys.outer;
+      if (!outer || outer.length < 3 || _polyArea(outer) < 1) {
+        out.push('degenerate outline');
+      }
+      // Size-vs-code (FORK A): compare the parsed bbox to the dims encoded in
+      // the code. p.w/p.h are forced equal to the bbox on load, so the code is
+      // the only independent reference.
+      const m = /-(\d{3})(\d{3})$/.exec(p.code || '');
+      if (m && p.bbox) {
+        const bw = Math.round(p.bbox[2] - p.bbox[0]);
+        const bh = Math.round(p.bbox[3] - p.bbox[1]);
+        const wCode = parseInt(m[1], 10) * 10;
+        const hCode = parseInt(m[2], 10) * 10;
+        const TOL = 10;
+        const near = v => v > 0 && (Math.abs(bw - v) <= TOL || Math.abs(bh - v) <= TOL);
+        const wBad = wCode > 0 && !near(wCode);
+        const hBad = hCode > 0 && !near(hCode);
+        if (wBad || hBad) {
+          out.push(`DXF size ≈ ${bw}\xd7${bh}, code says ~${wCode}\xd7${hCode}`);
+        }
+      }
+    }
+    return out;
+  }
+
   function _viewHtml() {
     const nSheets = S.flatSheets.length;
     const totalPcs = S.parts.reduce((s, p) => s + (p.selected ? (p.qty || 0) : 0), 0);
