@@ -2170,6 +2170,32 @@
     }));
   }
 
+  // Download the current nest state as a JSON backup (insurance outside
+  // Firebase). Does not require a prior save. (user 2026-05-30 'เก็บเป็นไฟล์')
+  function _exportJobJson() {
+    const pk = S.projectKey || 'project';
+    const payload = {
+      kind: 'kd-nest-job', version: 1,
+      projectKey: pk, projectName: S.projectName || pk,
+      exported_at: Date.now(),
+      job: _buildJob(),
+    };
+    try {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `${pk}_nest_${_jobStamp()}.json`;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objUrl), 10000);
+    } catch (e) {
+      alert('Export failed: ' + (e.message || e));
+    }
+  }
+
   // DXF builder for one nested sheet — minimal R12-ish text format.
   // ezdxf would be nicer but we have to ship browser-only. The format
   // below works in any DXF reader (NestingTool's ezdxf-based reader
