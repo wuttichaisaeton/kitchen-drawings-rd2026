@@ -403,23 +403,18 @@ function MindmapNode({ id, data, selected }) {
           onBlur={commit}
           onKeyDown={onKeyDown}
           onClick={(e) => {
-            // Admin label click is inert: it stops propagation so the
-            // click doesn't fall through to React Flow's onNodeClick
-            // (Fusion/PDF route), leaving a clean double-click → edit.
-            // (The 'click code → open in Library' command was removed
-            // 2026-05-31 per เอ๋ 'ยกเลิกคำสั่งนี้'.)
-            if (!admin || editing || !code) return;
-            e.stopPropagation();
+            // Click on the code text behaves exactly like a click on the
+            // empty card body — it bubbles to React Flow's onNodeClick
+            // (expand/collapse). (เอ๋ 2026-05-31 'กดที่ตัวอักษรให้มีค่า
+            // เหมือนกดบนพื้นที่ว่าง'.) Only swallow the click while editing,
+            // so caret placement in the contentEditable label isn't hijacked
+            // by a collapse toggle. Double-click → edit is the outer handler.
+            if (editing) { e.stopPropagation(); }
           }}
           onPointerDown={(e) => {
-            // Touch path — keep the admin label tap inert (no nav, and
-            // don't let it reach onNodeClick's Fusion route). Editing on
-            // touch is via double-tap; rare (use desktop).
-            if (e.pointerType === 'touch' && admin && !editing && code) {
-              e.preventDefault();
-              e.stopPropagation();
-              e.nativeEvent.stopImmediatePropagation();
-            }
+            // Same on touch: let the tap reach onNodeClick (= tap empty space)
+            // unless we're editing. Double-tap enters edit mode (outer).
+            if (editing) { e.stopPropagation(); }
           }}
         >
           {label}
