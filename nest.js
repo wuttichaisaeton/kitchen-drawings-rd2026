@@ -1325,6 +1325,63 @@
   }
 
   // ── Driver: pack onto multiple sheet sizes ─────────────────────────
+  // "Desktop" — a faithful mirror of the desktop NestingTool's Auto
+  // (nest_gui.py nest_pieces_multi_sheet / _nest_multi_with_mode): the 4
+  // rectangle packers with FIRST-FIT rotation (take the first allowed rotation
+  // that fits — like desktop's `for rot in rots: place(); break`), pick fewest
+  // unplaced then fewest sheets. NO true-shape. เอ๋ ran every mode and found the
+  // desktop layout best (2026-05-30), so this reproduces it exactly. Additive —
+  // Auto and every other mode untouched. Both MaxRectsPacker and SkylinePacker
+  // expose place(w,h) → [x,y]|null (BSSF position), matching desktop's place().
+  function _nestMultiSheetDesktop(pieces, stock, gap) {
+    function runFirstFit(mode) {
+      const useMax = (mode === 'MaxRects');
+      const sorted = pieces.slice().sort((a, b) =>
+        mode === 'Left' ? Math.max(b.w, b.h) - Math.max(a.w, a.h)
+                        : (b.w * b.h) - (a.w * a.h));
+      const stockCopy = stock.map(s => ({ ...s }));
+      const sheets = [];
+      let remaining = sorted.slice();
+      while (remaining.length) {
+        let placedAny = false;
+        for (let si = 0; si < stockCopy.length; si++) {
+          const s = stockCopy[si];
+          if (s.qty === 0) continue;
+          const packer = useMax ? new MaxRectsPacker(s.w, s.h) : new SkylinePacker(s.w, s.h, mode);
+          const placed = [], stillLeft = [];
+          for (const piece of remaining) {
+            let wasPlaced = false;
+            for (const rot of piece.rots) {
+              const rw = (rot === 90 || rot === 270) ? piece.h + gap : piece.w + gap;
+              const rh = (rot === 90 || rot === 270) ? piece.w + gap : piece.h + gap;
+              const pos = packer.place(rw, rh);   // first rotation that fits wins
+              if (pos) { placed.push({ ...piece, x: pos[0], y: pos[1], rot }); wasPlaced = true; break; }
+            }
+            if (!wasPlaced) stillLeft.push(piece);
+          }
+          if (placed.length) {
+            sheets.push({ sw: s.w, sh: s.h, placements: placed });
+            if (s.qty > 0) s.qty -= 1;
+            remaining = stillLeft;
+            placedAny = true;
+            break;
+          }
+        }
+        if (!placedAny) break;
+      }
+      return { sheets, unplaced: remaining };
+    }
+    let best = null;
+    for (const m of ['MaxRects', 'BL Corner', 'Left', 'Bottom']) {
+      const r = runFirstFit(m);
+      if (best === null || r.unplaced.length < best.unplaced.length
+          || (r.unplaced.length === best.unplaced.length && r.sheets.length < best.sheets.length)) {
+        best = r;
+      }
+    }
+    return best || { sheets: [], unplaced: pieces.slice() };
+  }
+
   function _nestMultiSheet(pieces, stock, gap, mode) {
     // pieces: [{code, w, h, rots:[0,90,...], qty}]
     // stock: [{w, h, qty}]   qty=-1 → unlimited
@@ -1332,6 +1389,7 @@
 
     if (mode === 'True Shape') return _nestMultiSheetRaster(pieces, stock, gap);
     if (mode === 'Max Remnant') return _nestMultiSheetMaxRemnant(pieces, stock, gap);
+    if (mode === 'Desktop') return _nestMultiSheetDesktop(pieces, stock, gap);
 
     function makePacker(sw, sh, m) {
       return m === 'MaxRects' ? new MaxRectsPacker(sw, sh)
@@ -2100,7 +2158,7 @@
           <div class="kdnest-controls">
             <label class="kdnest-mode-lab">Mode
               <select id="kdnest-mode">
-                ${['Auto','True Shape','MaxRects','BL Corner','Left','Bottom','Max Remnant']
+                ${['Auto','True Shape','MaxRects','BL Corner','Left','Bottom','Max Remnant','Desktop']
                   .map(m => `<option value="${m}" ${m === S.mode ? 'selected' : ''}>${m}</option>`).join('')}
               </select>
             </label>
