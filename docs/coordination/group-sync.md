@@ -669,3 +669,14 @@ outline + offset shadow), coloured sticky-note cards (yellow/blue/pink/green
 rotated, slight tilt, straighten on hover), paper grain + edge vignette overlay.
 style.css only, scoped to html[data-theme=sketch]; Default Dark untouched. Live +
 verified on Pages. NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: fix - Sketch theme text contrast. commit 4f3e9c4.
+
+Dark gradient pills (Active-in-Fusion badge) had unreadable dark-on-dark text in
+Sketch theme. Root cause: the reset cleared background-color but not the gradient
+image layer. Reset now strips background-image too; stand-out pills repainted as
+inked stamps / tinted-paper + dark ink. style.css only, data-theme=sketch. Live.
+NEEDS: nothing.
