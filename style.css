@@ -4806,3 +4806,20 @@ html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme
 html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) {
   transform: none !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   v9 (2026-05-31) — Sketch mindmap node clicks = Default (real fix).
+   เอ๋ 'ยังไม่เหมือน default ... note ยังไม่ยอมทำงาน' (edges/lines respond,
+   note bodies don't). Cause: the fullscreen editor is z-index:1
+   (editor/style.css .kme-root.kme-fullscreen) while the Sketch paper
+   vignette overlay (body::before) is position:fixed z-index:9998
+   mix-blend-mode:multiply — it sits OVER the whole React Flow canvas. A
+   fixed full-screen blend-mode layer above an RF canvas blocks node
+   pointer hit-testing on iPad/Safari even with pointer-events:none; the
+   reset excludes SVG, so edges (SVG) kept working while nodes (HTML) didn't.
+   Fix: drop the vignette while the editor is fullscreen (body gets
+   .kme-fs-on; editor already has its own paper bg from v6, so no visual
+   loss). Nothing else touched — no transform/pointer changes on RF nodes
+   (those must stay at RF defaults; the inner card un-rotate is in v8).
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="sketch"] body.kme-fs-on::before { display: none !important; }
