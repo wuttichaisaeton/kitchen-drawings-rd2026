@@ -154,6 +154,12 @@ function MindmapNode({ id, data, selected }) {
   // Bump on workshop-op state changes so re-renders read fresh.
   const [tick, setTick] = useState(0);
   const bump = useCallback(() => setTick(t => t + 1), []);
+  // Inline comment thread on the node (เอ๋ 2026-05-30 'กลุ่มคอมเมนต์ที assembly
+  // ต้องกดดูได้'). Reuses the per-code comment system + the checklist thread's
+  // .kme-cmt-* markup. Local open/draft state per node card.
+  const [cmtOpen, setCmtOpen] = useState(false);
+  const [cmtDraft, setCmtDraft] = useState('');
+  const isAdminUser = !!(window.isAdmin && window.isAdmin());
 
   const api = window.kdAPI || {};
   const bent = code ? api.isBent?.(projectKey, code) : false;
@@ -470,9 +476,53 @@ function MindmapNode({ id, data, selected }) {
           <span className="kme-missing-badge nodrag nopan" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
         )}
         {comments.length > 0 && (
-          <span className="kme-comment-count" title={`${comments.length} comments`}>💬{comments.length}</span>
+          <button
+            className={'kme-comment-count nodrag nopan' + (cmtOpen ? ' is-open' : '')}
+            title={`${comments.length} comment(s) — tap to view`}
+            onClick={(e) => { e.stopPropagation(); setCmtOpen(o => !o); }}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); setCmtOpen(o => !o); } }}
+          >💬{comments.length}</button>
         )}
       </div>
+      {cmtOpen && code && (
+        <div className="kme-cmt-thread nodrag nopan" onPointerDown={(e) => e.stopPropagation()}>
+          <div className="kme-cmt-head">
+            <span>{comments.length} comment{comments.length === 1 ? '' : 's'}</span>
+            <button className="kme-cmt-close" title="Close (Esc)" onClick={(e) => { e.stopPropagation(); setCmtOpen(false); setCmtDraft(''); }}>✕ close</button>
+          </div>
+          {comments.map((c, i) => (
+            <div key={c._key || i} className="kme-cmt">
+              <span className="kme-cmt-text">{c.text}</span>
+              {isAdminUser && (
+                <button
+                  className="kme-cmt-del"
+                  title="Delete comment"
+                  onClick={(e) => { e.stopPropagation(); api.deleteComment?.(code, c._key != null ? c._key : c.time); bump(); }}
+                >🗑</button>
+              )}
+            </div>
+          ))}
+          <div className="kme-cmt-add">
+            <input
+              className="kme-cmt-input"
+              value={cmtDraft}
+              autoFocus
+              onChange={e => setCmtDraft(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={e => {
+                e.stopPropagation();
+                if (e.key === 'Enter') { const t = cmtDraft.trim(); if (t) { api.addComment?.(code, t); setCmtDraft(''); bump(); } }
+                else if (e.key === 'Escape') { setCmtOpen(false); setCmtDraft(''); }
+              }}
+              placeholder="Add a comment…"
+            />
+            <button
+              className="kme-cmt-send"
+              onClick={(e) => { e.stopPropagation(); const t = cmtDraft.trim(); if (t) { api.addComment?.(code, t); setCmtDraft(''); bump(); } }}
+            >Add</button>
+          </div>
+        </div>
+      )}
       {isBom && (
         // `nodrag` removed from the row container so the empty space
         // around the buttons stays draggable — user 2026-05-28:
@@ -1261,7 +1311,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     setStatus(`tap: ${node?.id || '?'}`);
 
     // Inner-button taps have their own handlers; don't double-fire here.
-    if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, .kme-missing-badge, [contenteditable="true"]')) return;
+    if (evt?.target?.closest?.('.kme-mini, .kme-link-badge, .kme-missing-badge, .kme-comment-count, .kme-cmt-thread, [contenteditable="true"]')) return;
 
     if (node?.id?.startsWith('project:')) {
       // Project center tap also un-hides any anchors that were
