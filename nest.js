@@ -2328,6 +2328,77 @@
     return out;
   }
 
+  // Build 0–3 stacked warning banners for the result pane. Persistent (not
+  // dismissible) so a real problem can't be clicked away before cutting.
+  // (user 2026-05-30 'จำนวนขาด ... ก็ไม่มีการแจ้งเตือน')
+  function _warningsHtml() {
+    const banners = [];
+
+    // ① Unplaced (red, loudest) — only after a run.
+    if (S.unplaced && S.unplaced.length) {
+      // Active stock thicknesses, so we can flag the "no matching sheet" cause.
+      const tk = t => {
+        const n = typeof t === 'number' ? t : parseFloat(String(t).replace(/[^\d.]/g, ''));
+        return isNaN(n) ? '?' : String(Math.round(n * 100) / 100);
+      };
+      const stockThick = new Set(
+        (S.sheetStock || [])
+          .filter(s => s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1))
+          .map(s => tk(s.thickness ?? 1))
+      );
+      const byCode = new Map();
+      for (const pc of S.unplaced) {
+        const e = byCode.get(pc.code) || { qty: 0, thickness: pc.thickness };
+        e.qty += 1;
+        byCode.set(pc.code, e);
+      }
+      const lines = [...byCode.entries()].map(([code, e]) => {
+        const noStock = !stockThick.has(tk(e.thickness));
+        const suffix = noStock ? ` (t=${tk(e.thickness)}mm — no matching sheet stock)` : '';
+        return `<div class="kdnest-warn-line">${_esc(code)} ×${e.qty}${suffix}</div>`;
+      }).join('');
+      const total = S.unplaced.length;
+      banners.push(
+        `<div class="kdnest-warn kdnest-warn--unplaced">
+           <div class="kdnest-warn-head">⚠ ${total} piece${total === 1 ? '' : 's'} couldn't be placed</div>
+           ${lines}
+         </div>`
+      );
+    }
+
+    // ② Grain uncertain (amber).
+    const grainCodes = S.parts.filter(_isGrainUncertain).map(p => p.code);
+    if (grainCodes.length) {
+      const uniq = [...new Set(grainCodes)];
+      banners.push(
+        `<div class="kdnest-warn kdnest-warn--grain">
+           <div class="kdnest-warn-head">${uniq.length} part${uniq.length === 1 ? '' : 's'} have no confirmed grain — defaulting to ANY (any rotation)</div>
+           <div class="kdnest-warn-line">${uniq.map(_esc).join(', ')}</div>
+         </div>`
+      );
+    }
+
+    // ③ Review / looks-weird (orange).
+    const reviews = [];
+    for (const p of S.parts) {
+      const reasons = _reviewReasons(p);
+      if (reasons.length) reviews.push({ code: p.code, reasons });
+    }
+    if (reviews.length) {
+      const lines = reviews.map(r =>
+        `<div class="kdnest-warn-line">${_esc(r.code)} — ${_esc(r.reasons.join('; '))}</div>`
+      ).join('');
+      banners.push(
+        `<div class="kdnest-warn kdnest-warn--review">
+           <div class="kdnest-warn-head">Review ${reviews.length} part${reviews.length === 1 ? '' : 's'}:</div>
+           ${lines}
+         </div>`
+      );
+    }
+
+    return banners.join('');
+  }
+
   function _viewHtml() {
     const nSheets = S.flatSheets.length;
     const totalPcs = S.parts.reduce((s, p) => s + (p.selected ? (p.qty || 0) : 0), 0);
@@ -2375,8 +2446,10 @@
       // can't desync the size from the actual cut geometry. Manual rectangles
       // stay editable. (user 2026-05-30)
       const whLock = p.manual ? '' : ' disabled title="size comes from the DXF — locked"';
+      const grainWarn = _isGrainUncertain(p) ? ' kdnest-grain-warn' : '';
+      const reviewMark = _reviewReasons(p).length ? ' kdnest-part-review' : '';
       return `
-        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}" data-code="${_esc(p.code)}">
+        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${reviewMark}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
           <span class="kdnest-part-code">${p.manual ? '▭ ' : ''}${_esc(p.code)}</span>
@@ -2384,7 +2457,7 @@
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
-          <button class="kdnest-part-grain ${g.cls}" data-grain="${p.grain}" title="${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
+          <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set by any rule — defaulting to ANY · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
           <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>
           ${status}
@@ -2485,6 +2558,7 @@
         </aside>
         ${isAdminUser ? '<div class="kdnest-splitter" id="kdnest-splitter" title="Drag to resize the sidebar (admin only)"></div>' : ''}
         <main class="kdnest-canvas-wrap">
+          ${_warningsHtml()}
           <div class="kdnest-canvas-top">
             <span class="kdnest-canvas-info">${S.previewCode ? previewInfo : `Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}`}</span>
             <div class="kdnest-nav">
