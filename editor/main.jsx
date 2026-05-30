@@ -403,37 +403,22 @@ function MindmapNode({ id, data, selected }) {
           onBlur={commit}
           onKeyDown={onKeyDown}
           onClick={(e) => {
-            // Admin clicks the code text → drill into the part's
-            // Library entry. User 2026-05-29: 'admin ถ้ากดที่ตัวอักษร
-            // เช่น FN1BLA-120000 ให้ Link ไปที่อยู่ใน Library เลย'.
-            // Workshop's click bubbles up to React Flow's onNodeClick
-            // (Fusion-3D route — unchanged). Edit-mode owns the click
-            // for caret placement. Single-click is deferred ~280ms so
-            // a double-click (outer handler) can cancel us before nav.
+            // Admin label click is inert: it stops propagation so the
+            // click doesn't fall through to React Flow's onNodeClick
+            // (Fusion/PDF route), leaving a clean double-click → edit.
+            // (The 'click code → open in Library' command was removed
+            // 2026-05-31 per เอ๋ 'ยกเลิกคำสั่งนี้'.)
             if (!admin || editing || !code) return;
             e.stopPropagation();
-            if (navTimeoutRef.current) {
-              clearTimeout(navTimeoutRef.current);
-              navTimeoutRef.current = null;
-            }
-            // Second click of a double-click — bail; the outer
-            // onDoubleClick is about to fire startEdit.
-            if (e.detail >= 2) return;
-            navTimeoutRef.current = setTimeout(() => {
-              navTimeoutRef.current = null;
-              api.openInLibrary?.(code);
-            }, 280);
           }}
           onPointerDown={(e) => {
-            // Touch path — mirror the NO PDF chip's pattern. Tap the
-            // label = navigate immediately (touch doesn't deliver a
-            // useful double-tap counter, and admin label-editing on
-            // touch is rare; they can use desktop).
+            // Touch path — keep the admin label tap inert (no nav, and
+            // don't let it reach onNodeClick's Fusion route). Editing on
+            // touch is via double-tap; rare (use desktop).
             if (e.pointerType === 'touch' && admin && !editing && code) {
               e.preventDefault();
               e.stopPropagation();
               e.nativeEvent.stopImmediatePropagation();
-              api.openInLibrary?.(code);
             }
           }}
         >
