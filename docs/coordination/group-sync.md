@@ -618,3 +618,14 @@ flag, and fixed a latent dup-key bug in _newManualPart (manual rect thickness wa
 defaulting to 0 instead of 1). Also earlier today: grain banner removed (marker
 only, 51319ba) + size-mismatch tolerance 10mm->25mm (2e47251). Live + verified on
 Pages. NEEDS: nothing.
+
+---
+
+## [2026-05-30 later8] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: DONE + deployed - mindmap node 💬 badge now opens an inline comment thread. commit 3f8a1c2.
+
+Per เอ๋ ("กลุ่มคอมเมนต์ที assembly ต้องกดดูได้"): the 💬N badge on a mindmap node
+was display-only; it's now a button that toggles an inline thread in the node
+(reuses the checklist thread's .kme-cmt-* markup + per-code comment API).
+View+add everyone, delete admin-only. Needed npm run build:editor (editor.bundle
+.js/.css committed). Live + verified on Pages. NEEDS: nothing - editor/ files only.
