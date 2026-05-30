@@ -2295,7 +2295,7 @@
   }
   // "Looks weird" reasons for a selected part (empty array = nothing to flag).
   // Checks: no DXF · DXF parse error / degenerate outline · parsed bbox vs the
-  // size encoded in the 13-char code (…WWWHHH, 10mm units), ±10mm tolerance.
+  // size encoded in the 13-char code (…WWWHHH, 10mm units), ±25mm tolerance.
   // (user 2026-05-30 'ชิ้นนี้ดูแปลกๆ ให้เข้าไปดูหน่อย / ชิ้นนี้ไม่มี DXF')
   function _reviewReasons(p) {
     const out = [];
@@ -2316,7 +2316,7 @@
         const bh = Math.round(p.bbox[3] - p.bbox[1]);
         const wCode = parseInt(m[1], 10) * 10;
         const hCode = parseInt(m[2], 10) * 10;
-        const TOL = 10;
+        const TOL = 25;   // ±25mm (เอ๋ 2026-05-30) — was 10; absorbs panel-vs-channel + tier-rounding so legit parts don't over-flag
         const near = v => v > 0 && (Math.abs(bw - v) <= TOL || Math.abs(bh - v) <= TOL);
         const wBad = wCode > 0 && !near(wCode);
         const hBad = hCode > 0 && !near(hCode);
