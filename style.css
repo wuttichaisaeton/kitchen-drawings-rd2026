@@ -4110,3 +4110,22 @@ button.cut-status:focus-visible {
 .kdstock-add span { color: #889bb3; }
 .kdstock-foot { padding: 10px 16px; border-top: 1px solid #2a4a52; display: flex; align-items: center; }
 .kdnest-btn-stock { background: rgba(120,160,200,0.12); color: #9fc4e6; border-color: rgba(120,160,200,0.4); }
+
+/* Saved Jobs popover rows (frame reuses .kdstock-* styles) */
+.kdjobs-body { display: flex; flex-direction: column; gap: 8px; padding: 4px 2px; }
+.kdjobs-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px;
+  background: rgba(255,255,255,0.04);
+}
+.kdjobs-main { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.kdjobs-name { font-family: "Flux Architect", ui-monospace, monospace; font-size: 14px; overflow-wrap: anywhere; }
+.kdjobs-meta { font-size: 12px; opacity: 0.7; }
+.kdjobs-load, .kdjobs-del {
+  flex: 0 0 auto; border: 0; border-radius: 6px; cursor: pointer;
+  padding: 6px 12px; font-size: 13px;
+}
+.kdjobs-load { background: #2d7d5a; color: #fff; }
+.kdjobs-del  { background: #7d2d2d; color: #fff; padding: 6px 10px; }
+.kdjobs-empty { opacity: 0.7; padding: 12px; font-size: 13px; }
+.kdnest-btn-jobs, .kdnest-btn-export { /* inherit .kdnest-btn; no special colour needed */ }
