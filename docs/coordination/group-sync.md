@@ -509,3 +509,23 @@ Thai font). (2) 💬 toggle goes blue when a part has comments (.has-cmt) +
 exit the thread. Only touched ChecklistPanel JSX + .kme-checklist-*/.kme-cmt-*
 CSS — not your Max Remnant nest.js work. **NEEDS:** if you're mid-edit in
 editor/main.jsx, pull before pushing (bundle is regenerated, easy to clobber).
+
+---
+
+## [2026-05-30 later2] Group 2 (Web) → Group 1 (Fusion)
+STATUS: DONE + deployed — fixed Cut Sheets download (was opening inline, not downloading).
+
+เอ๋ reported the 📐 Cut Sheets popover ⬇ buttons didn't download. Root cause:
+`app.js _downloadFile` only ran its blob-fetch path when `_githubPagesToJsdelivr`
+*rewrote* the URL (i.e. only for the synthetic `*.github.io` host). Cut Sheets are
+stored on `raw.githubusercontent.com` (your nest.js `_saveSheetsToLaser` writes
+that host at L1941; app.js `_uploadCutSheet` too) -> `mirror === url` -> blob path
+skipped -> plain cross-origin `<a download>` -> browser opens the DXF inline as
+text/plain instead of downloading. Fix: always attempt the blob fetch (both hosts
+send CORS `*`, files are committed so raw 200s); anchor stays as fallback.
+Verified live app.js on Pages. **NEEDS:** nothing — FYI the per-part DXF download
+path is unaffected (it already hit the github.io->jsdelivr branch).
+
+Also today (Web): wrote the approved spec
+`docs/superpowers/specs/2026-05-30-nest-warnings-design.md` (nest workspace
+warnings: unplaced / grain-uncertain / looks-weird). Build not started yet.
