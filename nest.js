@@ -2108,6 +2108,68 @@
     _refreshView();
   }
 
+  // ── Saved Jobs popover ────────────────────────────────────────────────
+  // Lists nest_jobs/<pk>/* newest-first; load or (admin) delete each.
+  function _openSavedJobsModal() {
+    const pk = S.projectKey;
+    if (!pk || !window.firebaseDB) { alert('No project / database unavailable.'); return; }
+    window.firebaseDB.ref(`nest_jobs/${pk}`).once('value')
+      .then(snap => _renderSavedJobsModal(snap.val() || {}))
+      .catch(e => alert('Saved Jobs load failed: ' + (e.message || e)));
+  }
+  function _renderSavedJobsModal(bucket) {
+    document.querySelectorAll('.kdjobs-modal').forEach(m => m.remove());
+    const isAdminUser = (typeof window.isAdmin === 'function' && window.isAdmin());
+    const jobs = Object.entries(bucket)
+      .map(([jobId, v]) => ({ jobId, ...v }))
+      .sort((a, b) => (b.saved_at || 0) - (a.saved_at || 0));
+
+    const rows = jobs.length ? jobs.map(j => {
+      const nSheets = Array.isArray(j.sheets) ? j.sheets.length : 0;
+      const nParts = Array.isArray(j.parts) ? j.parts.length : 0;
+      return `
+        <div class="kdjobs-row" data-id="${_esc(j.jobId)}">
+          <div class="kdjobs-main">
+            <span class="kdjobs-name">${_esc(j.name || j.jobId)}</span>
+            <span class="kdjobs-meta">${nSheets} sheets · ${nParts} parts · ${_esc(j.mode || '')}</span>
+          </div>
+          <button class="kdjobs-load" data-id="${_esc(j.jobId)}">Load</button>
+          ${isAdminUser ? `<button class="kdjobs-del" data-id="${_esc(j.jobId)}" title="Delete this saved job">✕</button>` : ''}
+        </div>`;
+    }).join('') : '<div class="kdjobs-empty">No saved jobs yet. Click 💾 Save Project to create one.</div>';
+
+    const modal = document.createElement('div');
+    modal.className = 'kdstock-modal kdjobs-modal';
+    modal.innerHTML = '<div class="kdstock-backdrop"></div>'
+      + `<div class="kdstock-frame" role="dialog" aria-label="Saved Jobs">
+           <div class="kdstock-head">📂 Saved Jobs
+             <span class="kdstock-sub">${_esc(S.projectName)} · ${jobs.length} saved</span>
+             <button class="kdstock-close" aria-label="Close">✕</button>
+           </div>
+           <div class="kdjobs-body">${rows}</div>
+         </div>`;
+    document.body.appendChild(modal);
+
+    const closeModal = () => modal.remove();
+    modal.querySelector('.kdstock-backdrop').addEventListener('click', closeModal);
+    modal.querySelector('.kdstock-close').addEventListener('click', closeModal);
+    modal.querySelectorAll('.kdjobs-load').forEach(btn => btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      const job = bucket[id];
+      closeModal();
+      if (job) await _restoreJob(job);
+    }));
+    modal.querySelectorAll('.kdjobs-del').forEach(btn => btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      if (!confirm('Delete saved job "' + id + '"? This cannot be undone.')) return;
+      try {
+        await window.firebaseDB.ref(`nest_jobs/${S.projectKey}/${id}`).remove();
+        const snap = await window.firebaseDB.ref(`nest_jobs/${S.projectKey}`).once('value');
+        _renderSavedJobsModal(snap.val() || {});
+      } catch (e) { alert('Delete failed: ' + (e.message || e)); }
+    }));
+  }
+
   // DXF builder for one nested sheet — minimal R12-ish text format.
   // ezdxf would be nicer but we have to ship browser-only. The format
   // below works in any DXF reader (NestingTool's ezdxf-based reader
