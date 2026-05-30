@@ -4786,3 +4786,23 @@ html[data-theme="sketch"] .kme-checklist-row { background-color: var(--paper) !i
    ════════════════════════════════════════════════════════════════════ */
 .kme-node-label { pointer-events: none !important; }
 .kme-node-label[contenteditable="true"] { pointer-events: auto !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   v8 (2026-05-31) — Sketch mindmap node interactivity = Default.
+   เอ๋ 'onNodeClick = expand/collapse, tab 3 ... ให้เหมือน Theme default'.
+   Root cause: the post-it `transform: rotate()` on .kme-node tilts the
+   visual box away from React Flow's layout box, so RF's pointer→node hit
+   test (which drives onNodeClick's expand/collapse + tap-3 hide cycle)
+   landed inconsistently — Default has no transform, so it worked there.
+   Drop the rotation on the React Flow nodes ONLY (keep the note colour,
+   inked border + offset shadow → still reads as a post-it). Other pages'
+   cards (.project-card / .cut-row) keep their tilt — they aren't RF nodes.
+   Specificity matches the nth-of-type rules above + comes later + !important,
+   so this wins.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project),
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project),
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project),
+html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) {
+  transform: none !important;
+}
