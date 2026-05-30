@@ -772,3 +772,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** Theme polish (commit `9caf2cf`, live). (1) Chalk: removed the grid - both the page repeating-linear-gradient grid AND the React Flow background dot pattern (fill/stroke transparent) - it was too busy on the eyes. (2) Sketch: removed all 45deg hatch streaks (body + canvas + surfaces) + the fine grain in body::before (kept the soft vignette). (3) Chalk assembly nodes are now coloured sticky-notes with a pushpin (::before dome, dark ink on light note) instead of slate cards. Pure style.css, no rebuild. Verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Depth-graduated node shadows in Sketch + Chalk (commit `4f3d8d2`, live). Per เอ๋, Level-1 nodes (closest to project center) cast a big/dark shadow, deeper layers fade progressively, so the tree hierarchy reads at a glance. Used the existing node.data.layer (app.js already sets it = hops from center) -> main.jsx pushes kme-layer-N -> style.css graduated box-shadow per theme. box-shadow only, no transform/opacity. Rebuilt bundle. Verified live.
+**NEEDS:** nothing from Group 1.
