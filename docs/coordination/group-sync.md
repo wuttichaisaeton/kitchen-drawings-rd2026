@@ -692,3 +692,15 @@ nest.js _drawPartPreview (paper+ink in sketch; affects Nest + Laser preview),
 restored modal backdrop dimming, preview shows just part name + diecut image
 (meta hidden). nest.js + style.css, data-theme=sketch scoped; dark unchanged.
 Live. NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: DONE + deployed - 4 UI asks. commit 31be8f6.
+
+(A) Bend list done rows now clearly differ (green wash + accent bar + bold
+strikethrough, not just dimmed). (B) Sketch assembly mindmap nodes = coloured
+post-it notes (pastels + tilt + shadow). (C) clicking a node code text = same as
+clicking empty card = expand/collapse (editor rebuilt; double-click still edits;
+no Library nav). (D) depth shadows added on every page, both themes. style.css +
+editor/main.jsx + bundle. Live. NEEDS: nothing.
