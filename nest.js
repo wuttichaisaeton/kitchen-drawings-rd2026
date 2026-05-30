@@ -2051,6 +2051,63 @@
           (firstErr ? `\n\nFirst cut-sheet error: ${firstErr}` : ''));
   }
 
+  // Restore a saved nest job into S: settings + parts + stock, then re-parse
+  // DXFs and re-attach polys/bbox to the saved placements by code. No re-run —
+  // the saved layout renders as-is. (user 2026-05-30 'โหลดงานเก่า')
+  async function _restoreJob(job) {
+    if (!job) return;
+    S.mode = job.mode || S.mode;
+    S.gap = (typeof job.gap === 'number') ? job.gap : S.gap;
+    S.skipRemnants = !!job.skipRemnants;
+    S.dontRemember = !!job.dontRemember;
+    if (Array.isArray(job.sheetStock) && job.sheetStock.length) {
+      S.sheetStock = job.sheetStock.map(s => ({
+        w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
+        thickness: s.thickness ?? 1, label: s.label || '',
+      }));
+    }
+    // Rebuild parts: start from a fresh part shell per code, overlay saved fields.
+    S.parts = (job.parts || []).map(sp => {
+      const base = sp.manual ? _newManualPart() : _newPart(sp.code, sp.qty);
+      base.code = sp.code;
+      base.qty = sp.qty || 0;
+      base.selected = !!sp.selected;
+      base.grain = sp.grain || 'ANY';
+      base.thickness = sp.thickness || 0;
+      base.w = sp.w || 0;
+      base.h = sp.h || 0;
+      base.manual = !!sp.manual;
+      base.dxfUrl = sp.dxfUrl || '';
+      base.dxfLoaded = !!sp.manual;   // manual rects need no fetch
+      base.dxfError = null;
+      base.polys = null; base.bbox = null;
+      return base;
+    });
+    S.previewCode = null;
+    S.highlightCode = null;
+    S.flatSheets = [];
+    S.currentSheetIdx = 0;
+    _refreshView();
+    // Re-parse DXFs (fills polys/bbox + may correct w/h from the real bbox).
+    await _loadAllDxfs();
+    if (S.closing) return;
+    // Rebuild flatSheets from the saved placements, re-attaching geometry from
+    // the freshly-loaded part of the same code.
+    S.flatSheets = (job.sheets || []).map(sh => ({
+      thick: sh.thick, sw: sh.sw, sh: sh.sh,
+      placements: (sh.placements || []).map(pl => {
+        const part = S.parts.find(p => p.code === pl.code);
+        return {
+          code: pl.code, x: pl.x, y: pl.y, w: pl.w, h: pl.h, rot: pl.rot || 0,
+          polys: part ? part.polys : null,
+          bbox: part ? part.bbox : null,
+        };
+      }),
+    }));
+    S.currentSheetIdx = 0;
+    _refreshView();
+  }
+
   // DXF builder for one nested sheet — minimal R12-ish text format.
   // ezdxf would be nicer but we have to ship browser-only. The format
   // below works in any DXF reader (NestingTool's ezdxf-based reader
