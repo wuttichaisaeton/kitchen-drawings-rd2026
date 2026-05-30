@@ -816,6 +816,27 @@ function _aggregatePartsByCode(parts) {
 function _renderCutList(parts, projectKey) {
   const aggregated = _aggregatePartsByCode(parts);
 
+  // Merge the latest nest snapshot: override grain/qty on matching codes and
+  // append nest-only codes (manual rectangles) the manifest doesn't know about.
+  // (user 2026-05-30 'sync รายละเอียด Part ไปด้วย')
+  const _nestParts = (typeof nestPartsForProject === 'function')
+    ? nestPartsForProject(projectKey) : [];
+  const _nestByCode = new Map(_nestParts.map(np => [np.code, np]));
+  const _aggByCode = new Map(aggregated.map(a => [a.code, a]));
+  for (const np of _nestParts) {
+    const row = _aggByCode.get(np.code);
+    if (row) {
+      if (np.qty) row.qty = np.qty;          // nest qty wins (latest truth)
+      row._nestGrain = np.grain || null;     // grain override consumed below
+    } else {
+      aggregated.push({
+        code: np.code, qty: np.qty || 0,
+        family: 'Other', urn: null,
+        _nestGrain: np.grain || null, _nestOnly: true,
+      });
+    }
+  }
+
   // Nesting part number (#N): 1-based rank of the code in the alphabetically
   // sorted unique-code list — the SAME rule the Nest workspace uses
   // (nest.js:572 sorts S.parts by code.localeCompare, labels rows #i+1), so
@@ -859,8 +880,10 @@ function _renderCutList(parts, projectKey) {
         // workspace (user 2026-05-28: 'part view ให้ sync ข้อมูล
         // ระหว่าง Laser & Nesting').
         let grainCell = '';
-        if (window.kdNest && typeof window.kdNest.lookupGrain === 'function') {
-          const g = window.kdNest.lookupGrain(p.code) || '?';
+        if (window.kdNest && typeof window.kdNest.grainGlyph === 'function') {
+          const g = p._nestGrain
+            || (typeof window.kdNest.lookupGrain === 'function' ? window.kdNest.lookupGrain(p.code) : null)
+            || '?';
           const gly = window.kdNest.grainGlyph(g);
           grainCell = `<span class="cut-grain ${gly.cls}" title="${gly.title}">${gly.ch}</span>`;
         }
