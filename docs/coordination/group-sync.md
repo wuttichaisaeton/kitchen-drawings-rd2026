@@ -717,3 +717,13 @@ text-taps pass through to the card. style.css only, both themes, no rebuild.
 Also earlier: v6 made the Sketch theme reach the editor canvas (was black behind
 post-it nodes). Live. NEEDS: nothing.
 
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: fix - Sketch mindmap node click now matches Default (post-it rotate broke RF hit-test).
+
+The post-it transform:rotate() on .kme-node tilted the card off React Flow's
+layout box so onNodeClick's 3-tap expand/collapse/hide cycle landed wrong in
+Sketch only. Removed rotate on RF nodes (kept colour/border/shadow). style.css
+only, no rebuild. Live. NEEDS: nothing.
