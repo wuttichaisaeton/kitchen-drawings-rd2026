@@ -4365,3 +4365,110 @@ html[data-theme="sketch"] .kme-project {
 }
 html[data-theme="sketch"] .theme-menu { box-shadow: var(--pen-sh) !important; }
 html[data-theme="sketch"] .theme-opt.is-active { color: var(--accent) !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   SKETCH v2 (2026-05-31) — match the site-plan + kanban references เอ๋ sent:
+   engraved hatch headings (bold outline + pencil-fill shadow), coloured
+   sticky-note cards (warm pastels, pinned at a tiny tilt), paper grain +
+   edge vignette. Appended after the v1 sketch block so these win on source
+   order. Still scoped to html[data-theme="sketch"] only.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Paper grain + edge vignette — fixed overlay, never affects layout/clicks. */
+html[data-theme="sketch"] body::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 9998;
+  background:
+    radial-gradient(130% 120% at 50% 42%, transparent 58%, rgba(70,55,30,0.20) 100%),
+    repeating-linear-gradient(0deg, rgba(80,64,40,0.022) 0 2px, transparent 2px 5px),
+    repeating-linear-gradient(90deg, rgba(80,64,40,0.018) 0 2px, transparent 2px 6px);
+  mix-blend-mode: multiply;
+}
+
+/* Engraved hatch headings — bold UPPERCASE, layered offset shadow gives the
+   inked-outline-with-fill look from the references. The header brand uses a
+   light fill + dark stroke; section titles use solid pen ink + offset. */
+html[data-theme="sketch"] h1 {
+  color: var(--paper2) !important;
+  -webkit-text-stroke: 1.3px var(--pen);
+  text-shadow: 2px 2px 0 var(--pen), 4px 4px 0 rgba(27,24,21,0.22) !important;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+html[data-theme="sketch"] h1 .brand-sub {
+  -webkit-text-stroke: 0;
+  text-shadow: none !important;
+  color: var(--ink-soft) !important;
+  text-transform: none;
+  font-style: italic;
+}
+html[data-theme="sketch"] .project-name,
+html[data-theme="sketch"] .cut-list-title,
+html[data-theme="sketch"] .cut-section-title,
+html[data-theme="sketch"] .kdnest-title-main,
+html[data-theme="sketch"] .pdxf-title,
+html[data-theme="sketch"] .kdstock-head,
+html[data-theme="sketch"] .kme-checklist-title {
+  color: var(--pen) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-shadow: 1.5px 1.5px 0 rgba(27,24,21,0.18) !important;
+}
+
+/* Coloured sticky-note cards — warm pastels rotated by position, each pinned
+   at a tiny hand-placed angle. Overrides the v1 reset's transparent bg
+   (higher specificity: nth-of-type + theme prefix beats the universal `*`). */
+html[data-theme="sketch"] .project-card,
+html[data-theme="sketch"] .cut-row {
+  border-radius: 3px 11px 4px 10px / 10px 4px 11px 3px !important;
+  border: 2px solid var(--pen) !important;
+  box-shadow: 2px 3px 0 rgba(27,24,21,0.20) !important;
+  background-image: none !important;   /* solid note paper, no hatch over colour */
+}
+/* Yellow / blue / pink / green rotation — the four note colours in the refs. */
+html[data-theme="sketch"] .project-card:nth-of-type(4n+1),
+html[data-theme="sketch"] .cut-row:nth-of-type(4n+1) { background-color: #fbe79f !important; transform: rotate(-0.7deg); }
+html[data-theme="sketch"] .project-card:nth-of-type(4n+2),
+html[data-theme="sketch"] .cut-row:nth-of-type(4n+2) { background-color: #bcdcef !important; transform: rotate(0.6deg); }
+html[data-theme="sketch"] .project-card:nth-of-type(4n+3),
+html[data-theme="sketch"] .cut-row:nth-of-type(4n+3) { background-color: #f4c6cd !important; transform: rotate(-0.5deg); }
+html[data-theme="sketch"] .project-card:nth-of-type(4n+4),
+html[data-theme="sketch"] .cut-row:nth-of-type(4n+4) { background-color: #cbe7a6 !important; transform: rotate(0.7deg); }
+/* Straighten on hover so a tilted card is easy to read/click. */
+html[data-theme="sketch"] .project-card:hover,
+html[data-theme="sketch"] .cut-row:hover { transform: rotate(0deg) !important; }
+/* Text on the coloured notes stays graphite ink (reset already set --ink),
+   but force it on the title/meta in case a base rule set a brand colour. */
+html[data-theme="sketch"] .project-card *,
+html[data-theme="sketch"] .cut-row * { color: var(--ink) !important; }
+
+/* Nest part rows + saved-job rows + stock cards: lighter note paper (no
+   tilt — they sit in tight lists where rotation would overlap). */
+html[data-theme="sketch"] .kdnest-part,
+html[data-theme="sketch"] .kdjobs-row,
+html[data-theme="sketch"] .kdstock-card,
+html[data-theme="sketch"] .bom-row,
+html[data-theme="sketch"] .tree-row {
+  background-color: #fcf4dd !important;
+  background-image: none !important;
+}
+
+/* North-compass / scale-bar vibe: give the footer count a faint drafting
+   underline so the bottom of the page reads like a title block. */
+html[data-theme="sketch"] footer {
+  border-top: 2px solid var(--pen) !important;
+}
+
+/* Search field: ruled drafting input. */
+html[data-theme="sketch"] .search-wrap,
+html[data-theme="sketch"] #search {
+  background-color: var(--paper) !important;
+}
+
+/* Tabs as drawn chips with a heavier active underline (title-block style). */
+html[data-theme="sketch"] .tab.active {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
