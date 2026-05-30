@@ -1886,6 +1886,70 @@
   }
 
   // ════════════════════════════════════════════════════════════════════
+  //  Save Project — job serialization helpers (pure; no DOM/Firebase)
+  // ════════════════════════════════════════════════════════════════════
+  // Timestamp slug YYYYMMDD_HHMMSS (local) — used as the jobId + filename.
+  function _jobStamp() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
+  }
+  // Human label "YYYY-MM-DD HH:MM" (local) for the Saved Jobs list.
+  function _jobLabel() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+  // Strip a part down to the persisted fields (no polys/bbox — re-parsed on restore).
+  function _serializePart(p) {
+    return {
+      code: p.code, qty: p.qty || 0, selected: !!p.selected,
+      grain: p.grain || 'ANY', thickness: p.thickness || 0,
+      w: p.w || 0, h: p.h || 0, manual: !!p.manual, dxfUrl: p.dxfUrl || '',
+    };
+  }
+  // Strip a flatSheet to thick/size + placements without polys/bbox.
+  function _serializeSheet(s) {
+    return {
+      thick: s.thick, sw: s.sw, sh: s.sh,
+      placements: (s.placements || []).map(pl => ({
+        code: pl.code, x: pl.x, y: pl.y, w: pl.w, h: pl.h, rot: pl.rot || 0,
+      })),
+    };
+  }
+  // Per-cut-sheet parts summary: group a sheet's placements by code, attach
+  // grain/thickness from the matching S.parts entry. Used in cut_sheets.parts[].
+  function _sheetPartsSummary(sheet) {
+    const byCode = new Map();
+    for (const pl of (sheet.placements || [])) {
+      const ex = byCode.get(pl.code);
+      if (ex) { ex.qty += 1; continue; }
+      const part = S.parts.find(p => p.code === pl.code);
+      byCode.set(pl.code, {
+        code: pl.code, qty: 1, w: pl.w, h: pl.h, rot: pl.rot || 0,
+        grain: (part && part.grain) || 'ANY',
+        thickness: (part && part.thickness) || 0,
+      });
+    }
+    return [...byCode.values()];
+  }
+  // Assemble the full job object from current S. Pure (reads S, returns data).
+  function _buildJob() {
+    return {
+      saved_at: Date.now(),
+      name: _jobLabel(),
+      mode: S.mode, gap: S.gap,
+      skipRemnants: !!S.skipRemnants, dontRemember: !!S.dontRemember,
+      sheetStock: (S.sheetStock || []).map(s => ({
+        w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
+        thickness: s.thickness ?? 1, label: s.label || '',
+      })),
+      parts: (S.parts || []).map(_serializePart),
+      sheets: (S.flatSheets || []).map(_serializeSheet),
+    };
+  }
+
+  // ════════════════════════════════════════════════════════════════════
   //  Save sheets to Laser → cut_sheets/<projectKey>/<id>
   //  (button label was 'Save Sheets to Project' through 2026-05-29 —
   //   renamed because the destination is the Laser-role 📐 Cut Sheets
