@@ -1278,12 +1278,16 @@ function _renderCutSheetsModal(triggerBtn, projectKey, project) {
         const sz = (s.sheet_w_mm && s.sheet_h_mm) ? `${s.sheet_w_mm}×${s.sheet_h_mm}mm` : '';
         const ago = _formatTimeAgo(s.uploaded_at) || '';
         const via = s.uploaded_via ? ` · via ${escapeHtml(s.uploaded_via)}` : '';
+        const partsSummary = Array.isArray(s.parts) && s.parts.length
+          ? s.parts.map(pt => `${escapeHtml(pt.code)}×${pt.qty || 1}`).join(', ')
+          : '';
         return `
           <div class="cs-row" data-id="${escapeHtml(s.id)}" data-url="${escapeHtml(s.url || '')}" data-filename="${escapeHtml(filename)}">
             <div class="cs-row-main">
               <span class="cs-filename">${escapeHtml(filename)}</span>
               <span class="cs-meta">${thMm} · ${parts}${sz ? ' · ' + sz : ''}</span>
               <span class="cs-sub">${escapeHtml(ago)}${via}</span>
+              ${partsSummary ? `<span class="cs-parts" title="Parts on this sheet">${partsSummary}</span>` : ''}
             </div>
             <button class="cs-download-btn" data-action="download">⬇</button>
             ${adminMode ? `<button class="cs-delete-btn" data-action="delete" title="Delete cut sheet">✕</button>` : ''}
