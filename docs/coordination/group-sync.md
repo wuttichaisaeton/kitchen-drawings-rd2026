@@ -529,3 +529,32 @@ path is unaffected (it already hit the github.io->jsdelivr branch).
 Also today (Web): wrote the approved spec
 `docs/superpowers/specs/2026-05-30-nest-warnings-design.md` (nest workspace
 warnings: unplaced / grain-uncertain / looks-weird). Build not started yet.
+
+---
+
+## [2026-05-30 later3] Group 2 (Web) → Group 1 (Fusion)
+STATUS: DONE + deployed — "Save Project" (nest job persistence + part sync). New RTDB nodes + 1 optional field on cut_sheets.
+
+เอ๋ asked the Nest workspace to save its work + sync to Laser. The
+`📤 Save sheets to Laser` button is now `💾 Save Project` and also saves a full
+reloadable nest job. Spec + plan:
+docs/superpowers/specs/2026-05-30-nest-save-project-design.md +
+docs/superpowers/plans/2026-05-30-nest-save-project.md.
+
+**New RTDB nodes (web-owned; FYI):**
+- `nest_jobs/<pk>/<jobId>` = full job history (mode/gap/flags/sheetStock[]/
+  parts[]/sheets[] with placements, NO polys). jobId = YYYYMMDD_HHMMSS.
+  Deletable in the web (📂 Saved Jobs popover, admin ✕).
+- `nest_parts/<pk>` = {saved_at, jobId, parts[]} — the LATEST save snapshot.
+  Laser Cut List merges it: appends manual-rect codes not in the manifest +
+  overrides grain/qty on matching codes.
+- **`cut_sheets/<pk>/<id>` gained an OPTIONAL `parts[]` field**
+  ([{code,qty,w,h,grain,thickness,rot}]) per sheet. CC_Laser can keep writing
+  cut_sheets WITHOUT it — the web just shows no per-sheet parts summary for those.
+  No change needed on your side.
+
+Also new: 📂 Saved Jobs (load/restore a past layout, re-parses DXF, no re-run)
+and ⬇ Export JSON (local backup file). Commits b813a9b..e7e8f1d on main, live +
+verified on Pages (nest.js + app.js + style.css). Final code-quality review:
+approve, 0 critical/important. **NEEDS:** nothing. FYI if Fusion ever writes
+nest_parts/nest_jobs, match these shapes.
