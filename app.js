@@ -2224,6 +2224,28 @@ function cutSheetsForProject(projectKey) {
   return out;
 }
 
+// ── Nest parts snapshot (latest Save Project per project) ──────────────
+// Written by nest.js _saveProject to nest_parts/<pk>. The Laser Cut List
+// merges this so manual rects + grain/qty edits made in the Nest workspace
+// reach the laser worker. app.js only READS this node.
+let _nestPartsCache = {};
+function initNestPartsSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('nest_parts').on('value', snap => {
+      _nestPartsCache = snap.val() || {};
+      if (typeof render === 'function') render();
+    });
+  } catch (e) {
+    console.warn('Firebase nest_parts listener failed:', e);
+  }
+}
+function nestPartsForProject(projectKey) {
+  if (!projectKey || !_nestPartsCache) return [];
+  const node = _nestPartsCache[projectKey];
+  return (node && Array.isArray(node.parts)) ? node.parts : [];
+}
+
 function initUploadedDxfsSync() {
   if (!window.firebaseDB) return;
   try {
@@ -7796,6 +7818,7 @@ async function init() {
   initUploadedPdfsSync();
   initUploadedDxfsSync();
   initCutSheetsSync();
+  initNestPartsSync();
   initActiveRowsSync();
   initBentSync();
   initAssembledSync();
