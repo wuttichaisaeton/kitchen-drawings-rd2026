@@ -226,6 +226,44 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.4);
 }
 
+/* Completed / assembled node — clear green ✓ badge + struck label so it's
+   obvious on the canvas which parts are done. Lives in the bundle so it works
+   in EVERY theme: the badge is a ::after pseudo-element (Sketch/Chalk's
+   `*{background:transparent!important}` reset doesn't match pseudo-elements,
+   so the green stays) and it uses border / box-shadow / text-decoration —
+   NO transform / NO opacity on .kme-node, so RF's expand/collapse scale
+   animation is untouched. (เอ๋ 2026-05-31 'ดูไม่ออกว่า assembly Mark complete') */
+.kme-node.kme-done {
+  position: relative;
+  border-color: #3fb950;
+  box-shadow: 0 0 0 1.5px #3fb950 inset;
+}
+.kme-node.kme-done::after {
+  content: "\2713";
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  width: 21px;
+  height: 21px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #3fb950;
+  color: #fff;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  z-index: 6;
+  pointer-events: none;
+}
+.kme-node.kme-done .kme-node-label {
+  text-decoration: line-through;
+  text-decoration-color: #3fb950;
+  text-decoration-thickness: 2px;
+}
+
 .kme-node.kme-linked {
   border-color: #3fb950;
   background: #0f2818;

@@ -365,6 +365,11 @@ function MindmapNode({ id, data, selected }) {
   if (isCollapsedParent) cls.push('kme-parent-collapsed');
   if (isVariantRoot) cls.push('kme-variant-root');
   if (isFadedNode) cls.push('kme-faded');
+  // Assembled/complete BOM parts get a clear "done" marker on the canvas
+  // (green ✓ badge + struck label, styled in editor/style.css → works in every
+  // theme). Without this, a checklist-ticked node stays visible but looks
+  // identical to a todo node. (เอ๋ 2026-05-31 'ดูไม่ออกว่า assembly Mark complete')
+  if (assembled && isBom) cls.push('kme-done');
 
   // Layer coloring (2026-05-30): every BOM node — including wrapper / variant-
   // root containers — shows its depth-layer color. (The qty badge + family
