@@ -821,7 +821,6 @@ function _renderCutList(parts, projectKey) {
   // (user 2026-05-30 'sync รายละเอียด Part ไปด้วย')
   const _nestParts = (typeof nestPartsForProject === 'function')
     ? nestPartsForProject(projectKey) : [];
-  const _nestByCode = new Map(_nestParts.map(np => [np.code, np]));
   const _aggByCode = new Map(aggregated.map(a => [a.code, a]));
   for (const np of _nestParts) {
     const row = _aggByCode.get(np.code);
