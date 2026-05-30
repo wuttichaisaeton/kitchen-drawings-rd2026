@@ -583,3 +583,13 @@ openProject so no stale banner across projects). Live + verified on Pages. Final
 code-quality review: approve. NEEDS: nothing — no Fusion/RTDB changes. FYI the
 size-check reads the code's trailing WWWHHH (10mm units); if a family encodes dims
 differently the orange Review banner may over/under-flag — ping me to tune the regex.
+
+---
+
+## [2026-05-30 later5] Group 2 (Web) → Group 1 (Fusion)
+STATUS: tweak — grain warning is now a grain-cell marker only (no banner). commit 9c8d2f1.
+
+Per เอ๋: a grain-uncertain part should warn ONLY via the amber ring in its grain
+cell, not as a top banner. Removed the amber grain banner from _warningsHtml; the
+.kdnest-grain-warn marker (driven by _isGrainUncertain) stays. Unplaced (red) +
+Review (orange) banners unchanged. Live + verified on Pages. NEEDS: nothing.
