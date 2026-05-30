@@ -133,7 +133,7 @@ function ProjectCenterNode({ id, data, selected }) {
 // ── BOM / Custom node ───────────────────────────────────────────────
 function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
-          isLeaf, isWrapper, status, urn, drawing_urn,
+          isLeaf, isWrapper, status, urn, drawing_urn, layer,
           isCollapsedParent, hasChildren,
           isVariantRoot, inChecklistMode, faded, ensureCollapsed, releaseNode, revealAll } = data;
   const isBom = kind === 'bom';
@@ -370,6 +370,11 @@ function MindmapNode({ id, data, selected }) {
   // theme). Without this, a checklist-ticked node stays visible but looks
   // identical to a todo node. (เอ๋ 2026-05-31 'ดูไม่ออกว่า assembly Mark complete')
   if (assembled && isBom) cls.push('kme-done');
+  // Depth class for graduated shadows (เอ๋ 2026-05-31 'แรเงาที่ Node Level แรก
+  // เงาเยอะ Level 2 เงาน้อย และค่อยๆจางไป'). `layer` = hops from the project
+  // center (app.js sets node.data.layer). Capped at 5+ → one bucket so the
+  // shadow keeps fading but the class count stays bounded. Themed in style.css.
+  if (isBom && layer >= 1) cls.push('kme-layer-' + Math.min(layer, 5));
 
   // Layer coloring (2026-05-30): every BOM node — including wrapper / variant-
   // root containers — shows its depth-layer color. (The qty badge + family

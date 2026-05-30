@@ -5190,3 +5190,26 @@ html[data-theme="chalk"] .kme-node.kme-done {
   border-color: #2f9e44 !important;
   box-shadow: 0 0 0 1.5px #2f9e44 inset !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   DEPTH-GRADUATED NODE SHADOWS — Sketch + Chalk (2026-05-31). เอ๋ 'assembly
+   ที่ Node theme sketch & chalkboard ให้มีแรเงาที่ Node Level แรก เงาเยอะ
+   Level 2 เงาน้อย และค่อยๆจางไป จะได้บ่งบอกถึงความต่าง'. `.kme-layer-N` is
+   added in editor/main.jsx from node.data.layer (hops from the project
+   center). L1 = closest to root = biggest, darkest lift; deeper layers cast a
+   progressively smaller/softer shadow so the tree hierarchy reads at a glance.
+   box-shadow only — NO transform/opacity on .kme-node (RF scale lesson).
+   ════════════════════════════════════════════════════════════════════ */
+/* Sketch — hand-inked offset shadow, hard edge, fading by depth. */
+html[data-theme="sketch"] .kme-node.kme-layer-1:not(.kme-project) { box-shadow: 6px 8px 0 rgba(27,24,21,0.34) !important; }
+html[data-theme="sketch"] .kme-node.kme-layer-2:not(.kme-project) { box-shadow: 5px 6px 0 rgba(27,24,21,0.26) !important; }
+html[data-theme="sketch"] .kme-node.kme-layer-3:not(.kme-project) { box-shadow: 4px 5px 0 rgba(27,24,21,0.19) !important; }
+html[data-theme="sketch"] .kme-node.kme-layer-4:not(.kme-project) { box-shadow: 3px 3px 0 rgba(27,24,21,0.13) !important; }
+html[data-theme="sketch"] .kme-node.kme-layer-5:not(.kme-project) { box-shadow: 2px 2px 0 rgba(27,24,21,0.08) !important; }
+
+/* Chalk — soft drop shadow under the pinned post-it, fading by depth. */
+html[data-theme="chalk"] .kme-node.kme-layer-1:not(.kme-project) { box-shadow: 3px 7px 14px rgba(0,0,0,0.60) !important; }
+html[data-theme="chalk"] .kme-node.kme-layer-2:not(.kme-project) { box-shadow: 2px 5px 10px rgba(0,0,0,0.48) !important; }
+html[data-theme="chalk"] .kme-node.kme-layer-3:not(.kme-project) { box-shadow: 2px 4px 7px rgba(0,0,0,0.37) !important; }
+html[data-theme="chalk"] .kme-node.kme-layer-4:not(.kme-project) { box-shadow: 1px 3px 5px rgba(0,0,0,0.27) !important; }
+html[data-theme="chalk"] .kme-node.kme-layer-5:not(.kme-project) { box-shadow: 1px 2px 3px rgba(0,0,0,0.18) !important; }
