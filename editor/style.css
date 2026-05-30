@@ -585,6 +585,24 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   background: rgba(212, 164, 74, 0.12);
   padding: 1px 5px;
   border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.kme-comment-count:hover { background: rgba(212, 164, 74, 0.22); }
+.kme-comment-count.is-open { border-color: #d4a44a; color: #ffe9bf; }
+/* Inline comment thread on a mindmap node — reuses .kme-cmt-* (defined below).
+   Same look as .kme-checklist-thread. (เอ๋ 2026-05-30 'กลุ่มคอมเมนต์ที assembly') */
+.kme-cmt-thread {
+  margin-top: 6px; padding: 6px 8px;
+  background: #0d1117; border: 1px solid #21262d; border-radius: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+/* Comments are the ONE place Thai is allowed — Thai-capable fallback stack
+   (Flux Architect can't render Thai), mirroring .kme-checklist-thread. */
+.kme-cmt-thread .kme-cmt, .kme-cmt-thread .kme-cmt-input {
+  font-family: 'IBM Plex Sans Thai', 'Noto Sans Thai', system-ui, sans-serif;
+  font-size: 12.5px;
 }
 
 .kme-view-only .kme-row-actions button {
