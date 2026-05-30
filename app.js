@@ -463,8 +463,14 @@ async function _downloadFile(url, suggestedName) {
   // same trick the preview path uses) as a blob and download via an object URL
   // so the file actually lands with the right name. Any non-github.io URL
   // (raw.githubusercontent PDFs etc.) keeps the plain-anchor path unchanged.
+  // Always fetch as a blob. For the synthetic *.github.io host this hits the
+  // jsdelivr mirror; for Cut Sheets (raw.githubusercontent.com) the URL is
+  // unchanged — but raw serves DXF as text/plain, so a plain cross-origin
+  // <a download> would open it inline instead of downloading. Both hosts send
+  // CORS headers, so the blob + object-URL path forces a real download with
+  // the right filename in every case. Plain anchor remains the fallback.
   const mirror = _githubPagesToJsdelivr(url);
-  if (mirror !== url) {
+  {
     try {
       const resp = await fetch(mirror, { cache: 'force-cache' });
       if (!resp.ok) throw new Error('fetch ' + resp.status);
@@ -480,7 +486,7 @@ async function _downloadFile(url, suggestedName) {
       setTimeout(() => URL.revokeObjectURL(objUrl), 10000);
       return;
     } catch (e) {
-      console.warn('[dxf] jsdelivr blob download failed, falling back to direct link:', e);
+      console.warn('[dxf] blob download failed, falling back to direct link:', e);
       // fall through to the plain anchor below (best-effort)
     }
   }
