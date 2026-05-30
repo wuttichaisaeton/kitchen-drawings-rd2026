@@ -4204,7 +4204,7 @@ html[data-theme="sketch"] body,
 html[data-theme="sketch"] #root,
 html[data-theme="sketch"] main {
   background-color: var(--paper) !important;
-  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+  background-image: none !important;   /* hatch removed — เอ๋ 'เอาพื้นหลังขีดๆออก' 2026-05-31 */
   color: var(--ink) !important;
 }
 
@@ -4262,7 +4262,7 @@ html[data-theme="sketch"] .theme-menu {
   border: 2px solid var(--pen) !important;
   border-radius: var(--wob) !important;
   box-shadow: var(--pen-sh) !important;
-  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+  background-image: none !important;   /* hatch removed — เอ๋ 'เอาพื้นหลังขีดๆออก' 2026-05-31 */
 }
 
 /* Buttons — inked paper chips with a hand-drawn outline + hard offset. */
@@ -4350,7 +4350,7 @@ html[data-theme="sketch"] .react-flow__renderer,
 html[data-theme="sketch"] .mindmap-wrapper,
 html[data-theme="sketch"] .mindmap-canvas {
   background-color: var(--paper) !important;
-  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+  background-image: none !important;   /* hatch removed — เอ๋ 'เอาพื้นหลังขีดๆออก' 2026-05-31 */
 }
 html[data-theme="sketch"] .kme-node {
   background-color: var(--paper2) !important;
@@ -4386,9 +4386,7 @@ html[data-theme="sketch"] body::before {
   content: "";
   position: fixed; inset: 0; pointer-events: none; z-index: 9998;
   background:
-    radial-gradient(130% 120% at 50% 42%, transparent 58%, rgba(70,55,30,0.20) 100%),
-    repeating-linear-gradient(0deg, rgba(80,64,40,0.022) 0 2px, transparent 2px 5px),
-    repeating-linear-gradient(90deg, rgba(80,64,40,0.018) 0 2px, transparent 2px 6px);
+    radial-gradient(130% 120% at 50% 42%, transparent 58%, rgba(70,55,30,0.20) 100%);
   mix-blend-mode: multiply;
 }
 
@@ -4720,7 +4718,7 @@ html[data-theme="sketch"] .react-flow__viewport {
   color: var(--ink) !important;
 }
 html[data-theme="sketch"] .kme-root {
-  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+  background-image: none !important;   /* hatch removed — เอ๋ 'เอาพื้นหลังขีดๆออก' 2026-05-31 */
 }
 /* React Flow's <Background> SVG layer (dotted grid) — paper + faint dots. */
 html[data-theme="sketch"] .react-flow__background { background-color: var(--paper) !important; }
@@ -4861,9 +4859,7 @@ html[data-theme="chalk"] body,
 html[data-theme="chalk"] #root,
 html[data-theme="chalk"] main {
   background-color: var(--board) !important;
-  background-image:
-    repeating-linear-gradient(0deg, var(--dust) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(90deg, var(--dust) 0 1px, transparent 1px 7px) !important;
+  background-image: none !important;   /* grid removed — เอ๋ 'เอาตาราง grid ออก ลายตามาก' 2026-05-31 */
   color: var(--chalk) !important;
 }
 
@@ -5074,16 +5070,15 @@ html[data-theme="chalk"] .kme-canvas {
   color: var(--chalk) !important;
 }
 html[data-theme="chalk"] .kme-root {
-  background-image:
-    repeating-linear-gradient(0deg, var(--dust) 0 1px, transparent 1px 6px),
-    repeating-linear-gradient(90deg, var(--dust) 0 1px, transparent 1px 7px) !important;
+  background-image: none !important;   /* canvas grid removed — เอ๋ 'เอาตาราง grid ออก ลายตามาก' 2026-05-31 */
 }
 html[data-theme="chalk"] .react-flow__background { background-color: var(--board) !important; }
+/* Hide the React Flow dot/line grid pattern entirely (too busy on the eyes). */
 html[data-theme="chalk"] .react-flow__background-pattern,
 html[data-theme="chalk"] .react-flow__background pattern circle,
 html[data-theme="chalk"] .react-flow__background pattern path {
-  fill: rgba(244,241,232,0.12) !important;
-  stroke: rgba(244,241,232,0.12) !important;
+  fill: transparent !important;
+  stroke: transparent !important;
 }
 
 /* Editor toolbar + floating chrome = slate chalk chips. */
@@ -5102,24 +5097,48 @@ html[data-theme="chalk"] .kme-checklist-btn {
   box-shadow: var(--chalk-sh) !important;
 }
 
-/* Mindmap nodes = chalk-outlined slate cards, coloured-chalk by position.
-   NO transform / NO opacity (RF scale-animation lesson). */
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project) { border-color: var(--c-yellow) !important; }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project) { border-color: var(--c-blue) !important; }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project) { border-color: var(--c-pink) !important; }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) { border-color: var(--c-green) !important; }
+/* Assembly nodes = coloured sticky-notes pinned to the blackboard (เอ๋
+   2026-05-31 'Assembly ของ Chalk เอา Post-it มีหมุดปัก'). Light note paper +
+   DARK ink (override the chalk-white reset) + a pushpin via ::before. Pin is a
+   pseudo-element → survives the theme reset + transforms only itself, NOT
+   .kme-node, so RF's scale animation is untouched (the post-it lesson). */
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project) { background-color: #f3e7a8 !important; border-color: #bfa53c !important; }
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project) { background-color: #b8dcf0 !important; border-color: #3f7fa6 !important; }
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project) { background-color: #f0c2cd !important; border-color: #b1556b !important; }
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) { background-color: #bfe0b5 !important; border-color: #4f9450 !important; }
 html[data-theme="chalk"] .kme-node:not(.kme-project) {
-  background-color: var(--board2) !important;
+  background-color: #f3e7a8 !important;
   background-image: none !important;
-  border: 2px solid var(--line) !important;
-  border-radius: var(--wob2) !important;
-  box-shadow: var(--chalk-sh) !important;
-  color: var(--chalk) !important;
+  border: 1.5px solid #bfa53c !important;
+  border-radius: 3px !important;
+  position: relative;
+  box-shadow: 1px 3px 6px rgba(0,0,0,0.45) !important;
+  color: #23201a !important;
 }
-html[data-theme="chalk"] .kme-node:not(.kme-project) * { color: var(--chalk) !important; }
-html[data-theme="chalk"] .kme-node-label,
-html[data-theme="chalk"] .kme-node-qty,
-html[data-theme="chalk"] .kme-node-qty-num { color: var(--chalk) !important; }
+/* Dark ink on the coloured note (the chalk-white reset would make it vanish). */
+html[data-theme="chalk"] .kme-node:not(.kme-project) *,
+html[data-theme="chalk"] .kme-node:not(.kme-project) .kme-node-label,
+html[data-theme="chalk"] .kme-node:not(.kme-project) .kme-node-qty,
+html[data-theme="chalk"] .kme-node:not(.kme-project) .kme-node-qty-num { color: #23201a !important; }
+/* Pushpin head — glossy red dome centred at the top of the note. */
+html[data-theme="chalk"] .kme-node:not(.kme-project)::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #d24b3e 42%, #8c241a);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.55);
+  z-index: 7;
+  pointer-events: none;
+}
+/* Pin colour coordinated with each note colour. */
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project)::before { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #3f8fd0 42%, #1f5685); }
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project)::before { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #d86f97 42%, #8c2e52); }
+html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project)::before { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #46b04e 42%, #1f6e2a); }
 html[data-theme="chalk"] .kme-node.kme-project,
 html[data-theme="chalk"] .kme-project,
 html[data-theme="chalk"] .kme-center,
