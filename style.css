@@ -4806,12 +4806,10 @@ html[data-theme="sketch"] .kme-checklist-row { background-color: var(--paper) !i
    Specificity matches the nth-of-type rules above + comes later + !important,
    so this wins.
    ════════════════════════════════════════════════════════════════════ */
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project),
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project),
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project),
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) {
-  transform: none !important;
-}
+/* (v8's `transform: none !important` removed 2026-05-31 — it overrode the
+   editor's scale() collapse/assembled-fade so 🧩 mark-complete looked dead.
+   The post-it rules above carry NO transform now → RF's own scale runs =
+   Default behaviour.) */
 
 /* ════════════════════════════════════════════════════════════════════
    v9 (2026-05-31) — Sketch mindmap node clicks = Default (real fix).
