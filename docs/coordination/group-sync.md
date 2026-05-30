@@ -739,3 +739,16 @@ the whole React Flow canvas (fullscreen editor is z-index:1); a fixed blend-mode
 layer blocks RF node hit-testing on iPad even with pointer-events:none. Fix: hide
 the vignette while the editor is fullscreen (body.kme-fs-on). style.css only,
 no rebuild. Earlier v8 (remove node rotate) was a red herring. Live. NEEDS: nothing.
+
+---
+
+## 2026-05-31 - Group 2 (Web): Sketch theme node interactivity fixes (final)
+
+Sketch theme mindmap: node click / tap-2 collapse / tap-3 hide / mark-complete now
+all behave identically to Default. Two CSS root causes (both fixed, style.css only):
+- vignette overlay (body::before fixed z-index:9998 mix-blend-multiply) covered the
+  React Flow canvas and blocked node hit-testing on iPad -> hidden in fullscreen.
+- transform/opacity overrides on .kme-node / .kme-faded broke RF scale animations
+  (rotate, transform:none, opacity:0.85 all removed). Post-it nodes now set
+  colour/border/shadow only.
+Live + verified. No Fusion impact, no editor rebuild.
