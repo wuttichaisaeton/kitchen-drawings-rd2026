@@ -680,3 +680,15 @@ Sketch theme. Root cause: the reset cleared background-color but not the gradien
 image layer. Reset now strips background-image too; stand-out pills repainted as
 inked stamps / tinted-paper + dark ink. style.css only, data-theme=sketch. Live.
 NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: fix - Sketch DXF preview (paper canvas + backdrop dim + declutter). commit pushed.
+
+In Sketch theme the DXF preview had a black canvas + the page bled through behind
+the modal (reset had stripped backdrop dim). Fixed: theme-aware canvas palette in
+nest.js _drawPartPreview (paper+ink in sketch; affects Nest + Laser preview),
+restored modal backdrop dimming, preview shows just part name + diecut image
+(meta hidden). nest.js + style.css, data-theme=sketch scoped; dark unchanged.
+Live. NEEDS: nothing.
