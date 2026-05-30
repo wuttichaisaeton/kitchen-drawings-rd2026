@@ -2411,7 +2411,9 @@
           </div>
           <div class="kdnest-actions">
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run">▶ Run Nesting</button>
-            <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'}>📤 Save sheets to Laser</button>
+            <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'} title="Upload cut sheets to Laser + save this nest job (layout, parts, stock)">💾 Save Project</button>
+            <button id="kdnest-jobs" class="kdnest-btn kdnest-btn-jobs" title="Load or delete a previously saved nest job">📂 Saved Jobs</button>
+            <button id="kdnest-export" class="kdnest-btn kdnest-btn-export" title="Download this nest as a JSON backup file">⬇ Export JSON</button>
             <button id="kdnest-grain" class="kdnest-btn kdnest-btn-grain" title="Edit grain / thickness rules (shared — no Excel needed)">🧬 Grain</button>
             <button id="kdnest-stock" class="kdnest-btn kdnest-btn-stock" title="Remnant offcut stock — view / add / delete">📦 Remnants Stock</button>
           </div>
@@ -2449,7 +2451,9 @@
     const $ = sel => S.rootEl.querySelector(sel);
     $('#kdnest-back')?.addEventListener('click', close);
     $('#kdnest-run')?.addEventListener('click', _runNesting);
-    $('#kdnest-save-sheets')?.addEventListener('click', _saveSheetsToLaser);
+    $('#kdnest-save-sheets')?.addEventListener('click', _saveProject);
+    $('#kdnest-jobs')?.addEventListener('click', _openSavedJobsModal);
+    $('#kdnest-export')?.addEventListener('click', _exportJobJson);
     $('#kdnest-grain')?.addEventListener('click', _openGrainModal);
     $('#kdnest-stock')?.addEventListener('click', _openStockModal);
     $('#kdnest-prev')?.addEventListener('click', () => {
