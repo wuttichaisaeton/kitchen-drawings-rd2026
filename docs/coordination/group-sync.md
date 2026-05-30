@@ -775,5 +775,5 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** Depth-graduated node shadows in Sketch + Chalk (commit `4f3d8d2`, live). Per เอ๋, Level-1 nodes (closest to project center) cast a big/dark shadow, deeper layers fade progressively, so the tree hierarchy reads at a glance. Used the existing node.data.layer (app.js already sets it = hops from center) -> main.jsx pushes kme-layer-N -> style.css graduated box-shadow per theme. box-shadow only, no transform/opacity. Rebuilt bundle. Verified live.
+**DONE:** Depth-graduated node shadows in Sketch + Chalk (commit `99ee7ba`, live). Per เอ๋, Level-1 nodes (closest to project center) cast a big/dark shadow, deeper layers fade progressively, so the tree hierarchy reads at a glance. Used the existing node.data.layer (app.js already sets it = hops from center) -> main.jsx pushes kme-layer-N -> style.css graduated box-shadow per theme. box-shadow only, no transform/opacity. Rebuilt bundle. Verified live.
 **NEEDS:** nothing from Group 1.
