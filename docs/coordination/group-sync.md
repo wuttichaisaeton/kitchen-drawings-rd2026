@@ -752,3 +752,8 @@ all behave identically to Default. Two CSS root causes (both fixed, style.css on
   (rotate, transform:none, opacity:0.85 all removed). Post-it nodes now set
   colour/border/shadow only.
 Live + verified. No Fusion impact, no editor rebuild.
+
+---
+### 2026-05-31 — Group 2 (Web)
+**DONE:** Added 3rd theme **Chalkboard - chalk** (`data-theme="chalk"`, commit `9631505`, live). Developed from Sketch but inverted to a dark slate-green blackboard ground + chalk-white ink + coloured-chalk accents. Touches `index.html` (THEMES entry), `style.css` (~143-rule self-contained block after Sketch), `nest.js` (`_chalk` canvas branch). Reused every Sketch lesson: reset strips background-image, no transform/opacity on RF nodes, dust/vignette overlay hidden in fullscreen, canvas palette themed. Default Dark + Sketch untouched. Verified live (style/index/nest all serve chalk).
+**NEEDS:** nothing from Group 1.
