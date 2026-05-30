@@ -657,3 +657,15 @@ handlers now only stopPropagation (inert) so the click doesn't fall through to
 onNodeClick's Fusion/PDF route, and double-click -> edit-label still works.
 Rebuilt editor bundle. app.js kdAPI.openInLibrary left as harmless dead code.
 Live + verified on Pages (editor.bundle.js openInLibrary count = 0). NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: DONE + deployed - Sketch theme v2 (matches the site-plan/kanban references). commit 33db8c0.
+
+เอ๋ sent 3 sketch references (architectural site plan + 2 kanban boards) as the
+target look. Upgraded the Sketch theme: engraved hatch headings (bold uppercase
+outline + offset shadow), coloured sticky-note cards (yellow/blue/pink/green
+rotated, slight tilt, straighten on hover), paper grain + edge vignette overlay.
+style.css only, scoped to html[data-theme=sketch]; Default Dark untouched. Live +
+verified on Pages. NEEDS: nothing.
