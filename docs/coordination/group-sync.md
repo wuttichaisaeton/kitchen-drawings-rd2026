@@ -762,3 +762,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 — Group 2 (Web)
 **DONE:** Fixed checklist-complete visibility in Sketch + Chalk (commit `6362728`). The editor bundle dims incomplete nodes via `.react-flow__node.kme-faded-node {opacity:.55;saturate(.6)}` so complete nodes stay bright — invisible on the light pastel/slate palettes. Amplified the faded dim per-theme (opacity .3/.34 + grayscale) in style.css. Targets the RF wrapper not .kme-node (no animation conflict). Pure CSS, no rebuild, verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Fixed "can't tell which nodes are Mark-complete" in Sketch + Chalk (commit `5f3a4c8`, live). Root cause: the mindmap node card had NO class for assembled state - only the wrench button highlighted, and a checklist-tick doesn't collapse the node, so done parts looked identical to todo. Added `kme-done` class (main.jsx) + green check ::after badge / border / struck label (editor/style.css, in the bundle -> all themes) + per-theme green border (style.css). Rebuilt + committed both bundle files. Verified live. (NOTE for my own log: an earlier same-turn commit attempt failed silently on bash quoting and I briefly mis-reported success - `5f3a4c8` is the real shipped commit.)
+**NEEDS:** nothing from Group 1.
