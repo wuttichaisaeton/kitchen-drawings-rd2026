@@ -38,7 +38,7 @@
       { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4'  },
       { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)' },
     ],
-    mode: 'Auto',
+    mode: 'Desktop',   // default — mirrors the desktop NestingTool (เอ๋: best layout, 2026-05-30)
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
     dontRemember: false,  // Phase 2 toggle — pre-wired UI, packer doesn't
                           // track remnants yet so both flags are no-ops
