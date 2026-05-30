@@ -54,6 +54,7 @@
                           // part ended up (user 2026-05-28: 'view@sheet
                           // ให้ทำ Hilight ด้วย').
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
+    lastSavedJobId: null,  // set by _saveProject; informational
     currentSheetIdx: 0,
     previewCode: null,    // single-part preview mode (↑/↓ cycles; null = sheet view)
     rootEl: null,     // <main id="root"> at the time we opened
@@ -1955,7 +1956,7 @@
   //   renamed because the destination is the Laser-role 📐 Cut Sheets
   //   panel on the same project, not a generic 'project drop'.)
   // ════════════════════════════════════════════════════════════════════
-  async function _saveSheetsToLaser() {
+  async function _saveProject() {
     if (!S.flatSheets.length) {
       alert('No nested sheets — click ▶ Run Nesting first.');
       return;
@@ -1965,11 +1966,8 @@
     if (!pat) { alert('GitHub PAT needed to upload.'); return; }
 
     const projectKey = S.projectKey;
-    const ts = (function () {
-      const d = new Date();
-      const p = n => String(n).padStart(2, '0');
-      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}_${p(d.getHours())}-${p(d.getMinutes())}-${p(d.getSeconds())}`;
-    })();
+    const jobId = _jobStamp();
+    const ts = jobId;   // cut-sheet ids share the job stamp so they group together
     const safeProject = projectKey.replace(/[^A-Za-z0-9._-]+/g, '_');
     const repoPrefix = `CutSheets/${encodeURIComponent(safeProject)}`;
 
@@ -2017,6 +2015,7 @@
           uploaded_via: 'web-nest',
           original_filename: `${sheetId}.dxf`,
           size_bytes: content.length,
+          parts: _sheetPartsSummary(sheet),
         };
         await window.firebaseDB.ref(`cut_sheets/${projectKey}/${sheetId}`).set(meta);
         ok++;
@@ -2025,9 +2024,31 @@
         if (!firstErr) firstErr = String(e.message || e);
       }
     }
+
+    // Persist the full nest job (history) + the latest-parts snapshot + a
+    // local backup. These are independent of the cut-sheet DXF upload above,
+    // so a GitHub failure still saves the job for restore.
+    const job = _buildJob();
+    let jobSaved = false, jobErr = '';
+    try {
+      await window.firebaseDB.ref(`nest_jobs/${projectKey}/${jobId}`).set(job);
+      await window.firebaseDB.ref(`nest_parts/${projectKey}`).set({
+        saved_at: job.saved_at, jobId: jobId, parts: job.parts,
+      });
+      S.lastSavedJobId = jobId;
+      jobSaved = true;
+    } catch (e) {
+      jobErr = String(e.message || e);
+    }
+    try {
+      localStorage.setItem('kd_nest_job_' + projectKey, JSON.stringify({ jobId, ...job }));
+    } catch (e) { /* quota / private mode — non-fatal */ }
+
     if (btn) { btn.disabled = false; btn.textContent = origText; }
-    alert(`Save sheets to Laser — '${S.projectName}'\n\nUploaded: ${ok}\nFailed:   ${fail}` +
-          (firstErr ? `\n\nFirst error: ${firstErr}` : ''));
+    alert(`Save Project — '${S.projectName}'\n\n` +
+          `Cut sheets uploaded: ${ok}` + (fail ? `\nFailed: ${fail}` : '') +
+          `\nNest job: ${jobSaved ? 'saved (' + job.name + ')' : 'FAILED — ' + jobErr}` +
+          (firstErr ? `\n\nFirst cut-sheet error: ${firstErr}` : ''));
   }
 
   // DXF builder for one nested sheet — minimal R12-ish text format.
