@@ -593,3 +593,14 @@ Per เอ๋: a grain-uncertain part should warn ONLY via the amber ring in its
 cell, not as a top banner. Removed the amber grain banner from _warningsHtml; the
 .kdnest-grain-warn marker (driven by _isGrainUncertain) stays. Unplaced (red) +
 Review (orange) banners unchanged. Live + verified on Pages. NEEDS: nothing.
+
+---
+
+## [2026-05-30 later6] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: tweak - size-mismatch review tolerance widened 10mm -> 25mm. commit 1763198.
+
+Per ao: the orange REVIEW banner over-flagged legit parts (e.g. BK1DN1-080000
+DXF 789 vs code 800 = 11mm > old 10mm tol). const TOL in _reviewReasons is now
+25mm, so panel-vs-channel encodings + tier-rounding stop triggering false
+"DXF size != code" warnings while gross mismatches (800 vs 400) still flag.
+Live + verified on Pages. NEEDS: nothing.
