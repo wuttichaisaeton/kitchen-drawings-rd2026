@@ -5154,3 +5154,24 @@ html[data-theme="chalk"] .dxf-preview-canvas {
   background-color: var(--board) !important; border: 1.5px solid var(--faint) !important; border-radius: 6px;
 }
 html[data-theme="chalk"] .dxf-preview-meta { display: none !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   CHECKLIST FADE — stronger per-theme (2026-05-31). เอ๋: Sketch + Chalk
+   'ดูไม่ออกเลยว่า assembly Mark complete'. The editor bundle dims INCOMPLETE
+   nodes via `.react-flow__node.kme-faded-node { opacity:.55; filter:saturate(.6) }`
+   so COMPLETE nodes stay bright. On Default's saturated-on-dark nodes that
+   reads clearly, but on Sketch's pale pastels + Chalk's slate cards a .55
+   dim is nearly invisible → can't tell done from todo. Amplify the dim
+   (opacity + grayscale) so finished nodes obviously stand out. This targets
+   the RF wrapper (.react-flow__node) — the SAME element + property Default
+   uses for the faded state — NOT .kme-node, so it does NOT fight RF's
+   expand/collapse scale animation (the post-it lesson). No rebuild.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="sketch"] .react-flow__node.kme-faded-node {
+  opacity: 0.3 !important;
+  filter: grayscale(0.85) saturate(0.4) !important;
+}
+html[data-theme="chalk"] .react-flow__node.kme-faded-node {
+  opacity: 0.34 !important;
+  filter: grayscale(0.7) brightness(0.85) !important;
+}
