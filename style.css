@@ -4541,3 +4541,47 @@ html[data-theme="sketch"] [style*="--fam-color"],
 html[data-theme="sketch"] [style*="--fam-tint"] {
   background-color: var(--paper2) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   SKETCH v4 (2026-05-31) — modal/preview fixes (เอ๋ 'เวลากดเข้า มาให้เห็นแต่
+   รูปชิ้นงาน(diecut) และ ชื่องาน theme เดียวกัน'). The v1 reset stripped the
+   dark backdrop dimming → the page bled through behind open modals. Restore a
+   warm dim on every modal backdrop, repaint the preview frame as paper, and
+   declutter the DXF preview to just the part name + the diecut image.
+   (Canvas bg/ink is themed in nest.js _drawPartPreview.)
+   ════════════════════════════════════════════════════════════════════ */
+
+/* Restore backdrop dimming so an open modal hides the page behind it. */
+html[data-theme="sketch"] .dxf-preview-backdrop,
+html[data-theme="sketch"] .pdxf-backdrop,
+html[data-theme="sketch"] .kdstock-backdrop,
+html[data-theme="sketch"] .kdng-backdrop {
+  background-color: rgba(40, 33, 20, 0.55) !important;
+  background-image: none !important;
+}
+
+/* DXF preview: paper frame, clean canvas. */
+html[data-theme="sketch"] .dxf-preview-frame {
+  background-color: var(--paper2) !important;
+  border: 2px solid var(--pen) !important;
+  border-radius: var(--wob) !important;
+  box-shadow: 4px 5px 0 rgba(27,24,21,0.25) !important;
+  background-image: none !important;
+}
+html[data-theme="sketch"] .dxf-preview-canvas {
+  background-color: var(--paper2) !important;
+  border: 1.5px solid var(--faint) !important;
+  border-radius: 6px;
+}
+/* Title = the part name, inked + bold. */
+html[data-theme="sketch"] .dxf-preview-title {
+  color: var(--pen) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em;
+}
+/* Declutter: hide the thickness/material/grain/size meta line — เอ๋ wants
+   only the image + the name. (Thickness/grain still read from the cut list.) */
+html[data-theme="sketch"] .dxf-preview-meta { display: none !important; }
+/* Keep the footer (nav + download) but make it quiet. */
+html[data-theme="sketch"] .dxf-nav-hint,
+html[data-theme="sketch"] .dxf-preview-size { color: var(--ink-soft) !important; }

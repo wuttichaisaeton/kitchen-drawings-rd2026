@@ -1597,6 +1597,7 @@
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = `${14 * dpr}px "Flux Architect", monospace`;
+      ctx.fillStyle = MUTED;
       ctx.fillText(part && part.dxfError ? ('DXF error: ' + part.dxfError)
                    : 'DXF not loaded yet…', cw / 2, ch / 2);
       return;
@@ -1616,7 +1617,7 @@
     const drawW = fw * scale, drawH = fh * scale;
     const offX = (cw - drawW) / 2, offY = (ch - drawH) / 2;
     const tx = (x, y) => { const m = mapPt(x, y); return [offX + m[0] * scale, offY + (fh - m[1]) * scale]; };  // flip Y
-    const colour = '#4ecca3';
+    const colour = INK;
     const trace = (pts, close) => {
       ctx.beginPath();
       for (let k = 0; k < pts.length; k++) {
