@@ -629,3 +629,19 @@ was display-only; it's now a button that toggles an inline thread in the node
 (reuses the checklist thread's .kme-cmt-* markup + per-code comment API).
 View+add everyone, delete admin-only. Needed npm run build:editor (editor.bundle
 .js/.css committed). Live + verified on Pages. NEEDS: nothing - editor/ files only.
+
+---
+
+## [2026-05-30 night] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: DONE + deployed - theme system + Sketch (pencil-on-paper) theme. commit 2c7d54a.
+
+Request: selectable themes (sketch design + Flux Architect + pencil shading,
+solid/faint lines, bold black pen). Added a header theme button (menu:
+Default-Dark / Sketch), persisted per-device (localStorage kd_theme_v1), applied
+as data-theme on <html> pre-paint. Sketch = paper + diagonal pencil hatch,
+graphite ink, bold pen wobble-borders (hand-drawn asymmetric radius + offset
+shadow), faint dividers, red-pencil active tab; covers app chrome + lists + nest
++ modals + the React Flow mindmap (style.css reaches the nodes, no editor
+rebuild). DEFAULT stays Dark so workshop iPads are unaffected unless someone
+picks Sketch. All in style.css + index.html; app.js + editor untouched. Live +
+verified on Pages. NEEDS: nothing.
