@@ -84,7 +84,6 @@
       // bbox + polygons populated from DXF once loaded
       w: 0, h: 0,
       grain: 'ANY',     // H / V / ANY — read from CSV later
-      grainExplicit: false,  // true once a DXF-meta grain or a grain rule sets it (else it's just the default)
       thickness: 0,     // mm — read from uploaded_dxfs metadata
       polys: null,      // {outer: [[x,y],...], holes: [[[x,y]...], ...]}
       bbox: null,       // [minX, minY, maxX, maxY] in DXF coords
@@ -561,7 +560,7 @@
     if (S.grainMap) {
       for (const part of byCode.values()) {
         const looked = _lookupPattern(part.code, S.grainMap);
-        if (looked && looked.grain) { part.grain = looked.grain; part.grainExplicit = true; }
+        if (looked && looked.grain) part.grain = looked.grain;
         // Thickness override mirrors the Python behaviour — grain.xlsx
         // can pin the value when Fusion's export is wrong (BM* = 1mm).
         if (looked && looked.thickness && !part.thickness) {
@@ -2277,11 +2276,14 @@
   }
 
   // ── Warning predicates (pure; shared by the banners + per-row markers) ──
-  // Grain is "uncertain" when it fell through to the default ANY because no
-  // DXF-meta grain and no grain rule ever set it (grainExplicit stays false).
-  // (user 2026-05-30 'เตือนเรื่องแนว grain ที่ไม่แน่ใจ')
-  function _isGrainUncertain(p) {
-    return !!(p && p.selected && !p.manual && !p.grainExplicit);
+  // A part with a DIRECTIONAL grain (H or V) must be laid with the grain
+  // running the right way — flag it so the worker orients it correctly before
+  // cutting. ANY rotates freely (no orientation risk → no flag).
+  // (เอ๋ 2026-05-30 'บีเค grain ไปทางแนวนอน ... อันนี้ที่ต้องเตือน')
+  function _isGrainDirectional(p) {
+    if (!p || !p.selected || p.manual) return false;
+    const g = String(p.grain || '').toUpperCase();
+    return g === 'H' || g === 'V';
   }
   // Shoelace area of a polygon ([[x,y],...]) — used to spot degenerate outlines.
   function _polyArea(pts) {
@@ -2366,9 +2368,10 @@
       );
     }
 
-    // ② Grain uncertain → NO banner. Per เอ๋ 2026-05-30 the grain warning shows
-    // ONLY as the amber ring marker (.kdnest-grain-warn) in each row's grain
-    // cell — _isGrainUncertain still drives that marker in _viewHtml.
+    // ② Grain → NO banner. Per เอ๋ 2026-05-30 the grain warning shows ONLY as
+    // the amber ring marker (.kdnest-grain-warn) in each row's grain cell —
+    // _isGrainDirectional drives that marker in _viewHtml (flags H/V parts so
+    // the worker lays the grain the right way).
 
     // ③ Review / looks-weird (orange).
     const reviews = [];
@@ -2438,7 +2441,7 @@
       // can't desync the size from the actual cut geometry. Manual rectangles
       // stay editable. (user 2026-05-30)
       const whLock = p.manual ? '' : ' disabled title="size comes from the DXF — locked"';
-      const grainWarn = _isGrainUncertain(p) ? ' kdnest-grain-warn' : '';
+      const grainWarn = _isGrainDirectional(p) ? ' kdnest-grain-warn' : '';
       const reviewMark = _reviewReasons(p).length ? ' kdnest-part-review' : '';
       return `
         <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${reviewMark}" data-code="${_esc(p.code)}">
@@ -2449,7 +2452,7 @@
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
-          <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set by any rule — defaulting to ANY · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
+          <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'directional grain — lay it the right way · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
           <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>
           ${status}
