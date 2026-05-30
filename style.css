@@ -4211,6 +4211,13 @@ html[data-theme="sketch"] main {
 /* Reset: strip dark fills/glows off everything; keep art + mask-icons. */
 html[data-theme="sketch"] body *:not(svg):not(svg *):not(img):not([class*="icon"]) {
   background-color: transparent !important;
+  /* Also strip gradient/image FILLS: a `background: linear-gradient(...)`
+     shorthand sets the image layer, which `background-color: transparent`
+     alone does NOT clear — so dark gradient pills (e.g. #active-fusion-badge)
+     survived and their forced ink text became unreadable. Stripping the image
+     guarantees ink-on-paper contrast. Real surfaces re-add their hatch/paper
+     after this with higher-specificity !important rules; icons are excluded. */
+  background-image: none !important;
   color: var(--ink) !important;
   border-color: var(--faint) !important;
   box-shadow: none !important;
@@ -4471,4 +4478,66 @@ html[data-theme="sketch"] .tab.active {
   text-decoration: underline;
   text-decoration-thickness: 2px;
   text-underline-offset: 3px;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   SKETCH v3 (2026-05-31) — contrast fixes (เอ๋ 'ให้ตัวอักษร ตัดกันกับสีพื้นหลัง').
+   The v1 reset now strips gradient fills, so previously-dark pills flatten to
+   paper+ink. A few elements are MEANT to stand out — repaint them as readable
+   inked stamps (dark pen ground + paper text) so they keep emphasis AND read.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* "Active in Fusion" alert — inked rubber-stamp: dark pen ground, paper text.
+   High emphasis (someone has the file open) + guaranteed contrast. */
+html[data-theme="sketch"] #active-fusion-badge {
+  background-color: var(--pen) !important;
+  color: var(--paper2) !important;
+  border: 2px solid var(--pen) !important;
+  box-shadow: var(--pen-sh) !important;
+  border-radius: var(--wob2) !important;
+}
+
+/* Status pills + small badges that carry meaning by colour: keep a tinted
+   paper ground but force a DARK ink text so they always contrast. */
+html[data-theme="sketch"] .cut-status,
+html[data-theme="sketch"] .pdxf-status,
+html[data-theme="sketch"] .tab-badge,
+html[data-theme="sketch"] .admin-badge,
+html[data-theme="sketch"] .role-chip,
+html[data-theme="sketch"] .kdnest-part-ok,
+html[data-theme="sketch"] .kdnest-part-err,
+html[data-theme="sketch"] .kme-comment-count {
+  color: var(--pen) !important;
+  border: 1.5px solid var(--pen) !important;
+  background-color: #f0e6cf !important;
+}
+
+/* Any element a base rule painted with a saturated brand fill (blue #4a90e2,
+   green, red, amber) keeps that colour as a left accent only — but its TEXT
+   must be light if the fill stays dark. These are the known solid-fill chips:
+   force white text where the fill is intentionally dark/strong. */
+html[data-theme="sketch"] .cut-status.cut-ok,
+html[data-theme="sketch"] .kdnest-part-ok {
+  background-color: #cbe7a6 !important; color: #2f4a16 !important;
+}
+html[data-theme="sketch"] .cut-status.cut-none,
+html[data-theme="sketch"] .kdnest-part-err {
+  background-color: #f4d6b0 !important; color: #6b3a12 !important;
+}
+
+/* Selected/active tab uses red-pencil ink on paper (already), ensure text dark. */
+html[data-theme="sketch"] .tab.active { color: var(--accent) !important; }
+
+/* Sticky-note cards: make sure EVERY descendant text is graphite ink on the
+   pastel paper (a base rule could have set a brand colour on a code/qty). */
+html[data-theme="sketch"] .project-card *,
+html[data-theme="sketch"] .cut-row *,
+html[data-theme="sketch"] .bom-row *,
+html[data-theme="sketch"] .kdnest-part * { color: var(--ink) !important; }
+
+/* Family-colour stripe + active glow: keep as a thin left border for flavour,
+   but never as a full dark fill behind text. */
+html[data-theme="sketch"] [style*="--fam-color"],
+html[data-theme="sketch"] [style*="--fam-tint"] {
+  background-color: var(--paper2) !important;
 }
