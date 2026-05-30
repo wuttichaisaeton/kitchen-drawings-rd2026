@@ -1588,12 +1588,19 @@
     const dpr = window.devicePixelRatio || 1;
     const cw = canvas.width = canvas.clientWidth * dpr;
     const ch = canvas.height = canvas.clientHeight * dpr;
-    ctx.fillStyle = '#0b1117';
+    // Theme-aware palette: paper + graphite ink in the Sketch theme so the
+    // diecut reads like a drawing on paper; dark canvas + teal otherwise.
+    // (เอ๋ 2026-05-31 'ให้เห็นแต่รูปชิ้นงาน ... theme เดียวกัน')
+    const _sketch = (typeof document !== 'undefined') &&
+      document.documentElement.getAttribute('data-theme') === 'sketch';
+    const BG = _sketch ? '#f7f2e7' : '#0b1117';
+    const INK = _sketch ? '#1b1815' : '#4ecca3';
+    const MUTED = _sketch ? '#6f6757' : '#88aab1';
+    ctx.fillStyle = BG;
     ctx.fillRect(0, 0, cw, ch);
     const polys = part && part.polys;
     const bbox = part && part.bbox;
     if (!polys || !bbox) {
-      ctx.fillStyle = '#88aab1';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.font = `${14 * dpr}px "Flux Architect", monospace`;
