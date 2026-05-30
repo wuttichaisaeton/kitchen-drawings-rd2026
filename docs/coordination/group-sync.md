@@ -645,3 +645,15 @@ shadow), faint dividers, red-pencil active tab; covers app chrome + lists + nest
 rebuild). DEFAULT stays Dark so workshop iPads are unaffected unless someone
 picks Sketch. All in style.css + index.html; app.js + editor untouched. Live +
 verified on Pages. NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: DONE + deployed - removed click-to-Library from mindmap node label. commit 2da5097.
+
+Per เอ๋ 'ยกเลิกคำสั่งนี้': the admin label click/tap on a mindmap node used to
+open that part in the Library tab (added 2026-05-29). Removed. The label
+handlers now only stopPropagation (inert) so the click doesn't fall through to
+onNodeClick's Fusion/PDF route, and double-click -> edit-label still works.
+Rebuilt editor bundle. app.js kdAPI.openInLibrary left as harmless dead code.
+Live + verified on Pages (editor.bundle.js openInLibrary count = 0). NEEDS: nothing.
