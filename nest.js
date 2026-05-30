@@ -54,6 +54,7 @@
                           // part ended up (user 2026-05-28: 'view@sheet
                           // ให้ทำ Hilight ด้วย').
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
+    unplaced: [],     // pieces the packer couldn't place (set by _runNesting; for the warning banner)
     lastSavedJobId: null,  // set by _saveProject; informational
     currentSheetIdx: 0,
     previewCode: null,    // single-part preview mode (↑/↓ cycles; null = sheet view)
@@ -69,7 +70,7 @@
     return {
       code: 'RECT-' + S._manualSeq,
       qty: 1, selected: true, manual: true,
-      w: 0, h: 0, grain: 'ANY', thickness: 1,
+      w: 0, h: 0, grain: 'ANY', grainExplicit: true, thickness: 1,
       polys: null, bbox: null, dxfUrl: '', dxfMeta: null,
       dxfLoaded: true,   // nothing to fetch — ready immediately
     };
@@ -83,6 +84,7 @@
       // bbox + polygons populated from DXF once loaded
       w: 0, h: 0,
       grain: 'ANY',     // H / V / ANY — read from CSV later
+      grainExplicit: false,  // true once a DXF-meta grain or a grain rule sets it (else it's just the default)
       thickness: 0,     // mm — read from uploaded_dxfs metadata
       polys: null,      // {outer: [[x,y],...], holes: [[[x,y]...], ...]}
       bbox: null,       // [minX, minY, maxX, maxY] in DXF coords
@@ -537,6 +539,7 @@
         part.dxfMeta = meta;  // verbatim — used by 👁 view button
         part.thickness = meta.thickness_mm || 0;
         part.grain = (meta.grain || part.grain || 'ANY').toUpperCase();
+        if (meta.grain) part.grainExplicit = true;
       }
     }
 
@@ -558,7 +561,7 @@
     if (S.grainMap) {
       for (const part of byCode.values()) {
         const looked = _lookupPattern(part.code, S.grainMap);
-        if (looked && looked.grain) part.grain = looked.grain;
+        if (looked && looked.grain) { part.grain = looked.grain; part.grainExplicit = true; }
         // Thickness override mirrors the Python behaviour — grain.xlsx
         // can pin the value when Fusion's export is wrong (BM* = 1mm).
         if (looked && looked.thickness && !part.thickness) {
@@ -1567,8 +1570,9 @@
       sw: s.sw, sh: s.sh, placements: s.placements,
     }));
     S.currentSheetIdx = 0;
-    if (result.unplaced.length) {
-      console.warn('[kdNest] unplaced pieces:', result.unplaced);
+    S.unplaced = result.unplaced || [];
+    if (S.unplaced.length) {
+      console.warn('[kdNest] unplaced pieces:', S.unplaced);
     }
     _refreshView();
   }
@@ -2704,6 +2708,7 @@
     S.rootEl = null;
     S.prevHtml = null;
     S.flatSheets = [];
+    S.unplaced = [];
     S.currentSheetIdx = 0;
     S.previewCode = null;
     if (S._onKeyNav) { document.removeEventListener('keydown', S._onKeyNav); S._onKeyNav = null; }
