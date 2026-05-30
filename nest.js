@@ -2366,17 +2366,9 @@
       );
     }
 
-    // ② Grain uncertain (amber).
-    const grainCodes = S.parts.filter(_isGrainUncertain).map(p => p.code);
-    if (grainCodes.length) {
-      const uniq = [...new Set(grainCodes)];
-      banners.push(
-        `<div class="kdnest-warn kdnest-warn--grain">
-           <div class="kdnest-warn-head">${uniq.length} part${uniq.length === 1 ? '' : 's'} have no confirmed grain — defaulting to ANY (any rotation)</div>
-           <div class="kdnest-warn-line">${uniq.map(_esc).join(', ')}</div>
-         </div>`
-      );
-    }
+    // ② Grain uncertain → NO banner. Per เอ๋ 2026-05-30 the grain warning shows
+    // ONLY as the amber ring marker (.kdnest-grain-warn) in each row's grain
+    // cell — _isGrainUncertain still drives that marker in _viewHtml.
 
     // ③ Review / looks-weird (orange).
     const reviews = [];
