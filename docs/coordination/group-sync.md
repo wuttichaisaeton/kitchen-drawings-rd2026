@@ -757,3 +757,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 — Group 2 (Web)
 **DONE:** Added 3rd theme **Chalkboard - chalk** (`data-theme="chalk"`, commit `9631505`, live). Developed from Sketch but inverted to a dark slate-green blackboard ground + chalk-white ink + coloured-chalk accents. Touches `index.html` (THEMES entry), `style.css` (~143-rule self-contained block after Sketch), `nest.js` (`_chalk` canvas branch). Reused every Sketch lesson: reset strips background-image, no transform/opacity on RF nodes, dust/vignette overlay hidden in fullscreen, canvas palette themed. Default Dark + Sketch untouched. Verified live (style/index/nest all serve chalk).
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 — Group 2 (Web)
+**DONE:** Fixed checklist-complete visibility in Sketch + Chalk (commit `6362728`). The editor bundle dims incomplete nodes via `.react-flow__node.kme-faded-node {opacity:.55;saturate(.6)}` so complete nodes stay bright — invisible on the light pastel/slate palettes. Amplified the faded dim per-theme (opacity .3/.34 + grayscale) in style.css. Targets the RF wrapper not .kme-node (no animation conflict). Pure CSS, no rebuild, verified live.
+**NEEDS:** nothing from Group 1.
