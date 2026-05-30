@@ -604,3 +604,17 @@ DXF 789 vs code 800 = 11mm > old 10mm tol). const TOL in _reviewReasons is now
 25mm, so panel-vs-channel encodings + tier-rounding stop triggering false
 "DXF size != code" warnings while gross mismatches (800 vs 400) still flag.
 Live + verified on Pages. NEEDS: nothing.
+
+---
+
+## [2026-05-30 later7] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: tweak - grain marker now flags DIRECTIONAL grain (H/V), not default-ANY. commit 8d8f3e6.
+
+Per เอ๋ ("บีเค grain ไปทางแนวนอน อันนี้ที่ต้องเตือน"): the grain-cell amber ring
+now warns on parts whose grain has a DIRECTION (─ H or │ V) — the worker must lay
+the grain the right way — instead of parts that fell to ANY. Inverted the predicate
+(_isGrainUncertain -> _isGrainDirectional), dropped the now-unused grainExplicit
+flag, and fixed a latent dup-key bug in _newManualPart (manual rect thickness was
+defaulting to 0 instead of 1). Also earlier today: grain banner removed (marker
+only, 51319ba) + size-mismatch tolerance 10mm->25mm (2e47251). Live + verified on
+Pages. NEEDS: nothing.
