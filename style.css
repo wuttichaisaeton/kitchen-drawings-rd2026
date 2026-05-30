@@ -4692,3 +4692,81 @@ html[data-theme="sketch"] .kdstock-card,
 html[data-theme="sketch"] .mm-comment-panel {
   box-shadow: 2px 3px 0 rgba(27,24,21,0.20) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   v6 (2026-05-31) — Sketch theme reaches the EDITOR canvas chrome.
+   The dark mindmap background comes from editor/style.css (.kme-root,
+   .react-flow__background) which is bundled into editor.bundle.css — a
+   SEPARATE stylesheet injected at runtime. The v1 sketch rules only hit
+   .react-flow / .mindmap-canvas, never .kme-root, so the fullscreen
+   editor stayed black behind the post-it nodes (เอ๋ 'ดูอะไรไม่ออกเลย').
+   These !important rules override the bundle regardless of inject order.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* The fullscreen editor shell + its canvas = paper ground + pencil hatch. */
+html[data-theme="sketch"] .kme-root,
+html[data-theme="sketch"] .kme-root.kme-fullscreen,
+html[data-theme="sketch"] .kme-canvas,
+html[data-theme="sketch"] .react-flow__renderer,
+html[data-theme="sketch"] .react-flow__pane,
+html[data-theme="sketch"] .react-flow__viewport {
+  background-color: var(--paper) !important;
+  color: var(--ink) !important;
+}
+html[data-theme="sketch"] .kme-root {
+  background-image: repeating-linear-gradient(45deg, var(--hatch) 0 1px, transparent 1px 7px) !important;
+}
+/* React Flow's <Background> SVG layer (dotted grid) — paper + faint dots. */
+html[data-theme="sketch"] .react-flow__background { background-color: var(--paper) !important; }
+html[data-theme="sketch"] .react-flow__background-pattern,
+html[data-theme="sketch"] .react-flow__background pattern circle,
+html[data-theme="sketch"] .react-flow__background pattern path {
+  fill: rgba(40, 33, 20, 0.16) !important;
+  stroke: rgba(40, 33, 20, 0.16) !important;
+}
+
+/* Editor toolbar + floating chrome (Back / Show all / fit / Checklist) =
+   paper chips with inked borders, readable on the paper canvas. */
+html[data-theme="sketch"] .kme-toolbar {
+  background-color: var(--paper2) !important;
+  border-bottom: 2px solid var(--pen) !important;
+}
+html[data-theme="sketch"] .kme-toolbar button,
+html[data-theme="sketch"] .kme-fs-back,
+html[data-theme="sketch"] .kme-showall-float,
+html[data-theme="sketch"] .kme-fit-btn,
+html[data-theme="sketch"] .kme-checklist-btn {
+  background-color: var(--paper2) !important;
+  color: var(--pen) !important;
+  border: 2px solid var(--pen) !important;
+  border-radius: var(--wob2) !important;
+  box-shadow: var(--pen-sh) !important;
+}
+html[data-theme="sketch"] .kme-fs-back:hover,
+html[data-theme="sketch"] .kme-showall-float:hover,
+html[data-theme="sketch"] .kme-fit-btn:hover,
+html[data-theme="sketch"] .kme-checklist-btn:hover { background-color: #ece3cd !important; }
+
+/* Project-centre bubble — paper disc with inked ring + ink label. */
+html[data-theme="sketch"] .kme-center,
+html[data-theme="sketch"] .kme-center-circle,
+html[data-theme="sketch"] .react-flow__node-project .kme-node {
+  background-color: var(--paper2) !important;
+  border: 2.5px solid var(--pen) !important;
+  color: var(--pen) !important;
+  box-shadow: var(--pen-sh) !important;
+}
+html[data-theme="sketch"] .kme-center *,
+html[data-theme="sketch"] .react-flow__node-project * { color: var(--pen) !important; }
+
+/* Edges/connectors = pen lines on paper. */
+html[data-theme="sketch"] .kme-root .react-flow__edge-path { stroke: var(--pen) !important; stroke-width: 1.5 !important; }
+html[data-theme="sketch"] .kme-root .react-flow__handle { background: var(--pen) !important; border-color: var(--pen) !important; }
+
+/* Checklist panel (slides over the canvas) = paper. */
+html[data-theme="sketch"] .kme-checklist-panel {
+  background-color: var(--paper2) !important;
+  border: 2px solid var(--pen) !important;
+  box-shadow: 4px 5px 0 rgba(27,24,21,0.25) !important;
+}
+html[data-theme="sketch"] .kme-checklist-row { background-color: var(--paper) !important; border-color: var(--faint) !important; }
