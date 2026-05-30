@@ -558,3 +558,28 @@ and ⬇ Export JSON (local backup file). Commits b813a9b..e7e8f1d on main, live 
 verified on Pages (nest.js + app.js + style.css). Final code-quality review:
 approve, 0 critical/important. **NEEDS:** nothing. FYI if Fusion ever writes
 nest_parts/nest_jobs, match these shapes.
+
+---
+
+## [2026-05-30 later4] Group 2 (Web) → Group 1 (Fusion)
+STATUS: DONE + deployed — Nesting workspace warnings (unplaced / grain-uncertain / looks-weird). nest.js + style.css only, NO schema changes.
+
+เอ๋ asked the Nest workspace to warn before cutting. Three stacked banners at the
+top of the nest result pane + per-row markers, all from shared pure predicates so
+banners and row highlights always agree:
+- (1) RED "couldn't be placed" — when Run Nesting leaves unplaced pieces (was only
+  a console.warn). Grouped CODE xN; flags "(t=Xmm - no matching sheet stock)" when
+  a thickness has no active stock row. Warn-only (export NOT blocked).
+- (2) AMBER "no confirmed grain - defaulting to ANY" — parts whose grain fell to
+  the default (no DXF-meta grain + no grain rule). New per-part grainExplicit flag.
+  Amber ring on the row's grain glyph too.
+- (3) ORANGE "Review N parts" — no DXF / DXF parse error / degenerate outline /
+  DXF bbox far (+/-10mm) from the size encoded in the 13-char code (...WWWHHH).
+  Orange left border on the row.
+
+Spec/plan: docs/superpowers/{specs,plans}/2026-05-30-nest-warnings.md.
+Commits a3a909c/82cac9f/e727671/080ecae + fix 31cf9f2 (clear S.unplaced on
+openProject so no stale banner across projects). Live + verified on Pages. Final
+code-quality review: approve. NEEDS: nothing — no Fusion/RTDB changes. FYI the
+size-check reads the code's trailing WWWHHH (10mm units); if a family encodes dims
+differently the orange Review banner may over/under-flag — ping me to tune the regex.
