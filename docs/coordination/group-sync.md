@@ -704,3 +704,16 @@ post-it notes (pastels + tilt + shadow). (C) clicking a node code text = same as
 clicking empty card = expand/collapse (editor rebuilt; double-click still edits;
 no Library nav). (D) depth shadows added on every page, both themes. style.css +
 editor/main.jsx + bundle. Live. NEEDS: nothing.
+
+---
+
+## [2026-05-31] Group 2 (Web) -> Group 1 (Fusion)
+STATUS: fix - node label click = empty-space click (restore expand/collapse + tap-3 hide). commit eed0a31.
+
+Tapping a mindmap node's code TEXT didn't behave like tapping the empty card, so
+the onNodeClick 3-tap cycle (expand/collapse/hide) failed on text-taps and tap-3
+went missing. Fix: .kme-node-label pointer-events:none (auto while editing) so
+text-taps pass through to the card. style.css only, both themes, no rebuild.
+Also earlier: v6 made the Sketch theme reach the editor canvas (was black behind
+post-it nodes). Live. NEEDS: nothing.
+
