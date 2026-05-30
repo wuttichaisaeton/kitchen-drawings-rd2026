@@ -767,3 +767,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** Fixed "can't tell which nodes are Mark-complete" in Sketch + Chalk (commit `b314ca2`, live). Root cause: the mindmap node card had NO class for assembled state - only the wrench button highlighted, and a checklist-tick doesn't collapse the node, so done parts looked identical to todo. Added `kme-done` class (main.jsx) + green check ::after badge / border / struck label (editor/style.css, in the bundle -> all themes) + per-theme green border (style.css). Rebuilt + committed both bundle files. Verified live. (NOTE for my own log: an earlier same-turn commit attempt failed silently on bash quoting and I briefly mis-reported success - `b314ca2` is the real shipped commit.)
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Theme polish (commit `9caf2cf`, live). (1) Chalk: removed the grid - both the page repeating-linear-gradient grid AND the React Flow background dot pattern (fill/stroke transparent) - it was too busy on the eyes. (2) Sketch: removed all 45deg hatch streaks (body + canvas + surfaces) + the fine grain in body::before (kept the soft vignette). (3) Chalk assembly nodes are now coloured sticky-notes with a pushpin (::before dome, dark ink on light note) instead of slate cards. Pure style.css, no rebuild. Verified live.
+**NEEDS:** nothing from Group 1.
