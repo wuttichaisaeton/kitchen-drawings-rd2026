@@ -2799,6 +2799,13 @@
       }
     };
     document.addEventListener('keydown', S._onKeyNav);
+    // Fresh run state — clear any prior project's results so a stale "pieces
+    // couldn't be placed" banner can't show against the newly-opened project
+    // before its first Run. (the banner renders from S.unplaced on _viewHtml)
+    S.unplaced = [];
+    S.flatSheets = [];
+    S.currentSheetIdx = 0;
+    S.previewCode = null;
     S.prevHtml = S.rootEl.innerHTML;
     S.rootEl.innerHTML = `<p class="loading">Loading nesting workspace…</p>`;
     // Restore the admin's preferred sidebar width.
