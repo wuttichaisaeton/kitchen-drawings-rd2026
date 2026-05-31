@@ -957,3 +957,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (5dceea1 + chips fix pending, live) Remnant model COMPLETE ('อยากให้ครบ' — closed the Phase 2 v1 gaps). (1) Grain-fit gating: _remnantStockForThick carries offcut grain; _grainFits(piece,rem) — directional H/V part only from ANY or same-dir offcut, MIXED offcut never reused for directional; clashing offcuts dropped from that group + counted. Pieces now carry grain into packer. (2) Review banner ②b '♻ N saved offcuts skipped — grain direction doesn't match' (S.grainSkippedRemnants, reset on open). (3) material/finish stored on auto-save (_sheetMaterial/_sheetFinish; parts have no field yet → default ALPF/blank) + carried on stock rows. (4) Cards show grain/material chips (blue grain / red MIXED / purple material). Verified live: grainFits=2 grainSkip=4 sheetMat=2 chips=2.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (819da4c, live) Grain-direction HATCH on Part preview + Sheet + Remnant thumbnail (เอ๋ 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน'). Thin parallel lines: H = horizontal, V = vertical, MIXED = crosshatch, ANY/unset = none. Helpers _grainHatchCanvas (canvas, clipped to shape) + _grainHatchSvg (thumbnail). Part: clipped to silhouette, screen-space so it matches the preview V-rotation. Sheet: one hatch for the whole sheet from _sheetGrain, faint under the parts, theme-aware ink. Remnant: hatch over the leftover rect from the stored grain. Verified live: hatchCanvas+hatchSvg present, part+sheet markers found.
+**NEEDS:** nothing.
