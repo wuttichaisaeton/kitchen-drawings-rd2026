@@ -5524,3 +5524,19 @@ html[data-theme="chalk"]  .kdnest-stock-row .kdnest-stock-qty{
 }
 html[data-theme="sketch"] #kdnest-run,
 html[data-theme="sketch"] #kdnest-stock{ outline-color:#cf6f00; }
+
+/* Remnants Stock modal: OPAQUE box in every theme + draggable. The theme reset
+   (*{background:transparent!important}) wiped .kdstock-box's #1a1f24 fill on
+   sketch/chalk, so the modal floated see-through over the nest layout and was
+   unreadable (เอ๋ 2026-05-31 'พื้นหลังทึบ เหมือน default'). Re-assert a solid
+   surface with a theme-prefixed (2-class) rule that beats the reset. */
+html[data-theme="sketch"] .kdstock-box{
+  background:#f3ecdd !important; border-color:rgba(60,50,40,0.35) !important;
+  box-shadow:0 20px 60px rgba(0,0,0,0.35) !important;
+}
+html[data-theme="chalk"] .kdstock-box{
+  background:#2f3a38 !important; border-color:rgba(180,200,190,0.3) !important;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6) !important;
+}
+/* Drag affordance — the header is the grab handle (JS sets cursor too). */
+.kdstock-head{ cursor:move; user-select:none; }

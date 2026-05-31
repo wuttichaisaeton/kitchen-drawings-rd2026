@@ -827,6 +827,37 @@
     const close = () => modal.remove();
     q('.kdstock-backdrop').addEventListener('click', close);
     q('#kdstock-close').addEventListener('click', close);
+    // Drag the modal by its header so it can be moved off the nest layout to
+    // compare (เอ๋ 2026-05-31 'ให้จับย้ายได้'). First drag switches the box from
+    // flex-centred to absolute-positioned; clamped to the viewport.
+    (function _makeDraggable() {
+      const box = q('.kdstock-box');
+      const handle = q('.kdstock-head');
+      if (!box || !handle) return;
+      handle.style.cursor = 'move';
+      let drag = null;
+      handle.addEventListener('pointerdown', function (e) {
+        const r = box.getBoundingClientRect();
+        box.style.position = 'absolute';
+        box.style.margin = '0';
+        box.style.left = r.left + 'px';
+        box.style.top = r.top + 'px';
+        drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+        try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+      });
+      handle.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        const bw = box.offsetWidth, bh = box.offsetHeight;
+        let nx = Math.max(0, Math.min(e.clientX - drag.dx, window.innerWidth - bw));
+        let ny = Math.max(0, Math.min(e.clientY - drag.dy, window.innerHeight - bh));
+        box.style.left = nx + 'px';
+        box.style.top = ny + 'px';
+      });
+      const end = function (e) { drag = null; try { handle.releasePointerCapture(e.pointerId); } catch (_) {} };
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    })();
     modal.querySelectorAll('.kdstock-del').forEach(function (el) {
       el.addEventListener('click', async function () {
         const id = el.dataset.id;
