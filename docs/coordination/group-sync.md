@@ -807,3 +807,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **FIXED:** grain-direction warning showed nothing in Sketch/Chalk despite BK*=H + banner counting 10 (commit `0ac3a3c`, live). Pure CSS specificity bug: the theme reset selector (html[data-theme] body *:not(svg)... !important, spec ~0,2,3) outranks a bare .kdnest-grain-warn (0,2,0 !important) and forces background transparent. Added theme-prefixed overrides (0,3,0) for the amber glyph chip + row wash. General lesson noted for both groups: in Sketch/Chalk any coloured element background needs an html[data-theme=...]-prefixed rule, not just !important.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Two nest tweaks (commit `6a91c5e`, live). (1) "ทีวีไฮไลต์ทำให้มองไม่ออก" - the active/previewed row's opaque fill buried the text; now a thin frame + left accent bar + faint tint only (readable). (2) "เตือนเฉพาะตัวที่ไม่แน่ใจ พอแล้ว" - INVERTED the grain warning: was flagging all H/V parts (10/17 = noise), now flags only parts whose grain is still ANY/unset (the undecided ones); H/V = decided = no marker. Note: this is the opposite of the 2026-05-30 "บีเค grain แนวนอน ต้องเตือน" polarity - เอ๋ changed their mind once all the BK/BM/FN/SD/SH rules were set to H. nest.js + style.css, no rebuild. Verified live.
+**NEEDS:** nothing from Group 1.
