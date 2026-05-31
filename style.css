@@ -5484,22 +5484,43 @@ html[data-theme="chalk"] .cut-loc-head{ border-bottom-color:rgba(180,200,190,0.2
   animation:kdnestFlagPulse 2.8s ease-in-out infinite;
 }
 
-/* 5 - Per-part grain cell (verify H / V / ANY before cutting). Steady amber */
-/* box; the unset-grain warn ring (.kdnest-grain-warn::after) still pulses on */
-/* top so missing-grain parts stay MORE urgent than merely-flagged ones. */
-.kdnest-part-grain{
-  border:2px solid #ff9800!important; background:rgba(255,152,0,0.14)!important;
-  border-radius:6px; font-weight:800;
+/* 5 - Per-part GRAIN cell: NO blanket flag. The grain column already warns
+   SELECTIVELY via .kdnest-grain-warn (amber ring on parts whose grain is
+   '?'/unmatched only — "might be a problem"). A box on every cell made all 17
+   rows shout at once (เอ๋ 2026-05-31 'ถ้าเตือนทั้งหมดแบบนี้ผมงง'). So grain is
+   left to the existing _isGrainDirectional + .kdnest-grain-warn system — warn
+   only when it might be wrong. (Intentionally no .kdnest-part-grain rule here.) */
+
+/* 6 - Remnants Stock — remind the worker this run may consume saved offcuts
+   (เอ๋ 2026-05-31 'เพิ่มให้เตือนเรื่องการใช้เศษวัสดุ'). An ID beats the theme
+   reset on every theme, so no per-theme override needed for the outline. */
+#kdnest-stock{
+  outline:2px solid #ff9800; outline-offset:2px;
+  animation:kdnestFlagPulse 2.8s ease-in-out infinite;
 }
 
-/* Sketch (cream paper) needs a deeper amber for contrast. */
-html[data-theme="sketch"] .kdnest-skip-lab,
-html[data-theme="sketch"] .kdnest-stock-up,
-html[data-theme="sketch"] .kdnest-stock-down,
-html[data-theme="sketch"] .kdnest-stock-qty,
-html[data-theme="sketch"] .kdnest-part-grain{
-  border-color:#cf6f00!important; background:rgba(207,111,0,0.12)!important;
+/* Cross-theme fix. The sketch/chalk reset `html[data-theme=…] body *:not(svg)…`
+   is ~(0,2,6) !important and OUTRANKS a bare `.kdnest-skip-lab` (0,1,0) — so on
+   cream/board the amber border+bg were wiped and nothing showed (เอ๋ 2026-05-31
+   'theme pencil & chalk ยังไม่เตือนเลย'). Prefixing with the parent container
+   class lifts our override into the class column so it wins. Per-theme accent:
+   sketch deep amber on cream, chalk amber on dark board. */
+html[data-theme="sketch"]{ --kdflag:#cf6f00; --kdflag-bg:rgba(207,111,0,0.14); }
+html[data-theme="chalk"] { --kdflag:#ff9800; --kdflag-bg:rgba(255,152,0,0.16); }
+html[data-theme="sketch"] .kdnest-controls .kdnest-skip-lab,
+html[data-theme="chalk"]  .kdnest-controls .kdnest-skip-lab{
+  border:2px solid var(--kdflag) !important; background:var(--kdflag-bg) !important;
 }
-html[data-theme="sketch"] .kdnest-stock-up,
-html[data-theme="sketch"] .kdnest-stock-down{ color:#cf6f00!important; }
-html[data-theme="sketch"] #kdnest-run{ outline-color:#cf6f00; }
+html[data-theme="sketch"] .kdnest-stock-row .kdnest-stock-up,
+html[data-theme="sketch"] .kdnest-stock-row .kdnest-stock-down,
+html[data-theme="chalk"]  .kdnest-stock-row .kdnest-stock-up,
+html[data-theme="chalk"]  .kdnest-stock-row .kdnest-stock-down{
+  border:1.5px solid var(--kdflag) !important; color:var(--kdflag) !important;
+  background:var(--kdflag-bg) !important;
+}
+html[data-theme="sketch"] .kdnest-stock-row .kdnest-stock-qty,
+html[data-theme="chalk"]  .kdnest-stock-row .kdnest-stock-qty{
+  border:2px solid var(--kdflag) !important; background:var(--kdflag-bg) !important;
+}
+html[data-theme="sketch"] #kdnest-run,
+html[data-theme="sketch"] #kdnest-stock{ outline-color:#cf6f00; }
