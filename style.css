@@ -5437,12 +5437,15 @@ html[data-theme="chalk"] .cut-loc-panel{ background:#2f3a38!important; color:#f4
 html[data-theme="chalk"] .cut-loc-head{ border-bottom-color:rgba(180,200,190,0.2); }
 
 /* === Nesting: high-attention controls (don't-forget-to-check) 2026-05-31 === */
-/* 5 spots flagged by the owner: Skip/Don't-remember checkboxes, sheet-stock   */
-/* reorder arrows, sheet-stock qty, Run Nesting, and the per-part grain cell.   */
-/* One amber accent (#ff9800) reads on all 3 themes (dark / sketch-cream /      */
-/* chalk). Backgrounds use !important so the *{background:transparent} theme    */
-/* reset cannot blank them. Pulse only on the two once-per-run settings (skip   */
-/* box + Run button); the rest are steady to avoid a flickering wall.           */
+/* Spots flagged by the owner: Skip/Don't-remember checkboxes, sheet-stock      */
+/* reorder arrows, sheet-stock qty, Run Nesting, and Remnants Stock (this run   */
+/* may consume saved offcuts). The per-part GRAIN cell is intentionally NOT     */
+/* blanket-flagged — it keeps its existing SELECTIVE .kdnest-grain-warn ring    */
+/* (only parts with no grain rule), so the list doesn't shout on every row.     */
+/* Amber #ff9800 (deeper #cf6f00 on the sketch cream theme) on all 3 themes;    */
+/* backgrounds use !important + a container-class prefix so the theme reset     */
+/* (*{background:transparent!important}) can't blank them. Pulse on the skip    */
+/* boxes + Run + Remnants; steady elsewhere to avoid a flickering wall.         */
 @keyframes kdnestFlagPulse{
   0%,100%{ box-shadow:0 0 0 0 rgba(255,152,0,0.0); }
   50%    { box-shadow:0 0 0 5px rgba(255,152,0,0.32); }
