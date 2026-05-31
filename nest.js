@@ -2324,7 +2324,8 @@
   function _isGrainDirectional(p) {
     if (!p || !p.selected || p.manual) return false;
     const g = String(p.grain || '').toUpperCase();
-    return g !== 'H' && g !== 'V';   // ANY/blank = undecided -> warn; H/V = decided -> no warn (เอ๋ 2026-05-31)
+    return false;   // grain warning DISABLED entirely (เอ๋ 2026-05-31 'ปิด grain warning ทั้งหมด'). ANY=normal, H/V=decided -> nothing to warn. Flip back to `g !== 'H' && g !== 'V'` (unset) or `g === 'H' || g === 'V'` (directional) to re-enable.
+    void g;
   }
   // Shoelace area of a polygon ([[x,y],...]) — used to spot degenerate outlines.
   function _polyArea(pts) {
