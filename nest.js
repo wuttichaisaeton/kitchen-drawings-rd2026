@@ -2498,6 +2498,15 @@
         </div>`;
     }).join('');
 
+    // Directional-grain summary banner (เอ๋ 2026-05-31 'ไม่เห็นเตือน' x2). The
+    // per-row amber chip was easy to miss in a long list; this counts the
+    // selected H/V parts and shows one loud banner above the rows. Empty when
+    // nothing is directional (all ANY). Styled .kdnest-grain-summary.
+    const _dirParts = S.parts.filter(_isGrainDirectional);
+    const grainSummary = _dirParts.length
+      ? `<div class="kdnest-grain-summary">⚠ ${_dirParts.length} part${_dirParts.length === 1 ? '' : 's'} have directional grain (─ H / │ V) — lay the grain the right way before cutting</div>`
+      : '';
+
     const sheetStockRows = S.sheetStock.map((s, i) => {
       const upDisabled = i === 0 ? 'disabled' : '';
       const downDisabled = i === S.sheetStock.length - 1 ? 'disabled' : '';
@@ -2587,6 +2596,7 @@
               ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
               <span class="kdnest-parts-count">${totalUnique} / ${S.parts.length} · ${totalPcs} pcs</span>
             </div>
+            ${grainSummary}
             ${partsRows || '<div class="kdnest-empty">No parts in this project</div>'}
           </div>
         </aside>
