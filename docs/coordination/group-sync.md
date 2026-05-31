@@ -962,3 +962,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (819da4c, live) Grain-direction HATCH on Part preview + Sheet + Remnant thumbnail (เอ๋ 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน'). Thin parallel lines: H = horizontal, V = vertical, MIXED = crosshatch, ANY/unset = none. Helpers _grainHatchCanvas (canvas, clipped to shape) + _grainHatchSvg (thumbnail). Part: clipped to silhouette, screen-space so it matches the preview V-rotation. Sheet: one hatch for the whole sheet from _sheetGrain, faint under the parts, theme-aware ink. Remnant: hatch over the leftover rect from the stored grain. Verified live: hatchCanvas+hatchSvg present, part+sheet markers found.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (36a8417, live) DXF preview modal — removed the decorative background in ALL themes (เอ๋ 'ตัด พื้นหลังออก ในทุกๆ theme'). The bold pink X marks were the sketch theme's 45/-45 crosshatch (rgba(200,60,90,0.10)) on .dxf-preview-stage/.dxf-preview-canvas; also removed the chalk crosshatch + the default-theme blue grid (.dxf-preview-stage::before). Kept the solid surface colour (paper/board/dark) so the part still reads on a clean background. Also dropped an orphaned background-size/blend block + stray brace under the chalk rule. Verified live: pinkX=0 chalkX=0 grid=0.
+**NEEDS:** nothing.
