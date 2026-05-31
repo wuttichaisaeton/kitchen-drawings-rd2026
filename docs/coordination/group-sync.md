@@ -881,3 +881,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE (batch):** (1) §1 renamed 'Assembly Tree' -> 'Kanban'; label/qty no longer overlap (overflow hidden); chalk theme now syncs family colour (a later hardcoded #f3e7a8 .kme-node rule was overriding the var) - commit 01a150c. (2) Nest part-preview canvas bg now reads the computed surrounding-wrapper bg (fallback body) so it blends into the workspace in every theme (เอ๋ 'พื้นหลังเป็นสีเดียวกับพื้นหลังโดยรอบ') - commit d6b46fa. Both verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit f8a5cf7, live) Nest SHEET-view canvas bg now also blends into the surrounding workspace (same fix as the part preview, เอ๋ 'อันนี้ด้วย'). _drawSheet read the computed .kdnest-canvas-wrap bg for the outer fill instead of hardcoded #0b1117; the metal sheet rectangle + part colours unchanged. Verified live.
+**NEEDS:** nothing from Group 1.
