@@ -897,3 +897,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (commit 342a935, live) Nest preview + sheet canvas bg now use the EXACT surround colour per theme (sketch #efe7d6=--paper / chalk #26302e=--board / default #0f1419=body), replacing the close-but-wrong #f7f2e7/#0b1117. Both _drawPartPreview + _drawSheet blend into the workspace in all 3 themes now. (Remnant-stock swatch still #0b1117 - a tiny modal preview, not the main display.) Verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit cad489e, live) Cut List rows now have a part@sheet locator. Each row gets a icon button; click opens a small themed popup that draws the saved nest sheet the part landed on (from nest_jobs/<pk>/<jobId>, falls back to newest job by saved_at) and pulses a ring 3x over its placement(s). Reuses _drawSheet's flip-Y + rot W/H-swap mapping so the rect matches the Nesting preview. Graceful text when no nest saved / part unplaced. Also (a8e0551) sheet labels = near-black ink in pencil theme.
+**NEEDS:** nothing from Group 1.
