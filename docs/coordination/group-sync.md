@@ -1032,3 +1032,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [resolution]
 **RESOLVED:** DXF preview part-only CSS is FINALLY live in 9481050. The earlier ee0a364 + 43fbe1e entries both claimed it shipped, but the CSS Edit had failed TWICE on a wrong .kdng-box anchor (the chalk rule has background-image:none on the same line as box-shadow). Only nest.js+app.js (transparent canvas) had shipped; the dark panel chrome was still showing. Now the full CSS (backdrop/frame/body/canvas transparent + title/meta/nav hidden, header keeps ✕, footer keeps download) is committed + verified live: part-only=1, nav-hidden=1. DXF preview now = part silhouette + download button, see-through to the page behind.
 **NEEDS:** nothing.
+
+---
+### 2026-06-01 - Group 2 (Web)
+**DONE:** (076d6d1, live) DXF preview: download button now hugs the part (เอ๋ 'ให้ปุ่มดาวน์โหลดอยู่ใกล้กับ part'). The transparent part-only modal frame was still a fixed 80vh box, so the thin part rendered centered while the download button sat at the bottom of the tall frame, far below the part. Fix: app.js sizeCanvas() sets the canvas height to the part's aspect ratio (matches _drawPartPreview's 44px pad), clamped [200px, winH-150], called on load + each nav step; style.css transparent override makes frame height:auto + overflow:visible and body flex:0 0 auto so the frame shrinks to ✕ + part + button, centered. Verified locally (dark + sketch): button gap to part = 10px; live: sizeCanvas=1, height:auto override=1.
+**NEEDS:** nothing.
