@@ -547,7 +547,7 @@
     // conversion writes drawings-ui/grain.json next to it. Patterns:
     // exact > XX wildcard > longest prefix > longest suffix > longest
     // substring (matches Python's lookup_in_map priority).
-    if (!S.grainMap) {
+    if (true) {   // always reload live RTDB grain_rules (เอ๋'s modal edits win over the grain.json seed)
       // grain_rules (RTDB, edited in the 🧬 Grain modal) is the live source;
       // grain.json is the seed when RTDB is empty. _loadGrainRows does both.
       try {
@@ -560,7 +560,7 @@
     if (S.grainMap) {
       for (const part of byCode.values()) {
         const looked = _lookupPattern(part.code, S.grainMap);
-        if (looked && looked.grain) part.grain = looked.grain;
+        part.grain = (looked && looked.grain) ? looked.grain : '?';   // no rule matched -> '?' uncertain (desktop parity)
         // Thickness override mirrors the Python behaviour — grain.xlsx
         // can pin the value when Fusion's export is wrong (BM* = 1mm).
         if (looked && looked.thickness && !part.thickness) {
@@ -631,7 +631,7 @@
     if (!S.grainMap) return;
     for (const part of S.parts) {
       const looked = _lookupPattern(part.code, S.grainMap);
-      if (looked && looked.grain) part.grain = looked.grain;
+      part.grain = (looked && looked.grain) ? looked.grain : '?';   // no rule matched -> '?' uncertain (desktop parity)
       if (looked && looked.thickness) {
         const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
         if (!isNaN(t)) part.thickness = t;
@@ -2324,8 +2324,7 @@
   function _isGrainDirectional(p) {
     if (!p || !p.selected || p.manual) return false;
     const g = String(p.grain || '').toUpperCase();
-    return false;   // grain warning DISABLED entirely (เอ๋ 2026-05-31 'ปิด grain warning ทั้งหมด'). ANY=normal, H/V=decided -> nothing to warn. Flip back to `g !== 'H' && g !== 'V'` (unset) or `g === 'H' || g === 'V'` (directional) to re-enable.
-    void g;
+    return g !== 'H' && g !== 'V' && g !== 'ANY';   // warn ONLY '?'/unmatched (เอ๋ 2026-05-31 'เตือนเฉพาะค่าที่ไม่แน่ใจ' = desktop's "Grain unspecified"); H/V/ANY = decided -> no warn
   }
   // Shoelace area of a polygon ([[x,y],...]) — used to spot degenerate outlines.
   function _polyArea(pts) {
@@ -2508,7 +2507,7 @@
     // set. (เอ๋ 2026-05-31 'เตือนเฉพาะตัวที่ไม่แน่ใจ'). Styled .kdnest-grain-summary.
     const _dirParts = S.parts.filter(_isGrainDirectional);
     const grainSummary = _dirParts.length
-      ? `<div class="kdnest-grain-summary">⚠ ${_dirParts.length} part${_dirParts.length === 1 ? '' : 's'} have no grain set (ANY) — set ─ H / │ V if grain matters before cutting</div>`
+      ? `<div class="kdnest-grain-summary">⚠ ${_dirParts.length} part${_dirParts.length === 1 ? '' : 's'} have no grain rule — check the grain table (set ─ H / │ V / ✱ ANY)</div>`
       : '';
 
     const sheetStockRows = S.sheetStock.map((s, i) => {
