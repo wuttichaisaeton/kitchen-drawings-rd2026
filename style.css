@@ -4109,7 +4109,10 @@ button.cut-status:focus-visible {
 .kdstock-calc { font-family: "Flux Architect", monospace; font-size: 11px; color: #7d8a99; margin-top: 1px; text-decoration: line-through; opacity: 0.8; }
 .kdstock-actual { display: flex; align-items: center; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
 .kdstock-actual-lab { font-family: "Flux Architect", monospace; font-size: 11px; color: #9fe9cf; font-weight: 700; }
-.kdstock-actual input { width: 56px; background: #0f1620; border: 1px solid #2a3a4f; color: #e8eef5; border-radius: 6px; padding: 4px 6px; font-family: "Flux Architect", monospace; font-size: 12px; }
+.kdstock-actual input { width: 56px; background: #0f1620; border: 1px solid #2a3a4f; color: #e8eef5; border-radius: 6px; padding: 4px 6px; font-family: "Flux Architect", monospace; font-size: 12px; -moz-appearance: textfield; appearance: textfield; }
+/* Hide the number-spinner arrows — clutter, no value here (เอ๋ 2026-05-31 'ไม่ต้องมีปุ่มขึ้นลง เกะกะ'). */
+.kdstock-actual input::-webkit-outer-spin-button,
+.kdstock-actual input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .kdstock-actual span { color: #889bb3; font-family: "Flux Architect", monospace; }
 .kdstock-actual-save, .kdstock-actual-clear { background: transparent; border: 1px solid #2a4a52; color: #4ecca3; border-radius: 6px; padding: 4px 9px; font-size: 13px; cursor: pointer; font-family: "Flux Architect", monospace; }
 .kdstock-actual-save:hover { background: rgba(78,204,163,0.15); }
