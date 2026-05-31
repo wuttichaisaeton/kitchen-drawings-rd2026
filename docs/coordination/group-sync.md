@@ -892,3 +892,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **FIX:** Nest sheet-view bg stayed dark in sketch/chalk (commits cb6a360 + ff4e26a, live). Root cause: _drawSheet had a non-themed default + a getComputedStyle read that returned a dark value. Both _drawSheet and _drawPartPreview now use a plain per-theme constant (sketch #f7f2e7 / chalk #26302e / else #0b1117) - paper/board ARE the surround, deterministic, no computed read. Verified live (computed reads = 0).
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit 342a935, live) Nest preview + sheet canvas bg now use the EXACT surround colour per theme (sketch #efe7d6=--paper / chalk #26302e=--board / default #0f1419=body), replacing the close-but-wrong #f7f2e7/#0b1117. Both _drawPartPreview + _drawSheet blend into the workspace in all 3 themes now. (Remnant-stock swatch still #0b1117 - a tiny modal preview, not the main display.) Verified live.
+**NEEDS:** nothing from Group 1.
