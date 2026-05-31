@@ -1658,9 +1658,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         </div>
       </section>
 
-      {/* §3 Kanban — the existing React Flow mindmap, untouched */}
+      {/* §3 Mindmap — the existing React Flow mindmap, untouched (เอ๋
+          2026-05-31 renamed 'Kanban' → 'Mindmap'; class kept for the CSS) */}
       <section className="kme-sec kme-sec-kanban">
-        <div className="kme-sec-head"><span className="kme-sec-title">3 · Kanban</span></div>
+        <div className="kme-sec-head"><span className="kme-sec-title">3 · Mindmap</span></div>
     <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}${fullscreen ? ' kme-fullscreen' : ''}`}>
       {/* Toolbar is admin-only. Workers get a clean canvas — the floating
           Show all (in the <Panel> below) is their only control, so the

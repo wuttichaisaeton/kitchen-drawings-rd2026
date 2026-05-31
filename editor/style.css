@@ -1006,7 +1006,18 @@ html.kme-fs-on .kme-root { height: 100% !important; }
 }
 
 /* ── §1 Assembly Tree capsules ── */
-.kme-tree { display: flex; flex-direction: column; gap: 4px; padding: 4px 8px; }
+/* Auto columns — capsules flow into as many columns as the width allows
+   (เอ๋ 2026-05-31 'Assembly Tree ทำเป็นแบบ Column จำนวน column เป็นแบบ auto').
+   1 col on a phone, more on a wide screen; each capsule keeps its depth
+   indent via inline paddingLeft. */
+.kme-tree {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  align-items: start;
+  gap: 4px 8px;
+  padding: 4px 8px;
+}
+.kme-tree-empty { grid-column: 1 / -1; }
 .kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
 .kme-tree-row {
   display: flex;
@@ -1075,7 +1086,18 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   padding: 0;
 }
 .kme-checklist-section .kme-checklist-head { padding: 4px 14px; }
-.kme-checklist-section .kme-checklist-list { max-height: none; }
+/* Auto columns for the checklist too (เอ๋ 2026-05-31 'Checklist ทำเป็นแบบ
+   Column จำนวน column เป็นแบบ auto'). A row whose comment thread is open
+   spans the full width so the thread isn't cramped in one column. */
+.kme-checklist-section .kme-checklist-list {
+  max-height: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  align-items: start;
+  gap: 4px 10px;
+}
+.kme-checklist-section .kme-checklist-row { min-width: 0; }
+.kme-checklist-section .kme-checklist-row:has(.kme-checklist-thread) { grid-column: 1 / -1; }
 .kme-checklist-pdf {
   flex-shrink: 0;
   width: 32px; height: 32px;
