@@ -5448,13 +5448,15 @@ html[data-theme="chalk"] .cut-loc-head{ border-bottom-color:rgba(180,200,190,0.2
   50%    { box-shadow:0 0 0 5px rgba(255,152,0,0.32); }
 }
 
-/* 1 - Skip remnants / Don't remember (set per run, easy to forget) */
-.kdnest-skip-wrap{
+/* 1 - Skip remnants / Don't remember (set per run, easy to forget). These   */
+/* two are the ONLY .kdnest-skip-lab labels — Mode uses .kdnest-mode-lab and  */
+/* Gap uses .kdnest-gap-lab — so this lights exactly the two checkboxes.      */
+.kdnest-skip-lab{
   border:2px solid #ff9800!important; border-radius:10px;
-  background:rgba(255,152,0,0.12)!important; padding:6px 12px!important;
+  background:rgba(255,152,0,0.12)!important; padding:4px 10px!important;
+  font-weight:700;
   animation:kdnestFlagPulse 2.8s ease-in-out infinite;
 }
-.kdnest-skip-wrap .kdnest-skip-lab{ font-weight:700; }
 
 /* 2 - Sheet-stock priority arrows */
 .kdnest-stock-up, .kdnest-stock-down{
@@ -5488,7 +5490,7 @@ html[data-theme="chalk"] .cut-loc-head{ border-bottom-color:rgba(180,200,190,0.2
 }
 
 /* Sketch (cream paper) needs a deeper amber for contrast. */
-html[data-theme="sketch"] .kdnest-skip-wrap,
+html[data-theme="sketch"] .kdnest-skip-lab,
 html[data-theme="sketch"] .kdnest-stock-up,
 html[data-theme="sketch"] .kdnest-stock-down,
 html[data-theme="sketch"] .kdnest-stock-qty,
