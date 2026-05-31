@@ -940,5 +940,5 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** (a701f97, live) Remnant thumbnails: (1) AUTO remnants now store the sheet layout (piece footprint rects + sheetW/H + offcut pos + sheetNo) so the thumbnail draws the real sheet — cut pieces faint grey, leftover green at its actual position, label 'WxH · sheet N' — answering 'ดูรูปได้ว่ามาจากแผ่นไหน'. Manual remnants keep the centred-rect fallback. (2) SVG preview text monospace -> 'Flux Architect' (เอ๋ 'font flux architect ทั้งหมด'). Verified live.
+**DONE:** (6349194, live) Remnant thumbnails: (1) AUTO remnants now store the sheet layout (piece footprint rects + sheetW/H + offcut pos + sheetNo) so the thumbnail draws the real sheet — cut pieces faint grey, leftover green at its actual position, label 'WxH · sheet N' — answering 'ดูรูปได้ว่ามาจากแผ่นไหน'. Manual remnants keep the centred-rect fallback. (2) SVG preview text monospace -> 'Flux Architect' (เอ๋ 'font flux architect ทั้งหมด'). Verified live.
 **NEEDS:** nothing.
