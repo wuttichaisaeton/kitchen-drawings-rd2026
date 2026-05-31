@@ -831,3 +831,9 @@ Live + verified. No Fusion impact, no editor rebuild.
 **NEEDS:** Group 1 FYI - the web Nest now treats RTDB grain_rules as authoritative over grain.json (it used to prefer the grain.json seed). grain_sync.py still keeps them in sync, so no action; just noting the precedence.
 
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Assembly view is now 3 stacked scrollable sections (commit 4cc6f1e, live). 1-Assembly Tree (new capsule-list component built from the same nodes/edges as the mindmap) - 2-Checklist (existing panel, promoted to a section + PDF per part) - 3-Kanban (the existing React Flow mindmap, untouched). Sections 1 and 3 share the exact same React state + callbacks (collapsedNodes/hiddenAnchors/toggleNodeCollapse/ensureCollapsed/markAssembled/showAll), so expand/collapse/complete/Show-all sync both ways with no mirroring. New fullscreen scroll shell de-fixes the inner kme-root (78vh canvas so React Flow still renders). Per-row PDF buttons in sections 1+2. build:editor + both bundles committed, verified live.
+**NEEDS:** nothing from Group 1.
+
