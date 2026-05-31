@@ -1082,14 +1082,39 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
    (เอ๋ 2026-05-31 'Assembly Tree ทำเป็นแบบ Column จำนวน column เป็นแบบ auto').
    1 col on a phone, more on a wide screen; each capsule keeps its depth
    indent via inline paddingLeft. */
-.kme-tree {
+/* Kanban-style board: one column per family (BK / SD / TS …), tinted to
+   match the same family's node colour in the Mindmap (เอ๋ 2026-05-31). Columns
+   sit side by side; wrap onto new rows when they run out of width. */
+.kme-tree-board {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   align-items: start;
-  gap: 4px 8px;
-  padding: 4px 8px;
+  gap: 10px;
+  padding: 8px;
 }
-.kme-tree-empty { grid-column: 1 / -1; }
+.kme-tree-col {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--fam-border, #3a4757);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0f141a;
+}
+.kme-tree-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 2px solid var(--fam-border, #3a4757);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+.kme-tree-col-name { color: #fff; font-size: 14px; }
+.kme-tree-col-count { color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 700; }
+.kme-tree-col-body { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
+.kme-tree { padding: 4px 8px; }
+.kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
 .kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
 .kme-tree-row {
   display: flex;
@@ -1097,7 +1122,9 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
   gap: 8px;
   padding: 7px 12px;
   background: #161b22;
-  border: 1px solid #3a4757;   /* brighter so every capsule (incl. children) shows its frame */
+  /* border tinted by the row's family (set via --fam-border on the column);
+     falls back to a visible slate so every capsule shows its frame. */
+  border: 1.5px solid var(--fam-border, #3a4757);
   border-radius: 18px;          /* rounded but not full-pill, so multi-line codes wrap cleanly */
   min-height: 40px;
   transition: background 0.15s ease;

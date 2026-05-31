@@ -379,10 +379,22 @@ function MindmapNode({ id, data, selected }) {
   // Layer coloring (2026-05-30): every BOM node — including wrapper / variant-
   // root containers — shows its depth-layer color. (The qty badge + family
   // stripe removed on 2026-05-28 are separate elements and stay removed.)
-  const style = isBom && color ? {
+  // Colour the node by FAMILY so it matches the §1 Assembly Tree column of the
+  // same family (เอ๋ 2026-05-31 'Column Link สีกับ Mindmap … BK เขียวทั้งสองที่').
+  // Emits CSS vars the sketch/chalk post-it rules read (var(--fam-soft)) so the
+  // match holds in every theme; default theme uses the saturated border + dark
+  // gradient tint inline.
+  const _fc = isBom && code ? _famColor(_famOf(code)) : null;
+  const style = _fc ? {
+    '--fam-border': _fc.border,
+    '--fam-soft': _fc.soft,
+    '--fam-dark': _fc.dark,
+    borderColor: _fc.border,
+    background: `linear-gradient(180deg, #161b22 60%, ${_fc.dark} 100%)`,
+  } : (isBom && color ? {
     borderColor: color,
     background: `linear-gradient(180deg, #161b22 60%, ${tint || '#161b22'} 100%)`,
-  } : undefined;
+  } : undefined);
 
   return (
     <div
@@ -762,6 +774,37 @@ function _openPdfForCode(code) {
   (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
 }
 
+// ── Family colour (shared by §1 Tree columns + §3 Mindmap nodes) ──────
+// เอ๋ 2026-05-31: group the Assembly Tree into columns by family (BK/SD/TS…)
+// and make the Mindmap node colour MATCH its family column ('Column 1 BK =
+// green → BK post-it in the Mindmap also green'). family = the leading
+// letters of the code before the first digit (BKIDN1→BK, SD00NA→SD,
+// TS002H→TS, FN0F00→FN, BM1N00→BM, BXXTR0→BX, SH0S10→SH …). One palette,
+// keyed by the family string so the same family always lands on the same
+// hue regardless of how many families a project has.
+function _famOf(code) {
+  if (!code) return '?';
+  const m = String(code).match(/^[A-Za-z]+/);
+  return m ? m[0].toUpperCase() : '?';
+}
+// 10 distinct hues; family string hashed into the ring so it's stable.
+const _FAM_HUES = [145, 205, 38, 275, 330, 12, 175, 95, 250, 300];
+function _famHue(fam) {
+  let h = 0;
+  for (let i = 0; i < fam.length; i++) h = (h * 31 + fam.charCodeAt(i)) >>> 0;
+  return _FAM_HUES[h % _FAM_HUES.length];
+}
+// Returns colours for a family: a saturated border/ink + a soft post-it bg.
+function _famColor(fam) {
+  const hue = _famHue(fam);
+  return {
+    border: `hsl(${hue}, 62%, 55%)`,   // capsule/node border + edge
+    soft:   `hsl(${hue}, 70%, 84%)`,   // sketch/chalk post-it fill (light)
+    dark:   `hsl(${hue}, 40%, 16%)`,   // default-theme gradient tint endpoint
+    head:   `hsl(${hue}, 55%, 30%)`,   // column header bg
+  };
+}
+
 // ── Assembly Tree (§1) — capsule list view of the SAME tree the Kanban
 // (§3 mindmap) renders. Shares collapsedNodes / hiddenAnchors / assembled
 // state, so expand/collapse + complete + Show-all sync both ways (เอ๋
@@ -823,49 +866,89 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   // signal the Kanban node + checklist use.
   const isDone = (code) => !!(code && api.isAssembled && api.isAssembled(projectKey, code));
 
+  // Group the flat DFS row list into columns by family (เอ๋ 2026-05-31
+  // 'Column 1 มี group ของ BK ทั้งหมด · Column 2 SD · Column 3 TS …'). Family =
+  // the leading letters of each row's code (_famOf). Columns sorted A→Z so the
+  // order is stable; rows inside keep their DFS order + depth indent. Each
+  // column is tinted by _famColor so it matches the same family's node colour
+  // in the §3 Mindmap.
+  const columns = useMemo(() => {
+    const byFam = new Map();
+    for (const r of rows) {
+      const code = r.node.data?.label || '';
+      const fam = _famOf(code);
+      if (!byFam.has(fam)) byFam.set(fam, []);
+      byFam.get(fam).push(r);
+    }
+    return [...byFam.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [rows]);
+
+  const renderRow = ({ id, node, depth, hasKids }) => {
+    const code = node.data?.label || '';
+    const qty = node.data?.qty;
+    const collapsed = collapsedNodes.has(id);
+    const done = isDone(code);
+    const comments = api.getComments ? (api.getComments(code) || []) : [];
+    const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
+    return (
+      <div
+        key={id}
+        className={'kme-tree-row' + (done ? ' is-done' : '')}
+        style={{ paddingLeft: (8 + depth * 16) + 'px' }}
+      >
+        <button
+          className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf') + (collapsed ? ' is-collapsed' : '')}
+          onClick={() => hasKids && toggleNodeCollapse(id)}
+          title={hasKids ? (collapsed ? 'Expand' : 'Collapse') : ''}
+          disabled={!hasKids}
+        >{hasKids ? (collapsed ? '▸' : '▾') : '·'}</button>
+        <span className="kme-tree-label" title={code}>{code}</span>
+        {qty != null && <span className="kme-tree-qty">×{qty}</span>}
+        {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
+        {hasPdf && (
+          <button
+            className="kme-tree-pdf"
+            onClick={() => _openPdfForCode(code)}
+            title="Open PDF"
+          >📄</button>
+        )}
+        <button
+          className={'kme-tree-done' + (done ? ' is-on' : '')}
+          onClick={() => {
+            const next = !done;
+            api.markAssembled?.(projectKey, code, next);
+            // Mirror the Kanban node: complete → collapse+hide; un-complete → release.
+            if (next) ensureCollapsed?.(id);
+            else releaseNode?.(id);
+          }}
+          title={done ? 'Mark not assembled' : 'Mark assembled'}
+        >🧩</button>
+      </div>
+    );
+  };
+
+  if (rows.length === 0) {
+    return <div className="kme-tree"><div className="kme-tree-empty">No assembly tree for this project.</div></div>;
+  }
+
   return (
-    <div className="kme-tree">
-      {rows.length === 0 && <div className="kme-tree-empty">No assembly tree for this project.</div>}
-      {rows.map(({ id, node, depth, hasKids }) => {
-        const code = node.data?.label || '';
-        const qty = node.data?.qty;
-        const collapsed = collapsedNodes.has(id);
-        const done = isDone(code);
-        const comments = api.getComments ? (api.getComments(code) || []) : [];
-        const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
+    <div className="kme-tree-board">
+      {columns.map(([fam, famRows]) => {
+        const fc = _famColor(fam);
+        const doneCount = famRows.filter(r => isDone(r.node.data?.label || '')).length;
         return (
           <div
-            key={id}
-            className={'kme-tree-row' + (done ? ' is-done' : '')}
-            style={{ paddingLeft: (8 + depth * 18) + 'px' }}
+            key={fam}
+            className="kme-tree-col"
+            style={{ '--fam-border': fc.border, '--fam-head': fc.head }}
           >
-            <button
-              className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf') + (collapsed ? ' is-collapsed' : '')}
-              onClick={() => hasKids && toggleNodeCollapse(id)}
-              title={hasKids ? (collapsed ? 'Expand' : 'Collapse') : ''}
-              disabled={!hasKids}
-            >{hasKids ? (collapsed ? '▸' : '▾') : '·'}</button>
-            <span className="kme-tree-label" title={code}>{code}</span>
-            {qty != null && <span className="kme-tree-qty">×{qty}</span>}
-            {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
-            {hasPdf && (
-              <button
-                className="kme-tree-pdf"
-                onClick={() => _openPdfForCode(code)}
-                title="Open PDF"
-              >📄</button>
-            )}
-            <button
-              className={'kme-tree-done' + (done ? ' is-on' : '')}
-              onClick={() => {
-                const next = !done;
-                api.markAssembled?.(projectKey, code, next);
-                // Mirror the Kanban node: complete → collapse+hide; un-complete → release.
-                if (next) ensureCollapsed?.(id);
-                else releaseNode?.(id);
-              }}
-              title={done ? 'Mark not assembled' : 'Mark assembled'}
-            >🧩</button>
+            <div className="kme-tree-col-head" style={{ background: fc.head, borderColor: fc.border }}>
+              <span className="kme-tree-col-name">{fam}</span>
+              <span className="kme-tree-col-count">{doneCount}/{famRows.length}</span>
+            </div>
+            <div className="kme-tree-col-body">
+              {famRows.map(renderRow)}
+            </div>
           </div>
         );
       })}

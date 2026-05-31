@@ -4685,10 +4685,10 @@ html[data-theme="sketch"] .bend-row:not(.bent-done) .bend-code {
    card overrides the Default scale() used by the collapse + assembled-fade
    animation (and rotate broke hit-testing), so 🧩 mark-complete looked dead.
    Colour + inked border + offset shadow still read as a post-it. (fix 2026-05-31) */
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project) { background-color: #fbe79f !important; }
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project) { background-color: #bcdcef !important; }
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project) { background-color: #f4c6cd !important; }
-html[data-theme="sketch"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) { background-color: #cbe7a6 !important; }
+/* Post-it fill = the node's FAMILY colour (var --fam-soft, set inline by
+   MindmapNode) so a family's node matches its Assembly-Tree column (เอ๋
+   2026-05-31). Falls back to warm paper when no family var. */
+html[data-theme="sketch"] .kme-node:not(.kme-project) { background-color: var(--fam-soft, #fbe79f) !important; }
 html[data-theme="sketch"] .kme-node:not(.kme-project) {
   border: 2px solid var(--pen) !important;
   border-radius: 3px 11px 4px 10px / 10px 4px 11px 3px !important;
@@ -5119,10 +5119,12 @@ html[data-theme="chalk"] .kme-checklist-btn {
    DARK ink (override the chalk-white reset) + a pushpin via ::before. Pin is a
    pseudo-element → survives the theme reset + transforms only itself, NOT
    .kme-node, so RF's scale animation is untouched (the post-it lesson). */
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+1) .kme-node:not(.kme-project) { background-color: #f3e7a8 !important; border-color: #bfa53c !important; }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project) { background-color: #b8dcf0 !important; border-color: #3f7fa6 !important; }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project) { background-color: #f0c2cd !important; border-color: #b1556b !important; }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project) { background-color: #bfe0b5 !important; border-color: #4f9450 !important; }
+/* Post-it fill + border = the node's FAMILY colour (vars set inline by
+   MindmapNode) so it matches its Assembly-Tree column (เอ๋ 2026-05-31). */
+html[data-theme="chalk"] .kme-node:not(.kme-project) {
+  background-color: var(--fam-soft, #f3e7a8) !important;
+  border-color: var(--fam-border, #bfa53c) !important;
+}
 html[data-theme="chalk"] .kme-node:not(.kme-project) {
   background-color: #f3e7a8 !important;
   background-image: none !important;
@@ -5153,9 +5155,8 @@ html[data-theme="chalk"] .kme-node:not(.kme-project)::before {
   pointer-events: none;
 }
 /* Pin colour coordinated with each note colour. */
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+2) .kme-node:not(.kme-project)::before { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #3f8fd0 42%, #1f5685); }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+3) .kme-node:not(.kme-project)::before { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #d86f97 42%, #8c2e52); }
-html[data-theme="chalk"] .react-flow__node:nth-of-type(4n+4) .kme-node:not(.kme-project)::before { background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.9), #46b04e 42%, #1f6e2a); }
+/* (per-position pin colours removed — the post-it FILL now carries the
+   family colour, so all pins use the base red pushpin. เอ๋ 2026-05-31) */
 html[data-theme="chalk"] .kme-node.kme-project,
 html[data-theme="chalk"] .kme-project,
 html[data-theme="chalk"] .kme-center,
