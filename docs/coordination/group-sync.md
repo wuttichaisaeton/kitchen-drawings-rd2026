@@ -870,3 +870,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE:** (commit 4189e60, live) Assembly Tree family colours now show in sketch/chalk themes - the theme reset (*{background:transparent}) had wiped them; each Tree row now gets the family post-it fill var(--fam-soft) + dark ink + column-header tint, theme-prefixed so it beats the reset. Tree column now visually matches its Mindmap nodes in every theme. Also: code labels (Tree + Checklist) switched to single-line nowrap (was wrapping to 2 lines) - full code, no ellipsis, no wrap. Verified live.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit 6f55c54, live) Fullscreen Mindmap cleanup - removed the in-canvas Checklist panel (the §2 accordion Checklist section already covers it) and moved the floating Show all button from top-right to bottom-left. Verified live.
+**NEEDS:** nothing from Group 1.
