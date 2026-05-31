@@ -1017,3 +1017,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (e5a9ce0, live) Save Project now REPLACES the Laser cut list instead of appending. _saveProject removes the whole cut_sheets/<pk> node before writing the new per-sheet entries (เอ๋ 'เวลา save ไป cut list ให้ลบของเดิมออกก่อน และ save ของใหม่เข้าไปแทนที่เสมอ'). Each save wrote cut_sheets/<pk>/<project_ts_sN> under a fresh per-run id, so without the wipe the node accumulated stale sheets from every prior run. nest_parts/<pk> already .set()-overwrites; nest_jobs history intentionally NOT wiped. Verified live: 'REPLACES the Laser' present.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (bed5834, live) DXF preview modal stripped to PART-ONLY + see-through (เอ๋ 'โชว์แค่พาร์ท พื้นหลังไม่เอา ปุ่มดาวน์โหลด part พอ เกะกะมองไม่เห็นด้านหลัง'). nest.js _drawPartPreview gained opts.transparent → clearRect (canvas shows page through); app.js modal passes {transparent:true}; the Nest workspace preview keeps solid BG (no opts). style.css: backdrop/frame/body/canvas transparent (!important + sketch/chalk twins), title+meta+nav hidden, header keeps only ✕, footer keeps only download button. Verified live in all 3 files.
+**NEEDS:** nothing.
