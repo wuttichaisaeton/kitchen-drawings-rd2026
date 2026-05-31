@@ -850,5 +850,6 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**FIX:** §3 Mindmap section was rendering black/empty (commit 3a6f3c6, live). Cause: base rule html.kme-fs-on .kme-root{height:100%!important} outranked the section's 78vh, collapsing the canvas to ~0. Fixed with an html.kme-fs-on-prefixed selector + !important. Also added a ⛶ Fullscreen toggle in the §3 header (mapMax -> fixed inset:0 overlay, re-fits on enter) + a floating ✕ Close (the header button sits under the maxed canvas). Verified live.
+**FIX:** §3 Mindmap section was rendering black/empty (commit 8701250, live). Cause: base rule html.kme-fs-on .kme-root{height:100%!important} outranked the section's 78vh, collapsing the canvas to ~0. Fixed with an html.kme-fs-on-prefixed selector + !important. Also added a ⛶ Fullscreen toggle in the §3 header (mapMax -> fixed inset:0 overlay, re-fits on enter) + a floating ✕ Close (the header button sits under the maxed canvas). Verified live.
 **NEEDS:** nothing from Group 1.
+
