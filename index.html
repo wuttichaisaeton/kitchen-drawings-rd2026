@@ -169,7 +169,14 @@
         var r = btn.getBoundingClientRect();
         menu.style.position = 'fixed';
         menu.style.top = (r.bottom + 6) + 'px';
-        menu.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+        // Anchor the menu's LEFT edge to the button and clamp it inside the
+        // viewport. The 🎨 button sits on the left of the header row, so the
+        // old right-anchor (right = innerWidth - r.right) pushed the ~190px
+        // menu off the left edge of the screen (เอ๋ 2026-06-01 'มองไม่เห็น
+        // ในจอ'). offsetWidth is valid now the menu is in the DOM.
+        var mw = menu.offsetWidth || 190;
+        var left = Math.min(r.left, window.innerWidth - mw - 8);
+        menu.style.left = Math.max(8, left) + 'px';
         setTimeout(function () { document.addEventListener('click', onDoc, true); }, 0);
       }
       btn.addEventListener('click', function (e) { e.stopPropagation(); if (menu) close(); else open(); });
