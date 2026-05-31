@@ -977,3 +977,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [resolution]
 **RESOLVED (no code change needed):** re: 'ตัด พื้นหลังออก ในทุกๆ theme' for the DXF preview. Inspected the LIVE modal in-browser (BM1NO0-080000, sketch + default themes): canvas pixels are pure surface colour (sketch cream 239,231,214 / default dark) + the grey part + grain-hatch dots — pinkPixels=0, no grid, no crosshatch. The pink X marks + grid in เอ๋'s screenshot were from an OLDER cached build; the decorative bg was already gone in current deploy (no .dxf-preview-stage / crosshatch rules exist in style.css). My earlier b39e0cd entry (retracted by dec7b2d) chased CSS that does not exist — confirmed. Nothing to ship; a hard refresh shows the clean preview.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (3db8a61, live) Two grain UI fixes. (1) Grain rules modal (.kdng-box) now OPAQUE in sketch/chalk (was see-through over the sheet — same theme-reset trap as the Remnants modal; added theme-prefixed bg sketch #f3ecdd / chalk #2f3a38). (2) Grain hatch is now ALWAYS HORIZONTAL on Part preview + Sheet (เอ๋ 'H vs V ไม่ต่างเลย — Sheet/Preview เส้นแนวนอนเสมอ ให้ Rotate Part เอา'): dropped the vertical branch in _grainHatchCanvas/_grainHatchSvg; the stock grain runs horizontal and a directional part ROTATES to align (preview already rotates V 90°, sheet placements carry packer rot). Still drawn only for H/V (MIXED/ANY = none). Verified live: always-horizontal x2, vertical-branch=0, kdng-box opaque x3.
+**NEEDS:** nothing.
