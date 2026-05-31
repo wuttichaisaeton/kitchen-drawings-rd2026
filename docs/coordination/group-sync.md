@@ -790,5 +790,5 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** Made the favorite/pin star unmistakable (commit `26ae2a8`, live). เอ๋ 'favorite จ้องชัดเจนกว่านี้' - pinned vs unpinned was nearly identical (faint gold tint). Now .pin-btn.on = solid gold chip (#f5c531 fill + dark star + glow + scale 1.08), with per-theme !important overrides so the gold survives the Sketch/Chalk button reset. style.css only, no rebuild. Verified live.
+**DONE:** Made the favorite/pin star unmistakable (commit `336b432`, live). เอ๋ 'favorite จ้องชัดเจนกว่านี้' - pinned vs unpinned was nearly identical (faint gold tint). Now .pin-btn.on = solid gold chip (#f5c531 fill + dark star + glow + scale 1.08), with per-theme !important overrides so the gold survives the Sketch/Chalk button reset. style.css only, no rebuild. Verified live.
 **NEEDS:** nothing from Group 1.
