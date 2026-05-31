@@ -892,6 +892,7 @@ function _renderCutList(parts, projectKey) {
             <span class="cut-code">${escapeHtml(p.code)}</span>
             <span class="cut-qty">× ${p.qty || 0}</span>
             ${grainCell}
+            <button type="button" class="cut-sheet-btn" data-code="${escapeHtml(p.code)}" title="Show where this part sits on the nest sheet">📍</button>
             ${status}
           </div>`;
       }).join('');
@@ -983,6 +984,16 @@ function _wireCutList(parts, projectKey) {
         // picks one → that one opens in the preview modal (with nav).
         _renderDxfPopover(row, dxfs, (item) => _renderDxfPreviewModal(item, navCtx));
       }
+    });
+  });
+  // 📍 part@sheet — locate this part on its saved nest sheet in a small
+  // popup with a pulsing ring (user 2026-05-31 'cut list เพิ่ม icon part@sheet
+  // สามารถกดดูได้ พร้อม effect'). stopPropagation so the row's DXF-preview
+  // handler doesn't also fire.
+  ROOT.querySelectorAll('.cut-sheet-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _renderSheetLocatorModal(btn.dataset.code, projectKey);
     });
   });
   // Status-pill click handler removed: the merged <button.cut-status.cut-ok>
@@ -1080,6 +1091,150 @@ function _wireCutList(parts, projectKey) {
         _downloadFile(item.url, item.filename || `${item.stem}.dxf`);
       }, i * 250);
     });
+  });
+}
+
+// 📍 Part@sheet locator — small popup that draws the saved nest sheet the
+// part landed on, with a pulsing ring around its placement(s). Data comes
+// from nest_jobs/<pk>/<jobId> (the only record that keeps per-sheet
+// placements — nest_parts has just the parts list). Self-contained modal:
+// backdrop click / ✕ / Escape all close it. (user 2026-05-31)
+async function _renderSheetLocatorModal(code, projectKey) {
+  // Build the shell first so the user gets instant feedback while we fetch.
+  const back = document.createElement('div');
+  back.className = 'cut-loc-back';
+  back.innerHTML = `
+    <div class="cut-loc-panel" role="dialog" aria-label="Part on sheet">
+      <div class="cut-loc-head">
+        <span class="cut-loc-title">📍 ${escapeHtml(code)}</span>
+        <button type="button" class="cut-loc-close" title="Close">✕</button>
+      </div>
+      <div class="cut-loc-body"><div class="cut-loc-status">Loading sheet…</div></div>
+    </div>`;
+  document.body.appendChild(back);
+
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  const close = () => { document.removeEventListener('keydown', onKey); back.remove(); };
+  document.addEventListener('keydown', onKey);
+  back.addEventListener('click', (e) => { if (e.target === back) close(); });
+  back.querySelector('.cut-loc-close').addEventListener('click', close);
+
+  const body = back.querySelector('.cut-loc-body');
+  const fail = (msg) => { body.innerHTML = `<div class="cut-loc-status">${escapeHtml(msg)}</div>`; };
+
+  if (!window.firebaseDB) { fail('Not connected — nest data unavailable.'); return; }
+
+  // Resolve the latest saved job → its per-sheet placements.
+  let sheets = null;
+  try {
+    const partsSnap = await window.firebaseDB.ref(`nest_parts/${projectKey}`).once('value');
+    const jobId = partsSnap.val() && partsSnap.val().jobId;
+    if (jobId) {
+      const jSnap = await window.firebaseDB.ref(`nest_jobs/${projectKey}/${jobId}`).once('value');
+      sheets = jSnap.val() && jSnap.val().sheets;
+    }
+    if (!sheets) {
+      // Fallback: newest job by saved_at.
+      const allSnap = await window.firebaseDB.ref(`nest_jobs/${projectKey}`).once('value');
+      const jobs = allSnap.val() || {};
+      let best = null;
+      Object.keys(jobs).forEach(k => {
+        const j = jobs[k];
+        if (j && j.sheets && (!best || (j.saved_at || '') > (best.saved_at || ''))) best = j;
+      });
+      sheets = best && best.sheets;
+    }
+  } catch (e) {
+    fail('Could not load nest data: ' + (e.message || e));
+    return;
+  }
+
+  if (!sheets || !sheets.length) {
+    fail('No saved nest yet — run Nesting → Save Project first.');
+    return;
+  }
+
+  // Which sheet is this part on?
+  let sheetIdx = -1;
+  for (let i = 0; i < sheets.length; i++) {
+    if ((sheets[i].placements || []).some(pl => pl.code === code)) { sheetIdx = i; break; }
+  }
+  if (sheetIdx < 0) {
+    fail('This part is not placed on any saved sheet (unplaced, or added after the last save).');
+    return;
+  }
+
+  const sheet = sheets[sheetIdx];
+  body.innerHTML = `
+    <div class="cut-loc-meta">Sheet ${sheetIdx + 1} / ${sheets.length} · ${Math.round(sheet.sw)}×${Math.round(sheet.sh)} mm${sheet.thick ? ' · ' + sheet.thick + 'mm' : ''}</div>
+    <div class="cut-loc-canvas-wrap"><canvas class="cut-loc-canvas"></canvas></div>`;
+  const wrap = body.querySelector('.cut-loc-canvas-wrap');
+  const canvas = body.querySelector('.cut-loc-canvas');
+  // Defer a frame so the wrap has measured its width before we size+draw.
+  requestAnimationFrame(() => _drawSheetLocator(wrap, canvas, sheet, code));
+}
+
+// Draws one sheet's placements as rectangles (bottom-left origin → canvas
+// top-left, y-flipped to match the Nesting preview) and drops a pulsing CSS
+// ring over every placement of `code`. Theme-aware fills like the Nest canvas.
+function _drawSheetLocator(wrap, canvas, sheet, code) {
+  const theme = document.documentElement.getAttribute('data-theme');
+  const BG    = theme === 'sketch' ? '#efe7d6' : theme === 'chalk' ? '#26302e' : '#0f1419';
+  const INK   = theme === 'sketch' ? '#1b1815' : theme === 'chalk' ? '#f4f1e8' : '#cdd6e0';
+  const FAINT = theme === 'sketch' ? 'rgba(27,24,21,0.30)' : theme === 'chalk' ? 'rgba(244,241,232,0.32)' : 'rgba(205,214,224,0.30)';
+  const HOT   = theme === 'sketch' ? '#c0392b' : theme === 'chalk' ? '#ffd166' : '#4ecca3';
+
+  const dpr = window.devicePixelRatio || 1;
+  const cw = wrap.clientWidth || 320;
+  const aspect = (sheet.sh || 1) / (sheet.sw || 1);
+  const maxH = Math.min(window.innerHeight * 0.5, 460);
+  let drawW = cw, drawH = cw * aspect;
+  if (drawH > maxH) { drawH = maxH; drawW = maxH / aspect; }
+
+  canvas.style.width = drawW + 'px';
+  canvas.style.height = drawH + 'px';
+  canvas.width = drawW * dpr;
+  canvas.height = drawH * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = BG; ctx.fillRect(0, 0, drawW, drawH);
+  ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+  ctx.strokeRect(1, 1, drawW - 2, drawH - 2);
+
+  const sx = drawW / (sheet.sw || 1);
+  const sy = drawH / (sheet.sh || 1);
+  const map = (x, y, w, h) => [x * sx, drawH - (y + h) * sy, w * sx, h * sy];  // flip Y
+
+  const hotRects = [];
+  (sheet.placements || []).forEach(pl => {
+    // Footprint on the sheet swaps W/H for 90°/270° placements — same rule
+    // _drawSheet uses, so the locator rect matches the Nesting preview.
+    const rotated = (pl.rot === 90 || pl.rot === 270);
+    const pw = rotated ? (pl.h || 0) : (pl.w || 0);
+    const ph = rotated ? (pl.w || 0) : (pl.h || 0);
+    const [rx, ry, rw, rh] = map(pl.x || 0, pl.y || 0, pw, ph);
+    const isHot = pl.code === code;
+    if (isHot) { ctx.fillStyle = HOT + '33'; ctx.fillRect(rx, ry, rw, rh); }
+    ctx.strokeStyle = isHot ? HOT : FAINT;
+    ctx.lineWidth = isHot ? 2 : 1;
+    ctx.strokeRect(rx, ry, rw, rh);
+    if (isHot) hotRects.push([rx, ry, rw, rh]);
+  });
+
+  // Pulsing ring(s) — CSS-animated divs positioned over the canvas, 3 pulses
+  // then they settle invisible (the filled rect stays as the lasting marker).
+  const ox = canvas.offsetLeft, oy = canvas.offsetTop;
+  hotRects.forEach(([rx, ry, rw, rh]) => {
+    const ring = document.createElement('div');
+    ring.className = 'cut-loc-ring';
+    const d = Math.max(rw, rh) + 16;
+    ring.style.left = (ox + rx + rw / 2 - d / 2) + 'px';
+    ring.style.top = (oy + ry + rh / 2 - d / 2) + 'px';
+    ring.style.width = d + 'px';
+    ring.style.height = d + 'px';
+    ring.style.borderColor = HOT;
+    wrap.appendChild(ring);
   });
 }
 
