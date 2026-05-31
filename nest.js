@@ -2151,20 +2151,27 @@
     ctx.strokeStyle = '#2a5dff';
     ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
     ctx.strokeRect(offX, offY, sheet.sw * scale, sheet.sh * scale);
-    // Sheet grain hatch — ONE direction for the whole sheet (a real sheet has a
-    // single grain). Derived from the parts on it: H/V → lines, MIXED → cross-
-    // hatch (a grain clash slipped through), ANY → none. Drawn faint UNDER the
-    // parts so the translucent part fills sit on top. (เอ๋ 2026-05-31 'ทำ Hatch
-    // ขีดบางๆ จะได้รู้ Grain ทิศทางไหน')
+    // Sheet grain hatch — ALWAYS faint HORIZONTAL lines across the whole sheet
+    // (เอ๋ 2026-05-31 'ที่ Sheet ให้โชว์ Hatch แนวนอนบางๆ (Grain)'). A stock
+    // sheet's grain runs horizontal by convention, regardless of which parts
+    // land on it — so this is unconditional (not gated on _sheetGrain, which
+    // would skip MIXED/ANY). Directional parts are rotated to align; the sheet
+    // grain itself never turns. Drawn UNDER the parts so the part fills sit on top.
     {
-      const _sg = (typeof _sheetGrain === 'function') ? _sheetGrain(sheet) : 'ANY';
-      const _hatchInk = _stheme === 'sketch' ? 'rgba(60,50,40,0.55)'
-        : _stheme === 'chalk' ? 'rgba(220,230,225,0.45)' : 'rgba(150,170,190,0.45)';
+      const _hatchInk = _stheme === 'sketch' ? 'rgba(60,50,40,0.45)'
+        : _stheme === 'chalk' ? 'rgba(220,230,225,0.35)' : 'rgba(150,170,190,0.32)';
+      const _dpr = window.devicePixelRatio || 1;
+      const _step = 11 * _dpr;
+      const _x1 = offX + sheet.sw * scale, _y1 = offY + sheet.sh * scale;
       ctx.save();
       ctx.beginPath();
       ctx.rect(offX, offY, sheet.sw * scale, sheet.sh * scale);
       ctx.clip();
-      _grainHatchCanvas(ctx, _sg, offX, offY, offX + sheet.sw * scale, offY + sheet.sh * scale, _hatchInk, window.devicePixelRatio || 1);
+      ctx.strokeStyle = _hatchInk;
+      ctx.lineWidth = Math.max(0.5, 0.5 * _dpr);
+      ctx.beginPath();
+      for (let y = offY + _step; y < _y1; y += _step) { ctx.moveTo(offX, y); ctx.lineTo(_x1, y); }
+      ctx.stroke();
       ctx.restore();
     }
     // Each placement
