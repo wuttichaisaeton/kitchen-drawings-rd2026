@@ -917,3 +917,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [correction]
 **DONE:** (a9ced2c, live) CORRECTION to the d1d5089 followup above: that entry claimed the skip-lab fix had landed, but the Edit had failed (file appended via shell, never Read by the editor) so the broken .kdnest-skip-wrap rule was still live and did nothing. Now genuinely fixed - retargeted to .kdnest-skip-lab. Verified live: skiplab_flag=1 skipwrap=0 pulse=3. All 5 Nesting attention-flags active on every theme for real.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (4707f3e, live) Nest attention-highlight tuned per owner: (1) GRAIN column back to SELECTIVE warn only — removed the blanket amber box that lit all 17 cells ('เตือนทั้งหมดแบบนี้ผมงง'); keeps existing .kdnest-grain-warn ring on '?'/unmatched parts. (2) sketch & chalk now actually show the flags — theme reset (body *:not(svg) ~0,2,6 !important) outranked bare .kdnest-skip-lab; prefixed overrides with parent container class + per-theme --kdflag var. (3) NEW: Remnants Stock button (#kdnest-stock) flagged + pulses to warn this run may consume saved offcuts. Verified live: stock=2 kdflag=2 container=2 blanket=0.
+**NEEDS:** nothing.
