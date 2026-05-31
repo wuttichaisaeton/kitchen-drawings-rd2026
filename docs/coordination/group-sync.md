@@ -912,3 +912,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [followup]
 **DONE:** (a8f9c64) Fixed the skip/don't-remember highlight - it targeted a non-existent .kdnest-skip-wrap; retargeted to .kdnest-skip-lab (the two checkboxes, since Mode/Gap use their own label classes). Verified live: pulse=3 skiplab=1 skipwrap_gone=0 run=2 grain=2 qty=1. All 5 attention-flags now active on every theme.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [correction]
+**DONE:** (a9ced2c, live) CORRECTION to the d1d5089 followup above: that entry claimed the skip-lab fix had landed, but the Edit had failed (file appended via shell, never Read by the editor) so the broken .kdnest-skip-wrap rule was still live and did nothing. Now genuinely fixed - retargeted to .kdnest-skip-lab. Verified live: skiplab_flag=1 skipwrap=0 pulse=3. All 5 Nesting attention-flags active on every theme for real.
+**NEEDS:** nothing.
