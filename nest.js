@@ -2443,6 +2443,16 @@
     const origText = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = '⏫ Uploading…'; }
 
+    // Wipe the project's OLD cut sheets first so each Save REPLACES the Laser
+    // cut list, never appends (เอ๋ 2026-05-31 'เวลา save ไป cut list ให้ลบของเดิม
+    // ออกก่อน และ save ของใหม่เข้าไปแทนที่เสมอ'). Each save writes
+    // cut_sheets/<pk>/<project_ts_sN> under a fresh per-run id, so without this
+    // the node piled up stale sheets from every previous run. nest_parts below
+    // already .set()-overwrites; this brings cut_sheets to the same replace
+    // semantics. (nest_jobs history is intentionally NOT wiped.)
+    try { await window.firebaseDB.ref(`cut_sheets/${projectKey}`).remove(); }
+    catch (e) { /* non-fatal — per-sheet writes below still overwrite by id */ }
+
     let ok = 0, fail = 0, firstErr = '';
     for (let i = 0; i < S.flatSheets.length; i++) {
       const sheet = S.flatSheets[i];
