@@ -1945,31 +1945,31 @@
   // Thin parallel lines showing which way the grain runs, so a worker can read
   // the grain at a glance on the Part preview, the Sheet, and a Remnant
   // thumbnail (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน').
-  // Single-direction lines ONLY (เอ๋ 2026-05-31 'hatch ที่ให้ทำคือเป็นเส้น
-  // แนวเดียว (ทิศทาง grain)'): H = horizontal lines, V = vertical. MIXED has no
-  // single direction (sheet had both H+V) → NO hatch (don't crosshatch).
-  // ANY/unset = nothing. Function declarations → hoisted, usable everywhere
-  // in this IIFE (incl. _remnantPreview above).
+  // Grain hatch = ALWAYS HORIZONTAL lines (เอ๋ 2026-05-31 'Sheet จะเป็นเส้น
+  // แนวนอนเสมอ และใน Preview ก็จะเป็นเส้นแนวนอนเสมอ ให้คุณ Rotate Part เอา').
+  // The stock sheet's grain runs horizontally; a directional part is ROTATED to
+  // align with it (the preview already rotates V parts 90°, the packer rotates
+  // placements on the sheet). So the lines never change direction — only the
+  // PART turns. Drawn only for directional grain (H or V); MIXED/ANY = none.
+  // Function declarations → hoisted, usable everywhere in this IIFE.
   function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr) {
     const g = String(grain || '').toUpperCase();
-    if (g !== 'H' && g !== 'V') return;   // single-direction only — MIXED/ANY draw nothing
+    if (g !== 'H' && g !== 'V') return;   // directional only — MIXED/ANY draw nothing
     const step = 8 * (dpr || 1);
     ctx.save();
     ctx.strokeStyle = colour;
     ctx.lineWidth = Math.max(0.5, 0.5 * (dpr || 1));
     ctx.globalAlpha = 0.45;
     ctx.beginPath();
-    if (g === 'H') for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
-    else          for (let x = x0 + step; x < x1; x += step) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+    for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }  // always horizontal
     ctx.stroke();
     ctx.restore();
   }
   function _grainHatchSvg(grain, x, y, w, h, colour) {
     const g = String(grain || '').toUpperCase();
-    if (g !== 'H' && g !== 'V') return '';   // single-direction only
+    if (g !== 'H' && g !== 'V') return '';   // directional only
     const step = 6, lines = [];
-    if (g === 'H') for (let yy = y + step; yy < y + h; yy += step) lines.push('<line x1="' + x.toFixed(1) + '" y1="' + yy.toFixed(1) + '" x2="' + (x + w).toFixed(1) + '" y2="' + yy.toFixed(1) + '"/>');
-    else           for (let xx = x + step; xx < x + w; xx += step) lines.push('<line x1="' + xx.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y2="' + (y + h).toFixed(1) + '"/>');
+    for (let yy = y + step; yy < y + h; yy += step) lines.push('<line x1="' + x.toFixed(1) + '" y1="' + yy.toFixed(1) + '" x2="' + (x + w).toFixed(1) + '" y2="' + yy.toFixed(1) + '"/>');  // always horizontal
     if (!lines.length) return '';
     return '<g stroke="' + colour + '" stroke-width="0.4" opacity="0.5">' + lines.join('') + '</g>';
   }
