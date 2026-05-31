@@ -1007,3 +1007,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [note]
 **HASH NOTE:** the prior entry cited 3c46e8c for the green --ok CSS, but that standalone commit FAILED (PowerShell heredoc parsed the Co-Authored-By line as a filename); the CSS instead landed bundled in board commit 885e15c. Net: run-tally banner (nest.js) + green .kdnest-warn--ok (style.css) are BOTH live in HEAD 885e15c. Verified live: tally=1, css_ok=1. Feature complete.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (0a23779, live) Nest action buttons tidied. (1) Export JSON button REMOVED — Save Project already persists the whole job to Firebase nest_jobs/, so the local-file export was redundant ('i export json ทำงานอยู่หลังบ้านอยู่แล้ว ถ้าจริงก็ไม่ต้องโชว์'); _exportJobJson kept as dormant helper. (2) 'Saved Jobs' renamed to 'Load Saved Nest' (clearer read counterpart to Save Project's write). Save Project (cut sheets to Laser + save job to cloud) and Load Saved Nest (reopen a saved job) are distinct actions — not merged. Verified live: export_btn=0, Load Saved Nest present.
+**NEEDS:** nothing.
