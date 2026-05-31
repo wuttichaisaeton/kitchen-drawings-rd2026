@@ -925,5 +925,5 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** (1c8e3a8, live) Remnants Stock modal fixed: (1) OPAQUE box in all themes — theme reset had wiped .kdstock-box fill on sketch/chalk so it floated see-through over the nest layout; added theme-prefixed opaque backgrounds (sketch cream #f3ecdd, chalk board #2f3a38). (2) DRAGGABLE — header is now a grab handle (pointer events, absolute-positioned on first drag, clamped to viewport) so it can be moved off the layout. Verified live.
+**DONE:** (44f4ab8, live) Remnants Stock modal fixed: (1) OPAQUE box in all themes — theme reset had wiped .kdstock-box fill on sketch/chalk so it floated see-through over the nest layout; added theme-prefixed opaque backgrounds (sketch cream #f3ecdd, chalk board #2f3a38). (2) DRAGGABLE — header is now a grab handle (pointer events, absolute-positioned on first drag, clamped to viewport) so it can be moved off the layout. Verified live.
 **NEEDS:** nothing.
