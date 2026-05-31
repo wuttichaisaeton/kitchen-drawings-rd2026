@@ -1724,6 +1724,7 @@
       let saved = 0;
       for (let i = 0; i < (S.flatSheets || []).length; i++) {
         const sheet = S.flatSheets[i];
+        if (sheet.fromRemnant) continue;   // don't save an offcut-of-an-offcut
         const off = _largestOffcut(sheet);
         if (!(off.w >= _REMNANT_MIN && off.h >= _REMNANT_MIN)) continue;
         // Footprint rects of every piece on this sheet (W/H swapped for
@@ -1810,17 +1811,49 @@
       byThick.get(k).push(piece);
     }
 
+    // Saved offcuts as stock rows for this thickness — uses the ACTUAL cut
+    // size when the Laser worker recorded it, else the calculated size.
+    // (เอ๋ 2026-05-31 'นำค่าจริงมาใช้' + 'ตัด nest จริงต้องเอาเศษมาใช้')
+    function _remnantStockForThick(tk) {
+      const out = [];
+      for (const r of (S.remnants || [])) {
+        if (thickKey(r.thickness ?? 1) !== tk) continue;
+        const w = (r.actualW != null) ? +r.actualW : +r.w;
+        const h = (r.actualH != null) ? +r.actualH : +r.h;
+        if (!(w > 0 && h > 0)) continue;
+        out.push({ w: Math.round(w), h: Math.round(h), qty: 1,
+                   thickness: r.thickness ?? 1, label: '♻ remnant', _remnantId: r.id });
+      }
+      return out;
+    }
+
     const allSheets = [];
     const allUnplaced = [];
     for (const [tk, group] of byThick) {
-      const stockForThick = activeStock.filter(s => thickKey(s.thickness ?? 1) === tk);
+      let stockForThick = activeStock.filter(s => thickKey(s.thickness ?? 1) === tk);
+      // Use saved offcuts FIRST (prepended → packer walks stock in priority
+      // order), unless "Skip remnants" is ticked. This is what finally makes
+      // the SKIP REMNANTS toggle do something + the remnant pool consumable.
+      let remStock = [];
+      if (!S.skipRemnants) {
+        remStock = _remnantStockForThick(tk);
+        stockForThick = remStock.concat(stockForThick);
+      }
       if (stockForThick.length === 0) {
         allUnplaced.push(...group);
         continue;
       }
       const r = _nestMultiSheet(group, stockForThick, S.gap, S.mode);
+      // Tag each produced sheet that landed on a remnant (exact size match,
+      // consumed 1:1) so the view labels it + auto-save skips it (no
+      // offcut-of-an-offcut). Original remnant stays in the pool (not auto-
+      // deleted — the worker removes it after cutting).
+      const remMatch = remStock.slice();
       for (const s of r.sheets) {
-        allSheets.push({ ...s, thick: tk });
+        let fromRemnant = null;
+        const mi = remMatch.findIndex(rm => rm.w === Math.round(s.sw) && rm.h === Math.round(s.sh));
+        if (mi >= 0) { fromRemnant = remMatch[mi]._remnantId; remMatch.splice(mi, 1); }
+        allSheets.push({ ...s, thick: tk, fromRemnant: fromRemnant });
       }
       allUnplaced.push(...r.unplaced);
     }
@@ -1828,6 +1861,7 @@
     S.flatSheets = result.sheets.map(s => ({
       thick: s.thick,
       sw: s.sw, sh: s.sh, placements: s.placements,
+      fromRemnant: s.fromRemnant || null,
     }));
     S.currentSheetIdx = 0;
     S.unplaced = result.unplaced || [];
@@ -2214,6 +2248,7 @@
   function _serializeSheet(s) {
     return {
       thick: s.thick, sw: s.sw, sh: s.sh,
+      fromRemnant: s.fromRemnant || null,
       placements: (s.placements || []).map(pl => ({
         code: pl.code, x: pl.x, y: pl.y, w: pl.w, h: pl.h, rot: pl.rot || 0,
       })),

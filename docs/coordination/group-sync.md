@@ -947,3 +947,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (d9f395e, live) Remnants at Laser view + actual-cut-size entry. (1) kdNest.openStock() exported + 'Remnants Stock' button added to the Laser Cut List actions (เอ๋ 'ให้แสดงที่ User Laser ด้วย'). (2) Each remnant card has an Actual WxH editor for Laser+admin (_canEditActual); placeholders show calc value; saves actualW/actualH/actualAt to RTDB via _updateRemnant. (3) Card dims USE actual when present (with 'actual' tag) + show calc struck-through below; clear revert. Verified live: openStock=1 canEdit=2 cut-remnants-btn present.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (849df13, live) Phase 2 — Run Nesting now CONSUMES the saved remnant pool, not just writes to it (live review found remnants were write-only + SKIP REMNANTS inert). _remnantStockForThick(tk) turns saved offcuts (actual size preferred over calc) into stock rows matched by thickness; when Skip remnants is OFF they're PREPENDED so the packer tries leftovers first. Default skip=ON so old behaviour unchanged until unticked — and SKIP REMNANTS finally does something. Sheets landing on a remnant tagged fromRemnant (1:1 size match): sub-line shows '♻ from remnant', auto-save skips them, tag survives save/restore. Original remnant NOT auto-deleted (worker removes after cutting). Verified live: _remnantStockForThick=2 remStock.concat=1.
+**NEEDS:** nothing. (Known v1 limit: no per-sheet grain-orientation modelling for remnants — same assumption as fresh sheets; material/finish still not stored on auto-save.)
