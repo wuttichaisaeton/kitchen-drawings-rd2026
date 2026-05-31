@@ -771,16 +771,48 @@
     if (!window.firebaseDB || !id) return;
     await window.firebaseDB.ref('nest_remnants/' + id).remove();
   }
+  // Thumbnail. For AUTO remnants (which carry sheetW/sheetH + placements +
+  // offcut position) draw the actual sheet layout \u2014 cut pieces as faint grey
+  // boxes, the leftover highlighted green \u2014 so the worker sees WHICH part of
+  // WHICH sheet it came from (\u0e40\u0e2d\u0e4b 2026-05-31 '\u0e14\u0e39\u0e23\u0e39\u0e1b\u0e44\u0e14\u0e49\u0e27\u0e48\u0e32\u0e21\u0e32\u0e08\u0e32\u0e01\u0e41\u0e1c\u0e48\u0e19\u0e44\u0e2b\u0e19'). For
+  // manual remnants (no layout) fall back to a centred rectangle. All text =
+  // Flux Architect (\u0e40\u0e2d\u0e4b 2026-05-31 'font flux architect \u0e17\u0e31\u0e49\u0e07\u0e2b\u0e21\u0e14').
   function _remnantPreview(r) {
-    const BW = 132, BH = 82, pad = 16;
+    const BW = 132, BH = 82, pad = 8;
+    const FONT = '\'Flux Architect\', monospace';
     const w = +r.w || 1, h = +r.h || 1;
-    const sc = Math.min((BW - 2 * pad) / w, (BH - 2 * pad) / h);
+    const hasLayout = r.sheetW > 0 && r.sheetH > 0;
+    if (hasLayout) {
+      const SW = +r.sheetW, SH = +r.sheetH;
+      const sc = Math.min((BW - 2 * pad) / SW, (BH - 2 * pad) / SH);
+      const dw = SW * sc, dh = SH * sc;
+      const ox = (BW - dw) / 2, oy = (BH - dh) / 2;
+      // flip Y: nest origin is bottom-left, SVG is top-left.
+      const mapY = py => oy + dh - py * sc;
+      let svg = '<svg class="kdstock-prev" width="' + BW + '" height="' + BH + '" viewBox="0 0 ' + BW + ' ' + BH + '">'
+        + '<rect x="0" y="0" width="' + BW + '" height="' + BH + '" fill="#0b1117"/>'
+        + '<rect x="' + ox.toFixed(1) + '" y="' + oy.toFixed(1) + '" width="' + dw.toFixed(1) + '" height="' + dh.toFixed(1) + '" fill="#161d24" stroke="#3a4a55" stroke-width="1"/>';
+      for (const p of (r.placements || [])) {
+        const rx = ox + (+p.x) * sc, ry = mapY((+p.y) + (+p.h));
+        svg += '<rect x="' + rx.toFixed(1) + '" y="' + ry.toFixed(1) + '" width="' + Math.max(1, (+p.w) * sc).toFixed(1) + '" height="' + Math.max(1, (+p.h) * sc).toFixed(1) + '" fill="#5a6675" fill-opacity="0.45" stroke="#7d8a99" stroke-width="0.4"/>';
+      }
+      // Leftover (green) at its real position when known, else centred.
+      const lw = w * sc, lh = h * sc;
+      const lx = (r.offX != null) ? ox + (+r.offX) * sc : ox + (dw - lw) / 2;
+      const ly = (r.offY != null) ? mapY((+r.offY) + h) : oy + (dh - lh) / 2;
+      svg += '<rect x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" width="' + Math.max(2, lw).toFixed(1) + '" height="' + Math.max(2, lh).toFixed(1) + '" fill="#4ecca344" stroke="#4ecca3" stroke-width="1.4"/>'
+        + '<text x="' + (BW / 2) + '" y="' + (BH - 3) + '" fill="#9fe9cf" font-size="9" text-anchor="middle" font-family="' + FONT + '">' + Math.round(w) + '\u00d7' + Math.round(h) + (r.sheetNo ? ' \u00b7 sheet ' + r.sheetNo : '') + '</text>'
+        + '</svg>';
+      return svg;
+    }
+    // Manual remnant \u2014 no layout, draw the offcut alone.
+    const sc = Math.min((BW - 2 * pad - 8) / w, (BH - 2 * pad - 8) / h);
     const rw = Math.max(4, w * sc), rh = Math.max(4, h * sc);
     const x = (BW - rw) / 2, y = (BH - rh) / 2;
     return '<svg class="kdstock-prev" width="' + BW + '" height="' + BH + '" viewBox="0 0 ' + BW + ' ' + BH + '">'
       + '<rect x="0" y="0" width="' + BW + '" height="' + BH + '" fill="#0b1117"/>'
       + '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + rw.toFixed(1) + '" height="' + rh.toFixed(1) + '" fill="#4ecca322" stroke="#4ecca3" stroke-width="1.5"/>'
-      + '<text x="' + (BW / 2) + '" y="' + (BH / 2) + '" fill="#cfe7ee" font-size="11" text-anchor="middle" dominant-baseline="middle" font-family="monospace">' + Math.round(w) + '\u00d7' + Math.round(h) + '</text>'
+      + '<text x="' + (BW / 2) + '" y="' + (BH / 2) + '" fill="#cfe7ee" font-size="11" text-anchor="middle" dominant-baseline="middle" font-family="' + FONT + '">' + Math.round(w) + '\u00d7' + Math.round(h) + '</text>'
       + '</svg>';
   }
   function _openStockModal() {
@@ -1635,6 +1667,15 @@
         const sheet = S.flatSheets[i];
         const off = _largestOffcut(sheet);
         if (!(off.w >= _REMNANT_MIN && off.h >= _REMNANT_MIN)) continue;
+        // Footprint rects of every piece on this sheet (W/H swapped for
+        // rotated parts) so the preview can draw the actual layout + show
+        // WHERE on the sheet the leftover sits (เอ๋ 2026-05-31 'ดูรูปได้ว่า
+        // มาจากแผ่นไหน'). Plus the sheet size + the offcut's position.
+        const placements = (sheet.placements || []).map(pl => ({
+          x: Math.round(pl.x), y: Math.round(pl.y),
+          w: Math.round((pl.rot === 90 || pl.rot === 270) ? pl.h : pl.w),
+          h: Math.round((pl.rot === 90 || pl.rot === 270) ? pl.w : pl.h),
+        }));
         await _saveRemnant({
           w: Math.round(off.w), h: Math.round(off.h),
           thickness: sheet.thick ?? 1,
@@ -1645,6 +1686,10 @@
           createdAt: Date.now(),
           auto: true,
           sourceProject: pk,
+          sheetNo: i + 1,
+          sheetW: Math.round(sheet.sw), sheetH: Math.round(sheet.sh),
+          offX: Math.round(off.x), offY: Math.round(off.y),
+          placements: placements,
         });
         saved++;
       }
