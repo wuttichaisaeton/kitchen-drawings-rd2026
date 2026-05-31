@@ -1626,19 +1626,7 @@
     // เป็นสีเดียวกับพื้นหลังโดยรอบ'). Read the computed bg of the canvas's
     // wrapper; transparent (theme reset) → fall back to <body>, then the
     // per-theme constant. INK/MUTED stay theme-based for contrast.
-    let BG = _sketch ? '#f7f2e7' : _chalk ? '#26302e' : '#0b1117';
-    try {
-      const host = (canvas.closest && canvas.closest('.kdnest-canvas-wrap'))
-        || canvas.parentElement || document.body;
-      const opaque = (c) => c && c !== 'transparent'
-        && !/rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(c);
-      const wrapBg = getComputedStyle(host).backgroundColor;
-      if (opaque(wrapBg)) BG = wrapBg;
-      else {
-        const bodyBg = getComputedStyle(document.body).backgroundColor;
-        if (opaque(bodyBg)) BG = bodyBg;
-      }
-    } catch (_) { /* keep the per-theme constant */ }
+    const BG = _sketch ? '#f7f2e7' : _chalk ? '#26302e' : '#0b1117';
     const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : '#4ecca3';
     const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : '#88aab1';
     // Opaque steel silhouette so the diecut reads as a real metal part, not a
