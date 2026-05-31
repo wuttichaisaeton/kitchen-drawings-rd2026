@@ -5558,5 +5558,16 @@ html[data-theme="chalk"] .kdstock-box{
   background:#2f3a38 !important; border-color:rgba(180,200,190,0.3) !important;
   box-shadow:0 20px 60px rgba(0,0,0,0.6) !important;
 }
+/* Grain rules modal — OPAQUE box in all themes (เอ๋ 2026-05-31 'Dialog grain
+   ให้ทึบ'). Same theme-reset trap as .kdstock-box: the reset blanked .kdng-box's
+   fill so it floated see-through over the sheet. */
+html[data-theme="sketch"] .kdng-box{
+  background:#f3ecdd !important; border-color:rgba(60,50,40,0.35) !important;
+  box-shadow:0 20px 60px rgba(0,0,0,0.35) !important; background-image:none !important;
+}
+html[data-theme="chalk"] .kdng-box{
+  background:#2f3a38 !important; border-color:rgba(180,200,190,0.3) !important;
+  box-shadow:0 20px 60px rgba(0,0,0,0.6) !important; background-image:none !important;
+}
 /* Drag affordance — the header is the grab handle (JS sets cursor too). */
 .kdstock-head{ cursor:move; user-select:none; }
