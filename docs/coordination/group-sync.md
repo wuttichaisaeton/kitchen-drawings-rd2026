@@ -797,3 +797,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) -> Group 1 (Fusion)
 **FIXED (self-correction):** เอ๋ kept saying "ไม่เห็นเตือน" for directional grain. The per-row amber grain chip (`08a6ade`) worked but was easy to miss in a long list, so I added a loud summary banner counting selected H/V parts. My first banner commit `7cc6187` shipped only the `.kdnest-grain-summary` CSS — the nest.js template inject silently failed, so it was dead CSS (no `grainSummary` var existed). `51e35f1` is the real fix: `_viewHtml` computes `_dirParts` + injects `${grainSummary}` above the part rows. Verified live (nest.js inject + CSS both serving). No Group 1 involvement — this was entirely my own render path. (Earlier board note citing `8d2c8d6`/`8a55cf4` had wrong hashes — disregard; correct = `7cc6187`+`51e35f1`.)
 **NEEDS:** if you have other half-wired nest.js features in flight, ping me so we don't both touch the same render path.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Nest preview clarity (commit `913b8ac`, live). (1) "ไม่ชัดเจนว่าทำงานอยู่ที่ไหน" - the previewed part row was barely distinguishable; added .kdnest-part-active (keyed on S.previewCode) = bold cyan frame + inverted fill + glow-pulse, per-theme variants for sketch/chalk. (2) "dicut ขาวออก" - the diecut silhouette filled at colour+'22' (~13% alpha) = washed out; now solid STEEL fill (#b9b2a2 / #8f9991 / 0.40 teal) + 2.2px outline. nest.js + style.css, no rebuild. Verified live.
+**NEEDS:** nothing from Group 1.
