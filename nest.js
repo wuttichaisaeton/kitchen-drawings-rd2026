@@ -2036,7 +2036,11 @@
       return (grot === 90) ? [-v + ph0, u] : [u, v];
     };
     const fw = (grot === 90) ? ph0 : pw0, fh = (grot === 90) ? pw0 : ph0;
-    const pad = 44 * dpr;
+    // Padding around the part. The DXF preview modal passes a small pad so the
+    // canvas hugs the silhouette and the download button sits right against it
+    // (เอ๋ 2026-06-01 'ปุ่มดาวน์โหลดให้อยู่ชิด Part เลย'); the Nest workspace
+    // preview keeps the roomy 44px default.
+    const pad = (opts && typeof opts.pad === 'number' ? opts.pad : 44) * dpr;
     const scale = Math.min((cw - 2 * pad) / fw, (ch - 2 * pad) / fh);
     const drawW = fw * scale, drawH = fh * scale;
     const offX = (cw - drawW) / 2, offY = (ch - drawH) / 2;

@@ -715,19 +715,27 @@ async function _renderDxfPreviewModal(dxf, nav) {
   // อยู่ใกล้กับ part'). The frame is height:auto in transparent mode, so the
   // canvas height we set here drives where the footer lands. Falls back to a
   // default box before the bbox is known (the 'loading…' placeholder).
+  // Small padding so the canvas hugs the part and the download button sits
+  // right against the silhouette (เอ๋ 2026-06-01 'ปุ่มดาวน์โหลดให้อยู่ชิด Part
+  // เลย'). Passed to drawPart AND used by sizeCanvas so both agree on the box.
+  const PREVIEW_PAD = 8;
   function sizeCanvas(bbox) {
     const availW = canvas.clientWidth || Math.min(window.innerWidth - 48, 900);
-    const maxH = Math.max(200, window.innerHeight - 150); // leave room for ✕ + button
+    const maxH = Math.max(160, window.innerHeight - 150); // leave room for ✕ + button
     let h;
     if (bbox && bbox.length === 4) {
       const pw = (bbox[2] - bbox[0]) || 1, ph = (bbox[3] - bbox[1]) || 1;
-      const pad = 44; // matches _drawPartPreview's padding (CSS px)
-      const scale = (availW - 2 * pad) / pw;
-      h = ph * scale + 2 * pad;
+      const scale = (availW - 2 * PREVIEW_PAD) / pw;
+      h = ph * scale + 2 * PREVIEW_PAD; // matches _drawPartPreview's pad → no dead space
     } else {
       h = maxH * 0.6;
     }
-    canvas.style.height = Math.round(Math.max(200, Math.min(maxH, h))) + 'px';
+    // Floor very low so a thin strip's box collapses to the part itself
+    // (drawPart centers within ph*scale+2·pad → only PREVIEW_PAD of dead space,
+    // button hugs the part) instead of a tall box with the part floating
+    // mid-height. The natural h already hugs; the floor is only a degenerate
+    // guard for near-zero-height parts.
+    canvas.style.height = Math.round(Math.max(24, Math.min(maxH, h))) + 'px';
   }
 
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
@@ -788,7 +796,7 @@ async function _renderDxfPreviewModal(dxf, nav) {
     // polys → drawPart paints a "DXF not loaded yet…" placeholder; once
     // the fetch+parse resolves we fill polys/bbox and redraw.
     const part = { code: navCode, polys: null, bbox: null };
-    const drawNow = () => { try { window.kdNest && window.kdNest.drawPart(canvas, part, { transparent: true }); } catch (e) {} };
+    const drawNow = () => { try { window.kdNest && window.kdNest.drawPart(canvas, part, { transparent: true, pad: PREVIEW_PAD }); } catch (e) {} };
     sizeCanvas(null);
     drawNow();
     try {
