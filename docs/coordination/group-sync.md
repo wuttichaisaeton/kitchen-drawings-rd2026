@@ -902,3 +902,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (commit cad489e, live) Cut List rows now have a part@sheet locator. Each row gets a icon button; click opens a small themed popup that draws the saved nest sheet the part landed on (from nest_jobs/<pk>/<jobId>, falls back to newest job by saved_at) and pulses a ring 3x over its placement(s). Reuses _drawSheet's flip-Y + rot W/H-swap mapping so the rect matches the Nesting preview. Graceful text when no nest saved / part unplaced. Also (a8e0551) sheet labels = near-black ink in pencil theme.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit 3936047, live) Amber attention-highlight on 5 Nesting controls the owner flags as easy-to-forget: Skip/Don't-remember checkboxes (.kdnest-skip-wrap), sheet-stock reorder arrows (.kdnest-stock-up/-down), sheet-stock qty (.kdnest-stock-qty), Run Nesting (#kdnest-run by id, not the shared class), per-part grain cell (.kdnest-part-grain). One amber accent (#ff9800, deeper #cf6f00 on sketch cream) across all 3 themes; skip box + Run button pulse, rest steady. Grain warn ring still layers on top.
+**NEEDS:** nothing from Group 1.
