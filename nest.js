@@ -2801,6 +2801,25 @@
   function _warningsHtml() {
     const banners = [];
 
+    // ⓪ Run tally — after a run, confirm how many of the requested pieces
+    // actually landed on a sheet. Green when ALL placed, red when short, so the
+    // worker never assumes 50/50 when it's really 45/50. (เอ๋ 2026-05-31 'บอก
+    // ด้วยว่าที่ run มาได้ 50 ชิ้นจริงไหม ... ถ้าไม่ได้ต้องมีการแจ้งเตือน')
+    {
+      const placed = (S.flatSheets || []).reduce((n, s) => n + ((s.placements || []).length), 0);
+      const unplaced = (S.unplaced || []).length;
+      const total = placed + unplaced;
+      if (total > 0) {   // a run has produced a result
+        banners.push(unplaced > 0
+          ? `<div class="kdnest-warn kdnest-warn--unplaced">
+               <div class="kdnest-warn-head">✗ ${placed} / ${total} pieces placed — ${unplaced} short (see below)</div>
+             </div>`
+          : `<div class="kdnest-warn kdnest-warn--ok">
+               <div class="kdnest-warn-head">✓ all ${total} pieces placed (${(S.flatSheets || []).length} sheet${(S.flatSheets || []).length === 1 ? '' : 's'})</div>
+             </div>`);
+      }
+    }
+
     // ① Unplaced (red, loudest) — only after a run.
     if (S.unplaced && S.unplaced.length) {
       // Active stock thicknesses, so we can flag the "no matching sheet" cause.

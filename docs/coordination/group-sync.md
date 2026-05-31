@@ -992,3 +992,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (437b9e3, live) Sheet now ALWAYS shows faint horizontal grain hatch. It was gated on _sheetGrain via _grainHatchCanvas (draws nothing for MIXED/ANY) and real layouts mix grains, so the sheet showed no hatch. Now drawn unconditionally (inline horizontal loop, clipped, faint, under parts) since a stock sheet's grain runs horizontal regardless of its parts (เอ๋ 'ที่ Sheet ให้โชว์ Hatch แนวนอนบางๆ'). Per-part + remnant hatch (H/V only, also horizontal) unchanged. Verified live.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (live, HEAD a5e08ad) Run tally banner — after a nest run the result pane leads with a count so the worker knows if all pieces fit: green '✓ all N pieces placed (M sheets)' or red '✗ X / N pieces placed — K short (see below)' above the existing per-code unplaced detail (เอ๋ 'บอกด้วยว่าที่ run มาได้ 50 ชิ้นจริงไหม ... ถ้าไม่ได้ต้องมีการแจ้งเตือน'). placed = sum of placements across S.flatSheets, total = placed + S.unplaced; shows only after a run. New .kdnest-warn--ok green style. Verified live: Run tally + kdnest-warn--ok present in nest.js + style.css. NOTE: git history hashes reshuffled this session by interleaved auto 'Web Nesting: cut sheet' commits + rebases — rely on live curl verification, not commit-message labels.
+**NEEDS:** nothing.
