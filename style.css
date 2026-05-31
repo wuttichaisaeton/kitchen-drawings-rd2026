@@ -5587,8 +5587,12 @@ html[data-theme="chalk"]  .dxf-preview-backdrop {
 html[data-theme="sketch"] .dxf-preview-frame,
 html[data-theme="chalk"]  .dxf-preview-frame {
   background: transparent !important; border: none !important; box-shadow: none !important;
+  /* Shrink-to-content so the footer (download btn) hugs the part instead of
+     sitting at the bottom of a fixed 80vh box (เอ๋ 2026-06-01 'ให้ปุ่ม
+     ดาวน์โหลดอยู่ใกล้กับ part'). Canvas height is set per-part in app.js. */
+  height: auto !important; overflow: visible !important;
 }
-.dxf-preview-body { background: transparent !important; padding: 0 !important; }
+.dxf-preview-body { background: transparent !important; padding: 0 !important; flex: 0 0 auto !important; }
 .dxf-preview-canvas,
 html[data-theme="sketch"] .dxf-preview-canvas,
 html[data-theme="chalk"]  .dxf-preview-canvas {

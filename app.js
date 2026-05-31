@@ -709,6 +709,27 @@ async function _renderDxfPreviewModal(dxf, nav) {
   const footEl  = modal.querySelector('.dxf-preview-footer');
   const canvas  = modal.querySelector('.dxf-preview-canvas');
 
+  // Size the canvas to the part's aspect ratio so the silhouette fills the
+  // box tightly and the download button sits right beneath the part instead
+  // of floating far below an oversized frame (เอ๋ 2026-06-01 'ให้ปุ่มดาวน์โหลด
+  // อยู่ใกล้กับ part'). The frame is height:auto in transparent mode, so the
+  // canvas height we set here drives where the footer lands. Falls back to a
+  // default box before the bbox is known (the 'loading…' placeholder).
+  function sizeCanvas(bbox) {
+    const availW = canvas.clientWidth || Math.min(window.innerWidth - 48, 900);
+    const maxH = Math.max(200, window.innerHeight - 150); // leave room for ✕ + button
+    let h;
+    if (bbox && bbox.length === 4) {
+      const pw = (bbox[2] - bbox[0]) || 1, ph = (bbox[3] - bbox[1]) || 1;
+      const pad = 44; // matches _drawPartPreview's padding (CSS px)
+      const scale = (availW - 2 * pad) / pw;
+      h = ph * scale + 2 * pad;
+    } else {
+      h = maxH * 0.6;
+    }
+    canvas.style.height = Math.round(Math.max(200, Math.min(maxH, h))) + 'px';
+  }
+
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (ev) => {
     if (ev.key === 'Escape') { close(); return; }
@@ -768,6 +789,7 @@ async function _renderDxfPreviewModal(dxf, nav) {
     // the fetch+parse resolves we fill polys/bbox and redraw.
     const part = { code: navCode, polys: null, bbox: null };
     const drawNow = () => { try { window.kdNest && window.kdNest.drawPart(canvas, part, { transparent: true }); } catch (e) {} };
+    sizeCanvas(null);
     drawNow();
     try {
       if (!window.kdNest || typeof window.kdNest.loadPartPreview !== 'function') {
@@ -776,6 +798,7 @@ async function _renderDxfPreviewModal(dxf, nav) {
       const r = await window.kdNest.loadPartPreview(d.url);
       part.polys = r.polys; part.bbox = r.bbox;
       if (!r.bbox) part.dxfError = 'No cut geometry found';
+      sizeCanvas(part.bbox);
       drawNow();
       // Second paint next frame in case the canvas hadn't been laid out
       // (clientWidth 0) on the synchronous first draw.
