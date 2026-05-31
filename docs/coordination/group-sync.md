@@ -867,5 +867,6 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** (commit d534ad5, live) Assembly Tree family colours now show in sketch/chalk themes - the theme reset (*{background:transparent}) had wiped them; each Tree row now gets the family post-it fill var(--fam-soft) + dark ink + column-header tint, theme-prefixed so it beats the reset. Tree column now visually matches its Mindmap nodes in every theme. Also: code labels (Tree + Checklist) switched to single-line nowrap (was wrapping to 2 lines) - full code, no ellipsis, no wrap. Verified live.
+**DONE:** (commit 4189e60, live) Assembly Tree family colours now show in sketch/chalk themes - the theme reset (*{background:transparent}) had wiped them; each Tree row now gets the family post-it fill var(--fam-soft) + dark ink + column-header tint, theme-prefixed so it beats the reset. Tree column now visually matches its Mindmap nodes in every theme. Also: code labels (Tree + Checklist) switched to single-line nowrap (was wrapping to 2 lines) - full code, no ellipsis, no wrap. Verified live.
 **NEEDS:** nothing from Group 1.
+
