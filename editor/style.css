@@ -993,16 +993,71 @@ html.kme-fs-on .kme-root { height: 100% !important; }
 .kme-sec-title { color: #cfe1f0; }
 .kme-sec-body { padding: 6px 0; }
 
-/* §3 Kanban — de-fix the inner root so it sits in the scroll flow with a
-   fixed canvas height (React Flow needs explicit height to render). */
+/* §3 Mindmap — de-fix the inner root so it sits in the scroll flow with a
+   fixed canvas height (React Flow needs explicit height to render). The
+   `html.kme-fs-on` prefix + !important is REQUIRED: the base rule
+   `html.kme-fs-on .kme-root { height:100% !important }` otherwise wins and
+   collapses the canvas to ~0 inside the section → black/empty (เอ๋ 2026-05-31
+   'ต้องเห็น mindmap'). */
+html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root,
 .kme-assembly-shell .kme-sec-kanban .kme-root,
 .kme-assembly-shell .kme-sec-kanban .kme-root.kme-fullscreen {
-  position: relative;
-  inset: auto;
-  z-index: auto;
-  width: 100%;
-  height: 78vh;
-  height: 78dvh;
+  position: relative !important;
+  inset: auto !important;
+  z-index: auto !important;
+  width: 100% !important;
+  height: 78vh !important;
+  height: 78dvh !important;
+}
+
+/* Section header lays out title + the ⛶ Fullscreen button on one row. */
+.kme-sec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.kme-map-max-btn {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+.kme-map-max-btn:hover { background: #243349; }
+/* Floating exit, on top of the maximized mindmap (z-index above it). */
+.kme-map-max-exit {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 61;
+  background: #1c2330;
+  color: #cdd9e5;
+  border: 1px solid #3a4757;
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+.kme-map-max-exit:hover { background: #283142; }
+
+/* Maximized mindmap — true fullscreen overlay over everything (incl. the
+   accordion + the app), with a comfortable z-index above the sticky bars. */
+html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
+.kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 60 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
 }
 
 /* ── §1 Assembly Tree capsules ── */

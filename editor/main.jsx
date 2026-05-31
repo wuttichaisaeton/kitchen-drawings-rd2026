@@ -953,6 +953,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // editing view opens normal so the toolbar stays in reach. Tapping an empty
   // spot on the canvas toggles it either way. In-memory only.
   const [fullscreen, setFullscreen] = useState(!!autoFullscreen);
+  // §3 Mindmap maximize — tap ⛶ to blow the mindmap up to a true fullscreen
+  // overlay (position:fixed) and ✕ to drop it back into the accordion section
+  // (เอ๋ 2026-05-31 'ต้องเห็น mindmap กดเข้าไปแล้วเป็นแบบ full screen'). Re-fit
+  // on enter so the whole map is framed at the new size.
+  const [mapMax, setMapMax] = useState(false);
 
   // External-sync nonce. app.js dispatches a 'kme:extsync' window event when
   // a Firebase assembled/bent write lands (our own echo OR a remote device's
@@ -1661,8 +1666,20 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       {/* §3 Mindmap — the existing React Flow mindmap, untouched (เอ๋
           2026-05-31 renamed 'Kanban' → 'Mindmap'; class kept for the CSS) */}
       <section className="kme-sec kme-sec-kanban">
-        <div className="kme-sec-head"><span className="kme-sec-title">3 · Mindmap</span></div>
-    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}${fullscreen ? ' kme-fullscreen' : ''}`}>
+        <div className="kme-sec-head">
+          <span className="kme-sec-title">3 · Mindmap</span>
+          <button
+            className="kme-map-max-btn"
+            onClick={() => {
+              const next = !mapMax;
+              setMapMax(next);
+              // re-fit after the container resizes so the whole map shows
+              setTimeout(() => { try { fitNow({ duration: 0 }); } catch (_) {} }, 60);
+            }}
+            title={mapMax ? 'Exit fullscreen' : 'Fullscreen mindmap'}
+          >{mapMax ? '✕ Close' : '⛶ Fullscreen'}</button>
+        </div>
+    <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}${fullscreen ? ' kme-fullscreen' : ''}${mapMax ? ' kme-map-max' : ''}`}>
       {/* Toolbar is admin-only. Workers get a clean canvas — the floating
           Show all (in the <Panel> below) is their only control, so the
           status line + zoom chrome don't eat their screen. User 2026-05-29:
@@ -1851,6 +1868,16 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       </div>
     </div>
       </section>
+      {/* Floating exit — only while the mindmap is maximized; the section's
+          own ✕ in the header sits UNDER the maxed canvas (z-index), so this
+          fixed button is the reachable way back to the accordion. */}
+      {mapMax && (
+        <button
+          className="kme-map-max-exit"
+          onClick={() => setMapMax(false)}
+          title="Exit fullscreen mindmap"
+        >✕ Close</button>
+      )}
     </div>
   );
 }
