@@ -864,3 +864,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE:** Assembly Tree is now a Kanban-style board of columns by FAMILY (commit d4b6371, live). One column per family (BK/SD/TS/FN/BM/... = leading letters before the first digit), sorted A-Z, each with a colour-tinted header + done count. The §3 Mindmap nodes now colour by the SAME family palette (CSS vars set inline on the node; sketch/chalk post-it rules read var(--fam-soft)/var(--fam-border) instead of the old nth-of-type cycle), so a family's node matches its Tree column in every theme - BK column green => BK node green. build:editor + bundles + theme style.css committed, verified live.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit d534ad5, live) Assembly Tree family colours now show in sketch/chalk themes - the theme reset (*{background:transparent}) had wiped them; each Tree row now gets the family post-it fill var(--fam-soft) + dark ink + column-header tint, theme-prefixed so it beats the reset. Tree column now visually matches its Mindmap nodes in every theme. Also: code labels (Tree + Checklist) switched to single-line nowrap (was wrapping to 2 lines) - full code, no ellipsis, no wrap. Verified live.
+**NEEDS:** nothing from Group 1.
