@@ -1625,6 +1625,10 @@
     const BG = _sketch ? '#f7f2e7' : _chalk ? '#26302e' : '#0b1117';
     const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : '#4ecca3';
     const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : '#88aab1';
+    // Opaque steel silhouette so the diecut reads as a real metal part, not a
+    // washed-out outline (เอ๋ 2026-05-31 'dicut ขาวออก' — colour+'22' = ~13%
+    // alpha was nearly invisible). Solid mid-grey on every theme.
+    const STEEL = _sketch ? '#b9b2a2' : _chalk ? '#8f9991' : 'rgba(78,204,163,0.40)';
     ctx.fillStyle = BG;
     ctx.fillRect(0, 0, cw, ch);
     const polys = part && part.polys;
@@ -1664,8 +1668,8 @@
     };
     if (polys.outer && polys.outer.length > 1) {
       trace(polys.outer, true);
-      ctx.fillStyle = colour + '22'; ctx.fill();
-      ctx.strokeStyle = colour; ctx.lineWidth = 1.8 * dpr; ctx.stroke();
+      ctx.fillStyle = STEEL; ctx.fill();
+      ctx.strokeStyle = colour; ctx.lineWidth = 2.2 * dpr; ctx.stroke();
     }
     if (polys.strokes && polys.strokes.length > 1) {
       ctx.strokeStyle = colour; ctx.lineWidth = 1.6 * dpr;
@@ -2483,7 +2487,7 @@
       const rowGrainWarn = grainDir ? ' kdnest-part-grainwarn' : '';
       const reviewMark = _reviewReasons(p).length ? ' kdnest-part-review' : '';
       return `
-        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}" data-code="${_esc(p.code)}">
+        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${p.code === S.previewCode ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
           <span class="kdnest-part-code">${p.manual ? '▭ ' : ''}${_esc(p.code)}</span>

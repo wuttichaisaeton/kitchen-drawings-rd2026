@@ -5285,3 +5285,53 @@ html[data-theme="chalk"] .kdnest-grain-summary {
   border-left: 5px solid #8a5a00 !important;
   box-shadow: 0 2px 6px rgba(0,0,0,0.45) !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ACTIVE / PREVIEWED PART ROW (2026-05-31). เอ๋ 'ไม่ชัดเจนว่าทำงานอยู่ที่ไหน
+   — ทำกรอบให้ชัดเจน + Invert สี + ทำ Effect'. When a part is being previewed
+   (👁), its row gets .kdnest-part-active. Make it unmistakable: bold cyan
+   frame + INVERTED fill (light row on the dark list) + glow pulse. Applies in
+   every theme via per-theme overrides below.
+   ════════════════════════════════════════════════════════════════════ */
+.kdnest-part.kdnest-part-active {
+  background: #4ecca3 !important;
+  color: #06241b !important;
+  border: 2px solid #7dffd0 !important;
+  border-radius: 7px;
+  box-shadow: 0 0 0 2px rgba(78,204,163,0.4), 0 0 14px rgba(78,204,163,0.6) !important;
+  position: relative;
+  z-index: 2;
+  animation: kdnest-active-pulse 1.4s ease-in-out infinite;
+}
+.kdnest-part.kdnest-part-active .kdnest-part-code,
+.kdnest-part.kdnest-part-active .kdnest-part-num,
+.kdnest-part.kdnest-part-active .kdnest-x { color: #06241b !important; font-weight: 800; }
+.kdnest-part.kdnest-part-active input { color: #06241b !important; font-weight: 700; }
+@keyframes kdnest-active-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(78,204,163,0.4), 0 0 10px rgba(78,204,163,0.5); }
+  50%      { box-shadow: 0 0 0 3px rgba(78,204,163,0.6), 0 0 20px rgba(78,204,163,0.85); }
+}
+/* Sketch — inverted ink row: dark paper + light text, pen frame. */
+html[data-theme="sketch"] .kdnest-part.kdnest-part-active {
+  background: #1b1815 !important;
+  color: #f7f2e7 !important;
+  border: 2px solid #1b1815 !important;
+  box-shadow: 3px 4px 0 rgba(27,24,21,0.45), 0 0 0 2px #c25a3a !important;
+  animation: none;
+}
+html[data-theme="sketch"] .kdnest-part.kdnest-part-active .kdnest-part-code,
+html[data-theme="sketch"] .kdnest-part.kdnest-part-active .kdnest-part-num,
+html[data-theme="sketch"] .kdnest-part.kdnest-part-active .kdnest-x,
+html[data-theme="sketch"] .kdnest-part.kdnest-part-active input { color: #f7f2e7 !important; }
+/* Chalk — bright chalk-highlight row: light slate + dark text, amber frame. */
+html[data-theme="chalk"] .kdnest-part.kdnest-part-active {
+  background: #e9e4d6 !important;
+  color: #1b211f !important;
+  border: 2px solid #f0a51e !important;
+  box-shadow: 0 0 0 2px rgba(240,165,30,0.5), 0 2px 10px rgba(0,0,0,0.5) !important;
+  animation: none;
+}
+html[data-theme="chalk"] .kdnest-part.kdnest-part-active .kdnest-part-code,
+html[data-theme="chalk"] .kdnest-part.kdnest-part-active .kdnest-part-num,
+html[data-theme="chalk"] .kdnest-part.kdnest-part-active .kdnest-x,
+html[data-theme="chalk"] .kdnest-part.kdnest-part-active input { color: #1b211f !important; }
