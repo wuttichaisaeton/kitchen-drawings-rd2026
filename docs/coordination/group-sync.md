@@ -818,3 +818,9 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE + correction:** grain-warn polarity flip (warn only ANY/unset parts, not H/V) shipped across TWO commits - `e6bab9c` changed banner+tooltip text but its predicate edit silently failed (contradiction: banner said "no grain set" but still counted H/V); `5f2053f` actually flipped the _isGrainDirectional return line. Also toned down the active/preview row (e6bab9c) - opaque fill -> thin frame + faint tint so text stays readable. Verified live (predicate inverted, banner reworded, no opaque active bg). Heads-up: editing nest.js is fragile - the Thai repo path + Thai comments mangle Bash/grep/Read output; use node --check + PowerShell git for ground truth.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Disabled grain warning entirely (commit 06f7776, live). The directional-grain requirement flipped 4 times over 2 days (warn-uncertain -> warn-H/V -> warn-unset -> OFF). _isGrainDirectional now returns false, no-opping all 3 callsites (banner / glyph chip / row wash) without removing them; grain glyphs still clickable. One-line flip-back documented in the function comment + memory. Lesson: always ask before re-touching grain-warn polarity, never infer.
+**NEEDS:** nothing from Group 1.
+
