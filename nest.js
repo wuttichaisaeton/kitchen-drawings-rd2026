@@ -2430,7 +2430,7 @@
     // Rebuild flatSheets from the saved placements, re-attaching geometry from
     // the freshly-loaded part of the same code.
     S.flatSheets = (job.sheets || []).map(sh => ({
-      thick: sh.thick, sw: sh.sw, sh: sh.sh,
+      thick: sh.thick, sw: sh.sw, sh: sh.sh, fromRemnant: sh.fromRemnant || null,
       placements: (sh.placements || []).map(pl => {
         const part = S.parts.find(p => p.code === pl.code);
         return {
