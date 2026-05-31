@@ -654,6 +654,18 @@ function ChecklistPanel({ projectKey, nonce, asSection }) {
     const next = !api.isAssembled?.(projectKey, code);
     api.markAssembled?.(projectKey, code, next);
   };
+  // Check-all / uncheck-all toggle (เอ๋ 2026-05-31). If every part is already
+  // done → uncheck all; otherwise → check all. Writes the SAME assembled_status
+  // each row uses, so the tree + mindmap sync.
+  const allDone = total > 0 && done === total;
+  const toggleAll = () => {
+    const target = !allDone;
+    for (const p of parts) {
+      if (!!api.isAssembled?.(projectKey, p.code) !== target) {
+        api.markAssembled?.(projectKey, p.code, target);
+      }
+    }
+  };
   const submitComment = (code) => {
     const t = draft.trim();
     if (!t) return;

@@ -879,12 +879,13 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   flex: 1; min-width: 0; cursor: pointer;
 }
 .kme-checklist-main input { width: 17px; height: 17px; accent-color: #3fb950; flex: none; }
+/* Full code, no ellipsis (เอ๋ 2026-05-31 'ห้ามย่อ...'). */
 .kme-checklist-code {
   font-family: 'Flux Architect', ui-monospace, monospace; font-size: 12.5px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: normal; overflow-wrap: anywhere;
 }
-.kme-checklist-qty { color: #9aa7b4; font-size: 12px; flex: none; }
-.kme-checklist-row.is-done .kme-checklist-code { text-decoration: line-through; opacity: 0.55; }
+.kme-checklist-qty { color: #cdd9e5; font-size: 13px; font-weight: 700; flex: none; }
+.kme-checklist-row.is-done .kme-checklist-code { text-decoration: line-through; text-decoration-color: #3fb950; color: #8aa394; }
 .kme-checklist-cmt-toggle {
   background: none; border: none; color: #9aa7b4;
   font-size: 12px; cursor: pointer; flex: none;
@@ -1029,6 +1030,22 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root,
   cursor: pointer;
 }
 .kme-map-max-btn:hover { background: #243349; }
+/* Check-all / uncheck-all toggle in the Checklist header. */
+.kme-checklist-allbtn {
+  margin-left: auto;
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.kme-checklist-allbtn:hover { background: #243349; }
+.kme-checklist-allbtn:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Floating exit, on top of the maximized mindmap (z-index above it). */
 .kme-map-max-exit {
   position: fixed;
@@ -1067,7 +1084,7 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
    indent via inline paddingLeft. */
 .kme-tree {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   align-items: start;
   gap: 4px 8px;
   padding: 4px 8px;
@@ -1078,19 +1095,26 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 10px;
+  padding: 7px 12px;
   background: #161b22;
-  border: 1px solid #283442;
-  border-radius: 999px;
+  border: 1px solid #3a4757;   /* brighter so every capsule (incl. children) shows its frame */
+  border-radius: 18px;          /* rounded but not full-pill, so multi-line codes wrap cleanly */
   min-height: 40px;
-  transition: opacity 0.25s ease, background 0.15s ease;
+  transition: background 0.15s ease;
 }
+/* Done = dim by COLOUR not opacity (opacity faded the capsule's own border
+   away on the dark ground — เอ๋ 2026-05-31 'ตัวลูกไม่มีกรอบ'). Keep a solid
+   green-tinted frame + struck label; text stays readable. */
 .kme-tree-row.is-done {
-  opacity: 0.5;
   background: #12231a;
-  border-color: #2f6f4a;
+  border-color: #3fb950;
+  color: #7e8c84;
 }
-.kme-tree-row.is-done .kme-tree-label { text-decoration: line-through; text-decoration-color: #3fb950; }
+.kme-tree-row.is-done .kme-tree-label {
+  color: #8aa394;
+  text-decoration: line-through;
+  text-decoration-color: #3fb950;
+}
 .kme-tree-chev {
   flex-shrink: 0;
   width: 26px; height: 26px;
@@ -1104,17 +1128,18 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
 }
 .kme-tree-chev.is-leaf { opacity: 0.35; cursor: default; }
 .kme-tree-chev:not(.is-leaf):hover { background: #243349; }
+/* Full code, no truncation (เอ๋ 2026-05-31 'ตัวหนังสือต้องอ่านได้ทุกตัว
+   ห้ามย่อ...'). Allow the capsule to grow to fit the whole code. */
 .kme-tree-label {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
   color: #e6edf3;
 }
-.kme-tree-qty { flex-shrink: 0; font-size: 12px; color: #88aab1; }
+.kme-tree-qty { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #cdd9e5; }
 .kme-tree-cmt { flex-shrink: 0; font-size: 12px; color: #c8a6ff; }
 .kme-tree-pdf, .kme-tree-done {
   flex-shrink: 0;
