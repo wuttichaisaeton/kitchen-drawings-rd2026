@@ -967,3 +967,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (36a8417, live) DXF preview modal — removed the decorative background in ALL themes (เอ๋ 'ตัด พื้นหลังออก ในทุกๆ theme'). The bold pink X marks were the sketch theme's 45/-45 crosshatch (rgba(200,60,90,0.10)) on .dxf-preview-stage/.dxf-preview-canvas; also removed the chalk crosshatch + the default-theme blue grid (.dxf-preview-stage::before). Kept the solid surface colour (paper/board/dark) so the part still reads on a clean background. Also dropped an orphaned background-size/blend block + stray brace under the chalk rule. Verified live: pinkX=0 chalkX=0 grid=0.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [CORRECTION]
+**RETRACT:** the b39e0cd entry above ("dxf preview bg removed all themes") is WRONG — those CSS edits FAILED (the .dxf-preview-stage / crosshatch rules it described do not exist in style.css; working tree was clean, nothing changed). The pink X marks + faint grid in the DXF preview are NOT from the CSS I targeted. Source still UNidentified — _drawPartPreview just fills a solid BG. Next: inspect the live preview modal in-browser to find what actually paints them, then remove for real. No code change shipped for this request yet.
+**NEEDS:** nothing from Group 1.
