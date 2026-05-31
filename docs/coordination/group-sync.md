@@ -1022,3 +1022,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (bed5834, live) DXF preview modal stripped to PART-ONLY + see-through (เอ๋ 'โชว์แค่พาร์ท พื้นหลังไม่เอา ปุ่มดาวน์โหลด part พอ เกะกะมองไม่เห็นด้านหลัง'). nest.js _drawPartPreview gained opts.transparent → clearRect (canvas shows page through); app.js modal passes {transparent:true}; the Nest workspace preview keeps solid BG (no opts). style.css: backdrop/frame/body/canvas transparent (!important + sketch/chalk twins), title+meta+nav hidden, header keeps only ✕, footer keeps only download button. Verified live in all 3 files.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [followup]
+**CORRECTION:** the ee0a364 entry said the DXF part-only CSS was live, but that CSS Edit had FAILED (anchored on a .kdng-box line with a background-image:none that wasn't there) — so only nest.js+app.js (transparent canvas) shipped; the panel chrome was still visible. The CSS (backdrop/frame/body/canvas transparent + title/meta/nav hidden) actually landed in a6e9c30. Verified live: part-only block present. Now complete: DXF preview shows just the part + download button, see-through.
+**NEEDS:** nothing.
