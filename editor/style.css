@@ -882,7 +882,7 @@ html.kme-fs-on .kme-root { height: 100% !important; }
 /* Full code, single line — no ellipsis + no 2-line wrap (เอ๋ 2026-05-31). */
 .kme-checklist-code {
   font-family: 'Flux Architect', ui-monospace, monospace; font-size: 12px;
-  white-space: nowrap; overflow: visible;
+  white-space: nowrap; overflow: hidden;
 }
 .kme-checklist-qty { color: #cdd9e5; font-size: 13px; font-weight: 700; flex: none; }
 .kme-checklist-row.is-done .kme-checklist-code { text-decoration: line-through; text-decoration-color: #3fb950; color: #8aa394; }
@@ -1167,7 +1167,7 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 12.5px;
   white-space: nowrap;
-  overflow: visible;
+  overflow: hidden;
   color: #e6edf3;
 }
 .kme-tree-qty { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #cdd9e5; }

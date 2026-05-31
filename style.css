@@ -5126,9 +5126,9 @@ html[data-theme="chalk"] .kme-node:not(.kme-project) {
   border-color: var(--fam-border, #bfa53c) !important;
 }
 html[data-theme="chalk"] .kme-node:not(.kme-project) {
-  background-color: #f3e7a8 !important;
+  background-color: var(--fam-soft, #f3e7a8) !important;   /* family colour (chalk sync fix 2026-05-31) */
   background-image: none !important;
-  border: 1.5px solid #bfa53c !important;
+  border: 1.5px solid var(--fam-border, #bfa53c) !important;
   border-radius: 3px !important;
   position: relative;
   box-shadow: 1px 3px 6px rgba(0,0,0,0.45) !important;

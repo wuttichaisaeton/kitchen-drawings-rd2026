@@ -1745,7 +1745,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
 
       {/* §1 Assembly Tree — capsule list, shares state with §3 Kanban */}
       <section className="kme-sec kme-sec-tree">
-        <div className="kme-sec-head"><span className="kme-sec-title">1 · Assembly Tree</span></div>
+        <div className="kme-sec-head"><span className="kme-sec-title">1 · Kanban</span></div>
         <div className="kme-sec-body">
           <AssemblyTree
             nodes={nodes} edges={edges} projectKey={projectKey} admin={admin}
