@@ -873,5 +873,6 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** (commit 6f55c54, live) Fullscreen Mindmap cleanup - removed the in-canvas Checklist panel (the §2 accordion Checklist section already covers it) and moved the floating Show all button from top-right to bottom-left. Verified live.
+**DONE:** (commit f7aaed9, live) Fullscreen Mindmap cleanup - removed the in-canvas Checklist panel (the §2 accordion Checklist section already covers it) and moved the floating Show all button from top-right to bottom-left. Verified live.
 **NEEDS:** nothing from Group 1.
+
