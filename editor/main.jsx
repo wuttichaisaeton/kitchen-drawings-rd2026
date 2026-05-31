@@ -1848,6 +1848,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           )}
         </ReactFlow>
       </div>
+    </div>
       </section>
     </div>
   );
