@@ -1765,8 +1765,22 @@
     // Center the sheet on the canvas.
     const offX = (cw - sheet.sw * scale) / 2;
     const offY = (ch - sheet.sh * scale) / 2;
-    // Clear
-    ctx.fillStyle = '#0b1117';
+    // Clear — outer canvas bg = the ACTUAL surrounding workspace bg so the
+    // sheet view blends in like the part preview does (เอ๋ 2026-05-31 'พื้นหลัง
+    // เป็นสีเดียวกับพื้นหลังโดยรอบ' · 'อันนี้ด้วย'). Read the wrapper's computed
+    // bg; transparent → <body>; else keep the dark default. The metal SHEET
+    // rectangle + part colours below stay their own colours.
+    let _outerBG = '#0b1117';
+    try {
+      const _host = (canvas.closest && canvas.closest('.kdnest-canvas-wrap'))
+        || canvas.parentElement || document.body;
+      const _opaque = (c) => c && c !== 'transparent'
+        && !/rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(c);
+      const _wb = getComputedStyle(_host).backgroundColor;
+      if (_opaque(_wb)) _outerBG = _wb;
+      else { const _bb = getComputedStyle(document.body).backgroundColor; if (_opaque(_bb)) _outerBG = _bb; }
+    } catch (_) { /* keep dark default */ }
+    ctx.fillStyle = _outerBG;
     ctx.fillRect(0, 0, cw, ch);
     // Sheet outline
     ctx.strokeStyle = '#2a5dff';
