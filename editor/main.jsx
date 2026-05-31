@@ -678,6 +678,12 @@ function ChecklistPanel({ projectKey, nonce, asSection }) {
       <div className="kme-checklist-head">
         <span className="kme-checklist-title">Checklist</span>
         <span className="kme-checklist-progress">{done}/{total}</span>
+        <button
+          className="kme-checklist-allbtn"
+          onClick={toggleAll}
+          disabled={total === 0}
+          title={allDone ? 'Uncheck all' : 'Check all'}
+        >{allDone ? '☐ Uncheck all' : '☑ Check all'}</button>
         {!asSection && <button className="kme-checklist-close" onClick={() => setOpen(false)} title="Close">✕</button>}
       </div>
       <div className="kme-checklist-list">
