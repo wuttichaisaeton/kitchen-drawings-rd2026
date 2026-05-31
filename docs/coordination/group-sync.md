@@ -842,3 +842,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **FIX:** the Assembly 3-section build I committed earlier (cd26ef2) shipped a STALE bundle - esbuild had failed (mis-ordered closing tags from wrapping the mindmap in a new section) so the source was live but the feature was dead. Fixed the closing-tag order + rebuilt; 75e9e8a is the working build, verified live (AssemblyTree + kme-assembly-shell + kme-sec-tree all present in the served bundle). The 3 sections (Assembly Tree / Checklist / Kanban) now render and sync as intended.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (commit 8d8f1c0, live) Assembly Tree + Checklist sections now lay out in AUTO columns (CSS grid auto-fill minmax 240/260px - 1 col on phone, more on wide). Section 3 renamed Kanban -> Mindmap (label only; class kept). build:editor + bundles committed, verified live.
+**NEEDS:** nothing from Group 1.
