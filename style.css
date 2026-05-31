@@ -5572,3 +5572,30 @@ html[data-theme="chalk"] .kdng-box{
 }
 /* Drag affordance — the header is the grab handle (JS sets cursor too). */
 .kdstock-head{ cursor:move; user-select:none; }
+
+/* === DXF preview = part-only, see-through (เอ๋ 2026-05-31 'โชว์แค่พาร์ท พื้นหลัง
+   ไม่เอา และปุ่มดาวน์โหลด part พอ ที่เหลือไม่เอา เกะกะมองไม่เห็นอะไรเลยด้านหลัง').
+   Strip ALL chrome to just the part silhouette (canvas cleared transparent in
+   nest.js drawPart transparent mode) + the download button + a small ✕.
+   !important + sketch/chalk twins so it beats the theme overrides. */
+.dxf-preview-backdrop,
+html[data-theme="sketch"] .dxf-preview-backdrop,
+html[data-theme="chalk"]  .dxf-preview-backdrop {
+  background: transparent !important; backdrop-filter: none !important;
+}
+.dxf-preview-frame,
+html[data-theme="sketch"] .dxf-preview-frame,
+html[data-theme="chalk"]  .dxf-preview-frame {
+  background: transparent !important; border: none !important; box-shadow: none !important;
+}
+.dxf-preview-body { background: transparent !important; padding: 0 !important; }
+.dxf-preview-canvas,
+html[data-theme="sketch"] .dxf-preview-canvas,
+html[data-theme="chalk"]  .dxf-preview-canvas {
+  background: transparent !important; border: none !important;
+}
+.dxf-preview-header { border: none !important; padding: 6px 8px !important; background: transparent !important; justify-content: flex-end !important; }
+.dxf-preview-title { display: none !important; }
+.dxf-preview-meta  { display: none !important; }
+.dxf-preview-footer { border: none !important; background: transparent !important; justify-content: center !important; }
+.dxf-preview-nav { display: none !important; }
