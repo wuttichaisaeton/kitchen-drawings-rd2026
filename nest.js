@@ -1553,6 +1553,106 @@
     return runOne(mode);
   }
 
+  // ── Auto-remember offcuts ──────────────────────────────────────────
+  // Largest reusable offcut on a packed sheet — coarse raster + histogram
+  // largest-empty-rectangle (standalone twin of the one inside Max Remnant
+  // mode so auto-save can reach it). Returns {w,h,x,y,area} in mm (0 if none).
+  function _largestOffcut(sheet) {
+    if (!sheet || !sheet.placements || !sheet.sw || !sheet.sh) return { w: 0, h: 0, area: 0 };
+    const cell = Math.max(5, Math.ceil(Math.max(sheet.sw, sheet.sh) / 120));
+    const gw = Math.max(1, Math.ceil(sheet.sw / cell));
+    const gh = Math.max(1, Math.ceil(sheet.sh / cell));
+    const mask = new Uint8Array(gw * gh);   // 0 = free, 1 = occupied
+    for (const pl of sheet.placements) {
+      const w = (pl.rot === 90 || pl.rot === 270) ? pl.h : pl.w;
+      const h = (pl.rot === 90 || pl.rot === 270) ? pl.w : pl.h;
+      const x0 = Math.floor(pl.x / cell), y0 = Math.floor(pl.y / cell);
+      const x1 = Math.ceil((pl.x + w) / cell), y1 = Math.ceil((pl.y + h) / cell);
+      for (let gy = y0; gy < y1; gy++)
+        for (let gx = x0; gx < x1; gx++)
+          if (gx >= 0 && gx < gw && gy >= 0 && gy < gh) mask[gy * gw + gx] = 1;
+    }
+    const heights = new Int32Array(gw);
+    let best = { area: 0, x: 0, y: 0, w: 0, h: 0 };
+    for (let gy = 0; gy < gh; gy++) {
+      for (let gx = 0; gx < gw; gx++)
+        heights[gx] = mask[gy * gw + gx] ? 0 : heights[gx] + 1;
+      const stack = [];
+      for (let gx = 0; gx <= gw; gx++) {
+        const cur = gx === gw ? 0 : heights[gx];
+        while (stack.length && heights[stack[stack.length - 1]] >= cur) {
+          const top = stack.pop();
+          const height = heights[top];
+          const left = stack.length ? stack[stack.length - 1] + 1 : 0;
+          const width = gx - left;
+          const area = height * width;
+          if (area > best.area) best = {
+            area: area, x: left * cell, y: (gy - height + 1) * cell,
+            w: width * cell, h: height * cell,
+          };
+        }
+        stack.push(gx);
+      }
+    }
+    best.w = Math.min(best.w, sheet.sw);   // raster rounds up → clamp to sheet
+    best.h = Math.min(best.h, sheet.sh);
+    return best;
+  }
+  // Grain of a sheet's leftover = derived from the parts laid on it. H+V
+  // together → MIXED (a grain-strict job can't reuse it); a single directional
+  // → that direction; else ANY. (feedback_remnants_grain_finish)
+  function _sheetGrain(sheet) {
+    let hasH = false, hasV = false;
+    for (const pl of (sheet.placements || [])) {
+      const p = S.parts.find(pp => pp.code === pl.code);
+      const g = String((p && p.grain) || 'ANY').toUpperCase();
+      if (g === 'H') hasH = true; else if (g === 'V') hasV = true;
+    }
+    if (hasH && hasV) return 'MIXED';
+    if (hasH) return 'H';
+    if (hasV) return 'V';
+    return 'ANY';
+  }
+  // After a run, save the largest offcut of each sheet to the shared Remnants
+  // pool (เอ๋ 2026-05-31 'กด run nesting แล้ว...ทำไมไม่มีเศษวัสดุ'). Skipped when
+  // Don't remember is checked. Re-running REPLACES this project's prior auto
+  // offcuts (auto:true + sourceProject) so tuning doesn't pile up duplicates;
+  // manual remnants and other projects' offcuts are never touched.
+  const _REMNANT_MIN = 150;   // mm — ignore slivers smaller than this on a side
+  async function _autoSaveRemnants() {
+    if (S.dontRemember) return;          // user opted out of remembering this run
+    if (!window.firebaseDB) return;
+    const pk = S.projectKey || '';
+    try {
+      await _loadRemnants();
+      for (const r of (S.remnants || [])) {   // clear this project's prior auto offcuts
+        if (r.auto && r.sourceProject === pk) {
+          try { await _deleteRemnant(r.id); } catch (_) {}
+        }
+      }
+      let saved = 0;
+      for (let i = 0; i < (S.flatSheets || []).length; i++) {
+        const sheet = S.flatSheets[i];
+        const off = _largestOffcut(sheet);
+        if (!(off.w >= _REMNANT_MIN && off.h >= _REMNANT_MIN)) continue;
+        await _saveRemnant({
+          w: Math.round(off.w), h: Math.round(off.h),
+          thickness: sheet.thick ?? 1,
+          grain: _sheetGrain(sheet),
+          project: S.projectName || '',
+          note: 'Auto · sheet ' + (i + 1),
+          date: new Date().toISOString().slice(0, 10),
+          createdAt: Date.now(),
+          auto: true,
+          sourceProject: pk,
+        });
+        saved++;
+      }
+      await _loadRemnants();   // refresh so an already-open modal repaints current
+      if (saved) console.log('[kdNest] auto-saved ' + saved + ' offcut(s) to remnants');
+    } catch (e) { console.warn('[kdNest] auto-save remnants failed:', e); }
+  }
+
   // ════════════════════════════════════════════════════════════════════
   //  Run Nesting
   // ════════════════════════════════════════════════════════════════════
@@ -1631,6 +1731,9 @@
       console.warn('[kdNest] unplaced pieces:', S.unplaced);
     }
     _refreshView();
+    // Remember the offcuts (unless Don't remember). Fire-and-forget so the
+    // layout shows instantly; it refreshes the remnant pool in the background.
+    _autoSaveRemnants();
   }
 
   // ════════════════════════════════════════════════════════════════════
