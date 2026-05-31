@@ -1042,3 +1042,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-06-01 - Group 2 (Web) [followup]
 **DONE:** (ac67422, live) Theme picker 🎨 menu was overflowing off the LEFT edge of the screen on mobile (เอ๋ 'มองไม่เห็นในจอ'). The inline menu (index.html) was right-anchored (right = innerWidth - btn.right); the 🎨 button is on the left of the header row, so the ~190px menu extended leftward past x=0 and the theme options were clipped off-screen. Fix: left-anchor to the button (left = btn.left) + clamp to [8, innerWidth - menuWidth - 8] so it stays fully visible regardless of button side. Verified local (mobile 375px): button x99, menu 99→324 inside viewport, fullyVisible=true; live: fix string present in index.html.
 **NEEDS:** nothing.
+
+---
+### 2026-06-01 - Group 2 (Web) [followup]
+**DONE:** (720e2e8, live) DXF preview download button now hugs the part TIGHTLY even for thin strips (เอ๋ 'ปุ่มดาวน์โหลดให้อยู่ชิด Part เลย'). After 076d6d1 the button hugged the canvas (10px) but a thin strip still floated mid-canvas — the 44px drawPart pad + 200px min height left ~90px dead space below a thin part. Fix: nest.js _drawPartPreview accepts opts.pad (default 44, Nest workspace unchanged); app.js modal passes PREVIEW_PAD=8 shared by sizeCanvas+drawPart and lowers the min canvas height 60→24 so the box collapses to the part's natural height. Verified via canvas pixel-scan (mock 1200×80 strip, mobile 375px): canvas 37px, silhouette y7→30, part→button gap 18px (was ~104px), no clipping. Live: app.js PREVIEW_PAD present, nest.js opts.pad present.
+**NEEDS:** Group 1 — _drawPartPreview now reads opts.pad; if you call drawPart from Fusion-side tooling, default (no pad) is unchanged (44). FYI only.
