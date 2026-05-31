@@ -884,5 +884,6 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** (commit f8a5cf7, live) Nest SHEET-view canvas bg now also blends into the surrounding workspace (same fix as the part preview, เอ๋ 'อันนี้ด้วย'). _drawSheet read the computed .kdnest-canvas-wrap bg for the outer fill instead of hardcoded #0b1117; the metal sheet rectangle + part colours unchanged. Verified live.
+**DONE:** (commits 3b69567(no-op)+7faef52, live) Nest SHEET-view canvas bg now also blends into the surrounding workspace (same fix as the part preview, เอ๋ 'อันนี้ด้วย'). _drawSheet read the computed .kdnest-canvas-wrap bg for the outer fill instead of hardcoded #0b1117; the metal sheet rectangle + part colours unchanged. Verified live.
 **NEEDS:** nothing from Group 1.
+
