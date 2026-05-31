@@ -858,3 +858,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** Assembly capsule polish + Check-all (latest commit, live). (1) Child capsules had no frame - is-done used opacity:0.5 which faded the border into the dark bg; switched to colour-only dim + brighter base border so every capsule shows its frame. (2) Codes were truncated with ellipsis (BK0DN0-0...); removed text-overflow on Tree + Checklist, full codes now wrap and are always readable; wider columns; bolder qty. (3) New Check-all / Uncheck-all toggle in the Checklist header (writes the same assembled_status so tree+mindmap sync). build:editor + bundles committed, verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Assembly Tree is now a Kanban-style board of columns by FAMILY (commit 72eef8e, live). One column per family (BK/SD/TS/FN/BM/... = leading letters before the first digit), sorted A-Z, each with a colour-tinted header + done count. The §3 Mindmap nodes now colour by the SAME family palette (CSS vars set inline on the node; sketch/chalk post-it rules read var(--fam-soft)/var(--fam-border) instead of the old nth-of-type cycle), so a family's node matches its Tree column in every theme - BK column green => BK node green. build:editor + bundles + theme style.css committed, verified live.
+**NEEDS:** nothing from Group 1.
