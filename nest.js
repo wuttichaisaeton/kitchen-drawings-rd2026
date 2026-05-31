@@ -771,6 +771,17 @@
     if (!window.firebaseDB || !id) return;
     await window.firebaseDB.ref('nest_remnants/' + id).remove();
   }
+  async function _updateRemnant(id, patch) {
+    if (!window.firebaseDB || !id) return;
+    await window.firebaseDB.ref('nest_remnants/' + id).update(patch);
+  }
+  // Who may enter the ACTUAL cut size: Laser (they cut it) + admin. app.js
+  // exposes the role predicates on window. (เอ๋ 2026-05-31 'ให้ Laser กรอก
+  // ค่าจริงได้')
+  function _canEditActual() {
+    return (window.isAdmin && window.isAdmin())
+        || (window.isLaserUser && window.isLaserUser());
+  }
   // Thumbnail. For AUTO remnants (which carry sheetW/sheetH + placements +
   // offcut position) draw the actual sheet layout \u2014 cut pieces as faint grey
   // boxes, the leftover highlighted green \u2014 so the worker sees WHICH part of
@@ -821,16 +832,42 @@
   function _renderStockModal() {
     document.querySelectorAll('.kdstock-modal').forEach(m => m.remove());
     const admin = (typeof window.isAdmin === 'function' && window.isAdmin());
+    const canEditActual = _canEditActual();
     const list = (S.remnants || []).map(function (r) {
-      const dims = Math.round(+r.w || 0) + '\u00d7' + Math.round(+r.h || 0)
-        + (r.thickness ? ' \u00b7 ' + _esc(String(r.thickness)) + 'mm' : '');
+      // The size we USE = actual (measured after cutting) when present, else
+      // the calculated leftover. Both shown so the worker sees what was
+      // expected vs what's really there. (\u0e40\u0e2d\u0e4b 2026-05-31 '\u0e19\u0e33\u0e04\u0e48\u0e32\u0e08\u0e23\u0e34\u0e07\u0e21\u0e32\u0e43\u0e0a\u0e49 \u0e41\u0e15\u0e48
+      // \u0e22\u0e31\u0e07\u0e04\u0e07\u0e21\u0e35\u0e04\u0e48\u0e32\u0e40\u0e14\u0e34\u0e21\u0e42\u0e0a\u0e27\u0e4c\u0e2d\u0e22\u0e39\u0e48')
+      const hasActual = (r.actualW != null && r.actualH != null);
+      const usedW = hasActual ? +r.actualW : (+r.w || 0);
+      const usedH = hasActual ? +r.actualH : (+r.h || 0);
+      const dims = Math.round(usedW) + '\u00d7' + Math.round(usedH)
+        + (r.thickness ? ' \u00b7 ' + _esc(String(r.thickness)) + 'mm' : '')
+        + (hasActual ? ' <span class="kdstock-tag">actual</span>' : '');
+      const calcLine = hasActual
+        ? '<div class="kdstock-calc">calc ' + Math.round(+r.w || 0) + '\u00d7' + Math.round(+r.h || 0) + '</div>'
+        : '';
       const prov = [r.project ? _esc(r.project) : '', r.date ? _esc(r.date) : ''].filter(Boolean).join(' \u00b7 ');
+      // Actual-size editor \u2014 Laser measures the real offcut after cutting and
+      // types it here; placeholders show the calculated value.
+      const editor = canEditActual
+        ? '<div class="kdstock-actual">'
+          + '<span class="kdstock-actual-lab">Actual</span>'
+          + '<input class="kdstock-aw" type="number" min="0" placeholder="' + Math.round(+r.w || 0) + '" value="' + (r.actualW != null ? Math.round(+r.actualW) : '') + '">'
+          + '<span>\u00d7</span>'
+          + '<input class="kdstock-ah" type="number" min="0" placeholder="' + Math.round(+r.h || 0) + '" value="' + (r.actualH != null ? Math.round(+r.actualH) : '') + '">'
+          + '<button class="kdstock-actual-save" data-id="' + _esc(r.id) + '" title="Save actual cut size">\u2713</button>'
+          + (hasActual ? '<button class="kdstock-actual-clear" data-id="' + _esc(r.id) + '" title="Clear actual \u2014 revert to calculated">\u21ba</button>' : '')
+          + '</div>'
+        : '';
       return '<div class="kdstock-card" data-id="' + _esc(r.id) + '">'
         + _remnantPreview(r)
         + '<div class="kdstock-info">'
         + '<div class="kdstock-dims">' + dims + '</div>'
+        + calcLine
         + '<div class="kdstock-prov">' + (prov || '\u2014') + '</div>'
         + (r.note ? '<div class="kdstock-note">' + _esc(r.note) + '</div>' : '')
+        + editor
         + '</div>'
         + (admin ? '<button class="kdstock-del" data-id="' + _esc(r.id) + '" title="Delete remnant">\ud83d\uddd1</button>' : '')
         + '</div>';
@@ -896,6 +933,28 @@
         if (!confirm('Delete this remnant from stock?')) return;
         try { await _deleteRemnant(id); await _loadRemnants(); _renderStockModal(); }
         catch (e) { alert('Delete failed: ' + (e.message || e)); }
+      });
+    });
+    // Save the actual cut size the Laser worker measured. Blank = treat as
+    // unset (revert to calc). Persists to RTDB so every view sees it.
+    modal.querySelectorAll('.kdstock-actual-save').forEach(function (el) {
+      el.addEventListener('click', async function () {
+        const card = el.closest('.kdstock-card');
+        const aw = parseFloat(card.querySelector('.kdstock-aw').value);
+        const ah = parseFloat(card.querySelector('.kdstock-ah').value);
+        const patch = (aw > 0 && ah > 0)
+          ? { actualW: Math.round(aw), actualH: Math.round(ah), actualAt: Date.now() }
+          : { actualW: null, actualH: null, actualAt: null };
+        el.disabled = true;
+        try { await _updateRemnant(el.dataset.id, patch); await _loadRemnants(); _renderStockModal(); }
+        catch (e) { alert('Save failed: ' + (e.message || e)); el.disabled = false; }
+      });
+    });
+    modal.querySelectorAll('.kdstock-actual-clear').forEach(function (el) {
+      el.addEventListener('click', async function () {
+        el.disabled = true;
+        try { await _updateRemnant(el.dataset.id, { actualW: null, actualH: null, actualAt: null }); await _loadRemnants(); _renderStockModal(); }
+        catch (e) { alert('Clear failed: ' + (e.message || e)); el.disabled = false; }
       });
     });
     const addBtn = q('#kdstock-add-btn');
@@ -3140,6 +3199,10 @@
   window.kdNest = {
     openProject: openProject,
     close: close,
+    // Open the shared Remnants Stock modal from anywhere (e.g. the Laser
+    // Cut List) — it loads from RTDB + appends to <body>, no nest workspace
+    // needed. (เอ๋ 2026-05-31 'ให้แสดงที่ User Laser ด้วย')
+    openStock: _openStockModal,
     // Shared state for app.js (Laser cut list etc.) so all views
     // present the same H/V/ANY badge per part without re-implementing
     // the pattern-matching priority.

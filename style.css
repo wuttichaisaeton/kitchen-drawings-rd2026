@@ -4104,6 +4104,19 @@ button.cut-status:focus-visible {
 .kdstock-dims { font-family: "Flux Architect", monospace; font-weight: 700; font-size: 14px; color: #e8eef5; }
 .kdstock-prov { font-size: 12px; color: #889bb3; margin-top: 2px; }
 .kdstock-note { font-size: 11px; color: #6f8597; margin-top: 2px; font-style: italic; }
+/* Actual-cut-size entry (Laser) + calc-vs-actual display — 2026-05-31. */
+.kdstock-tag { font-family: "Flux Architect", monospace; font-size: 9px; font-weight: 700; color: #0b1117; background: #4ecca3; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
+.kdstock-calc { font-family: "Flux Architect", monospace; font-size: 11px; color: #7d8a99; margin-top: 1px; text-decoration: line-through; opacity: 0.8; }
+.kdstock-actual { display: flex; align-items: center; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
+.kdstock-actual-lab { font-family: "Flux Architect", monospace; font-size: 11px; color: #9fe9cf; font-weight: 700; }
+.kdstock-actual input { width: 56px; background: #0f1620; border: 1px solid #2a3a4f; color: #e8eef5; border-radius: 6px; padding: 4px 6px; font-family: "Flux Architect", monospace; font-size: 12px; }
+.kdstock-actual span { color: #889bb3; font-family: "Flux Architect", monospace; }
+.kdstock-actual-save, .kdstock-actual-clear { background: transparent; border: 1px solid #2a4a52; color: #4ecca3; border-radius: 6px; padding: 4px 9px; font-size: 13px; cursor: pointer; font-family: "Flux Architect", monospace; }
+.kdstock-actual-save:hover { background: rgba(78,204,163,0.15); }
+.kdstock-actual-clear { color: #c9a96a; border-color: #4a3a2a; }
+html[data-theme="sketch"] .kdstock-tag { background: #2f8f6f; color: #f3ecdd; }
+html[data-theme="sketch"] .kdstock-actual input,
+html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rgba(0,0,0,0.06)) !important; }
 .kdstock-del { flex: 0 0 auto; background: transparent; border: 1px solid #3a2a2a; color: #c98a8a; border-radius: 6px; padding: 6px 10px; font-size: 14px; cursor: pointer; font-family: inherit; }
 .kdstock-del:hover { background: rgba(194,85,85,0.18); border-color: #c25555; color: #e07a7a; }
 .kdstock-add { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 16px; border-top: 1px solid #232830; }

@@ -952,6 +952,7 @@ function _renderCutList(parts, projectKey) {
         ${_canDownloadPartDxf()
           ? `<button id="cut-download-all-btn" class="action-btn cut-action" ${totalDxfs === 0 ? 'disabled' : ''}>⬇ Download all ${totalDxfs} DXFs</button>`
           : '<span class="cut-action-hint">View only — for laser cuts download from 📐 Cut Sheets above</span>'}
+        <button id="cut-remnants-btn" class="action-btn cut-action">📦 Remnants Stock</button>
       </div>
     </div>`;
 }
@@ -1080,6 +1081,18 @@ function _wireCutList(parts, projectKey) {
       });
     });
   }
+
+  // Remnants Stock — same shared modal the Nest workspace uses, reachable
+  // here so the Laser worker can see + record offcuts without admin/nest
+  // access (เอ๋ 2026-05-31 'ให้แสดงที่ User Laser ด้วย').
+  ROOT.querySelector('#cut-remnants-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    if (window.kdNest && typeof window.kdNest.openStock === 'function') {
+      window.kdNest.openStock();
+    } else {
+      alert('Remnants stock unavailable — nest module not loaded.');
+    }
+  });
 
   // Download-all: fire one download per DXF, spaced 250 ms so the
   // browser doesn't dedupe.
