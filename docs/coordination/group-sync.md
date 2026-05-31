@@ -927,3 +927,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (44f4ab8, live) Remnants Stock modal fixed: (1) OPAQUE box in all themes — theme reset had wiped .kdstock-box fill on sketch/chalk so it floated see-through over the nest layout; added theme-prefixed opaque backgrounds (sketch cream #f3ecdd, chalk board #2f3a38). (2) DRAGGABLE — header is now a grab handle (pointer events, absolute-positioned on first drag, clamped to viewport) so it can be moved off the layout. Verified live.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (fdcf19d, live) Run Nesting now AUTO-SAVES offcuts to Remnants Stock. Root cause: dontRemember was a documented no-op and _saveRemnant only fired from the + Add button, so the pool stayed empty after a run (เอ๋ 'กด run nesting แล้วทำไมไม่มีเศษวัสดุ'). New: _largestOffcut (raster+histogram largest-empty-rect per sheet), _sheetGrain (H+V=MIXED), _autoSaveRemnants gated on !dontRemember, REPLACES this project's prior auto offcuts (auto:true+sourceProject) to avoid dup pileup while tuning; manual + other projects untouched; slivers <150mm/side skipped.
+**NEEDS:** nothing.
