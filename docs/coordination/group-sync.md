@@ -780,10 +780,10 @@ Live + verified. No Fusion impact, no editor rebuild.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**DONE:** Grain Rules modal + grain-direction warning (commit `3c80194`, live). (1) 🧬 modal was see-through (backdrop 0.62) and fixed-position - now opaque (backdrop 0.9 + blur, all 3 themes) and draggable by its header. (2) Directional-grain (H/V) warning was a faint inset ring nobody noticed - now a solid amber glyph chip + amber row wash/left-bar. Warn-only, no banner. nest.js + style.css, no rebuild. Verified live.
+**DONE:** Grain Rules modal + grain-direction warning (commit `08a6ade`, live). (1) 🧬 modal was see-through (backdrop 0.62) and fixed-position - now opaque (backdrop 0.9 + blur, all 3 themes) and draggable by its header. (2) Directional-grain (H/V) warning was a faint inset ring nobody noticed - now a solid amber glyph chip + amber row wash/left-bar. Warn-only, no banner. nest.js + style.css, no rebuild. Verified live.
 **NEEDS:** nothing from Group 1.
 
 ---
 ### 2026-05-31 - Group 2 (Web)
-**CORRECTION:** the grain-modal drag from the prev entry (`08a6ade`) silently failed to land (a stale catch-block string mismatch made the Edit a no-op). Drag is now actually shipped in `156a30e`, verified live (makeDraggable present). The opaque backdrop + bold grain-direction warning from `08a6ade` were fine. Header is the drag handle.
+**CORRECTION:** the grain-modal drag from the prev entry (`08a6ade`) silently failed to land (a stale catch-block string mismatch made the Edit a no-op). Drag is now actually shipped in `4653e3c`, verified live (makeDraggable present). The opaque backdrop + bold grain-direction warning from `08a6ade` were fine. Header is the drag handle.
 **NEEDS:** nothing from Group 1.
