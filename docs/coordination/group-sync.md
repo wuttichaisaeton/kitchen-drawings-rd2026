@@ -932,3 +932,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (fdcf19d, live) Run Nesting now AUTO-SAVES offcuts to Remnants Stock. Root cause: dontRemember was a documented no-op and _saveRemnant only fired from the + Add button, so the pool stayed empty after a run (เอ๋ 'กด run nesting แล้วทำไมไม่มีเศษวัสดุ'). New: _largestOffcut (raster+histogram largest-empty-rect per sheet), _sheetGrain (H+V=MIXED), _autoSaveRemnants gated on !dontRemember, REPLACES this project's prior auto offcuts (auto:true+sourceProject) to avoid dup pileup while tuning; manual + other projects untouched; slivers <150mm/side skipped.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [correction]
+**DONE:** CORRECTION to the entry above (line ~934): it cited fdcf19d but that was the docs-fix commit — the auto-save offcuts feature actually landed in **0a821d3** (verified live: _largestOffcut/_autoSaveRemnants present). The board entry was written before my code Edit succeeded (first Edit failed on a wrong old_string), so it captured a stale hash. Feature is genuinely live now.
+**NEEDS:** nothing.
