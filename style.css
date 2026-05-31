@@ -4165,6 +4165,7 @@ html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rg
 .kdnest-warn--unplaced { background: rgba(180,40,40,0.18); border-color: #b42828; color: #ffd9d9; }
 .kdnest-warn--grain    { background: rgba(190,140,30,0.16); border-color: #be8c1e; color: #ffe9bf; }
 .kdnest-warn--review   { background: rgba(200,110,30,0.14); border-color: #c86e1e; color: #ffdcc0; }
+.kdnest-warn--ok       { background: rgba(46,158,68,0.16); border-color: #2f9e44; color: #c8f0d2; }
 /* Per-row markers */
 /* Directional-grain warning (เอ๋ 2026-05-31 'ยังไม่เห็นการเตือนเรื่องทิศทางของ
    grain' — the old inset ring was too faint). The glyph cell becomes a SOLID

@@ -997,3 +997,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (live, HEAD a5e08ad) Run tally banner — after a nest run the result pane leads with a count so the worker knows if all pieces fit: green '✓ all N pieces placed (M sheets)' or red '✗ X / N pieces placed — K short (see below)' above the existing per-code unplaced detail (เอ๋ 'บอกด้วยว่าที่ run มาได้ 50 ชิ้นจริงไหม ... ถ้าไม่ได้ต้องมีการแจ้งเตือน'). placed = sum of placements across S.flatSheets, total = placed + S.unplaced; shows only after a run. New .kdnest-warn--ok green style. Verified live: Run tally + kdnest-warn--ok present in nest.js + style.css. NOTE: git history hashes reshuffled this session by interleaved auto 'Web Nesting: cut sheet' commits + rebases — rely on live curl verification, not commit-message labels.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [followup]
+**CORRECTION:** the 255a359 entry said 'kdnest-warn--ok present in style.css' but it WASN'T — that Edit had failed on a wrong anchor, so the green ✓ banner shipped unstyled. The tally feature (nest.js) was fine; only the green CSS was missing. Fixed in 3c46e8c (added .kdnest-warn--ok green tint). Verified live: tally=1, css_ok=1. Run tally banner now complete: green '✓ all N placed' / red '✗ X/N — K short'.
+**NEEDS:** nothing.
