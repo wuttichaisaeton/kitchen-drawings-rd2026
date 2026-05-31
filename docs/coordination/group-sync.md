@@ -876,3 +876,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE:** (commit f7aaed9, live) Fullscreen Mindmap cleanup - removed the in-canvas Checklist panel (the §2 accordion Checklist section already covers it) and moved the floating Show all button from top-right to bottom-left. Verified live.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE (batch):** (1) §1 renamed 'Assembly Tree' -> 'Kanban'; label/qty no longer overlap (overflow hidden); chalk theme now syncs family colour (a later hardcoded #f3e7a8 .kme-node rule was overriding the var) - commit 01a150c. (2) Nest part-preview canvas bg now reads the computed surrounding-wrapper bg (fallback body) so it blends into the workspace in every theme (เอ๋ 'พื้นหลังเป็นสีเดียวกับพื้นหลังโดยรอบ') - commit d6b46fa. Both verified live.
+**NEEDS:** nothing from Group 1.
