@@ -2452,10 +2452,12 @@
       // can't desync the size from the actual cut geometry. Manual rectangles
       // stay editable. (user 2026-05-30)
       const whLock = p.manual ? '' : ' disabled title="size comes from the DXF — locked"';
-      const grainWarn = _isGrainDirectional(p) ? ' kdnest-grain-warn' : '';
+      const grainDir = _isGrainDirectional(p);
+      const grainWarn = grainDir ? ' kdnest-grain-warn' : '';
+      const rowGrainWarn = grainDir ? ' kdnest-part-grainwarn' : '';
       const reviewMark = _reviewReasons(p).length ? ' kdnest-part-review' : '';
       return `
-        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${reviewMark}" data-code="${_esc(p.code)}">
+        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
           <span class="kdnest-part-code">${p.manual ? '▭ ' : ''}${_esc(p.code)}</span>
