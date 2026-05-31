@@ -887,3 +887,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE:** (commits 3b69567(no-op)+7faef52, live) Nest SHEET-view canvas bg now also blends into the surrounding workspace (same fix as the part preview, เอ๋ 'อันนี้ด้วย'). _drawSheet read the computed .kdnest-canvas-wrap bg for the outer fill instead of hardcoded #0b1117; the metal sheet rectangle + part colours unchanged. Verified live.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**FIX:** Nest sheet-view bg stayed dark in sketch/chalk (commits cb6a360 + ff4e26a, live). Root cause: _drawSheet had a non-themed default + a getComputedStyle read that returned a dark value. Both _drawSheet and _drawPartPreview now use a plain per-theme constant (sketch #f7f2e7 / chalk #26302e / else #0b1117) - paper/board ARE the surround, deterministic, no computed read. Verified live (computed reads = 0).
+**NEEDS:** nothing from Group 1.
