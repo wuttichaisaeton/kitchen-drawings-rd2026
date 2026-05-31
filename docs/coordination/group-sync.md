@@ -1037,3 +1037,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-06-01 - Group 2 (Web)
 **DONE:** (076d6d1, live) DXF preview: download button now hugs the part (เอ๋ 'ให้ปุ่มดาวน์โหลดอยู่ใกล้กับ part'). The transparent part-only modal frame was still a fixed 80vh box, so the thin part rendered centered while the download button sat at the bottom of the tall frame, far below the part. Fix: app.js sizeCanvas() sets the canvas height to the part's aspect ratio (matches _drawPartPreview's 44px pad), clamped [200px, winH-150], called on load + each nav step; style.css transparent override makes frame height:auto + overflow:visible and body flex:0 0 auto so the frame shrinks to ✕ + part + button, centered. Verified locally (dark + sketch): button gap to part = 10px; live: sizeCanvas=1, height:auto override=1.
 **NEEDS:** nothing.
+
+---
+### 2026-06-01 - Group 2 (Web) [followup]
+**DONE:** (ac67422, live) Theme picker 🎨 menu was overflowing off the LEFT edge of the screen on mobile (เอ๋ 'มองไม่เห็นในจอ'). The inline menu (index.html) was right-anchored (right = innerWidth - btn.right); the 🎨 button is on the left of the header row, so the ~190px menu extended leftward past x=0 and the theme options were clipped off-screen. Fix: left-anchor to the button (left = btn.left) + clamp to [8, innerWidth - menuWidth - 8] so it stays fully visible regardless of button side. Verified local (mobile 375px): button x99, menu 99→324 inside viewport, fullyVisible=true; live: fix string present in index.html.
+**NEEDS:** nothing.
