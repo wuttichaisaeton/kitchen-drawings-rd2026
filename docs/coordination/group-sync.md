@@ -942,3 +942,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (6349194, live) Remnant thumbnails: (1) AUTO remnants now store the sheet layout (piece footprint rects + sheetW/H + offcut pos + sheetNo) so the thumbnail draws the real sheet — cut pieces faint grey, leftover green at its actual position, label 'WxH · sheet N' — answering 'ดูรูปได้ว่ามาจากแผ่นไหน'. Manual remnants keep the centred-rect fallback. (2) SVG preview text monospace -> 'Flux Architect' (เอ๋ 'font flux architect ทั้งหมด'). Verified live.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (d9f395e, live) Remnants at Laser view + actual-cut-size entry. (1) kdNest.openStock() exported + 'Remnants Stock' button added to the Laser Cut List actions (เอ๋ 'ให้แสดงที่ User Laser ด้วย'). (2) Each remnant card has an Actual WxH editor for Laser+admin (_canEditActual); placeholders show calc value; saves actualW/actualH/actualAt to RTDB via _updateRemnant. (3) Card dims USE actual when present (with 'actual' tag) + show calc struck-through below; clear revert. Verified live: openStock=1 canEdit=2 cut-remnants-btn present.
+**NEEDS:** nothing.
