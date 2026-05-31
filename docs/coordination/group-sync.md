@@ -987,3 +987,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [followup]
 **DONE:** (3ba6023) Grain dialog opaque fix that the 3db8a61 entry claimed but FAILED to land (the .kdng-box Edit anchored on a non-existent background-image:none line in .kdstock-box → silent no-op; live showed kdng_sketch=0). Re-added sketch/chalk .kdng-box opaque bg with the correct anchor. ALSO: the prior board entry's hash for the horizontal-hatch + dialog work was guessed wrong (said 2031f3a, real = 3db8a61). Verified live: .kdng-box{ x2.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (437b9e3, live) Sheet now ALWAYS shows faint horizontal grain hatch. It was gated on _sheetGrain via _grainHatchCanvas (draws nothing for MIXED/ANY) and real layouts mix grains, so the sheet showed no hatch. Now drawn unconditionally (inline horizontal loop, clipped, faint, under parts) since a stock sheet's grain runs horizontal regardless of its parts (เอ๋ 'ที่ Sheet ให้โชว์ Hatch แนวนอนบางๆ'). Per-part + remnant hatch (H/V only, also horizontal) unchanged. Verified live.
+**NEEDS:** nothing.
