@@ -907,3 +907,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (commit 3936047, live) Amber attention-highlight on 5 Nesting controls the owner flags as easy-to-forget: Skip/Don't-remember checkboxes (.kdnest-skip-wrap), sheet-stock reorder arrows (.kdnest-stock-up/-down), sheet-stock qty (.kdnest-stock-qty), Run Nesting (#kdnest-run by id, not the shared class), per-part grain cell (.kdnest-part-grain). One amber accent (#ff9800, deeper #cf6f00 on sketch cream) across all 3 themes; skip box + Run button pulse, rest steady. Grain warn ring still layers on top.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web) [followup]
+**DONE:** (a8f9c64) Fixed the skip/don't-remember highlight - it targeted a non-existent .kdnest-skip-wrap; retargeted to .kdnest-skip-lab (the two checkboxes, since Mode/Gap use their own label classes). Verified live: pulse=3 skiplab=1 skipwrap_gone=0 run=2 grain=2 qty=1. All 5 attention-flags now active on every theme.
+**NEEDS:** nothing.
