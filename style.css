@@ -5435,3 +5435,66 @@ html[data-theme="sketch"] .cut-loc-panel{ background:#f3ecdd!important; color:#1
 html[data-theme="sketch"] .cut-loc-head{ border-bottom-color:rgba(60,50,40,0.2); }
 html[data-theme="chalk"] .cut-loc-panel{ background:#2f3a38!important; color:#f4f1e8; border-color:rgba(180,200,190,0.3); }
 html[data-theme="chalk"] .cut-loc-head{ border-bottom-color:rgba(180,200,190,0.2); }
+
+/* === Nesting: high-attention controls (don't-forget-to-check) 2026-05-31 === */
+/* 5 spots flagged by the owner: Skip/Don't-remember checkboxes, sheet-stock   */
+/* reorder arrows, sheet-stock qty, Run Nesting, and the per-part grain cell.   */
+/* One amber accent (#ff9800) reads on all 3 themes (dark / sketch-cream /      */
+/* chalk). Backgrounds use !important so the *{background:transparent} theme    */
+/* reset cannot blank them. Pulse only on the two once-per-run settings (skip   */
+/* box + Run button); the rest are steady to avoid a flickering wall.           */
+@keyframes kdnestFlagPulse{
+  0%,100%{ box-shadow:0 0 0 0 rgba(255,152,0,0.0); }
+  50%    { box-shadow:0 0 0 5px rgba(255,152,0,0.32); }
+}
+
+/* 1 - Skip remnants / Don't remember (set per run, easy to forget) */
+.kdnest-skip-wrap{
+  border:2px solid #ff9800!important; border-radius:10px;
+  background:rgba(255,152,0,0.12)!important; padding:6px 12px!important;
+  animation:kdnestFlagPulse 2.8s ease-in-out infinite;
+}
+.kdnest-skip-wrap .kdnest-skip-lab{ font-weight:700; }
+
+/* 2 - Sheet-stock priority arrows */
+.kdnest-stock-up, .kdnest-stock-down{
+  border:1.5px solid #ff9800!important; color:#ff9800!important;
+  font-weight:800; background:rgba(255,152,0,0.12)!important; border-radius:6px;
+}
+.kdnest-stock-up:disabled, .kdnest-stock-down:disabled{
+  border-color:rgba(255,152,0,0.3)!important; color:rgba(255,152,0,0.4)!important;
+  background:rgba(255,152,0,0.04)!important;
+}
+
+/* 3 - Sheet-stock qty (how many of each sheet) */
+.kdnest-stock-qty{
+  border:2px solid #ff9800!important; background:rgba(255,152,0,0.14)!important;
+  font-weight:800; border-radius:6px;
+}
+
+/* 4 - Run Nesting (primary action) - keep its blue, add amber pulsing ring. */
+/* Target the ID, not .kdnest-btn-run (that class is shared by modal Save/Add). */
+#kdnest-run{
+  outline:2px solid #ff9800; outline-offset:2px;
+  animation:kdnestFlagPulse 2.8s ease-in-out infinite;
+}
+
+/* 5 - Per-part grain cell (verify H / V / ANY before cutting). Steady amber */
+/* box; the unset-grain warn ring (.kdnest-grain-warn::after) still pulses on */
+/* top so missing-grain parts stay MORE urgent than merely-flagged ones. */
+.kdnest-part-grain{
+  border:2px solid #ff9800!important; background:rgba(255,152,0,0.14)!important;
+  border-radius:6px; font-weight:800;
+}
+
+/* Sketch (cream paper) needs a deeper amber for contrast. */
+html[data-theme="sketch"] .kdnest-skip-wrap,
+html[data-theme="sketch"] .kdnest-stock-up,
+html[data-theme="sketch"] .kdnest-stock-down,
+html[data-theme="sketch"] .kdnest-stock-qty,
+html[data-theme="sketch"] .kdnest-part-grain{
+  border-color:#cf6f00!important; background:rgba(207,111,0,0.12)!important;
+}
+html[data-theme="sketch"] .kdnest-stock-up,
+html[data-theme="sketch"] .kdnest-stock-down{ color:#cf6f00!important; }
+html[data-theme="sketch"] #kdnest-run{ outline-color:#cf6f00; }
