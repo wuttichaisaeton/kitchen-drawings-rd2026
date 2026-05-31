@@ -827,6 +827,7 @@
       const lx = (r.offX != null) ? ox + (+r.offX) * sc : ox + (dw - lw) / 2;
       const ly = (r.offY != null) ? mapY((+r.offY) + h) : oy + (dh - lh) / 2;
       svg += '<rect x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" width="' + Math.max(2, lw).toFixed(1) + '" height="' + Math.max(2, lh).toFixed(1) + '" fill="#4ecca344" stroke="#4ecca3" stroke-width="1.4"/>'
+        + _grainHatchSvg(r.grain, lx, ly, Math.max(2, lw), Math.max(2, lh), '#9fe9cf')
         + '<text x="' + (BW / 2) + '" y="' + (BH - 3) + '" fill="#9fe9cf" font-size="9" text-anchor="middle" font-family="' + FONT + '">' + Math.round(w) + '\u00d7' + Math.round(h) + (r.sheetNo ? ' \u00b7 sheet ' + r.sheetNo : '') + '</text>'
         + '</svg>';
       return svg;
@@ -838,6 +839,7 @@
     return '<svg class="kdstock-prev" width="' + BW + '" height="' + BH + '" viewBox="0 0 ' + BW + ' ' + BH + '">'
       + '<rect x="0" y="0" width="' + BW + '" height="' + BH + '" fill="#0b1117"/>'
       + '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + rw.toFixed(1) + '" height="' + rh.toFixed(1) + '" fill="#4ecca322" stroke="#4ecca3" stroke-width="1.5"/>'
+      + _grainHatchSvg(r.grain, x, y, rw, rh, '#9fe9cf')
       + '<text x="' + (BW / 2) + '" y="' + (BH / 2) + '" fill="#cfe7ee" font-size="11" text-anchor="middle" dominant-baseline="middle" font-family="' + FONT + '">' + Math.round(w) + '\u00d7' + Math.round(h) + '</text>'
       + '</svg>';
   }
@@ -1939,6 +1941,37 @@
     _autoSaveRemnants();
   }
 
+  // ── Grain-direction hatch ──────────────────────────────────────────
+  // Thin parallel lines showing which way the grain runs, so a worker can read
+  // the grain at a glance on the Part preview, the Sheet, and a Remnant
+  // thumbnail (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน').
+  // H = horizontal lines, V = vertical, MIXED = crosshatch (sheet had both),
+  // ANY/unset = nothing. Function declarations → hoisted, usable everywhere
+  // in this IIFE (incl. _remnantPreview above).
+  function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr) {
+    const g = String(grain || '').toUpperCase();
+    if (g !== 'H' && g !== 'V' && g !== 'MIXED') return;
+    const step = 8 * (dpr || 1);
+    ctx.save();
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = Math.max(0.5, 0.5 * (dpr || 1));
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    if (g === 'H' || g === 'MIXED') for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
+    if (g === 'V' || g === 'MIXED') for (let x = x0 + step; x < x1; x += step) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+    ctx.stroke();
+    ctx.restore();
+  }
+  function _grainHatchSvg(grain, x, y, w, h, colour) {
+    const g = String(grain || '').toUpperCase();
+    if (g !== 'H' && g !== 'V' && g !== 'MIXED') return '';
+    const step = 6, lines = [];
+    if (g === 'H' || g === 'MIXED') for (let yy = y + step; yy < y + h; yy += step) lines.push('<line x1="' + x.toFixed(1) + '" y1="' + yy.toFixed(1) + '" x2="' + (x + w).toFixed(1) + '" y2="' + yy.toFixed(1) + '"/>');
+    if (g === 'V' || g === 'MIXED') for (let xx = x + step; xx < x + w; xx += step) lines.push('<line x1="' + xx.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y2="' + (y + h).toFixed(1) + '"/>');
+    if (!lines.length) return '';
+    return '<g stroke="' + colour + '" stroke-width="0.4" opacity="0.5">' + lines.join('') + '</g>';
+  }
+
   // ════════════════════════════════════════════════════════════════════
   //  Single-part preview (desktop-style clear view + ↑/↓ keyboard nav)
   // ════════════════════════════════════════════════════════════════════
@@ -2010,7 +2043,16 @@
     if (polys.outer && polys.outer.length > 1) {
       trace(polys.outer, true);
       ctx.fillStyle = STEEL; ctx.fill();
-      ctx.strokeStyle = colour; ctx.lineWidth = 2.2 * dpr; ctx.stroke();
+      // Grain hatch — clipped to the silhouette so the lines read as grain on
+      // the metal. The preview is already rotated so V parts run vertically
+      // (grot=90), so screen-space H/V matches what the worker sees on the
+      // sheet. (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน')
+      if (part.grain === 'H' || part.grain === 'V') {
+        ctx.save(); trace(polys.outer, true); ctx.clip();
+        _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr);
+        ctx.restore();
+      }
+      ctx.strokeStyle = colour; ctx.lineWidth = 2.2 * dpr; trace(polys.outer, true); ctx.stroke();
     }
     if (polys.strokes && polys.strokes.length > 1) {
       ctx.strokeStyle = colour; ctx.lineWidth = 1.6 * dpr;
@@ -2107,6 +2149,22 @@
     ctx.strokeStyle = '#2a5dff';
     ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
     ctx.strokeRect(offX, offY, sheet.sw * scale, sheet.sh * scale);
+    // Sheet grain hatch — ONE direction for the whole sheet (a real sheet has a
+    // single grain). Derived from the parts on it: H/V → lines, MIXED → cross-
+    // hatch (a grain clash slipped through), ANY → none. Drawn faint UNDER the
+    // parts so the translucent part fills sit on top. (เอ๋ 2026-05-31 'ทำ Hatch
+    // ขีดบางๆ จะได้รู้ Grain ทิศทางไหน')
+    {
+      const _sg = (typeof _sheetGrain === 'function') ? _sheetGrain(sheet) : 'ANY';
+      const _hatchInk = _stheme === 'sketch' ? 'rgba(60,50,40,0.55)'
+        : _stheme === 'chalk' ? 'rgba(220,230,225,0.45)' : 'rgba(150,170,190,0.45)';
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(offX, offY, sheet.sw * scale, sheet.sh * scale);
+      ctx.clip();
+      _grainHatchCanvas(ctx, _sg, offX, offY, offX + sheet.sw * scale, offY + sheet.sh * scale, _hatchInk, window.devicePixelRatio || 1);
+      ctx.restore();
+    }
     // Each placement
     const palette = ['#4ecca3', '#ffa726', '#e74c3c', '#9b59b6',
                      '#3498db', '#f1c40f', '#1abc9c', '#e67e22',
