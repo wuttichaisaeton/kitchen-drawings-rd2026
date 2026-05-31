@@ -2324,7 +2324,7 @@
   function _isGrainDirectional(p) {
     if (!p || !p.selected || p.manual) return false;
     const g = String(p.grain || '').toUpperCase();
-    return g === 'H' || g === 'V';
+    return g !== 'H' && g !== 'V';   // ANY/blank = undecided -> warn; H/V = decided -> no warn (เอ๋ 2026-05-31)
   }
   // Shoelace area of a polygon ([[x,y],...]) — used to spot degenerate outlines.
   function _polyArea(pts) {
