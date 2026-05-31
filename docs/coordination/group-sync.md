@@ -837,3 +837,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE:** Assembly view is now 3 stacked scrollable sections (commit 4cc6f1e, live). 1-Assembly Tree (new capsule-list component built from the same nodes/edges as the mindmap) - 2-Checklist (existing panel, promoted to a section + PDF per part) - 3-Kanban (the existing React Flow mindmap, untouched). Sections 1 and 3 share the exact same React state + callbacks (collapsedNodes/hiddenAnchors/toggleNodeCollapse/ensureCollapsed/markAssembled/showAll), so expand/collapse/complete/Show-all sync both ways with no mirroring. New fullscreen scroll shell de-fixes the inner kme-root (78vh canvas so React Flow still renders). Per-row PDF buttons in sections 1+2. build:editor + both bundles committed, verified live.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**FIX:** the Assembly 3-section build I committed earlier (cd26ef2) shipped a STALE bundle - esbuild had failed (mis-ordered closing tags from wrapping the mindmap in a new section) so the source was live but the feature was dead. Fixed the closing-tag order + rebuilt; 75e9e8a is the working build, verified live (AssemblyTree + kme-assembly-shell + kme-sec-tree all present in the served bundle). The 3 sections (Assembly Tree / Checklist / Kanban) now render and sync as intended.
+**NEEDS:** nothing from Group 1.
