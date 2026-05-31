@@ -2495,20 +2495,19 @@
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
-          <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'directional grain — lay it the right way · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
+          <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set yet — pick H/V if it matters · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
           <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>
           ${status}
         </div>`;
     }).join('');
 
-    // Directional-grain summary banner (เอ๋ 2026-05-31 'ไม่เห็นเตือน' x2). The
-    // per-row amber chip was easy to miss in a long list; this counts the
-    // selected H/V parts and shows one loud banner above the rows. Empty when
-    // nothing is directional (all ANY). Styled .kdnest-grain-summary.
+    // Unset-grain summary banner — counts parts whose grain is still ANY/blank
+    // (undecided). One banner above the rows; empty when every part has a grain
+    // set. (เอ๋ 2026-05-31 'เตือนเฉพาะตัวที่ไม่แน่ใจ'). Styled .kdnest-grain-summary.
     const _dirParts = S.parts.filter(_isGrainDirectional);
     const grainSummary = _dirParts.length
-      ? `<div class="kdnest-grain-summary">⚠ ${_dirParts.length} part${_dirParts.length === 1 ? '' : 's'} have directional grain (─ H / │ V) — lay the grain the right way before cutting</div>`
+      ? `<div class="kdnest-grain-summary">⚠ ${_dirParts.length} part${_dirParts.length === 1 ? '' : 's'} have no grain set (ANY) — set ─ H / │ V if grain matters before cutting</div>`
       : '';
 
     const sheetStockRows = S.sheetStock.map((s, i) => {
