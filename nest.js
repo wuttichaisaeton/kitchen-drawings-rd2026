@@ -714,6 +714,32 @@
       try { await _saveGrainRows(); modal.remove(); _refreshView(); }
       catch (err) { alert('Save failed: ' + (err.message || err)); btn.disabled = false; btn.textContent = '💾 Save'; }
     });
+    // Drag the dialog by its header (เอ๋ 2026-05-31 'ให้ผมขยับได้'). The box is
+    // flex-centred; we offset it with a transform so the centring still holds.
+    // dx/dy persist across pointer cycles within this render (reset on re-render).
+    (function makeDraggable() {
+      const box = q('.kdng-box');
+      const handle = q('.kdng-head');
+      if (!box || !handle) return;
+      let dx = 0, dy = 0, sx = 0, sy = 0, dragging = false;
+      handle.addEventListener('pointerdown', (e) => {
+        dragging = true; sx = e.clientX; sy = e.clientY;
+        try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+      });
+      handle.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        box.style.transform = `translate(${dx + e.clientX - sx}px, ${dy + e.clientY - sy}px)`;
+      });
+      const end = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        dx += e.clientX - sx; dy += e.clientY - sy;
+        try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+      };
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    })();
   }
 
   // ── grain.json → pattern map ──────────────────────────────────────
