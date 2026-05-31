@@ -616,7 +616,7 @@ const edgeTypes = { floating: FloatingEdge };
 // (the editor's extSyncNonce) bumps — which app.js does on every assembled or
 // comment Firebase write — so ticks/comments from the mindmap or another
 // device show here with no remount. (2026-05-30)
-function ChecklistPanel({ projectKey, nonce }) {
+function ChecklistPanel({ projectKey, nonce, asSection }) {
   const api = window.kdAPI || {};
   const [open, setOpen] = useState(false);
   const [openCode, setOpenCode] = useState(null);   // row whose comments are expanded
@@ -632,7 +632,10 @@ function ChecklistPanel({ projectKey, nonce }) {
   // after a Firebase tick/comment lands. No local mirror needed.
   void nonce;
 
-  if (!open) {
+  // asSection (§2 accordion section, เอ๋ 2026-05-31): always-open, no
+  // collapsed launcher button + no panel chrome — the section header owns
+  // the title. The floating-panel mode keeps the launcher button.
+  if (!asSection && !open) {
     return (
       <button className="kme-checklist-btn" onClick={() => setOpen(true)} title="Assembly checklist">
         <svg className="kme-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -659,11 +662,11 @@ function ChecklistPanel({ projectKey, nonce }) {
   };
 
   return (
-    <div className="kme-checklist-panel">
+    <div className={'kme-checklist-panel' + (asSection ? ' kme-checklist-section' : '')}>
       <div className="kme-checklist-head">
         <span className="kme-checklist-title">Checklist</span>
         <span className="kme-checklist-progress">{done}/{total}</span>
-        <button className="kme-checklist-close" onClick={() => setOpen(false)} title="Close">✕</button>
+        {!asSection && <button className="kme-checklist-close" onClick={() => setOpen(false)} title="Close">✕</button>}
       </div>
       <div className="kme-checklist-list">
         {parts.map(p => {
@@ -677,6 +680,13 @@ function ChecklistPanel({ projectKey, nonce }) {
                 <span className="kme-checklist-code">{p.code}</span>
                 <span className="kme-checklist-qty">×{p.qty}</span>
               </label>
+              {api.pdfUrlForCode && api.pdfUrlForCode(p.code) && (
+                <button
+                  className="kme-checklist-pdf"
+                  onClick={() => _openPdfForCode(p.code)}
+                  title="Open PDF"
+                >📄</button>
+              )}
               <button
                 className={'kme-checklist-cmt-toggle' + (comments.length ? ' has-cmt' : '') + (expanded ? ' is-open' : '')}
                 onClick={() => { setOpenCode(expanded ? null : p.code); setDraft(''); }}
@@ -715,6 +725,132 @@ function ChecklistPanel({ projectKey, nonce }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+// ── Shared PDF opener ───────────────────────────────────────────────
+// Same touch/desktop behaviour as the node's onOpenPdf: same-tab nav on
+// touch (iPad popup-blocks window.open from synthesized handlers), new tab
+// on desktop. Reused by the Assembly Tree + Checklist section rows.
+function _openPdfForCode(code) {
+  const api = window.kdAPI || {};
+  if (!code) return;
+  const url = api.pdfUrlForCode ? api.pdfUrlForCode(code) : null;
+  if (!url) return;
+  const isTouch = (typeof window !== 'undefined') && window.matchMedia
+    && window.matchMedia('(pointer: coarse)').matches;
+  if (isTouch) { window.location.href = url; return; }
+  (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);
+}
+
+// ── Assembly Tree (§1) — capsule list view of the SAME tree the Kanban
+// (§3 mindmap) renders. Shares collapsedNodes / hiddenAnchors / assembled
+// state, so expand/collapse + complete + Show-all sync both ways (เอ๋
+// 2026-05-31 'Assembly Tree เป็น capsule … sync กับ Kanban … 1 และ 3 ย่อ
+// ขยายเหมือนกัน'). Auto columns: each row = capsule indented by tree depth,
+// with expand chevron (parents), label, qty, 💬 count, 📄 PDF, 🧩 complete.
+function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
+                        collapsedNodes, hiddenAnchors, revealAll,
+                        toggleNodeCollapse, ensureCollapsed, releaseNode }) {
+  const api = window.kdAPI || {};
+  void nonce;  // touch so reads of isAssembled re-run after a Firebase tick
+
+  // Build an ordered, depth-tagged row list from the directed edge set.
+  // Roots = BOM nodes with no incoming edge (the project-center is excluded).
+  const rows = useMemo(() => {
+    const childrenOf = new Map();
+    const hasParent = new Set();
+    for (const e of edges) {
+      if (!e.source || !e.target) continue;
+      if (!childrenOf.has(e.source)) childrenOf.set(e.source, []);
+      childrenOf.get(e.source).push(e.target);
+      hasParent.add(e.target);
+    }
+    const byId = new Map(nodes.map(n => [n.id, n]));
+    const isBom = (n) => n && n.data && n.data.kind === 'bom';
+    // Top roots = BOM nodes whose only parent is the project center (or none).
+    const roots = nodes.filter(n => isBom(n) && (
+      !hasParent.has(n.id) ||
+      (childrenOf.get('project') || []).includes(n.id) ||
+      !nodes.some(p => isBom(p) && (childrenOf.get(p.id) || []).includes(n.id))
+    ));
+    const seen = new Set();
+    const out = [];
+    const walk = (id, depth) => {
+      const n = byId.get(id);
+      if (!n || !isBom(n) || seen.has(id)) return;
+      seen.add(id);
+      const kids = (childrenOf.get(id) || []).filter(k => isBom(byId.get(k)));
+      out.push({ id, node: n, depth, hasKids: kids.length > 0 });
+      if (!collapsedNodes.has(id)) {
+        for (const k of kids) walk(k, depth + 1);
+      }
+    };
+    // de-dup roots (a node reached as a child shouldn't also be a root)
+    const rootIds = new Set(roots.map(r => r.id));
+    for (const r of roots) {
+      // skip if this root is a descendant of another root already walked
+      if (seen.has(r.id)) continue;
+      walk(r.id, 0);
+    }
+    // any BOM node not yet emitted (orphan / cycle) appended at depth 0
+    for (const n of nodes) {
+      if (isBom(n) && !seen.has(n.id)) { void rootIds; walk(n.id, 0); }
+    }
+    return out;
+  }, [nodes, edges, collapsedNodes]);
+
+  // A row is dimmed (assembled/complete) when its code is assembled — same
+  // signal the Kanban node + checklist use.
+  const isDone = (code) => !!(code && api.isAssembled && api.isAssembled(projectKey, code));
+
+  return (
+    <div className="kme-tree">
+      {rows.length === 0 && <div className="kme-tree-empty">No assembly tree for this project.</div>}
+      {rows.map(({ id, node, depth, hasKids }) => {
+        const code = node.data?.label || '';
+        const qty = node.data?.qty;
+        const collapsed = collapsedNodes.has(id);
+        const done = isDone(code);
+        const comments = api.getComments ? (api.getComments(code) || []) : [];
+        const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
+        return (
+          <div
+            key={id}
+            className={'kme-tree-row' + (done ? ' is-done' : '')}
+            style={{ paddingLeft: (8 + depth * 18) + 'px' }}
+          >
+            <button
+              className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf') + (collapsed ? ' is-collapsed' : '')}
+              onClick={() => hasKids && toggleNodeCollapse(id)}
+              title={hasKids ? (collapsed ? 'Expand' : 'Collapse') : ''}
+              disabled={!hasKids}
+            >{hasKids ? (collapsed ? '▸' : '▾') : '·'}</button>
+            <span className="kme-tree-label" title={code}>{code}</span>
+            {qty != null && <span className="kme-tree-qty">×{qty}</span>}
+            {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
+            {hasPdf && (
+              <button
+                className="kme-tree-pdf"
+                onClick={() => _openPdfForCode(code)}
+                title="Open PDF"
+              >📄</button>
+            )}
+            <button
+              className={'kme-tree-done' + (done ? ' is-on' : '')}
+              onClick={() => {
+                const next = !done;
+                api.markAssembled?.(projectKey, code, next);
+                // Mirror the Kanban node: complete → collapse+hide; un-complete → release.
+                if (next) ensureCollapsed?.(id);
+                else releaseNode?.(id);
+              }}
+              title={done ? 'Mark not assembled' : 'Mark assembled'}
+            >🧩</button>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1482,6 +1618,49 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, [deepLinkCode]);
 
   return (
+    <div className={`kme-assembly-shell${fullscreen ? ' kme-fs-shell' : ''}`}>
+      {/* Sticky shell toolbar — Back + Show all reachable from the top of
+          the scroll, so the worker never has to scroll to the Kanban to
+          re-frame or leave. Show all calls the SHARED showAll → syncs §1+§3.
+          (เอ๋ 2026-05-31 'Show all เหมือนกัน') */}
+      <div className="kme-shell-bar">
+        <button
+          className="kme-shell-back"
+          onClick={() => {
+            document.documentElement.classList.remove('kme-fs-on');
+            setFullscreen(false);
+            (window.kdAPI?.back || (() => {}))();
+          }}
+          title="Back to projects"
+        >← Back</button>
+        <span className="kme-shell-title">Assembly</span>
+        <button className="kme-shell-showall" onClick={showAll} title="Show every node — clears all hide/collapse">⊞ Show all</button>
+      </div>
+
+      {/* §1 Assembly Tree — capsule list, shares state with §3 Kanban */}
+      <section className="kme-sec kme-sec-tree">
+        <div className="kme-sec-head"><span className="kme-sec-title">1 · Assembly Tree</span></div>
+        <div className="kme-sec-body">
+          <AssemblyTree
+            nodes={nodes} edges={edges} projectKey={projectKey} admin={admin}
+            nonce={extSyncNonce}
+            collapsedNodes={collapsedNodes} hiddenAnchors={hiddenAnchors} revealAll={revealAll}
+            toggleNodeCollapse={toggleNodeCollapse} ensureCollapsed={ensureCollapsed} releaseNode={releaseNode}
+          />
+        </div>
+      </section>
+
+      {/* §2 Checklist — flat tick list + PDF per part */}
+      <section className="kme-sec kme-sec-checklist">
+        <div className="kme-sec-head"><span className="kme-sec-title">2 · Checklist</span></div>
+        <div className="kme-sec-body">
+          <ChecklistPanel projectKey={projectKey} nonce={extSyncNonce} asSection />
+        </div>
+      </section>
+
+      {/* §3 Kanban — the existing React Flow mindmap, untouched */}
+      <section className="kme-sec kme-sec-kanban">
+        <div className="kme-sec-head"><span className="kme-sec-title">3 · Kanban</span></div>
     <div className={`kme-root${admin ? '' : ' kme-view-only'}${collapsed ? ' kme-collapsed' : ''}${inChecklistMode ? ' kme-checklist' : ''}${fullscreen ? ' kme-fullscreen' : ''}`}>
       {/* Toolbar is admin-only. Workers get a clean canvas — the floating
           Show all (in the <Panel> below) is their only control, so the
@@ -1669,6 +1848,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           )}
         </ReactFlow>
       </div>
+      </section>
     </div>
   );
 }

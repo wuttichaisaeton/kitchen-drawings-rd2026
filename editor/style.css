@@ -922,3 +922,169 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   padding: 5px 10px; font-size: 12px; cursor: pointer; flex: none;
 }
 .kme-cmt-send:hover { background: #2b7bf3; }
+
+/* ════════════════════════════════════════════════════════════════════
+   3-SECTION ASSEMBLY VIEW (2026-05-31) — เอ๋: Assembly opens to 3 stacked
+   sections: 1·Assembly Tree (capsule list) · 2·Checklist · 3·Kanban (the
+   React Flow mindmap). §1 + §3 share collapse/assembled state so they
+   expand/collapse/complete/Show-all together. Vertical scroll.
+   ════════════════════════════════════════════════════════════════════ */
+.kme-assembly-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  background: #0d1117;
+  color: #e6edf3;
+}
+.kme-assembly-shell.kme-fs-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.kme-shell-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #11161d;
+  border-bottom: 1px solid #222b36;
+}
+.kme-shell-bar button {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  border-radius: 8px;
+  padding: 7px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 38px;
+}
+.kme-shell-bar button:hover { background: #243349; }
+.kme-shell-title { flex: 1; font-weight: 700; letter-spacing: 0.04em; opacity: 0.8; }
+.kme-shell-showall { color: #4ecca3 !important; border-color: #2f6f5c !important; }
+
+.kme-sec {
+  display: flex;
+  flex-direction: column;
+  border-bottom: 6px solid #060a0f;
+}
+.kme-sec-head {
+  position: sticky;
+  top: 55px;
+  z-index: 4;
+  padding: 8px 14px;
+  background: #161b22;
+  border-bottom: 1px solid #222b36;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #9fb3c8;
+}
+.kme-sec-title { color: #cfe1f0; }
+.kme-sec-body { padding: 6px 0; }
+
+/* §3 Kanban — de-fix the inner root so it sits in the scroll flow with a
+   fixed canvas height (React Flow needs explicit height to render). */
+.kme-assembly-shell .kme-sec-kanban .kme-root,
+.kme-assembly-shell .kme-sec-kanban .kme-root.kme-fullscreen {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  width: 100%;
+  height: 78vh;
+  height: 78dvh;
+}
+
+/* ── §1 Assembly Tree capsules ── */
+.kme-tree { display: flex; flex-direction: column; gap: 4px; padding: 4px 8px; }
+.kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
+.kme-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  background: #161b22;
+  border: 1px solid #283442;
+  border-radius: 999px;
+  min-height: 40px;
+  transition: opacity 0.25s ease, background 0.15s ease;
+}
+.kme-tree-row.is-done {
+  opacity: 0.5;
+  background: #12231a;
+  border-color: #2f6f4a;
+}
+.kme-tree-row.is-done .kme-tree-label { text-decoration: line-through; text-decoration-color: #3fb950; }
+.kme-tree-chev {
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  border-radius: 7px;
+  color: #cad6e6;
+  font-size: 13px;
+  cursor: pointer;
+}
+.kme-tree-chev.is-leaf { opacity: 0.35; cursor: default; }
+.kme-tree-chev:not(.is-leaf):hover { background: #243349; }
+.kme-tree-label {
+  flex: 1;
+  min-width: 0;
+  font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #e6edf3;
+}
+.kme-tree-qty { flex-shrink: 0; font-size: 12px; color: #88aab1; }
+.kme-tree-cmt { flex-shrink: 0; font-size: 12px; color: #c8a6ff; }
+.kme-tree-pdf, .kme-tree-done {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+}
+.kme-tree-pdf:hover, .kme-tree-done:hover { background: #243349; }
+.kme-tree-done.is-on { background: #1f6f47; border-color: #3fb950; }
+
+/* ── §2 Checklist as a section ── */
+.kme-checklist-panel.kme-checklist-section {
+  position: static;
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+.kme-checklist-section .kme-checklist-head { padding: 4px 14px; }
+.kme-checklist-section .kme-checklist-list { max-height: none; }
+.kme-checklist-pdf {
+  flex-shrink: 0;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  border-radius: 7px;
+  font-size: 14px;
+  cursor: pointer;
+  margin-left: 4px;
+}
+.kme-checklist-pdf:hover { background: #243349; }
