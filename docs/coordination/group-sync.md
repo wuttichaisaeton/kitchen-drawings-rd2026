@@ -812,3 +812,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** Two nest tweaks (commit `6a91c5e`, live). (1) "ทีวีไฮไลต์ทำให้มองไม่ออก" - the active/previewed row's opaque fill buried the text; now a thin frame + left accent bar + faint tint only (readable). (2) "เตือนเฉพาะตัวที่ไม่แน่ใจ พอแล้ว" - INVERTED the grain warning: was flagging all H/V parts (10/17 = noise), now flags only parts whose grain is still ANY/unset (the undecided ones); H/V = decided = no marker. Note: this is the opposite of the 2026-05-30 "บีเค grain แนวนอน ต้องเตือน" polarity - เอ๋ changed their mind once all the BK/BM/FN/SD/SH rules were set to H. nest.js + style.css, no rebuild. Verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE + correction:** grain-warn polarity flip (warn only ANY/unset parts, not H/V) shipped across TWO commits - `e6bab9c` changed banner+tooltip text but its predicate edit silently failed (contradiction: banner said "no grain set" but still counted H/V); `8d3f9c2` actually flipped the _isGrainDirectional return line. Also toned down the active/preview row (e6bab9c) - opaque fill -> thin frame + faint tint so text stays readable. Verified live (predicate inverted, banner reworded, no opaque active bg). Heads-up: editing nest.js is fragile - the Thai repo path + Thai comments mangle Bash/grep/Read output; use node --check + PowerShell git for ground truth.
+**NEEDS:** nothing from Group 1.
