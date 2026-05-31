@@ -55,6 +55,7 @@
                           // ให้ทำ Hilight ด้วย').
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     unplaced: [],     // pieces the packer couldn't place (set by _runNesting; for the warning banner)
+    grainSkippedRemnants: 0,  // saved offcuts a grain clash kept out of the last run (review banner)
     lastSavedJobId: null,  // set by _saveProject; informational
     currentSheetIdx: 0,
     previewCode: null,    // single-part preview mode (↑/↓ cycles; null = sheet view)
@@ -1704,6 +1705,26 @@
     if (hasV) return 'V';
     return 'ANY';
   }
+  // Material / finish of a sheet's leftover — taken from the parts laid on it.
+  // Parts don't carry these fields yet (BOM has only grain+thickness), so this
+  // reads p.material/p.finish if a future BOM adds them, else falls back to the
+  // shop default: all laser sheet metal is ALPF ([[reference_alpf_material]]),
+  // finish unknown (blank). Stored on the offcut so a future grain+material+
+  // finish match key is possible without a re-cut. (feedback_remnants_grain_finish)
+  function _sheetMaterial(sheet) {
+    for (const pl of (sheet.placements || [])) {
+      const p = S.parts.find(pp => pp.code === pl.code);
+      if (p && p.material) return String(p.material);
+    }
+    return 'ALPF';
+  }
+  function _sheetFinish(sheet) {
+    for (const pl of (sheet.placements || [])) {
+      const p = S.parts.find(pp => pp.code === pl.code);
+      if (p && p.finish) return String(p.finish);
+    }
+    return '';
+  }
   // After a run, save the largest offcut of each sheet to the shared Remnants
   // pool (เอ๋ 2026-05-31 'กด run nesting แล้ว...ทำไมไม่มีเศษวัสดุ'). Skipped when
   // Don't remember is checked. Re-running REPLACES this project's prior auto
@@ -1740,6 +1761,8 @@
           w: Math.round(off.w), h: Math.round(off.h),
           thickness: sheet.thick ?? 1,
           grain: _sheetGrain(sheet),
+          material: _sheetMaterial(sheet),
+          finish: _sheetFinish(sheet),
           project: S.projectName || '',
           note: 'Auto · sheet ' + (i + 1),
           date: new Date().toISOString().slice(0, 10),
@@ -1779,6 +1802,7 @@
         pieces.push({
           code: p.code, w: p.w, h: p.h, rots: rots,
           polys: p.polys, bbox: bbox, thickness: p.thickness,
+          grain: String(p.grain || 'ANY').toUpperCase(),   // for remnant grain-fit gating
         });
       }
     }
@@ -1812,8 +1836,10 @@
     }
 
     // Saved offcuts as stock rows for this thickness — uses the ACTUAL cut
-    // size when the Laser worker recorded it, else the calculated size.
-    // (เอ๋ 2026-05-31 'นำค่าจริงมาใช้' + 'ตัด nest จริงต้องเอาเศษมาใช้')
+    // size when the Laser worker recorded it, else the calculated size. Carries
+    // the remnant's grain + material/finish so the packer can gate by grain and
+    // the banner can flag a mismatch. (เอ๋ 2026-05-31 'นำค่าจริงมาใช้' +
+    // 'ตัด nest จริงต้องเอาเศษมาใช้' + 'อยากให้ครบ')
     function _remnantStockForThick(tk) {
       const out = [];
       for (const r of (S.remnants || [])) {
@@ -1822,13 +1848,28 @@
         const h = (r.actualH != null) ? +r.actualH : +r.h;
         if (!(w > 0 && h > 0)) continue;
         out.push({ w: Math.round(w), h: Math.round(h), qty: 1,
-                   thickness: r.thickness ?? 1, label: '♻ remnant', _remnantId: r.id });
+                   thickness: r.thickness ?? 1, label: '♻ remnant', _remnantId: r.id,
+                   grain: String(r.grain || 'ANY').toUpperCase(),
+                   material: r.material || '', finish: r.finish || '' });
       }
       return out;
+    }
+    // Can a piece with directional grain pg ('H'/'V'/'ANY'/'?'/...) be cut from
+    // a remnant whose own grain is rg? A reused offcut already has a grain
+    // direction baked in, so a directional part must match it. MIXED (sheet had
+    // both H+V parts) is unsafe for any directional part. ANY remnant takes
+    // anything; ANY/?/unset part takes any remnant. (feedback_remnants_grain_finish)
+    function _grainFits(pieceGrain, remGrain) {
+      const pg = String(pieceGrain || 'ANY').toUpperCase();
+      const rg = String(remGrain || 'ANY').toUpperCase();
+      if (pg !== 'H' && pg !== 'V') return true;   // non-directional part: any remnant ok
+      if (rg === 'ANY') return true;               // fresh-grained offcut: any direction ok
+      return rg === pg;                            // directional part needs same-direction remnant
     }
 
     const allSheets = [];
     const allUnplaced = [];
+    let _grainSkippedRemnants = 0;   // count offcuts a grain clash kept out of a group
     for (const [tk, group] of byThick) {
       let stockForThick = activeStock.filter(s => thickKey(s.thickness ?? 1) === tk);
       // Use saved offcuts FIRST (prepended → packer walks stock in priority
@@ -1836,7 +1877,13 @@
       // the SKIP REMNANTS toggle do something + the remnant pool consumable.
       let remStock = [];
       if (!S.skipRemnants) {
-        remStock = _remnantStockForThick(tk);
+        const allRem = _remnantStockForThick(tk);
+        // A thickness group can still hold a mix of grains; keep an offcut only
+        // if EVERY directional piece in the group can be cut from it (so we
+        // never lay an H part on a V/MIXED offcut). Offcuts that clash are
+        // dropped from stock and counted for the review banner.
+        remStock = allRem.filter(rm => group.every(pc => _grainFits(pc.grain, rm.grain)));
+        _grainSkippedRemnants += (allRem.length - remStock.length);
         stockForThick = remStock.concat(stockForThick);
       }
       if (stockForThick.length === 0) {
@@ -1865,6 +1912,9 @@
     }));
     S.currentSheetIdx = 0;
     S.unplaced = result.unplaced || [];
+    // How many saved offcuts a grain clash kept out of this run — drives the
+    // review banner so the worker knows a leftover was skipped (not silently).
+    S.grainSkippedRemnants = _grainSkippedRemnants;
     if (S.unplaced.length) {
       console.warn('[kdNest] unplaced pieces:', S.unplaced);
     }
@@ -2705,6 +2755,18 @@
     // the amber ring marker (.kdnest-grain-warn) in each row's grain cell —
     // _isGrainDirectional drives that marker in _viewHtml (flags H/V parts so
     // the worker lays the grain the right way).
+
+    // ②b Remnant grain clash — a saved offcut matched on thickness but its
+    // grain direction couldn't take this run's directional parts, so it was
+    // skipped instead of silently mis-used. Surface it so the worker knows a
+    // leftover exists but didn't fit the grain. (เอ๋ 2026-05-31 'อยากให้ครบ')
+    if (S.grainSkippedRemnants > 0) {
+      banners.push(
+        `<div class="kdnest-warn kdnest-warn--review">
+           <div class="kdnest-warn-head">♻ ${S.grainSkippedRemnants} saved offcut${S.grainSkippedRemnants === 1 ? '' : 's'} skipped — grain direction doesn't match this run's parts</div>
+         </div>`
+      );
+    }
 
     // ③ Review / looks-weird (orange).
     const reviews = [];

@@ -4106,6 +4106,10 @@ button.cut-status:focus-visible {
 .kdstock-note { font-size: 11px; color: #6f8597; margin-top: 2px; font-style: italic; }
 /* Actual-cut-size entry (Laser) + calc-vs-actual display — 2026-05-31. */
 .kdstock-tag { font-family: "Flux Architect", monospace; font-size: 9px; font-weight: 700; color: #0b1117; background: #4ecca3; border-radius: 4px; padding: 1px 5px; margin-left: 6px; vertical-align: middle; }
+/* Grain + material chips on remnant cards (2026-05-31 'อยากให้ครบ'). */
+.kdstock-tag-grain { background: #3498db; color: #fff; }
+.kdstock-tag-mixed { background: #c0392b; color: #fff; }
+.kdstock-tag-mat { background: #8e7cc3; color: #11091f; }
 .kdstock-calc { font-family: "Flux Architect", monospace; font-size: 11px; color: #7d8a99; margin-top: 1px; text-decoration: line-through; opacity: 0.8; }
 .kdstock-actual { display: flex; align-items: center; gap: 5px; margin-top: 6px; flex-wrap: wrap; }
 .kdstock-actual-lab { font-family: "Flux Architect", monospace; font-size: 11px; color: #9fe9cf; font-weight: 700; }
