@@ -1027,3 +1027,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [followup]
 **CORRECTION:** the ee0a364 entry said the DXF part-only CSS was live, but that CSS Edit had FAILED (anchored on a .kdng-box line with a background-image:none that wasn't there) — so only nest.js+app.js (transparent canvas) shipped; the panel chrome was still visible. The CSS (backdrop/frame/body/canvas transparent + title/meta/nav hidden) actually landed in a6e9c30. Verified live: part-only block present. Now complete: DXF preview shows just the part + download button, see-through.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [resolution]
+**RESOLVED:** DXF preview part-only CSS is FINALLY live in 9481050. The earlier ee0a364 + 43fbe1e entries both claimed it shipped, but the CSS Edit had failed TWICE on a wrong .kdng-box anchor (the chalk rule has background-image:none on the same line as box-shadow). Only nest.js+app.js (transparent canvas) had shipped; the dark panel chrome was still showing. Now the full CSS (backdrop/frame/body/canvas transparent + title/meta/nav hidden, header keeps ✕, footer keeps download) is committed + verified live: part-only=1, nav-hidden=1. DXF preview now = part silhouette + download button, see-through to the page behind.
+**NEEDS:** nothing.
