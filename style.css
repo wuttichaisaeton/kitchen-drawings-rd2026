@@ -5335,3 +5335,30 @@ html[data-theme="chalk"] .kdnest-part.kdnest-part-active .kdnest-part-code,
 html[data-theme="chalk"] .kdnest-part.kdnest-part-active .kdnest-part-num,
 html[data-theme="chalk"] .kdnest-part.kdnest-part-active .kdnest-x,
 html[data-theme="chalk"] .kdnest-part.kdnest-part-active input { color: #1b211f !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   GRAIN-WARN MARKER — keep amber in Sketch + Chalk (2026-05-31). เอ๋ 'ผิดอยู่
+   ไม่เห็นเตือนหรือปรับ' — BK*=H, banner counts 10, but the per-row amber chip
+   + row wash vanished in the light themes. Cause: the theme reset selector
+   (`html[data-theme] body *:not(svg)...:not([class*="icon"])`) has specificity
+   ~0,2,3 and `!important`, which OUTRANKS the base `.kdnest-part-grain.
+   kdnest-grain-warn` (0,2,0 !important) → background forced transparent. The
+   banner survived because it had a theme-prefixed override; the row markers
+   didn't. These theme-prefixed rules carry 0,3,0 (data-theme + 2 classes) so
+   they beat the reset. Same amber as Default.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="sketch"] .kdnest-part-grain.kdnest-grain-warn,
+html[data-theme="chalk"]  .kdnest-part-grain.kdnest-grain-warn {
+  background: #f0a51e !important;
+  background-color: #f0a51e !important;
+  border-color: #c8841a !important;
+  color: #2a1c04 !important;
+  font-weight: 900 !important;
+  box-shadow: 0 0 0 2px #f0a51e, 0 0 7px rgba(240,165,30,0.75) !important;
+}
+html[data-theme="sketch"] .kdnest-part.kdnest-part-grainwarn,
+html[data-theme="chalk"]  .kdnest-part.kdnest-part-grainwarn {
+  background: rgba(240,165,30,0.16) !important;
+  background-color: rgba(240,165,30,0.16) !important;
+  border-left: 3px solid #f0a51e !important;
+}
