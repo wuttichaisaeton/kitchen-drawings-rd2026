@@ -940,7 +940,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
           <div
             key={fam}
             className="kme-tree-col"
-            style={{ '--fam-border': fc.border, '--fam-head': fc.head }}
+            style={{ '--fam-border': fc.border, '--fam-head': fc.head, '--fam-soft': fc.soft }}
           >
             <div className="kme-tree-col-head" style={{ background: fc.head, borderColor: fc.border }}>
               <span className="kme-tree-col-name">{fam}</span>

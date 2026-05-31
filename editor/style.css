@@ -879,10 +879,10 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   flex: 1; min-width: 0; cursor: pointer;
 }
 .kme-checklist-main input { width: 17px; height: 17px; accent-color: #3fb950; flex: none; }
-/* Full code, no ellipsis (เอ๋ 2026-05-31 'ห้ามย่อ...'). */
+/* Full code, single line — no ellipsis + no 2-line wrap (เอ๋ 2026-05-31). */
 .kme-checklist-code {
-  font-family: 'Flux Architect', ui-monospace, monospace; font-size: 12.5px;
-  white-space: normal; overflow-wrap: anywhere;
+  font-family: 'Flux Architect', ui-monospace, monospace; font-size: 12px;
+  white-space: nowrap; overflow: visible;
 }
 .kme-checklist-qty { color: #cdd9e5; font-size: 13px; font-weight: 700; flex: none; }
 .kme-checklist-row.is-done .kme-checklist-code { text-decoration: line-through; text-decoration-color: #3fb950; color: #8aa394; }
@@ -1158,15 +1158,16 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
 }
 .kme-tree-chev.is-leaf { opacity: 0.35; cursor: default; }
 .kme-tree-chev:not(.is-leaf):hover { background: #243349; }
-/* Full code, no truncation (เอ๋ 2026-05-31 'ตัวหนังสือต้องอ่านได้ทุกตัว
-   ห้ามย่อ...'). Allow the capsule to grow to fit the whole code. */
+/* Full code on ONE line — no ellipsis ('ห้ามย่อ...') AND no 2-line wrap
+   ('ชื่อห้ามเป็น 2 บรรทัด เพราะอ่านยาก', เอ๋ 2026-05-31). A 13-char code at
+   12.5px fits a 300px column; nowrap keeps it single-line. */
 .kme-tree-label {
   flex: 1 1 auto;
   min-width: 0;
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
-  font-size: 13px;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: visible;
   color: #e6edf3;
 }
 .kme-tree-qty { flex-shrink: 0; font-size: 13px; font-weight: 700; color: #cdd9e5; }

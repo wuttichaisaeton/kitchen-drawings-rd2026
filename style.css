@@ -5343,3 +5343,45 @@ html[data-theme="chalk"]  .kdnest-part.kdnest-part-grainwarn {
   background-color: rgba(240,165,30,0.16) !important;
   border-left: 3px solid #f0a51e !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   ASSEMBLY TREE family colour in Sketch + Chalk (2026-05-31). เอ๋ 'theme
+   sketch & chalk สี kanban ไม่ชัดเจน ให้ทำพื้นหลังเหมือน Mindmap'. The theme
+   reset (`*{background:transparent!important}`) wiped the column header bg
+   (inline) + left rows transparent, so the family colour didn't show. Give
+   each ROW the family post-it fill (var --fam-soft, set on the column) + dark
+   ink, and re-assert the column header tint — same colours the Mindmap
+   post-it uses, so Tree column ↔ Mindmap node match. Theme-prefixed (2-class)
+   specificity beats the reset.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="sketch"] .kme-tree-col .kme-tree-row,
+html[data-theme="chalk"]  .kme-tree-col .kme-tree-row {
+  background: var(--fam-soft, #fbe79f) !important;
+  background-color: var(--fam-soft, #fbe79f) !important;
+  border-bottom: 1px solid rgba(0,0,0,0.12) !important;
+  border-radius: 6px !important;
+  margin: 2px 0 !important;
+}
+html[data-theme="sketch"] .kme-tree-col .kme-tree-row .kme-tree-label,
+html[data-theme="chalk"]  .kme-tree-col .kme-tree-row .kme-tree-label,
+html[data-theme="sketch"] .kme-tree-col .kme-tree-row .kme-tree-qty,
+html[data-theme="chalk"]  .kme-tree-col .kme-tree-row .kme-tree-qty {
+  color: #23201a !important;
+}
+/* Column header keeps its family tint (inline bg killed by the reset). */
+html[data-theme="sketch"] .kme-tree-col-head,
+html[data-theme="chalk"]  .kme-tree-col-head {
+  background: var(--fam-head, #555) !important;
+  background-color: var(--fam-head, #555) !important;
+}
+html[data-theme="sketch"] .kme-tree-col-head .kme-tree-col-name,
+html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-name,
+html[data-theme="sketch"] .kme-tree-col-head .kme-tree-col-count,
+html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-count {
+  color: #fff !important;
+}
+/* done rows: keep family colour but dim + strike (no green wash override). */
+html[data-theme="sketch"] .kme-tree-col .kme-tree-row.is-done,
+html[data-theme="chalk"]  .kme-tree-col .kme-tree-row.is-done {
+  opacity: 0.55;
+}
