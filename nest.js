@@ -1945,29 +1945,31 @@
   // Thin parallel lines showing which way the grain runs, so a worker can read
   // the grain at a glance on the Part preview, the Sheet, and a Remnant
   // thumbnail (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน').
-  // H = horizontal lines, V = vertical, MIXED = crosshatch (sheet had both),
+  // Single-direction lines ONLY (เอ๋ 2026-05-31 'hatch ที่ให้ทำคือเป็นเส้น
+  // แนวเดียว (ทิศทาง grain)'): H = horizontal lines, V = vertical. MIXED has no
+  // single direction (sheet had both H+V) → NO hatch (don't crosshatch).
   // ANY/unset = nothing. Function declarations → hoisted, usable everywhere
   // in this IIFE (incl. _remnantPreview above).
   function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr) {
     const g = String(grain || '').toUpperCase();
-    if (g !== 'H' && g !== 'V' && g !== 'MIXED') return;
+    if (g !== 'H' && g !== 'V') return;   // single-direction only — MIXED/ANY draw nothing
     const step = 8 * (dpr || 1);
     ctx.save();
     ctx.strokeStyle = colour;
     ctx.lineWidth = Math.max(0.5, 0.5 * (dpr || 1));
     ctx.globalAlpha = 0.45;
     ctx.beginPath();
-    if (g === 'H' || g === 'MIXED') for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
-    if (g === 'V' || g === 'MIXED') for (let x = x0 + step; x < x1; x += step) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
+    if (g === 'H') for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }
+    else          for (let x = x0 + step; x < x1; x += step) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); }
     ctx.stroke();
     ctx.restore();
   }
   function _grainHatchSvg(grain, x, y, w, h, colour) {
     const g = String(grain || '').toUpperCase();
-    if (g !== 'H' && g !== 'V' && g !== 'MIXED') return '';
+    if (g !== 'H' && g !== 'V') return '';   // single-direction only
     const step = 6, lines = [];
-    if (g === 'H' || g === 'MIXED') for (let yy = y + step; yy < y + h; yy += step) lines.push('<line x1="' + x.toFixed(1) + '" y1="' + yy.toFixed(1) + '" x2="' + (x + w).toFixed(1) + '" y2="' + yy.toFixed(1) + '"/>');
-    if (g === 'V' || g === 'MIXED') for (let xx = x + step; xx < x + w; xx += step) lines.push('<line x1="' + xx.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y2="' + (y + h).toFixed(1) + '"/>');
+    if (g === 'H') for (let yy = y + step; yy < y + h; yy += step) lines.push('<line x1="' + x.toFixed(1) + '" y1="' + yy.toFixed(1) + '" x2="' + (x + w).toFixed(1) + '" y2="' + yy.toFixed(1) + '"/>');
+    else           for (let xx = x + step; xx < x + w; xx += step) lines.push('<line x1="' + xx.toFixed(1) + '" y1="' + y.toFixed(1) + '" x2="' + xx.toFixed(1) + '" y2="' + (y + h).toFixed(1) + '"/>');
     if (!lines.length) return '';
     return '<g stroke="' + colour + '" stroke-width="0.4" opacity="0.5">' + lines.join('') + '</g>';
   }
