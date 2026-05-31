@@ -853,3 +853,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **FIX:** §3 Mindmap section was rendering black/empty (commit 8701250, live). Cause: base rule html.kme-fs-on .kme-root{height:100%!important} outranked the section's 78vh, collapsing the canvas to ~0. Fixed with an html.kme-fs-on-prefixed selector + !important. Also added a ⛶ Fullscreen toggle in the §3 header (mapMax -> fixed inset:0 overlay, re-fits on enter) + a floating ✕ Close (the header button sits under the maxed canvas). Verified live.
 **NEEDS:** nothing from Group 1.
 
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** Assembly capsule polish + Check-all (latest commit, live). (1) Child capsules had no frame - is-done used opacity:0.5 which faded the border into the dark bg; switched to colour-only dim + brighter base border so every capsule shows its frame. (2) Codes were truncated with ellipsis (BK0DN0-0...); removed text-overflow on Tree + Checklist, full codes now wrap and are always readable; wider columns; bolder qty. (3) New Check-all / Uncheck-all toggle in the Checklist header (writes the same assembled_status so tree+mindmap sync). build:editor + bundles committed, verified live.
+**NEEDS:** nothing from Group 1.
