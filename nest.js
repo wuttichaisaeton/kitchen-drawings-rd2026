@@ -783,6 +783,20 @@
     return (window.isAdmin && window.isAdmin())
         || (window.isLaserUser && window.isLaserUser());
   }
+  // Grain + material chips for a remnant card so the worker can tell at a
+  // glance if an offcut fits a grain-strict / material-specific job (เอ๋
+  // 2026-05-31 'อยากให้ครบ'). MIXED = sheet had H+V parts -> not reusable for
+  // directional. ALPF is the default material so it's not chipped (noise).
+  function _grainChipFor(r) {
+    const g = String((r && r.grain) || '').toUpperCase();
+    if (!g || g === 'ANY') return '';
+    return ' <span class="kdstock-tag kdstock-tag-grain' + (g === 'MIXED' ? ' kdstock-tag-mixed' : '') + '">' + _esc(g) + '</span>';
+  }
+  function _matChipFor(r) {
+    const m = r && r.material ? String(r.material) : '';
+    if (!m || m.toUpperCase() === 'ALPF') return '';
+    return ' <span class="kdstock-tag kdstock-tag-mat">' + _esc(m) + (r.finish ? ' ' + _esc(String(r.finish)) : '') + '</span>';
+  }
   // Thumbnail. For AUTO remnants (which carry sheetW/sheetH + placements +
   // offcut position) draw the actual sheet layout \u2014 cut pieces as faint grey
   // boxes, the leftover highlighted green \u2014 so the worker sees WHICH part of
@@ -844,7 +858,8 @@
       const usedH = hasActual ? +r.actualH : (+r.h || 0);
       const dims = Math.round(usedW) + '\u00d7' + Math.round(usedH)
         + (r.thickness ? ' \u00b7 ' + _esc(String(r.thickness)) + 'mm' : '')
-        + (hasActual ? ' <span class="kdstock-tag">actual</span>' : '');
+        + (hasActual ? ' <span class="kdstock-tag">actual</span>' : '')
+        + _grainChipFor(r) + _matChipFor(r);
       const calcLine = hasActual
         ? '<div class="kdstock-calc">calc ' + Math.round(+r.w || 0) + '\u00d7' + Math.round(+r.h || 0) + '</div>'
         : '';
