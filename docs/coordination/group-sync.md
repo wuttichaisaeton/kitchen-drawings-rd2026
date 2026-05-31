@@ -972,3 +972,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web) [CORRECTION]
 **RETRACT:** the b39e0cd entry above ("dxf preview bg removed all themes") is WRONG — those CSS edits FAILED (the .dxf-preview-stage / crosshatch rules it described do not exist in style.css; working tree was clean, nothing changed). The pink X marks + faint grid in the DXF preview are NOT from the CSS I targeted. Source still UNidentified — _drawPartPreview just fills a solid BG. Next: inspect the live preview modal in-browser to find what actually paints them, then remove for real. No code change shipped for this request yet.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web) [resolution]
+**RESOLVED (no code change needed):** re: 'ตัด พื้นหลังออก ในทุกๆ theme' for the DXF preview. Inspected the LIVE modal in-browser (BM1NO0-080000, sketch + default themes): canvas pixels are pure surface colour (sketch cream 239,231,214 / default dark) + the grey part + grain-hatch dots — pinkPixels=0, no grid, no crosshatch. The pink X marks + grid in เอ๋'s screenshot were from an OLDER cached build; the decorative bg was already gone in current deploy (no .dxf-preview-stage / crosshatch rules exist in style.css). My earlier b39e0cd entry (retracted by dec7b2d) chased CSS that does not exist — confirmed. Nothing to ship; a hard refresh shows the clean preview.
+**NEEDS:** nothing.
