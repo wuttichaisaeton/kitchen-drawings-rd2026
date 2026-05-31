@@ -1904,6 +1904,11 @@
     // (user 2026-05-30 'รวม Label ... อยู่ใกล้กัน เฉพาะชิ้นเล็กๆ') so a row
     // of triangles reads 'CODE x6' once instead of six overlapping IDs.
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Label ink: sketch theme has a light (cream) sheet → white text is
+    // invisible, so use near-black ink. chalk/default sheets are dark → keep
+    // the light ink. (user 2026-05-31 'theme pencil ให้ตัวอีกษรเป็นสีดำ')
+    const _lblNorm = _stheme === 'sketch' ? '#1a1f26' : '#e8eef5';
+    const _lblHot  = _stheme === 'sketch' ? '#000000' : '#fffce8';
     labels.forEach(function (L) {
       L.fp = (L.fits ? 11 : 9) * dpr;
       ctx.font = (L.isHighlight ? 'bold ' : '') + L.fp + 'px "Flux Architect", monospace';
@@ -1931,14 +1936,14 @@
       const g = groups[k];
       if (g.length === 1) {
         const L = labels[g[0]];
-        ctx.fillStyle = L.isHighlight ? '#fffce8' : '#e8eef5';
+        ctx.fillStyle = L.isHighlight ? _lblHot : _lblNorm;
         ctx.font = (L.isHighlight ? 'bold ' : '') + L.fp + 'px "Flux Architect", monospace';
         ctx.fillText(L.text, L.lx, L.ly);
         return;
       }
       let mx = 0, my = 0, hot = false;
       g.forEach(function (i) { mx += labels[i].lx / g.length; my += labels[i].ly / g.length; if (labels[i].isHighlight) hot = true; });
-      ctx.fillStyle = hot ? '#fffce8' : '#e8eef5';
+      ctx.fillStyle = hot ? _lblHot : _lblNorm;
       ctx.font = 'bold ' + (11 * dpr) + 'px "Flux Architect", monospace';
       ctx.fillText(labels[g[0]].code + ' \u00d7' + g.length, mx, my);
     });
