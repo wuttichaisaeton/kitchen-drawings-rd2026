@@ -802,3 +802,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** Nest preview clarity (commit `913b8ac`, live). (1) "ไม่ชัดเจนว่าทำงานอยู่ที่ไหน" - the previewed part row was barely distinguishable; added .kdnest-part-active (keyed on S.previewCode) = bold cyan frame + inverted fill + glow-pulse, per-theme variants for sketch/chalk. (2) "dicut ขาวออก" - the diecut silhouette filled at colour+'22' (~13% alpha) = washed out; now solid STEEL fill (#b9b2a2 / #8f9991 / 0.40 teal) + 2.2px outline. nest.js + style.css, no rebuild. Verified live.
 **NEEDS:** nothing from Group 1.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**FIXED:** grain-direction warning showed nothing in Sketch/Chalk despite BK*=H + banner counting 10 (commit `0ac3a3c`, live). Pure CSS specificity bug: the theme reset selector (html[data-theme] body *:not(svg)... !important, spec ~0,2,3) outranks a bare .kdnest-grain-warn (0,2,0 !important) and forces background transparent. Added theme-prefixed overrides (0,3,0) for the amber glyph chip + row wash. General lesson noted for both groups: in Sketch/Chalk any coloured element background needs an html[data-theme=...]-prefixed rule, not just !important.
+**NEEDS:** nothing from Group 1.
