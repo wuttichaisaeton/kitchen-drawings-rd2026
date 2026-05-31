@@ -1909,7 +1909,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               the canvas slides under the sticky app header once the worker
               pans). User 2026-05-29: assembly screen MUST keep Show all
               reachable. Always rendered so every role can re-frame. */}
-          <Panel position="top-right">
+          <Panel position="bottom-left">
             <button
               className="kme-showall kme-showall-float"
               onClick={showAll}
@@ -1929,14 +1929,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               <span>Show all</span>
             </button>
           </Panel>
-          {/* Assembly checklist — bottom-left, always mounted. Shows a
-              collapsed button by default; click opens the flat tick-list.
-              Ticks write to assembled_status (same path as 🧩 node toggle).
-              nonce=extSyncNonce re-renders the list when a Firebase tick
-              lands so ticks from another device appear immediately. (2026-05-30) */}
-          <Panel position="bottom-left">
-            <ChecklistPanel projectKey={projectKey} nonce={extSyncNonce} />
-          </Panel>
+          {/* Checklist panel removed from the fullscreen Mindmap — the §2
+              Checklist section in the accordion already covers it, and it was
+              overlapping Show all at bottom-left (เอ๋ 2026-05-31 'ที่ Mindmap
+              full screen ยกเลิก checklist เพราะมีที่ด้านนอกแล้ว'). */}
           {/* Back to the project list — only while fullscreen (the app
               header that normally holds the ← arrow is hidden). Top-left,
               opposite the Show all button on the right. User 2026-05-29:
