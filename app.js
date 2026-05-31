@@ -767,7 +767,7 @@ async function _renderDxfPreviewModal(dxf, nav) {
     // polys → drawPart paints a "DXF not loaded yet…" placeholder; once
     // the fetch+parse resolves we fill polys/bbox and redraw.
     const part = { code: navCode, polys: null, bbox: null };
-    const drawNow = () => { try { window.kdNest && window.kdNest.drawPart(canvas, part); } catch (e) {} };
+    const drawNow = () => { try { window.kdNest && window.kdNest.drawPart(canvas, part, { transparent: true }); } catch (e) {} };
     drawNow();
     try {
       if (!window.kdNest || typeof window.kdNest.loadPartPreview !== 'function') {

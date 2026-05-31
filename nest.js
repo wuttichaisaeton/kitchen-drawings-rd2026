@@ -1980,7 +1980,7 @@
   // Draw ONE part filling the canvas — outer profile + holes + multi-piece
   // strokes — so the worker can read it clearly, like the desktop tool's
   // preview pane. (user 2026-05-30 'view part ชัดเจนเหมือน nest บน desktop')
-  function _drawPartPreview(canvas, part) {
+  function _drawPartPreview(canvas, part, opts) {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const dpr = window.devicePixelRatio || 1;
@@ -2005,8 +2005,16 @@
     // washed-out outline (เอ๋ 2026-05-31 'dicut ขาวออก' — colour+'22' = ~13%
     // alpha was nearly invisible). Solid mid-grey on every theme.
     const STEEL = _sketch ? '#b9b2a2' : _chalk ? '#8f9991' : 'rgba(78,204,163,0.40)';
-    ctx.fillStyle = BG;
-    ctx.fillRect(0, 0, cw, ch);
+    // Transparent mode (modal "show only the part" — เอ๋ 2026-05-31 'โชว์แค่พาร์ท
+    // พื้นหลังไม่เอา'): clear instead of filling, so the page shows through and
+    // only the silhouette + outline paint. The Nest workspace preview keeps the
+    // solid BG (no opts) so it still blends with the workspace.
+    if (opts && opts.transparent) {
+      ctx.clearRect(0, 0, cw, ch);
+    } else {
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, cw, ch);
+    }
     const polys = part && part.polys;
     const bbox = part && part.bbox;
     if (!polys || !bbox) {
