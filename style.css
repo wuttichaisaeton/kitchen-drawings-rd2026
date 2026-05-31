@@ -5230,3 +5230,22 @@ html[data-theme="chalk"] .kme-node.kme-layer-2:not(.kme-project) { box-shadow: 2
 html[data-theme="chalk"] .kme-node.kme-layer-3:not(.kme-project) { box-shadow: 2px 4px 7px rgba(0,0,0,0.37) !important; }
 html[data-theme="chalk"] .kme-node.kme-layer-4:not(.kme-project) { box-shadow: 1px 3px 5px rgba(0,0,0,0.27) !important; }
 html[data-theme="chalk"] .kme-node.kme-layer-5:not(.kme-project) { box-shadow: 1px 2px 3px rgba(0,0,0,0.18) !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   FAVORITE STAR — keep the solid-gold pinned chip in Sketch + Chalk
+   (2026-05-31). The theme button-repaint + reset force bg/color on every
+   button, which flattened the gold .pin-btn.on. Re-assert it per-theme so a
+   favorited project is unmistakable in every theme. Unpinned star = muted
+   theme ink (handled by the generic button repaint). (เอ๋ 'favorite จ้องชัดเจน')
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="sketch"] .pin-btn.on,
+html[data-theme="chalk"] .pin-btn.on {
+  background: #f5c531 !important;
+  color: #3a2c00 !important;
+  border: 2px solid #c8901a !important;
+  box-shadow: 0 0 0 2px rgba(245,197,49,0.4), 2px 3px 0 rgba(60,44,0,0.3) !important;
+  transform: scale(1.08);
+  font-weight: 900;
+}
+html[data-theme="sketch"] .pin-btn.on:hover,
+html[data-theme="chalk"] .pin-btn.on:hover { background: #ffd34d !important; }
