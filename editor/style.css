@@ -1116,25 +1116,28 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
 .kme-tree { padding: 4px 8px; }
 .kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
 .kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
+/* NO per-row frame (เอ๋ 2026-05-31 'กรอบให้เอาออก…ดูลำดับชั้นไม่ถูก') — the
+   capsule border fought the depth indent; the column itself is the frame now.
+   Rows are borderless, transparent, with just a thin divider so the
+   hierarchy reads by indent. */
 .kme-tree-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 12px;
-  background: #161b22;
-  /* border tinted by the row's family (set via --fam-border on the column);
-     falls back to a visible slate so every capsule shows its frame. */
-  border: 1.5px solid var(--fam-border, #3a4757);
-  border-radius: 18px;          /* rounded but not full-pill, so multi-line codes wrap cleanly */
-  min-height: 40px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(120, 130, 145, 0.18);
+  border-radius: 0;
+  min-height: 38px;
   transition: background 0.15s ease;
 }
+.kme-tree-row:last-child { border-bottom: none; }
 /* Done = dim by COLOUR not opacity (opacity faded the capsule's own border
    away on the dark ground — เอ๋ 2026-05-31 'ตัวลูกไม่มีกรอบ'). Keep a solid
    green-tinted frame + struck label; text stays readable. */
 .kme-tree-row.is-done {
-  background: #12231a;
-  border-color: #3fb950;
+  background: rgba(63, 185, 80, 0.10);
   color: #7e8c84;
 }
 .kme-tree-row.is-done .kme-tree-label {
