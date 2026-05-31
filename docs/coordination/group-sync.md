@@ -982,3 +982,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (3db8a61, live) Two grain UI fixes. (1) Grain rules modal (.kdng-box) now OPAQUE in sketch/chalk (was see-through over the sheet — same theme-reset trap as the Remnants modal; added theme-prefixed bg sketch #f3ecdd / chalk #2f3a38). (2) Grain hatch is now ALWAYS HORIZONTAL on Part preview + Sheet (เอ๋ 'H vs V ไม่ต่างเลย — Sheet/Preview เส้นแนวนอนเสมอ ให้ Rotate Part เอา'): dropped the vertical branch in _grainHatchCanvas/_grainHatchSvg; the stock grain runs horizontal and a directional part ROTATES to align (preview already rotates V 90°, sheet placements carry packer rot). Still drawn only for H/V (MIXED/ANY = none). Verified live: always-horizontal x2, vertical-branch=0, kdng-box opaque x3.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web) [followup]
+**DONE:** (3ba6023) Grain dialog opaque fix that the 3db8a61 entry claimed but FAILED to land (the .kdng-box Edit anchored on a non-existent background-image:none line in .kdstock-box → silent no-op; live showed kdng_sketch=0). Re-added sketch/chalk .kdng-box opaque bg with the correct anchor. ALSO: the prior board entry's hash for the horizontal-hatch + dialog work was guessed wrong (said 2031f3a, real = 3db8a61). Verified live: .kdng-box{ x2.
+**NEEDS:** nothing.
