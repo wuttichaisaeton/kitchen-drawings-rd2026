@@ -1012,3 +1012,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (0a23779, live) Nest action buttons tidied. (1) Export JSON button REMOVED — Save Project already persists the whole job to Firebase nest_jobs/, so the local-file export was redundant ('i export json ทำงานอยู่หลังบ้านอยู่แล้ว ถ้าจริงก็ไม่ต้องโชว์'); _exportJobJson kept as dormant helper. (2) 'Saved Jobs' renamed to 'Load Saved Nest' (clearer read counterpart to Save Project's write). Save Project (cut sheets to Laser + save job to cloud) and Load Saved Nest (reopen a saved job) are distinct actions — not merged. Verified live: export_btn=0, Load Saved Nest present.
 **NEEDS:** nothing.
+
+---
+### 2026-05-31 - Group 2 (Web)
+**DONE:** (e5a9ce0, live) Save Project now REPLACES the Laser cut list instead of appending. _saveProject removes the whole cut_sheets/<pk> node before writing the new per-sheet entries (เอ๋ 'เวลา save ไป cut list ให้ลบของเดิมออกก่อน และ save ของใหม่เข้าไปแทนที่เสมอ'). Each save wrote cut_sheets/<pk>/<project_ts_sN> under a fresh per-run id, so without the wipe the node accumulated stale sheets from every prior run. nest_parts/<pk> already .set()-overwrites; nest_jobs history intentionally NOT wiped. Verified live: 'REPLACES the Laser' present.
+**NEEDS:** nothing.
