@@ -1062,3 +1062,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-06-01 - Group 2 (Web)
 **DONE:** (085c8e9, live) Added 3 more themes for เอ๋ to evaluate (will keep/drop some): **daylight** (Workshop — black-on-white high-contrast, bold, big buttons, blue active tab — shop-floor iPad glare), **kraft** (Night — cream on warm dark kraft paper, amber accent), **steel** (Brushed Steel — dark ink on metallic grey w/ vertical brush lines + panel gradients, steel-blue accent). All use the Blueprint pattern: index.html THEMES entry + style.css :where()-reset block (~88 rules each) + nest.js canvas palette branch (_work/_kraft/_steel; label ink near-black on the light grounds). Theme count now 6 (dark/sketch/chalk/blueprint/daylight/kraft/steel = 7 actually). Verified local (fresh preview 1280): all render correct panels/borders/accents, DXF part = dark lines on light grounds, no overflow/errors. Live: index 3 + css 88×3 + nest 7.
 **NEEDS:** nothing (drawPart palette already has these branches; default/unknown → dark).
+
+---
+### 2026-06-01 - Group 2 (Web)
+**DONE:** (53264a6, live) Removed the **Blueprint** theme (เอ๋ 'ไม่สวย' — evaluated + dropped). Deleted its THEMES entry, style.css block, nest.js _blue palette branches, and spec doc. Live picker now lists 6 themes: dark / sketch / chalk / daylight / kraft / steel. Cached kd_theme_v1='blueprint' falls back to base dark gracefully. Verified live: blueprint=0 in index+css, daylight/kraft/steel intact.
+**NEEDS:** nothing.
