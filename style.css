@@ -5800,6 +5800,468 @@ html[data-theme="blueprint"] .pin-btn.on {
   border-color: #f5c531 !important;
 }
 
+/* ─────────────────────────────────────────────────────────────────────
+   WORKSHOP / DAYLIGHT THEME — black-on-white, high contrast, big buttons.
+   For the shop-floor iPad under glare (เอ๋ 'ขาวจัด ตัวอักษรดำหนา ปุ่มใหญ่
+   คอนทราสต์สูง เน้นใช้งานจริง'). :where() reset (specificity (0,1,1)) so the
+   opaque white-panel repaints win. Status colours kept.
+   ───────────────────────────────────────────────────────────────────── */
+html[data-theme="daylight"] {
+  --dl-bg:       #f4f6f8;
+  --dl-bg2:      #ffffff;
+  --dl-panel:    #ffffff;
+  --dl-panel2:   #eef2f6;
+  --dl-line:     #c2ccd6;
+  --dl-line2:    #2b3138;
+  --dl-faint:    rgba(40,55,75,0.10);
+  --dl-ink:      #0a0d12;
+  --dl-ink-soft: #4a5563;
+  --dl-accent:   #0b5cad;
+}
+html[data-theme="daylight"] body,
+html[data-theme="daylight"] #root,
+html[data-theme="daylight"] main {
+  background-color: var(--dl-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--dl-faint) 0 1px, transparent 1px 30px),
+    repeating-linear-gradient(90deg, var(--dl-faint) 0 1px, transparent 1px 30px) !important;
+  color: var(--dl-ink) !important;
+  font-weight: 500;
+}
+html[data-theme="daylight"] :where(body *:not(svg):not(svg *):not(img):not([class*="icon"])) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--dl-ink) !important;
+  border-color: var(--dl-line) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+html[data-theme="daylight"] header { background-color: var(--dl-bg2) !important; border-bottom: 2px solid var(--dl-line2) !important; }
+html[data-theme="daylight"] footer { background-color: var(--dl-bg2) !important; border-top: 1px solid var(--dl-line) !important; }
+html[data-theme="daylight"] h1,
+html[data-theme="daylight"] h1 .brand-sub { color: var(--dl-ink) !important; font-weight: 800; }
+html[data-theme="daylight"] .project-card,
+html[data-theme="daylight"] .card,
+html[data-theme="daylight"] .bom-row,
+html[data-theme="daylight"] .tree-row,
+html[data-theme="daylight"] .cut-list,
+html[data-theme="daylight"] .cut-row,
+html[data-theme="daylight"] .cut-section,
+html[data-theme="daylight"] .cut-waiting,
+html[data-theme="daylight"] .pdxf-popover,
+html[data-theme="daylight"] .part-dxf-popover,
+html[data-theme="daylight"] .cs-modal,
+html[data-theme="daylight"] .cs-row,
+html[data-theme="daylight"] .kdstock-frame,
+html[data-theme="daylight"] .kdstock-card,
+html[data-theme="daylight"] .kdjobs-row,
+html[data-theme="daylight"] .mm-comment-panel,
+html[data-theme="daylight"] .comment-item,
+html[data-theme="daylight"] .kdnest-sidebar,
+html[data-theme="daylight"] .kdnest-part,
+html[data-theme="daylight"] .kdnest-stock-row,
+html[data-theme="daylight"] .nest-home-row,
+html[data-theme="daylight"] .family-card,
+html[data-theme="daylight"] .theme-menu {
+  background-color: var(--dl-panel) !important;
+  border: 1.5px solid var(--dl-line) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(20,30,45,0.12) !important;
+  background-image: none !important;
+}
+html[data-theme="daylight"] button,
+html[data-theme="daylight"] .tab,
+html[data-theme="daylight"] .action-btn,
+html[data-theme="daylight"] .filter-btn,
+html[data-theme="daylight"] .mini,
+html[data-theme="daylight"] .back-btn,
+html[data-theme="daylight"] .kdnest-btn,
+html[data-theme="daylight"] .theme-btn,
+html[data-theme="daylight"] .theme-opt,
+html[data-theme="daylight"] .comment-add,
+html[data-theme="daylight"] .kdjobs-load,
+html[data-theme="daylight"] .kdjobs-del,
+html[data-theme="daylight"] .cs-download-btn {
+  background-color: var(--dl-panel2) !important;
+  color: var(--dl-ink) !important;
+  border: 2px solid var(--dl-line2) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+  padding: 9px 15px !important;
+}
+html[data-theme="daylight"] button:hover,
+html[data-theme="daylight"] .tab:hover,
+html[data-theme="daylight"] .action-btn:hover,
+html[data-theme="daylight"] .kdnest-btn:hover { background-color: #dde6ef !important; }
+html[data-theme="daylight"] input,
+html[data-theme="daylight"] textarea,
+html[data-theme="daylight"] select,
+html[data-theme="daylight"] .search-wrap,
+html[data-theme="daylight"] #search,
+html[data-theme="daylight"] .comment-input,
+html[data-theme="daylight"] .kme-cmt-input {
+  background-color: #ffffff !important;
+  color: var(--dl-ink) !important;
+  border: 2px solid var(--dl-line2) !important;
+  border-radius: 8px !important;
+}
+html[data-theme="daylight"] ::placeholder { color: var(--dl-ink-soft) !important; }
+html[data-theme="daylight"] .tab.active {
+  color: #ffffff !important;
+  background-color: var(--dl-accent) !important;
+  border-color: var(--dl-accent) !important;
+}
+html[data-theme="daylight"] hr,
+html[data-theme="daylight"] .divider { border-color: var(--dl-line) !important; }
+html[data-theme="daylight"] .updated,
+html[data-theme="daylight"] .brand-sub,
+html[data-theme="daylight"] .cut-list-summary,
+html[data-theme="daylight"] .kdnest-title-sub,
+html[data-theme="daylight"] .pdxf-sub,
+html[data-theme="daylight"] .kdjobs-meta,
+html[data-theme="daylight"] #count { color: var(--dl-ink-soft) !important; }
+html[data-theme="daylight"] .kdnest-warn--unplaced {
+  background-color: #fde8e6 !important; border: 2px solid #c0392b !important; color: #8a2017 !important; border-radius: 8px !important;
+}
+html[data-theme="daylight"] .kdnest-warn--review {
+  background-color: #fdf0dd !important; border: 2px solid #b5701f !important; color: #7a4a12 !important; border-radius: 8px !important;
+}
+html[data-theme="daylight"] .kdnest-warn--unplaced *,
+html[data-theme="daylight"] .kdnest-warn--review * { color: inherit !important; }
+html[data-theme="daylight"] .pdxf-backdrop,
+html[data-theme="daylight"] .kdstock-backdrop,
+html[data-theme="daylight"] .kdng-backdrop { background-color: rgba(30,40,55,0.45) !important; background-image: none !important; }
+html[data-theme="daylight"] .react-flow,
+html[data-theme="daylight"] .react-flow__renderer,
+html[data-theme="daylight"] .mindmap-wrapper,
+html[data-theme="daylight"] .mindmap-canvas {
+  background-color: var(--dl-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--dl-faint) 0 1px, transparent 1px 30px),
+    repeating-linear-gradient(90deg, var(--dl-faint) 0 1px, transparent 1px 30px) !important;
+}
+html[data-theme="daylight"] .kme-node {
+  background-color: var(--dl-panel) !important; background-image: none !important;
+  border: 1.5px solid var(--dl-line2) !important; border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(20,30,45,0.14) !important; color: var(--dl-ink) !important;
+}
+html[data-theme="daylight"] .kme-node-label,
+html[data-theme="daylight"] .kme-node-qty,
+html[data-theme="daylight"] .kme-node-qty-num { color: var(--dl-ink) !important; font-weight: 700; }
+html[data-theme="daylight"] .react-flow__edge-path { stroke: var(--dl-line2) !important; stroke-width: 1.6 !important; }
+html[data-theme="daylight"] .react-flow__handle { background: var(--dl-line2) !important; border-color: var(--dl-line2) !important; }
+html[data-theme="daylight"] .kme-node.kme-project,
+html[data-theme="daylight"] .kme-project { background-color: #eef2f6 !important; border: 2px solid var(--dl-accent) !important; }
+html[data-theme="daylight"] .kme-node.kme-done { border-color: #2f9e44 !important; box-shadow: 0 0 0 1.5px #2f9e44 inset !important; }
+html[data-theme="daylight"] .pin-btn.on { background: #f5c531 !important; color: #3a2c00 !important; border-color: #caa01f !important; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   KRAFT THEME — cream ink on warm dark kraft paper. Easy-on-the-eyes
+   night sibling of Sketch (เอ๋ 'กระดาษคราฟท์น้ำตาลอุ่น ... ถนอมตากลางคืน').
+   :where() reset → opaque warm panels.
+   ───────────────────────────────────────────────────────────────────── */
+html[data-theme="kraft"] {
+  --kf-bg:       #271e16;
+  --kf-bg2:      #2f251c;
+  --kf-panel:    #382c21;
+  --kf-panel2:   #44362a;
+  --kf-line:     #8a6f52;
+  --kf-faint:    rgba(180,150,110,0.16);
+  --kf-ink:      #ece0cd;
+  --kf-ink-soft: #b9a384;
+  --kf-accent:   #e0954a;
+}
+html[data-theme="kraft"] body,
+html[data-theme="kraft"] #root,
+html[data-theme="kraft"] main {
+  background-color: var(--kf-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--kf-faint) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, var(--kf-faint) 0 1px, transparent 1px 32px) !important;
+  color: var(--kf-ink) !important;
+}
+html[data-theme="kraft"] :where(body *:not(svg):not(svg *):not(img):not([class*="icon"])) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--kf-ink) !important;
+  border-color: var(--kf-line) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+html[data-theme="kraft"] header { background-color: var(--kf-bg2) !important; border-bottom: 2px solid var(--kf-line) !important; }
+html[data-theme="kraft"] footer { background-color: var(--kf-bg2) !important; border-top: 1px solid var(--kf-line) !important; }
+html[data-theme="kraft"] h1,
+html[data-theme="kraft"] h1 .brand-sub { color: var(--kf-ink) !important; }
+html[data-theme="kraft"] .project-card,
+html[data-theme="kraft"] .card,
+html[data-theme="kraft"] .bom-row,
+html[data-theme="kraft"] .tree-row,
+html[data-theme="kraft"] .cut-list,
+html[data-theme="kraft"] .cut-row,
+html[data-theme="kraft"] .cut-section,
+html[data-theme="kraft"] .cut-waiting,
+html[data-theme="kraft"] .pdxf-popover,
+html[data-theme="kraft"] .part-dxf-popover,
+html[data-theme="kraft"] .cs-modal,
+html[data-theme="kraft"] .cs-row,
+html[data-theme="kraft"] .kdstock-frame,
+html[data-theme="kraft"] .kdstock-card,
+html[data-theme="kraft"] .kdjobs-row,
+html[data-theme="kraft"] .mm-comment-panel,
+html[data-theme="kraft"] .comment-item,
+html[data-theme="kraft"] .kdnest-sidebar,
+html[data-theme="kraft"] .kdnest-part,
+html[data-theme="kraft"] .kdnest-stock-row,
+html[data-theme="kraft"] .nest-home-row,
+html[data-theme="kraft"] .family-card,
+html[data-theme="kraft"] .theme-menu {
+  background-color: var(--kf-panel) !important;
+  border: 1px solid var(--kf-line) !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+html[data-theme="kraft"] button,
+html[data-theme="kraft"] .tab,
+html[data-theme="kraft"] .action-btn,
+html[data-theme="kraft"] .filter-btn,
+html[data-theme="kraft"] .mini,
+html[data-theme="kraft"] .back-btn,
+html[data-theme="kraft"] .kdnest-btn,
+html[data-theme="kraft"] .theme-btn,
+html[data-theme="kraft"] .theme-opt,
+html[data-theme="kraft"] .comment-add,
+html[data-theme="kraft"] .kdjobs-load,
+html[data-theme="kraft"] .kdjobs-del,
+html[data-theme="kraft"] .cs-download-btn {
+  background-color: var(--kf-panel2) !important;
+  color: var(--kf-ink) !important;
+  border: 1px solid var(--kf-line) !important;
+  border-radius: 5px !important;
+  box-shadow: none !important;
+  font-weight: 600;
+}
+html[data-theme="kraft"] button:hover,
+html[data-theme="kraft"] .tab:hover,
+html[data-theme="kraft"] .action-btn:hover,
+html[data-theme="kraft"] .kdnest-btn:hover { background-color: #4f3f30 !important; }
+html[data-theme="kraft"] input,
+html[data-theme="kraft"] textarea,
+html[data-theme="kraft"] select,
+html[data-theme="kraft"] .search-wrap,
+html[data-theme="kraft"] #search,
+html[data-theme="kraft"] .comment-input,
+html[data-theme="kraft"] .kme-cmt-input {
+  background-color: var(--kf-bg2) !important;
+  color: var(--kf-ink) !important;
+  border: 1px solid var(--kf-line) !important;
+  border-radius: 5px !important;
+}
+html[data-theme="kraft"] ::placeholder { color: var(--kf-ink-soft) !important; }
+html[data-theme="kraft"] .tab.active {
+  color: var(--kf-accent) !important;
+  border-color: var(--kf-accent) !important;
+  box-shadow: 0 0 0 1px var(--kf-accent) inset !important;
+}
+html[data-theme="kraft"] hr,
+html[data-theme="kraft"] .divider { border-color: var(--kf-line) !important; }
+html[data-theme="kraft"] .updated,
+html[data-theme="kraft"] .brand-sub,
+html[data-theme="kraft"] .cut-list-summary,
+html[data-theme="kraft"] .kdnest-title-sub,
+html[data-theme="kraft"] .pdxf-sub,
+html[data-theme="kraft"] .kdjobs-meta,
+html[data-theme="kraft"] #count { color: var(--kf-ink-soft) !important; }
+html[data-theme="kraft"] .kdnest-warn--unplaced {
+  background-color: rgba(168,57,42,0.24) !important; border: 1px solid #d9614f !important; color: #ffcfc6 !important; border-radius: 5px !important;
+}
+html[data-theme="kraft"] .kdnest-warn--review {
+  background-color: rgba(181,112,31,0.24) !important; border: 1px solid #e0a14f !important; color: #ffe5c8 !important; border-radius: 5px !important;
+}
+html[data-theme="kraft"] .kdnest-warn--unplaced *,
+html[data-theme="kraft"] .kdnest-warn--review * { color: inherit !important; }
+html[data-theme="kraft"] .pdxf-backdrop,
+html[data-theme="kraft"] .kdstock-backdrop,
+html[data-theme="kraft"] .kdng-backdrop { background-color: rgba(15,10,5,0.66) !important; background-image: none !important; }
+html[data-theme="kraft"] .react-flow,
+html[data-theme="kraft"] .react-flow__renderer,
+html[data-theme="kraft"] .mindmap-wrapper,
+html[data-theme="kraft"] .mindmap-canvas {
+  background-color: var(--kf-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--kf-faint) 0 1px, transparent 1px 32px),
+    repeating-linear-gradient(90deg, var(--kf-faint) 0 1px, transparent 1px 32px) !important;
+}
+html[data-theme="kraft"] .kme-node {
+  background-color: var(--kf-panel) !important; background-image: none !important;
+  border: 1px solid var(--kf-line) !important; border-radius: 5px !important;
+  box-shadow: none !important; color: var(--kf-ink) !important;
+}
+html[data-theme="kraft"] .kme-node-label,
+html[data-theme="kraft"] .kme-node-qty,
+html[data-theme="kraft"] .kme-node-qty-num { color: var(--kf-ink) !important; }
+html[data-theme="kraft"] .react-flow__edge-path { stroke: var(--kf-line) !important; stroke-width: 1.4 !important; }
+html[data-theme="kraft"] .react-flow__handle { background: var(--kf-line) !important; border-color: var(--kf-line) !important; }
+html[data-theme="kraft"] .kme-node.kme-project,
+html[data-theme="kraft"] .kme-project { background-color: var(--kf-panel2) !important; border: 1.5px solid var(--kf-accent) !important; }
+html[data-theme="kraft"] .kme-node.kme-done { border-color: #5cbf6a !important; box-shadow: 0 0 0 1.5px #5cbf6a inset !important; }
+html[data-theme="kraft"] .pin-btn.on { background: #f5c531 !important; color: #3a2c00 !important; border-color: #f5c531 !important; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   BRUSHED STEEL THEME — dark ink on a brushed metallic grey ground (the
+   real product material, เอ๋ 'สแตนเลสเงินเทา ออนแบรนด์สุด'). :where() reset
+   → opaque steel panels; fine vertical brush lines on the ground.
+   ───────────────────────────────────────────────────────────────────── */
+html[data-theme="steel"] {
+  --st-bg:       #c4c9ce;
+  --st-bg2:      #b6bdc4;
+  --st-panel:    #d6dadf;
+  --st-panel2:   #c2c8cf;
+  --st-line:     #7a838d;
+  --st-faint:    rgba(60,75,90,0.16);
+  --st-ink:      #1a1e22;
+  --st-ink-soft: #545c64;
+  --st-accent:   #2f6ea5;
+}
+html[data-theme="steel"] body,
+html[data-theme="steel"] #root,
+html[data-theme="steel"] main {
+  background-color: var(--st-bg) !important;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.35) 0 1px, rgba(0,0,0,0.035) 1px 3px) !important;
+  color: var(--st-ink) !important;
+}
+html[data-theme="steel"] :where(body *:not(svg):not(svg *):not(img):not([class*="icon"])) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--st-ink) !important;
+  border-color: var(--st-line) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+html[data-theme="steel"] header { background-color: var(--st-bg2) !important; border-bottom: 2px solid var(--st-line) !important; }
+html[data-theme="steel"] footer { background-color: var(--st-bg2) !important; border-top: 1px solid var(--st-line) !important; }
+html[data-theme="steel"] h1,
+html[data-theme="steel"] h1 .brand-sub { color: var(--st-ink) !important; }
+html[data-theme="steel"] .project-card,
+html[data-theme="steel"] .card,
+html[data-theme="steel"] .bom-row,
+html[data-theme="steel"] .tree-row,
+html[data-theme="steel"] .cut-list,
+html[data-theme="steel"] .cut-row,
+html[data-theme="steel"] .cut-section,
+html[data-theme="steel"] .cut-waiting,
+html[data-theme="steel"] .pdxf-popover,
+html[data-theme="steel"] .part-dxf-popover,
+html[data-theme="steel"] .cs-modal,
+html[data-theme="steel"] .cs-row,
+html[data-theme="steel"] .kdstock-frame,
+html[data-theme="steel"] .kdstock-card,
+html[data-theme="steel"] .kdjobs-row,
+html[data-theme="steel"] .mm-comment-panel,
+html[data-theme="steel"] .comment-item,
+html[data-theme="steel"] .kdnest-sidebar,
+html[data-theme="steel"] .kdnest-part,
+html[data-theme="steel"] .kdnest-stock-row,
+html[data-theme="steel"] .nest-home-row,
+html[data-theme="steel"] .family-card,
+html[data-theme="steel"] .theme-menu {
+  background-color: var(--st-panel) !important;
+  border: 1px solid var(--st-line) !important;
+  border-radius: 5px !important;
+  box-shadow: 0 1px 2px rgba(30,40,50,0.18) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.30), rgba(0,0,0,0.03)) !important;
+}
+html[data-theme="steel"] button,
+html[data-theme="steel"] .tab,
+html[data-theme="steel"] .action-btn,
+html[data-theme="steel"] .filter-btn,
+html[data-theme="steel"] .mini,
+html[data-theme="steel"] .back-btn,
+html[data-theme="steel"] .kdnest-btn,
+html[data-theme="steel"] .theme-btn,
+html[data-theme="steel"] .theme-opt,
+html[data-theme="steel"] .comment-add,
+html[data-theme="steel"] .kdjobs-load,
+html[data-theme="steel"] .kdjobs-del,
+html[data-theme="steel"] .cs-download-btn {
+  background-color: var(--st-panel2) !important;
+  color: var(--st-ink) !important;
+  border: 1px solid var(--st-line) !important;
+  border-radius: 5px !important;
+  box-shadow: 0 1px 1px rgba(30,40,50,0.18) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(0,0,0,0.04)) !important;
+  font-weight: 600;
+}
+html[data-theme="steel"] button:hover,
+html[data-theme="steel"] .tab:hover,
+html[data-theme="steel"] .action-btn:hover,
+html[data-theme="steel"] .kdnest-btn:hover { background-color: #b2b9c0 !important; }
+html[data-theme="steel"] input,
+html[data-theme="steel"] textarea,
+html[data-theme="steel"] select,
+html[data-theme="steel"] .search-wrap,
+html[data-theme="steel"] #search,
+html[data-theme="steel"] .comment-input,
+html[data-theme="steel"] .kme-cmt-input {
+  background-color: #e4e7ea !important;
+  color: var(--st-ink) !important;
+  border: 1px solid var(--st-line) !important;
+  border-radius: 5px !important;
+  background-image: none !important;
+}
+html[data-theme="steel"] ::placeholder { color: var(--st-ink-soft) !important; }
+html[data-theme="steel"] .tab.active {
+  color: #ffffff !important;
+  background-color: var(--st-accent) !important;
+  border-color: var(--st-accent) !important;
+  background-image: none !important;
+}
+html[data-theme="steel"] hr,
+html[data-theme="steel"] .divider { border-color: var(--st-line) !important; }
+html[data-theme="steel"] .updated,
+html[data-theme="steel"] .brand-sub,
+html[data-theme="steel"] .cut-list-summary,
+html[data-theme="steel"] .kdnest-title-sub,
+html[data-theme="steel"] .pdxf-sub,
+html[data-theme="steel"] .kdjobs-meta,
+html[data-theme="steel"] #count { color: var(--st-ink-soft) !important; }
+html[data-theme="steel"] .kdnest-warn--unplaced {
+  background-color: #f2d7d3 !important; border: 1px solid #b53524 !important; color: #7a2015 !important; border-radius: 5px !important;
+}
+html[data-theme="steel"] .kdnest-warn--review {
+  background-color: #f1e2cb !important; border: 1px solid #a86a1c !important; color: #6e430f !important; border-radius: 5px !important;
+}
+html[data-theme="steel"] .kdnest-warn--unplaced *,
+html[data-theme="steel"] .kdnest-warn--review * { color: inherit !important; }
+html[data-theme="steel"] .pdxf-backdrop,
+html[data-theme="steel"] .kdstock-backdrop,
+html[data-theme="steel"] .kdng-backdrop { background-color: rgba(20,28,36,0.5) !important; background-image: none !important; }
+html[data-theme="steel"] .react-flow,
+html[data-theme="steel"] .react-flow__renderer,
+html[data-theme="steel"] .mindmap-wrapper,
+html[data-theme="steel"] .mindmap-canvas {
+  background-color: var(--st-bg) !important;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.30) 0 1px, rgba(0,0,0,0.035) 1px 3px) !important;
+}
+html[data-theme="steel"] .kme-node {
+  background-color: var(--st-panel) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.30), rgba(0,0,0,0.03)) !important;
+  border: 1px solid var(--st-line) !important; border-radius: 5px !important;
+  box-shadow: 0 1px 2px rgba(30,40,50,0.2) !important; color: var(--st-ink) !important;
+}
+html[data-theme="steel"] .kme-node-label,
+html[data-theme="steel"] .kme-node-qty,
+html[data-theme="steel"] .kme-node-qty-num { color: var(--st-ink) !important; }
+html[data-theme="steel"] .react-flow__edge-path { stroke: var(--st-line) !important; stroke-width: 1.5 !important; }
+html[data-theme="steel"] .react-flow__handle { background: var(--st-line) !important; border-color: var(--st-line) !important; }
+html[data-theme="steel"] .kme-node.kme-project,
+html[data-theme="steel"] .kme-project { background-color: #cdd2d8 !important; border: 2px solid var(--st-accent) !important; }
+html[data-theme="steel"] .kme-node.kme-done { border-color: #2f9e44 !important; box-shadow: 0 0 0 1.5px #2f9e44 inset !important; }
+html[data-theme="steel"] .pin-btn.on { background: #e8a900 !important; color: #2a1f00 !important; border-color: #b98a00 !important; }
+
 /* === DXF preview = part-only, see-through (เอ๋ 2026-05-31 'โชว์แค่พาร์ท พื้นหลัง
    ไม่เอา และปุ่มดาวน์โหลด part พอ ที่เหลือไม่เอา เกะกะมองไม่เห็นอะไรเลยด้านหลัง').
    Strip ALL chrome to just the part silhouette (canvas cleared transparent in
