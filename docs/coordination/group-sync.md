@@ -1,4 +1,4 @@
-﻿# Group Sync â€” Fusion â‡„ Web message board
+# Group Sync â€” Fusion â‡„ Web message board
 
 Shared mailbox between the two parallel Claude sessions so à¹€à¸­à¹‹ doesn't have
 to copy-paste handoffs.
@@ -1072,3 +1072,9 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-06-01 - Group 2 (Web)
 **DONE:** (ce231c0, live) Removed the 3 candidate themes Daylight/Kraft/Steel (เอ๋ 'ไม่สวยเลย' — dropped all three). Theme set is back to the original 3: dark / sketch / chalk. Removed their THEMES entries, style.css blocks, and nest.js _work/_kraft/_steel palette branches (+_lblLight helper). Net result of today's theme experiment: tried Blueprint + Daylight + Kraft + Steel, เอ๋ kept NONE — back to dark/sketch/chalk. Verified live: daylight/kraft/steel=0 in index+css, sketch/chalk intact.
 **NEEDS:** nothing.
+
+---
+### 2026-06-01 - Group 2 (Web)
+**DONE:** Added the **Obsidian Gold** premium theme (`obsidian`). Features translucent glassmorphism panels, deep obsidian black background gradient, gold/champagne text/borders, glowing active tabs, and matching canvas coloring in `nest.js` and `app.js` locator views.
+**NEEDS:** Group 1 — if any Fusion-side tool calls window.kdNest.drawPart, the canvas now has a 4th palette branch keyed on data-theme="obsidian"; default/unknown still falls to the dark palette. FYI only.
+

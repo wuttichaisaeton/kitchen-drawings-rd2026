@@ -1,4 +1,4 @@
-﻿@font-face {
+@font-face {
   font-family: "Flux Architect";
   src: url("fonts/Flux Architect Regular.ttf") format("truetype");
   font-weight: 400;
@@ -5614,3 +5614,242 @@ html[data-theme="chalk"]  .dxf-preview-canvas {
 .dxf-preview-meta  { display: none !important; }
 .dxf-preview-footer { border: none !important; background: transparent !important; justify-content: center !important; }
 .dxf-preview-nav { display: none !important; }
+
+/* ─────────────────────────────────────────────────────────────────────
+   OBSIDIAN GOLD THEME — luxurious dark theme with deep obsidian black,
+   champagne gold borders, glowing accents, and premium glassmorphism.
+   ───────────────────────────────────────────────────────────────────── */
+html[data-theme="obsidian"] {
+  --ob-bg:       #08090d;
+  --ob-bg2:      #0d0e15;
+  --ob-panel:    rgba(18, 20, 29, 0.75);
+  --ob-panel2:   rgba(30, 34, 49, 0.85);
+  --ob-line:     rgba(212, 175, 55, 0.28);
+  --ob-faint:    rgba(212, 175, 55, 0.08);
+  --ob-ink:      #f0ebd8;
+  --ob-ink-soft: #b0a790;
+  --ob-accent:   #e5c158;
+  --ob-glow:     0 0 10px rgba(229, 193, 88, 0.35);
+  --ob-border-glow: 0 0 8px rgba(212, 175, 55, 0.15);
+}
+
+html[data-theme="obsidian"] body,
+html[data-theme="obsidian"] #root,
+html[data-theme="obsidian"] main {
+  background-color: var(--ob-bg) !important;
+  background-image: 
+    radial-gradient(circle at 50% 30%, #151a2e 0%, var(--ob-bg) 70%) !important;
+  color: var(--ob-ink) !important;
+}
+
+html[data-theme="obsidian"] :where(body *:not(svg):not(svg *):not(img):not([class*="icon"])) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--ob-ink) !important;
+  border-color: var(--ob-line) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="obsidian"] header {
+  background-color: var(--ob-bg2) !important;
+  border-bottom: 1px solid var(--ob-line) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;
+}
+
+html[data-theme="obsidian"] footer {
+  background-color: var(--ob-bg2) !important;
+  border-top: 1px solid var(--ob-line) !important;
+}
+
+html[data-theme="obsidian"] h1,
+html[data-theme="obsidian"] h1 .brand-sub {
+  color: var(--ob-accent) !important;
+  text-shadow: 0 0 8px rgba(229, 193, 88, 0.2) !important;
+}
+
+/* Card / panel / row surfaces — translucent obsidian panel w/ gold border. */
+html[data-theme="obsidian"] .project-card,
+html[data-theme="obsidian"] .card,
+html[data-theme="obsidian"] .bom-row,
+html[data-theme="obsidian"] .tree-row,
+html[data-theme="obsidian"] .cut-list,
+html[data-theme="obsidian"] .cut-row,
+html[data-theme="obsidian"] .cut-section,
+html[data-theme="obsidian"] .cut-waiting,
+html[data-theme="obsidian"] .pdxf-popover,
+html[data-theme="obsidian"] .part-dxf-popover,
+html[data-theme="obsidian"] .cs-modal,
+html[data-theme="obsidian"] .cs-row,
+html[data-theme="obsidian"] .kdstock-frame,
+html[data-theme="obsidian"] .kdstock-card,
+html[data-theme="obsidian"] .kdjobs-row,
+html[data-theme="obsidian"] .mm-comment-panel,
+html[data-theme="obsidian"] .comment-item,
+html[data-theme="obsidian"] .kdnest-sidebar,
+html[data-theme="obsidian"] .kdnest-part,
+html[data-theme="obsidian"] .kdnest-stock-row,
+html[data-theme="obsidian"] .nest-home-row,
+html[data-theme="obsidian"] .family-card,
+html[data-theme="obsidian"] .theme-menu {
+  background-color: var(--ob-panel) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--ob-line) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4), var(--ob-border-glow) !important;
+  background-image: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(0,0,0,0.05)) !important;
+}
+
+/* Buttons — gold gradient or dark gold button with hover glow. */
+html[data-theme="obsidian"] button,
+html[data-theme="obsidian"] .tab,
+html[data-theme="obsidian"] .action-btn,
+html[data-theme="obsidian"] .filter-btn,
+html[data-theme="obsidian"] .mini,
+html[data-theme="obsidian"] .back-btn,
+html[data-theme="obsidian"] .kdnest-btn,
+html[data-theme="obsidian"] .theme-btn,
+html[data-theme="obsidian"] .theme-opt,
+html[data-theme="obsidian"] .comment-add,
+html[data-theme="obsidian"] .kdjobs-load,
+html[data-theme="obsidian"] .kdjobs-del,
+html[data-theme="obsidian"] .cs-download-btn {
+  background-color: var(--ob-panel2) !important;
+  color: var(--ob-ink) !important;
+  border: 1px solid var(--ob-line) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(0,0,0,0.02)) !important;
+  font-weight: 600;
+  transition: all 0.2s ease !important;
+}
+
+html[data-theme="obsidian"] button:hover,
+html[data-theme="obsidian"] .tab:hover,
+html[data-theme="obsidian"] .action-btn:hover,
+html[data-theme="obsidian"] .kdnest-btn:hover,
+html[data-theme="obsidian"] .theme-btn:hover {
+  background-color: rgba(229, 193, 88, 0.15) !important;
+  border-color: var(--ob-accent) !important;
+  box-shadow: 0 0 12px rgba(229, 193, 88, 0.25) !important;
+}
+
+/* Inputs — darker obsidian field, faint gold border. */
+html[data-theme="obsidian"] input,
+html[data-theme="obsidian"] textarea,
+html[data-theme="obsidian"] select,
+html[data-theme="obsidian"] .search-wrap,
+html[data-theme="obsidian"] #search,
+html[data-theme="obsidian"] .comment-input,
+html[data-theme="obsidian"] .kme-cmt-input {
+  background-color: rgba(10, 11, 16, 0.9) !important;
+  color: var(--ob-ink) !important;
+  border: 1px solid var(--ob-line) !important;
+  border-radius: 6px !important;
+  background-image: none !important;
+}
+html[data-theme="obsidian"] ::placeholder { color: var(--ob-ink-soft) !important; }
+
+/* Active tab = bright gold emphasis w/ glow. */
+html[data-theme="obsidian"] .tab.active {
+  color: #ffffff !important;
+  background-color: rgba(229, 193, 88, 0.25) !important;
+  border-color: var(--ob-accent) !important;
+  box-shadow: var(--ob-glow), 0 0 0 1px var(--ob-accent) inset !important;
+}
+
+/* Dividers. */
+html[data-theme="obsidian"] hr,
+html[data-theme="obsidian"] .divider { border-color: var(--ob-faint) !important; }
+
+/* Secondary / muted text. */
+html[data-theme="obsidian"] .updated,
+html[data-theme="obsidian"] .brand-sub,
+html[data-theme="obsidian"] .cut-list-summary,
+html[data-theme="obsidian"] .kdnest-title-sub,
+html[data-theme="obsidian"] .pdxf-sub,
+html[data-theme="obsidian"] .kdjobs-meta,
+html[data-theme="obsidian"] #count { color: var(--ob-ink-soft) !important; }
+
+/* Warning banners — keep the colour code (ink on tinted amber/red). */
+html[data-theme="obsidian"] .kdnest-warn--unplaced {
+  background-color: rgba(168,57,42,0.22) !important; border: 1px solid #e0614f !important;
+  color: #ffd9d2 !important; border-radius: 6px !important;
+}
+html[data-theme="obsidian"] .kdnest-warn--review {
+  background-color: rgba(181,112,31,0.22) !important; border: 1px solid #e0a14f !important;
+  color: #ffe9cf !important; border-radius: 6px !important;
+}
+html[data-theme="obsidian"] .kdnest-warn--unplaced *,
+html[data-theme="obsidian"] .kdnest-warn--review * { color: inherit !important; }
+
+/* Non-DXF modal backdrops dimmed. */
+html[data-theme="obsidian"] .pdxf-backdrop,
+html[data-theme="obsidian"] .kdstock-backdrop,
+html[data-theme="obsidian"] .kdng-backdrop {
+  background-color: rgba(4, 5, 8, 0.8) !important; background-image: none !important;
+}
+
+/* MINDMAP — obsidian board, gold edges. */
+html[data-theme="obsidian"] .react-flow,
+html[data-theme="obsidian"] .react-flow__renderer,
+html[data-theme="obsidian"] .mindmap-wrapper,
+html[data-theme="obsidian"] .mindmap-canvas {
+  background-color: var(--ob-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--ob-faint) 0 1px, transparent 1px 36px),
+    repeating-linear-gradient(90deg, var(--ob-faint) 0 1px, transparent 1px 36px) !important;
+}
+html[data-theme="obsidian"] .kme-node {
+  background-color: var(--ob-panel) !important;
+  background-image: none !important;
+  border: 1px solid var(--ob-line) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+  color: var(--ob-ink) !important;
+}
+html[data-theme="obsidian"] .kme-node-label,
+html[data-theme="obsidian"] .kme-node-qty,
+html[data-theme="obsidian"] .kme-node-qty-num { color: var(--ob-ink) !important; }
+html[data-theme="obsidian"] .react-flow__edge-path { stroke: var(--ob-line) !important; stroke-width: 1.4 !important; }
+html[data-theme="obsidian"] .react-flow__handle { background: var(--ob-line) !important; border-color: var(--ob-line) !important; }
+html[data-theme="obsidian"] .kme-node.kme-project,
+html[data-theme="obsidian"] .kme-project {
+  background-color: var(--ob-panel2) !important;
+  border: 1.5px solid var(--ob-accent) !important;
+  box-shadow: var(--ob-glow) !important;
+}
+
+/* Completed assembly node — green border. */
+html[data-theme="obsidian"] .kme-node.kme-done {
+  border-color: #2f9e44 !important;
+  box-shadow: 0 0 0 1.5px #2f9e44 inset !important;
+}
+
+/* Favorite star. */
+html[data-theme="obsidian"] .pin-btn.on {
+  background: #f5c531 !important;
+  color: #3a2c00 !important;
+  border-color: #f5c531 !important;
+}
+
+/* Depth shadow overrides for mindmap layers */
+html[data-theme="obsidian"] .kme-node.kme-layer-1:not(.kme-project) { box-shadow: 0 8px 24px rgba(229,193,88,0.15) !important; }
+html[data-theme="obsidian"] .kme-node.kme-layer-2:not(.kme-project) { box-shadow: 0 6px 18px rgba(229,193,88,0.1) !important; }
+html[data-theme="obsidian"] .kme-node.kme-layer-3:not(.kme-project) { box-shadow: 0 4px 12px rgba(229,193,88,0.08) !important; }
+html[data-theme="obsidian"] .kme-node.kme-layer-4:not(.kme-project) { box-shadow: 0 3px 8px rgba(229,193,88,0.05) !important; }
+html[data-theme="obsidian"] .kme-node.kme-layer-5:not(.kme-project) { box-shadow: 0 2px 4px rgba(229,193,88,0.03) !important; }
+
+/* Checklist, cut location styling */
+html[data-theme="obsidian"] .kme-checklist-panel { background-color: var(--ob-bg2) !important; border: 1.5px solid var(--ob-line) !important; }
+html[data-theme="obsidian"] .kme-checklist-row { background-color: rgba(20,22,30,0.4) !important; border-color: var(--ob-faint) !important; }
+html[data-theme="obsidian"] .cut-loc-panel { background: var(--ob-panel) !important; color: var(--ob-ink); border-color: var(--ob-line); }
+html[data-theme="obsidian"] .cut-loc-head { border-bottom-color: var(--ob-line); }
+html[data-theme="obsidian"] .kdstock-box,
+html[data-theme="obsidian"] .kdng-box {
+  background-color: var(--ob-bg2) !important;
+  border: 1.5px solid var(--ob-line) !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
+}
+

@@ -1223,10 +1223,10 @@ async function _renderSheetLocatorModal(code, projectKey) {
 // ring over every placement of `code`. Theme-aware fills like the Nest canvas.
 function _drawSheetLocator(wrap, canvas, sheet, code) {
   const theme = document.documentElement.getAttribute('data-theme');
-  const BG    = theme === 'sketch' ? '#efe7d6' : theme === 'chalk' ? '#26302e' : '#0f1419';
-  const INK   = theme === 'sketch' ? '#1b1815' : theme === 'chalk' ? '#f4f1e8' : '#cdd6e0';
-  const FAINT = theme === 'sketch' ? 'rgba(27,24,21,0.30)' : theme === 'chalk' ? 'rgba(244,241,232,0.32)' : 'rgba(205,214,224,0.30)';
-  const HOT   = theme === 'sketch' ? '#c0392b' : theme === 'chalk' ? '#ffd166' : '#4ecca3';
+  const BG    = theme === 'sketch' ? '#efe7d6' : theme === 'chalk' ? '#26302e' : theme === 'obsidian' ? '#08090d' : '#0f1419';
+  const INK   = theme === 'sketch' ? '#1b1815' : theme === 'chalk' ? '#f4f1e8' : theme === 'obsidian' ? '#e5c158' : '#cdd6e0';
+  const FAINT = theme === 'sketch' ? 'rgba(27,24,21,0.30)' : theme === 'chalk' ? 'rgba(244,241,232,0.32)' : theme === 'obsidian' ? 'rgba(229,193,88,0.25)' : 'rgba(205,214,224,0.30)';
+  const HOT   = theme === 'sketch' ? '#c0392b' : theme === 'chalk' ? '#ffd166' : theme === 'obsidian' ? '#ffffff' : '#4ecca3';
 
   const dpr = window.devicePixelRatio || 1;
   const cw = wrap.clientWidth || 320;
