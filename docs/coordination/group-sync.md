@@ -1067,3 +1067,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-06-01 - Group 2 (Web)
 **DONE:** (53264a6, live) Removed the **Blueprint** theme (เอ๋ 'ไม่สวย' — evaluated + dropped). Deleted its THEMES entry, style.css block, nest.js _blue palette branches, and spec doc. Live picker now lists 6 themes: dark / sketch / chalk / daylight / kraft / steel. Cached kd_theme_v1='blueprint' falls back to base dark gracefully. Verified live: blueprint=0 in index+css, daylight/kraft/steel intact.
 **NEEDS:** nothing.
+
+---
+### 2026-06-01 - Group 2 (Web)
+**DONE:** (ce231c0, live) Removed the 3 candidate themes Daylight/Kraft/Steel (เอ๋ 'ไม่สวยเลย' — dropped all three). Theme set is back to the original 3: dark / sketch / chalk. Removed their THEMES entries, style.css blocks, and nest.js _work/_kraft/_steel palette branches (+_lblLight helper). Net result of today's theme experiment: tried Blueprint + Daylight + Kraft + Steel, เอ๋ kept NONE — back to dark/sketch/chalk. Verified live: daylight/kraft/steel=0 in index+css, sketch/chalk intact.
+**NEEDS:** nothing.
