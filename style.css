@@ -340,9 +340,14 @@ h1 {
 /* --- Project cards (Projects view) --- */
 
 .project-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  /* Auto-column grid like the Library family grid (เอ๋ 2026-06-01 'ทำเป็น
+     auto column เหมือน Library'): as many columns as fit at ≥360px each, so
+     desktop shows several project cards per row instead of one full-width
+     column. min(360px,100%) keeps it a single column on phones (no overflow
+     when the viewport is narrower than 360px). */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+  gap: 12px;
 }
 
 .project-card {
@@ -3495,7 +3500,10 @@ button.cut-status:focus-visible {
    clickable, no-DXF rows are dimmed + disabled with a hint. User
    2026-05-28: 'nest ให้ย้ายไปต่อ library admin ใช้ได้คนเดียว'. */
 .nest-home {
-  max-width: 900px;
+  /* Was capped at 900px (single narrow column). Widen so the auto-column
+     grid below can show several project rows per row on desktop, like the
+     Library (เอ๋ 2026-06-01 'ทำเป็น auto column เหมือน Library'). */
+  max-width: 1600px;
   margin: 0 auto;
   padding: 24px 16px;
 }
@@ -3519,9 +3527,12 @@ button.cut-status:focus-visible {
   color: #5d7290;
 }
 .nest-home-rows {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+  /* Auto-column grid like Library (เอ๋ 2026-06-01). Rows are denser than
+     project cards (move · name · stats · NEST · pin · trash), so use a wider
+     420px min track. min(420px,100%) → single column on phones. */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+  gap: 10px;
 }
 .nest-home-row {
   display: grid;
