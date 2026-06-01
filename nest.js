@@ -1993,7 +1993,6 @@
       ? document.documentElement.getAttribute('data-theme') : null;
     const _sketch = _theme === 'sketch';
     const _chalk = _theme === 'chalk';
-    const _blue = _theme === 'blueprint';   // white/cyan lines on blueprint blue
     const _work = _theme === 'daylight';    // black-on-white high-contrast
     const _kraft = _theme === 'kraft';      // cream-on-dark-kraft (warm night)
     const _steel = _theme === 'steel';      // dark-on-brushed-steel-grey
@@ -2002,13 +2001,13 @@
     // เป็นสีเดียวกับพื้นหลังโดยรอบ'). Read the computed bg of the canvas's
     // wrapper; transparent (theme reset) → fall back to <body>, then the
     // per-theme constant. INK/MUTED stay theme-based for contrast.
-    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _blue ? '#0d2440' : _work ? '#ffffff' : _kraft ? '#2a211a' : _steel ? '#c4c9ce' : '#0f1419';
-    const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : _blue ? '#cfe3ff' : _work ? '#0a0d12' : _kraft ? '#ece0cd' : _steel ? '#1a1e22' : '#4ecca3';
-    const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : _blue ? '#7c9cc0' : _work ? '#5b6671' : _kraft ? '#b9a384' : _steel ? '#545c64' : '#88aab1';
+    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _work ? '#ffffff' : _kraft ? '#2a211a' : _steel ? '#c4c9ce' : '#0f1419';
+    const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : _work ? '#0a0d12' : _kraft ? '#ece0cd' : _steel ? '#1a1e22' : '#4ecca3';
+    const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : _work ? '#5b6671' : _kraft ? '#b9a384' : _steel ? '#545c64' : '#88aab1';
     // Opaque steel silhouette so the diecut reads as a real metal part, not a
     // washed-out outline (เอ๋ 2026-05-31 'dicut ขาวออก' — colour+'22' = ~13%
     // alpha was nearly invisible). Solid mid-grey on every theme.
-    const STEEL = _sketch ? '#b9b2a2' : _chalk ? '#8f9991' : _blue ? 'rgba(120,170,225,0.28)' : _work ? 'rgba(40,80,140,0.18)' : _kraft ? 'rgba(224,149,74,0.24)' : _steel ? 'rgba(70,90,110,0.28)' : 'rgba(78,204,163,0.40)';
+    const STEEL = _sketch ? '#b9b2a2' : _chalk ? '#8f9991' : _work ? 'rgba(40,80,140,0.18)' : _kraft ? 'rgba(224,149,74,0.24)' : _steel ? 'rgba(70,90,110,0.28)' : 'rgba(78,204,163,0.40)';
     // Transparent mode (modal "show only the part" — เอ๋ 2026-05-31 'โชว์แค่พาร์ท
     // พื้นหลังไม่เอา'): clear instead of filling, so the page shows through and
     // only the silhouette + outline paint. The Nest workspace preview keeps the
@@ -2161,7 +2160,6 @@
       ? document.documentElement.getAttribute('data-theme') : null;
     const _outerBG = _stheme === 'sketch' ? '#efe7d6'
       : _stheme === 'chalk' ? '#26302e'
-      : _stheme === 'blueprint' ? '#0d2440'
       : _stheme === 'daylight' ? '#ffffff'
       : _stheme === 'kraft' ? '#2a211a'
       : _stheme === 'steel' ? '#c4c9ce' : '#0f1419';
@@ -2180,7 +2178,6 @@
     {
       const _hatchInk = _stheme === 'sketch' ? 'rgba(60,50,40,0.45)'
         : _stheme === 'chalk' ? 'rgba(220,230,225,0.35)'
-        : _stheme === 'blueprint' ? 'rgba(200,225,255,0.35)'
         : _stheme === 'daylight' ? 'rgba(60,70,90,0.30)'
         : _stheme === 'kraft' ? 'rgba(220,200,170,0.32)'
         : _stheme === 'steel' ? 'rgba(60,70,80,0.30)' : 'rgba(150,170,190,0.32)';
@@ -2336,7 +2333,7 @@
     // invisible, so use near-black ink. chalk/default sheets are dark → keep
     // the light ink. (user 2026-05-31 'theme pencil ให้ตัวอีกษรเป็นสีดำ')
     // Light-ground themes (sketch/daylight/steel) need near-black ink; dark
-    // grounds (chalk/blueprint/kraft/default) keep the light ink.
+    // grounds (chalk/kraft/default) keep the light ink.
     const _lblLight = _stheme === 'sketch' || _stheme === 'daylight' || _stheme === 'steel';
     const _lblNorm = _lblLight ? '#1a1f26' : '#e8eef5';
     const _lblHot  = _lblLight ? '#000000' : '#fffce8';
