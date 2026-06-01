@@ -1047,3 +1047,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 ### 2026-06-01 - Group 2 (Web) [followup]
 **DONE:** (720e2e8, live) DXF preview download button now hugs the part TIGHTLY even for thin strips (เอ๋ 'ปุ่มดาวน์โหลดให้อยู่ชิด Part เลย'). After 076d6d1 the button hugged the canvas (10px) but a thin strip still floated mid-canvas — the 44px drawPart pad + 200px min height left ~90px dead space below a thin part. Fix: nest.js _drawPartPreview accepts opts.pad (default 44, Nest workspace unchanged); app.js modal passes PREVIEW_PAD=8 shared by sizeCanvas+drawPart and lowers the min canvas height 60→24 so the box collapses to the part's natural height. Verified via canvas pixel-scan (mock 1200×80 strip, mobile 375px): canvas 37px, silhouette y7→30, part→button gap 18px (was ~104px), no clipping. Live: app.js PREVIEW_PAD present, nest.js opts.pad present.
 **NEEDS:** Group 1 — _drawPartPreview now reads opts.pad; if you call drawPart from Fusion-side tooling, default (no pad) is unchanged (44). FYI only.
+
+---
+### 2026-06-01 - Group 2 (Web)
+**DONE:** (b681243, live) Projects + Nest-workspace lists are now auto-column GRIDS like the Library family grid (เอ๋ 'ทำเป็น auto column เหมือน Library'). Both were single full-width columns on desktop. .project-list flex→grid repeat(auto-fill, minmax(min(360px,100%),1fr)); .nest-home-rows flex→grid minmax(min(420px,100%),1fr); .nest-home max-width 900→1600 so the grid has room. The min(Npx,100%) trick keeps a single column on phones with no horizontal overflow. Verified local (preview): desktop 1680px → Projects 4 cols / Nest 3 cols, no overflow; mobile 375px → both 1 col, card+row internal content fits. Live: all 3 CSS changes present.
+**NEEDS:** nothing.
