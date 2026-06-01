@@ -1993,18 +1993,19 @@
       ? document.documentElement.getAttribute('data-theme') : null;
     const _sketch = _theme === 'sketch';
     const _chalk = _theme === 'chalk';
+    const _blue = _theme === 'blueprint';   // white/cyan lines on blueprint blue
     // BG = the ACTUAL surrounding background so the preview blends into the
     // workspace in every theme (เอ๋ 2026-05-31 'ในช่องการแสดงภาพ ให้พื้นหลัง
     // เป็นสีเดียวกับพื้นหลังโดยรอบ'). Read the computed bg of the canvas's
     // wrapper; transparent (theme reset) → fall back to <body>, then the
     // per-theme constant. INK/MUTED stay theme-based for contrast.
-    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : '#0f1419';
-    const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : '#4ecca3';
-    const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : '#88aab1';
+    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _blue ? '#0d2440' : '#0f1419';
+    const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : _blue ? '#cfe3ff' : '#4ecca3';
+    const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : _blue ? '#7c9cc0' : '#88aab1';
     // Opaque steel silhouette so the diecut reads as a real metal part, not a
     // washed-out outline (เอ๋ 2026-05-31 'dicut ขาวออก' — colour+'22' = ~13%
     // alpha was nearly invisible). Solid mid-grey on every theme.
-    const STEEL = _sketch ? '#b9b2a2' : _chalk ? '#8f9991' : 'rgba(78,204,163,0.40)';
+    const STEEL = _sketch ? '#b9b2a2' : _chalk ? '#8f9991' : _blue ? 'rgba(120,170,225,0.28)' : 'rgba(78,204,163,0.40)';
     // Transparent mode (modal "show only the part" — เอ๋ 2026-05-31 'โชว์แค่พาร์ท
     // พื้นหลังไม่เอา'): clear instead of filling, so the page shows through and
     // only the silhouette + outline paint. The Nest workspace preview keeps the
@@ -2156,7 +2157,8 @@
     const _stheme = (typeof document !== 'undefined')
       ? document.documentElement.getAttribute('data-theme') : null;
     const _outerBG = _stheme === 'sketch' ? '#efe7d6'
-      : _stheme === 'chalk' ? '#26302e' : '#0f1419';
+      : _stheme === 'chalk' ? '#26302e'
+      : _stheme === 'blueprint' ? '#0d2440' : '#0f1419';
     ctx.fillStyle = _outerBG;
     ctx.fillRect(0, 0, cw, ch);
     // Sheet outline
@@ -2171,7 +2173,8 @@
     // grain itself never turns. Drawn UNDER the parts so the part fills sit on top.
     {
       const _hatchInk = _stheme === 'sketch' ? 'rgba(60,50,40,0.45)'
-        : _stheme === 'chalk' ? 'rgba(220,230,225,0.35)' : 'rgba(150,170,190,0.32)';
+        : _stheme === 'chalk' ? 'rgba(220,230,225,0.35)'
+        : _stheme === 'blueprint' ? 'rgba(200,225,255,0.35)' : 'rgba(150,170,190,0.32)';
       const _dpr = window.devicePixelRatio || 1;
       const _step = 11 * _dpr;
       const _x1 = offX + sheet.sw * scale, _y1 = offY + sheet.sh * scale;

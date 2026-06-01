@@ -5584,6 +5584,222 @@ html[data-theme="chalk"] .kdng-box{
 /* Drag affordance — the header is the grab handle (JS sets cursor too). */
 .kdstock-head{ cursor:move; user-select:none; }
 
+/* ─────────────────────────────────────────────────────────────────────
+   BLUEPRINT THEME — white/cyan technical lines on deep blueprint blue.
+   Fits the laser-cut domain + the "drawing medium on a surface" theme
+   language (เอ๋ 2026-06-01 'Blueprint'). Technique mirrors Sketch/Chalk:
+   (1) reset every surface transparent + light-blue ink, then (2) repaint
+   real surfaces as blue panels with CRISP 1px cyan technical borders (no
+   wobble). Status badge colours kept; faint grid on the body ground.
+   Does NOT style .dxf-preview-* — the part-only see-through override below
+   owns those, so the DXF part shows as white lines on the blue page.
+   ───────────────────────────────────────────────────────────────────── */
+html[data-theme="blueprint"] {
+  --bp-bg:       #0d2440;
+  --bp-bg2:      #102a4c;
+  --bp-panel:    #143861;
+  --bp-panel2:   #17406e;
+  --bp-line:     #5b9bd5;
+  --bp-faint:    rgba(120,170,225,0.22);
+  --bp-ink:      #dbe9ff;
+  --bp-ink-soft: #8fb3da;
+  --bp-accent:   #6fb7ff;
+}
+
+/* Ground + faint blueprint grid (cyan lines every 28px). */
+html[data-theme="blueprint"] body,
+html[data-theme="blueprint"] #root,
+html[data-theme="blueprint"] main {
+  background-color: var(--bp-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--bp-faint) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, var(--bp-faint) 0 1px, transparent 1px 28px) !important;
+  color: var(--bp-ink) !important;
+}
+
+/* Reset: strip dark fills/glows off everything; keep art + mask-icons.
+   Wrapped in :where() so the reset's specificity drops to (0,1,1) — UNLIKE
+   Sketch/Chalk's reset, this lets the crisp-panel repaint rules below
+   (class selectors, (0,2,x)) actually win and paint solid blue panels +
+   cyan borders (the spec calls for lifted panels, not transparent cards).
+   It still beats the base dark theme on un-repainted elements because the
+   base rules carry no !important. */
+html[data-theme="blueprint"] :where(body *:not(svg):not(svg *):not(img):not([class*="icon"])) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--bp-ink) !important;
+  border-color: var(--bp-faint) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+
+html[data-theme="blueprint"] header {
+  background-color: var(--bp-bg2) !important;
+  border-bottom: 1px solid var(--bp-line) !important;
+}
+html[data-theme="blueprint"] footer {
+  background-color: var(--bp-bg2) !important;
+  border-top: 1px solid var(--bp-faint) !important;
+}
+html[data-theme="blueprint"] h1,
+html[data-theme="blueprint"] h1 .brand-sub { color: var(--bp-ink) !important; }
+
+/* Card / panel / row surfaces — blue panel, crisp cyan line. (NOT
+   .dxf-preview-* — the part-only see-through override owns those.) */
+html[data-theme="blueprint"] .project-card,
+html[data-theme="blueprint"] .card,
+html[data-theme="blueprint"] .bom-row,
+html[data-theme="blueprint"] .tree-row,
+html[data-theme="blueprint"] .cut-list,
+html[data-theme="blueprint"] .cut-row,
+html[data-theme="blueprint"] .cut-section,
+html[data-theme="blueprint"] .cut-waiting,
+html[data-theme="blueprint"] .pdxf-popover,
+html[data-theme="blueprint"] .part-dxf-popover,
+html[data-theme="blueprint"] .cs-modal,
+html[data-theme="blueprint"] .cs-row,
+html[data-theme="blueprint"] .kdstock-frame,
+html[data-theme="blueprint"] .kdstock-card,
+html[data-theme="blueprint"] .kdjobs-row,
+html[data-theme="blueprint"] .mm-comment-panel,
+html[data-theme="blueprint"] .comment-item,
+html[data-theme="blueprint"] .kdnest-sidebar,
+html[data-theme="blueprint"] .kdnest-part,
+html[data-theme="blueprint"] .kdnest-stock-row,
+html[data-theme="blueprint"] .nest-home-row,
+html[data-theme="blueprint"] .family-card,
+html[data-theme="blueprint"] .theme-menu {
+  background-color: var(--bp-panel) !important;
+  border: 1px solid var(--bp-line) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  background-image: none !important;
+}
+
+/* Buttons — raised blue chip, crisp cyan outline. */
+html[data-theme="blueprint"] button,
+html[data-theme="blueprint"] .tab,
+html[data-theme="blueprint"] .action-btn,
+html[data-theme="blueprint"] .filter-btn,
+html[data-theme="blueprint"] .mini,
+html[data-theme="blueprint"] .back-btn,
+html[data-theme="blueprint"] .kdnest-btn,
+html[data-theme="blueprint"] .theme-btn,
+html[data-theme="blueprint"] .theme-opt,
+html[data-theme="blueprint"] .comment-add,
+html[data-theme="blueprint"] .kdjobs-load,
+html[data-theme="blueprint"] .kdjobs-del,
+html[data-theme="blueprint"] .cs-download-btn {
+  background-color: var(--bp-panel2) !important;
+  color: var(--bp-ink) !important;
+  border: 1px solid var(--bp-line) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  font-weight: 600;
+}
+html[data-theme="blueprint"] button:hover,
+html[data-theme="blueprint"] .tab:hover,
+html[data-theme="blueprint"] .action-btn:hover,
+html[data-theme="blueprint"] .kdnest-btn:hover { background-color: #1d4d82 !important; }
+
+/* Inputs — darker blue field, cyan border. */
+html[data-theme="blueprint"] input,
+html[data-theme="blueprint"] textarea,
+html[data-theme="blueprint"] select,
+html[data-theme="blueprint"] .search-wrap,
+html[data-theme="blueprint"] #search,
+html[data-theme="blueprint"] .comment-input,
+html[data-theme="blueprint"] .kme-cmt-input {
+  background-color: var(--bp-bg2) !important;
+  color: var(--bp-ink) !important;
+  border: 1px solid var(--bp-line) !important;
+  border-radius: 3px !important;
+}
+html[data-theme="blueprint"] ::placeholder { color: var(--bp-ink-soft) !important; }
+
+/* Active tab = bright cyan emphasis. */
+html[data-theme="blueprint"] .tab.active {
+  color: var(--bp-accent) !important;
+  border-color: var(--bp-accent) !important;
+  box-shadow: 0 0 0 1px var(--bp-accent) inset !important;
+}
+
+/* Dividers. */
+html[data-theme="blueprint"] hr,
+html[data-theme="blueprint"] .divider { border-color: var(--bp-faint) !important; }
+
+/* Secondary / muted text. */
+html[data-theme="blueprint"] .updated,
+html[data-theme="blueprint"] .brand-sub,
+html[data-theme="blueprint"] .cut-list-summary,
+html[data-theme="blueprint"] .kdnest-title-sub,
+html[data-theme="blueprint"] .pdxf-sub,
+html[data-theme="blueprint"] .kdjobs-meta,
+html[data-theme="blueprint"] #count { color: var(--bp-ink-soft) !important; }
+
+/* Warning banners — keep the colour code (ink on tinted blue). */
+html[data-theme="blueprint"] .kdnest-warn--unplaced {
+  background-color: rgba(168,57,42,0.22) !important; border: 1px solid #e0614f !important;
+  color: #ffd9d2 !important; border-radius: 3px !important;
+}
+html[data-theme="blueprint"] .kdnest-warn--review {
+  background-color: rgba(181,112,31,0.22) !important; border: 1px solid #e0a14f !important;
+  color: #ffe9cf !important; border-radius: 3px !important;
+}
+html[data-theme="blueprint"] .kdnest-warn--unplaced *,
+html[data-theme="blueprint"] .kdnest-warn--review * { color: inherit !important; }
+
+/* Non-DXF modal backdrops dimmed (reset stripped them). The DXF backdrop
+   stays transparent via the part-only see-through override below. */
+html[data-theme="blueprint"] .pdxf-backdrop,
+html[data-theme="blueprint"] .kdstock-backdrop,
+html[data-theme="blueprint"] .kdng-backdrop {
+  background-color: rgba(4,12,24,0.66) !important; background-image: none !important;
+}
+
+/* MINDMAP — blue board + grid, cyan edges. */
+html[data-theme="blueprint"] .react-flow,
+html[data-theme="blueprint"] .react-flow__renderer,
+html[data-theme="blueprint"] .mindmap-wrapper,
+html[data-theme="blueprint"] .mindmap-canvas {
+  background-color: var(--bp-bg) !important;
+  background-image:
+    repeating-linear-gradient(0deg, var(--bp-faint) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, var(--bp-faint) 0 1px, transparent 1px 28px) !important;
+}
+html[data-theme="blueprint"] .kme-node {
+  background-color: var(--bp-panel) !important;
+  background-image: none !important;
+  border: 1px solid var(--bp-line) !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+  color: var(--bp-ink) !important;
+}
+html[data-theme="blueprint"] .kme-node-label,
+html[data-theme="blueprint"] .kme-node-qty,
+html[data-theme="blueprint"] .kme-node-qty-num { color: var(--bp-ink) !important; }
+html[data-theme="blueprint"] .react-flow__edge-path { stroke: var(--bp-line) !important; stroke-width: 1.4 !important; }
+html[data-theme="blueprint"] .react-flow__handle { background: var(--bp-line) !important; border-color: var(--bp-line) !important; }
+html[data-theme="blueprint"] .kme-node.kme-project,
+html[data-theme="blueprint"] .kme-project {
+  background-color: var(--bp-panel2) !important;
+  border: 1.5px solid var(--bp-accent) !important;
+}
+
+/* Completed assembly node — green border (parity with Sketch/Chalk). */
+html[data-theme="blueprint"] .kme-node.kme-done {
+  border-color: #2f9e44 !important;
+  box-shadow: 0 0 0 1.5px #2f9e44 inset !important;
+}
+
+/* Favorite star — keep the solid-gold pinned chip (the button repaint
+   above would otherwise flatten it). */
+html[data-theme="blueprint"] .pin-btn.on {
+  background: #f5c531 !important;
+  color: #3a2c00 !important;
+  border-color: #f5c531 !important;
+}
+
 /* === DXF preview = part-only, see-through (เอ๋ 2026-05-31 'โชว์แค่พาร์ท พื้นหลัง
    ไม่เอา และปุ่มดาวน์โหลด part พอ ที่เหลือไม่เอา เกะกะมองไม่เห็นอะไรเลยด้านหลัง').
    Strip ALL chrome to just the part silhouette (canvas cleared transparent in
