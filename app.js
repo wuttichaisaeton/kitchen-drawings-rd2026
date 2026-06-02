@@ -3903,6 +3903,144 @@ let _toolingExpandedId = null;
 let _customToolsCache = null;
 let _customToolsSubscribed = false;
 
+const KYOKKO_CATALOG_PRESETS = {
+  punches: [
+    { no: "452-R08", label: "Kyokko #452 Gooseneck 88° · R0.8 H90", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 90, note: "Small Gooseneck (overall hardening)" },
+    { no: "452-R02", label: "Kyokko #452 Gooseneck 88° · R0.2 H90", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.2, height_mm: 90, note: "Small Gooseneck (sharp tip)" },
+    { no: "453-R08", label: "Kyokko #453 Gooseneck 88° · R0.8 H90 (Thin Tip)", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 90, note: "Thin Tip Small Gooseneck" },
+    { no: "045-R08", label: "Kyokko #045 Gooseneck 88° · R0.8 H105", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 105, note: "Middle Gooseneck punch" },
+    { no: "200-R06", label: "Kyokko #200 Sash Punch 88° · R0.6 H70", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.6, height_mm: 70, note: "Sash punch (short H70)" },
+    { no: "202-R06", label: "Kyokko #202 Sash Punch 88° · R0.6 H100", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.6, height_mm: 100, note: "Sash punch (H100)" },
+    { no: "109-R06", label: "Kyokko #109 Straight Punch 88° · R0.6 H95", type: "standard", angle_deg: 88, tip_radius_mm: 0.6, height_mm: 95, note: "Straight punch (H95)" },
+    { no: "109-R08", label: "Kyokko #109 Straight Punch 88° · R0.8 H120", type: "standard", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 120, note: "Straight punch (H120)" }
+  ],
+  dies: [
+    { no: "K-1V-V06", label: "Kyokko 1V · V6 · 88° H80", type: "1V", angle_deg: 88, v_list: [6], height_mm: 80, note: "Single V6 Die (H80)" },
+    { no: "K-1V-V08", label: "Kyokko 1V · V8 · 88° H80", type: "1V", angle_deg: 88, v_list: [8], height_mm: 80, note: "Single V8 Die (H80)" },
+    { no: "K-1V-V10", label: "Kyokko 1V · V10 · 88° H80", type: "1V", angle_deg: 88, v_list: [10], height_mm: 80, note: "Single V10 Die (H80)" },
+    { no: "K-1V-V12", label: "Kyokko 1V · V12 · 88° H80", type: "1V", angle_deg: 88, v_list: [12], height_mm: 80, note: "Single V12 Die (H80)" },
+    { no: "K-2V-0608", label: "Kyokko 2V · V6/V8 · 88° H80", type: "2V", angle_deg: 88, v_list: [6, 8], height_mm: 80, note: "Reversible V6/V8 Die" },
+    { no: "K-2V-0812", label: "Kyokko 2V · V8/V12 · 88° H80", type: "2V", angle_deg: 88, v_list: [8, 12], height_mm: 80, note: "Reversible V8/V12 Die" }
+  ]
+};
+
+function _showImportCatalogForm() {
+  const existing = document.getElementById('sb-add-tool-modal');
+  if (existing) existing.remove();
+
+  const cat = window.KD_TOOLING || { punches: [], dies: [] };
+  
+  const punchesHtml = KYOKKO_CATALOG_PRESETS.punches.map(item => {
+    const id = `P-KYOKKO-${item.no}`;
+    const isImported = cat.punches.some(t => t.id === id);
+    const btnHtml = isImported
+      ? `<button disabled class="sb-modal-btn" style="background: #1c2330; border: 1px solid #2b3340; color: #4ecca3; cursor: not-allowed; font-size: 11px; padding: 4px 8px;">✓ Imported</button>`
+      : `<button type="button" class="sb-modal-btn sb-submit sb-action-import" data-kind="punch" data-no="${item.no}" style="font-size: 11px; padding: 4px 8px;">Import</button>`;
+    
+    return `<div class="sb-catalog-item" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #1c2530; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+        <span style="font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cad6e6;">${escapeHtml(item.label)}</span>
+        <span style="font-size: 10px; opacity: 0.6; color: #889bb3;">${escapeHtml(item.note)}</span>
+      </div>
+      <div>${btnHtml}</div>
+    </div>`;
+  }).join('');
+
+  const diesHtml = KYOKKO_CATALOG_PRESETS.dies.map(item => {
+    const id = `D-KYOKKO-${item.no}`;
+    const isImported = cat.dies.some(t => t.id === id);
+    const btnHtml = isImported
+      ? `<button disabled class="sb-modal-btn" style="background: #1c2330; border: 1px solid #2b3340; color: #4ecca3; cursor: not-allowed; font-size: 11px; padding: 4px 8px;">✓ Imported</button>`
+      : `<button type="button" class="sb-modal-btn sb-submit sb-action-import" data-kind="die" data-no="${item.no}" style="font-size: 11px; padding: 4px 8px;">Import</button>`;
+    
+    return `<div class="sb-catalog-item" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #1c2530; gap: 8px;">
+      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+        <span style="font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cad6e6;">${escapeHtml(item.label)}</span>
+        <span style="font-size: 10px; opacity: 0.6; color: #889bb3;">${escapeHtml(item.note)}</span>
+      </div>
+      <div>${btnHtml}</div>
+    </div>`;
+  }).join('');
+
+  const modal = document.createElement('div');
+  modal.id = 'sb-add-tool-modal';
+  modal.className = 'sb-modal-backdrop';
+  
+  modal.innerHTML = `
+    <div class="sb-modal-card" style="width: min(720px, 95vw); background: #161b22; color: #cad6e6; border: 2px solid #2b3340;" onclick="event.stopPropagation()">
+      <div class="sb-modal-head" style="color: #4ecca3; font-weight: bold; border-bottom: 1px solid #2b3340; padding-bottom: 8px;">Import Tools from Kyokko Catalog (เลือกนำเข้ามีด/ร่อง)</div>
+      <div class="sb-modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-height: 60vh; overflow-y: hidden; margin-top: 14px;">
+        <div style="display: flex; flex-direction: column; border-right: 1px solid #2b3340; padding-right: 12px; min-width: 0;">
+          <h4 style="margin-top: 0; color: #4ecca3; font-size: 13px; border-bottom: 1px solid #2b3340; padding-bottom: 4px;">Punches (มีดพับ)</h4>
+          <div style="overflow-y: auto; flex: 1;">${punchesHtml}</div>
+        </div>
+        <div style="display: flex; flex-direction: column; min-width: 0;">
+          <h4 style="margin-top: 0; color: #4ecca3; font-size: 13px; border-bottom: 1px solid #2b3340; padding-bottom: 4px;">Dies (ร่องพับ)</h4>
+          <div style="overflow-y: auto; flex: 1;">${diesHtml}</div>
+        </div>
+      </div>
+      <div class="sb-modal-foot" style="border-top: 1px solid #2b3340; padding-top: 14px;">
+        <button class="sb-modal-btn sb-cancel" type="button">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  modal.querySelector('.sb-cancel').addEventListener('click', () => modal.remove());
+  
+  modal.querySelectorAll('.sb-action-import').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const kind = btn.getAttribute('data-kind');
+      const no = btn.getAttribute('data-no');
+      _importPresetTool(kind, no, btn);
+    });
+  });
+}
+
+function _importPresetTool(kind, no, btn) {
+  const list = kind === 'punch' ? KYOKKO_CATALOG_PRESETS.punches : KYOKKO_CATALOG_PRESETS.dies;
+  const item = list.find(t => t.no === no);
+  if (!item) return;
+
+  const id = kind === 'punch' ? `P-KYOKKO-${item.no}` : `D-KYOKKO-${item.no}`;
+  
+  const toolData = {
+    label: item.label,
+    type: item.type,
+    angle_deg: item.angle_deg,
+    height_mm: item.height_mm,
+    note: item.note
+  };
+
+  if (kind === 'punch') {
+    toolData.tip_radius_mm = item.tip_radius_mm;
+  } else {
+    toolData.v_list = item.v_list;
+  }
+
+  const refPath = `bend_tools_custom/${kind}s/${id}`;
+  try {
+    window.firebaseDB.ref(refPath).set(toolData).then(() => {
+      _setOwnedTool(id, true);
+      
+      btn.disabled = true;
+      btn.className = "sb-modal-btn";
+      btn.style.background = "#1c2330";
+      btn.style.border = "1px solid #2b3340";
+      btn.style.color = "#4ecca3";
+      btn.style.cursor = "not-allowed";
+      btn.textContent = "✓ Imported";
+      
+      render();
+    }).catch(e => {
+      alert('Error importing tool: ' + e.message);
+    });
+  } catch (e) {
+    alert('Database error: ' + e.message);
+  }
+}
+
 function _subscribeCustomTools() {
   if (_customToolsSubscribed) return;
   _customToolsSubscribed = true;
@@ -4183,8 +4321,9 @@ function _toolingPickerHtml() {
       </div>
       <div class="tl-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; margin-top: 8px;">
         ${admin ? `<button class="tl-quick" type="button">Select 1mm set</button>` : ''}
+        ${admin ? `<button class="tl-catalog-import-btn" type="button" style="font-family: inherit; font-size: 11px; cursor: pointer; color: #0c131b; background: #4ecca3; border: none; border-radius: 6px; padding: 6px 12px; font-weight: 700;">＋ Import from Kyokko Catalog</button>` : ''}
         <a href="https://www.kyokko-thai.com/17311020/catalog-%E3%82%AB%E3%82%BF%E3%83%AD%E3%82%B0" target="_blank" class="tl-catalog-link" style="color: #4ecca3; text-decoration: none; font-size: 11.5px; font-weight: bold;">
-          📖 Amada Tooling Catalog ↗
+          📖 Kyokko Catalog Webpage ↗
         </a>
         ${admin ? `<span class="tl-hint" style="margin-left: auto;">★ = good for 1mm · saved automatically</span>` : ''}
       </div>
@@ -4231,6 +4370,13 @@ function _wireToolingPicker() {
       _deleteCustomTool(id, kind);
     });
   });
+  const importBtn = ROOT.querySelector('.tl-catalog-import-btn');
+  if (importBtn) {
+    importBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _showImportCatalogForm();
+    });
+  }
   const quick = ROOT.querySelector('.tl-quick');
   if (quick) quick.addEventListener('click', () => {
     const cat = window.KD_TOOLING || { punches: [], dies: [] };
