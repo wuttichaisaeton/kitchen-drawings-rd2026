@@ -6024,4 +6024,122 @@ html[data-theme="chalk"] .sb-form-group select {
   color: #e4e9f0 !important;
 }
 
+/* Kyokko Catalog Importer Styles */
+.sb-catalog-card {
+  background: #1c2330;
+  border: 1px solid #2b3340;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.sb-catalog-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #2b3340;
+  padding-bottom: 6px;
+}
+.sb-catalog-card-title {
+  font-weight: bold;
+  font-size: 13.5px;
+  color: #4ecca3;
+}
+.sb-catalog-card-height {
+  font-size: 11px;
+  opacity: 0.8;
+  color: #889bb3;
+  font-weight: bold;
+}
+.sb-catalog-card-body {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.sb-catalog-card-preview {
+  width: 76px;
+  height: 86px;
+  background: #11161d;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: 1px solid #2b3340;
+  flex-shrink: 0;
+}
+.sb-catalog-card-controls {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 11.5px;
+}
+.sb-catalog-card-control-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sb-catalog-card-control-label {
+  opacity: 0.6;
+  min-width: 50px;
+  font-weight: bold;
+}
+.sb-catalog-card-note {
+  font-size: 10px;
+  opacity: 0.6;
+  color: #889bb3;
+  line-height: 1.3;
+}
+.sb-catalog-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #2b3340;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.sb-catalog-card-model {
+  font-weight: bold;
+  font-size: 11.5px;
+  color: #cad6e6;
+  font-family: monospace;
+}
+.sb-catalog-pill-group {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.sb-catalog-pill {
+  cursor: pointer;
+  background: #0e1217;
+  border: 1px solid #2b3340;
+  border-radius: 4px;
+  padding: 3px 7px;
+  font-size: 10.5px;
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+  color: #cad6e6;
+  display: inline-block;
+  text-align: center;
+}
+.sb-catalog-pill:hover {
+  background: #252d3a;
+  border-color: #3e4857;
+}
+.sb-catalog-pill-input {
+  display: none;
+}
+.sb-catalog-pill-input:checked + .sb-catalog-pill {
+  background: #4ecca3;
+  color: #0b121a;
+  border-color: #4ecca3;
+  font-weight: bold;
+}
+
+
 

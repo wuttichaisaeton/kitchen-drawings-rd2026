@@ -3903,24 +3903,82 @@ let _toolingExpandedId = null;
 let _customToolsCache = null;
 let _customToolsSubscribed = false;
 
-const KYOKKO_CATALOG_PRESETS = {
+const KYOKKO_CATALOG_SERIES = {
   punches: [
-    { no: "452-R08", label: "Kyokko #452 Gooseneck 88° · R0.8 H90", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 90, note: "Small Gooseneck (overall hardening)" },
-    { no: "452-R02", label: "Kyokko #452 Gooseneck 88° · R0.2 H90", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.2, height_mm: 90, note: "Small Gooseneck (sharp tip)" },
-    { no: "453-R08", label: "Kyokko #453 Gooseneck 88° · R0.8 H90 (Thin Tip)", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 90, note: "Thin Tip Small Gooseneck" },
-    { no: "045-R08", label: "Kyokko #045 Gooseneck 88° · R0.8 H105", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 105, note: "Middle Gooseneck punch" },
-    { no: "200-R06", label: "Kyokko #200 Sash Punch 88° · R0.6 H70", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.6, height_mm: 70, note: "Sash punch (short H70)" },
-    { no: "202-R06", label: "Kyokko #202 Sash Punch 88° · R0.6 H100", type: "gooseneck", angle_deg: 88, tip_radius_mm: 0.6, height_mm: 100, note: "Sash punch (H100)" },
-    { no: "109-R06", label: "Kyokko #109 Straight Punch 88° · R0.6 H95", type: "standard", angle_deg: 88, tip_radius_mm: 0.6, height_mm: 95, note: "Straight punch (H95)" },
-    { no: "109-R08", label: "Kyokko #109 Straight Punch 88° · R0.8 H120", type: "standard", angle_deg: 88, tip_radius_mm: 0.8, height_mm: 120, note: "Straight punch (H120)" }
+    {
+      series: "452",
+      name: "Gooseneck #452 (overall hardening)",
+      type: "gooseneck",
+      height_mm: 90,
+      radii: [0.2, 0.6, 0.8, 1.5, 3.0],
+      angles: [88, 90],
+      note: "Standard small gooseneck punch. Great for channels and boxes."
+    },
+    {
+      series: "453",
+      name: "Gooseneck #453 (Thin Tip)",
+      type: "gooseneck",
+      height_mm: 90,
+      radii: [0.2, 0.6, 0.8, 1.5, 3.0],
+      angles: [88, 90],
+      note: "Thin tip small gooseneck punch. Clears narrow channel returns."
+    },
+    {
+      series: "045",
+      name: "Middle Gooseneck #045",
+      type: "gooseneck",
+      height_mm: 105,
+      radii: [0.2, 0.6, 0.8, 1.5, 3.0],
+      angles: [88, 90],
+      note: "Middle-sized gooseneck punch. 105mm height for deeper bends."
+    },
+    {
+      series: "200",
+      name: "Sash Punch #200 (Short H70)",
+      type: "gooseneck",
+      height_mm: 70,
+      radii: [0.2, 0.6],
+      angles: [88, 90],
+      note: "Sash punch (short H70) for shallow profiles and returns."
+    },
+    {
+      series: "202",
+      name: "Sash Punch #202 (H100)",
+      type: "gooseneck",
+      height_mm: 100,
+      radii: [0.2, 0.6],
+      angles: [88, 90],
+      note: "Sash punch (H100) for standard return flanges."
+    },
+    {
+      series: "109",
+      name: "Straight Punch #109",
+      type: "standard",
+      height_mm: 95,
+      radii: [0.2, 0.6, 0.8],
+      angles: [88, 90],
+      note: "Straight punch H95. Ideal for flat sheets and standard 90° bends."
+    }
   ],
   dies: [
-    { no: "K-1V-V06", label: "Kyokko 1V · V6 · 88° H80", type: "1V", angle_deg: 88, v_list: [6], height_mm: 80, note: "Single V6 Die (H80)" },
-    { no: "K-1V-V08", label: "Kyokko 1V · V8 · 88° H80", type: "1V", angle_deg: 88, v_list: [8], height_mm: 80, note: "Single V8 Die (H80)" },
-    { no: "K-1V-V10", label: "Kyokko 1V · V10 · 88° H80", type: "1V", angle_deg: 88, v_list: [10], height_mm: 80, note: "Single V10 Die (H80)" },
-    { no: "K-1V-V12", label: "Kyokko 1V · V12 · 88° H80", type: "1V", angle_deg: 88, v_list: [12], height_mm: 80, note: "Single V12 Die (H80)" },
-    { no: "K-2V-0608", label: "Kyokko 2V · V6/V8 · 88° H80", type: "2V", angle_deg: 88, v_list: [6, 8], height_mm: 80, note: "Reversible V6/V8 Die" },
-    { no: "K-2V-0812", label: "Kyokko 2V · V8/V12 · 88° H80", type: "2V", angle_deg: 88, v_list: [8, 12], height_mm: 80, note: "Reversible V8/V12 Die" }
+    {
+      series: "1V",
+      name: "Single V Die H80",
+      type: "1V",
+      height_mm: 80,
+      vOpenings: [6, 8, 10, 12, 16, 20, 25],
+      angles: [88, 90],
+      note: "Kyokko Single V die H80. Standard height."
+    },
+    {
+      series: "2V",
+      name: "Double V Die H80",
+      type: "2V",
+      height_mm: 80,
+      vPairs: [[6, 8], [8, 12], [12, 20]],
+      angles: [88, 90],
+      note: "Kyokko Double V reversible die. Versatile two V-openings."
+    }
   ]
 };
 
@@ -3928,38 +3986,107 @@ function _showImportCatalogForm() {
   const existing = document.getElementById('sb-add-tool-modal');
   if (existing) existing.remove();
 
-  const cat = window.KD_TOOLING || { punches: [], dies: [] };
-  
-  const punchesHtml = KYOKKO_CATALOG_PRESETS.punches.map(item => {
-    const id = `P-KYOKKO-${item.no}`;
-    const isImported = cat.punches.some(t => t.id === id);
-    const btnHtml = isImported
-      ? `<button disabled class="sb-modal-btn" style="background: #1c2330; border: 1px solid #2b3340; color: #4ecca3; cursor: not-allowed; font-size: 11px; padding: 4px 8px;">✓ Imported</button>`
-      : `<button type="button" class="sb-modal-btn sb-submit sb-action-import" data-kind="punch" data-no="${item.no}" style="font-size: 11px; padding: 4px 8px;">Import</button>`;
-    
-    return `<div class="sb-catalog-item" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #1c2530; gap: 8px;">
-      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-        <span style="font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cad6e6;">${escapeHtml(item.label)}</span>
-        <span style="font-size: 10px; opacity: 0.6; color: #889bb3;">${escapeHtml(item.note)}</span>
+  const punchesHtml = KYOKKO_CATALOG_SERIES.punches.map(item => {
+    const anglePills = item.angles.map((ang, idx) => {
+      const checked = idx === 0 ? 'checked' : '';
+      return `<label class="sb-catalog-pill-group-item">
+        <input type="radio" name="punch-ang-${item.series}" value="${ang}" class="sb-catalog-pill-input punch-ang-radio" data-series="${item.series}" ${checked}>
+        <span class="sb-catalog-pill">${ang}°</span>
+      </label>`;
+    }).join('');
+
+    const radiusPills = item.radii.map((r, idx) => {
+      const checked = idx === 0 ? 'checked' : '';
+      return `<label class="sb-catalog-pill-group-item">
+        <input type="radio" name="punch-r-${item.series}" value="${r}" class="sb-catalog-pill-input punch-r-radio" data-series="${item.series}" ${checked}>
+        <span class="sb-catalog-pill">R${r}</span>
+      </label>`;
+    }).join('');
+
+    return `
+      <div class="sb-catalog-card" id="punch-card-${item.series}" data-series="${item.series}">
+        <div class="sb-catalog-card-header">
+          <span class="sb-catalog-card-title">${escapeHtml(item.name)}</span>
+          <span class="sb-catalog-card-height">H${item.height_mm}mm</span>
+        </div>
+        <div class="sb-catalog-card-body">
+          <div class="sb-catalog-card-preview" id="punch-preview-${item.series}"></div>
+          <div class="sb-catalog-card-controls">
+            <div class="sb-catalog-card-control-group">
+              <span class="sb-catalog-card-control-label">Angle:</span>
+              <div class="sb-catalog-pill-group">${anglePills}</div>
+            </div>
+            <div class="sb-catalog-card-control-group">
+              <span class="sb-catalog-card-control-label">Radius:</span>
+              <div class="sb-catalog-pill-group">${radiusPills}</div>
+            </div>
+            <div class="sb-catalog-card-note">${escapeHtml(item.note)}</div>
+          </div>
+        </div>
+        <div class="sb-catalog-card-footer">
+          <span class="sb-catalog-card-model" id="punch-model-${item.series}">-</span>
+          <button type="button" class="sb-modal-btn sb-submit sb-catalog-import-action" data-kind="punch" data-series="${item.series}" style="font-size: 11px; padding: 4px 10px; border-radius: 4px; border: none;">Import</button>
+        </div>
       </div>
-      <div>${btnHtml}</div>
-    </div>`;
+    `;
   }).join('');
 
-  const diesHtml = KYOKKO_CATALOG_PRESETS.dies.map(item => {
-    const id = `D-KYOKKO-${item.no}`;
-    const isImported = cat.dies.some(t => t.id === id);
-    const btnHtml = isImported
-      ? `<button disabled class="sb-modal-btn" style="background: #1c2330; border: 1px solid #2b3340; color: #4ecca3; cursor: not-allowed; font-size: 11px; padding: 4px 8px;">✓ Imported</button>`
-      : `<button type="button" class="sb-modal-btn sb-submit sb-action-import" data-kind="die" data-no="${item.no}" style="font-size: 11px; padding: 4px 8px;">Import</button>`;
-    
-    return `<div class="sb-catalog-item" style="display: flex; align-items: center; justify-content: space-between; padding: 8px; border-bottom: 1px solid #1c2530; gap: 8px;">
-      <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
-        <span style="font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #cad6e6;">${escapeHtml(item.label)}</span>
-        <span style="font-size: 10px; opacity: 0.6; color: #889bb3;">${escapeHtml(item.note)}</span>
+  const diesHtml = KYOKKO_CATALOG_SERIES.dies.map(item => {
+    const anglePills = item.angles.map((ang, idx) => {
+      const checked = idx === 0 ? 'checked' : '';
+      return `<label class="sb-catalog-pill-group-item">
+        <input type="radio" name="die-ang-${item.series}" value="${ang}" class="sb-catalog-pill-input die-ang-radio" data-series="${item.series}" ${checked}>
+        <span class="sb-catalog-pill">${ang}°</span>
+      </label>`;
+    }).join('');
+
+    let vPills = '';
+    if (item.series === '1V') {
+      vPills = item.vOpenings.map((v, idx) => {
+        const checked = idx === 0 ? 'checked' : '';
+        return `<label class="sb-catalog-pill-group-item">
+          <input type="radio" name="die-v-${item.series}" value="${v}" class="sb-catalog-pill-input die-v-radio" data-series="${item.series}" ${checked}>
+          <span class="sb-catalog-pill">V${v}</span>
+        </label>`;
+      }).join('');
+    } else {
+      vPills = item.vPairs.map((pair, idx) => {
+        const val = pair.join(',');
+        const labelText = `V${pair[0]}/V${pair[1]}`;
+        const checked = idx === 0 ? 'checked' : '';
+        return `<label class="sb-catalog-pill-group-item">
+          <input type="radio" name="die-v-${item.series}" value="${val}" class="sb-catalog-pill-input die-v-radio" data-series="${item.series}" ${checked}>
+          <span class="sb-catalog-pill">${labelText}</span>
+        </label>`;
+      }).join('');
+    }
+
+    return `
+      <div class="sb-catalog-card" id="die-card-${item.series}" data-series="${item.series}">
+        <div class="sb-catalog-card-header">
+          <span class="sb-catalog-card-title">${escapeHtml(item.name)}</span>
+          <span class="sb-catalog-card-height">H${item.height_mm}mm</span>
+        </div>
+        <div class="sb-catalog-card-body">
+          <div class="sb-catalog-card-preview" id="die-preview-${item.series}"></div>
+          <div class="sb-catalog-card-controls">
+            <div class="sb-catalog-card-control-group">
+              <span class="sb-catalog-card-control-label">Angle:</span>
+              <div class="sb-catalog-pill-group">${anglePills}</div>
+            </div>
+            <div class="sb-catalog-card-control-group">
+              <span class="sb-catalog-card-control-label">V Size:</span>
+              <div class="sb-catalog-pill-group">${vPills}</div>
+            </div>
+            <div class="sb-catalog-card-note">${escapeHtml(item.note)}</div>
+          </div>
+        </div>
+        <div class="sb-catalog-card-footer">
+          <span class="sb-catalog-card-model" id="die-model-${item.series}">-</span>
+          <button type="button" class="sb-modal-btn sb-submit sb-catalog-import-action" data-kind="die" data-series="${item.series}" style="font-size: 11px; padding: 4px 10px; border-radius: 4px; border: none;">Import</button>
+        </div>
       </div>
-      <div>${btnHtml}</div>
-    </div>`;
+    `;
   }).join('');
 
   const modal = document.createElement('div');
@@ -3967,20 +4094,23 @@ function _showImportCatalogForm() {
   modal.className = 'sb-modal-backdrop';
   
   modal.innerHTML = `
-    <div class="sb-modal-card" style="width: min(720px, 95vw); background: #161b22; color: #cad6e6; border: 2px solid #2b3340;" onclick="event.stopPropagation()">
-      <div class="sb-modal-head" style="color: #4ecca3; font-weight: bold; border-bottom: 1px solid #2b3340; padding-bottom: 8px;">Import Tools from Kyokko Catalog (เลือกนำเข้ามีด/ร่อง)</div>
-      <div class="sb-modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-height: 60vh; overflow-y: hidden; margin-top: 14px;">
+    <div class="sb-modal-card" style="width: min(840px, 96vw); background: #161b22; color: #cad6e6; border: 2px solid #2b3340; border-radius: 12px; padding: 20px;" onclick="event.stopPropagation()">
+      <div class="sb-modal-head" style="color: #4ecca3; font-weight: bold; border-bottom: 1px solid #2b3340; padding-bottom: 8px; font-size: 16px; display: flex; justify-content: space-between; align-items: center;">
+        <span>Import Tools from Kyokko Catalog (เลือกนำเข้ามีด/ร่องพับ)</span>
+        <span style="font-size: 11px; color: #889bb3; font-weight: normal;">* Click parameters to configure and preview *</span>
+      </div>
+      <div class="sb-modal-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-height: 65vh; overflow-y: auto; margin-top: 10px; margin-bottom: 14px; padding-right: 4px;">
         <div style="display: flex; flex-direction: column; border-right: 1px solid #2b3340; padding-right: 12px; min-width: 0;">
-          <h4 style="margin-top: 0; color: #4ecca3; font-size: 13px; border-bottom: 1px solid #2b3340; padding-bottom: 4px;">Punches (มีดพับ)</h4>
-          <div style="overflow-y: auto; flex: 1;">${punchesHtml}</div>
+          <h4 style="margin-top: 0; color: #4ecca3; font-size: 13.5px; border-bottom: 1px solid #2b3340; padding-bottom: 6px; font-weight: bold;">Punches (มีดพับ)</h4>
+          <div style="display: flex; flex-direction: column;">${punchesHtml}</div>
         </div>
         <div style="display: flex; flex-direction: column; min-width: 0;">
-          <h4 style="margin-top: 0; color: #4ecca3; font-size: 13px; border-bottom: 1px solid #2b3340; padding-bottom: 4px;">Dies (ร่องพับ)</h4>
-          <div style="overflow-y: auto; flex: 1;">${diesHtml}</div>
+          <h4 style="margin-top: 0; color: #4ecca3; font-size: 13.5px; border-bottom: 1px solid #2b3340; padding-bottom: 6px; font-weight: bold;">Dies (ร่องพับ)</h4>
+          <div style="display: flex; flex-direction: column;">${diesHtml}</div>
         </div>
       </div>
-      <div class="sb-modal-foot" style="border-top: 1px solid #2b3340; padding-top: 14px;">
-        <button class="sb-modal-btn sb-cancel" type="button">Close</button>
+      <div class="sb-modal-foot" style="border-top: 1px solid #2b3340; padding-top: 12px;">
+        <button class="sb-modal-btn sb-cancel" type="button" style="padding: 6px 16px;">Close</button>
       </div>
     </div>
   `;
@@ -3988,38 +4118,213 @@ function _showImportCatalogForm() {
   document.body.appendChild(modal);
 
   modal.querySelector('.sb-cancel').addEventListener('click', () => modal.remove());
-  
-  modal.querySelectorAll('.sb-action-import').forEach(btn => {
+
+  KYOKKO_CATALOG_SERIES.punches.forEach(item => {
+    const cardEl = document.getElementById(`punch-card-${item.series}`);
+    const updatePreview = () => {
+      const selectedAngle = Number(cardEl.querySelector(`.punch-ang-radio:checked`).value);
+      const selectedRadius = Number(cardEl.querySelector(`.punch-r-radio:checked`).value);
+      
+      let modelNum = item.series;
+      if (item.series === "452") modelNum = selectedAngle === 90 ? "462" : "452";
+      else if (item.series === "453") modelNum = selectedAngle === 90 ? "463" : "453";
+      else if (item.series === "045") modelNum = selectedAngle === 90 ? "046" : "045";
+      else if (item.series === "200") modelNum = selectedAngle === 90 ? "201" : "200";
+      else if (item.series === "202") modelNum = selectedAngle === 90 ? "203" : "202";
+      else if (item.series === "109") modelNum = selectedAngle === 90 ? "108" : "109";
+      
+      const label = `#${modelNum}-R${selectedRadius} (${selectedAngle}°)`;
+      const radiusStr = String(selectedRadius).replace('.', '');
+      const id = `P-KYOKKO-${modelNum}-R${radiusStr}`;
+
+      const modelLabelEl = document.getElementById(`punch-model-${item.series}`);
+      if (modelLabelEl) modelLabelEl.textContent = label;
+
+      const previewEl = document.getElementById(`punch-preview-${item.series}`);
+      if (previewEl && window.KD_TOOLART) {
+        previewEl.innerHTML = window.KD_TOOLART.punch({
+          type: item.type,
+          angle_deg: selectedAngle,
+          tip_radius_mm: selectedRadius,
+          height_mm: item.height_mm
+        }, { w: 64, h: 76 });
+      }
+
+      const imported = (window.KD_TOOLING.punches || []).some(t => t.id === id);
+      const btn = cardEl.querySelector('.sb-catalog-import-action') || cardEl.querySelector('button[data-kind]');
+      if (btn) {
+        if (imported) {
+          btn.disabled = true;
+          btn.textContent = '✓ Imported';
+          btn.className = 'sb-modal-btn';
+          btn.style.background = '#1c2330';
+          btn.style.border = '1px solid #2b3340';
+          btn.style.color = '#4ecca3';
+          btn.style.cursor = 'not-allowed';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Import';
+          btn.className = 'sb-modal-btn sb-submit sb-catalog-import-action';
+          btn.style.background = '';
+          btn.style.border = '';
+          btn.style.color = '';
+          btn.style.cursor = '';
+        }
+      }
+    };
+
+    cardEl.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', updatePreview);
+    });
+
+    updatePreview();
+  });
+
+  KYOKKO_CATALOG_SERIES.dies.forEach(item => {
+    const cardEl = document.getElementById(`die-card-${item.series}`);
+    const updatePreview = () => {
+      const selectedAngle = Number(cardEl.querySelector(`.die-ang-radio:checked`).value);
+      const vVal = cardEl.querySelector(`.die-v-radio:checked`).value;
+      const vList = vVal.split(',').map(Number);
+      
+      let label = '';
+      let id = '';
+      if (item.series === '1V') {
+        const V = vList[0];
+        label = `1V-V${V} H80 (${selectedAngle}°)`;
+        id = `D-KYOKKO-1V-V${V}-A${selectedAngle}`;
+      } else {
+        label = `2V-V${vList[0]}/${vList[1]} H80 (${selectedAngle}°)`;
+        id = `D-KYOKKO-2V-V${vList[0]}_${vList[1]}-A${selectedAngle}`;
+      }
+
+      const modelLabelEl = document.getElementById(`die-model-${item.series}`);
+      if (modelLabelEl) modelLabelEl.textContent = label;
+
+      const previewEl = document.getElementById(`die-preview-${item.series}`);
+      if (previewEl && window.KD_TOOLART) {
+        previewEl.innerHTML = window.KD_TOOLART.die({
+          type: item.type,
+          angle_deg: selectedAngle,
+          v_list: vList,
+          height_mm: item.height_mm
+        }, { w: 70, h: 50 });
+      }
+
+      const imported = (window.KD_TOOLING.dies || []).some(t => t.id === id);
+      const btn = cardEl.querySelector('.sb-catalog-import-action') || cardEl.querySelector('button[data-kind]');
+      if (btn) {
+        if (imported) {
+          btn.disabled = true;
+          btn.textContent = '✓ Imported';
+          btn.className = 'sb-modal-btn';
+          btn.style.background = '#1c2330';
+          btn.style.border = '1px solid #2b3340';
+          btn.style.color = '#4ecca3';
+          btn.style.cursor = 'not-allowed';
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Import';
+          btn.className = 'sb-modal-btn sb-submit sb-catalog-import-action';
+          btn.style.background = '';
+          btn.style.border = '';
+          btn.style.color = '';
+          btn.style.cursor = '';
+        }
+      }
+    };
+
+    cardEl.querySelectorAll('input[type="radio"]').forEach(radio => {
+      radio.addEventListener('change', updatePreview);
+    });
+
+    updatePreview();
+  });
+
+  modal.querySelectorAll('.sb-catalog-import-action').forEach(btn => {
     btn.addEventListener('click', () => {
       const kind = btn.getAttribute('data-kind');
-      const no = btn.getAttribute('data-no');
-      _importPresetTool(kind, no, btn);
+      const series = btn.getAttribute('data-series');
+      const cardEl = document.getElementById(`${kind}-card-${series}`);
+      
+      const angle = Number(cardEl.querySelector(`.${kind}-ang-radio:checked`).value);
+      let valOrRadius;
+      if (kind === 'punch') {
+        valOrRadius = Number(cardEl.querySelector(`.punch-r-radio:checked`).value);
+      } else {
+        valOrRadius = cardEl.querySelector(`.die-v-radio:checked`).value;
+      }
+      
+      _importPresetTool(kind, series, angle, valOrRadius, btn);
     });
   });
 }
 
-function _importPresetTool(kind, no, btn) {
-  const list = kind === 'punch' ? KYOKKO_CATALOG_PRESETS.punches : KYOKKO_CATALOG_PRESETS.dies;
-  const item = list.find(t => t.no === no);
-  if (!item) return;
-
-  const id = kind === 'punch' ? `P-KYOKKO-${item.no}` : `D-KYOKKO-${item.no}`;
-  
-  const toolData = {
-    label: item.label,
-    type: item.type,
-    angle_deg: item.angle_deg,
-    height_mm: item.height_mm,
-    note: item.note
-  };
+function _importPresetTool(kind, series, angle, valOrRadius, btn) {
+  let id = '';
+  let toolData = {};
 
   if (kind === 'punch') {
-    toolData.tip_radius_mm = item.tip_radius_mm;
+    const item = KYOKKO_CATALOG_SERIES.punches.find(p => p.series === series);
+    if (!item) return;
+
+    let modelNum = series;
+    if (series === "452") modelNum = angle === 90 ? "462" : "452";
+    else if (series === "453") modelNum = angle === 90 ? "463" : "453";
+    else if (series === "045") modelNum = angle === 90 ? "046" : "045";
+    else if (series === "200") modelNum = angle === 90 ? "201" : "200";
+    else if (series === "202") modelNum = angle === 90 ? "203" : "202";
+    else if (series === "109") modelNum = angle === 90 ? "108" : "109";
+
+    const radiusStr = String(valOrRadius).replace('.', '');
+    id = `P-KYOKKO-${modelNum}-R${radiusStr}`;
+
+    toolData = {
+      label: `Kyokko #${modelNum} Gooseneck ${angle}° · R${valOrRadius} H${item.height_mm}`,
+      type: item.type,
+      angle_deg: angle,
+      tip_radius_mm: valOrRadius,
+      height_mm: item.height_mm,
+      note: item.note
+    };
+    if (item.type === 'standard') {
+      toolData.label = `Kyokko #${modelNum} Straight ${angle}° · R${valOrRadius} H${item.height_mm}`;
+    } else if (modelNum === '200' || modelNum === '201' || modelNum === '202' || modelNum === '203') {
+      toolData.label = `Kyokko #${modelNum} Sash ${angle}° · R${valOrRadius} H${item.height_mm}`;
+    }
   } else {
-    toolData.v_list = item.v_list;
+    const item = KYOKKO_CATALOG_SERIES.dies.find(d => d.series === series);
+    if (!item) return;
+
+    const vList = String(valOrRadius).split(',').map(Number);
+    if (series === '1V') {
+      const V = vList[0];
+      id = `D-KYOKKO-1V-V${V}-A${angle}`;
+      toolData = {
+        label: `Kyokko 1V · V${V} · ${angle}° H${item.height_mm}`,
+        type: '1V',
+        angle_deg: angle,
+        v_list: vList,
+        height_mm: item.height_mm,
+        note: item.note
+      };
+    } else {
+      const V1 = vList[0];
+      const V2 = vList[1];
+      id = `D-KYOKKO-2V-V${V1}_${V2}-A${angle}`;
+      toolData = {
+        label: `Kyokko 2V · V${V1}/V${V2} · ${angle}° H${item.height_mm}`,
+        type: '2V',
+        angle_deg: angle,
+        v_list: vList,
+        height_mm: item.height_mm,
+        note: item.note
+      };
+    }
   }
 
-  const refPath = `bend_tools_custom/${kind}s/${id}`;
+  const pathSegment = kind === 'punch' ? 'punches' : 'dies';
+  const refPath = `bend_tools_custom/${pathSegment}/${id}`;
   try {
     window.firebaseDB.ref(refPath).set(toolData).then(() => {
       _setOwnedTool(id, true);
@@ -4054,7 +4359,7 @@ function _subscribeCustomTools() {
       const val = s.val() || {};
       _customToolsCache = val;
       
-      const punches = val.punches || {};
+      const punches = val.punches || val.punchs || {};
       const dies = val.dies || {};
       
       window.KD_TOOLING.punches = JSON.parse(JSON.stringify(window._masterKDTooling.punches));
@@ -4237,7 +4542,8 @@ function _saveCustomTool(kind, modal) {
     id = `D-CUSTOM-${cleanLabel}-${Date.now().toString().slice(-4)}`;
   }
 
-  const refPath = `bend_tools_custom/${kind}s/${id}`;
+  const pathSegment = kind === 'punch' ? 'punches' : 'dies';
+  const refPath = `bend_tools_custom/${pathSegment}/${id}`;
   try {
     window.firebaseDB.ref(refPath).set(toolData).then(() => {
       _setOwnedTool(id, true);
@@ -4254,7 +4560,8 @@ function _saveCustomTool(kind, modal) {
 function _deleteCustomTool(id, kind) {
   if (!confirm(`Are you sure you want to delete this custom tool: ${id}?`)) return;
 
-  const refPath = `bend_tools_custom/${kind}s/${id}`;
+  const pathSegment = kind === 'punch' ? 'punches' : 'dies';
+  const refPath = `bend_tools_custom/${pathSegment}/${id}`;
   try {
     window.firebaseDB.ref(refPath).set(null).then(() => {
       _setOwnedTool(id, null);
