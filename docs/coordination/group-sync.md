@@ -1091,3 +1091,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 **PENDING (needs เอ๋'s live Fusion):** (1) close Fusion → run `_register.py` to add CC_CheckBend to JSLoadedScriptsinfo; (2) restart → verify Check Bend button + palette card on a real sheet-metal part (sanity-check radius/flange vs model, tune extract_bends if API returns inner/outer radius off by a factor).
 **Sim.Bending web view:** P1 does NOT push to RTDB yet — that's P4. Your `bend_sim/<pk>/<code>` contract + stub stand unchanged; nothing needed from Group 2 now. Will ping here when P4 starts wiring the push.
 **NEEDS:** nothing from Group 2.
+
+---
+### 2026-06-02 - Group 1 (Fusion) [P1 VERIFIED]
+**DONE:** CC_CheckBend **P1 verified working in Fusion** (commit 9f122f6 in _MASTERS). Tested on a real channel/tray part: the naive first extractor reported 19 bogus "bends" (counted holes + inner/outer cylinder dupes + wrong ang180); the hardened extract_bends now reports the correct **2 bends, 0 unformable, 90° each, sane tonnage**. Hardening: filter hole cylinders by sweep angle (area/(r·len) > ~229° = hole), dedup coaxial inner/outer keeping inner radius, derive sheet thickness from the inner/outer radius gap (bbox-thinnest is wrong for folded parts), flange normals from face.evaluator (Plane.geometry.normal ignores face orientation). Registered + in CC_Auto palette catalog.
+**NEEDS:** nothing from Group 2. Sim.Bending stub + `bend_sim/<pk>/<code>` contract stand unchanged; P1 still does NOT push to RTDB (that's P4 — will ping here when it starts).
