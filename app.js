@@ -3855,18 +3855,129 @@ function render() {
   if (top.kind === 'project') return renderProject(top.name);
 }
 
-// Sim.Bending — press-brake bend feasibility per project, published by
-// CC_CheckBend (Fusion) to RTDB bend_sim/<pk>/<code>. Stub for now: empty
-// state until the Fusion tool publishes data (see
-// _MASTERS/fusion_scripts/CC_CheckBend/design.md, module 7). 2026-06-02.
+// Sim.Bending — press-brake bend feasibility per PART, published by
+// CC_CheckBend (Fusion) to RTDB bend_sim/<code>. Keyed by part code (not
+// project): bend feasibility is a property of the part geometry, shared
+// across every project that uses it. Record shape (Fusion web_push.py /
+// this view / the seed all agree):
+//   bend_sim/<code> = {
+//     bendable, kind: 'found'|'impossible'|'not_found_budget',
+//     order: [bendId...], n_bends, n_problems, reason,
+//     per_bend: [{bend, die, radius_mm, angle_deg, flange_mm, v_mm,
+//                 tonnage_kN, ok, collides, hits, at_angle, reason}],
+//     checked_at (iso), checked_by }
+// See _MASTERS/fusion_scripts/CC_CheckBend/design.md module 7. 2026-06-02.
+let _bendSimCache = null;          // null = not loaded yet
+let _bendSimSubscribed = false;
+let _simBendExpanded = null;       // code currently expanded inline
+
+function _subscribeBendSim() {
+  if (_bendSimSubscribed) return;
+  _bendSimSubscribed = true;
+  try {
+    window.firebaseDB.ref('bend_sim').on('value', snap => {
+      _bendSimCache = snap.val() || {};
+      if (view === 'simbend' && stack.length === 0) render();
+    });
+  } catch (e) {
+    _bendSimCache = {};
+  }
+}
+
+function _simVerdict(rec) {
+  if (rec && rec.bendable) return { cls: 'sb-ok', txt: '✓ BENDABLE' };
+  if (rec && rec.kind === 'not_found_budget')
+    return { cls: 'sb-warn', txt: '⚠ NOT FOUND (budget)' };
+  return { cls: 'sb-bad', txt: '✗ NOT BENDABLE' };
+}
+
 function renderSimBendHome() {
+  _subscribeBendSim();
+  COUNT_EL.textContent = '';
+  if (_bendSimCache === null) {
+    ROOT.innerHTML = `<div class="empty-state"><h2>🔩 Sim.Bending</h2>
+      <p class="muted">Loading…</p></div>`;
+    return;
+  }
+  const codes = Object.keys(_bendSimCache).filter(c => c && c[0] !== '_');
+  if (!codes.length) {
+    ROOT.innerHTML = `
+      <div class="empty-state">
+        <h2>🔩 Sim.Bending</h2>
+        <p>Press-brake bend feasibility per part.</p>
+        <p>Run <code>CC_CheckBend</code> on a part in Fusion to publish results here.</p>
+        <p class="muted">No bend-sim data yet.</p>
+      </div>`;
+    return;
+  }
+  const q = (SEARCH.value || '').trim().toLowerCase();
+  const shown = (q ? codes.filter(c => c.toLowerCase().includes(q)) : codes).sort();
+  COUNT_EL.textContent = `${shown.length} part${shown.length === 1 ? '' : 's'} checked`;
+
+  const cards = shown.map(code => {
+    const rec = _bendSimCache[code] || {};
+    const v = _simVerdict(rec);
+    const order = Array.isArray(rec.order) && rec.order.length
+      ? rec.order.join(' → ') : '—';
+    const nb = rec.n_bends != null ? rec.n_bends : (rec.per_bend || []).length;
+    const np = rec.n_problems != null ? rec.n_problems : 0;
+    const when = rec.checked_at ? String(rec.checked_at).slice(0, 16).replace('T', ' ') : '';
+    let detail = '';
+    if (_simBendExpanded === code) {
+      const rows = (rec.per_bend || []).map(b => {
+        const bad = b.ok === false || b.collides;
+        const why = b.collides
+          ? `hits ${b.hits || '?'}${b.at_angle != null ? ' @' + Math.round(b.at_angle) + '°' : ''}`
+          : (b.reason || (b.ok === false ? 'fail' : 'formable'));
+        return `<tr class="${bad ? 'sb-row-bad' : ''}">
+          <td>${escapeHtml(b.bend || '')}</td>
+          <td>${escapeHtml(b.die || '—')}</td>
+          <td>${b.radius_mm != null ? 'r' + b.radius_mm : ''}</td>
+          <td>${b.angle_deg != null ? Math.round(b.angle_deg) + '°' : ''}</td>
+          <td>${b.flange_mm != null ? b.flange_mm : ''}</td>
+          <td>${b.v_mm != null ? 'V' + Math.round(b.v_mm) : ''}</td>
+          <td>${b.tonnage_kN != null ? Math.round(b.tonnage_kN) + 'kN' : ''}</td>
+          <td>${escapeHtml(why)}</td></tr>`;
+      }).join('');
+      detail = `
+        <div class="sb-detail">
+          ${rec.reason ? `<div class="sb-reason">${escapeHtml(rec.reason)}</div>` : ''}
+          <table class="sb-table">
+            <thead><tr><th>bend</th><th>die</th><th>r</th><th>ang</th>
+              <th>flange</th><th>V</th><th>ton</th><th>note</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="8" class="muted">no per-bend data</td></tr>'}</tbody>
+          </table>
+          ${when ? `<div class="sb-when">checked ${escapeHtml(when)}${rec.checked_by ? ' · ' + escapeHtml(rec.checked_by) : ''}</div>` : ''}
+        </div>`;
+    }
+    return `
+      <div class="sb-card ${v.cls}" data-code="${escapeHtml(code)}" role="button" tabindex="0">
+        <div class="sb-card-head">
+          <span class="sb-code">${escapeHtml(code)}</span>
+          <span class="sb-chip ${v.cls}">${v.txt}</span>
+        </div>
+        <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'}${np ? ` · ${np} problem${np === 1 ? '' : 's'}` : ''} · order: ${escapeHtml(order)}</div>
+        ${detail}
+      </div>`;
+  }).join('');
+
   ROOT.innerHTML = `
-    <div class="empty-state">
-      <h2>🔩 Sim.Bending</h2>
-      <p>Press-brake bend feasibility per project.</p>
-      <p>Run <code>CC_CheckBend</code> on a part in Fusion to publish results here.</p>
-      <p class="muted">No bend-sim data yet.</p>
+    <div class="sb-home">
+      <div class="sb-banner">🔩 Sim.Bending — press-brake feasibility per part</div>
+      <div class="sb-grid">${cards}</div>
     </div>`;
+
+  ROOT.querySelectorAll('.sb-card').forEach(el => {
+    const toggle = () => {
+      const c = el.getAttribute('data-code');
+      _simBendExpanded = (_simBendExpanded === c) ? null : c;
+      render();
+    };
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
 }
 
 // Project picker for the Nest tab (admin only). Lists every project
@@ -7646,8 +7757,10 @@ function renderFamily(fam, highlight) {
       const dxfBtn = dxfList.length > 0
         ? `<button class="part-dxf-btn" data-dxf-code="${escapeHtml(p.code)}" aria-label="${dxfList.length === 1 ? 'Download DXF' : 'Download DXFs'}" title="${dxfList.length === 1 ? 'Download laser-cut DXF' : `Download one of ${dxfList.length} DXFs`}">📐${dxfList.length > 1 ? ' ' + dxfList.length : ''}</button>`
         : '';
-      adminBtns = `<button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
-         <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>${dxfBtn}`;
+      adminBtns = `<div class="part-actions">
+        <button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
+        <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>${dxfBtn}
+      </div>`;
     }
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">

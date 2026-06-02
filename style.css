@@ -1770,7 +1770,7 @@ button.family-breadcrumb-btn:focus-visible {
 
 .part-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
   gap: 6px 12px;
 }
 
@@ -1849,24 +1849,36 @@ button.family-breadcrumb-btn:focus-visible {
 
 /* Admin per-row buttons — only rendered when isAdmin().
    ✎ rename display label · 📁 move to folder (creates new on the fly).
-   Matched sizing so the two buttons sit neatly together on the right. */
+   Matched sizing so the buttons sit neatly together inside .part-actions on the right. */
+.part-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
 .part-rename-btn,
-.part-folder-btn {
+.part-folder-btn,
+.part-dxf-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(110, 118, 129, 0.4);
   color: #8b949e;
   border-radius: 6px;
-  padding: 6px 12px;
   cursor: pointer;
-  font-size: 15px;
+  font-size: 13px;
   font-family: inherit;
-  min-width: 44px;
-  min-height: 36px;
+  width: 30px;
+  height: 30px;
+  min-width: 30px;
+  min-height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   touch-action: manipulation;
   transition: background 120ms ease, color 120ms ease;
 }
-.part-rename-btn { margin-left: auto; }
-.part-folder-btn { margin-left: 6px; }
 
 .part-rename-btn:hover,
 .part-folder-btn:hover {
@@ -1880,23 +1892,15 @@ button.family-breadcrumb-btn:focus-visible {
 }
 
 /* --- DXF download button (admin Library row) --- */
-/* Cyan to differentiate from ✎ (white) and 📁 (white). Size matches
-   the other admin chips so the row's vertical rhythm stays consistent. */
+/* Cyan to differentiate from ✎ (white) and 📁 (white). */
 .part-dxf-btn {
-  margin-left: 8px;
-  padding: 6px 10px;
   background: #0e3a45;
   color: #5fd4e8;
-  border: 1px solid #145265;
-  border-radius: 6px;
-  font-size: 13px;
+  border-color: #145265;
+  font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.05s ease;
-  min-height: 40px;
-  min-width: 40px;
 }
-.part-dxf-btn:hover { background: #144e5e; }
+.part-dxf-btn:hover { background: #144e5e; color: #fff; }
 .part-dxf-btn:active { transform: scale(0.96); }
 
 /* --- DXF download popover (N > 1) --- */
@@ -2046,12 +2050,17 @@ button.family-breadcrumb-btn:focus-visible {
   opacity: 0.9;
   width: 20px;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .part-row .part-code {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
-  min-width: 13ch;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
 }
 
 .part-code {
@@ -2063,6 +2072,7 @@ button.family-breadcrumb-btn:focus-visible {
   color: #4a90e2;
   font-size: 11px;
   font-weight: 500;
+  flex-shrink: 0;
 }
 
 .part-meta {
@@ -3516,6 +3526,39 @@ button.cut-status:focus-visible {
   gap: 14px;
   margin-bottom: 16px;
 }
+
+/* ── Sim.Bending (CC_CheckBend results) ───────────────────────────── */
+.sb-home { padding: 4px; }
+.sb-banner {
+  font-size: 18px; font-weight: 700; color: #4ecca3; margin-bottom: 16px;
+}
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
+  gap: 12px;
+}
+.sb-card {
+  background: #0f1620; border: 1px solid #1c2530; border-left-width: 4px;
+  color: #cad6e6; padding: 12px 14px; border-radius: 8px; cursor: pointer;
+}
+.sb-card:hover { border-color: #2a3744; background: #121b27; }
+.sb-card.sb-ok   { border-left-color: #4ecca3; }
+.sb-card.sb-bad  { border-left-color: #e0574a; }
+.sb-card.sb-warn { border-left-color: #f2b84e; }
+.sb-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.sb-code { font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace; font-size: 14px; font-weight: 700; }
+.sb-chip { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 12px; white-space: nowrap; }
+.sb-chip.sb-ok   { background: rgba(78,204,163,0.16); color: #4ecca3; }
+.sb-chip.sb-bad  { background: rgba(224,87,74,0.16);  color: #e0574a; }
+.sb-chip.sb-warn { background: rgba(242,184,78,0.16); color: #f2b84e; }
+.sb-meta { font-size: 12px; opacity: 0.75; margin-top: 6px; }
+.sb-detail { margin-top: 12px; border-top: 1px solid #1c2530; padding-top: 10px; }
+.sb-reason { font-size: 12px; color: #e0574a; margin-bottom: 8px; }
+.sb-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.sb-table th, .sb-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #18212c; }
+.sb-table th { opacity: 0.6; font-weight: 600; }
+.sb-table .sb-row-bad td { color: #e0574a; }
+.sb-when { font-size: 11px; opacity: 0.55; margin-top: 8px; }
 .nest-home-sub {
   font-size: 12px;
   font-weight: 400;
