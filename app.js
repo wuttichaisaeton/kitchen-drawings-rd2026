@@ -3870,6 +3870,7 @@ function render() {
 let _bendSimCache = null;          // null = not loaded yet
 let _bendSimSubscribed = false;
 let _simBendExpanded = null;       // code currently expanded inline
+let _simController = null;         // active simbend-sim.js animation controller
 
 function _subscribeBendSim() {
   if (_bendSimSubscribed) return;
@@ -3941,6 +3942,14 @@ function renderSimBendHome() {
       }).join('');
       detail = `
         <div class="sb-detail">
+          <div class="sb-sim-wrap">
+            <canvas class="sb-sim-canvas"></canvas>
+            <div class="sb-sim-ctrls">
+              <button class="sb-sim-btn sb-sim-play" type="button">⏸ Pause</button>
+              <button class="sb-sim-btn sb-sim-rec" type="button">⬇ Clip (.webm)</button>
+              <span class="sb-sim-status muted"></span>
+            </div>
+          </div>
           ${rec.reason ? `<div class="sb-reason">${escapeHtml(rec.reason)}</div>` : ''}
           <table class="sb-table">
             <thead><tr><th>bend</th><th>die</th><th>r</th><th>ang</th>
@@ -3973,11 +3982,38 @@ function renderSimBendHome() {
       _simBendExpanded = (_simBendExpanded === c) ? null : c;
       render();
     };
-    el.addEventListener('click', toggle);
+    el.addEventListener('click', (e) => {
+      // don't collapse the card when interacting with the simulation/controls
+      if (e.target.closest && e.target.closest('.sb-sim-wrap')) return;
+      toggle();
+    });
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
   });
+
+  // (Re)mount the bend animation for the expanded card.
+  if (_simController) { try { _simController.destroy(); } catch (e) {} _simController = null; }
+  if (_simBendExpanded && window.kdSimBend) {
+    const card = ROOT.querySelector(`.sb-card[data-code="${_simBendExpanded.replace(/"/g, '')}"]`);
+    const canvas = card && card.querySelector('.sb-sim-canvas');
+    const rec = _bendSimCache[_simBendExpanded];
+    if (canvas && rec) {
+      _simController = window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+      const playBtn = card.querySelector('.sb-sim-play');
+      const recBtn = card.querySelector('.sb-sim-rec');
+      const status = card.querySelector('.sb-sim-status');
+      _simController.onstatus = (t) => { if (status) status.textContent = t; };
+      if (playBtn) playBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _simController.toggle();
+        playBtn.textContent = _simController.isPlaying() ? '⏸ Pause' : '▶ Play';
+      });
+      if (recBtn) recBtn.addEventListener('click', (e) => {
+        e.stopPropagation(); _simController.recordClip();
+      });
+    }
+  }
 }
 
 // Project picker for the Nest tab (admin only). Lists every project
