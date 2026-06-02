@@ -4153,7 +4153,7 @@ function renderSimBendHome() {
         }
         if (dObj && _simController.setDieOverride) {
           const v = dObj.v_list ? dObj.v_list[0] : 8;
-          _simController.setDieOverride(v, dObj.angle_deg || 88);
+          _simController.setDieOverride(v, dObj.angle_deg || 88, dObj.type, dObj.v_list);
         }
       };
 

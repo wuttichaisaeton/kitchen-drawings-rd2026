@@ -133,68 +133,165 @@
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     }
 
-    function drawDie(cx, cy, v, scale, dieAngle) {
+    function drawDie(cx, cy, v, scale, dieAngle, type, vList) {
       dieAngle = dieAngle || 88;
-      var hw = (v / 2) * scale;
-      var depth = hw / Math.tan(rad(dieAngle / 2));
-      var bw = Math.max(hw * 3.2, 60 * dpr), bh = Math.max(depth + 30 * dpr, 50 * dpr);
+      type = type || '1V';
+      vList = vList || [v];
+      var halfAng = rad(dieAngle / 2);
+      var depth = (v / 2) / Math.tan(halfAng);
+      
+      var H = type === '2V' ? 30 : 25;
+
       ctx.fillStyle = '#000000';
-      // block with V cut: draw two trapezoids left & right of the groove
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1.5 * dpr;
+
       ctx.beginPath();
-      ctx.moveTo(cx - bw, cy); ctx.lineTo(cx - hw, cy);
-      ctx.lineTo(cx, cy + depth); ctx.lineTo(cx + hw, cy);
-      ctx.lineTo(cx + bw, cy); ctx.lineTo(cx + bw, cy + bh);
-      ctx.lineTo(cx - bw, cy + bh); ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
+      if (type === '2V' && vList.length >= 2) {
+        var v1 = vList[0], v2 = vList[1];
+        var spacing = Math.max(22, (v1 + v2) * 1.1);
+        var v_top = v;
+        var v_bottom = v === v1 ? v2 : v1;
+        var depth_top = depth;
+        var depth_bottom = (v_bottom / 2) / Math.tan(halfAng);
+        
+        var blockW = spacing + (v1 + v2) * 1.1 + 18;
+        blockW = Math.max(36, Math.min(126, blockW));
+
+        var leftX = cx - (blockW / 2) * scale;
+        var rightX = cx + (blockW / 2) * scale;
+        var botY = cy + H * scale;
+
+        ctx.moveTo(leftX, botY);
+        ctx.lineTo(cx - (v_bottom / 2) * scale, botY);
+        ctx.lineTo(cx, botY - depth_bottom * scale);
+        ctx.lineTo(cx + (v_bottom / 2) * scale, botY);
+        ctx.lineTo(rightX, botY);
+        ctx.lineTo(rightX, cy);
+        ctx.lineTo(cx + (v_top / 2) * scale, cy);
+        ctx.lineTo(cx, cy + depth_top * scale);
+        ctx.lineTo(cx - (v_top / 2) * scale, cy);
+        ctx.lineTo(leftX, cy);
+      } else {
+        // 1V
+        var blockW = Math.max(34, v * 2.2);
+        blockW = Math.max(36, Math.min(126, blockW));
+
+        var leftX = cx - (blockW / 2) * scale;
+        var rightX = cx + (blockW / 2) * scale;
+        var botY = cy + H * scale;
+        var tangY = botY + 12 * scale;
+
+        ctx.moveTo(leftX, cy);
+        ctx.lineTo(cx - (v / 2) * scale, cy);
+        ctx.lineTo(cx, cy + depth * scale);
+        ctx.lineTo(cx + (v / 2) * scale, cy);
+        ctx.lineTo(rightX, cy);
+        ctx.lineTo(rightX, botY);
+        ctx.lineTo(cx + 6.5 * scale, botY);
+        ctx.lineTo(cx + 6.5 * scale, tangY);
+        ctx.lineTo(cx - 6.5 * scale, tangY);
+        ctx.lineTo(cx - 6.5 * scale, botY);
+        ctx.lineTo(leftX, botY);
+      }
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
     }
 
-    function drawPunch(cx, tipY, blocked, type, t) {
+    function drawPunch(cx, tipY, blocked, type, t, scale) {
       var shake = blocked ? Math.sin(t / 35) * 2.5 * dpr : 0;
       var x = cx + shake;
-      var top = 14 * dpr;
+      
+      var H = 120;
+      var ang = 88;
+      var R = 0.8;
+      if (type === 'gooseneck') { H = 150; ang = 88; R = 0.8; }
+      else if (type === 'acute') { H = 130; ang = 30; R = 0.4; }
+      else if (type === 'hemming') { H = 100; ang = 0; R = 0.0; }
+
       ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#000000';
       ctx.strokeStyle = blocked ? '#ff7a6c' : '#000000';
       ctx.lineWidth = 1.4 * dpr;
-      ctx.beginPath();
 
-      if (type === 'hemming') {
-        var hw = 12 * dpr;
-        ctx.moveTo(x - hw, top);
-        ctx.lineTo(x + hw, top);
-        ctx.lineTo(x + hw, tipY - 6 * dpr);
-        ctx.lineTo(x + 8 * dpr, tipY);
-        ctx.lineTo(x - 8 * dpr, tipY);
-        ctx.lineTo(x - hw, tipY - 6 * dpr);
-      } else if (type === 'acute') {
-        var halfTip = 2 * dpr, halfBody = 13 * dpr, tipRise = 45 * dpr;
-        ctx.moveTo(x - halfBody, top);
-        ctx.lineTo(x + halfBody, top);
-        ctx.lineTo(x + halfBody, tipY - tipRise);
-        ctx.lineTo(x + halfTip, tipY - 1 * dpr);
-        ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 1 * dpr);
-        ctx.lineTo(x - halfBody, tipY - tipRise);
-      } else if (type === 'gooseneck') {
-        var halfTip = 4 * dpr, halfBody = 13 * dpr, tipRise = 26 * dpr;
-        ctx.moveTo(x - halfBody, top);
-        ctx.lineTo(x + halfBody, top);
-        ctx.lineTo(x + halfBody, tipY - tipRise - 30 * dpr);
-        ctx.quadraticCurveTo(x - 10 * dpr, tipY - tipRise - 15 * dpr, x - 8 * dpr, tipY - tipRise - 4 * dpr);
-        ctx.quadraticCurveTo(x - 6 * dpr, tipY - tipRise + 6 * dpr, x + halfTip, tipY - 2 * dpr);
-        ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 2 * dpr);
-        ctx.lineTo(x - halfBody, tipY - tipRise);
-      } else {
-        // standard (default)
-        var halfTip = 5 * dpr, halfBody = 13 * dpr, tipRise = 26 * dpr;
-        ctx.moveTo(x - halfBody, top);
-        ctx.lineTo(x + halfBody, top);
-        ctx.lineTo(x + halfBody, tipY - tipRise);
-        ctx.lineTo(x + halfTip, tipY - 2 * dpr);
-        ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 2 * dpr);
-        ctx.lineTo(x - halfBody, tipY - tipRise);
-      }
+      var topY = 160 - H;
+      var tangH = 32;
+      var tangY1 = topY;
+      var tangY2 = topY + tangH;
+
+      function tx(artX) { return x + (artX - 50) * scale; }
+      function ty(artY) { return tipY - (160 - artY) * scale; }
+
+      var bodyW = 28;
+      var halfAng = ang / 2;
+      var rise = (bodyW / 2) / Math.tan(rad(halfAng));
+      var maxRise = H - 45;
+      var actualRise = Math.min(rise, maxRise);
+      var shoulderY = 160 - actualRise;
+      var shoulderW = actualRise * Math.tan(rad(halfAng));
+
+      ctx.beginPath();
       
-      ctx.closePath(); ctx.fill(); ctx.stroke();
+      // Start of combined path at tang top-left corner
+      ctx.moveTo(tx(43), ty(tangY1));
+      ctx.lineTo(tx(57), ty(tangY1));
+      ctx.lineTo(tx(57), ty(tangY2 - 2));
+      ctx.lineTo(tx(55), ty(tangY2 - 2));
+      ctx.lineTo(tx(55), ty(tangY2));
+
+      // Clockwise body profile
+      if (type === 'hemming') {
+        ctx.lineTo(tx(64), ty(tangY2 + 4));
+        ctx.lineTo(tx(64), ty(160 - 8));
+        ctx.lineTo(tx(62), ty(160 - 6));
+        ctx.lineTo(tx(62), ty(160));
+        ctx.lineTo(tx(38), ty(160));
+        ctx.lineTo(tx(38), ty(160 - 6));
+        ctx.lineTo(tx(36), ty(160 - 8));
+        ctx.lineTo(tx(36), ty(tangY2 + 4));
+      } else {
+        // Right side of body
+        if (type === 'gooseneck') {
+          var throatY1 = tangY2 + 10;
+          var throatY2 = (throatY1 + shoulderY) / 2;
+          ctx.lineTo(tx(64), ty(throatY1));
+          ctx.quadraticCurveTo(tx(22), ty(throatY1 + 10), tx(25), ty(throatY2));
+          ctx.quadraticCurveTo(tx(28), ty(throatY2 + 20), tx(50 + shoulderW), ty(shoulderY));
+        } else {
+          ctx.lineTo(tx(64), ty(tangY2 + 4));
+          ctx.lineTo(tx(64), ty(shoulderY));
+          ctx.lineTo(tx(50 + shoulderW), ty(shoulderY));
+        }
+
+        // Wedge tip with radius R
+        var tipR = Math.max(0.4, Math.min(R, 2.5));
+        var dx = tipR * Math.cos(rad(halfAng));
+        var dy = tipR * Math.sin(rad(halfAng));
+        var tx1 = 50 - dx;
+        var ty1 = 160 - tipR + dy;
+        var tx2 = 50 + dx;
+        var ty2 = 160 - tipR + dy;
+
+        ctx.lineTo(tx(tx2), ty(ty2));
+        ctx.quadraticCurveTo(tx(50), ty(160), tx(tx1), ty(ty1));
+
+        // Left side of body going back up
+        ctx.lineTo(tx(50 - shoulderW), ty(shoulderY));
+        ctx.lineTo(tx(36), ty(shoulderY));
+        ctx.lineTo(tx(36), ty(tangY2 + 4));
+      }
+
+      // Safety hook features on the left side of tang
+      ctx.lineTo(tx(45), ty(tangY2));
+      ctx.lineTo(tx(45), ty(tangY2 - 2));
+      ctx.lineTo(tx(43), ty(tangY2 - 7));
+      ctx.lineTo(tx(43), ty(tangY2 - 13));
+      ctx.lineTo(tx(45), ty(tangY2 - 16));
+      ctx.lineTo(tx(45), ty(tangY2 - 23));
+      ctx.lineTo(tx(43), ty(tangY2 - 26));
+      ctx.lineTo(tx(43), ty(tangY1));
+
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
     }
 
     function frame(t) {
@@ -207,7 +304,7 @@
 
       var scale = Math.max(0.5, Math.min(4 * dpr,
         (h * 0.34) / Math.max(maxFlange, 20)));
-      var dieCx = w / 2, dieCy = h * 0.64;
+      var dieCx = w / 2, dieCy = h * 0.58;
       function px(p) { return dieCx + p.x * scale; }
       function py(p) { return dieCy - p.y * scale; }
 
@@ -218,7 +315,14 @@
 
       var v = model.overrideDieV != null ? model.overrideDieV : (st.ab ? st.ab.v : 8);
       var dieAngle = model.overrideDieAngle != null ? model.overrideDieAngle : 88;
-      drawDie(dieCx, dieCy, v, scale, dieAngle);
+      var dieType = model.overrideDieType != null ? model.overrideDieType : 
+        (st.ab && st.ab.die && st.ab.die.includes('2V') ? '2V' : '1V');
+      var dieVList = model.overrideDieVList != null ? model.overrideDieVList : 
+        (st.ab && st.ab.die && st.ab.die.includes('0608') ? [6, 8] : 
+         (st.ab && st.ab.die && st.ab.die.includes('0812') ? [8, 12] : 
+          (st.ab && st.ab.die && st.ab.die.includes('1220') ? [12, 20] : [v])));
+          
+      drawDie(dieCx, dieCy, v, scale, dieAngle, dieType, dieVList);
 
       // sheet (the part) — thick steel polyline
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 6 * dpr;
@@ -233,7 +337,7 @@
       if (st.active != null) {
         var Vtx = P[st.active + 1];
         var pType = model.overridePunchType != null ? model.overridePunchType : (model.spatial[st.active].gooseneck ? 'gooseneck' : 'standard');
-        drawPunch(dieCx, py(Vtx), st.collide, pType, t);
+        drawPunch(dieCx, py(Vtx), st.collide, pType, t, scale);
       }
 
       // bend dots
@@ -310,9 +414,11 @@
                model.overridePunchType = type;
                frame(pausedAt);
              },
-             setDieOverride: function (v, angle) {
+             setDieOverride: function (v, angle, type, vList) {
                model.overrideDieV = v;
                model.overrideDieAngle = angle;
+               model.overrideDieType = type;
+               model.overrideDieVList = vList;
                frame(pausedAt);
              },
              set onstatus(fn) { statusCb = fn; } };
