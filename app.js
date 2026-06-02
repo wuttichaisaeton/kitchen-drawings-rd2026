@@ -4183,7 +4183,7 @@ function _toolingPickerHtml() {
       </div>
       <div class="tl-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; margin-top: 8px;">
         ${admin ? `<button class="tl-quick" type="button">Select 1mm set</button>` : ''}
-        <a href="https://www.amada.co.jp/en/products/sheetmetal/pressbrake/tooling/" target="_blank" class="tl-catalog-link" style="color: #4ecca3; text-decoration: none; font-size: 11.5px; font-weight: bold;">
+        <a href="https://www.amada.eu/en-gb/tooling" target="_blank" class="tl-catalog-link" style="color: #4ecca3; text-decoration: none; font-size: 11.5px; font-weight: bold;">
           📖 Amada Tooling Catalog ↗
         </a>
         ${admin ? `<span class="tl-hint" style="margin-left: auto;">★ = good for 1mm · saved automatically</span>` : ''}
