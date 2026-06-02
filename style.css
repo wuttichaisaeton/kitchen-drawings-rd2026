@@ -3573,6 +3573,41 @@ button.cut-status:focus-visible {
 }
 .sb-sim-btn:hover { background: #1c2a39; border-color: #3a4a5c; }
 .sb-sim-status { font-size: 11px; opacity: 0.6; }
+
+/* ── My Tooling picker ─────────────────────────────────────────────── */
+.tl-wrap { margin-bottom: 14px; }
+.tl-bar {
+  font: inherit; font-size: 13px; font-weight: 700; cursor: pointer;
+  width: 100%; text-align: left; color: #cad6e6;
+  background: #0f1620; border: 1px solid #1c2530; border-radius: 8px;
+  padding: 10px 14px;
+}
+.tl-bar:hover { border-color: #2a3744; }
+.tl-panel {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(360px,100%),1fr));
+  gap: 14px; margin-top: 8px; padding: 12px;
+  background: #0c131b; border: 1px solid #1c2530; border-radius: 8px;
+}
+.tl-col { min-width: 0; }
+.tl-h { font-size: 12px; font-weight: 700; color: #4ecca3; margin-bottom: 6px; }
+.tl-row {
+  display: grid; grid-template-columns: auto 14px 1fr auto; gap: 8px;
+  align-items: center; padding: 5px 6px; border-radius: 6px; cursor: pointer;
+  font-size: 12px; color: #aab6c6;
+}
+.tl-row:hover { background: #121b27; }
+.tl-row.tl-on { color: #e6eef8; background: rgba(78,204,163,0.07); }
+.tl-cb { width: 16px; height: 16px; accent-color: #4ecca3; cursor: pointer; }
+.tl-star { color: #f2b84e; text-align: center; }
+.tl-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-spec { font-size: 11px; opacity: 0.7; white-space: nowrap; }
+.tl-note { grid-column: 3 / 5; font-size: 11px; opacity: 0.5; }
+.tl-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+.tl-quick {
+  font: inherit; font-size: 12px; cursor: pointer; color: #0c131b;
+  background: #4ecca3; border: none; border-radius: 6px; padding: 6px 12px; font-weight: 700;
+}
+.tl-hint { font-size: 11px; opacity: 0.55; }
 .nest-home-sub {
   font-size: 12px;
   font-weight: 400;

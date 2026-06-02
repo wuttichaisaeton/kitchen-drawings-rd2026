@@ -3892,23 +3892,108 @@ function _simVerdict(rec) {
   return { cls: 'sb-bad', txt: '✗ NOT BENDABLE' };
 }
 
+// ── My Tooling picker (which Amada punches/dies เอ๋ owns) ──────────────
+// Catalog = window.KD_TOOLING (tooling-catalog.js). Ownership persists to RTDB
+// bend_tools_owned/<toolId>=true; CC_CheckBend reads it to pick only owned tools.
+let _ownedToolsCache = null;
+let _ownedToolsSubscribed = false;
+let _toolingPanelOpen = false;
+
+function _subscribeOwnedTools() {
+  if (_ownedToolsSubscribed) return;
+  _ownedToolsSubscribed = true;
+  try {
+    window.firebaseDB.ref('bend_tools_owned').on('value', s => {
+      _ownedToolsCache = s.val() || {};
+      if (view === 'simbend' && stack.length === 0) render();
+    });
+  } catch (e) { _ownedToolsCache = {}; }
+}
+
+function _setOwnedTool(id, on) {
+  _ownedToolsCache = _ownedToolsCache || {};
+  if (on) _ownedToolsCache[id] = true; else delete _ownedToolsCache[id];
+  try { window.firebaseDB.ref('bend_tools_owned/' + id).set(on ? true : null); }
+  catch (e) {}
+}
+
+function _toolingPickerHtml() {
+  const cat = window.KD_TOOLING;
+  if (!cat) return '';
+  const owned = _ownedToolsCache || {};
+  const nP = (cat.punches || []).filter(t => owned[t.id]).length;
+  const nD = (cat.dies || []).filter(t => owned[t.id]).length;
+  const admin = isAdmin();
+  let body = '';
+  if (_toolingPanelOpen) {
+    const row = (t, kind) => {
+      const on = !!owned[t.id];
+      const spec = kind === 'punch'
+        ? `${t.angle_deg}° · R${t.tip_radius_mm}`
+        : `${t.angle_deg}° · V${(t.v_list || []).join('/')}`;
+      const star = t.fit1mm ? '★' : (t.common ? '·' : '');
+      return `<label class="tl-row ${on ? 'tl-on' : ''}">
+        <input type="checkbox" class="tl-cb" data-id="${escapeHtml(t.id)}" ${on ? 'checked' : ''} ${admin ? '' : 'disabled'}>
+        <span class="tl-star">${star}</span>
+        <span class="tl-label">${escapeHtml(t.label)}</span>
+        <span class="tl-spec">${escapeHtml(spec)}</span>
+        <span class="tl-note">${escapeHtml(t.note || '')}</span>
+      </label>`;
+    };
+    body = `<div class="tl-panel">
+      <div class="tl-col"><div class="tl-h">Punches</div>${(cat.punches || []).map(t => row(t, 'punch')).join('')}</div>
+      <div class="tl-col"><div class="tl-h">Dies</div>${(cat.dies || []).map(t => row(t, 'die')).join('')}</div>
+      ${admin ? `<div class="tl-actions"><button class="tl-quick" type="button">Select 1mm set</button><span class="tl-hint">★ = good for 1mm · saved automatically</span></div>` : ''}
+    </div>`;
+  }
+  const caret = admin ? (_toolingPanelOpen ? ' ▲' : ' ▼') : '';
+  return `<div class="tl-wrap">
+    <button class="tl-bar" type="button">⚙ My Amada Tooling — ${nP} punch · ${nD} die${caret}</button>
+    ${body}
+  </div>`;
+}
+
+function _wireToolingPicker() {
+  const bar = ROOT.querySelector('.tl-bar');
+  if (bar) bar.addEventListener('click', () => { _toolingPanelOpen = !_toolingPanelOpen; render(); });
+  ROOT.querySelectorAll('.tl-cb').forEach(cb => {
+    cb.addEventListener('change', (e) => {
+      e.stopPropagation();
+      _setOwnedTool(cb.getAttribute('data-id'), cb.checked);
+      render();
+    });
+  });
+  const quick = ROOT.querySelector('.tl-quick');
+  if (quick) quick.addEventListener('click', () => {
+    const cat = window.KD_TOOLING || { punches: [], dies: [] };
+    [].concat(cat.punches, cat.dies).forEach(t => { if (t.fit1mm) _setOwnedTool(t.id, true); });
+    render();
+  });
+}
+
 function renderSimBendHome() {
   _subscribeBendSim();
+  _subscribeOwnedTools();
   COUNT_EL.textContent = '';
   if (_bendSimCache === null) {
     ROOT.innerHTML = `<div class="empty-state"><h2>🔩 Sim.Bending</h2>
       <p class="muted">Loading…</p></div>`;
     return;
   }
+  const picker = _toolingPickerHtml();
   const codes = Object.keys(_bendSimCache).filter(c => c && c[0] !== '_');
   if (!codes.length) {
     ROOT.innerHTML = `
-      <div class="empty-state">
-        <h2>🔩 Sim.Bending</h2>
-        <p>Press-brake bend feasibility per part.</p>
-        <p>Run <code>CC_CheckBend</code> on a part in Fusion to publish results here.</p>
-        <p class="muted">No bend-sim data yet.</p>
+      <div class="sb-home">
+        ${picker}
+        <div class="empty-state">
+          <h2>🔩 Sim.Bending</h2>
+          <p>Press-brake bend feasibility per part.</p>
+          <p>Run <code>CC_CheckBend</code> on a part in Fusion to publish results here.</p>
+          <p class="muted">No bend-sim data yet.</p>
+        </div>
       </div>`;
+    _wireToolingPicker();
     return;
   }
   const q = (SEARCH.value || '').trim().toLowerCase();
@@ -3972,10 +4057,12 @@ function renderSimBendHome() {
 
   ROOT.innerHTML = `
     <div class="sb-home">
+      ${picker}
       <div class="sb-banner">🔩 Sim.Bending — press-brake feasibility per part</div>
       <div class="sb-grid">${cards}</div>
     </div>`;
 
+  _wireToolingPicker();
   ROOT.querySelectorAll('.sb-card').forEach(el => {
     const toggle = () => {
       const c = el.getAttribute('data-code');
