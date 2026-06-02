@@ -4031,6 +4031,20 @@ function renderSimBendHome() {
     const when = rec.checked_at ? String(rec.checked_at).slice(0, 16).replace('T', ' ') : '';
     let detail = '';
     if (_simBendExpanded === code) {
+      const cat = window.KD_TOOLING || { punches: [], dies: [] };
+      const defaultPunchId = (rec.per_bend && rec.per_bend[0] && rec.per_bend[0].punch) || 'P-STD-R08-88';
+      const defaultDieId = (rec.per_bend && rec.per_bend[0] && rec.per_bend[0].die) || 'D-1V-V08-88';
+
+      const punchOptsHtml = (cat.punches || []).map(p => {
+        const sel = p.id === defaultPunchId ? 'selected' : '';
+        return `<option value="${escapeHtml(p.id)}" ${sel}>${escapeHtml(p.label)}</option>`;
+      }).join('');
+
+      const dieOptsHtml = (cat.dies || []).map(d => {
+        const sel = d.id === defaultDieId ? 'selected' : '';
+        return `<option value="${escapeHtml(d.id)}" ${sel}>${escapeHtml(d.label)}</option>`;
+      }).join('');
+
       const rows = (rec.per_bend || []).map(b => {
         const bad = b.ok === false || b.collides;
         const why = b.collides
@@ -4046,14 +4060,26 @@ function renderSimBendHome() {
           <td>${b.tonnage_kN != null ? Math.round(b.tonnage_kN) + 'kN' : ''}</td>
           <td>${escapeHtml(why)}</td></tr>`;
       }).join('');
+      
       detail = `
         <div class="sb-detail">
           <div class="sb-sim-wrap">
             <canvas class="sb-sim-canvas"></canvas>
-            <div class="sb-sim-ctrls">
+            <div class="sb-sim-ctrls" style="flex-wrap: wrap; gap: 10px;">
               <button class="sb-sim-btn sb-sim-play" type="button">⏸ Pause</button>
               <button class="sb-sim-btn sb-sim-rec" type="button">⬇ Clip (.webm)</button>
               <span class="sb-sim-status muted"></span>
+              
+              <div class="sb-sim-selects" style="margin-left: auto; display: flex; gap: 8px; align-items: center;" onclick="event.stopPropagation()">
+                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif;">มีด (Punch):</span>
+                <select class="sb-sim-punch-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer;">
+                  ${punchOptsHtml}
+                </select>
+                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; margin-left: 4px;">ร่อง (Die):</span>
+                <select class="sb-sim-die-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer;">
+                  ${dieOptsHtml}
+                </select>
+              </div>
             </div>
           </div>
           ${rec.reason ? `<div class="sb-reason">${escapeHtml(rec.reason)}</div>` : ''}
@@ -4111,7 +4137,38 @@ function renderSimBendHome() {
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
+      const punchSel = card.querySelector('.sb-sim-punch-select');
+      const dieSel = card.querySelector('.sb-sim-die-select');
+      
       _simController.onstatus = (t) => { if (status) status.textContent = t; };
+
+      const updateToolOverrides = () => {
+        const cat = window.KD_TOOLING || { punches: [], dies: [] };
+        const pId = punchSel.value;
+        const dId = dieSel.value;
+        const pObj = cat.punches.find(p => p.id === pId);
+        const dObj = cat.dies.find(d => d.id === dId);
+        if (pObj && _simController.setPunchOverride) {
+          _simController.setPunchOverride(pObj.type);
+        }
+        if (dObj && _simController.setDieOverride) {
+          const v = dObj.v_list ? dObj.v_list[0] : 8;
+          _simController.setDieOverride(v, dObj.angle_deg || 88);
+        }
+      };
+
+      if (punchSel && dieSel) {
+        punchSel.addEventListener('change', (e) => {
+          e.stopPropagation();
+          updateToolOverrides();
+        });
+        dieSel.addEventListener('change', (e) => {
+          e.stopPropagation();
+          updateToolOverrides();
+        });
+        updateToolOverrides();
+      }
+
       if (playBtn) playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         _simController.toggle();

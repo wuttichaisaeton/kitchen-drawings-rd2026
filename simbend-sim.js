@@ -111,7 +111,8 @@
     var bang = Math.atan2(bis.y, bis.x);
     var rot = Math.PI / 2 - bang;            // bisector -> +y (up toward punch)
     var c = Math.cos(rot), s = Math.sin(rot);
-    var pen = (model.spatial[k].v / 2) * Math.tan(rad((st.a[k] || 0) / 2)) * st.descend;
+    var activeV = model.overrideDieV != null ? model.overrideDieV : model.spatial[k].v;
+    var pen = (activeV / 2) * Math.tan(rad((st.a[k] || 0) / 2)) * st.descend;
     var out = pts.map(function (p) {
       var dx = p.x - V.x, dy = p.y - V.y;
       return { x: dx * c - dy * s, y: dx * s + dy * c - pen };
@@ -132,9 +133,10 @@
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     }
 
-    function drawDie(cx, cy, v, scale) {
+    function drawDie(cx, cy, v, scale, dieAngle) {
+      dieAngle = dieAngle || 88;
       var hw = (v / 2) * scale;
-      var depth = hw / Math.tan(rad(44));
+      var depth = hw / Math.tan(rad(dieAngle / 2));
       var bw = Math.max(hw * 3.2, 60 * dpr), bh = Math.max(depth + 30 * dpr, 50 * dpr);
       ctx.fillStyle = '#000000';
       // block with V cut: draw two trapezoids left & right of the groove
@@ -147,26 +149,51 @@
       ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
     }
 
-    function drawPunch(cx, tipY, blocked, gooseneck, t) {
+    function drawPunch(cx, tipY, blocked, type, t) {
       var shake = blocked ? Math.sin(t / 35) * 2.5 * dpr : 0;
       var x = cx + shake;
-      var halfTip = 5 * dpr, halfBody = 13 * dpr, tipRise = 26 * dpr;
       var top = 14 * dpr;
       ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#000000';
       ctx.strokeStyle = blocked ? '#ff7a6c' : '#000000';
       ctx.lineWidth = 1.4 * dpr;
       ctx.beginPath();
-      ctx.moveTo(x - halfBody, top);
-      ctx.lineTo(x + halfBody, top);
-      if (gooseneck) {
-        ctx.lineTo(x + halfBody, tipY - tipRise - 40 * dpr);
-        ctx.quadraticCurveTo(x - 3 * dpr, tipY - tipRise - 22 * dpr, x + halfBody - 5 * dpr, tipY - tipRise);
-      } else {
+
+      if (type === 'hemming') {
+        var hw = 12 * dpr;
+        ctx.moveTo(x - hw, top);
+        ctx.lineTo(x + hw, top);
+        ctx.lineTo(x + hw, tipY - 6 * dpr);
+        ctx.lineTo(x + 8 * dpr, tipY);
+        ctx.lineTo(x - 8 * dpr, tipY);
+        ctx.lineTo(x - hw, tipY - 6 * dpr);
+      } else if (type === 'acute') {
+        var halfTip = 2 * dpr, halfBody = 13 * dpr, tipRise = 45 * dpr;
+        ctx.moveTo(x - halfBody, top);
+        ctx.lineTo(x + halfBody, top);
         ctx.lineTo(x + halfBody, tipY - tipRise);
+        ctx.lineTo(x + halfTip, tipY - 1 * dpr);
+        ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 1 * dpr);
+        ctx.lineTo(x - halfBody, tipY - tipRise);
+      } else if (type === 'gooseneck') {
+        var halfTip = 4 * dpr, halfBody = 13 * dpr, tipRise = 26 * dpr;
+        ctx.moveTo(x - halfBody, top);
+        ctx.lineTo(x + halfBody, top);
+        ctx.lineTo(x + halfBody, tipY - tipRise - 30 * dpr);
+        ctx.quadraticCurveTo(x - 10 * dpr, tipY - tipRise - 15 * dpr, x - 8 * dpr, tipY - tipRise - 4 * dpr);
+        ctx.quadraticCurveTo(x - 6 * dpr, tipY - tipRise + 6 * dpr, x + halfTip, tipY - 2 * dpr);
+        ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 2 * dpr);
+        ctx.lineTo(x - halfBody, tipY - tipRise);
+      } else {
+        // standard (default)
+        var halfTip = 5 * dpr, halfBody = 13 * dpr, tipRise = 26 * dpr;
+        ctx.moveTo(x - halfBody, top);
+        ctx.lineTo(x + halfBody, top);
+        ctx.lineTo(x + halfBody, tipY - tipRise);
+        ctx.lineTo(x + halfTip, tipY - 2 * dpr);
+        ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 2 * dpr);
+        ctx.lineTo(x - halfBody, tipY - tipRise);
       }
-      ctx.lineTo(x + halfTip, tipY - 2 * dpr);
-      ctx.quadraticCurveTo(x, tipY, x - halfTip, tipY - 2 * dpr);
-      ctx.lineTo(x - halfBody, tipY - tipRise);
+      
       ctx.closePath(); ctx.fill(); ctx.stroke();
     }
 
@@ -189,8 +216,9 @@
       ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1 * dpr;
       ctx.beginPath(); ctx.moveTo(dieCx, 0); ctx.lineTo(dieCx, h); ctx.stroke();
 
-      var v = st.ab ? st.ab.v : 8;
-      drawDie(dieCx, dieCy, v, scale);
+      var v = model.overrideDieV != null ? model.overrideDieV : (st.ab ? st.ab.v : 8);
+      var dieAngle = model.overrideDieAngle != null ? model.overrideDieAngle : 88;
+      drawDie(dieCx, dieCy, v, scale, dieAngle);
 
       // sheet (the part) — thick steel polyline
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 6 * dpr;
@@ -204,7 +232,8 @@
       // punch tip sits at the active bend vertex (descending into the V)
       if (st.active != null) {
         var Vtx = P[st.active + 1];
-        drawPunch(dieCx, py(Vtx), st.collide, model.spatial[st.active].gooseneck, t);
+        var pType = model.overridePunchType != null ? model.overridePunchType : (model.spatial[st.active].gooseneck ? 'gooseneck' : 'standard');
+        drawPunch(dieCx, py(Vtx), st.collide, pType, t);
       }
 
       // bend dots
@@ -277,6 +306,15 @@
     return { play: play, pause: pause, toggle: toggle, restart: restart,
              recordClip: recordClip, destroy: destroy,
              isPlaying: function () { return playing; },
+             setPunchOverride: function (type) {
+               model.overridePunchType = type;
+               frame(pausedAt);
+             },
+             setDieOverride: function (v, angle) {
+               model.overrideDieV = v;
+               model.overrideDieAngle = angle;
+               frame(pausedAt);
+             },
              set onstatus(fn) { statusCb = fn; } };
   }
 
