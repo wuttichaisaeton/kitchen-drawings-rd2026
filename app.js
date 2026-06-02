@@ -3958,26 +3958,155 @@ const KYOKKO_CATALOG_SERIES = {
       radii: [0.2, 0.6, 0.8],
       angles: [88, 90],
       note: "Straight punch H95. Ideal for flat sheets and standard 90° bends."
+    },
+    {
+      series: "004",
+      name: "Gooseneck #004 (H67)",
+      type: "gooseneck",
+      height_mm: 67,
+      radii: [0.2, 0.6, 0.8, 1.5, 3.0],
+      angles: [88, 90],
+      note: "Gooseneck punch. 67mm standard height."
+    },
+    {
+      series: "117",
+      name: "Straight Punch #117 (H67)",
+      type: "standard",
+      height_mm: 67,
+      radii: [0.2, 0.6, 0.8],
+      angles: [88, 90],
+      note: "Straight punch. 67mm standard height."
+    },
+    {
+      series: "047",
+      name: "Big Gooseneck #047 (H120)",
+      type: "gooseneck",
+      height_mm: 120,
+      radii: [0.2, 0.6, 0.8, 1.5, 3.0],
+      angles: [88, 90],
+      note: "Large gooseneck punch. 120mm height for deep box bending."
+    },
+    {
+      series: "103",
+      name: "Acute 30° Gooseneck #103 (H67)",
+      type: "gooseneck",
+      height_mm: 67,
+      radii: [0.2, 0.6],
+      angles: [30],
+      note: "Acute 30° gooseneck punch. 67mm height."
+    },
+    {
+      series: "210",
+      name: "Acute 30° Sash #210 (H104)",
+      type: "gooseneck",
+      height_mm: 104,
+      radii: [0.2, 0.6],
+      angles: [30],
+      note: "Acute 30° sash punch. 104mm height."
+    },
+    {
+      series: "211",
+      name: "Acute 30° Sash #211 (H90)",
+      type: "gooseneck",
+      height_mm: 90,
+      radii: [0.2, 0.6],
+      angles: [30],
+      note: "Acute 30° sash punch. 90mm height."
+    },
+    {
+      series: "10870",
+      name: "Acute 30° Straight #10870 (H90)",
+      type: "standard",
+      height_mm: 90,
+      radii: [0.2, 0.6],
+      angles: [30],
+      note: "Straight-type acute 30° punch. 90mm height."
+    },
+    {
+      series: "008",
+      name: "Acute 45° Straight #008 (H67)",
+      type: "standard",
+      height_mm: 67,
+      radii: [0.2, 0.4, 0.6],
+      angles: [45],
+      note: "Acute 45° punch. 67mm height."
+    },
+    {
+      series: "003",
+      name: "Acute 60° Straight #003 (H65)",
+      type: "standard",
+      height_mm: 65,
+      radii: [0.2, 0.6, 6.0],
+      angles: [60],
+      note: "Acute 60° punch. 65mm height, includes R6.0."
     }
   ],
   dies: [
     {
-      series: "1V",
+      series: "1V-H60",
+      name: "Single V Die H60",
+      type: "1V",
+      height_mm: 60,
+      vOpenings: [3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 25],
+      angles: [88, 90],
+      note: "Kyokko Single V Die H60 (V3-V25)."
+    },
+    {
+      series: "1V-H80",
       name: "Single V Die H80",
       type: "1V",
       height_mm: 80,
       vOpenings: [6, 8, 10, 12, 16, 20, 25],
       angles: [88, 90],
-      note: "Kyokko Single V die H80. Standard height."
+      note: "Kyokko Single V Die H80 (V6-V25)."
     },
     {
-      series: "2V",
+      series: "1V-Large",
+      name: "Large Single V Die (H60-H140)",
+      type: "1V",
+      height_mm: 60,
+      vOpenings: [32, 40, 50, 63, 80, 100, 125, 160],
+      vHeights: { 32: 60, 40: 60, 50: 60, 63: 75, 80: 95, 100: 110, 125: 123, 160: 140 },
+      angles: [80, 85],
+      note: "Large Single V Die (V32-V160). H60-H140."
+    },
+    {
+      series: "2V-H46",
+      name: "Reversible 2V Die H46",
+      type: "2V",
+      height_mm: 46,
+      vPairs: [[4, 7], [5, 9], [6, 10], [8, 12], [12, 20], [16, 25]],
+      vHeights: { "4,7": 45.5, "5,9": 45.5, "6,10": 45.5, "8,12": 45.5, "12,20": 46, "16,25": 50 },
+      angles: [88, 90],
+      note: "Kyokko Reversible 2V Die H46."
+    },
+    {
+      series: "2V-H80",
       name: "Double V Die H80",
       type: "2V",
       height_mm: 80,
       vPairs: [[6, 8], [8, 12], [12, 20]],
       angles: [88, 90],
-      note: "Kyokko Double V reversible die. Versatile two V-openings."
+      note: "Kyokko Double V reversible die H80."
+    },
+    {
+      series: "2V-Acute-30",
+      name: "Acute 2V Die 30° (H38-H46)",
+      type: "2V",
+      height_mm: 38,
+      vPairs: [[6, 10], [8, 12]],
+      vHeights: { "6,10": 46, "8,12": 38 },
+      angles: [30],
+      note: "Kyokko Acute 30° Reversible 2V Die."
+    },
+    {
+      series: "1V-Acute-30",
+      name: "Acute 1V Die 30° H60",
+      type: "1V",
+      height_mm: 60,
+      vOpenings: [8, 10, 12, 16],
+      angles: [30],
+      note: "Kyokko Acute 30° Single V Die H60."
     }
   ]
 };
@@ -4041,7 +4170,7 @@ function _showImportCatalogForm() {
     }).join('');
 
     let vPills = '';
-    if (item.series === '1V') {
+    if (item.type === '1V') {
       vPills = item.vOpenings.map((v, idx) => {
         const checked = idx === 0 ? 'checked' : '';
         return `<label class="sb-catalog-pill-group-item">
@@ -4061,11 +4190,15 @@ function _showImportCatalogForm() {
       }).join('');
     }
 
+    const heightLabel = item.vHeights
+      ? `H${Math.min(...Object.values(item.vHeights))}-H${Math.max(...Object.values(item.vHeights))}mm`
+      : `H${item.height_mm}mm`;
+
     return `
       <div class="sb-catalog-card" id="die-card-${item.series}" data-series="${item.series}">
         <div class="sb-catalog-card-header">
           <span class="sb-catalog-card-title">${escapeHtml(item.name)}</span>
-          <span class="sb-catalog-card-height">H${item.height_mm}mm</span>
+          <span class="sb-catalog-card-height" id="die-height-label-${item.series}">${heightLabel}</span>
         </div>
         <div class="sb-catalog-card-body">
           <div class="sb-catalog-card-preview" id="die-preview-${item.series}"></div>
@@ -4121,18 +4254,23 @@ function _showImportCatalogForm() {
 
   KYOKKO_CATALOG_SERIES.punches.forEach(item => {
     const cardEl = document.getElementById(`punch-card-${item.series}`);
+    if (!cardEl) return;
     const updatePreview = () => {
       const selectedAngle = Number(cardEl.querySelector(`.punch-ang-radio:checked`).value);
       const selectedRadius = Number(cardEl.querySelector(`.punch-r-radio:checked`).value);
       
-      let modelNum = item.series;
-      if (item.series === "452") modelNum = selectedAngle === 90 ? "462" : "452";
-      else if (item.series === "453") modelNum = selectedAngle === 90 ? "463" : "453";
-      else if (item.series === "045") modelNum = selectedAngle === 90 ? "046" : "045";
-      else if (item.series === "200") modelNum = selectedAngle === 90 ? "201" : "200";
-      else if (item.series === "202") modelNum = selectedAngle === 90 ? "203" : "202";
-      else if (item.series === "109") modelNum = selectedAngle === 90 ? "108" : "109";
-      
+      const modelMapping = {
+        "452": { 88: "452", 90: "462" },
+        "453": { 88: "453", 90: "463" },
+        "045": { 88: "045", 90: "046" },
+        "200": { 88: "200", 90: "201" },
+        "202": { 88: "202", 90: "203" },
+        "109": { 88: "109", 90: "108" },
+        "004": { 88: "004", 90: "016" },
+        "117": { 88: "117", 90: "116" },
+        "047": { 88: "047", 90: "048" }
+      };
+      const modelNum = (modelMapping[item.series] && modelMapping[item.series][selectedAngle]) || item.series;
       const label = `#${modelNum}-R${selectedRadius} (${selectedAngle}°)`;
       const radiusStr = String(selectedRadius).replace('.', '');
       const id = `P-KYOKKO-${modelNum}-R${radiusStr}`;
@@ -4182,20 +4320,35 @@ function _showImportCatalogForm() {
 
   KYOKKO_CATALOG_SERIES.dies.forEach(item => {
     const cardEl = document.getElementById(`die-card-${item.series}`);
+    if (!cardEl) return;
     const updatePreview = () => {
       const selectedAngle = Number(cardEl.querySelector(`.die-ang-radio:checked`).value);
       const vVal = cardEl.querySelector(`.die-v-radio:checked`).value;
       const vList = vVal.split(',').map(Number);
       
+      const height = item.vHeights ? (item.vHeights[vVal] || item.height_mm) : item.height_mm;
+      const heightLabelEl = document.getElementById(`die-height-label-${item.series}`);
+      if (heightLabelEl) heightLabelEl.textContent = `H${height}mm`;
+
       let label = '';
       let id = '';
-      if (item.series === '1V') {
+      if (item.type === '1V') {
         const V = vList[0];
-        label = `1V-V${V} H80 (${selectedAngle}°)`;
-        id = `D-KYOKKO-1V-V${V}-A${selectedAngle}`;
+        label = `1V-V${V} H${height} (${selectedAngle}°)`;
+        if (item.series === '1V-H80') {
+          id = `D-KYOKKO-1V-V${V}-A${selectedAngle}`;
+        } else {
+          id = `D-KYOKKO-${item.series}-V${V}-A${selectedAngle}`;
+        }
       } else {
-        label = `2V-V${vList[0]}/${vList[1]} H80 (${selectedAngle}°)`;
-        id = `D-KYOKKO-2V-V${vList[0]}_${vList[1]}-A${selectedAngle}`;
+        const V1 = vList[0];
+        const V2 = vList[1];
+        label = `2V-V${V1}/${V2} H${height} (${selectedAngle}°)`;
+        if (item.series === '2V-H80') {
+          id = `D-KYOKKO-2V-V${V1}_${V2}-A${selectedAngle}`;
+        } else {
+          id = `D-KYOKKO-${item.series}-V${V1}_${V2}-A${selectedAngle}`;
+        }
       }
 
       const modelLabelEl = document.getElementById(`die-model-${item.series}`);
@@ -4207,7 +4360,7 @@ function _showImportCatalogForm() {
           type: item.type,
           angle_deg: selectedAngle,
           v_list: vList,
-          height_mm: item.height_mm
+          height_mm: height
         }, { w: 70, h: 50 });
       }
 
@@ -4268,14 +4421,18 @@ function _importPresetTool(kind, series, angle, valOrRadius, btn) {
     const item = KYOKKO_CATALOG_SERIES.punches.find(p => p.series === series);
     if (!item) return;
 
-    let modelNum = series;
-    if (series === "452") modelNum = angle === 90 ? "462" : "452";
-    else if (series === "453") modelNum = angle === 90 ? "463" : "453";
-    else if (series === "045") modelNum = angle === 90 ? "046" : "045";
-    else if (series === "200") modelNum = angle === 90 ? "201" : "200";
-    else if (series === "202") modelNum = angle === 90 ? "203" : "202";
-    else if (series === "109") modelNum = angle === 90 ? "108" : "109";
-
+    const modelMapping = {
+      "452": { 88: "452", 90: "462" },
+      "453": { 88: "453", 90: "463" },
+      "045": { 88: "045", 90: "046" },
+      "200": { 88: "200", 90: "201" },
+      "202": { 88: "202", 90: "203" },
+      "109": { 88: "109", 90: "108" },
+      "004": { 88: "004", 90: "016" },
+      "117": { 88: "117", 90: "116" },
+      "047": { 88: "047", 90: "048" }
+    };
+    const modelNum = (modelMapping[item.series] && modelMapping[item.series][angle]) || item.series;
     const radiusStr = String(valOrRadius).replace('.', '');
     id = `P-KYOKKO-${modelNum}-R${radiusStr}`;
 
@@ -4289,7 +4446,7 @@ function _importPresetTool(kind, series, angle, valOrRadius, btn) {
     };
     if (item.type === 'standard') {
       toolData.label = `Kyokko #${modelNum} Straight ${angle}° · R${valOrRadius} H${item.height_mm}`;
-    } else if (modelNum === '200' || modelNum === '201' || modelNum === '202' || modelNum === '203') {
+    } else if (modelNum === '200' || modelNum === '201' || modelNum === '202' || modelNum === '203' || modelNum === '210' || modelNum === '211') {
       toolData.label = `Kyokko #${modelNum} Sash ${angle}° · R${valOrRadius} H${item.height_mm}`;
     }
   } else {
@@ -4297,27 +4454,37 @@ function _importPresetTool(kind, series, angle, valOrRadius, btn) {
     if (!item) return;
 
     const vList = String(valOrRadius).split(',').map(Number);
-    if (series === '1V') {
+    const height = item.vHeights ? (item.vHeights[valOrRadius] || item.height_mm) : item.height_mm;
+
+    if (item.type === '1V') {
       const V = vList[0];
-      id = `D-KYOKKO-1V-V${V}-A${angle}`;
+      if (item.series === '1V-H80') {
+        id = `D-KYOKKO-1V-V${V}-A${angle}`;
+      } else {
+        id = `D-KYOKKO-${item.series}-V${V}-A${angle}`;
+      }
       toolData = {
-        label: `Kyokko 1V · V${V} · ${angle}° H${item.height_mm}`,
+        label: `Kyokko 1V · V${V} · ${angle}° H${height}`,
         type: '1V',
         angle_deg: angle,
         v_list: vList,
-        height_mm: item.height_mm,
+        height_mm: height,
         note: item.note
       };
     } else {
       const V1 = vList[0];
       const V2 = vList[1];
-      id = `D-KYOKKO-2V-V${V1}_${V2}-A${angle}`;
+      if (item.series === '2V-H80') {
+        id = `D-KYOKKO-2V-V${V1}_${V2}-A${angle}`;
+      } else {
+        id = `D-KYOKKO-${item.series}-V${V1}_${V2}-A${angle}`;
+      }
       toolData = {
-        label: `Kyokko 2V · V${V1}/V${V2} · ${angle}° H${item.height_mm}`,
+        label: `Kyokko 2V · V${V1}/V${V2} · ${angle}° H${height}`,
         type: '2V',
         angle_deg: angle,
         v_list: vList,
-        height_mm: item.height_mm,
+        height_mm: height,
         note: item.note
       };
     }
