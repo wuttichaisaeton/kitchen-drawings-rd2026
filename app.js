@@ -3926,15 +3926,18 @@ function _toolingPickerHtml() {
   const admin = isAdmin();
   let body = '';
   if (_toolingPanelOpen) {
+    const art = window.KD_TOOLART;
     const row = (t, kind) => {
       const on = !!owned[t.id];
       const spec = kind === 'punch'
         ? `${t.angle_deg}° · R${t.tip_radius_mm}`
         : `${t.angle_deg}° · V${(t.v_list || []).join('/')}`;
       const star = t.fit1mm ? '★' : (t.common ? '·' : '');
+      const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
       return `<label class="tl-row ${on ? 'tl-on' : ''}">
         <input type="checkbox" class="tl-cb" data-id="${escapeHtml(t.id)}" ${on ? 'checked' : ''} ${admin ? '' : 'disabled'}>
         <span class="tl-star">${star}</span>
+        ${pic}
         <span class="tl-label">${escapeHtml(t.label)}</span>
         <span class="tl-spec">${escapeHtml(spec)}</span>
         <span class="tl-note">${escapeHtml(t.note || '')}</span>

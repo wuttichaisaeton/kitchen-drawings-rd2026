@@ -3591,17 +3591,19 @@ button.cut-status:focus-visible {
 .tl-col { min-width: 0; }
 .tl-h { font-size: 12px; font-weight: 700; color: #4ecca3; margin-bottom: 6px; }
 .tl-row {
-  display: grid; grid-template-columns: auto 14px 1fr auto; gap: 8px;
-  align-items: center; padding: 5px 6px; border-radius: 6px; cursor: pointer;
+  display: grid; grid-template-columns: auto 14px 48px 1fr auto; gap: 8px;
+  align-items: center; padding: 6px 6px; border-radius: 6px; cursor: pointer;
   font-size: 12px; color: #aab6c6;
 }
 .tl-row:hover { background: #121b27; }
 .tl-row.tl-on { color: #e6eef8; background: rgba(78,204,163,0.07); }
 .tl-cb { width: 16px; height: 16px; accent-color: #4ecca3; cursor: pointer; }
 .tl-star { color: #f2b84e; text-align: center; }
+.tl-pic { display: flex; align-items: center; justify-content: center; }
+.tl-pic .tool-svg { display: block; }
 .tl-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tl-spec { font-size: 11px; opacity: 0.7; white-space: nowrap; }
-.tl-note { grid-column: 3 / 5; font-size: 11px; opacity: 0.5; }
+.tl-note { grid-column: 4 / 6; font-size: 11px; opacity: 0.5; }
 .tl-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; margin-top: 4px; }
 .tl-quick {
   font: inherit; font-size: 12px; cursor: pointer; color: #0c131b;
