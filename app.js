@@ -3898,6 +3898,7 @@ function _simVerdict(rec) {
 let _ownedToolsCache = null;
 let _ownedToolsSubscribed = false;
 let _toolingPanelOpen = false;
+let _toolingExpandedId = null;
 
 function _subscribeOwnedTools() {
   if (_ownedToolsSubscribed) return;
@@ -3934,14 +3935,22 @@ function _toolingPickerHtml() {
         : `${t.angle_deg}° · V${(t.v_list || []).join('/')}`;
       const star = t.fit1mm ? '★' : (t.common ? '·' : '');
       const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
-      return `<label class="tl-row ${on ? 'tl-on' : ''}">
+      const expanded = _toolingExpandedId === t.id;
+      return `<div class="tl-row ${on ? 'tl-on' : ''} ${expanded ? 'tl-expanded' : ''}" data-id="${escapeHtml(t.id)}">
         <input type="checkbox" class="tl-cb" data-id="${escapeHtml(t.id)}" ${on ? 'checked' : ''} ${admin ? '' : 'disabled'}>
         <span class="tl-star">${star}</span>
         ${pic}
         <span class="tl-label">${escapeHtml(t.label)}</span>
         <span class="tl-spec">${escapeHtml(spec)}</span>
         <span class="tl-note">${escapeHtml(t.note || '')}</span>
-      </label>`;
+        ${expanded ? `
+        <div class="tl-detail-row" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: #070b10; border-top: 1px solid #1c2530; margin-top: 6px; border-radius: 6px; cursor: default;" onclick="event.stopPropagation()">
+          ${kind === 'punch'
+            ? art.punch(t, { w: 200, h: 240, showDimensions: true })
+            : art.die(t, { w: 240, h: 180, showDimensions: true })}
+        </div>
+        ` : ''}
+      </div>`;
     };
     body = `<div class="tl-panel">
       <div class="tl-col"><div class="tl-h">Punches</div>${(cat.punches || []).map(t => row(t, 'punch')).join('')}</div>
@@ -3963,6 +3972,15 @@ function _wireToolingPicker() {
     cb.addEventListener('change', (e) => {
       e.stopPropagation();
       _setOwnedTool(cb.getAttribute('data-id'), cb.checked);
+      render();
+    });
+  });
+  ROOT.querySelectorAll('.tl-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row')) return;
+      e.stopPropagation();
+      const id = row.getAttribute('data-id');
+      _toolingExpandedId = (_toolingExpandedId === id) ? null : id;
       render();
     });
   });

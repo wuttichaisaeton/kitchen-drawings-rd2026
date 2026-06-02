@@ -136,7 +136,7 @@
       var hw = (v / 2) * scale;
       var depth = hw / Math.tan(rad(44));
       var bw = Math.max(hw * 3.2, 60 * dpr), bh = Math.max(depth + 30 * dpr, 50 * dpr);
-      ctx.fillStyle = '#566273';
+      ctx.fillStyle = '#000000';
       // block with V cut: draw two trapezoids left & right of the groove
       ctx.beginPath();
       ctx.moveTo(cx - bw, cy); ctx.lineTo(cx - hw, cy);
@@ -144,12 +144,7 @@
       ctx.lineTo(cx + bw, cy); ctx.lineTo(cx + bw, cy + bh);
       ctx.lineTo(cx - bw, cy + bh); ctx.closePath();
       ctx.fill();
-      ctx.strokeStyle = '#7d8a9c'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
-      // shoulder highlights
-      ctx.fillStyle = '#9fb0c4';
-      [-hw, hw].forEach(function (x) {
-        ctx.beginPath(); ctx.arc(cx + x, cy, 2.2 * dpr, 0, 7); ctx.fill();
-      });
+      ctx.strokeStyle = '#000000'; ctx.lineWidth = 1.5 * dpr; ctx.stroke();
     }
 
     function drawPunch(cx, tipY, blocked, gooseneck, t) {
@@ -157,8 +152,8 @@
       var x = cx + shake;
       var halfTip = 5 * dpr, halfBody = 13 * dpr, tipRise = 26 * dpr;
       var top = 14 * dpr;
-      ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#b9c8da';
-      ctx.strokeStyle = blocked ? '#ff7a6c' : '#dce8f5';
+      ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#000000';
+      ctx.strokeStyle = blocked ? '#ff7a6c' : '#000000';
       ctx.lineWidth = 1.4 * dpr;
       ctx.beginPath();
       ctx.moveTo(x - halfBody, top);
@@ -200,7 +195,7 @@
       // sheet (the part) — thick steel polyline
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 6 * dpr;
       var g = ctx.createLinearGradient(0, dieCy - 80 * dpr, 0, dieCy + 20 * dpr);
-      g.addColorStop(0, '#e3eef9'); g.addColorStop(1, '#8fa3b8');
+      g.addColorStop(0, '#ffb03a'); g.addColorStop(1, '#ea6f09');
       ctx.strokeStyle = g;
       ctx.beginPath(); ctx.moveTo(px(P[0]), py(P[0]));
       for (var i = 1; i < P.length; i++) ctx.lineTo(px(P[i]), py(P[i]));
