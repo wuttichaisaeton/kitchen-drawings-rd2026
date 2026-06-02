@@ -5947,3 +5947,81 @@ html[data-theme="obsidian"] .kdng-box {
   box-shadow: 0 10px 30px rgba(0,0,0,0.6) !important;
 }
 
+/* ── 🔩 SimBending Custom Tooling Modal ── */
+.sb-modal-backdrop {
+  position: fixed; inset: 0; z-index: 100000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(2px);
+}
+.sb-modal-card {
+  position: relative; z-index: 1;
+  width: min(440px, 94vw); max-height: 86vh; display: flex; flex-direction: column;
+  background: #161b22; border: 2px solid #2b3340; border-radius: 12px;
+  padding: 20px; box-shadow: 0 18px 50px rgba(0,0,0,0.75);
+  font-family: "Flux Architect", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #cad6e6;
+}
+.sb-modal-head {
+  font-size: 18px; font-weight: 700; color: #4ecca3; margin-bottom: 16px;
+  border-bottom: 1px solid #2b3340; padding-bottom: 8px;
+}
+.sb-modal-body {
+  overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
+  margin-bottom: 18px;
+}
+.sb-form-group {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.sb-form-group label {
+  font-size: 11.5px; opacity: 0.8; font-weight: bold;
+}
+.sb-form-group input, .sb-form-group select {
+  background: #0e1217; border: 1px solid #2b3340; border-radius: 6px;
+  color: #e4e9f0; padding: 8px 10px; font-size: 13.5px;
+  font-family: inherit;
+}
+.sb-form-group input:focus, .sb-form-group select:focus {
+  outline: none; border-color: #4ecca3;
+}
+.sb-modal-foot {
+  display: flex; justify-content: flex-end; gap: 10px;
+  border-top: 1px solid #2b3340; padding-top: 14px;
+}
+.sb-modal-btn {
+  border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: bold;
+  cursor: pointer; font-family: inherit; transition: background 0.2s;
+}
+.sb-modal-btn.sb-cancel {
+  background: #2b3340; border: 1px solid #3e4857; color: #cad6e6;
+}
+.sb-modal-btn.sb-cancel:hover { background: #3e4857; }
+.sb-modal-btn.sb-submit {
+  background: #4ecca3; border: 1px solid #4ecca3; color: #0b121a;
+}
+.sb-modal-btn.sb-submit:hover { background: #3db892; }
+
+/* Custom Add Button styling in Amada tooling header */
+.tl-add-btn {
+  font: inherit; font-size: 11px; cursor: pointer; color: #cad6e6;
+  background: #1c2530; border: 1px solid #2a3744; border-radius: 4px;
+  padding: 3px 8px; font-weight: 700; transition: background 0.15s;
+}
+.tl-add-btn:hover { background: #263342; border-color: #3b4d61; }
+.tl-catalog-link:hover { text-decoration: underline !important; opacity: 0.9; }
+
+/* Opaque backgrounds to override page-bleed/transparent styling in sketch/chalk */
+html[data-theme="sketch"] .sb-modal-card,
+html[data-theme="chalk"] .sb-modal-card {
+  background-color: #161b22 !important;
+  color: #cad6e6 !important;
+  border: 2px solid #2b3340 !important;
+}
+html[data-theme="sketch"] .sb-form-group input,
+html[data-theme="sketch"] .sb-form-group select,
+html[data-theme="chalk"] .sb-form-group input,
+html[data-theme="chalk"] .sb-form-group select {
+  background-color: #0e1217 !important;
+  color: #e4e9f0 !important;
+}
+
+

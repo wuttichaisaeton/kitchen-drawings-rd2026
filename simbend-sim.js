@@ -19,16 +19,26 @@
     var spatial = per.map(function (b, i) {
       var v = b.v_mm != null ? b.v_mm
             : (b.radius_mm != null ? b.radius_mm / 0.16 : 8);
+      var punchId = b.punch || '';
+      var pType = 'standard';
+      if (punchId.indexOf('GN') >= 0) pType = 'gooseneck';
+      else if (punchId.indexOf('ACUTE') >= 0) pType = 'acute';
+      else if (punchId.indexOf('HEM') >= 0) pType = 'hemming';
+
       return {
         id: b.bend != null ? b.bend : ('B' + (i + 1)),
         idx: i,
         angle: (b.angle_deg != null ? b.angle_deg : 90),
         collides: !!b.collides,
+        ok: b.ok !== false,
         hits: b.hits || 'punch',
         at_angle: (b.at_angle != null ? b.at_angle : null),
         die: b.die || null,
+        punch: b.punch || null,
+        punchType: pType,
+        gooseneck: pType === 'gooseneck',
+        reason: b.reason || null,
         v: v,
-        gooseneck: (b.die || '').indexOf('GN') >= 0,
         flange: Math.max(18, (b.flange_mm != null ? b.flange_mm : 35))
       };
     });
@@ -55,7 +65,6 @@
                     tMove: t, t0: t + MOVE, tFold: t + MOVE + FOLD,
                     tEnd: t + MOVE + FOLD + HOLD, target: target, blocking: blocking });
       t += MOVE + FOLD + HOLD;
-      if (blocking && !model.bendable) break;
     }
     model.phases = phases;
     model.totalT = t + END_HOLD;
@@ -111,13 +120,112 @@
     var bang = Math.atan2(bis.y, bis.x);
     var rot = Math.PI / 2 - bang;            // bisector -> +y (up toward punch)
     var c = Math.cos(rot), s = Math.sin(rot);
-    var activeV = model.overrideDieV != null ? model.overrideDieV : model.spatial[k].v;
+    
+    // Resolve active V using our helper
+    var activeV = resolveDie(model, st).v;
+    
     var pen = (activeV / 2) * Math.tan(rad((st.a[k] || 0) / 2)) * st.descend;
     var out = pts.map(function (p) {
       var dx = p.x - V.x, dy = p.y - V.y;
       return { x: dx * c - dy * s, y: dx * s + dy * c - pen };
     });
     return { pts: out, pen: pen };
+  }
+
+  function resolvePunch(model, st) {
+    var cat = window.KD_TOOLING || { punches: [], dies: [] };
+    var pType = 'standard';
+    var pAngle = 88;
+    var pRadius = 0.8;
+    var pHeight = 120;
+
+    var pId = null;
+    if (model.overridePunchId && model.overridePunchId !== 'AUTO') {
+      pId = model.overridePunchId;
+    } else if (model.overridePunchType && model.overridePunchType !== 'AUTO') {
+      pId = model.overridePunchType; // fallback
+    } else {
+      pId = st.ab ? st.ab.punch : null;
+    }
+
+    var pObj = pId ? cat.punches.find(function (p) { return p.id === pId; }) : null;
+    if (pObj) {
+      pType = pObj.type || 'standard';
+      pAngle = pObj.angle_deg != null ? pObj.angle_deg : 88;
+      pRadius = pObj.tip_radius_mm != null ? pObj.tip_radius_mm : 0.8;
+      pHeight = pObj.height_mm != null ? pObj.height_mm : 120;
+    } else {
+      var typeStr = pId || model.overridePunchType || (st.ab && st.ab.punchType) || 'standard';
+      typeStr = typeStr.toLowerCase();
+      if (typeStr.indexOf('gn') >= 0 || typeStr.indexOf('gooseneck') >= 0) {
+        pType = 'gooseneck'; pHeight = 150;
+      } else if (typeStr.indexOf('acute') >= 0) {
+        pType = 'acute'; pAngle = 30; pRadius = 0.4; pHeight = 130;
+      } else if (typeStr.indexOf('hem') >= 0) {
+        pType = 'hemming'; pAngle = 0; pRadius = 0; pHeight = 100;
+      } else {
+        pType = 'standard';
+      }
+    }
+    return { type: pType, angle: pAngle, radius: pRadius, height: pHeight };
+  }
+
+  function resolveDie(model, st) {
+    var cat = window.KD_TOOLING || { punches: [], dies: [] };
+    var dType = '1V';
+    var dAngle = 88;
+    var dV = 8;
+    var dHeight = 60;
+    var dVList = [8];
+
+    var dId = null;
+    if (model.overrideDieId && model.overrideDieId !== 'AUTO') {
+      dId = model.overrideDieId;
+    } else {
+      dId = st.ab ? st.ab.die : null;
+    }
+
+    var dObj = dId ? cat.dies.find(function (d) { return d.id === dId; }) : null;
+    if (dObj) {
+      dType = dObj.type || '1V';
+      dAngle = dObj.angle_deg != null ? dObj.angle_deg : 88;
+      dV = dObj.v_list ? dObj.v_list[0] : 8;
+      dHeight = dObj.height_mm != null ? dObj.height_mm : 60;
+      dVList = dObj.v_list || [dV];
+    } else {
+      var typeStr = dId || (st.ab && st.ab.die) || '1V';
+      typeStr = typeStr.toLowerCase();
+      dV = st.ab && st.ab.v != null ? st.ab.v : 8;
+      if (typeStr.indexOf('2v') >= 0) {
+        dType = '2V';
+        dVList = typeStr.indexOf('0608') >= 0 ? [6, 8] :
+                 typeStr.indexOf('0812') >= 0 ? [8, 12] :
+                 typeStr.indexOf('1220') >= 0 ? [12, 20] : [dV, dV * 1.5];
+      } else {
+        dType = '1V';
+        dVList = [dV];
+      }
+      if (typeStr.indexOf('-30') >= 0 || typeStr.indexOf('30') >= 0) {
+        dAngle = 30;
+      }
+    }
+    
+    // Override logic
+    if (model.overrideDieV != null && model.overrideDieV !== 'AUTO') {
+      dV = model.overrideDieV;
+      if (model.overrideDieVList != null && model.overrideDieVList !== 'AUTO') {
+        dVList = model.overrideDieVList;
+      } else {
+        dVList = [dV];
+      }
+    }
+    if (model.overrideDieAngle != null && model.overrideDieAngle !== 'AUTO') {
+      dAngle = model.overrideDieAngle;
+    }
+    if (model.overrideDieType != null && model.overrideDieType !== 'AUTO') {
+      dType = model.overrideDieType;
+    }
+    return { type: dType, angle: dAngle, v: dV, height: dHeight, vList: dVList };
   }
 
   // ---- mount ------------------------------------------------------------
@@ -142,8 +250,8 @@
       
       var H = type === '2V' ? 30 : 25;
 
-      ctx.fillStyle = '#000000';
-      ctx.strokeStyle = '#000000';
+      ctx.fillStyle = '#6c757d';
+      ctx.strokeStyle = '#495057';
       ctx.lineWidth = 1.5 * dpr;
 
       ctx.beginPath();
@@ -198,19 +306,29 @@
       ctx.fill(); ctx.stroke();
     }
 
-    function drawPunch(cx, tipY, blocked, type, t, scale) {
+    function drawPunch(cx, tipY, blocked, type, t, scale, angle, radius, height) {
       var shake = blocked ? Math.sin(t / 35) * 2.5 * dpr : 0;
       var x = cx + shake;
       
-      var H = 120;
-      var ang = 88;
-      var R = 0.8;
-      if (type === 'gooseneck') { H = 150; ang = 88; R = 0.8; }
-      else if (type === 'acute') { H = 130; ang = 30; R = 0.4; }
-      else if (type === 'hemming') { H = 100; ang = 0; R = 0.0; }
+      var H = height != null ? height : 120;
+      var ang = angle != null ? angle : 88;
+      var R = radius != null ? radius : 0.8;
+      if (type === 'gooseneck') {
+        H = height != null ? height : 150;
+        ang = angle != null ? angle : 88;
+        R = radius != null ? radius : 0.8;
+      } else if (type === 'acute') {
+        H = height != null ? height : 130;
+        ang = angle != null ? angle : 30;
+        R = radius != null ? radius : 0.4;
+      } else if (type === 'hemming') {
+        H = height != null ? height : 100;
+        ang = 0;
+        R = 0.0;
+      }
 
-      ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#000000';
-      ctx.strokeStyle = blocked ? '#ff7a6c' : '#000000';
+      ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#6c757d';
+      ctx.strokeStyle = blocked ? '#ff7a6c' : '#495057';
       ctx.lineWidth = 1.4 * dpr;
 
       var topY = 160 - H;
@@ -249,18 +367,10 @@
         ctx.lineTo(tx(36), ty(160 - 8));
         ctx.lineTo(tx(36), ty(tangY2 + 4));
       } else {
-        // Right side of body
-        if (type === 'gooseneck') {
-          var throatY1 = tangY2 + 10;
-          var throatY2 = (throatY1 + shoulderY) / 2;
-          ctx.lineTo(tx(64), ty(throatY1));
-          ctx.quadraticCurveTo(tx(22), ty(throatY1 + 10), tx(25), ty(throatY2));
-          ctx.quadraticCurveTo(tx(28), ty(throatY2 + 20), tx(50 + shoulderW), ty(shoulderY));
-        } else {
-          ctx.lineTo(tx(64), ty(tangY2 + 4));
-          ctx.lineTo(tx(64), ty(shoulderY));
-          ctx.lineTo(tx(50 + shoulderW), ty(shoulderY));
-        }
+        // Right side of body (straight vertical back)
+        ctx.lineTo(tx(64), ty(tangY2 + 4));
+        ctx.lineTo(tx(64), ty(shoulderY));
+        ctx.lineTo(tx(50 + shoulderW), ty(shoulderY));
 
         // Wedge tip with radius R
         var tipR = Math.max(0.4, Math.min(R, 2.5));
@@ -275,9 +385,18 @@
         ctx.quadraticCurveTo(tx(50), ty(160), tx(tx1), ty(ty1));
 
         // Left side of body going back up
-        ctx.lineTo(tx(50 - shoulderW), ty(shoulderY));
-        ctx.lineTo(tx(36), ty(shoulderY));
-        ctx.lineTo(tx(36), ty(tangY2 + 4));
+        if (type === 'gooseneck') {
+          var throatX = 58;
+          var throatY = tangY2 + 12;
+          var bellyX = 35;
+          var bellyY = shoulderY - 10;
+          ctx.lineTo(tx(bellyX), ty(bellyY));
+          ctx.quadraticCurveTo(tx(throatX), ty(throatY), tx(36), ty(tangY2 + 4));
+        } else {
+          ctx.lineTo(tx(50 - shoulderW), ty(shoulderY));
+          ctx.lineTo(tx(36), ty(shoulderY));
+          ctx.lineTo(tx(36), ty(tangY2 + 4));
+        }
       }
 
       // Safety hook features on the left side of tang
@@ -313,16 +432,8 @@
       ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1 * dpr;
       ctx.beginPath(); ctx.moveTo(dieCx, 0); ctx.lineTo(dieCx, h); ctx.stroke();
 
-      var v = model.overrideDieV != null ? model.overrideDieV : (st.ab ? st.ab.v : 8);
-      var dieAngle = model.overrideDieAngle != null ? model.overrideDieAngle : 88;
-      var dieType = model.overrideDieType != null ? model.overrideDieType : 
-        (st.ab && st.ab.die && st.ab.die.includes('2V') ? '2V' : '1V');
-      var dieVList = model.overrideDieVList != null ? model.overrideDieVList : 
-        (st.ab && st.ab.die && st.ab.die.includes('0608') ? [6, 8] : 
-         (st.ab && st.ab.die && st.ab.die.includes('0812') ? [8, 12] : 
-          (st.ab && st.ab.die && st.ab.die.includes('1220') ? [12, 20] : [v])));
-          
-      drawDie(dieCx, dieCy, v, scale, dieAngle, dieType, dieVList);
+      var rd = resolveDie(model, st);
+      drawDie(dieCx, dieCy, rd.v, scale, rd.angle, rd.type, rd.vList);
 
       // sheet (the part) — thick steel polyline
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 6 * dpr;
@@ -336,44 +447,91 @@
       // punch tip sits at the active bend vertex (descending into the V)
       if (st.active != null) {
         var Vtx = P[st.active + 1];
-        var pType = model.overridePunchType != null ? model.overridePunchType : (model.spatial[st.active].gooseneck ? 'gooseneck' : 'standard');
-        drawPunch(dieCx, py(Vtx), st.collide, pType, t, scale);
+        var rp = resolvePunch(model, st);
+        drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height);
       }
+
+      // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
+      model.spatial.forEach(function (sp) {
+        var vtx = P[sp.idx + 1]; if (!vtx) return;
+        var isBad = !sp.ok || sp.collides;
+        if (isBad) {
+          ctx.strokeStyle = '#e0574a';
+          ctx.lineWidth = 1.5 * dpr;
+          ctx.beginPath();
+          ctx.arc(px(vtx), py(vtx), 9 * dpr, 0, 2 * Math.PI);
+          ctx.stroke();
+        }
+      });
 
       // bend dots
       model.spatial.forEach(function (sp) {
         var vtx = P[sp.idx + 1]; if (!vtx) return;
-        var full = sp.collides && sp.at_angle != null ? sp.at_angle : sp.angle;
-        var done = (st.a[sp.idx] || 0) >= full - 0.01;
-        var col = '#33404f';
-        if (st.active === sp.idx && st.collide) col = '#e0574a';
-        else if (st.active === sp.idx) col = '#f2b84e';
-        else if (done) col = sp.collides ? '#e0574a' : '#4ecca3';
+        var isBad = !sp.ok || sp.collides;
+        var col = isBad ? '#e0574a' : '#4ecca3'; // Red if bad, Green if good
+        
         ctx.fillStyle = col;
-        ctx.beginPath(); ctx.arc(px(vtx), py(vtx), 4 * dpr, 0, 7); ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px(vtx), py(vtx), 4 * dpr, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Inner white dot for active bend
+        if (st.active === sp.idx) {
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(px(vtx), py(vtx), 1.5 * dpr, 0, 2 * Math.PI);
+          ctx.fill();
+        }
       });
 
-      // HUD
-      ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-      ctx.font = (13 * dpr) + 'px "Flux Architect", monospace';
+      // HUD Top Bar Background
+      ctx.fillStyle = 'rgba(11, 18, 26, 0.85)';
+      ctx.fillRect(0, 0, w, 28 * dpr);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath(); ctx.moveTo(0, 28 * dpr); ctx.lineTo(w, 28 * dpr); ctx.stroke();
+
+      // Top Bar Text (Left-aligned details)
+      ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
       if (st.ab) {
-        var phaseTxt = st.moving ? 'position' : 'press';
-        ctx.fillText('Step ' + st.step + '/' + model.phases.length + '  ·  ' +
-          st.ab.id + (st.ab.die ? ' (' + st.ab.die + ')' : '') + '  ·  ' +
-          Math.round(st.ab.angle) + '°  ·  ' + phaseTxt, 12 * dpr, 10 * dpr);
+        var phaseTxt = (st.moving ? 'position' : 'press').toUpperCase();
+        var rpInfo = resolvePunch(model, st);
+        var rdInfo = resolveDie(model, st);
+        var toolInfo = '  ·  PUNCH: ' + rpInfo.type.toUpperCase() + '  ·  DIE: V' + rdInfo.v;
+        ctx.fillText('STEP ' + st.step + '/' + model.phases.length + '  ·  ' +
+          st.ab.id + '  ·  ' +
+          Math.round(st.ab.angle) + '°  ·  ' + phaseTxt + toolInfo, 12 * dpr, 14 * dpr);
       }
-      if (st.collide) {
-        ctx.fillStyle = '#e0574a';
-        ctx.fillText('✗ ' + (st.ab ? st.ab.id : '') + ' hits ' + (st.ab ? st.ab.hits : 'punch') +
-          (st.ab && st.ab.at_angle != null ? ' @' + Math.round(st.ab.at_angle) + '°' : ''),
-          12 * dpr, 30 * dpr);
+
+      // Top Bar Text (Right-aligned error/warning)
+      if (st.ab && (!st.ab.ok || st.collide)) {
+        ctx.fillStyle = '#e0574a'; ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
+        ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
+        var errorMsg = '';
+        if (st.collide) {
+          errorMsg = 'COLLISION: HITS ' + (st.ab.hits || 'PUNCH').toUpperCase() + (st.ab.at_angle != null ? ' @' + Math.round(st.ab.at_angle) + '°' : '');
+        } else {
+          errorMsg = 'UNBENDABLE: ' + (st.ab.reason || 'REJECTED').toUpperCase();
+        }
+        ctx.fillText(errorMsg, w - 12 * dpr, 14 * dpr);
       }
+
+      // HUD Bottom Bar Background
+      ctx.fillStyle = 'rgba(11, 18, 26, 0.85)';
+      ctx.fillRect(0, h - 28 * dpr, w, 28 * dpr);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+      ctx.lineWidth = 1 * dpr;
+      ctx.beginPath(); ctx.moveTo(0, h - 28 * dpr); ctx.lineTo(w, h - 28 * dpr); ctx.stroke();
+
+      // Bottom Bar Text (Overall part status)
       ctx.fillStyle = model.bendable ? '#4ecca3' : '#e0574a';
-      ctx.font = 'bold ' + (14 * dpr) + 'px "Flux Architect", monospace';
-      ctx.fillText(model.bendable
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+      ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
+      var statusTxt = model.bendable
         ? '✓ BENDABLE  —  ' + model.order.map(function (i) { return model.spatial[i].id; }).join(' → ')
-        : '✗ NOT BENDABLE' + (record.reason ? '  —  ' + record.reason : ''),
-        12 * dpr, h - 24 * dpr);
+        : '✗ NOT BENDABLE' + (model.record.reason ? '  —  ' + model.record.reason : '');
+      ctx.fillText(statusTxt.toUpperCase(), 12 * dpr, h - 14 * dpr);
     }
 
     function loop(now) {
@@ -410,11 +568,13 @@
     return { play: play, pause: pause, toggle: toggle, restart: restart,
              recordClip: recordClip, destroy: destroy,
              isPlaying: function () { return playing; },
-             setPunchOverride: function (type) {
+             setPunchOverride: function (id, type) {
+               model.overridePunchId = id;
                model.overridePunchType = type;
                frame(pausedAt);
              },
-             setDieOverride: function (v, angle, type, vList) {
+             setDieOverride: function (id, v, angle, type, vList) {
+               model.overrideDieId = id;
                model.overrideDieV = v;
                model.overrideDieAngle = angle;
                model.overrideDieType = type;

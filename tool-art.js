@@ -74,20 +74,6 @@
              ' L 64,' + (tangY2 + 4) +
              ' L 55,' + tangY2 + ' Z';
     } else {
-      // Wedge tip: Left side is straight down, right side might have gooseneck
-      var rightProfile = '';
-      if (type === 'gooseneck') {
-        var throatY1 = tangY2 + 10;
-        var throatY2 = (throatY1 + shoulderY) / 2;
-        rightProfile = ' L 64,' + throatY1 +
-                       ' Q 22,' + (throatY1 + 10) + ' 25,' + throatY2 +
-                       ' Q 28,' + (throatY2 + 20) + ' ' + (cx + shoulderW) + ',' + shoulderY;
-      } else {
-        rightProfile = ' L 64,' + (tangY2 + 4) +
-                       ' L 64,' + shoulderY +
-                       ' L ' + (cx + shoulderW) + ',' + shoulderY;
-      }
-
       // Tip rounded shape calculation
       var tipR = Math.max(0.4, Math.min(R, 2.5));
       var dx = tipR * cos(halfAng);
@@ -97,11 +83,35 @@
       var tx2 = cx + dx;
       var ty2 = tipY - tipR + dy;
 
+      var leftProfile = '';
+      var rightProfile = '';
+
+      if (type === 'gooseneck') {
+        var throatX = cx + 8; // X = 58 (throat curves inward to the right)
+        var throatY = tangY2 + 12;
+        var bellyX = cx - 15; // X = 35 (belly curves outward to the left)
+        var bellyY = shoulderY - 10;
+        
+        leftProfile = ' Q ' + throatX + ',' + throatY + ' ' + bellyX + ',' + bellyY +
+                      ' L ' + tx1 + ',' + ty1;
+        
+        rightProfile = ' L ' + (cx + shoulderW) + ',' + shoulderY +
+                       ' L 64,' + shoulderY +
+                       ' L 64,' + (tangY2 + 4);
+      } else {
+        // Standard / acute
+        leftProfile = ' L 36,' + shoulderY +
+                      ' L ' + (cx - shoulderW) + ',' + shoulderY +
+                      ' L ' + tx1 + ',' + ty1;
+                      
+        rightProfile = ' L ' + (cx + shoulderW) + ',' + shoulderY +
+                       ' L 64,' + shoulderY +
+                       ' L 64,' + (tangY2 + 4);
+      }
+
       path = 'M 45,' + tangY2 +
              ' L 36,' + (tangY2 + 4) +
-             ' L 36,' + shoulderY +
-             ' L ' + (cx - shoulderW) + ',' + shoulderY +
-             ' L ' + tx1 + ',' + ty1 +
+             leftProfile +
              ' Q ' + cx + ',' + tipY + ' ' + tx2 + ',' + ty2 +
              rightProfile +
              ' L 55,' + tangY2 + ' Z';
@@ -109,15 +119,11 @@
 
     var defs = '';
     var dims = '';
-    var fillAttr = 'url(#pg)';
-    var strokeAttr = EDGE;
-    var strokeWidth = '1.2';
+    var fillAttr = '#6c757d';
+    var strokeAttr = '#495057';
+    var strokeWidth = '1';
 
     if (showDims) {
-      fillAttr = '#000000';
-      strokeAttr = '#000000';
-      strokeWidth = '1';
-
       // Dimension overlays in theme green
       defs = '<defs>' +
              '<marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">' +
@@ -128,10 +134,10 @@
       // 1. Height dimension (left side, text inside margin)
       var dimX = 14;
       dims += '<!-- Height -->' +
-              '<line x1="36" y1="' + topY + '" x2="' + (dimX - 4) + '" y2="' + topY + '" stroke="#4ecca3" stroke-width="0.8" stroke-dasharray="2 2" />' +
-              '<line x1="36" y1="' + tipY + '" x2="' + (dimX - 4) + '" y2="' + tipY + '" stroke="#4ecca3" stroke-width="0.8" stroke-dasharray="2 2" />' +
-              '<line x1="' + dimX + '" y1="' + topY + '" x2="' + dimX + '" y2="' + tipY + '" stroke="#4ecca3" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)" />' +
-              '<text x="' + (dimX + 5) + '" y="' + ((topY + tipY) / 2) + '" fill="#4ecca3" font-size="9.5" font-family="\'Flux Architect\', monospace" font-weight="bold" text-anchor="start" alignment-baseline="middle">' + H + ' mm</text>';
+               '<line x1="36" y1="' + topY + '" x2="' + (dimX - 4) + '" y2="' + topY + '" stroke="#4ecca3" stroke-width="0.8" stroke-dasharray="2 2" />' +
+               '<line x1="36" y1="' + tipY + '" x2="' + (dimX - 4) + '" y2="' + tipY + '" stroke="#4ecca3" stroke-width="0.8" stroke-dasharray="2 2" />' +
+               '<line x1="' + dimX + '" y1="' + topY + '" x2="' + dimX + '" y2="' + tipY + '" stroke="#4ecca3" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)" />' +
+               '<text x="' + (dimX + 5) + '" y="' + ((topY + tipY) / 2) + '" fill="#4ecca3" font-size="9.5" font-family="\'Flux Architect\', monospace" font-weight="bold" text-anchor="start" alignment-baseline="middle">' + H + ' mm</text>';
 
       if (type !== 'hemming') {
         // 2. Angle dimension (arc near tip)
@@ -160,13 +166,6 @@
                 '<line x1="38" y1="' + (tipY + 8) + '" x2="62" y2="' + (tipY + 8) + '" stroke="#4ecca3" stroke-width="1" marker-start="url(#arrow)" marker-end="url(#arrow)" />' +
                 '<text x="50" y="' + (tipY + 19) + '" fill="#4ecca3" font-size="9" font-family="\'Flux Architect\', monospace" font-weight="bold" text-anchor="middle">Flat 24mm</text>';
       }
-    } else {
-      // standard linear gradient defs
-      defs = '<defs><linearGradient id="pg" x1="0" y1="0" x2="1" y2="1">' +
-             '<stop offset="0" stop-color="' + STEEL + '"/>' +
-             '<stop offset="0.4" stop-color="' + STEEL_M + '"/>' +
-             '<stop offset="1" stop-color="' + STEEL_D + '"/>' +
-             '</linearGradient></defs>';
     }
 
     var bodySvg = tangPath + ' ' + path;
@@ -245,15 +244,11 @@
 
     var defs = '';
     var dims = '';
-    var fillAttr = 'url(#dg)';
-    var strokeAttr = EDGE;
-    var strokeWidth = '1.2';
+    var fillAttr = '#6c757d';
+    var strokeAttr = '#495057';
+    var strokeWidth = '1';
 
     if (showDims) {
-      fillAttr = '#000000';
-      strokeAttr = '#000000';
-      strokeWidth = '1';
-
       defs = '<defs>' +
              '<marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">' +
              '<path d="M 0 0 L 10 5 L 0 10 z" fill="#4ecca3" />' +
@@ -308,12 +303,6 @@
         dims += '<!-- Angle -->' +
                 '<text x="' + cx + '" y="' + (apexY - 10) + '" fill="#4ecca3" font-size="9.5" font-family="\'Flux Architect\', monospace" font-weight="bold" text-anchor="middle">' + ang + '°</text>';
       }
-    } else {
-      defs = '<defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1">' +
-             '<stop offset="0" stop-color="' + STEEL + '"/>' +
-             '<stop offset="0.5" stop-color="' + STEEL_M + '"/>' +
-             '<stop offset="1" stop-color="' + STEEL_D + '"/>' +
-             '</linearGradient></defs>';
     }
 
     var drawContent = defs +

@@ -3900,6 +3900,53 @@ let _ownedToolsSubscribed = false;
 let _toolingPanelOpen = false;
 let _toolingExpandedId = null;
 
+let _customToolsCache = null;
+let _customToolsSubscribed = false;
+
+function _subscribeCustomTools() {
+  if (_customToolsSubscribed) return;
+  _customToolsSubscribed = true;
+  
+  if (!window._masterKDTooling) {
+    window._masterKDTooling = JSON.parse(JSON.stringify(window.KD_TOOLING || { punches: [], dies: [] }));
+  }
+  
+  try {
+    window.firebaseDB.ref('bend_tools_custom').on('value', s => {
+      const val = s.val() || {};
+      _customToolsCache = val;
+      
+      const punches = val.punches || {};
+      const dies = val.dies || {};
+      
+      window.KD_TOOLING.punches = JSON.parse(JSON.stringify(window._masterKDTooling.punches));
+      window.KD_TOOLING.dies = JSON.parse(JSON.stringify(window._masterKDTooling.dies));
+      
+      Object.keys(punches).forEach(key => {
+        const item = punches[key];
+        item.id = key;
+        item.isCustom = true;
+        if (!window.KD_TOOLING.punches.find(p => p.id === key)) {
+          window.KD_TOOLING.punches.push(item);
+        }
+      });
+      
+      Object.keys(dies).forEach(key => {
+        const item = dies[key];
+        item.id = key;
+        item.isCustom = true;
+        if (!window.KD_TOOLING.dies.find(d => d.id === key)) {
+          window.KD_TOOLING.dies.push(item);
+        }
+      });
+      
+      if (view === 'simbend' && stack.length === 0) render();
+    });
+  } catch (e) {
+    console.error("Failed to subscribe to custom tools", e);
+  }
+}
+
 function _subscribeOwnedTools() {
   if (_ownedToolsSubscribed) return;
   _ownedToolsSubscribed = true;
@@ -3916,6 +3963,170 @@ function _setOwnedTool(id, on) {
   if (on) _ownedToolsCache[id] = true; else delete _ownedToolsCache[id];
   try { window.firebaseDB.ref('bend_tools_owned/' + id).set(on ? true : null); }
   catch (e) {}
+}
+
+function _showAddToolForm(kind) {
+  const existing = document.getElementById('sb-add-tool-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'sb-add-tool-modal';
+  modal.className = 'sb-modal-backdrop';
+  
+  const title = kind === 'punch' ? 'Add Custom Punch (เพิ่มมีด)' : 'Add Custom Die (เพิ่มร่อง)';
+  
+  const content = kind === 'punch' ? `
+    <div class="sb-form-group">
+      <label>Name / Label (เช่น GooseNeck 88 R0.8)</label>
+      <input type="text" id="tool-label" placeholder="GooseNeck 88° · R0.8 Custom" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Type (รูปทรง)</label>
+      <select id="tool-type">
+        <option value="standard">Standard (ทรงตรง)</option>
+        <option value="gooseneck">Gooseneck (ทรงหงส์)</option>
+        <option value="acute">Acute (มุมแหลม)</option>
+        <option value="hemming">Hemming (พับแบน)</option>
+      </select>
+    </div>
+    <div class="sb-form-group">
+      <label>Angle (องศา, เช่น 88 หรือ 30)</label>
+      <input type="number" id="tool-angle" value="88" step="1" min="0" max="180" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Tip Radius (รัศมีปลายมีด R, มม.)</label>
+      <input type="number" id="tool-radius" value="0.8" step="0.1" min="0" max="10" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Height (ความสูงมีด H, มม.)</label>
+      <input type="number" id="tool-height" value="120" step="1" min="10" max="300" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Note (หมายเหตุ)</label>
+      <input type="text" id="tool-note" placeholder="รายละเอียดเพิ่มเติม">
+    </div>
+  ` : `
+    <div class="sb-form-group">
+      <label>Name / Label (เช่น 1V V8 88°)</label>
+      <input type="text" id="tool-label" placeholder="1V · V8 · 88° Custom" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Type (ประเภท)</label>
+      <select id="tool-type">
+        <option value="1V">1V (ร่องเดี่ยว)</option>
+        <option value="2V">2V (ร่องคู่กลับด้าน)</option>
+        <option value="acute">Acute / 1V Acute</option>
+      </select>
+    </div>
+    <div class="sb-form-group">
+      <label>Angle (องศาร่อง, เช่น 88 หรือ 30)</label>
+      <input type="number" id="tool-angle" value="88" step="1" min="0" max="180" required>
+    </div>
+    <div class="sb-form-group">
+      <label>V Openings (มม., สำหรับ 2V ใส่คั่นด้วยจุลภาค เช่น 6,8)</label>
+      <input type="text" id="tool-vlist" value="8" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Height (ความสูงร่อง H, มม.)</label>
+      <input type="number" id="tool-height" value="60" step="1" min="10" max="300" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Note (หมายเหตุ)</label>
+      <input type="text" id="tool-note" placeholder="รายละเอียดเพิ่มเติม">
+    </div>
+  `;
+
+  modal.innerHTML = `
+    <div class="sb-modal-card" onclick="event.stopPropagation()">
+      <div class="sb-modal-head">${escapeHtml(title)}</div>
+      <form id="sb-add-tool-form">
+        <div class="sb-modal-body">
+          ${content}
+        </div>
+        <div class="sb-modal-foot">
+          <button class="sb-modal-btn sb-cancel" type="button">Cancel</button>
+          <button class="sb-modal-btn sb-submit" type="submit">Save Tool</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const focusInput = modal.querySelector('#tool-label');
+  if (focusInput) focusInput.focus();
+
+  modal.querySelector('.sb-cancel').addEventListener('click', () => modal.remove());
+  modal.querySelector('#sb-add-tool-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    _saveCustomTool(kind, modal);
+  });
+}
+
+function _saveCustomTool(kind, modal) {
+  const label = modal.querySelector('#tool-label').value.trim();
+  const type = modal.querySelector('#tool-type').value;
+  const angle_deg = parseFloat(modal.querySelector('#tool-angle').value);
+  const height_mm = parseFloat(modal.querySelector('#tool-height').value);
+  const note = modal.querySelector('#tool-note').value.trim();
+
+  if (!label) return;
+
+  let toolData = {
+    label,
+    type,
+    angle_deg,
+    height_mm,
+    note
+  };
+
+  let id = '';
+
+  if (kind === 'punch') {
+    const tip_radius_mm = parseFloat(modal.querySelector('#tool-radius').value);
+    toolData.tip_radius_mm = tip_radius_mm;
+    const cleanLabel = label.replace(/[^a-zA-Z0-9]/g, '-').toUpperCase();
+    id = `P-CUSTOM-${cleanLabel}-${Date.now().toString().slice(-4)}`;
+  } else {
+    const vlistStr = modal.querySelector('#tool-vlist').value;
+    const v_list = vlistStr.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+    if (v_list.length === 0) {
+      alert('Please specify at least one valid V opening size.');
+      return;
+    }
+    toolData.v_list = v_list;
+    const cleanLabel = label.replace(/[^a-zA-Z0-9]/g, '-').toUpperCase();
+    id = `D-CUSTOM-${cleanLabel}-${Date.now().toString().slice(-4)}`;
+  }
+
+  const refPath = `bend_tools_custom/${kind}s/${id}`;
+  try {
+    window.firebaseDB.ref(refPath).set(toolData).then(() => {
+      _setOwnedTool(id, true);
+      modal.remove();
+      render();
+    }).catch(e => {
+      alert('Error saving custom tool: ' + e.message);
+    });
+  } catch (e) {
+    alert('Database reference error: ' + e.message);
+  }
+}
+
+function _deleteCustomTool(id, kind) {
+  if (!confirm(`Are you sure you want to delete this custom tool: ${id}?`)) return;
+
+  const refPath = `bend_tools_custom/${kind}s/${id}`;
+  try {
+    window.firebaseDB.ref(refPath).set(null).then(() => {
+      _setOwnedTool(id, null);
+      render();
+    }).catch(e => {
+      alert('Error deleting tool: ' + e.message);
+    });
+  } catch (e) {
+    alert('Database reference error: ' + e.message);
+  }
 }
 
 function _toolingPickerHtml() {
@@ -3936,12 +4147,15 @@ function _toolingPickerHtml() {
       const star = t.fit1mm ? '★' : (t.common ? '·' : '');
       const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
       const expanded = _toolingExpandedId === t.id;
+      const deleteBtn = (admin && t.isCustom)
+        ? `<button class="tl-del-btn" type="button" data-id="${escapeHtml(t.id)}" data-kind="${kind}" style="background: none; border: none; color: #e0574a; cursor: pointer; padding: 0 4px; font-size: 14px; margin-left: 8px;" title="Delete custom tool">🗑</button>`
+        : '';
       return `<div class="tl-row ${on ? 'tl-on' : ''} ${expanded ? 'tl-expanded' : ''}" data-id="${escapeHtml(t.id)}">
         <input type="checkbox" class="tl-cb" data-id="${escapeHtml(t.id)}" ${on ? 'checked' : ''} ${admin ? '' : 'disabled'}>
         <span class="tl-star">${star}</span>
         ${pic}
         <span class="tl-label">${escapeHtml(t.label)}</span>
-        <span class="tl-spec">${escapeHtml(spec)}</span>
+        <span class="tl-spec" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(spec)}${deleteBtn}</span>
         <span class="tl-note">${escapeHtml(t.note || '')}</span>
         ${expanded ? `
         <div class="tl-detail-row" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: #070b10; border-top: 1px solid #1c2530; margin-top: 6px; border-radius: 6px; cursor: default;" onclick="event.stopPropagation()">
@@ -3953,9 +4167,27 @@ function _toolingPickerHtml() {
       </div>`;
     };
     body = `<div class="tl-panel">
-      <div class="tl-col"><div class="tl-h">Punches</div>${(cat.punches || []).map(t => row(t, 'punch')).join('')}</div>
-      <div class="tl-col"><div class="tl-h">Dies</div>${(cat.dies || []).map(t => row(t, 'die')).join('')}</div>
-      ${admin ? `<div class="tl-actions"><button class="tl-quick" type="button">Select 1mm set</button><span class="tl-hint">★ = good for 1mm · saved automatically</span></div>` : ''}
+      <div class="tl-col">
+        <div class="tl-h" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span>Punches</span>
+          ${admin ? `<button class="tl-add-btn" type="button" data-kind="punch" style="font-size: 11px; padding: 2px 6px; cursor: pointer;">＋ Add Punch</button>` : ''}
+        </div>
+        ${(cat.punches || []).map(t => row(t, 'punch')).join('')}
+      </div>
+      <div class="tl-col">
+        <div class="tl-h" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span>Dies</span>
+          ${admin ? `<button class="tl-add-btn" type="button" data-kind="die" style="font-size: 11px; padding: 2px 6px; cursor: pointer;">＋ Add Die</button>` : ''}
+        </div>
+        ${(cat.dies || []).map(t => row(t, 'die')).join('')}
+      </div>
+      <div class="tl-actions" style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 10px; margin-top: 8px;">
+        ${admin ? `<button class="tl-quick" type="button">Select 1mm set</button>` : ''}
+        <a href="https://www.amada.co.jp/en/products/sheetmetal/pressbrake/tooling/" target="_blank" class="tl-catalog-link" style="color: #4ecca3; text-decoration: none; font-size: 11.5px; font-weight: bold;">
+          📖 Amada Tooling Catalog ↗
+        </a>
+        ${admin ? `<span class="tl-hint" style="margin-left: auto;">★ = good for 1mm · saved automatically</span>` : ''}
+      </div>
     </div>`;
   }
   const caret = admin ? (_toolingPanelOpen ? ' ▲' : ' ▼') : '';
@@ -3977,11 +4209,26 @@ function _wireToolingPicker() {
   });
   ROOT.querySelectorAll('.tl-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row')) return;
+      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row') || e.target.classList.contains('tl-del-btn')) return;
       e.stopPropagation();
       const id = row.getAttribute('data-id');
       _toolingExpandedId = (_toolingExpandedId === id) ? null : id;
       render();
+    });
+  });
+  ROOT.querySelectorAll('.tl-add-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const kind = btn.getAttribute('data-kind');
+      _showAddToolForm(kind);
+    });
+  });
+  ROOT.querySelectorAll('.tl-del-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const kind = btn.getAttribute('data-kind');
+      _deleteCustomTool(id, kind);
     });
   });
   const quick = ROOT.querySelector('.tl-quick');
@@ -3995,6 +4242,7 @@ function _wireToolingPicker() {
 function renderSimBendHome() {
   _subscribeBendSim();
   _subscribeOwnedTools();
+  _subscribeCustomTools();
   COUNT_EL.textContent = '';
   if (_bendSimCache === null) {
     ROOT.innerHTML = `<div class="empty-state"><h2>🔩 Sim.Bending</h2>
@@ -4035,15 +4283,15 @@ function renderSimBendHome() {
       const defaultPunchId = (rec.per_bend && rec.per_bend[0] && rec.per_bend[0].punch) || 'P-STD-R08-88';
       const defaultDieId = (rec.per_bend && rec.per_bend[0] && rec.per_bend[0].die) || 'D-1V-V08-88';
 
-      const punchOptsHtml = (cat.punches || []).map(p => {
-        const sel = p.id === defaultPunchId ? 'selected' : '';
-        return `<option value="${escapeHtml(p.id)}" ${sel}>${escapeHtml(p.label)}</option>`;
-      }).join('');
+      const punchOptsHtml = `<option value="AUTO" selected>Auto (ตามข้อมูลจริง)</option>` +
+        (cat.punches || []).map(p => {
+          return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.label)}</option>`;
+        }).join('');
 
-      const dieOptsHtml = (cat.dies || []).map(d => {
-        const sel = d.id === defaultDieId ? 'selected' : '';
-        return `<option value="${escapeHtml(d.id)}" ${sel}>${escapeHtml(d.label)}</option>`;
-      }).join('');
+      const dieOptsHtml = `<option value="AUTO" selected>Auto (ตามข้อมูลจริง)</option>` +
+        (cat.dies || []).map(d => {
+          return `<option value="${escapeHtml(d.id)}">${escapeHtml(d.label)}</option>`;
+        }).join('');
 
       const rows = (rec.per_bend || []).map(b => {
         const bad = b.ok === false || b.collides;
@@ -4146,14 +4394,26 @@ function renderSimBendHome() {
         const cat = window.KD_TOOLING || { punches: [], dies: [] };
         const pId = punchSel.value;
         const dId = dieSel.value;
-        const pObj = cat.punches.find(p => p.id === pId);
-        const dObj = cat.dies.find(d => d.id === dId);
-        if (pObj && _simController.setPunchOverride) {
-          _simController.setPunchOverride(pObj.type);
+        if (pId === 'AUTO') {
+          if (_simController.setPunchOverride) {
+            _simController.setPunchOverride('AUTO', 'AUTO');
+          }
+        } else {
+          const pObj = cat.punches.find(p => p.id === pId);
+          if (pObj && _simController.setPunchOverride) {
+            _simController.setPunchOverride(pObj.id, pObj.type);
+          }
         }
-        if (dObj && _simController.setDieOverride) {
-          const v = dObj.v_list ? dObj.v_list[0] : 8;
-          _simController.setDieOverride(v, dObj.angle_deg || 88, dObj.type, dObj.v_list);
+        if (dId === 'AUTO') {
+          if (_simController.setDieOverride) {
+            _simController.setDieOverride('AUTO', 'AUTO', 'AUTO', 'AUTO', 'AUTO');
+          }
+        } else {
+          const dObj = cat.dies.find(d => d.id === dId);
+          if (dObj && _simController.setDieOverride) {
+            const v = dObj.v_list ? dObj.v_list[0] : 8;
+            _simController.setDieOverride(dObj.id, v, dObj.angle_deg || 88, dObj.type, dObj.v_list);
+          }
         }
       };
 
