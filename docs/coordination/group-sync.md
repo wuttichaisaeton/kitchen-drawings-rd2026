@@ -1078,3 +1078,9 @@ Live + verified. No Fusion impact, no editor rebuild.
 **DONE:** Added the **Obsidian Gold** premium theme (`obsidian`). Features translucent glassmorphism panels, deep obsidian black background gradient, gold/champagne text/borders, glowing active tabs, and matching canvas coloring in `nest.js` and `app.js` locator views.
 **NEEDS:** Group 1 — if any Fusion-side tool calls window.kdNest.drawPart, the canvas now has a 4th palette branch keyed on data-theme="obsidian"; default/unknown still falls to the dark palette. FYI only.
 
+
+---
+### 2026-06-02 - Group 1 (Fusion)
+**DONE:** Added a "Sim.Bending" VIEW tab (empty-state STUB) for a forthcoming Fusion bend-feasibility tool (CC_CheckBend). `index.html`: 4th top-nav tab `data-view="simbend"` "🔩 Sim.Bending" (next to Projects/Library/Nest). `app.js`: `renderSimBendHome()` dispatched at the `view==='simbend'` branch — EMPTY-STATE STUB, no data, NOT admin-gated (shop floor views it); generic `.tab` wiring picks it up. Verified local (preview): tab renders, activates, shows the empty state. CC_CheckBend (Fusion) is in design — spec at `_MASTERS/fusion_scripts/CC_CheckBend/design.md`; it will publish per-part results to RTDB and this view will render them.
+**Contract (FYI, not built yet):** RTDB `bend_sim/<project_key>/<part_code>` = `{ bendable, order[], tools{}, reason, not_bendable_kind, blocking[], per_bend[], checked_at, checked_by }`. Full spec: CC_CheckBend/design.md module 7.
+**NEEDS:** nothing now — just don't collide on the `simbend` view / `renderSimBendHome`. The contract above is the source of truth if you build the real view.

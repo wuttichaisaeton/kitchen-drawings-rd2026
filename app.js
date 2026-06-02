@@ -3847,11 +3847,26 @@ function render() {
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
     if (view === 'nest')     return renderNestHome();
+    if (view === 'simbend')  return renderSimBendHome();
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
   if (top.kind === 'family') return renderFamily(top.name, top.highlight);
   if (top.kind === 'project') return renderProject(top.name);
+}
+
+// Sim.Bending — press-brake bend feasibility per project, published by
+// CC_CheckBend (Fusion) to RTDB bend_sim/<pk>/<code>. Stub for now: empty
+// state until the Fusion tool publishes data (see
+// _MASTERS/fusion_scripts/CC_CheckBend/design.md, module 7). 2026-06-02.
+function renderSimBendHome() {
+  ROOT.innerHTML = `
+    <div class="empty-state">
+      <h2>🔩 Sim.Bending</h2>
+      <p>Press-brake bend feasibility per project.</p>
+      <p>Run <code>CC_CheckBend</code> on a part in Fusion to publish results here.</p>
+      <p class="muted">No bend-sim data yet.</p>
+    </div>`;
 }
 
 // Project picker for the Nest tab (admin only). Lists every project
