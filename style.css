@@ -3576,6 +3576,14 @@ button.cut-status:focus-visible {
 .sb-table-wrap { overflow-x: auto; margin: 0 -2px; }
 /* Bend color dot indicator */
 .sb-bend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+/* Hide the native up/down spinner arrows on the step-table number inputs
+   (เอ๋ 2026-06-03 'เอาลูกศรขึ้นลงออก') — keeps the ANG/FLAN/V cells clean. */
+.sb-edit-angle::-webkit-outer-spin-button, .sb-edit-angle::-webkit-inner-spin-button,
+.sb-edit-flange::-webkit-outer-spin-button, .sb-edit-flange::-webkit-inner-spin-button,
+.sb-edit-v::-webkit-outer-spin-button, .sb-edit-v::-webkit-inner-spin-button {
+  -webkit-appearance: none; margin: 0;
+}
+.sb-edit-angle, .sb-edit-flange, .sb-edit-v { -moz-appearance: textfield; appearance: textfield; }
 .sb-when { font-size: 11px; opacity: 0.55; margin-top: 8px; }
 .sb-sim-wrap { margin: 4px 0 14px; }
 .sb-sim-canvas {
