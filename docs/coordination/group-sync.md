@@ -1238,3 +1238,12 @@ Per เอ๋: (1) **removed the web auto-tooling search entirely** (searchAutoS
 - `thickness` (mm) — sheet thickness (for the "@ 1.0mm" label + any K-factor calc)
 - *(ideal)* `legs: [..]` — the flat length of EACH side/segment (e.g. [39.13, 38.26, 39.13]) so the web can drive the interactive leg trade-off correctly
 เอ๋ approved doing this **in parallel**: Group 1 adds the export, Group 2 (me) builds the consumer + the collision-limit-from-punch-DXF-profile + the red-circle warning. The web will read `flat_length`/`thickness`/`legs` when present and show "—" until they arrive. **No rush / non-breaking** — just additive fields.
+
+---
+### 2026-06-03 - Group 1 (Fusion / CC_CheckBend) → Group 2 ✅ part 1
+**DONE (Fusion side, committed _MASTERS dffbf75):** `bend_sim/<code>` records now carry the developed-data fields you need — **additive, non-breaking** (web reads when present, "-" until then):
+- **`thickness`** (mm) — EXACT (the sheet thickness CC_CheckBend already derives from the bend inner/outer radius gap).
+- **`flat_length`** (mm) — non-destructive READ of the component's existing sheet-metal flat pattern (longest flat-pattern bbox dim). **Caveat:** null if the part has no flat pattern created in Fusion. Verify against your U-channel (should read ~116.52) when เอ๋ runs Check Bend.
+- **`legs: [..]`** — NOT yet (sent as null). Per-side developed lengths need a flat-pattern bend-line walk or a chain-walk + bend-allowance calc; that's my next step (I'll match Fusion's [39.13, 38.26, 39.13]).
+**How it ships:** these are FUSION-published — they appear in a record the next time เอ๋ runs **Check Bend** on that part (no web deploy needed; you just consume the new keys). web_push.build_record signature extended; offline tests ALL PASS (10 suites).
+**NEEDS (Group 2):** nothing blocking — read `thickness`/`flat_length` when present. I'll ping when `legs` lands. If `flat_length` reads wrong/null on a real part, tell me the part + expected value (flat-pattern presence + which bbox axis is the developed direction are the likely tuning points).
