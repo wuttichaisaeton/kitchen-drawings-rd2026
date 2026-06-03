@@ -367,12 +367,7 @@
         ctx.lineTo(tx(36), ty(160 - 8));
         ctx.lineTo(tx(36), ty(tangY2 + 4));
       } else {
-        // Right side of body (straight vertical back)
-        ctx.lineTo(tx(64), ty(tangY2 + 4));
-        ctx.lineTo(tx(64), ty(shoulderY));
-        ctx.lineTo(tx(50 + shoulderW), ty(shoulderY));
-
-        // Wedge tip with radius R
+        // Tip calculations moved to the top of the block
         var tipR = Math.max(0.4, Math.min(R, 2.5));
         var dx = tipR * Math.cos(rad(halfAng));
         var dy = tipR * Math.sin(rad(halfAng));
@@ -381,17 +376,47 @@
         var tx2 = 50 + dx;
         var ty2 = 160 - tipR + dy;
 
+        var ry1;
+
+        if (type === 'gooseneck') {
+          var Bh = 160 - tangY2;
+          var rx3 = cx + 14;
+          var ry3 = tangY2 + 4;
+          var rx2 = cx + 24;
+          var ry2 = tangY2 + Bh * 0.3;
+          var rx1 = cx + 24;
+          ry1 = ty2 - (rx1 - tx2);
+
+          ctx.lineTo(tx(rx3), ty(ry3));
+          ctx.lineTo(tx(rx2), ty(ry2));
+          ctx.lineTo(tx(rx1), ty(ry1));
+        } else {
+          // Right side of body (straight vertical back)
+          ctx.lineTo(tx(64), ty(tangY2 + 4));
+          ctx.lineTo(tx(64), ty(shoulderY));
+          ctx.lineTo(tx(50 + shoulderW), ty(shoulderY));
+        }
+
         ctx.lineTo(tx(tx2), ty(ty2));
         ctx.quadraticCurveTo(tx(50), ty(160), tx(tx1), ty(ty1));
 
         // Left side of body going back up
         if (type === 'gooseneck') {
-          var throatX = 58;
-          var throatY = tangY2 + 12;
-          var bellyX = 35;
-          var bellyY = shoulderY - 10;
-          ctx.lineTo(tx(bellyX), ty(bellyY));
-          ctx.quadraticCurveTo(tx(throatX), ty(throatY), tx(36), ty(tangY2 + 4));
+          var Bh = 160 - tangY2;
+          var neckT = 9 * (Bh / 90);
+          var neckH = neckT * 1.414;
+          var xIntersect = cx - neckH / 2;
+          var yIntersect = ty2 + dx - neckH / 2;
+          var yNeckEnd = ry1;
+          var xNeckEnd = xIntersect + (yIntersect - yNeckEnd);
+          var throatX = cx + 10;
+          var throatY = tangY2 + Bh * 0.45;
+
+          ctx.lineTo(tx(xIntersect), ty(yIntersect));
+          ctx.lineTo(tx(xNeckEnd), ty(yNeckEnd));
+          ctx.quadraticCurveTo(tx(throatX), ty(throatY + (yNeckEnd - throatY) * 0.5), tx(throatX), ty(throatY));
+          ctx.quadraticCurveTo(tx(36), ty(tangY2 + Bh * 0.3), tx(36), ty(tangY2 + Bh * 0.15));
+          ctx.lineTo(tx(36), ty(tangY2 + 4));
         } else {
           ctx.lineTo(tx(50 - shoulderW), ty(shoulderY));
           ctx.lineTo(tx(36), ty(shoulderY));
@@ -422,8 +447,8 @@
       var P = an.pts;
 
       var scale = Math.max(0.5, Math.min(4 * dpr,
-        (h * 0.34) / Math.max(maxFlange, 20)));
-      var dieCx = w / 2, dieCy = h * 0.58;
+        (h * 0.26) / Math.max(maxFlange, 20)));
+      var dieCx = w / 2, dieCy = h * 0.62;
       function px(p) { return dieCx + p.x * scale; }
       function py(p) { return dieCy - p.y * scale; }
 
@@ -465,10 +490,14 @@
       });
 
       // bend dots
+      // bend dots — each bend gets a unique color from the palette
+      var BEND_COLORS_SIM = [
+        '#e0574a', '#4ecca3', '#4a90e2', '#f2b84e', '#c471ed',
+        '#2ecc71', '#e67e22', '#1abc9c', '#e84393', '#6c5ce7'
+      ];
       model.spatial.forEach(function (sp) {
         var vtx = P[sp.idx + 1]; if (!vtx) return;
-        var isBad = !sp.ok || sp.collides;
-        var col = isBad ? '#e0574a' : '#4ecca3'; // Red if bad, Green if good
+        var col = BEND_COLORS_SIM[sp.idx % BEND_COLORS_SIM.length];
         
         ctx.fillStyle = col;
         ctx.beginPath();
@@ -584,5 +613,181 @@
              set onstatus(fn) { statusCb = fn; } };
   }
 
-  window.kdSimBend = { mount: mount };
+  // ---- 2D Collision Checking helpers (Requirement 1 & 4) ----------------
+  function anchorWithDescend(pts, activeBendIdx, a, descend, activeV) {
+    var k = activeBendIdx, Vi = k + 1, V = pts[Vi];
+    var r1 = pts[k] ? norm(sub(pts[k], V)) : null;
+    var r2 = pts[k + 2] ? norm(sub(pts[k + 2], V)) : null;
+    var bis;
+    if (r1 && r2) bis = { x: r1.x + r2.x, y: r1.y + r2.y };
+    else { var r = r1 || r2; bis = { x: -r.x, y: -r.y }; }
+    if (Math.hypot(bis.x, bis.y) < 1e-6) bis = { x: 0, y: 1 };
+    var bang = Math.atan2(bis.y, bis.x);
+    var rot = Math.PI / 2 - bang;
+    var c = Math.cos(rot), s = Math.sin(rot);
+    
+    var pen = (activeV / 2) * Math.tan(rad((a[k] || 0) / 2)) * descend;
+    var out = pts.map(function (p) {
+      var dx = p.x - V.x, dy = p.y - V.y;
+      return { x: dx * c - dy * s, y: dx * s + dy * c - pen };
+    });
+    return out;
+  }
+
+  function getPunchPolygon(type, angle, radius, height) {
+    var H = height || 120;
+    var ang = angle || 88;
+    var R = radius || 0.8;
+    
+    var bodyW = 28;
+    var halfAng = ang / 2;
+    var rise = (bodyW / 2) / Math.tan(rad(halfAng));
+    var maxRise = H - 45;
+    var actualRise = Math.min(rise, maxRise);
+    var shoulderW = actualRise * Math.tan(rad(halfAng));
+    
+    if (type === 'gooseneck') {
+      var Bh = H - 32;
+      var tipR = Math.max(0.4, Math.min(R, 2.5));
+      var dx = tipR * Math.cos(rad(halfAng));
+      var dy = tipR * Math.sin(rad(halfAng));
+
+      // Neck calculations (9mm physical parallel neck, scaled to Bh)
+      var neckT = 9 * (Bh / 90);
+      var neckH = neckT * 1.414;
+
+      var y_neck_end = 24 - dx + tipR - dy;
+      var y_intersect = tipR - dy - dx + neckH / 2;
+
+      return [
+        { x: 0, y: 0 },
+        { x: dx, y: tipR - dy },
+        { x: 24, y: y_neck_end },
+        { x: 24, y: 0.7 * Bh },
+        { x: 14, y: H - 36 },
+        { x: 5, y: H - 32 },
+        { x: 7, y: H },
+        { x: -7, y: H },
+        { x: -5, y: H - 32 },
+        { x: -14, y: H - 36 },
+        { x: -14, y: 0.85 * Bh },
+        { x: -8, y: 0.7 * Bh },
+        { x: 10, y: 0.55 * Bh },
+        { x: 13.5 - 0.25 * neckH, y: 0.275 * Bh + 0.5 * y_neck_end },
+        { x: 24 - neckH, y: y_neck_end },
+        { x: -neckH / 2, y: y_intersect },
+        { x: -dx, y: tipR - dy }
+      ];
+    } else if (type === 'hemming') {
+      return [
+        { x: -12, y: 0 },
+        { x: 12, y: 0 },
+        { x: 12, y: H },
+        { x: -12, y: H }
+      ];
+    } else {
+      return [
+        { x: 0, y: 0 },
+        { x: shoulderW, y: actualRise },
+        { x: 14, y: actualRise },
+        { x: 7, y: H - 32 },
+        { x: 7, y: H },
+        { x: -7, y: H },
+        { x: -7, y: H - 32 },
+        { x: -14, y: actualRise },
+        { x: -shoulderW, y: actualRise }
+      ];
+    }
+  }
+
+  function getDiePolygon(type, angle, v, height, vList) {
+    var H = height || 60;
+    var ang = angle || 88;
+    var V = v || 8;
+    var halfAng = ang / 2;
+    var depth = (V / 2) / Math.tan(rad(halfAng));
+    
+    var blockW = type === '2V' ? 60 : Math.max(34, V * 2.2);
+    blockW = Math.max(36, Math.min(126, blockW));
+    
+    return [
+      { x: -blockW / 2, y: 0 },
+      { x: -V / 2, y: 0 },
+      { x: 0, y: -depth },
+      { x: V / 2, y: 0 },
+      { x: blockW / 2, y: 0 },
+      { x: blockW / 2, y: -H },
+      { x: -blockW / 2, y: -H }
+    ];
+  }
+
+  function lineIntersects(p1, p2, p3, p4) {
+    var d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+    if (d === 0) return false;
+    var u = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+    var v = ((p3.x - p1.x) * (p2.y - p1.y) - (p3.y - p1.y) * (p2.x - p1.x)) / d;
+    return (u >= 0 && u <= 1 && v >= 0 && v <= 1);
+  }
+
+  function pointInPolygon(pt, poly) {
+    var inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i].x, yi = poly[i].y;
+      var xj = poly[j].x, yj = poly[j].y;
+      var intersect = ((yi > pt.y) !== (yj > pt.y))
+          && (pt.x < (xj - xi) * (pt.y - yi) / ((yj - yi) || 1) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+
+  function segmentIntersectsPolygon(p1, p2, poly) {
+    for (var i = 0; i < poly.length; i++) {
+      if (lineIntersects(p1, p2, poly[i], poly[(i + 1) % poly.length])) return true;
+    }
+    if (pointInPolygon(p1, poly) || pointInPolygon(p2, poly)) return true;
+    return false;
+  }
+
+  function checkCollisionAt(model, activeBendIdx, a, punch, die) {
+    var pts = vertices(model, a);
+    var descends = [0.0, 0.5, 1.0];
+    for (var di = 0; di < descends.length; di++) {
+      var desc = descends[di];
+      var pen = (die.v / 2) * Math.tan(rad((a[activeBendIdx] || 0) / 2)) * desc;
+      var ptsAnchored = anchorWithDescend(pts, activeBendIdx, a, desc, die.v);
+      
+      var punchPoly = getPunchPolygon(punch.type, punch.angle, punch.radius, punch.height);
+      var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x, y: p.y - pen }; });
+      var diePoly = getDiePolygon(die.type, die.angle, die.v, die.height, die.vList);
+      
+      for (var i = 0; i < model.N; i++) {
+        if (i === activeBendIdx || i === activeBendIdx + 1) continue;
+        var p1 = ptsAnchored[i];
+        var p2 = ptsAnchored[i + 1];
+        if (!p1 || !p2) continue;
+        
+        if (segmentIntersectsPolygon(p1, p2, punchPolyTrans)) {
+          return { collides: true, with: 'punch', at_angle: a[activeBendIdx] * desc };
+        }
+        if (segmentIntersectsPolygon(p1, p2, diePoly)) {
+          return { collides: true, with: 'die', at_angle: a[activeBendIdx] * desc };
+        }
+      }
+    }
+    return { collides: false, with: null, at_angle: null };
+  }
+
+  window.kdSimBend = {
+    mount: mount,
+    buildModel: buildModel,
+    stateAt: stateAt,
+    vertices: vertices,
+    anchor: anchor,
+    resolvePunch: resolvePunch,
+    resolveDie: resolveDie,
+    checkCollisionAt: checkCollisionAt,
+    getPunchPolygon: getPunchPolygon,
+    getDiePolygon: getDiePolygon
+  };
 })();

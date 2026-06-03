@@ -3554,10 +3554,19 @@ button.cut-status:focus-visible {
 .sb-meta { font-size: 12px; opacity: 0.75; margin-top: 6px; }
 .sb-detail { margin-top: 12px; border-top: 1px solid #1c2530; padding-top: 10px; }
 .sb-reason { font-size: 12px; color: #e0574a; margin-bottom: 8px; }
-.sb-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.sb-table th, .sb-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #18212c; }
-.sb-table th { opacity: 0.6; font-weight: 600; }
+.sb-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: auto; }
+.sb-table th, .sb-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #18212c; white-space: nowrap; }
+.sb-table th { opacity: 0.6; font-weight: 600; font-size: 11px; }
 .sb-table .sb-row-bad td { color: #e0574a; }
+/* Punch/die columns can wrap if needed */
+.sb-table td:nth-child(2),
+.sb-table td:nth-child(3) { white-space: normal; word-break: break-word; max-width: 180px; }
+/* Note column can also wrap */
+.sb-table .sb-note-cell { white-space: normal; word-break: break-word; max-width: 120px; }
+/* Scroll wrapper for the table on narrow cards */
+.sb-table-wrap { overflow-x: auto; margin: 0 -2px; }
+/* Bend color dot indicator */
+.sb-bend-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: middle; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
 .sb-when { font-size: 11px; opacity: 0.55; margin-top: 8px; }
 .sb-sim-wrap { margin: 4px 0 14px; }
 .sb-sim-canvas {
@@ -6139,6 +6148,175 @@ html[data-theme="chalk"] .sb-form-group select {
   color: #0b121a;
   border-color: #4ecca3;
   font-weight: bold;
+}
+
+/* Bending Interactive Overrides & Saving (Requirement 4 & 6) */
+.sb-step-move-btn {
+  background: #1c2530;
+  color: #cad6e6;
+  border: 1px solid #2b3340;
+  border-radius: 3px;
+  cursor: pointer;
+  width: 14px;
+  height: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.sb-step-move-btn:hover:not(:disabled) {
+  background: #4ecca3;
+  color: #0b121a;
+  border-color: #4ecca3;
+}
+.sb-step-move-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.sb-save-btn:hover {
+  opacity: 0.9;
+  box-shadow: 0 0 8px rgba(78, 204, 163, 0.4);
+}
+.sb-reset-auto-btn:hover {
+  background: rgba(202, 214, 230, 0.08) !important;
+}
+.sb-edit-punch, .sb-edit-die {
+  max-width: 150px;
+}
+.sb-edit-punch:focus, .sb-edit-die:focus, .sb-edit-angle:focus, .sb-edit-flange:focus, .sb-edit-v:focus {
+  border-color: #4ecca3 !important;
+  outline: none;
+  box-shadow: 0 0 4px rgba(78, 204, 163, 0.3);
+}
+.sb-purchase-banner {
+  animation: fadeIn 0.25s ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ensure Kyokko Catalog Modal has opaque backgrounds in all themes */
+#sb-add-tool-modal.sb-modal-backdrop {
+  background: rgba(0,0,0,0.85) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+#sb-add-tool-modal .sb-modal-card {
+  background-color: #161b22 !important;
+  color: #cad6e6 !important;
+  border: 2px solid #2b3340 !important;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.8) !important;
+}
+
+#sb-add-tool-modal .sb-catalog-card {
+  background-color: #1c2330 !important;
+  border: 1px solid #2b3340 !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+}
+
+#sb-add-tool-modal .sb-catalog-card-preview {
+  background-color: #11161d !important;
+  border: 1px solid #2b3340 !important;
+}
+
+#sb-add-tool-modal .sb-catalog-pill {
+  background-color: #16202c !important;
+  border: 1px solid #2b3340 !important;
+  color: #cad6e6 !important;
+}
+
+#sb-add-tool-modal .sb-catalog-pill-input:checked + .sb-catalog-pill {
+  background-color: #4ecca3 !important;
+  color: #0b121a !important;
+  border-color: #4ecca3 !important;
+}
+
+/* Theme overrides for Kyokko Catalog Modal to match theme aesthetics */
+html[data-theme="obsidian"] #sb-add-tool-modal .sb-modal-card {
+  background-color: #0d1117 !important;
+  color: #cad6e6 !important;
+  border: 2px solid #bfa15f !important;
+}
+
+html[data-theme="obsidian"] #sb-add-tool-modal .sb-catalog-card {
+  background-color: #141923 !important;
+  border: 1px solid #2e2417 !important;
+}
+
+html[data-theme="obsidian"] #sb-add-tool-modal .sb-catalog-card-preview {
+  background-color: #090c12 !important;
+  border: 1px solid #2e2417 !important;
+}
+
+html[data-theme="obsidian"] #sb-add-tool-modal .sb-catalog-pill {
+  background-color: #090c12 !important;
+  border: 1px solid #2e2417 !important;
+  color: #cad6e6 !important;
+}
+
+html[data-theme="obsidian"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb-catalog-pill {
+  background-color: #e5c158 !important;
+  color: #0d1117 !important;
+  border-color: #e5c158 !important;
+}
+
+/* Sketch theme - keep it paper styled but fully opaque */
+html[data-theme="sketch"] #sb-add-tool-modal .sb-modal-card {
+  background-color: #f4ecd8 !important;
+  color: #1b1815 !important;
+  border: 2.5px solid #1b1815 !important;
+}
+
+html[data-theme="sketch"] #sb-add-tool-modal .sb-catalog-card {
+  background-color: #eadfc9 !important;
+  border: 1.5px solid #1b1815 !important;
+}
+
+html[data-theme="sketch"] #sb-add-tool-modal .sb-catalog-card-preview {
+  background-color: #f4ecd8 !important;
+  border: 1.5px solid #1b1815 !important;
+}
+
+html[data-theme="sketch"] #sb-add-tool-modal .sb-catalog-pill {
+  background-color: #f4ecd8 !important;
+  border: 1px solid #1b1815 !important;
+  color: #1b1815 !important;
+}
+
+html[data-theme="sketch"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb-catalog-pill {
+  background-color: #1b1815 !important;
+  color: #f4ecd8 !important;
+  border-color: #1b1815 !important;
+}
+
+/* Chalk theme - dark blackboard style but fully opaque */
+html[data-theme="chalk"] #sb-add-tool-modal .sb-modal-card {
+  background-color: #1e262f !important;
+  color: #eef2f7 !important;
+  border: 2px solid #526273 !important;
+}
+
+html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-card {
+  background-color: #27313d !important;
+  border: 1px solid #526273 !important;
+}
+
+html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-card-preview {
+  background-color: #1e262f !important;
+  border: 1px solid #526273 !important;
+}
+
+html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill {
+  background-color: #1e262f !important;
+  border: 1px solid #526273 !important;
+  color: #eef2f7 !important;
+}
+
+html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb-catalog-pill {
+  background-color: #eef2f7 !important;
+  color: #1e262f !important;
+  border-color: #eef2f7 !important;
 }
 
 

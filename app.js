@@ -3868,6 +3868,20 @@ function render() {
 //     checked_at (iso), checked_by }
 // See _MASTERS/fusion_scripts/CC_CheckBend/design.md module 7. 2026-06-02.
 let _bendSimCache = null;          // null = not loaded yet
+// Color palette for bend point dots — each B1,B2,B3... gets a distinct hue
+const BEND_COLORS = [
+  '#e0574a', // B1 — red
+  '#4ecca3', // B2 — green
+  '#4a90e2', // B3 — blue
+  '#f2b84e', // B4 — amber
+  '#c471ed', // B5 — purple
+  '#2ecc71', // B6 — emerald
+  '#e67e22', // B7 — orange
+  '#1abc9c', // B8 — teal
+  '#e84393', // B9 — pink
+  '#6c5ce7', // B10 — indigo
+];
+function getBendColor(idx) { return BEND_COLORS[idx % BEND_COLORS.length]; }
 let _bendSimSubscribed = false;
 let _simBendExpanded = null;       // code currently expanded inline
 let _simController = null;         // active simbend-sim.js animation controller
@@ -3943,12 +3957,17 @@ const KYOKKO_CATALOG_SERIES = {
     },
     {
       series: "202",
-      name: "Sash Punch #202 (H100)",
-      type: "gooseneck",
-      height_mm: 100,
+      name: "Sash Punch #202 (H130)",
+      type: "sash",
+      height_mm: 130,
+      tang_w_mm: 26.17,
+      body_w_mm: 11.31,
+      tip_w_mm: 18,
+      bevel_angle: 135,
+      neck_w_mm: 11.56,
       radii: [0.2, 0.6],
       angles: [88, 90],
-      note: "Sash punch (H100) for standard return flanges."
+      note: "Sash punch (H130) for standard return flanges."
     },
     {
       series: "109",
@@ -4282,6 +4301,7 @@ function _showImportCatalogForm() {
       if (previewEl && window.KD_TOOLART) {
         previewEl.innerHTML = window.KD_TOOLART.punch({
           type: item.type,
+          series: item.series,
           angle_deg: selectedAngle,
           tip_radius_mm: selectedRadius,
           height_mm: item.height_mm
@@ -4444,9 +4464,16 @@ function _importPresetTool(kind, series, angle, valOrRadius, btn) {
       height_mm: item.height_mm,
       note: item.note
     };
+    // Pass through sash-specific dimensions from catalog
+    if (item.tang_w_mm) toolData.tang_w_mm = item.tang_w_mm;
+    if (item.body_w_mm) toolData.body_w_mm = item.body_w_mm;
+    if (item.tip_w_mm) toolData.tip_w_mm = item.tip_w_mm;
+    if (item.bevel_angle) toolData.bevel_angle = item.bevel_angle;
+    if (item.neck_w_mm) toolData.neck_w_mm = item.neck_w_mm;
+
     if (item.type === 'standard') {
       toolData.label = `Kyokko #${modelNum} Straight ${angle}° · R${valOrRadius} H${item.height_mm}`;
-    } else if (modelNum === '200' || modelNum === '201' || modelNum === '202' || modelNum === '203' || modelNum === '210' || modelNum === '211') {
+    } else if (item.type === 'sash' || modelNum === '200' || modelNum === '201' || modelNum === '202' || modelNum === '203' || modelNum === '210' || modelNum === '211') {
       toolData.label = `Kyokko #${modelNum} Sash ${angle}° · R${valOrRadius} H${item.height_mm}`;
     }
   } else {
@@ -4741,6 +4768,191 @@ function _deleteCustomTool(id, kind) {
   }
 }
 
+// ── Edit tool form ─────────────────────────────────────────────────
+function _showEditToolForm(tool, kind, isCustom) {
+  const existing = document.getElementById('sb-add-tool-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'sb-add-tool-modal';
+  modal.className = 'sb-modal-backdrop';
+  
+  const title = kind === 'punch'
+    ? `Edit Punch (แก้ไขมีด): ${tool.label}`
+    : `Edit Die (แก้ไขร่อง): ${tool.label}`;
+
+  // Pre-fill form values from existing tool
+  const content = kind === 'punch' ? `
+    <div class="sb-form-group">
+      <label>Name / Label</label>
+      <input type="text" id="tool-label" value="${escapeHtml(tool.label || '')}" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Type (รูปทรง)</label>
+      <select id="tool-type">
+        <option value="standard" ${tool.type === 'standard' ? 'selected' : ''}>Standard (ทรงตรง)</option>
+        <option value="gooseneck" ${tool.type === 'gooseneck' ? 'selected' : ''}>Gooseneck (ทรงหงส์)</option>
+        <option value="acute" ${tool.type === 'acute' ? 'selected' : ''}>Acute (มุมแหลม)</option>
+        <option value="hemming" ${tool.type === 'hemming' ? 'selected' : ''}>Hemming (พับแบน)</option>
+        <option value="sash" ${tool.type === 'sash' ? 'selected' : ''}>Sash (ทรงตั้ง)</option>
+      </select>
+    </div>
+    <div class="sb-form-group">
+      <label>Angle (องศา)</label>
+      <input type="number" id="tool-angle" value="${tool.angle_deg != null ? tool.angle_deg : 88}" step="1" min="0" max="180" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Tip Radius (รัศมีปลาย R, มม.)</label>
+      <input type="number" id="tool-radius" value="${tool.tip_radius_mm != null ? tool.tip_radius_mm : 0.8}" step="0.1" min="0" max="10" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Height (ความสูง H, มม.)</label>
+      <input type="number" id="tool-height" value="${tool.height_mm != null ? tool.height_mm : 120}" step="1" min="10" max="300" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Note (หมายเหตุ)</label>
+      <input type="text" id="tool-note" value="${escapeHtml(tool.note || '')}">
+    </div>
+  ` : `
+    <div class="sb-form-group">
+      <label>Name / Label</label>
+      <input type="text" id="tool-label" value="${escapeHtml(tool.label || '')}" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Type (ประเภท)</label>
+      <select id="tool-type">
+        <option value="1V" ${tool.type === '1V' ? 'selected' : ''}>1V (ร่องเดี่ยว)</option>
+        <option value="2V" ${tool.type === '2V' ? 'selected' : ''}>2V (ร่องคู่กลับด้าน)</option>
+        <option value="acute" ${tool.type === 'acute' ? 'selected' : ''}>Acute / 1V Acute</option>
+      </select>
+    </div>
+    <div class="sb-form-group">
+      <label>Angle (องศาร่อง)</label>
+      <input type="number" id="tool-angle" value="${tool.angle_deg != null ? tool.angle_deg : 88}" step="1" min="0" max="180" required>
+    </div>
+    <div class="sb-form-group">
+      <label>V Openings (มม., สำหรับ 2V ใส่คั่นด้วยจุลภาค เช่น 6,8)</label>
+      <input type="text" id="tool-vlist" value="${(tool.v_list || []).join(',')}" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Height (ความสูงร่อง H, มม.)</label>
+      <input type="number" id="tool-height" value="${tool.height_mm != null ? tool.height_mm : 60}" step="1" min="10" max="300" required>
+    </div>
+    <div class="sb-form-group">
+      <label>Note (หมายเหตุ)</label>
+      <input type="text" id="tool-note" value="${escapeHtml(tool.note || '')}">
+    </div>
+  `;
+
+  // Preview SVG of current tool
+  const art = window.KD_TOOLART;
+  const previewSvg = art
+    ? (kind === 'punch' ? art.punch(tool, { w: 120, h: 160, showDimensions: true }) : art.die(tool, { w: 160, h: 120, showDimensions: true }))
+    : '';
+
+  modal.innerHTML = `
+    <div class="sb-modal-card" onclick="event.stopPropagation()" style="max-width: 520px;">
+      <div class="sb-modal-head">${escapeHtml(title)}</div>
+      <form id="sb-edit-tool-form">
+        <div class="sb-modal-body" style="display: flex; gap: 16px;">
+          <div style="flex: 1;">${content}</div>
+          <div id="tool-edit-preview" style="flex: 0 0 140px; display: flex; align-items: center; justify-content: center; background: #070b10; border-radius: 8px; padding: 10px; min-height: 160px;">
+            ${previewSvg}
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #8899aa; padding: 0 16px 8px; font-style: italic;">
+          ID: ${escapeHtml(tool.id)} · ${isCustom ? 'Custom' : 'Preset'}
+        </div>
+        <div class="sb-modal-foot">
+          <button class="sb-modal-btn sb-cancel" type="button">Cancel</button>
+          <button class="sb-modal-btn sb-submit" type="submit">💾 Save Changes</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const focusInput = modal.querySelector('#tool-label');
+  if (focusInput) focusInput.focus();
+
+  modal.querySelector('.sb-cancel').addEventListener('click', () => modal.remove());
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+  
+  // Live preview update
+  const previewEl = modal.querySelector('#tool-edit-preview');
+  function updatePreview() {
+    try {
+      const previewTool = _readToolFormValues(kind, modal);
+      if (previewTool && art) {
+        previewEl.innerHTML = kind === 'punch'
+          ? art.punch(previewTool, { w: 120, h: 160, showDimensions: true })
+          : art.die(previewTool, { w: 160, h: 120, showDimensions: true });
+      }
+    } catch(e) { /* ignore parse errors while typing */ }
+  }
+  modal.querySelectorAll('input, select').forEach(el => {
+    el.addEventListener('input', updatePreview);
+    el.addEventListener('change', updatePreview);
+  });
+
+  modal.querySelector('#sb-edit-tool-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    _saveEditTool(tool.id, kind, isCustom, modal);
+  });
+}
+
+function _readToolFormValues(kind, modal) {
+  const label = modal.querySelector('#tool-label').value.trim();
+  const type = modal.querySelector('#tool-type').value;
+  const angle_deg = parseFloat(modal.querySelector('#tool-angle').value);
+  const height_mm = parseFloat(modal.querySelector('#tool-height').value);
+  const note = modal.querySelector('#tool-note').value.trim();
+  let toolData = { label, type, angle_deg, height_mm, note };
+  if (kind === 'punch') {
+    toolData.tip_radius_mm = parseFloat(modal.querySelector('#tool-radius').value);
+  } else {
+    const vlistStr = modal.querySelector('#tool-vlist').value;
+    toolData.v_list = vlistStr.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+  }
+  return toolData;
+}
+
+function _saveEditTool(id, kind, isCustom, modal) {
+  const toolData = _readToolFormValues(kind, modal);
+  if (!toolData.label) { alert('Please enter a name/label.'); return; }
+  if (kind === 'die' && (!toolData.v_list || toolData.v_list.length === 0)) {
+    alert('Please specify at least one valid V opening size.');
+    return;
+  }
+
+  if (isCustom) {
+    // Custom tools: update directly in bend_tools_custom
+    const pathSegment = kind === 'punch' ? 'punches' : 'dies';
+    const refPath = `bend_tools_custom/${pathSegment}/${id}`;
+    try {
+      window.firebaseDB.ref(refPath).update(toolData).then(() => {
+        modal.remove();
+        render();
+      }).catch(e => alert('Error saving edit: ' + e.message));
+    } catch (e) { alert('Database reference error: ' + e.message); }
+  } else {
+    // Default/Kyokko tools: save override to bend_tools_edits/<id>
+    const refPath = `bend_tools_edits/${id}`;
+    try {
+      window.firebaseDB.ref(refPath).set(toolData).then(() => {
+        // Also update the in-memory catalog immediately
+        const cat = window.KD_TOOLING;
+        const list = kind === 'punch' ? cat.punches : cat.dies;
+        const existing = (list || []).find(t => t.id === id);
+        if (existing) Object.assign(existing, toolData);
+        modal.remove();
+        render();
+      }).catch(e => alert('Error saving edit: ' + e.message));
+    } catch (e) { alert('Database reference error: ' + e.message); }
+  }
+}
+
 function _toolingPickerHtml() {
   const cat = window.KD_TOOLING;
   if (!cat) return '';
@@ -4759,15 +4971,18 @@ function _toolingPickerHtml() {
       const star = t.fit1mm ? '★' : (t.common ? '·' : '');
       const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
       const expanded = _toolingExpandedId === t.id;
-      const deleteBtn = (admin && t.isCustom)
-        ? `<button class="tl-del-btn" type="button" data-id="${escapeHtml(t.id)}" data-kind="${kind}" style="background: none; border: none; color: #e0574a; cursor: pointer; padding: 0 4px; font-size: 14px; margin-left: 8px;" title="Delete custom tool">🗑</button>`
+      const editBtn = (admin)
+        ? `<button class="tl-edit-btn" type="button" data-id="${escapeHtml(t.id)}" data-kind="${kind}" data-custom="${t.isCustom ? '1' : '0'}" style="background: none; border: none; color: #4ecca3; cursor: pointer; padding: 0 4px; font-size: 13px; margin-left: 4px;" title="Edit tool">✏️</button>`
+        : '';
+      const deleteBtn = (admin)
+        ? `<button class="tl-del-btn" type="button" data-id="${escapeHtml(t.id)}" data-kind="${kind}" data-custom="${t.isCustom ? '1' : '0'}" style="background: none; border: none; color: #e0574a; cursor: pointer; padding: 0 4px; font-size: 14px; margin-left: 4px;" title="Delete tool">🗑</button>`
         : '';
       return `<div class="tl-row ${on ? 'tl-on' : ''} ${expanded ? 'tl-expanded' : ''}" data-id="${escapeHtml(t.id)}">
         <input type="checkbox" class="tl-cb" data-id="${escapeHtml(t.id)}" ${on ? 'checked' : ''} ${admin ? '' : 'disabled'}>
         <span class="tl-star">${star}</span>
         ${pic}
         <span class="tl-label">${escapeHtml(t.label)}</span>
-        <span class="tl-spec" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(spec)}${deleteBtn}</span>
+        <span class="tl-spec" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(spec)}${editBtn}${deleteBtn}</span>
         <span class="tl-note">${escapeHtml(t.note || '')}</span>
         ${expanded ? `
         <div class="tl-detail-row" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; background: #070b10; border-top: 1px solid #1c2530; margin-top: 6px; border-radius: 6px; cursor: default;" onclick="event.stopPropagation()">
@@ -4822,7 +5037,7 @@ function _wireToolingPicker() {
   });
   ROOT.querySelectorAll('.tl-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row') || e.target.classList.contains('tl-del-btn')) return;
+      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row') || e.target.classList.contains('tl-del-btn') || e.target.classList.contains('tl-edit-btn')) return;
       e.stopPropagation();
       const id = row.getAttribute('data-id');
       _toolingExpandedId = (_toolingExpandedId === id) ? null : id;
@@ -4841,7 +5056,20 @@ function _wireToolingPicker() {
       e.stopPropagation();
       const id = btn.getAttribute('data-id');
       const kind = btn.getAttribute('data-kind');
-      _deleteCustomTool(id, kind);
+      const isCustom = btn.getAttribute('data-custom') === '1';
+      _deleteTool(id, kind, isCustom);
+    });
+  });
+  ROOT.querySelectorAll('.tl-edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const kind = btn.getAttribute('data-kind');
+      const isCustom = btn.getAttribute('data-custom') === '1';
+      const cat = window.KD_TOOLING;
+      const list = kind === 'punch' ? cat.punches : cat.dies;
+      const tool = (list || []).find(t => t.id === id);
+      if (tool) _showEditToolForm(tool, kind, isCustom);
     });
   });
   const importBtn = ROOT.querySelector('.tl-catalog-import-btn');
@@ -4859,10 +5087,370 @@ function _wireToolingPicker() {
   });
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Auto-sequencing & Overrides helpers (Requirements 1, 2, 3, 4, 6)
+// ──────────────────────────────────────────────────────────────────────
+
+let _deletedDefaultsCache = null;
+let _deletedDefaultsSubscribed = false;
+let _toolEditsCache = null;
+
+function _subscribeDeletedDefaults() {
+  if (_deletedDefaultsSubscribed) return;
+  _deletedDefaultsSubscribed = true;
+  try {
+    window.firebaseDB.ref('bend_tools_deleted_defaults').on('value', s => {
+      _deletedDefaultsCache = s.val() || {};
+      _rebuildKDTooling();
+      if (view === 'simbend' && stack.length === 0) render();
+    });
+    // Also subscribe to tool edits (overrides for default/Kyokko tools)
+    window.firebaseDB.ref('bend_tools_edits').on('value', s => {
+      _toolEditsCache = s.val() || {};
+      _rebuildKDTooling();
+      if (view === 'simbend' && stack.length === 0) render();
+    });
+  } catch (e) {
+    _deletedDefaultsCache = {};
+    _toolEditsCache = {};
+  }
+}
+
+function _rebuildKDTooling() {
+  if (!window._masterKDTooling) {
+    window._masterKDTooling = JSON.parse(JSON.stringify(window.KD_TOOLING || { punches: [], dies: [] }));
+  }
+  const custom = _customToolsCache || {};
+  const deleted = _deletedDefaultsCache || {};
+  
+  let punches = window._masterKDTooling.punches.filter(p => !deleted[p.id]);
+  let dies = window._masterKDTooling.dies.filter(d => !deleted[d.id]);
+  
+  // Apply stored edits (overrides) to default/Kyokko tools
+  const edits = _toolEditsCache || {};
+  punches.forEach(p => {
+    if (edits[p.id]) Object.assign(p, edits[p.id]);
+  });
+  dies.forEach(d => {
+    if (edits[d.id]) Object.assign(d, edits[d.id]);
+  });
+  
+  const customPunches = custom.punches || custom.punchs || {};
+  Object.keys(customPunches).forEach(key => {
+    const item = JSON.parse(JSON.stringify(customPunches[key]));
+    item.id = key;
+    item.isCustom = true;
+    if (!punches.find(p => p.id === key)) {
+      punches.push(item);
+    }
+  });
+  
+  const customDies = custom.dies || {};
+  Object.keys(customDies).forEach(key => {
+    const item = JSON.parse(JSON.stringify(customDies[key]));
+    item.id = key;
+    item.isCustom = true;
+    if (!dies.find(d => d.id === key)) {
+      dies.push(item);
+    }
+  });
+  
+  window.KD_TOOLING.punches = punches;
+  window.KD_TOOLING.dies = dies;
+}
+
+function _deleteTool(id, kind, isCustom) {
+  const msg = isCustom 
+    ? `Are you sure you want to delete this custom tool: ${id}?`
+    : `Are you sure you want to delete this default preset tool: ${id}? (This will remove it from the catalog for all projects)`;
+  if (!confirm(msg)) return;
+
+  if (isCustom) {
+    const pathSegment = kind === 'punch' ? 'punches' : 'dies';
+    const refPath = `bend_tools_custom/${pathSegment}/${id}`;
+    try {
+      window.firebaseDB.ref(refPath).set(null).then(() => {
+        _setOwnedTool(id, null);
+        render();
+      }).catch(e => alert('Error deleting tool: ' + e.message));
+    } catch (e) { alert('Database reference error: ' + e.message); }
+  } else {
+    try {
+      window.firebaseDB.ref(`bend_tools_deleted_defaults/${id}`).set(true).then(() => {
+        _setOwnedTool(id, null);
+        render();
+      }).catch(e => alert('Error deleting preset: ' + e.message));
+    } catch (e) { alert('Database reference error: ' + e.message); }
+  }
+}
+
+function getFlattenedCatalog(ownedOnly) {
+  const owned = _ownedToolsCache || {};
+  let punches = (window.KD_TOOLING.punches || []).map(p => ({ ...p, isKyokkoPreset: false }));
+  let dies = (window.KD_TOOLING.dies || []).map(d => ({ ...d, isKyokkoPreset: false }));
+
+  if (ownedOnly) {
+    punches = punches.filter(p => owned[p.id]);
+    dies = dies.filter(d => owned[d.id]);
+  } else {
+    (KYOKKO_CATALOG_SERIES.punches || []).forEach(item => {
+      item.angles.forEach(angle => {
+        item.radii.forEach(r => {
+          const modelMapping = {
+            "452": { 88: "452", 90: "462" },
+            "453": { 88: "453", 90: "463" },
+            "045": { 88: "045", 90: "046" },
+            "200": { 88: "200", 90: "201" },
+            "202": { 88: "202", 90: "203" },
+            "109": { 88: "109", 90: "108" },
+            "004": { 88: "004", 90: "016" },
+            "117": { 88: "117", 90: "116" },
+            "047": { 88: "047", 90: "048" }
+          };
+          const modelNum = (modelMapping[item.series] && modelMapping[item.series][angle]) || item.series;
+          const radiusStr = String(r).replace('.', '');
+          const id = `P-KYOKKO-${modelNum}-R${radiusStr}`;
+          
+          if (!punches.find(p => p.id === id)) {
+            let label = `Kyokko #${modelNum} Gooseneck ${angle}° · R${r} H${item.height_mm}`;
+            if (item.type === 'standard') {
+              label = `Kyokko #${modelNum} Straight ${angle}° · R${r} H${item.height_mm}`;
+            } else if (item.type === 'sash' || ['200', '201', '202', '203', '210', '211'].includes(modelNum)) {
+              label = `Kyokko #${modelNum} Sash ${angle}° · R${r} H${item.height_mm}`;
+            }
+            const entry = {
+              id,
+              label,
+              type: item.type,
+              angle_deg: angle,
+              tip_radius_mm: r,
+              height_mm: item.height_mm,
+              isKyokkoPreset: true
+            };
+            // Pass through sash dimensions
+            if (item.tang_w_mm) entry.tang_w_mm = item.tang_w_mm;
+            if (item.body_w_mm) entry.body_w_mm = item.body_w_mm;
+            if (item.tip_w_mm) entry.tip_w_mm = item.tip_w_mm;
+            if (item.bevel_angle) entry.bevel_angle = item.bevel_angle;
+            if (item.neck_w_mm) entry.neck_w_mm = item.neck_w_mm;
+            punches.push(entry);
+          }
+        });
+      });
+    });
+
+    (KYOKKO_CATALOG_SERIES.dies || []).forEach(item => {
+      item.angles.forEach(angle => {
+        const vOps = item.type === '1V' ? item.vOpenings.map(v => [v]) : item.vPairs;
+        vOps.forEach(vList => {
+          const vVal = vList.join(',');
+          const height = item.vHeights ? (item.vHeights[vVal] || item.height_mm) : item.height_mm;
+          let id = '';
+          let label = '';
+          if (item.type === '1V') {
+            const V = vList[0];
+            id = item.series === '1V-H80' ? `D-KYOKKO-1V-V${V}-A${angle}` : `D-KYOKKO-${item.series}-V${V}-A${angle}`;
+            label = `Kyokko 1V · V${V} · ${angle}° H${height}`;
+          } else {
+            const V1 = vList[0], V2 = vList[1];
+            id = item.series === '2V-H80' ? `D-KYOKKO-2V-V${V1}_${V2}-A${angle}` : `D-KYOKKO-${item.series}-V${V1}_${V2}-A${angle}`;
+            label = `Kyokko 2V · V${V1}/V${V2} · ${angle}° H${height}`;
+          }
+
+          if (!dies.find(d => d.id === id)) {
+            dies.push({
+              id,
+              label,
+              type: item.type,
+              angle_deg: angle,
+              v_list: vList,
+              height_mm: height,
+              isKyokkoPreset: true
+            });
+          }
+        });
+      });
+    });
+  }
+
+  return { punches, dies };
+}
+
+function searchAutoSequence(rec, ownedOnly) {
+  if (!window.kdSimBend) return null;
+  const catalog = getFlattenedCatalog(ownedOnly);
+  const bends = rec.per_bend || [];
+  const N = bends.length;
+  if (N === 0) return null;
+
+  const compatiblePunches = [];
+  const compatibleDies = [];
+
+  for (let i = 0; i < N; i++) {
+    const b = bends[i];
+    const ir = b.radius_mm || 0.8;
+    const ang = b.angle_deg || 90;
+    const fl = b.flange_mm || 18;
+
+    const dies = catalog.dies.filter(d => {
+      const V = d.v_list ? d.v_list[0] : 8;
+      const angleOk = d.angle_deg <= ang + 2.0;
+      const flangeOk = fl >= 0.67 * V;
+      const radiusOk = Math.abs(0.16 * V - ir) <= 0.5;
+      return angleOk && flangeOk && radiusOk;
+    });
+    dies.sort((a, b_die) => {
+      const vA = a.v_list ? a.v_list[0] : 8;
+      const vB = b_die.v_list ? b_die.v_list[0] : 8;
+      return Math.abs(0.16 * vA - ir) - Math.abs(0.16 * vB - ir);
+    });
+
+    const punches = catalog.punches.filter(p => p.angle_deg <= ang + 2.0);
+    punches.sort((a, b_punch) => {
+      const typeOrder = { 'standard': 0, 'gooseneck': 1, 'acute': 2, 'hemming': 3 };
+      const ta = typeOrder[a.type] != null ? typeOrder[a.type] : 99;
+      const tb = typeOrder[b_punch.type] != null ? typeOrder[b_punch.type] : 99;
+      if (ta !== tb) return ta - tb;
+      return a.tip_radius_mm - b_punch.tip_radius_mm;
+    });
+
+    if (dies.length === 0 || punches.length === 0) {
+      return null;
+    }
+
+    compatiblePunches.push(punches);
+    compatibleDies.push(dies);
+  }
+
+  const model = window.kdSimBend.buildModel({
+    per_bend: bends.map((b, i) => ({
+      bend: b.bend || ('B' + (i + 1)),
+      radius_mm: b.radius_mm,
+      angle_deg: b.angle_deg,
+      flange_mm: b.flange_mm,
+      v_mm: b.v_mm || 8,
+      die: '',
+      punch: ''
+    })),
+    order: []
+  });
+
+  let solution = null;
+  const dead = new Set();
+  const allSet = (1 << N) - 1;
+
+  function dfs(formedMask, order, assignedTools) {
+    if (formedMask === allSet) {
+      solution = { order, assignedTools };
+      return true;
+    }
+    const stateKey = formedMask + '-' + order.join(',');
+    if (dead.has(stateKey)) return false;
+
+    for (let i = 0; i < N; i++) {
+      if ((formedMask & (1 << i)) !== 0) continue;
+
+      const dies = compatibleDies[i];
+      const punches = compatiblePunches[i];
+
+      for (let di = 0; di < dies.length; di++) {
+        const die = dies[di];
+        for (let pi = 0; pi < punches.length; pi++) {
+          const punch = punches[pi];
+
+          const a = new Array(N).fill(0);
+          order.forEach(idx => {
+            a[idx] = bends[idx].angle_deg;
+          });
+          a[i] = bends[i].angle_deg;
+
+          const res = window.kdSimBend.checkCollisionAt(model, i, a, punch, die);
+          if (!res.collides) {
+            const nextAssigned = { ...assignedTools };
+            nextAssigned[bends[i].bend] = { punch, die };
+
+            if (dfs(formedMask | (1 << i), order.concat([i]), nextAssigned)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+
+    dead.add(stateKey);
+    return false;
+  }
+
+  if (dfs(0, [], {})) {
+    const orderIds = solution.order.map(idx => bends[idx].bend);
+    return {
+      bendable: true,
+      kind: 'found',
+      order: orderIds,
+      assignedTools: solution.assignedTools
+    };
+  }
+
+  return null;
+}
+
+function runAutoToolingSearch(rec) {
+  let sol = searchAutoSequence(rec, true);
+  if (sol) {
+    sol.n_problems = 0;
+    return sol;
+  }
+  
+  sol = searchAutoSequence(rec, false);
+  if (sol) {
+    sol.n_problems = 0;
+    return sol;
+  }
+  
+  return {
+    bendable: false,
+    kind: 'impossible',
+    order: (rec.per_bend || []).map(b => b.bend),
+    assignedTools: {},
+    n_problems: (rec.per_bend || []).length,
+    reason: "no collision-free bend order exists"
+  };
+}
+
+function getRecordWithAuto(code, rec) {
+  if (!rec) return null;
+  if (rec.checked_by === 'web_override') {
+    return rec;
+  }
+  
+  const autoPlan = runAutoToolingSearch(rec);
+  if (autoPlan) {
+    const updatedRec = JSON.parse(JSON.stringify(rec));
+    updatedRec.order = autoPlan.order;
+    updatedRec.bendable = autoPlan.bendable;
+    updatedRec.kind = autoPlan.kind;
+    updatedRec.reason = autoPlan.reason || rec.reason;
+    updatedRec.n_problems = autoPlan.n_problems;
+    
+    updatedRec.per_bend.forEach(b => {
+      const assigned = autoPlan.assignedTools[b.bend];
+      if (assigned) {
+        b.punch = assigned.punch.id;
+        b.die = assigned.die.id;
+        b.v_mm = assigned.die.v_list ? assigned.die.v_list[0] : 8;
+        b.needs_purchase = assigned.punch.isKyokkoPreset || assigned.die.isKyokkoPreset;
+      }
+    });
+    return updatedRec;
+  }
+  return rec;
+}
+
 function renderSimBendHome() {
   _subscribeBendSim();
   _subscribeOwnedTools();
   _subscribeCustomTools();
+  _subscribeDeletedDefaults();
   COUNT_EL.textContent = '';
   if (_bendSimCache === null) {
     ROOT.innerHTML = `<div class="empty-state"><h2>🔩 Sim.Bending</h2>
@@ -4885,85 +5473,188 @@ function renderSimBendHome() {
     _wireToolingPicker();
     return;
   }
+  
+  const processedCache = {};
+  codes.forEach(c => {
+    processedCache[c] = getRecordWithAuto(c, _bendSimCache[c]);
+  });
+  
   const q = (SEARCH.value || '').trim().toLowerCase();
   const shown = (q ? codes.filter(c => c.toLowerCase().includes(q)) : codes).sort();
   COUNT_EL.textContent = `${shown.length} part${shown.length === 1 ? '' : 's'} checked`;
 
   const cards = shown.map(code => {
-    const rec = _bendSimCache[code] || {};
+    const rec = processedCache[code] || {};
     const v = _simVerdict(rec);
     const order = Array.isArray(rec.order) && rec.order.length
       ? rec.order.join(' → ') : '—';
     const nb = rec.n_bends != null ? rec.n_bends : (rec.per_bend || []).length;
     const np = rec.n_problems != null ? rec.n_problems : 0;
     const when = rec.checked_at ? String(rec.checked_at).slice(0, 16).replace('T', ' ') : '';
+    
+    let hasNotOwnedTools = false;
+    (rec.per_bend || []).forEach(b => {
+      if (b.needs_purchase) hasNotOwnedTools = true;
+    });
+
     let detail = '';
     if (_simBendExpanded === code) {
-      const cat = window.KD_TOOLING || { punches: [], dies: [] };
-      const defaultPunchId = (rec.per_bend && rec.per_bend[0] && rec.per_bend[0].punch) || 'P-STD-R08-88';
-      const defaultDieId = (rec.per_bend && rec.per_bend[0] && rec.per_bend[0].die) || 'D-1V-V08-88';
+      const catalog = getFlattenedCatalog(false);
+      const canEdit = isAdmin() || getRole() === 'bend';
 
       const punchOptsHtml = `<option value="AUTO" selected>Auto (ตามข้อมูลจริง)</option>` +
-        (cat.punches || []).map(p => {
+        (catalog.punches || []).map(p => {
           return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.label)}</option>`;
         }).join('');
 
       const dieOptsHtml = `<option value="AUTO" selected>Auto (ตามข้อมูลจริง)</option>` +
-        (cat.dies || []).map(d => {
+        (catalog.dies || []).map(d => {
           return `<option value="${escapeHtml(d.id)}">${escapeHtml(d.label)}</option>`;
         }).join('');
 
-      const rows = (rec.per_bend || []).map(b => {
+      const orderMap = {};
+      (rec.order || []).forEach((id, idx) => { orderMap[id] = idx; });
+      const sortedBends = (rec.per_bend || []).slice().sort((a, b_b) => {
+        const idxA = orderMap[a.bend] !== undefined ? orderMap[a.bend] : 999;
+        const idxB = orderMap[b_b.bend] !== undefined ? orderMap[b_b.bend] : 999;
+        return idxA - idxB;
+      });
+
+      const rows = sortedBends.map((b, seqIdx) => {
         const bad = b.ok === false || b.collides;
         const why = b.collides
           ? `hits ${b.hits || '?'}${b.at_angle != null ? ' @' + Math.round(b.at_angle) + '°' : ''}`
           : (b.reason || (b.ok === false ? 'fail' : 'formable'));
-        return `<tr class="${bad ? 'sb-row-bad' : ''}">
-          <td>${escapeHtml(b.bend || '')}</td>
-          <td>${escapeHtml(b.die || '—')}</td>
-          <td>${b.radius_mm != null ? 'r' + b.radius_mm : ''}</td>
-          <td>${b.angle_deg != null ? Math.round(b.angle_deg) + '°' : ''}</td>
-          <td>${b.flange_mm != null ? b.flange_mm : ''}</td>
-          <td>${b.v_mm != null ? 'V' + Math.round(b.v_mm) : ''}</td>
+          
+        let stepText = `Step ${seqIdx + 1}: ${b.bend}`;
+        // Colored dot matching the simulation canvas — uses original bend index
+        const bendOrigIdx = (rec.per_bend || []).indexOf(b);
+        const dotColor = getBendColor(bendOrigIdx >= 0 ? bendOrigIdx : seqIdx);
+        const dotHtml = `<span class="sb-bend-dot" style="background:${dotColor};" title="${escapeHtml(b.bend)}"></span>`;
+        if (canEdit) {
+          const isFirst = seqIdx === 0;
+          const isLast = seqIdx === sortedBends.length - 1;
+          stepText = `
+            <div style="display: inline-flex; align-items: center; gap: 4px;">
+              <span class="nest-move" style="display: inline-flex; flex-direction: column; margin-right: 4px;">
+                <button class="sb-step-move-btn sb-step-up" data-bend="${escapeHtml(b.bend)}" aria-label="Move up" title="Move up" style="font-size: 8px; padding: 1px 3px; line-height: 1;" ${isFirst ? 'disabled' : ''}>▲</button>
+                <button class="sb-step-move-btn sb-step-down" data-bend="${escapeHtml(b.bend)}" aria-label="Move down" title="Move down" style="font-size: 8px; padding: 1px 3px; line-height: 1;" ${isLast ? 'disabled' : ''}>▼</button>
+              </span>
+              ${dotHtml}
+              <span>Step ${seqIdx + 1}: <strong>${escapeHtml(b.bend)}</strong></span>
+            </div>`;
+        } else {
+          stepText = `<div style="display: inline-flex; align-items: center; gap: 4px;">${dotHtml}<span>Step ${seqIdx + 1}: ${escapeHtml(b.bend)}</span></div>`;
+        }
+
+        const warningBadge = b.needs_purchase
+          ? `<span class="project-badge missing" style="padding: 1px 4px; font-size: 9px; margin-left: 4px;">Not Owned</span>`
+          : '';
+
+        let dieCell = escapeHtml(b.die || '—') + warningBadge;
+        let punchCell = escapeHtml(b.punch || '—') + warningBadge;
+        let angleCell = `${b.angle_deg != null ? Math.round(b.angle_deg) : ''}°`;
+        let flangeCell = `${b.flange_mm != null ? b.flange_mm : ''}`;
+        let vCell = `V${b.v_mm != null ? Math.round(b.v_mm) : ''}`;
+
+        if (canEdit) {
+          punchCell = `<div style="display: flex; align-items: center; gap: 4px;">
+            <select class="sb-edit-punch" data-bend="${escapeHtml(b.bend)}" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px 4px; font-size: 11px; cursor: pointer;">` +
+            catalog.punches.map(p => {
+              const isOwned = _ownedToolsCache && _ownedToolsCache[p.id];
+              const ownedLabel = isOwned ? '' : ' [Not Owned]';
+              const sel = p.id === b.punch ? 'selected' : '';
+              return `<option value="${escapeHtml(p.id)}" ${sel}>${escapeHtml(p.label)}${ownedLabel}</option>`;
+            }).join('') +
+            `</select>${warningBadge}</div>`;
+
+          dieCell = `<div style="display: flex; align-items: center; gap: 4px;">
+            <select class="sb-edit-die" data-bend="${escapeHtml(b.bend)}" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px 4px; font-size: 11px; cursor: pointer;">` +
+            catalog.dies.map(d => {
+              const isOwned = _ownedToolsCache && _ownedToolsCache[d.id];
+              const ownedLabel = isOwned ? '' : ' [Not Owned]';
+              const sel = d.id === b.die ? 'selected' : '';
+              return `<option value="${escapeHtml(d.id)}" ${sel}>${escapeHtml(d.label)}${ownedLabel}</option>`;
+            }).join('') +
+            `</select>${warningBadge}</div>`;
+
+          angleCell = `<input type="number" class="sb-edit-angle" data-bend="${escapeHtml(b.bend)}" value="${b.angle_deg != null ? Math.round(b.angle_deg) : 90}" step="1" style="width: 45px; background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px; font-size: 11px; text-align: center;">`;
+          flangeCell = `<input type="number" class="sb-edit-flange" data-bend="${escapeHtml(b.bend)}" value="${b.flange_mm != null ? b.flange_mm : 35}" step="0.5" style="width: 45px; background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px; font-size: 11px; text-align: center;">`;
+          vCell = `<input type="number" class="sb-edit-v" data-bend="${escapeHtml(b.bend)}" value="${b.v_mm != null ? Math.round(b.v_mm) : 8}" step="1" style="width: 40px; background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px; font-size: 11px; text-align: center;">`;
+        }
+
+        return `<tr class="${bad ? 'sb-row-bad' : ''}" data-bend="${escapeHtml(b.bend)}">
+          <td>${stepText}</td>
+          <td>${punchCell}</td>
+          <td>${dieCell}</td>
+          <td>${angleCell}</td>
+          <td>${flangeCell}</td>
+          <td>${vCell}</td>
           <td>${b.tonnage_kN != null ? Math.round(b.tonnage_kN) + 'kN' : ''}</td>
-          <td>${escapeHtml(why)}</td></tr>`;
+          <td class="sb-note-cell">${escapeHtml(why)}</td></tr>`;
       }).join('');
       
+      const saveControlsHtml = canEdit ? `
+        <div class="sb-save-container" style="display: flex; gap: 12px; align-items: center; margin-top: 14px;" onclick="event.stopPropagation()">
+          <button class="sb-save-btn" style="font-family: inherit; font-size: 12px; font-weight: bold; background: #4ecca3; color: #0c131b; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; transition: opacity 0.2s;">Save Config & Step Mapping</button>
+          <button class="sb-reset-auto-btn" style="font-family: inherit; font-size: 12px; background: transparent; color: #cad6e6; border: 1px solid #2b3340; border-radius: 6px; padding: 8px 16px; cursor: pointer; transition: opacity 0.2s;">Reset to Auto Plan</button>
+          <span class="sb-save-status" style="font-size: 12px; font-weight: bold;"></span>
+        </div>` : '';
+
+      const purchaseWarningBanner = hasNotOwnedTools ? `
+        <div class="sb-purchase-banner" style="background: rgba(210, 153, 34, 0.15); border: 1px solid #d29922; border-radius: 8px; padding: 10px; margin-bottom: 12px; color: #ffa726; font-size: 12.5px; display: flex; align-items: center; gap: 8px;">
+          <span>⚠️</span>
+          <span><strong>Not Owned / Needs Purchase:</strong> เครื่องมือบางชิ้นในแผนการพับนี้ยังไม่มีในคลัง ต้องสั่งซื้อเพิ่มเพื่อรองรับการผลิตจริง</span>
+        </div>` : '';
+
       detail = `
         <div class="sb-detail">
+          ${purchaseWarningBanner}
           <div class="sb-sim-wrap">
             <canvas class="sb-sim-canvas"></canvas>
             <div class="sb-sim-ctrls" style="flex-wrap: wrap; gap: 10px;">
               <button class="sb-sim-btn sb-sim-play" type="button">⏸ Pause</button>
               <button class="sb-sim-btn sb-sim-rec" type="button">⬇ Clip (.webm)</button>
               <span class="sb-sim-status muted"></span>
-              
-              <div class="sb-sim-selects" style="margin-left: auto; display: flex; gap: 8px; align-items: center;" onclick="event.stopPropagation()">
-                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif;">มีด (Punch):</span>
-                <select class="sb-sim-punch-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer;">
+            </div>
+            <div class="sb-sim-selects-container" style="display: flex; flex-direction: column; gap: 6px; width: 100%; border-top: 1px solid #2b3340; padding-top: 8px; margin-top: 4px;" onclick="event.stopPropagation()">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; width: 85px; flex-shrink: 0; text-align: left;">มีด (PUNCH):</span>
+                <select class="sb-sim-punch-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer; flex-grow: 1;">
                   ${punchOptsHtml}
                 </select>
-                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; margin-left: 4px;">ร่อง (Die):</span>
-                <select class="sb-sim-die-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer;">
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; width: 85px; flex-shrink: 0; text-align: left;">ร่อง (DIE):</span>
+                <select class="sb-sim-die-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer; flex-grow: 1;">
                   ${dieOptsHtml}
                 </select>
               </div>
             </div>
           </div>
           ${rec.reason ? `<div class="sb-reason">${escapeHtml(rec.reason)}</div>` : ''}
+          <div class="sb-table-wrap">
           <table class="sb-table">
-            <thead><tr><th>bend</th><th>die</th><th>r</th><th>ang</th>
+            <thead><tr><th>step / bend</th><th>punch (มีด)</th><th>die (ร่อง)</th><th>ang</th>
               <th>flange</th><th>V</th><th>ton</th><th>note</th></tr></thead>
             <tbody>${rows || '<tr><td colspan="8" class="muted">no per-bend data</td></tr>'}</tbody>
           </table>
-          ${when ? `<div class="sb-when">checked ${escapeHtml(when)}${rec.checked_by ? ' · ' + escapeHtml(rec.checked_by) : ''}</div>` : ''}
+          </div>
+          ${saveControlsHtml}
+          ${when ? `<div class="sb-when" style="margin-top: 10px;">checked ${escapeHtml(when)}${rec.checked_by ? ' · ' + escapeHtml(rec.checked_by) : ''}</div>` : ''}
         </div>`;
     }
+
+    const warningBadge = hasNotOwnedTools
+      ? `<span class="project-badge missing" style="margin-left: 6px; font-size: 10px;">Needs Purchase</span>`
+      : '';
+
     return `
       <div class="sb-card ${v.cls}" data-code="${escapeHtml(code)}" role="button" tabindex="0">
         <div class="sb-card-head">
           <span class="sb-code">${escapeHtml(code)}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>
+          ${warningBadge}
         </div>
         <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'}${np ? ` · ${np} problem${np === 1 ? '' : 's'}` : ''} · order: ${escapeHtml(order)}</div>
         ${detail}
@@ -4985,8 +5676,7 @@ function renderSimBendHome() {
       render();
     };
     el.addEventListener('click', (e) => {
-      // don't collapse the card when interacting with the simulation/controls
-      if (e.target.closest && e.target.closest('.sb-sim-wrap')) return;
+      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container'))) return;
       toggle();
     });
     el.addEventListener('keydown', e => {
@@ -4994,26 +5684,24 @@ function renderSimBendHome() {
     });
   });
 
-  // (Re)mount the bend animation for the expanded card.
   if (_simController) { try { _simController.destroy(); } catch (e) {} _simController = null; }
   if (_simBendExpanded && window.kdSimBend) {
     const card = ROOT.querySelector(`.sb-card[data-code="${_simBendExpanded.replace(/"/g, '')}"]`);
     const canvas = card && card.querySelector('.sb-sim-canvas');
-    const rec = _bendSimCache[_simBendExpanded];
+    const rec = processedCache[_simBendExpanded];
     if (canvas && rec) {
       _simController = window.kdSimBend.mount(canvas, rec, _simBendExpanded);
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
+      
       const punchSel = card.querySelector('.sb-sim-punch-select');
       const dieSel = card.querySelector('.sb-sim-die-select');
       
-      _simController.onstatus = (t) => { if (status) status.textContent = t; };
-
       const updateToolOverrides = () => {
-        const cat = window.KD_TOOLING || { punches: [], dies: [] };
-        const pId = punchSel.value;
-        const dId = dieSel.value;
+        const cat = getFlattenedCatalog(false);
+        const pId = punchSel ? punchSel.value : 'AUTO';
+        const dId = dieSel ? dieSel.value : 'AUTO';
         if (pId === 'AUTO') {
           if (_simController.setPunchOverride) {
             _simController.setPunchOverride('AUTO', 'AUTO');
@@ -5046,8 +5734,9 @@ function renderSimBendHome() {
           e.stopPropagation();
           updateToolOverrides();
         });
-        updateToolOverrides();
       }
+
+      _simController.onstatus = (t) => { if (status) status.textContent = t; };
 
       if (playBtn) playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -5056,6 +5745,226 @@ function renderSimBendHome() {
       });
       if (recBtn) recBtn.addEventListener('click', (e) => {
         e.stopPropagation(); _simController.recordClip();
+      });
+
+      const onOverrideChange = () => {
+        const table = card.querySelector('.sb-table');
+        if (!table) return;
+        
+        rec.checked_by = 'web_override';
+        
+        table.querySelectorAll('tbody tr').forEach(row => {
+          const bendId = row.getAttribute('data-bend');
+          const b = rec.per_bend.find(x => x.bend === bendId);
+          if (!b) return;
+          
+          b.is_override = true;
+          
+          const pSel = row.querySelector('.sb-edit-punch');
+          if (pSel) {
+            b.punch = pSel.value;
+            b.punch_out = pSel.value;
+          }
+          
+          const dSel = row.querySelector('.sb-edit-die');
+          if (dSel) {
+            b.die = dSel.value;
+            b.die_out = dSel.value;
+          }
+          
+          const aInput = row.querySelector('.sb-edit-angle');
+          if (aInput) {
+            const vVal = parseFloat(aInput.value);
+            if (!isNaN(vVal)) {
+              b.angle_deg = vVal;
+              b.angle_deg_out = vVal;
+            }
+          }
+          
+          const fInput = row.querySelector('.sb-edit-flange');
+          if (fInput) {
+            const vVal = parseFloat(fInput.value);
+            if (!isNaN(vVal)) {
+              b.flange_mm = vVal;
+              b.flange_mm_out = vVal;
+            }
+          }
+          
+          const vInput = row.querySelector('.sb-edit-v');
+          if (vInput) {
+            const vVal = parseFloat(vInput.value);
+            if (!isNaN(vVal)) {
+              b.v_mm = vVal;
+              b.v_mm_out = vVal;
+            }
+          }
+        });
+
+        const N = rec.per_bend.length;
+        const catalog = getFlattenedCatalog(false);
+        const model = window.kdSimBend.buildModel({
+          per_bend: rec.per_bend,
+          order: rec.order
+        });
+        
+        let nProblems = 0;
+        
+        rec.per_bend.forEach((b, i) => {
+          const punchObj = catalog.punches.find(p => p.id === b.punch);
+          const dieObj = catalog.dies.find(d => d.id === b.die);
+          
+          const punch = punchObj || { type: 'standard', angle: 88, radius: 0.8, height: 120 };
+          const die = dieObj || { type: '1V', angle: 88, v: b.v_mm || 8, height: 60, vList: [b.v_mm || 8] };
+          
+          const V = die.v_list ? die.v_list[0] : 8;
+          const angleOk = die.angle_deg <= b.angle_deg + 2.0;
+          const flangeOk = b.flange_mm >= 0.67 * V;
+          
+          let ok = angleOk && flangeOk;
+          let reasons = [];
+          if (!angleOk) reasons.push("die angle too obtuse");
+          if (!flangeOk) reasons.push("flange too short for V");
+          
+          const a = new Array(N).fill(0);
+          rec.order.forEach(idxName => {
+            const bendIndex = rec.per_bend.findIndex(x => x.bend === idxName);
+            if (bendIndex >= 0) {
+              a[bendIndex] = rec.per_bend[bendIndex].angle_deg;
+            }
+          });
+          const currentBendIdx = rec.per_bend.findIndex(x => x.bend === b.bend);
+          if (currentBendIdx >= 0) {
+            a[currentBendIdx] = b.angle_deg;
+          }
+          
+          let collides = false;
+          let hits = null;
+          let at_angle = null;
+          let colReason = "";
+          
+          if (ok && currentBendIdx >= 0) {
+            const colRes = window.kdSimBend.checkCollisionAt(model, currentBendIdx, a, punch, die);
+            if (colRes.collides) {
+              collides = true;
+              hits = colRes.with;
+              at_angle = colRes.at_angle;
+              colReason = `hits ${colRes.with} @${Math.round(colRes.at_angle)}°`;
+            }
+          }
+          
+          b.ok = ok && !collides;
+          b.collides = collides;
+          b.hits = hits;
+          b.at_angle = at_angle;
+          b.reason = collides ? colReason : (reasons.join('; ') || 'formable');
+          b.needs_purchase = (punchObj && punchObj.isKyokkoPreset) || (dieObj && dieObj.isKyokkoPreset);
+          
+          if (!b.ok) {
+            nProblems++;
+          }
+          
+          const rowEl = table.querySelector(`tbody tr[data-bend="${escapeHtml(b.bend)}"]`);
+          if (rowEl) {
+            rowEl.className = b.ok ? '' : 'sb-row-bad';
+            const noteEl = rowEl.querySelector('.sb-note-cell');
+            if (noteEl) noteEl.textContent = b.reason;
+            
+            const badges = rowEl.querySelectorAll('.project-badge.missing');
+            if (b.needs_purchase) {
+              if (badges.length === 0) {
+                const pSelWrap = rowEl.querySelector('.sb-edit-punch')?.parentNode;
+                const dSelWrap = rowEl.querySelector('.sb-edit-die')?.parentNode;
+                pSelWrap?.appendChild(document.createRange().createContextualFragment(`<span class="project-badge missing" style="padding: 1px 4px; font-size: 9px; margin-left: 4px;">Not Owned</span>`));
+                dSelWrap?.appendChild(document.createRange().createContextualFragment(`<span class="project-badge missing" style="padding: 1px 4px; font-size: 9px; margin-left: 4px;">Not Owned</span>`));
+              }
+            } else {
+              badges.forEach(badge => badge.remove());
+            }
+          }
+        });
+        
+        rec.n_problems = nProblems;
+        rec.bendable = nProblems === 0;
+        rec.kind = rec.bendable ? 'found' : 'impossible';
+        rec.reason = rec.bendable ? '' : 'one or more bends have problems';
+        
+        if (_simController) {
+          _simController.destroy();
+          _simController = window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+          _simController.onstatus = (t) => { if (status) status.textContent = t; };
+          const playBtn = card.querySelector('.sb-sim-play');
+          if (playBtn) playBtn.textContent = '⏸ Pause';
+        }
+      };
+
+      card.querySelectorAll('.sb-edit-punch, .sb-edit-die').forEach(sel => {
+        sel.addEventListener('change', onOverrideChange);
+      });
+      card.querySelectorAll('.sb-edit-angle, .sb-edit-flange, .sb-edit-v').forEach(inp => {
+        inp.addEventListener('input', onOverrideChange);
+      });
+
+      card.querySelectorAll('.sb-step-move-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const bendId = btn.getAttribute('data-bend');
+          const isUp = btn.classList.contains('sb-step-up');
+          const curOrder = rec.order.slice();
+          const idx = curOrder.indexOf(bendId);
+          const nextIdx = idx + (isUp ? -1 : 1);
+          
+          if (idx >= 0 && nextIdx >= 0 && nextIdx < curOrder.length) {
+            [curOrder[idx], curOrder[nextIdx]] = [curOrder[nextIdx], curOrder[idx]];
+            rec.order = curOrder;
+            rec.checked_by = 'web_override';
+            render();
+          }
+        });
+      });
+
+      card.querySelector('.sb-save-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const stepMapping = {};
+        rec.order.forEach((bendId, idx) => {
+          stepMapping[bendId] = idx + 1;
+        });
+        
+        const saveStatus = card.querySelector('.sb-save-status');
+        if (saveStatus) saveStatus.textContent = 'Saving…';
+        
+        const refPath = `bend_sim/${_simBendExpanded}`;
+        window.firebaseDB.ref(refPath).update({
+          order: rec.order,
+          per_bend: rec.per_bend,
+          bendable: rec.bendable,
+          kind: rec.kind,
+          reason: rec.reason,
+          n_problems: rec.n_problems,
+          step_mapping: stepMapping,
+          checked_by: 'web_override',
+          checked_at: new Date().toISOString().slice(0, 16).replace('T', ' ')
+        }).then(() => {
+          if (saveStatus) {
+            saveStatus.textContent = '✓ Saved successfully!';
+            saveStatus.style.color = '#4ecca3';
+            setTimeout(() => { saveStatus.textContent = ''; }, 3000);
+          }
+        }).catch(err => {
+          if (saveStatus) {
+            saveStatus.textContent = '✗ Error: ' + err.message;
+            saveStatus.style.color = '#e0574a';
+          }
+        });
+      });
+
+      card.querySelector('.sb-reset-auto-btn')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (!confirm('Reset all overrides to the automatic plan?')) return;
+        
+        const refPath = `bend_sim/${_simBendExpanded}`;
+        window.firebaseDB.ref(refPath).child('checked_by').set(null).then(() => {
+          render();
+        });
       });
     }
   }
