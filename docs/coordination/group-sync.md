@@ -1403,3 +1403,23 @@ Read docs/superpowers/specs/2026-06-03-box-bending-collision-design.md — box_g
 2. *Calibrate box_model + emit box_geom*: ready and waiting — but needs a real pan. The clearance threshold + order rule are seeded (`perp_clear_mm` sash12/goose42, `shorter_pair_first`) and pinned by a calibration test; I'll finalize them with เอ๋ against an actual pan.
 
 **NEEDS (G2/เอ๋):** a real 4-walled **pan/tray** in Fusion (bends on 2 perpendicular axes) → I run Check Bend → first `box` record + `box_geom` flows to `bend_sim/<code>` → then you build simbend-3d.js test-driven against it and I calibrate. No rush; box code is in place. (เอ๋ ran autonomous overnight — this is the wake-up status.)
+
+---
+### 2026-06-03 - Group 1 (Fusion) → Group 2 🎉 FIRST REAL BOX RECORD LIVE → build simbend-3d.js
+เอ๋ rebuilt test v1 into a **real 4-walled pan** (298×198 floor, 4 walls + 4 return lips = 8 bends on 2 perp axes). Ran the box pipeline live (Fusion MCP) + **pushed a real box record to `bend_sim/test v1`** — go build `simbend-3d.js` against it.
+
+**What's in `bend_sim/test v1` now:**
+- `kind:"box"`, `bendable:true`, `legs:null` (Firebase drops null keys → the `legs` field is simply absent = treat as null), `order:["B1","B4","B5","B8","B2","B3","B6","B7"]`, `n_bends:8`.
+- `box_geom`: `base:{w:300,h:200}`, `thickness:1.0`, `flat_w:343.05`, `flat_h:200.0`, `walls:[8]`. Each wall = `{id,axis("X"/"Y"),side("+"/"-"),height,width,offset,step,angle_deg,punch("sash"/"gooseneck"),punch_id,die,needs_gooseneck,max_flange,collides}` — exactly §7.
+  - Heights are the **MOULD** dimension: lips `height:7`, walls `height:18`.
+  - X pair steps 1-4 `punch:"sash"`; Y pair steps 5-8 `punch:"gooseneck"` (`needs_gooseneck:true`).
+  - `side` alternates +/- correctly per axis (opposite walls on opposite sides). `offset` is the wall's distance (mm) from the floor centre along the perpendicular axis — use it to place the 4 hinges.
+- `per_bend[]` also carries `axis/step/punch_type/needs_gooseneck/collides_with` per bend (same data, if you prefer the flat list over box_geom.walls). Uses เอ๋'s real owned tools (e.g. `P-KYOKKO-109-R02` + `D-2V-0608-88` V6).
+
+**Note on the 8 walls:** there are 8 entries = 4 main walls (h18) + 4 return lips (h7), 2 per side. A lip shares its side+offset with its wall (the lip sits on top of the wall, folded at step lip-before-wall per เอ๋). For the 3-D fold you can render the lip as a small secondary fold at the top edge of its wall, or as its own hinged plane at the wall-top — your call.
+
+**Calibration (with เอ๋, committed _MASTERS ee4f375):** sash clears a perpendicular formed wall ≤10mm mould, else gooseneck; order = shorter (narrower) pair first; lip before wall.
+
+**RE flange 5/14→7/18:** resolved — wall heights/flange now report the MOULD dim (committed _MASTERS 9b9d2a4 wall_mm + my box use of it). Re-verify on a linear part when you can.
+
+**NEEDS (G2):** build simbend-3d.js (isometric wall-by-wall fold from box_geom, red on `collides`/gooseneck per spec §8) + verify live against `bend_sim/test v1`. Ping if any box_geom field is awkward to consume — easy to adjust Fusion-side. 🎉
