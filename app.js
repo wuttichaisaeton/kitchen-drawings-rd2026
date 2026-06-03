@@ -87,9 +87,13 @@ function updateAdminBadge() {
   // Workshop users don't manage Library taxonomy — hide the tab so they
   // can't accidentally drill in and start uploading PDFs / re-filing
   // parts. Admin (and PWA in admin mode) still sees it.
+  // Bending workers (ช่างพับ) only need Projects + Sim.Bending — hide Library
+  // (part taxonomy) and Nest (laser nesting) for the bend role too, even in
+  // admin mode (เอ๋ 2026-06-03 'ช่างพับ ไม่ควรเห็น 2 ช่องนี้').
+  const showLibNest = isAdmin() && !isBendUser();
   const libTab = document.getElementById('tab-library');
   if (libTab) {
-    libTab.style.display = isAdmin() ? '' : 'none';
+    libTab.style.display = showLibNest ? '' : 'none';
   }
   // Nest tab — admin-only too (user 2026-05-28: 'nest ให้ย้ายไปต่อ
   // library admin ใช้ได้คนเดียว'). The Nest workspace itself can be
@@ -97,12 +101,12 @@ function updateAdminBadge() {
   // nests has real cost, so we keep it gated behind the admin flag.
   const nestTab = document.getElementById('tab-nest');
   if (nestTab) {
-    nestTab.style.display = isAdmin() ? '' : 'none';
+    nestTab.style.display = showLibNest ? '' : 'none';
   }
   // If a workshop user somehow lands on a gated view (e.g. legacy URL
   // or auto-switch when no projects yet), bounce them back to Projects
   // so the empty hidden tab can't trap them.
-  if (!isAdmin() && typeof view !== 'undefined' && (view === 'library' || view === 'nest')) {
+  if (!showLibNest && typeof view !== 'undefined' && (view === 'library' || view === 'nest')) {
     view = 'projects';
     stack = [];
     const projTab = document.getElementById('tab-projects');
@@ -168,6 +172,9 @@ function setRole(role) {
     else localStorage.setItem(LS_ROLE_KEY, role);
   } catch {}
   updateRoleBadge();
+  // The role now gates the Library/Nest tabs (bend role hides them), so
+  // re-run the tab/badge logic when the role switches at runtime.
+  try { updateAdminBadge(); } catch {}
 }
 
 function isLaserUser()    { return getRole() === 'laser'; }
@@ -4968,9 +4975,12 @@ function _toolingPickerHtml() {
       const spec = kind === 'punch'
         ? `${t.angle_deg}° · R${t.tip_radius_mm}`
         : `${t.angle_deg}° · V${(t.v_list || []).join('/')}`;
-      const star = t.fit1mm ? '★' : (t.common ? '·' : '');
+      // 2-state marker (เอ๋ 2026-06-03 'เอาแค่ ★ ○ ... ○ ให้เป็นทั่วไป' —
+      // supersedes the 3-state ·): ★ = recommended, ○ = common/ทั่วไป.
+      // One tap toggles, so marking ★ always works.
+      const star = t.fit1mm ? '★' : '○';
       const starClickable = admin
-        ? `<span class="tl-star tl-star-btn" data-id="${escapeHtml(t.id)}" data-fit1mm="${t.fit1mm ? '1' : '0'}" data-common="${t.common ? '1' : '0'}" style="cursor: pointer;" title="Click to change: ★ = recommended · = common">${star || '○'}</span>`
+        ? `<span class="tl-star tl-star-btn" data-id="${escapeHtml(t.id)}" data-fit1mm="${t.fit1mm ? '1' : '0'}" data-common="${t.common ? '1' : '0'}" style="cursor: pointer;" title="Click to toggle: ★ = recommended / ○ = common">${star}</span>`
         : `<span class="tl-star">${star}</span>`;
       const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
       const expanded = _toolingExpandedId === t.id;
@@ -5017,7 +5027,7 @@ function _toolingPickerHtml() {
         <a href="https://www.kyokko-thai.com/17311020/catalog-%E3%82%AB%E3%82%BF%E3%83%AD%E3%82%B0" target="_blank" class="tl-catalog-link" style="color: #4ecca3; text-decoration: none; font-size: 11.5px; font-weight: bold;">
           📖 Kyokko Catalog Webpage ↗
         </a>
-        ${admin ? `<span class="tl-hint" style="margin-left: auto;">★ = good for 1mm · saved automatically</span>` : ''}
+        ${admin ? `<span class="tl-hint" style="margin-left: auto;">★ = recommended · ○ = common · saved automatically</span>` : ''}
       </div>
     </div>`;
   }
@@ -5047,18 +5057,14 @@ function _wireToolingPicker() {
       render();
     });
   });
-  // Star/dot click — cycle: ★ → · → (none) → ★
+  // Star toggle — ★ ↔ ○ (recommended / common). ○ keeps common=true ("ทั่วไป");
+  // one tap flips, so marking ★ always works (เอ๋ 'เอาแค่ ★ ○' / 'mark ★ ไม่ได้').
   ROOT.querySelectorAll('.tl-star-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = btn.getAttribute('data-id');
       const wasFit = btn.getAttribute('data-fit1mm') === '1';
-      const wasCommon = btn.getAttribute('data-common') === '1';
-      let newFit, newCommon;
-      if (wasFit) { newFit = false; newCommon = true; }       // ★ → ·
-      else if (wasCommon) { newFit = false; newCommon = false; } // · → (none)
-      else { newFit = true; newCommon = true; }                 // (none) → ★
-      _saveToolStarFlag(id, newFit, newCommon);
+      _saveToolStarFlag(id, !wasFit, true);
     });
   });
   ROOT.querySelectorAll('.tl-add-btn').forEach(btn => {
@@ -5143,15 +5149,6 @@ function _rebuildKDTooling() {
   let punches = window._masterKDTooling.punches.filter(p => !deleted[p.id]);
   let dies = window._masterKDTooling.dies.filter(d => !deleted[d.id]);
   
-  // Apply stored edits (overrides) to default/Kyokko tools
-  const edits = _toolEditsCache || {};
-  punches.forEach(p => {
-    if (edits[p.id]) Object.assign(p, edits[p.id]);
-  });
-  dies.forEach(d => {
-    if (edits[d.id]) Object.assign(d, edits[d.id]);
-  });
-  
   const customPunches = custom.punches || custom.punchs || {};
   Object.keys(customPunches).forEach(key => {
     const item = JSON.parse(JSON.stringify(customPunches[key]));
@@ -5170,6 +5167,15 @@ function _rebuildKDTooling() {
     if (!dies.find(d => d.id === key)) {
       dies.push(item);
     }
+  });
+  
+  // Apply stored edits (overrides) to all default/Kyokko/custom tools
+  const edits = _toolEditsCache || {};
+  punches.forEach(p => {
+    if (edits[p.id]) Object.assign(p, edits[p.id]);
+  });
+  dies.forEach(d => {
+    if (edits[d.id]) Object.assign(d, edits[d.id]);
   });
   
   window.KD_TOOLING.punches = punches;
