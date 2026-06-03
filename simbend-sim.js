@@ -31,6 +31,7 @@
         angle: (b.angle_deg != null ? b.angle_deg : 90),
         collides: !!b.collides,
         ok: b.ok !== false,
+        overLimit: (b.max_flange != null && b.flange_mm != null && b.flange_mm > b.max_flange),
         hits: b.hits || 'punch',
         at_angle: (b.at_angle != null ? b.at_angle : null),
         die: b.die || null,
@@ -531,7 +532,7 @@
       // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
       model.spatial.forEach(function (sp) {
         var vtx = P[sp.idx + 1]; if (!vtx) return;
-        var isBad = !sp.ok || sp.collides;
+        var isBad = !sp.ok || sp.collides || sp.overLimit;
         if (isBad) {
           ctx.strokeStyle = '#e0574a';
           ctx.lineWidth = 1.5 * dpr;

@@ -5381,6 +5381,11 @@ function renderSimBendHome() {
     const nb = rec.n_bends != null ? rec.n_bends : (rec.per_bend || []).length;
     const np = rec.n_problems != null ? rec.n_problems : 0;
     const when = rec.checked_at ? String(rec.checked_at).slice(0, 16).replace('T', ' ') : '';
+    // Developed (flat) length — shown only once Fusion (CC_CheckBend) exports it
+    // (เอ๋ 'ขึ้น Flat: 116.52 mm @ 1.0mm'). Absent → nothing shown (no regression).
+    const flatStr = (rec.flat_length != null && !isNaN(+rec.flat_length))
+      ? ` · <strong>Flat: ${(+rec.flat_length).toFixed(2)} mm</strong>${rec.thickness != null ? ` @ ${(+rec.thickness).toFixed(1)}mm` : ''}`
+      : '';
     
     let hasNotOwnedTools = false;
     (rec.per_bend || []).forEach(b => {
@@ -5413,8 +5418,14 @@ function renderSimBendHome() {
       });
 
       const rows = sortedBends.map((b, seqIdx) => {
-        const bad = b.ok === false || b.collides;
-        const why = b.collides
+        // Over the punch's flange limit (Fusion's per-bend max_flange): the leg
+        // is longer than this punch can clear → collides (เอ๋ 'เกิน...วงแดง';
+        // at-or-below = OK). Only active once Fusion exports max_flange.
+        const overLimit = b.max_flange != null && b.flange_mm != null && b.flange_mm > b.max_flange;
+        const bad = b.ok === false || b.collides || overLimit;
+        const why = overLimit
+          ? `flange ${b.flange_mm} > max ${(+b.max_flange).toFixed(1)} — change punch`
+          : b.collides
           ? `hits ${b.hits || '?'}${b.at_angle != null ? ' @' + Math.round(b.at_angle) + '°' : ''}`
           : (b.reason || (b.ok === false ? 'fail' : 'formable'));
           
@@ -5557,7 +5568,7 @@ function renderSimBendHome() {
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
         </div>
-        <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'}${np ? ` · ${np} problem${np === 1 ? '' : 's'}` : ''} · order: ${escapeHtml(order)}</div>
+        <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'}${np ? ` · ${np} problem${np === 1 ? '' : 's'}` : ''} · order: ${escapeHtml(order)}${flatStr}</div>
         ${detail}
       </div>`;
   }).join('');
