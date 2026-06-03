@@ -80,9 +80,13 @@ wall's flange).
 2. **Perpendicular standing-wall clearance:** the walls perpendicular to wall *i*
    that are already up (height `h_perp`) sit at the **ends** of wall *i*'s punch.
    The punch descends into the die; its profile must clear the perpendicular
-   wall tops. A **straight/standard** punch (full-width body) needs reach
-   `≥ h_perp + margin`; a **gooseneck** throat clears taller `h_perp`. If even a
-   gooseneck cannot clear → that step is infeasible in this order.
+   wall tops. Each punch profile carries a calibrated **`perp_clear_mm`** in
+   `punch_profiles.json` — the tallest perpendicular standing wall it clears
+   (sash/straight = **12 mm**, gooseneck = **42 mm**). Rule: if
+   `h_perp > punch.perp_clear_mm` → that punch collides → escalate to a
+   gooseneck; if `h_perp > gooseneck.perp_clear_mm` too → the step is infeasible
+   in this order. (E.g. test v1's 18 mm walls: sash 12 < 18 → blocked → gooseneck
+   42 ≥ 18 → clears.)
 3. **Punch length vs inside width:** the punch length (= wall *i* width) must fit
    between the inside faces of the perpendicular walls. Normally holds (the wall
    spans the base width). Flag if a corner/relief makes it not.
@@ -180,15 +184,25 @@ mirroring how `simbend-sim.js` synthesizes the 2-D fold from `per_bend`.
 
 - `box_detect`: synthetic 1-axis (not box), 2-axis rectangular, irregular.
 - `box_model`: a rectangular pan (W×L, wall heights, lips) → expected order +
-  gooseneck flags; **calibrate against เอ๋'s "test v1" + her shop judgement.**
+  gooseneck flags; **calibrate against เอ๋'s "test v1":** base **200×300**, flat
+  (developed) **243.048×300**, walls **7/7/18/18** (the 18 mm walls carry a 7 mm
+  return lip → 8 bends = 4×(wall+lip)). Expected: the **18 mm walls need a
+  gooseneck** (sash `perp_clear` 12 < 18), the 7 mm lips do not.
+- **Per-bend wall-dim fix (do WITH box_model):** the per-bend `flange_mm`
+  currently reports the **face-extent** (flat zone) — under เอ๋'s drawing dims
+  (test v1: 5/14 vs real 7/18). This is NOT a clean +setback: on the #202 rig the
+  face (43) ≈ เอ๋'s bent dim (42.87) while on test v1 the face (5) < bent (7), so
+  the face-extent measure is geometry-inconsistent. Fix the wall dim to เอ๋'s
+  **bent/outer** value, **calibrated to BOTH anchors (test v1 7/18 + #202 42.86)**
+  — same discipline as max_flange, not a hand-formula.
 - `formed_collision`: offline collide / clear cases.
 - **Regression:** linear parts (max_flange / mould legs) must be unchanged.
-- **Live:** verify on test v1 (after เอ๋ creates a flat pattern) + a second real pan.
+- **Live:** verify on test v1 (create a flat pattern for flat_length) + a 2nd real pan.
 
 ## 11. Open questions (resolve during implementation)
 
-- Exact perpendicular-clearance threshold (punch reach vs `h_perp`) — calibrate
-  from the real punch heights (#109 H95, #202 H130, gooseneck #453 H90) + เอ๋.
+- Perpendicular-clearance threshold — **resolved:** `punch_profiles.json.perp_clear_mm`
+  (sash 12, gooseneck 42), calibrated by เอ๋. Confirm/extend per punch as needed.
 - Order rule when both pairs are equal — pick a deterministic default (e.g. bend
   the **shorter** pair first), confirm with เอ๋.
 - Whether `flat_length` for a pan should be `{w,l}` instead of one number (web
