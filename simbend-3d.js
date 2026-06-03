@@ -76,8 +76,10 @@
 
     // ── isometric projection (camera az/elev fixed) ──
     var ISO = 26 * R;
-    function iso(p) { return { x: (p.x - p.y) * Math.cos(ISO), y: (p.x + p.y) * Math.sin(ISO) - p.z }; }
-    function depth(p) { return p.x + p.y - p.z * 1.5; }   // painter's: bigger = nearer-back, draw first
+    // view from ABOVE: world +z renders UP on screen (tray opens up / หงายขึ้น),
+    // so die (z<0) sits at the bottom and the punch (z>0) comes down from the top.
+    function iso(p) { return { x: (p.x - p.y) * Math.cos(ISO), y: p.z - (p.x + p.y) * Math.sin(ISO) }; }
+    function depth(p) { return p.x + p.y + p.z * 1.5; }   // painter's: bigger = nearer (above-front cam), draw last
 
     // static scale/centre from the fully-folded bounds (stable, no jump)
     var scale = 1, cx = 0, cy = 0;
