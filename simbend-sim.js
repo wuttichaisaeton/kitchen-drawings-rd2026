@@ -549,7 +549,11 @@
         var phaseTxt = (st.moving ? 'position' : 'press').toUpperCase();
         var rpInfo = resolvePunch(model, st);
         var rdInfo = resolveDie(model, st);
-        var toolInfo = '  ·  PUNCH: ' + rpInfo.type.toUpperCase() + '  ·  DIE: V' + rdInfo.v;
+        // Drop the tool info from the left label when a right-aligned error is
+        // shown, so the two don't overlap on narrow cards (เอ๋ 2026-06-03
+        // 'ตัวแดงซ้อนทับกัน'). The tools are listed in the step table anyway.
+        var hasErr = !st.ab.ok || st.collide;
+        var toolInfo = hasErr ? '' : ('  ·  PUNCH: ' + rpInfo.type.toUpperCase() + '  ·  DIE: V' + rdInfo.v);
         ctx.fillText('STEP ' + st.step + '/' + model.phases.length + '  ·  ' +
           st.ab.id + '  ·  ' +
           Math.round(st.ab.angle) + '°  ·  ' + phaseTxt + toolInfo, 12 * dpr, 14 * dpr);
@@ -561,9 +565,9 @@
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
         var errorMsg = '';
         if (st.collide) {
-          errorMsg = 'COLLISION: HITS ' + (st.ab.hits || 'PUNCH').toUpperCase() + (st.ab.at_angle != null ? ' @' + Math.round(st.ab.at_angle) + '°' : '');
+          errorMsg = '✗ HITS ' + (st.ab.hits || 'PUNCH').toUpperCase() + (st.ab.at_angle != null ? ' @' + Math.round(st.ab.at_angle) + '°' : '');
         } else {
-          errorMsg = 'UNBENDABLE: ' + (st.ab.reason || 'REJECTED').toUpperCase();
+          errorMsg = '✗ ' + (st.ab.reason || 'REJECTED').toUpperCase();
         }
         ctx.fillText(errorMsg, w - 12 * dpr, 14 * dpr);
       }
