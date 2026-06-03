@@ -5682,7 +5682,10 @@ function renderSimBendHome() {
     const canvas = card && card.querySelector('.sb-sim-canvas');
     const rec = processedCache[_simBendExpanded];
     if (canvas && rec) {
-      _simController = window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+      // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
+      _simController = (rec.kind === 'box' && window.kdSimBend3D)
+        ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
+        : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
@@ -5882,7 +5885,10 @@ function renderSimBendHome() {
         
         if (_simController) {
           _simController.destroy();
-          _simController = window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+          // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
+      _simController = (rec.kind === 'box' && window.kdSimBend3D)
+        ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
+        : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
           _simController.onstatus = (t) => { if (status) status.textContent = t; };
           const playBtn = card.querySelector('.sb-sim-play');
           if (playBtn) playBtn.textContent = '⏸ Pause';
