@@ -4969,6 +4969,9 @@ function _toolingPickerHtml() {
         ? `${t.angle_deg}° · R${t.tip_radius_mm}`
         : `${t.angle_deg}° · V${(t.v_list || []).join('/')}`;
       const star = t.fit1mm ? '★' : (t.common ? '·' : '');
+      const starClickable = admin
+        ? `<span class="tl-star tl-star-btn" data-id="${escapeHtml(t.id)}" data-fit1mm="${t.fit1mm ? '1' : '0'}" data-common="${t.common ? '1' : '0'}" style="cursor: pointer;" title="Click to change: ★ = recommended · = common">${star || '○'}</span>`
+        : `<span class="tl-star">${star}</span>`;
       const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
       const expanded = _toolingExpandedId === t.id;
       const editBtn = (admin)
@@ -4979,7 +4982,7 @@ function _toolingPickerHtml() {
         : '';
       return `<div class="tl-row ${on ? 'tl-on' : ''} ${expanded ? 'tl-expanded' : ''}" data-id="${escapeHtml(t.id)}">
         <input type="checkbox" class="tl-cb" data-id="${escapeHtml(t.id)}" ${on ? 'checked' : ''} ${admin ? '' : 'disabled'}>
-        <span class="tl-star">${star}</span>
+        ${starClickable}
         ${pic}
         <span class="tl-label">${escapeHtml(t.label)}</span>
         <span class="tl-spec" style="display: flex; align-items: center; gap: 8px;">${escapeHtml(spec)}${editBtn}${deleteBtn}</span>
@@ -5037,11 +5040,25 @@ function _wireToolingPicker() {
   });
   ROOT.querySelectorAll('.tl-row').forEach(row => {
     row.addEventListener('click', (e) => {
-      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row') || e.target.classList.contains('tl-del-btn') || e.target.classList.contains('tl-edit-btn')) return;
+      if (e.target.classList.contains('tl-cb') || e.target.closest('.tl-detail-row') || e.target.classList.contains('tl-del-btn') || e.target.classList.contains('tl-edit-btn') || e.target.classList.contains('tl-star-btn')) return;
       e.stopPropagation();
       const id = row.getAttribute('data-id');
       _toolingExpandedId = (_toolingExpandedId === id) ? null : id;
       render();
+    });
+  });
+  // Star/dot click — cycle: ★ → · → (none) → ★
+  ROOT.querySelectorAll('.tl-star-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.getAttribute('data-id');
+      const wasFit = btn.getAttribute('data-fit1mm') === '1';
+      const wasCommon = btn.getAttribute('data-common') === '1';
+      let newFit, newCommon;
+      if (wasFit) { newFit = false; newCommon = true; }       // ★ → ·
+      else if (wasCommon) { newFit = false; newCommon = false; } // · → (none)
+      else { newFit = true; newCommon = true; }                 // (none) → ★
+      _saveToolStarFlag(id, newFit, newCommon);
     });
   });
   ROOT.querySelectorAll('.tl-add-btn').forEach(btn => {
@@ -5157,6 +5174,20 @@ function _rebuildKDTooling() {
   
   window.KD_TOOLING.punches = punches;
   window.KD_TOOLING.dies = dies;
+}
+
+function _saveToolStarFlag(id, fit1mm, common) {
+  try {
+    const updates = { fit1mm: !!fit1mm, common: !!common };
+    window.firebaseDB.ref(`bend_tools_edits/${id}`).update(updates).then(() => {
+      // Also update the in-memory catalog immediately
+      const cat = window.KD_TOOLING;
+      const all = (cat.punches || []).concat(cat.dies || []);
+      const t = all.find(x => x.id === id);
+      if (t) { t.fit1mm = !!fit1mm; t.common = !!common; }
+      render();
+    }).catch(e => console.warn('Star flag save failed:', e));
+  } catch (e) { console.warn('Star flag error:', e); }
 }
 
 function _deleteTool(id, kind, isCustom) {
@@ -5502,12 +5533,12 @@ function renderSimBendHome() {
       const catalog = getFlattenedCatalog(false);
       const canEdit = isAdmin() || getRole() === 'bend';
 
-      const punchOptsHtml = `<option value="AUTO" selected>Auto (ตามข้อมูลจริง)</option>` +
+      const punchOptsHtml = `<option value="AUTO" selected>Auto (from library)</option>` +
         (catalog.punches || []).map(p => {
           return `<option value="${escapeHtml(p.id)}">${escapeHtml(p.label)}</option>`;
         }).join('');
 
-      const dieOptsHtml = `<option value="AUTO" selected>Auto (ตามข้อมูลจริง)</option>` +
+      const dieOptsHtml = `<option value="AUTO" selected>Auto (from library)</option>` +
         (catalog.dies || []).map(d => {
           return `<option value="${escapeHtml(d.id)}">${escapeHtml(d.label)}</option>`;
         }).join('');
@@ -5604,7 +5635,7 @@ function renderSimBendHome() {
       const purchaseWarningBanner = hasNotOwnedTools ? `
         <div class="sb-purchase-banner" style="background: rgba(210, 153, 34, 0.15); border: 1px solid #d29922; border-radius: 8px; padding: 10px; margin-bottom: 12px; color: #ffa726; font-size: 12.5px; display: flex; align-items: center; gap: 8px;">
           <span>⚠️</span>
-          <span><strong>Not Owned / Needs Purchase:</strong> เครื่องมือบางชิ้นในแผนการพับนี้ยังไม่มีในคลัง ต้องสั่งซื้อเพิ่มเพื่อรองรับการผลิตจริง</span>
+          <span><strong>Not Owned / Needs Purchase:</strong> Some tools in this bend plan are not in your library. Purchase required for production.</span>
         </div>` : '';
 
       detail = `
@@ -5619,13 +5650,13 @@ function renderSimBendHome() {
             </div>
             <div class="sb-sim-selects-container" style="display: flex; flex-direction: column; gap: 6px; width: 100%; border-top: 1px solid #2b3340; padding-top: 8px; margin-top: 4px;" onclick="event.stopPropagation()">
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; width: 85px; flex-shrink: 0; text-align: left;">มีด (PUNCH):</span>
+                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; width: 85px; flex-shrink: 0; text-align: left;">Punch:</span>
                 <select class="sb-sim-punch-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer; flex-grow: 1;">
                   ${punchOptsHtml}
                 </select>
               </div>
               <div style="display: flex; align-items: center; gap: 8px;">
-                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; width: 85px; flex-shrink: 0; text-align: left;">ร่อง (DIE):</span>
+                <span style="font-size: 11px; opacity: 0.7; font-family: 'Flux Architect', sans-serif; width: 85px; flex-shrink: 0; text-align: left;">Die:</span>
                 <select class="sb-sim-die-select" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 6px; padding: 4px 6px; font-size: 11px; font-family: inherit; cursor: pointer; flex-grow: 1;">
                   ${dieOptsHtml}
                 </select>
@@ -5635,7 +5666,7 @@ function renderSimBendHome() {
           ${rec.reason ? `<div class="sb-reason">${escapeHtml(rec.reason)}</div>` : ''}
           <div class="sb-table-wrap">
           <table class="sb-table">
-            <thead><tr><th>step / bend</th><th>punch (มีด)</th><th>die (ร่อง)</th><th>ang</th>
+            <thead><tr><th>step / bend</th><th>punch</th><th>die</th><th>ang</th>
               <th>flange</th><th>V</th><th>ton</th><th>note</th></tr></thead>
             <tbody>${rows || '<tr><td colspan="8" class="muted">no per-bend data</td></tr>'}</tbody>
           </table>
