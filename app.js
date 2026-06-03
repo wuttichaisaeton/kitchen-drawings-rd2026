@@ -5542,7 +5542,9 @@ function renderSimBendHome() {
 
     let detail = '';
     if (_simBendExpanded === code) {
-      const catalog = getFlattenedCatalog(false);
+      // Punch/Die pickers list only tools we OWN (เอ๋ 2026-06-03 'ให้แสดง
+      // เฉพาะข้อมูลที่เรามี') — not the whole Kyokko catalog with [NOT OWNED].
+      const catalog = getFlattenedCatalog(true);
       const canEdit = isAdmin() || getRole() === 'bend';
 
       const punchOptsHtml = `<option value="AUTO" selected>Auto (from library)</option>` +
@@ -5601,22 +5603,27 @@ function renderSimBendHome() {
         let vCell = `V${b.v_mm != null ? Math.round(b.v_mm) : ''}`;
 
         if (canEdit) {
+          // Problem steps default to ⚙ Auto so the system re-searches a
+          // working tool, instead of locking in the failing one (เอ๋ 2026-06-03
+          // 'step ไหนพับไม่ได้ ... เปลี่ยนมีด/die เป็น Auto ... เป็น Default').
           punchCell = `<div style="display: flex; align-items: center; gap: 4px;">
             <select class="sb-edit-punch" data-bend="${escapeHtml(b.bend)}" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px 4px; font-size: 11px; cursor: pointer;">` +
+            `<option value="AUTO" ${bad ? 'selected' : ''}>⚙ Auto</option>` +
             catalog.punches.map(p => {
               const isOwned = _ownedToolsCache && _ownedToolsCache[p.id];
               const ownedLabel = isOwned ? '' : ' [Not Owned]';
-              const sel = p.id === b.punch ? 'selected' : '';
+              const sel = (!bad && p.id === b.punch) ? 'selected' : '';
               return `<option value="${escapeHtml(p.id)}" ${sel}>${escapeHtml(p.label)}${ownedLabel}</option>`;
             }).join('') +
             `</select>${warningBadge}</div>`;
 
           dieCell = `<div style="display: flex; align-items: center; gap: 4px;">
             <select class="sb-edit-die" data-bend="${escapeHtml(b.bend)}" style="background: #16202c; color: #cad6e6; border: 1px solid #2a3744; border-radius: 4px; padding: 2px 4px; font-size: 11px; cursor: pointer;">` +
+            `<option value="AUTO" ${bad ? 'selected' : ''}>⚙ Auto</option>` +
             catalog.dies.map(d => {
               const isOwned = _ownedToolsCache && _ownedToolsCache[d.id];
               const ownedLabel = isOwned ? '' : ' [Not Owned]';
-              const sel = d.id === b.die ? 'selected' : '';
+              const sel = (!bad && d.id === b.die) ? 'selected' : '';
               return `<option value="${escapeHtml(d.id)}" ${sel}>${escapeHtml(d.label)}${ownedLabel}</option>`;
             }).join('') +
             `</select>${warningBadge}</div>`;
