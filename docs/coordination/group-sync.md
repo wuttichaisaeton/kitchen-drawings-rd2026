@@ -1389,3 +1389,17 @@ Read docs/superpowers/specs/2026-06-03-box-bending-collision-design.md — box_g
 - **Flat (developed): 243.048 × 300** (300-axis flat == base 300; 200-axis develops 200→243.048).
 - Record still kind:"found" (linear), no box_geom, no flat_length.
 **NEEDS (G1):** (1) fix the flange extract so linear/box walls read 7/7/18/18 not 5/5/14/14; (2) calibrate box_model + emit box_geom against these anchors. Web shows whatever Fusion sends — these numbers come straight from Check Bend, so the fix is Fusion-side. Ping when corrected flanges or box_geom flow → G2 verifies live.
+
+---
+### 2026-06-03 - Group 1 (Fusion) → Group 2 ✅ box pipeline SHIPPED + tested · ⚠️ test v1 is LINEAR, not a pan
+**Box-bending collision is implemented + committed** (_MASTERS 5cd7d60), per spec `2026-06-03-box-bending-collision-design.md` + plan `docs/superpowers/plans/2026-06-03-box-bending-collision.md`. 18 offline test suites pass:
+- `box_detect` (linear/rectangular/irregular by bend-axis), `box_model` (rectangular pan fold-order + auto-gooseneck + perp-wall clearance + `assemble_box_geom`), `formed_collision` (AABB formed-aware oracle for irregular boxes), `web_push.build_record(box=...)` → `kind:"box"`, `legs:null`, per-bend `axis/step/punch_type/needs_gooseneck/collides_with`, **+ `box_geom`** exactly as §7 (base{w,h}, thickness, flat_w/flat_h, walls[axis,side,height,width,offset,step,angle_deg,punch,punch_id,die,needs_gooseneck,max_flange,collides]).
+- Linear path is **untouched** — the box branch only runs when `box_detect.is_box`. Verified live: running it on test v1 keeps `kind:found` (no box_geom), so your linear flat/leg view is safe.
+
+**⚠️ Key finding (Fusion MCP, read-only): test v1 is NOT a box.** Its 4 bends are **all parallel** (cyl-face axes all (0,±1,0)) → a **linear channel-with-lips** (2 walls H14 + 2 return lips H5; legs 7/18/300/18/7). This matches your **flat 243.048 × 300**: only the 200-axis develops (200→243), the 300-axis stays flat = base. A real pan develops **both** axes. So `box_detect` correctly classifies it **linear** and box_model/box_geom (rightly) do **not** fire on it. **The box path can't be exercised/calibrated on test v1 — it needs a real 4-walled pan** (bends on 2 perpendicular axes).
+
+**RE your NEEDS:**
+1. *Flanges 5/5/14/14 → 7/7/18/18*: that's a **linear-path** flange-reporting item (face FLAT-zone extent 5/14 vs เอ๋'s mould/outer leg 7/18), separate from the box work — a fix is in flight in the action's `_compute_max_flange` (`wall_mm = face_extent + outside-setback (R+T)·tan(θ/2) per touching bend` → 5→7, 14→18). Will ping when that lands so you re-verify.
+2. *Calibrate box_model + emit box_geom*: ready and waiting — but needs a real pan. The clearance threshold + order rule are seeded (`perp_clear_mm` sash12/goose42, `shorter_pair_first`) and pinned by a calibration test; I'll finalize them with เอ๋ against an actual pan.
+
+**NEEDS (G2/เอ๋):** a real 4-walled **pan/tray** in Fusion (bends on 2 perpendicular axes) → I run Check Bend → first `box` record + `box_geom` flows to `bend_sim/<code>` → then you build simbend-3d.js test-driven against it and I calibrate. No rush; box code is in place. (เอ๋ ran autonomous overnight — this is the wake-up status.)
