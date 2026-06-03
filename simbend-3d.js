@@ -13,6 +13,8 @@
   var R = Math.PI / 180;
   var START = 350, MOVE = 700, HOLD = 220, END = 900;   // ms
   var PEN_HI = 34;   // punch tip lift above the bend line when the wall is flat (descends to ~1 when folded)
+  var HORN_GAP = 1.5;   // mm gap each end so the punch clears the already-standing perpendicular walls
+  var SEG_MID = [300, 200, 50, 40, 20, 15, 10];   // Kyokko middle segments (horns = 100 at each end)
 
   function mount(canvas, record, code) {
     var box = record && record.box_geom;
@@ -139,10 +141,37 @@
       if (w.axis === 'X') return { x: sg * off + u, y: e, z: z };
       return { x: e, y: sg * off + u, z: z };
     }
-    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias) {
-      var hw = w.width / 2;
-      var front = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, hw); });
-      var back = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, -hw); });
+    // ── item 3: punch half-length along the bend line. If a perpendicular wall is
+    // already standing (folded at an earlier step), the blade must end INSIDE it —
+    // shorter than the wall width and centred — so it doesn't crush the up wing.
+    function punchHalf(aw) {
+      var hw = aw.width / 2, inside = Infinity;
+      allWalls.forEach(function (x) {
+        if (x.axis !== aw.axis && x.step < aw.step && x.height >= aw.height - 0.01)
+          inside = Math.min(inside, x.offset);
+      });
+      return inside < Infinity ? Math.min(hw, inside - HORN_GAP) : hw;
+    }
+    // ── item 2: cut positions along a bar of length L assembled from standard
+    // Kyokko segments (punch reserves a 100 mm horn at each end). Returns boundary
+    // offsets in [0,L] for drawing the segment-joint lines.
+    function segBoundaries(L, isPunch) {
+      var rem = L, segs = [], horn = isPunch && L >= 200;
+      if (horn) { segs.push(100); rem -= 200; }
+      for (var k = 0; k < SEG_MID.length; k++) {
+        while (rem >= SEG_MID[k] - 0.01 && rem > 8) { segs.push(SEG_MID[k]); rem -= SEG_MID[k]; if (segs.length > 80) { rem = 0; break; } }
+      }
+      if (rem > 0.5 && segs.length) segs[segs.length - 1] += rem;
+      if (horn) segs.push(100);
+      var b = [], acc = 0;
+      for (var i = 0; i < segs.length - 1; i++) { acc += segs[i]; b.push(acc); }
+      return b;
+    }
+    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias, eHalf, uSign, seam) {
+      if (eHalf == null) eHalf = w.width / 2;
+      if (uSign && uSign !== 1) prof = prof.map(function (p) { return [p[0] * uSign, p[1]]; });
+      var front = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, eHalf); });
+      var back = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, -eHalf); });
       for (var i = 0; i < prof.length; i++) {
         var j = (i + 1) % prof.length;
         var q = [front[i], front[j], back[j], back[i]];
@@ -150,6 +179,11 @@
       }
       items.push({ pts: front, fill: fill, stroke: stroke, lw: 1, d: cen(front) + (dbias || 0) + 0.3 });
       items.push({ pts: back, fill: fill, stroke: stroke, lw: 1, d: cen(back) + (dbias || 0) - 0.3 });
+      if (seam) seam.forEach(function (bpos) {                       // segment-joint lines
+        var e = -eHalf + bpos;
+        var loop = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, e); });
+        items.push({ pts: loop, fill: null, stroke: stroke, lw: 0.7, d: cen(loop) + (dbias || 0) + 0.2 });
+      });
     }
 
     function frame(t) {
@@ -186,8 +220,11 @@
         var f = frac(aw.step, t);
         var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
-        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3);                                  // die under the line
-        addExtrusion(items, aw, aw.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF, penZ, pFill, pStroke, 6); // punch above (near)
+        var eHalf = punchHalf(aw);                   // item 3: shorten + centre vs standing walls
+        var uSign = aw.side === '+' ? 1 : -1;        // item: throat (concave) faces the standing flange (box interior)
+        var prof = aw.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF;
+        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, aw.width / 2, 1, segBoundaries(aw.width, false)); // die: full bed, segmented
+        addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, uSign, segBoundaries(eHalf * 2, true));      // punch: real shape, segmented, shorter+centred
       }
 
       items.sort(function (a, b) { return a.d - b.d; });
@@ -208,10 +245,12 @@
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, w, 30 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
+      var tlen = wall ? Math.round(punchHalf(wall) * 2) : 0;
+      var clr = wall && tlen < Math.round(wall.width) ? ' (horn-clr ' + tlen + '<' + Math.round(wall.width) + ')' : '';
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
            '  ·  PUNCH: ' + (wall.punch || 'sash').toUpperCase() + (wall.needs_gooseneck ? ' (GN)' : '') +
-           '  ·  H' + wall.height)
+           '  ·  TOOL ' + tlen + 'mm' + clr)
         : 'PAN FOLD  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
 
