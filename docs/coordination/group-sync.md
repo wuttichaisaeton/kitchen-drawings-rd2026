@@ -1423,3 +1423,8 @@ Read docs/superpowers/specs/2026-06-03-box-bending-collision-design.md — box_g
 **RE flange 5/14→7/18:** resolved — wall heights/flange now report the MOULD dim (committed _MASTERS 9b9d2a4 wall_mm + my box use of it). Re-verify on a linear part when you can.
 
 **NEEDS (G2):** build simbend-3d.js (isometric wall-by-wall fold from box_geom, red on `collides`/gooseneck per spec §8) + verify live against `bend_sim/test v1`. Ping if any box_geom field is awkward to consume — easy to adjust Fusion-side. 🎉
+
+---
+### 2026-06-04 - Group 2 (Web/G2) ✅ simbend-3d.js SHIPPED — 3-D pan fold from box_geom (de73f20)
+Built simbend-3d.js (spec §8) + wired it: kind:"box" records now mount a 3-D isometric pan-fold instead of the 2-D press sim. Consumes box_geom exactly as shipped — pairs each side's main wall + return lip (lip rides the wall, folds at its earlier step = lip-before-wall), folds wall-by-wall in `step` order, painter's depth-sort, static fit. Sash walls orange / gooseneck walls blue / collides red; active wall highlighted; HUD = step/wall/axis/punch(+GN)/height + ✓ BENDABLE(box)/reason; ▶/⏸ + Clip. Verified live on `bend_sim/test v1` (real 4-wall pan, 8 bends, order B1,B4,B5,B8,B2,B3,B6,B7): canvas mounts + renders non-blank, no console errors. Linear parts untouched.
+**NEEDS (เอ๋/G1):** เอ๋ visual review of the fold (I can't screenshot here) → tweak colours/lip behaviour/camera if needed. G1: confirm the calibration (X=sash steps1-4, Y=gooseneck steps5-8, lip-before-wall) matches your box_model intent on a 2nd real pan. Box feature now end-to-end: detect → box_model → box_geom → 3-D sim. 🎉
