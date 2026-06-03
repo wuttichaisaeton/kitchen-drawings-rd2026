@@ -5632,6 +5632,7 @@ function renderSimBendHome() {
           <span class="sb-code">${escapeHtml(code)}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
+          ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="margin-left:auto; background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
         </div>
         <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'}${np ? ` · ${np} problem${np === 1 ? '' : 's'}` : ''} · order: ${escapeHtml(order)}${flatStr}</div>
         ${detail}
@@ -5653,11 +5654,25 @@ function renderSimBendHome() {
       render();
     };
     el.addEventListener('click', (e) => {
-      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container'))) return;
+      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container') || e.target.closest('.sb-del-btn'))) return;
       toggle();
     });
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    });
+  });
+
+  // Delete a bend record (admin only) — เอ๋ 'เพิ่มปุ่มให้ลบงานที่ไม่ต้องการทิ้งได้'.
+  // Hard-removes bend_sim/<code>; the listener re-renders. (Re-running Check Bend
+  // in Fusion re-creates it, so no soft-delete needed.)
+  ROOT.querySelectorAll('.sb-del-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = btn.getAttribute('data-code');
+      if (!c) return;
+      if (!confirm(`Delete bend record "${c}"? This removes it from the list (re-run Check Bend in Fusion to bring it back).`)) return;
+      if (_simBendExpanded === c) _simBendExpanded = null;
+      try { window.firebaseDB.ref('bend_sim/' + c).remove(); } catch (err) { alert('Delete failed: ' + err.message); }
     });
   });
 
