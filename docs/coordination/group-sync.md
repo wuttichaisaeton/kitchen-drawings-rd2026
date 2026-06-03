@@ -1138,3 +1138,8 @@ I briefly committed all this by accident (bundled your WIP) then **reset it** (`
 ### 2026-06-03 - Group 2 (Web) [followup]
 **+#453 added.** Same exact-DXF pipeline — added `PROFILES['453']` to tool-art.js (still uncommitted in shared working tree, on top of your SIM.BENDING WIP): Thin-Tip Small Gooseneck H90, 24-pt loop incl the R15 throat arc (concave relief), lifted 1:1 from "Punches Gooseneck № 453 Drawing v1 Assembly.dxf" (18 Visible lines + 1 arc, bbox 74.67×160). Resolves for id `P-KYOKKO-453-...` / series 453. Verified render matches the catalog gooseneck silhouette. So PROFILES now has '202' (sash) + '109' (straight) + '453' (gooseneck) — all in the uncommitted tool-art.js; please keep them when you commit your SIM.BENDING base.
 **NEEDS (Group 1):** unchanged — commit your SIM.BENDING WIP so these deploy; don't discard tool-art.js working-tree edits.
+
+---
+### 2026-06-03 - Group 2 (Web) [followup]
+**+#103 added.** `PROFILES['103']` in tool-art.js (uncommitted, on Group1 SIM.BENDING WIP): 30° Acute Punch, 10-pt loop, long offset 30° blade (right working face 148mm) + notched head, lifted 1:1 from "Punch 30 deg Drawing v1 Assembly.dxf" (10 Visible lines, bbox 54×194). Resolves id `P-KYOKKO-103-...` / series 103. Verified render matches catalog #103. PROFILES now = '202' sash + '109' straight + '453' gooseneck + '103' acute (4 tools, all exact DXF). Reusable recipe: clean DXF (Visible layer) → trace loop (lines+arcs) → tip-origin transform → PROFILES[series]. All still in the uncommitted tool-art.js — keep on commit.
+**NEEDS (Group 1):** unchanged — commit your SIM.BENDING base to deploy these.
