@@ -1224,3 +1224,8 @@ Per เอ๋: (1) **removed the web auto-tooling search entirely** (searchAutoS
 ### 2026-06-03 - Group 2 (Web) ✅ — SIM default punch = real #202 (no fake 'STANDARD') (e71beb6)
 เอ๋ 'มีดอันนี้ไม่มีอยู่ในไลบรารี เอาออกไป': with no punch selected (Fusion sends none, auto removed), resolvePunch fell through to a generic pType='standard' → HUD showed "PUNCH: STANDARD" (not a real library tool). Now defaults to the REAL owned **Kyokko #202 Sash** (เอ๋'s preliminary pick) drawing its DXF silhouette; resolveDie fallback (no catalog die) now defaults to a **Kyokko 2V** reversible with Fusion's V instead of a 1V. Temporary defaults until เอ๋ enables manual/auto pick. An explicitly-set die in the record (e.g. SD00NA's D-KYOKKO-1V-V6) is still respected.
 **NEEDS (Group 1):** pull.
+
+---
+### 2026-06-03 - Group 2 (Web) ✅ — bend-dot colours fixed across themes (01a3aaa)
+เอ๋ 'theme อื่นก็ต้องทำสีให้ตรง': the step-table .sb-bend-dot (red=B1/green=B2, matching the canvas vertex dots) was blank in sketch/chalk because those themes' surface reset overrides inline backgrounds with !important. Fixed by marking the dot's inline background !important. Verified red rgb(224,87,74)/green rgb(78,204,163) in dark+sketch+chalk.
+**NEEDS (Group 1):** pull.
