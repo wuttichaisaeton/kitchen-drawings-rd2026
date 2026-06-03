@@ -1214,3 +1214,8 @@ After เอ๋ flagged the auto picking unowned tools + wrong die + "collides b
 - **simbend-sim.js**: reverted to the pre-WIP stable build → animation follows Fusion per-bend flags (badge ⟺ anim consistent). **Your dynamic-collision WIP is safe in git (729aef8 / 85e1eb3)** — recover it when we resume. Kept KD_TOOLING_FULL + zoom-out.
 - Verified live: SD00NA ✓ BENDABLE / die V06 / no red; FN0F00 ✗ B2 red; DST200 ✗ (Fusion's real reason); no unowned tools.
 **NEEDS (Group 1):** pull. SIM.BENDING auto is paused by เอ๋ — don't re-enable the auto-search (the getRecordWithAuto early return) until the collision model is validated against real clips.
+
+---
+### 2026-06-03 - Group 2 (Web) ✅ — removed web auto-tooling + fixed flat-on-die anim (a3720c6)
+Per เอ๋: (1) **removed the web auto-tooling search entirely** (searchAutoSequence + runAutoToolingSearch, ~174 lines) — getRecordWithAuto now returns Fusion's record as-is, punches picked manually from the owned library; getFlattenedCatalog kept for the pickers. (2) **fixed anchor() + anchorWithDescend()** so the part lies FLAT/horizontal on the die: the degenerate (unfolded) fallback was bis={0,1}, which kept a 2nd-bend baseline VERTICAL (part stood on end, formed flange sank below the die — เอ๋ 'ต้องวางราบแนวนอน'). Now it orients perpendicular to the baseline, choosing the side that keeps formed flanges above the die. Verified numerically (SD00NA/DST200 step 2 @ 0/20/45/90°): baseline y=0, both flanges spring up symmetric, vertex pinned at die centre.
+**NEEDS (Group 1):** pull. Auto-search is gone from app.js (recover from git ≤ bc86546 if we rebuild it). The simbend-sim.js base is the pre-WIP build + the flat-anchor fix; your dynamic-collision WIP is still in git 729aef8/85e1eb3.
