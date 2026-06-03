@@ -14,7 +14,16 @@
   var START = 350, MOVE = 700, HOLD = 220, END = 900;   // ms
   var PEN_HI = 34;   // punch tip lift above the bend line when the wall is flat (descends to ~1 when folded)
   var HORN_GAP = 1.5;   // mm gap each end so the punch clears the already-standing perpendicular walls
-  var SEG_MID = [300, 200, 50, 40, 20, 15, 10];   // Kyokko middle segments (horns = 100 at each end)
+
+  // ── tool cross-sections (shared by the 3-D fold + the 2-D press view) ──
+  // [u across hinge, z up], tip at origin. REAL outlines lifted 1:1 from เอ๋'s clean
+  // DXFs: SASH = Kyokko #202, GOOSE = gooseneck #453 (concave throat). TOOL_SCALE
+  // shrinks them so the real-mm tool doesn't dwarf small flanges.
+  var TOOL_SCALE = 0.5;
+  function scaleProf(p, k) { return p.map(function (q) { return [q[0] * k, q[1] * k]; }); }
+  var DIE_PROF = [[-13, 0], [-4, 0], [0, -6], [4, 0], [13, 0], [13, -16], [-13, -16]];
+  var SASH_PROF = scaleProf([[0,0],[12.728,12.728],[12.728,87],[20.728,95],[20.728,105],[17.728,105],[17.728,112.5],[20.728,112.5],[20.728,130],[7.728,130],[7.728,100],[-5.272,100],[-5.272,95],[2.728,87],[2.728,13.618],[-5.444,5.445]], TOOL_SCALE);
+  var GOOSE_PROF = scaleProf([[0,0],[4.09,4.39],[4.09,4.85],[8.9,10],[20.31,22.24],[28.65,31.18],[49,53],[49,77],[36,90],[20,90],[20,95],[17,95],[17,103],[20,103],[17,120],[7,120],[7,90],[-7,90],[-7,81],[11.84,61.5],[13.01,60.13],[14.01,58.62],[14.82,57.01],[15.43,55.31],[15.84,53.56],[16.03,51.76],[16,49.95],[15.76,48.17],[15.3,46.42],[14.64,44.74],[8.32,31.18],[4.15,22.24],[-1.56,10],[-4.24,4.25]], TOOL_SCALE);
 
   function mount(canvas, record, code) {
     var box = record && record.box_geom;
@@ -42,6 +51,19 @@
     // ONE tooling set for the whole job (เอ๋: don't swap tools — set up once, bend all
     // steps). If any wall needs a gooseneck, the gooseneck #453 covers every bend.
     var ONE_GOOSE = allWalls.some(function (x) { return x.punch === 'gooseneck' || x.needs_gooseneck; });
+    // ONE tool LENGTH for every step: sized to the LONG side (เอ๋ — size to the long
+    // wall, bend the short side first, never resize). Clamped so the bar still clears
+    // the perpendicular (short) walls standing when the long walls are bent last.
+    var _longWall = allWalls.reduce(function (a, b) {
+      return (b.width > a.width || (b.width === a.width && b.height > a.height)) ? b : a;
+    });
+    var ONE_TOOL_HALF = (function () {
+      var hw = _longWall.width / 2, off = Infinity;
+      allWalls.forEach(function (x) {
+        if (x.axis !== _longWall.axis && x.height >= _longWall.height - 0.01) off = Math.min(off, x.offset);
+      });
+      return off < Infinity ? Math.min(hw, off - HORN_GAP) : hw;
+    })();
 
     // fold fraction 0..1 for a given step at time t
     function frac(step, t) {
@@ -79,7 +101,6 @@
       return [{ x: -hw, y: -hh, z: 0 }, { x: hw, y: -hh, z: 0 },
               { x: hw, y: hh, z: 0 }, { x: -hw, y: hh, z: 0 }];
     }
-    function scaleProf(p, k) { return p.map(function (q) { return [q[0] * k, q[1] * k]; }); }
 
     // ── isometric projection (camera az/elev fixed) ──
     var ISO = 26 * R;
@@ -128,49 +149,17 @@
     var C_LIP = 'rgba(255,255,255,0.12)';
     var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f';
 
-    // ── press tooling: die (V-groove block under the bend line) + punch (blade
-    // descending from above), shown at the ACTIVE wall's bend line, extruded
-    // along the wall width. Cross-section [u across hinge, z up], tip at origin. ──
-    // Punch silhouettes are REAL outlines lifted 1:1 from เอ๋'s clean DXFs (tip
-    // at origin, +z up — same recipe as tool-art.js): SASH = Kyokko #202 (W26×H130),
-    // GOOSE = Kyokko gooseneck #453 v4 Assembly (W56×H120, concave throat on the
-    // left). TOOL_SCALE shrinks them uniformly if they dwarf the part on screen.
-    var TOOL_SCALE = 0.5;
-    var DIE_PROF   = [[-13, 0], [-4, 0], [0, -6], [4, 0], [13, 0], [13, -16], [-13, -16]];
-    var SASH_PROF  = scaleProf([[0,0],[12.728,12.728],[12.728,87],[20.728,95],[20.728,105],[17.728,105],[17.728,112.5],[20.728,112.5],[20.728,130],[7.728,130],[7.728,100],[-5.272,100],[-5.272,95],[2.728,87],[2.728,13.618],[-5.444,5.445]], TOOL_SCALE);
-    var GOOSE_PROF = scaleProf([[0,0],[4.09,4.39],[4.09,4.85],[8.9,10],[20.31,22.24],[28.65,31.18],[49,53],[49,77],[36,90],[20,90],[20,95],[17,95],[17,103],[20,103],[17,120],[7,120],[7,90],[-7,90],[-7,81],[11.84,61.5],[13.01,60.13],[14.01,58.62],[14.82,57.01],[15.43,55.31],[15.84,53.56],[16.03,51.76],[16,49.95],[15.76,48.17],[15.3,46.42],[14.64,44.74],[8.32,31.18],[4.15,22.24],[-1.56,10],[-4.24,4.25]], TOOL_SCALE);
+    // press tooling at the active wall's bend line — die (V block, below) + punch
+    // (real silhouette, descends from above). One solid bar, gooseneck throat out.
     function csTo3d(w, u, z, e) {
       var sg = w.side === '+' ? 1 : -1, off = w.offset;
       if (w.axis === 'X') return { x: sg * off + u, y: e, z: z };
       return { x: e, y: sg * off + u, z: z };
     }
-    // ── item 3: punch half-length along the bend line. If a perpendicular wall is
-    // already standing (folded at an earlier step), the blade must end INSIDE it —
-    // shorter than the wall width and centred — so it doesn't crush the up wing.
-    function punchHalf(aw) {
-      var hw = aw.width / 2, inside = Infinity;
-      allWalls.forEach(function (x) {
-        if (x.axis !== aw.axis && x.step < aw.step && x.height >= aw.height - 0.01)
-          inside = Math.min(inside, x.offset);
-      });
-      return inside < Infinity ? Math.min(hw, inside - HORN_GAP) : hw;
-    }
-    // ── item 2: cut positions along a bar of length L assembled from standard
-    // Kyokko segments (punch reserves a 100 mm horn at each end). Returns boundary
-    // offsets in [0,L] for drawing the segment-joint lines.
-    function segBoundaries(L, isPunch) {
-      var rem = L, segs = [], horn = isPunch && L >= 200;
-      if (horn) { segs.push(100); rem -= 200; }
-      for (var k = 0; k < SEG_MID.length; k++) {
-        while (rem >= SEG_MID[k] - 0.01 && rem > 8) { segs.push(SEG_MID[k]); rem -= SEG_MID[k]; if (segs.length > 80) { rem = 0; break; } }
-      }
-      if (rem > 0.5 && segs.length) segs[segs.length - 1] += rem;
-      if (horn) segs.push(100);
-      var b = [], acc = 0;
-      for (var i = 0; i < segs.length - 1; i++) { acc += segs[i]; b.push(acc); }
-      return b;
-    }
-    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias, eHalf, uSign, seam) {
+    // Extrude a tool cross-section as ONE solid bar (เอ๋: no section/segment cuts).
+    // eHalf = half-length along the bend line; uSign flips the profile across u so
+    // the gooseneck throat (concave) faces OUTSIDE the workpiece.
+    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias, eHalf, uSign) {
       if (eHalf == null) eHalf = w.width / 2;
       if (uSign && uSign !== 1) prof = prof.map(function (p) { return [p[0] * uSign, p[1]]; });
       var front = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, eHalf); });
@@ -182,11 +171,6 @@
       }
       items.push({ pts: front, fill: fill, stroke: stroke, lw: 1, d: cen(front) + (dbias || 0) + 0.3 });
       items.push({ pts: back, fill: fill, stroke: stroke, lw: 1, d: cen(back) + (dbias || 0) - 0.3 });
-      if (seam) seam.forEach(function (bpos) {                       // segment-joint lines
-        var e = -eHalf + bpos;
-        var loop = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, e); });
-        items.push({ pts: loop, fill: null, stroke: stroke, lw: 0.7, d: cen(loop) + (dbias || 0) + 0.2 });
-      });
     }
 
     function frame(t) {
@@ -223,11 +207,11 @@
         var f = frac(aw.step, t);
         var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
-        var eHalf = punchHalf(aw);                   // item 3: shorten + centre vs standing walls
-        var uSign = aw.side === '+' ? 1 : -1;        // throat (concave) hugs the rising flap (clears the sheet being folded)
+        var eHalf = ONE_TOOL_HALF;                   // one fixed length for every step (no resize; overhangs short walls)
+        var uSign = aw.side === '+' ? -1 : 1;        // throat (concave) faces OUTSIDE the workpiece (เอ๋)
         var prof = (ONE_GOOSE || aw.punch === 'gooseneck') ? GOOSE_PROF : SASH_PROF;
-        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, aw.width / 2, 1, segBoundaries(aw.width, false)); // die: full bed, segmented
-        addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, uSign, segBoundaries(eHalf * 2, true));      // punch: real shape, segmented, shorter+centred
+        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, eHalf, 1);          // die: one solid bar
+        addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, uSign);        // punch: one solid bar, concave ends, throat out
       }
 
       items.sort(function (a, b) { return a.d - b.d; });
@@ -248,12 +232,11 @@
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, w, 30 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      var tlen = wall ? Math.round(punchHalf(wall) * 2) : 0;
-      var clr = wall && tlen < Math.round(wall.width) ? ' (horn-clr ' + tlen + '<' + Math.round(wall.width) + ')' : '';
+      var tlen = Math.round(ONE_TOOL_HALF * 2);
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
            '  ·  PUNCH: ' + (ONE_GOOSE ? 'GOOSENECK #453' : (wall.punch || 'sash').toUpperCase()) + (ONE_GOOSE ? ' (1 setup, all ' + maxStep + ')' : '') +
-           '  ·  TOOL ' + tlen + 'mm' + clr)
+           '  ·  TOOL ' + tlen + 'mm (1 size)')
         : 'PAN FOLD  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
 
@@ -313,5 +296,72 @@
     };
   }
 
-  window.kdSimBend3D = { mount: mount };
+  // ── 2-D press cross-section of a BOX, per bend (เอ๋: the linear strip view is
+  // wrong for a pan). Shows the active wall's section: base flat on the die, the
+  // wall flange tipping up, the gooseneck punch descending — synced to the 3-D. ──
+  function mount2d(canvas, record, code) {
+    var box = record && record.box_geom;
+    if (!box || !canvas) return null;
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.max(1, window.devicePixelRatio || 1);
+    var walls = (box.walls || []).slice();
+    if (!walls.length) return null;
+    var maxStep = walls.reduce(function (m, w) { return Math.max(m, w.step || 0); }, 0);
+    var totalT = START + maxStep * (MOVE + HOLD) + END;
+    var ONE_GOOSE = walls.some(function (x) { return x.punch === 'gooseneck' || x.needs_gooseneck; });
+    function frac(step, t) {
+      var s = START + (step - 1) * (MOVE + HOLD);
+      if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE;
+    }
+    var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f',
+        C_BASE = '#9aa6b2', C_FLAP = '#4a90e2', C_RED = '#e0574a';
+
+    function frame(t) {
+      var W = canvas.width, H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+      var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
+      var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
+      var h = aw ? aw.height : 18;
+      var topZ = PEN_HI + 130 * TOOL_SCALE + 6;
+      var uMin = -46, uMax = 46, zMin = -20, zMax = Math.max(topZ, h + 6);
+      var s = Math.min((W * 0.9) / (uMax - uMin), (H * 0.82) / (zMax - zMin));
+      var ox = W / 2, baseY = H - 28 * dpr;
+      function X(u) { return ox + u * s; }
+      function Y(z) { return baseY - z * s; }
+      function poly(pts, fill, stroke, lw) {
+        ctx.beginPath(); pts.forEach(function (p, i) { var x = X(p[0]), y = Y(p[1]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
+        ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); }
+      }
+      function seg(a, b, col, lw) { ctx.beginPath(); ctx.moveTo(X(a[0]), Y(a[1])); ctx.lineTo(X(b[0]), Y(b[1])); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineCap = 'round'; ctx.stroke(); }
+      poly(DIE_PROF, C_DIE, C_DIE_E, 1);                       // die, V up at u=0
+      if (aw) {
+        var f = frac(active, t), th = (aw.angle_deg || 90) * f * R;
+        seg([0, 0], [42, 0], C_BASE, 7 * dpr / dpr);          // base: interior (+u), flat on die
+        var fx = -h * Math.cos(th), fz = h * Math.sin(th);
+        seg([0, 0], [fx, fz], aw.collides ? C_RED : C_FLAP, 7); // flange: outside (-u), tips up
+        var penZ = PEN_HI * (1 - f) + 1;
+        var prof = (ONE_GOOSE || aw.punch === 'gooseneck') ? GOOSE_PROF : SASH_PROF;
+        var pp = prof.map(function (p) { return [-p[0], p[1] + penZ]; }); // throat to -u (outside / flap side)
+        poly(pp, aw.collides ? C_RED : C_PUNCH, aw.collides ? C_RED : C_PUNCH_E, 1);
+      }
+      ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
+      ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
+      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + Math.round((aw.angle_deg || 90) * frac(active, t)) + '°  ·  PRESS  ·  ' + (ONE_GOOSE ? 'GOOSENECK #453' : 'SASH')) : '2D PRESS', 10 * dpr, 14 * dpr);
+    }
+
+    var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
+    function resize() { var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr); }
+    function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
+    resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
+    raf = requestAnimationFrame(loop);
+    return {
+      destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) try { ro.disconnect(); } catch (e) {} },
+      toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
+      isPlaying: function () { return !paused; },
+      set onstatus(fn) { statusCb = fn; },
+      recordClip: function () { if (statusCb) statusCb('use the 3-D clip'); }
+    };
+  }
+
+  window.kdSimBend3D = { mount: mount, mount2d: mount2d };
 })();
