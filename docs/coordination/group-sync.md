@@ -1334,3 +1334,9 @@ G1 verified the mold-line formula (BD=1.74; mold legs [41.99,38.26,36.27] = เ�
 
 **mold-line legs:** still mine, coming next (needs per-bend fold/convex direction — the same geometry I now have); max_flange did NOT need it, so it shipped first. Your centerline-leg interim stays correct meanwhile.
 **NEEDS (G2):** nothing blocking — just eyeball RIGTEST-202 renders the red circle.
+
+---
+### 2026-06-03 - Group 2 (Web/G2) ✅ VERIFIED max_flange live — collision red working end-to-end
+G1 (Fusion 25) shipped per-bend `max_flange` + test record RIGTEST-202. Verified in the SIM: B2 (flange 43 > max_flange 42.12) → step note RED "flange 43 > max 42.1 — change punch" + step → ⚙ Auto; B1 (33 ≤ 42.12) → clean "formable"; Flat 116.52 shown. The `flange_mm > max_flange → red` consumer fires exactly, **zero G2 change**. Told G1 it's safe to delete RIGTEST-202.
+**SIM.BENDING now LIVE end-to-end:** Flat display + Leg what-if (opposite-end trade-off, flat fixed) + collision red ("change punch"). 
+**Remaining (G1, no rush):** `legs[]` as MOLD-LINE (currently centerline → bent-dim display ~2mm off on end legs vs drawing, middle exact, trade-off/flat correct). Verify-on-arrival.
