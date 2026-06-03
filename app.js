@@ -5632,7 +5632,7 @@ function renderSimBendHome() {
       : '';
 
     return `
-      <div class="sb-card ${v.cls}" data-code="${escapeHtml(code)}" role="button" tabindex="0">
+      <div class="sb-card ${v.cls}${(_simBendExpanded === code && rec.kind === 'box') ? ' sb-card-wide' : ''}" data-code="${escapeHtml(code)}" role="button" tabindex="0">
         <div class="sb-card-head">
           <span class="sb-code">${escapeHtml(code)}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>

@@ -3592,6 +3592,8 @@ button.cut-status:focus-visible {
   background: radial-gradient(circle at 50% 36%, #16202c, #0b121a);
   border: 1px solid #1c2530; border-radius: 8px; cursor: default;
 }
+/* box card, when expanded, spans the whole grid so the 2 sim columns sit side by side */
+.sb-card-wide { grid-column: 1 / -1; }
 /* box parts: 2D press (left) + 3D iso (right), auto columns → stack when narrow */
 .sb-sim-cols { display: flex; flex-wrap: wrap; gap: 10px; }
 .sb-sim-col { flex: 1 1 320px; min-width: 0; }
