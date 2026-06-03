@@ -3891,7 +3891,8 @@ const BEND_COLORS = [
 function getBendColor(idx) { return BEND_COLORS[idx % BEND_COLORS.length]; }
 let _bendSimSubscribed = false;
 let _simBendExpanded = null;       // code currently expanded inline
-let _simController = null;         // active simbend-sim.js animation controller
+let _simController = null;         // active sim controller (3-D for box, else 2-D)
+let _simController2D = null;       // box only: the 2-D press sim shown beside the 3-D iso (เอ๋ wants both, 2 cols)
 
 function _subscribeBendSim() {
   if (_bendSimSubscribed) return;
@@ -5587,7 +5588,11 @@ function renderSimBendHome() {
         <div class="sb-detail">
           ${purchaseWarningBanner}
           <div class="sb-sim-wrap">
-            <canvas class="sb-sim-canvas"></canvas>
+            ${rec.kind === 'box' ? `
+            <div class="sb-sim-cols">
+              <div class="sb-sim-col"><div class="sb-sim-col-lbl">2D press</div><canvas class="sb-sim-canvas-2d"></canvas></div>
+              <div class="sb-sim-col"><div class="sb-sim-col-lbl">3D isometric</div><canvas class="sb-sim-canvas"></canvas></div>
+            </div>` : `<canvas class="sb-sim-canvas"></canvas>`}
             <div class="sb-sim-ctrls" style="flex-wrap: wrap; gap: 10px;">
               <button class="sb-sim-btn sb-sim-play" type="button">⏸ Pause</button>
               <button class="sb-sim-btn sb-sim-rec" type="button">⬇ Clip (.webm)</button>
@@ -5677,15 +5682,19 @@ function renderSimBendHome() {
   });
 
   if (_simController) { try { _simController.destroy(); } catch (e) {} _simController = null; }
+  if (_simController2D) { try { _simController2D.destroy(); } catch (e) {} _simController2D = null; }
   if (_simBendExpanded && window.kdSimBend) {
     const card = ROOT.querySelector(`.sb-card[data-code="${_simBendExpanded.replace(/"/g, '')}"]`);
     const canvas = card && card.querySelector('.sb-sim-canvas');
+    const canvas2d = card && card.querySelector('.sb-sim-canvas-2d');   // box only
     const rec = processedCache[_simBendExpanded];
     if (canvas && rec) {
       // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
       _simController = (rec.kind === 'box' && window.kdSimBend3D)
         ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
         : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+      // For box parts also mount the 2-D press sim beside it (left column).
+      if (canvas2d && window.kdSimBend) _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
@@ -5736,6 +5745,7 @@ function renderSimBendHome() {
       if (playBtn) playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         _simController.toggle();
+        if (_simController2D) { try { _simController2D.toggle(); } catch (e2) {} }   // keep both columns in sync
         playBtn.textContent = _simController.isPlaying() ? '⏸ Pause' : '▶ Play';
       });
       if (recBtn) recBtn.addEventListener('click', (e) => {
@@ -5885,10 +5895,13 @@ function renderSimBendHome() {
         
         if (_simController) {
           _simController.destroy();
+          if (_simController2D) { try { _simController2D.destroy(); } catch (e2) {} _simController2D = null; }
           // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
       _simController = (rec.kind === 'box' && window.kdSimBend3D)
         ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
         : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+          const canvas2d = card.querySelector('.sb-sim-canvas-2d');
+          if (canvas2d && window.kdSimBend) _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
           _simController.onstatus = (t) => { if (status) status.textContent = t; };
           const playBtn = card.querySelector('.sb-sim-play');
           if (playBtn) playBtn.textContent = '⏸ Pause';

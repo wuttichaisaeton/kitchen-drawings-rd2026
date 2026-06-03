@@ -39,6 +39,9 @@
     var nSteps = allWalls.length;
     var maxStep = allWalls.reduce(function (m, w) { return Math.max(m, w.step || 0); }, 0);
     var totalT = START + maxStep * (MOVE + HOLD) + END;
+    // ONE tooling set for the whole job (เอ๋: don't swap tools — set up once, bend all
+    // steps). If any wall needs a gooseneck, the gooseneck #453 covers every bend.
+    var ONE_GOOSE = allWalls.some(function (x) { return x.punch === 'gooseneck' || x.needs_gooseneck; });
 
     // fold fraction 0..1 for a given step at time t
     function frac(step, t) {
@@ -200,7 +203,7 @@
       var bq = baseQuad();
       items.push({ pts: bq, fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
       pairs.forEach(function (pr) {
-        var m = pr.main, mw = m.collides ? C_RED : (m.punch === 'gooseneck' ? C_GOOSE : C_SASH);
+        var m = pr.main, mw = m.collides ? C_RED : (ONE_GOOSE || m.punch === 'gooseneck' ? C_GOOSE : C_SASH);
         var md = (m.angle_deg || 90) * frac(m.step, t);
         var mq = wallQuad(m, md);
         var act = (m.step === active);
@@ -221,8 +224,8 @@
         var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
         var eHalf = punchHalf(aw);                   // item 3: shorten + centre vs standing walls
-        var uSign = aw.side === '+' ? 1 : -1;        // item: throat (concave) faces the standing flange (box interior)
-        var prof = aw.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF;
+        var uSign = aw.side === '+' ? 1 : -1;        // throat (concave) hugs the rising flap (clears the sheet being folded)
+        var prof = (ONE_GOOSE || aw.punch === 'gooseneck') ? GOOSE_PROF : SASH_PROF;
         addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, aw.width / 2, 1, segBoundaries(aw.width, false)); // die: full bed, segmented
         addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, uSign, segBoundaries(eHalf * 2, true));      // punch: real shape, segmented, shorter+centred
       }
@@ -249,7 +252,7 @@
       var clr = wall && tlen < Math.round(wall.width) ? ' (horn-clr ' + tlen + '<' + Math.round(wall.width) + ')' : '';
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
-           '  ·  PUNCH: ' + (wall.punch || 'sash').toUpperCase() + (wall.needs_gooseneck ? ' (GN)' : '') +
+           '  ·  PUNCH: ' + (ONE_GOOSE ? 'GOOSENECK #453' : (wall.punch || 'sash').toUpperCase()) + (ONE_GOOSE ? ' (1 setup, all ' + maxStep + ')' : '') +
            '  ·  TOOL ' + tlen + 'mm' + clr)
         : 'PAN FOLD  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
