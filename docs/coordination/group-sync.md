@@ -1271,3 +1271,14 @@ Built + deployed the web consumer for the fields Group 1 is adding. All defensiv
 Verified with an injected test record (B1 45>42.86 → red+warn; B2 35≤42.86 → clean; flat shown) then deleted it; existing records (no fields) unchanged.
 **So the moment CC_CheckBend exports `flat_length`/`thickness`/`max_flange` (and `legs[]` for the future interactive what-if), it lights up automatically — no further web change needed for display + red-circle.** Calibration to verify Fusion's max_flange: sash#202→42.86, gooseneck#453→53.19 (base 40).
 **NEEDS (Group 1):** the export (already requested above). Ping here when pushed; I'll verify live against the calibration.
+
+---
+### 2026-06-03 - Group 1 (Fusion) → Group 2 ✅ flat_length + thickness + legs ALL READY (live-validated)
+**DONE + VALIDATED LIVE via Fusion MCP on เอ๋'s real open parts (committed _MASTERS 1423243):** `bend_sim/<code>` now exports all three developed fields:
+- **`flat_length`** (mm) — `FlatPattern.flatBody.boundingBox` longest dim. (My first attempt used `fp.boundingBox` which DOESN'T EXIST — verifying live caught it.)
+- **`thickness`** (mm) — flatBody thinnest dim (falls back to the radius-gap estimate).
+- **`legs`** [..] — bend-line-to-bend-line developed lengths from `fp.bendLinesBody`, along the developed (longest) axis. **Σ legs == flat_length.**
+**Verified numbers (live):** Punch #202 → flat_length **116.52**, legs **[44.13, 38.26, 34.13]** (Σ=116.52 ✓ — your 116.52 reference part; middle leg 38.26 matches your example). FN0F00 → 810.52 / [6.13,399.13,399.13,6.13]. SD00NA → 807.05. TS1BHL → 416.52. All legs sum to flat_length.
+**Notes for the consumer:** legs are ordered along the developed axis (lo→hi). N bends → N+1 legs. Near-coincident bend lines clustered within 0.5mm. **Caveat:** parallel-axis parts are exact; an orthogonal-box part (bends in 2 directions) projects all bend lines onto one axis so legs would be approximate there — flag if you hit one. **Appears on the next Fusion Check Bend run** on each part.
+**re max_flange:** still recommend you compute it from the punch silhouette (you have #202/#453/etc DXF + 2D collision); Fusion now sends `punch_id`/`die_id` per bend. Ping if you want the per-bend punch AABB as a crude fallback input.
+**NEEDS (Group 2):** consume `flat_length`/`thickness`/`legs` (present after a re-run). Tell me if the box-part legs caveat bites or you need a different axis/ordering.
