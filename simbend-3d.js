@@ -113,6 +113,31 @@
     var C_BASE = '#9aa6b2', C_BASE_E = '#5d6b78';
     var C_SASH = '#e8923a', C_GOOSE = '#4a90e2', C_RED = '#e0574a';
     var C_LIP = 'rgba(255,255,255,0.12)';
+    var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f';
+
+    // ── press tooling: die (V-groove block under the bend line) + punch (blade
+    // descending from above), shown at the ACTIVE wall's bend line, extruded
+    // along the wall width. Cross-section (u across hinge, z up) → 3-D. ──
+    var DIE_PROF   = [[-13, 0], [-4, 0], [0, -6], [4, 0], [13, 0], [13, -16], [-13, -16]];
+    var SASH_PROF  = [[0, 0], [3.5, 5], [3.5, 48], [-3.5, 48], [-3.5, 5]];
+    var GOOSE_PROF = [[0, 0], [3.5, 5], [3.5, 17], [11, 25], [11, 48], [3, 48], [3, 31], [-3.5, 31], [-3.5, 5]];
+    function csTo3d(w, u, z, e) {
+      var sg = w.side === '+' ? 1 : -1, off = w.offset;
+      if (w.axis === 'X') return { x: sg * off + u, y: e, z: z };
+      return { x: e, y: sg * off + u, z: z };
+    }
+    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias) {
+      var hw = w.width / 2;
+      var front = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, hw); });
+      var back = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, -hw); });
+      for (var i = 0; i < prof.length; i++) {
+        var j = (i + 1) % prof.length;
+        var q = [front[i], front[j], back[j], back[i]];
+        items.push({ pts: q, fill: fill, stroke: stroke, lw: 1, d: cen(q) + (dbias || 0) });
+      }
+      items.push({ pts: front, fill: fill, stroke: stroke, lw: 1, d: cen(front) + (dbias || 0) + 0.3 });
+      items.push({ pts: back, fill: fill, stroke: stroke, lw: 1, d: cen(back) + (dbias || 0) - 0.3 });
+    }
 
     function frame(t) {
       var w = canvas.width, h = canvas.height;
@@ -140,6 +165,18 @@
           items.push({ pts: lq, fill: pr.lip.collides ? C_RED : shade(mw, 0.6), stroke: pr.lip.collides ? C_RED : '#2b3340', lw: 1, d: cen(lq) + 0.5 });
         }
       });
+
+      // press tooling at the active wall's bend line: die (static, below) +
+      // punch (descends from above as the wall folds; sash vs gooseneck shape).
+      var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
+      if (aw && active >= 1) {
+        var f = frac(aw.step, t);
+        var penZ = 34 * (1 - f) + 1;                 // punch tip: high when flat → ~0 when folded
+        var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
+        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3);                                  // die under the line
+        addExtrusion(items, aw, aw.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF, penZ, pFill, pStroke, 6); // punch above (near)
+      }
+
       items.sort(function (a, b) { return a.d - b.d; });
       items.forEach(function (it) { fillQuad(it.pts, it.fill, it.stroke, it.lw); });
 
