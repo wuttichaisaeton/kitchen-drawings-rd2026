@@ -12,6 +12,7 @@
   'use strict';
   var R = Math.PI / 180;
   var START = 350, MOVE = 700, HOLD = 220, END = 900;   // ms
+  var PEN_HI = 34;   // punch tip lift above the bend line when the wall is flat (descends to ~1 when folded)
 
   function mount(canvas, record, code) {
     var box = record && record.box_geom;
@@ -73,6 +74,7 @@
       return [{ x: -hw, y: -hh, z: 0 }, { x: hw, y: -hh, z: 0 },
               { x: hw, y: hh, z: 0 }, { x: -hw, y: hh, z: 0 }];
     }
+    function scaleProf(p, k) { return p.map(function (q) { return [q[0] * k, q[1] * k]; }); }
 
     // ── isometric projection (camera az/elev fixed) ──
     var ISO = 26 * R;
@@ -88,6 +90,10 @@
       pairs.forEach(function (pr) {
         pts = pts.concat(wallQuad(pr.main, pr.main.angle_deg || 90));
         if (pr.lip) pts = pts.concat(lipQuad(pr.main, pr.main.angle_deg || 90, pr.lip, pr.lip.angle_deg || 90));
+        // include the (real, tall) tooling envelope so the punch never clips off-canvas
+        var prof = pr.main.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF;
+        prof.forEach(function (p) { pts.push(csTo3d(pr.main, p[0], p[1] + PEN_HI, 0)); });
+        DIE_PROF.forEach(function (p) { pts.push(csTo3d(pr.main, p[0], p[1], 0)); });
       });
       var P = pts.map(iso);
       var minx = Math.min.apply(0, P.map(function (p) { return p.x; }));
@@ -119,10 +125,15 @@
 
     // ── press tooling: die (V-groove block under the bend line) + punch (blade
     // descending from above), shown at the ACTIVE wall's bend line, extruded
-    // along the wall width. Cross-section (u across hinge, z up) → 3-D. ──
+    // along the wall width. Cross-section [u across hinge, z up], tip at origin. ──
+    // Punch silhouettes are REAL outlines lifted 1:1 from เอ๋'s clean DXFs (tip
+    // at origin, +z up — same recipe as tool-art.js): SASH = Kyokko #202 (W26×H130),
+    // GOOSE = Kyokko gooseneck #453 v4 Assembly (W56×H120, concave throat on the
+    // left). TOOL_SCALE shrinks them uniformly if they dwarf the part on screen.
+    var TOOL_SCALE = 0.5;
     var DIE_PROF   = [[-13, 0], [-4, 0], [0, -6], [4, 0], [13, 0], [13, -16], [-13, -16]];
-    var SASH_PROF  = [[0, 0], [3.5, 5], [3.5, 48], [-3.5, 48], [-3.5, 5]];
-    var GOOSE_PROF = [[0, 0], [3.5, 5], [3.5, 17], [11, 25], [11, 48], [3, 48], [3, 31], [-3.5, 31], [-3.5, 5]];
+    var SASH_PROF  = scaleProf([[0,0],[12.728,12.728],[12.728,87],[20.728,95],[20.728,105],[17.728,105],[17.728,112.5],[20.728,112.5],[20.728,130],[7.728,130],[7.728,100],[-5.272,100],[-5.272,95],[2.728,87],[2.728,13.618],[-5.444,5.445]], TOOL_SCALE);
+    var GOOSE_PROF = scaleProf([[0,0],[4.09,4.39],[4.09,4.85],[8.9,10],[20.31,22.24],[28.65,31.18],[49,53],[49,77],[36,90],[20,90],[20,95],[17,95],[17,103],[20,103],[17,120],[7,120],[7,90],[-7,90],[-7,81],[11.84,61.5],[13.01,60.13],[14.01,58.62],[14.82,57.01],[15.43,55.31],[15.84,53.56],[16.03,51.76],[16,49.95],[15.76,48.17],[15.3,46.42],[14.64,44.74],[8.32,31.18],[4.15,22.24],[-1.56,10],[-4.24,4.25]], TOOL_SCALE);
     function csTo3d(w, u, z, e) {
       var sg = w.side === '+' ? 1 : -1, off = w.offset;
       if (w.axis === 'X') return { x: sg * off + u, y: e, z: z };
@@ -173,7 +184,7 @@
       var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
       if (aw && active >= 1) {
         var f = frac(aw.step, t);
-        var penZ = 34 * (1 - f) + 1;                 // punch tip: high when flat → ~0 when folded
+        var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
         addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3);                                  // die under the line
         addExtrusion(items, aw, aw.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF, penZ, pFill, pStroke, 6); // punch above (near)
