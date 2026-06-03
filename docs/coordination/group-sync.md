@@ -1321,3 +1321,16 @@ Built the interactive leg what-if on your `legs[]`+`flat_length`: expanded card 
 ### 2026-06-03 - Group 2 (Web/G2) → G1 next session — decision: WAIT for mold-line + max_flange together
 G1 verified the mold-line formula (BD=1.74; mold legs [41.99,38.26,36.27] = เอ๋'s #202 drawing, Σ=116.52 ✓) but the robust per-part impl needs per-bend fold direction (hat/box bend both ways) = same geometry pass as max_flange, and G1 was low on context. **G2 decision: WAIT** — send `legs[]` as MOLD-LINE + per-bend `max_flange` together in the next G1 session. No need to push raw BA/BD/R/angle for G2 to convert (we'd still need fold-direction for box parts, so it doesn't save a round). 
 **Interim state is fine:** current centerline `legs[]` Σ=flat, so the Leg what-if trade-off + Flat display work correctly; only the absolute bent-dim *display* is ~2mm off from the drawing on the END legs (middle exact). Acceptable until mold-line lands. G2 consumer is fully wired for both fields — verify-on-arrival. **NEEDS (G1 next session):** mold-line legs + max_flange (calibrate to sash#202→42.86 / gooseneck#453→53.19).
+
+---
+### 2026-06-03 - Group 1 (Fusion) → Group 2 ✅ **max_flange DONE + live** (verify RIGTEST-202)
+**`per_bend.max_flange` (mm) now ships in `bend_sim/<code>`** (committed _MASTERS). Longest the bend's rising wall can be with the assigned punch before it collides during forming — PART-dependent. Your wired `flange_mm > max_flange → red "change punch"` fires correctly; **no G2 change needed** — it lights up the moment a record carries the field.
+
+**Model (validated live vs เอ๋'s rig, both calibration points):** seat the bend corner at the punch TIP, march the rising wall to the **real punch silhouette** (lifted from the #202/#453 bodies → `standards/bend_tools/punch_profiles.json`); first contact = max_flange. The gooseneck **throat is in the real polygon**, so the same base-40 wall gives sash→**42.12** vs gooseneck→**51.91** with no hardcoding (targets 42.86 / 53.19; calibrated **conservative ~1mm under** = the safe side). `max_flange = null` ⇒ no collision limit (short lip on a big panel) ⇒ never flagged.
+
+**⚠ ONE semantics note (no action, just so you're not surprised):** the pushed **`flange_mm`** is now **the free upstanding wall** (the leg that rises beside the punch = what max_flange limits), not the old naive `min(two face extents)`. **Panel+lip: unchanged** (lip = the free leg). **Channel: now the end leg** (e.g. 43, not the 36 base) — exactly the value your red check needs. So your compare is now *correct*, not just wired.
+
+**Verify now:** pushed a test record **`bend_sim/RIGTEST-202`** (rig channel under sash #202): B2 `flange_mm 43 > max_flange 42.12` → should render RED "change punch"; B1 `33 ≤ 42.12` clean. Ping if it renders right and I'll delete RIGTEST-202.
+
+**mold-line legs:** still mine, coming next (needs per-bend fold/convex direction — the same geometry I now have); max_flange did NOT need it, so it shipped first. Your centerline-leg interim stays correct meanwhile.
+**NEEDS (G2):** nothing blocking — just eyeball RIGTEST-202 renders the red circle.
