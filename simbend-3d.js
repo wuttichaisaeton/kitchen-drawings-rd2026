@@ -13,7 +13,8 @@
   var R = Math.PI / 180;
   var START = 350, MOVE = 700, HOLD = 220, END = 900;   // ms
   var PEN_HI = 34;   // punch tip lift above the bend line when the wall is flat (descends to ~1 when folded)
-  var HORN_GAP = 1.5;   // mm gap each end so the punch clears the already-standing perpendicular walls
+  var HORN_LEN = 70;    // mm at each punch end where the bottom relief (horn) ramps up
+  var HORN_RISE = 20;   // how far the bottom tip lifts at the very ends (top stays flat → #453)
 
   // ── tool cross-sections (shared by the 3-D fold + the 2-D press view) ──
   // [u across hinge, z up], tip at origin. REAL outlines lifted 1:1 from เอ๋'s clean
@@ -57,13 +58,9 @@
     var _longWall = allWalls.reduce(function (a, b) {
       return (b.width > a.width || (b.width === a.width && b.height > a.height)) ? b : a;
     });
-    var ONE_TOOL_HALF = (function () {
-      var hw = _longWall.width / 2, off = Infinity;
-      allWalls.forEach(function (x) {
-        if (x.axis !== _longWall.axis && x.height >= _longWall.height - 0.01) off = Math.min(off, x.offset);
-      });
-      return off < Infinity ? Math.min(hw, off - HORN_GAP) : hw;
-    })();
+    // full long-side length; the horns (raised bottom at the ends) clear the
+    // standing short walls — so the bar isn't shortened (เอ๋: หลบด้วย horn).
+    var ONE_TOOL_HALF = _longWall.width / 2;
 
     // fold fraction 0..1 for a given step at time t
     function frac(step, t) {
@@ -172,6 +169,36 @@
       items.push({ pts: front, fill: fill, stroke: stroke, lw: 1, d: cen(front) + (dbias || 0) + 0.3 });
       items.push({ pts: back, fill: fill, stroke: stroke, lw: 1, d: cen(back) + (dbias || 0) - 0.3 });
     }
+    // The punch as ONE solid bar with a HORN relief: the working tip is flat in the
+    // middle and rises toward both ends (top edge stays straight — mounts in the ram),
+    // so the ends clear the already-standing perpendicular walls (#453 side profile).
+    function sweptPunch(items, w, prof, zBase, eHalf, uSign, fill, stroke, dbias) {
+      if (uSign && uSign !== 1) prof = prof.map(function (p) { return [p[0] * uSign, p[1]]; });
+      var profH = prof.reduce(function (m, p) { return Math.max(m, p[1]); }, 1);
+      var N = 16, slices = [];
+      for (var k = 0; k <= N; k++) {
+        var e = -eHalf + (2 * eHalf) * k / N;
+        var a = Math.abs(e) - (eHalf - HORN_LEN);
+        var lift = a > 0 ? Math.min(1, a / HORN_LEN) * HORN_RISE : 0;
+        slices.push(prof.map(function (p) { return csTo3d(w, p[0], p[1] + zBase + lift * (1 - p[1] / profH), e); }));
+      }
+      var n = prof.length;
+      for (var s = 0; s < slices.length - 1; s++) {       // solid side facets (filled, no lines)
+        var A = slices[s], B = slices[s + 1];
+        for (var i = 0; i < n; i++) {
+          var j = (i + 1) % n, q = [A[i], A[j], B[j], B[i]];
+          items.push({ pts: q, fill: fill, stroke: null, lw: 0, d: cen(q) + (dbias || 0) });
+        }
+      }
+      [0, Math.floor(n / 2)].forEach(function (edge) {     // silhouette runs (tip + a side) define the horn shape
+        for (var s2 = 0; s2 < slices.length - 1; s2++) {
+          var seg = [slices[s2][edge], slices[s2 + 1][edge], slices[s2 + 1][edge], slices[s2][edge]];
+          items.push({ pts: seg, fill: null, stroke: stroke, lw: 1, d: cen(seg) + (dbias || 0) + 0.3 });
+        }
+      });
+      items.push({ pts: slices[0], fill: null, stroke: stroke, lw: 1.2, d: cen(slices[0]) + (dbias || 0) - 0.3 });
+      items.push({ pts: slices[slices.length - 1], fill: null, stroke: stroke, lw: 1.2, d: cen(slices[slices.length - 1]) + (dbias || 0) + 0.3 });
+    }
 
     function frame(t) {
       var w = canvas.width, h = canvas.height;
@@ -211,7 +238,7 @@
         var uSign = aw.side === '+' ? -1 : 1;        // throat (concave) faces OUTSIDE the workpiece (เอ๋)
         var prof = (ONE_GOOSE || aw.punch === 'gooseneck') ? GOOSE_PROF : SASH_PROF;
         addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, eHalf, 1);          // die: one solid bar
-        addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, uSign);        // punch: one solid bar, concave ends, throat out
+        sweptPunch(items, aw, prof, penZ, eHalf, uSign, pFill, pStroke, 6);          // punch: one bar + horn relief, throat out
       }
 
       items.sort(function (a, b) { return a.d - b.d; });
