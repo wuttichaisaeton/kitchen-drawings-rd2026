@@ -5472,34 +5472,51 @@ function searchAutoSequence(rec, ownedOnly) {
 }
 
 function runAutoToolingSearch(rec) {
+  // OWNED-ONLY: never auto-assign a tool the shop doesn't own (เอ๋ 'มีดรุ่นนี้
+  // เราไม่มี' — owned-only, punch may differ per bend). The auto-plan only ever
+  // uses tools we physically have.
   let sol = searchAutoSequence(rec, true);
   if (sol) {
     sol.n_problems = 0;
     return sol;
   }
-  
-  sol = searchAutoSequence(rec, false);
-  if (sol) {
-    sol.n_problems = 0;
-    return sol;
-  }
-  
+
+  // Couldn't bend with owned tools. Run an all-tools search ONLY to tell เอ๋
+  // whether buying a tool would make it possible — we do NOT assign the unowned
+  // tool as the plan (that was the bug: it silently picked a punch we don't own).
+  const allSol = searchAutoSequence(rec, false);
   return {
     bendable: false,
-    kind: 'impossible',
+    kind: allSol ? 'needs_tool' : 'impossible',
     order: (rec.per_bend || []).map(b => b.bend),
     assignedTools: {},
     n_problems: (rec.per_bend || []).length,
-    reason: "no collision-free bend order exists"
+    reason: allSol
+      ? "not bendable with the tools we own — would need a tool we don't have"
+      : "no collision-free bend order exists"
   };
 }
 
 function getRecordWithAuto(code, rec) {
   if (!rec) return null;
+
+  // ── AUTO TOOLING TEMPORARILY DISABLED (เอ๋ 2026-06-03 'หยุดระบบ Auto ก่อน') ──
+  // The web 2D collision model can't reliably decide bendability — it could not
+  // tell a genuinely-bendable part (SD00NA) apart from a non-bendable one
+  // (FN0F00); both look identical in 2D (flange vs upper-punch). It also picked
+  // tools the shop doesn't own. So until the collision model is good enough, we
+  // show Fusion's authoritative result (bendable / order / die / collides) AS-IS
+  // and let เอ๋ pick punches manually. The auto-search code below
+  // (runAutoToolingSearch / searchAutoSequence) is kept intact but dormant —
+  // re-enable by removing this early return once it's accurate enough (เอ๋ will
+  // ask "พร้อมทำ Sim bending auto หรือยัง").
+  return rec;
+
+  // eslint-disable-next-line no-unreachable
   if (rec.checked_by === 'web_override') {
     return rec;
   }
-  
+
   const autoPlan = runAutoToolingSearch(rec);
   if (autoPlan) {
     const updatedRec = JSON.parse(JSON.stringify(rec));

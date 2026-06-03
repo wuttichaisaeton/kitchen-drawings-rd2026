@@ -82,47 +82,13 @@
         if (t < p.t0) { moving = true; a[p.idx] = 0; descend = 0; }
         else if (t < p.tFold) {
           var f = (t - p.t0) / FOLD; a[p.idx] = lerp(0, p.target, f); descend = f;
-          // Dynamic collision checking during folding
-          if (active != null) {
-            var rp = resolvePunch(model, { ab: ab });
-            var rd = resolveDie(model, { ab: ab });
-            var colRes = checkCollisionAt(model, active, a, rp, rd);
-            if (colRes.collides && colRes.at_angle <= Math.abs(a[active])) {
-              collide = true;
-            }
-          }
-        } else {
-          a[p.idx] = p.target; descend = 1;
-          // Dynamic collision checking at full bend stroke
-          if (active != null) {
-            var rp = resolvePunch(model, { ab: ab });
-            var rd = resolveDie(model, { ab: ab });
-            var colRes = checkCollisionAt(model, active, a, rp, rd);
-            if (colRes.collides) {
-              collide = true;
-            }
-          }
-        }
+        } else { a[p.idx] = p.target; descend = 1; if (p.blocking) collide = true; }
       }
     }
     if (t >= model.totalT - END_HOLD) {
       var lp = model.phases[model.phases.length - 1];
-      if (lp) {
-        step = lp.step; active = lp.idx; ab = lp.b; a[lp.idx] = lp.target; descend = 1;
-        // Dynamic collision checking at final hold state
-        if (active != null) {
-          var rp = resolvePunch(model, { ab: ab });
-          var rd = resolveDie(model, { ab: ab });
-          var colRes = checkCollisionAt(model, active, a, rp, rd);
-          if (colRes.collides) {
-            collide = true;
-          }
-        }
-        if (!model.bendable && !model.overridePunchId && !model.overrideDieId) {
-          // Fallback: if part is not bendable and no override has been touched, keep original collision status
-          collide = lp.blocking || collide;
-        }
-      }
+      if (lp) { step = lp.step; active = lp.idx; ab = lp.b; a[lp.idx] = lp.target; descend = 1;
+        if (lp.blocking || !model.bendable) collide = lp.blocking || collide; }
     }
     return { a: a, active: active, step: step, collide: collide, ab: ab, descend: descend, moving: moving };
   }
@@ -167,10 +133,6 @@
   }
 
   function resolvePunch(model, st) {
-    // Resolve against the FULL catalog (owned + Kyokko presets) that the auto-
-    // search assigned from — window.KD_TOOLING alone lacks the P-KYOKKO-* presets,
-    // which made needs-purchase punches fall through to the string heuristic and
-    // mislabel as STANDARD (เอ๋ DST200). Falls back to KD_TOOLING if FULL absent.
     var cat = window.KD_TOOLING_FULL || window.KD_TOOLING || { punches: [], dies: [] };
     var pType = 'standard';
     var pAngle = 88;
@@ -214,8 +176,6 @@
   }
 
   function resolveDie(model, st) {
-    // Full catalog incl. Kyokko presets (see resolvePunch) so auto-assigned
-    // P-KYOKKO-* dies resolve to real geometry instead of the heuristic.
     var cat = window.KD_TOOLING_FULL || window.KD_TOOLING || { punches: [], dies: [] };
     var dType = '1V';
     var dAngle = 88;
@@ -508,9 +468,10 @@
       var an = st.active != null ? anchor(pts, model, st) : { pts: pts, pen: 0 };
       var P = an.pts;
 
-      var scale = Math.max(0.5, Math.min(4 * dpr,
-        (h * 0.26) / Math.max(maxFlange, 20)));
-      var dieCx = w / 2, dieCy = h * 0.62;
+      // Zoomed out so the full tool + part fit with headroom (เอ๋ 'Zoom out ออกมาอีก').
+      var scale = Math.max(0.4, Math.min(4 * dpr,
+        (h * 0.19) / Math.max(maxFlange, 26)));
+      var dieCx = w / 2, dieCy = h * 0.66;
       function px(p) { return dieCx + p.x * scale; }
       function py(p) { return dieCy - p.y * scale; }
 
@@ -538,25 +499,10 @@
         drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile);
       }
 
-      // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal dynamically
+      // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
       model.spatial.forEach(function (sp) {
         var vtx = P[sp.idx + 1]; if (!vtx) return;
-        var rp = resolvePunch(model, { ab: sp });
-        var rd = resolveDie(model, { ab: sp });
-        var V = rd.v;
-        var angleOk = rd.angle <= sp.angle + 2.0;
-        var flangeOk = sp.flange >= 0.67 * V;
-        
-        var aTest = {};
-        model.spatial.forEach(function (s) { aTest[s.idx] = 0; });
-        for (var k = 0; k < model.order.length; k++) {
-          var oIdx = model.order[k];
-          aTest[oIdx] = model.spatial[oIdx].angle;
-          if (oIdx === sp.idx) break;
-        }
-        
-        var colRes = checkCollisionAt(model, sp.idx, aTest, rp, rd);
-        var isBad = !angleOk || !flangeOk || colRes.collides;
+        var isBad = !sp.ok || sp.collides;
         if (isBad) {
           ctx.strokeStyle = '#e0574a';
           ctx.lineWidth = 1.5 * dpr;
@@ -597,24 +543,17 @@
       ctx.lineWidth = 1 * dpr;
       ctx.beginPath(); ctx.moveTo(0, 28 * dpr); ctx.lineTo(w, 28 * dpr); ctx.stroke();
 
-      // Top Bar Text (Left-aligned details & dynamic error calculations)
+      // Top Bar Text (Left-aligned details)
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      var hasErr = false;
-      var angleOk = true;
-      var flangeOk = true;
-      var rpInfo = null;
-      var rdInfo = null;
       if (st.ab) {
         var phaseTxt = (st.moving ? 'position' : 'press').toUpperCase();
-        rpInfo = resolvePunch(model, st);
-        rdInfo = resolveDie(model, st);
-        
-        var V = rdInfo.v;
-        angleOk = rdInfo.angle <= st.ab.angle + 2.0;
-        flangeOk = st.ab.flange >= 0.67 * V;
-        hasErr = !angleOk || !flangeOk || st.collide;
-        
+        var rpInfo = resolvePunch(model, st);
+        var rdInfo = resolveDie(model, st);
+        // Drop the tool info from the left label when a right-aligned error is
+        // shown, so the two don't overlap on narrow cards (เอ๋ 2026-06-03
+        // 'ตัวแดงซ้อนทับกัน'). The tools are listed in the step table anyway.
+        var hasErr = !st.ab.ok || st.collide;
         var toolInfo = hasErr ? '' : ('  ·  PUNCH: ' + rpInfo.type.toUpperCase() + '  ·  DIE: V' + rdInfo.v);
         ctx.fillText('STEP ' + st.step + '/' + model.phases.length + '  ·  ' +
           st.ab.id + '  ·  ' +
@@ -622,28 +561,12 @@
       }
 
       // Top Bar Text (Right-aligned error/warning)
-      if (st.ab && hasErr) {
+      if (st.ab && (!st.ab.ok || st.collide)) {
         ctx.fillStyle = '#e0574a'; ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
         var errorMsg = '';
         if (st.collide) {
-          // Detect whether it collides with punch or die dynamically
-          var pts = vertices(model, st.a);
-          var ptsAnchored = anchorWithDescend(pts, st.active, st.a, st.descend, rdInfo.v);
-          var diePoly = getDiePolygon(rdInfo.type, rdInfo.angle, rdInfo.v, rdInfo.height, rdInfo.vList);
-          
-          var hitsWhat = 'PUNCH';
-          for (var i = 0; i <= model.N; i++) {   // all N+1 flanges (see checkCollisionAt)
-            if (i === st.active || i === st.active + 1) continue;
-            var p1 = ptsAnchored[i]; var p2 = ptsAnchored[i + 1];
-            if (!p1 || !p2) continue;
-            if (segmentIntersectsPolygon(p1, p2, diePoly)) { hitsWhat = 'DIE'; break; }
-          }
-          errorMsg = '✗ HITS ' + hitsWhat + ' @' + Math.round(st.ab.angle * st.descend) + '°';
-        } else if (!angleOk) {
-          errorMsg = '✗ DIE ANGLE TOO OBTUSE';
-        } else if (!flangeOk) {
-          errorMsg = '✗ FLANGE TOO SHORT';
+          errorMsg = '✗ HITS ' + (st.ab.hits || 'PUNCH').toUpperCase() + (st.ab.at_angle != null ? ' @' + Math.round(st.ab.at_angle) + '°' : '');
         } else {
           errorMsg = '✗ ' + (st.ab.reason || 'REJECTED').toUpperCase();
         }
@@ -865,18 +788,12 @@
       var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x, y: p.y - pen }; });
       var diePoly = getDiePolygon(die.type, die.angle, die.v, die.height, die.vList);
       
-      // Check EVERY flange segment (0..N) — there are N+1 segments for N bends,
-      // so the old `i < model.N` bound silently skipped the last formed flange
-      // (the one that most often swings into the punch on the final step). That
-      // under-detection is why parts that visibly collide were still reported
-      // bendable (เอ๋ 'มันชน ทำไมแจ้งพับได้'). Still skip the two flanges joined
-      // at the active vertex (they ride the punch tip by definition).
-      for (var i = 0; i <= model.N; i++) {
+      for (var i = 0; i < model.N; i++) {
         if (i === activeBendIdx || i === activeBendIdx + 1) continue;
         var p1 = ptsAnchored[i];
         var p2 = ptsAnchored[i + 1];
         if (!p1 || !p2) continue;
-
+        
         if (segmentIntersectsPolygon(p1, p2, punchPolyTrans)) {
           return { collides: true, with: 'punch', at_angle: a[activeBendIdx] * desc };
         }
