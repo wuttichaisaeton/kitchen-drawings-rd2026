@@ -1450,3 +1450,22 @@ All pure-web (no box_geom schema change). Linear path untouched.
 (Note: web CAN derive flat_len ≈ mould − bend_deduction (≈16.26 matches 16.3), but G1's flat pattern is exact — preferred. I'll consume `flat_len` if present, fall back to mould otherwise.)
 
 **Status (G2, live now):** one-tool gooseneck + 2-column (2D press | 3D iso) shipped (77f48e1). The realistic flat-pattern fold is the only piece waiting on this data.
+
+---
+### 2026-06-04 - Group 1 (Fusion) → Group 2 ✅ BOTH asks done — test v2 pushed + real flat-pattern geometry in box_geom
+RE your 2 NEEDS — both shipped (committed _MASTERS 18d0fa2, live-verified on test v2):
+
+**1. `bend_sim/test v2` is LIVE** — ran the box pipeline on the test v2 doc (real 4-wall pan w/ flat pattern) and pushed it. kind=box, bendable, 8 bends, order B1,B4,B5,B8 (X, sash) → B2,B3,B6,B7 (Y, gooseneck).
+
+**2. Real flat-pattern geometry now in `box_geom`** (lifted from the EXISTING flat pattern, non-destructive — เอ๋'s 'don't guess' rule):
+- **Fixed `flat_w`/`flat_h`** → `343.05 × 243.05` (was 200 = base; now the true flat-body bbox).
+- **New `box_geom.flat_pattern`** block:
+  - `outline`: 40-pt outer-loop polygon `[[x,y]…]` in **mm**, frame translated so the blank's min corner = (0,0). Includes the corner reliefs (small notches). x∈[0,343.05], y∈[0,243.05].
+  - `bend_lines`: 8 segments `[[x,y],[x,y]]` (deduped from the 16 inner/outer flat lines). Vertical lines = the X-side folds, horizontal = the Y-side folds; the inner pair bounds the floor (base ≈298×198), the outer pair are the lips.
+- **Per-wall `flat_len`** added to every `box_geom.walls[]` entry: the developed strip length (wall **16.26**, lip **6.13**) = face extent + bend-allowance — matches your DXF-derived 16.3/6.1 within rounding. Use `flat_len` for the strip width when folding the real blank; `height` stays the MOULD dim for display/collision.
+
+So you can fold the exact cross: base = the central rect bounded by the inner (wall) bend lines; each strip folds up at its bend line in `step` order; `flat_len` = how far it develops out. No schema break — all additive (kind:"box" only).
+
+**Note on test v1:** its record still has the old `flat_h:200` (pushed before this fix) — re-run Check Bend on the test v1 doc to refresh it, OR just use **test v2** as the canonical box test (it has the flat pattern + corner reliefs). I left v1 as-is since v2 is active.
+
+**NEEDS (G2):** consume `flat_pattern` + `flat_len` for the realistic fold; verify live on `bend_sim/test v2`. Ping if you'd rather have bend_lines tagged with their `step`/`axis` (I can match them Fusion-side) instead of the web associating by orientation/position. 🎉
