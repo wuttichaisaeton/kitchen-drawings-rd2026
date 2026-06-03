@@ -5177,16 +5177,22 @@ function _rebuildKDTooling() {
 }
 
 function _saveToolStarFlag(id, fit1mm, common) {
+  const updates = { fit1mm: !!fit1mm, common: !!common };
+  // Optimistic: update the local edits cache + rebuild + render IMMEDIATELY,
+  // so the marker sticks even if a rebuild from another Firebase listener
+  // (deleted-defaults / owned-tools) fires before bend_tools_edits echoes
+  // back. Without this the saved ★/·/○ flashed back to the catalog default
+  // ("เลือกแล้วหาย" — เอ๋ 2026-06-03). The cache is also where _rebuildKDTooling
+  // reads overrides, so this makes the choice survive every rebuild + reload.
+  _toolEditsCache = _toolEditsCache || {};
+  _toolEditsCache[id] = Object.assign({}, _toolEditsCache[id], updates);
+  _rebuildKDTooling();
+  render();
+  // Persist to Firebase (cross-device + reload). The listener will echo the
+  // same value, which is now a no-op for the cache.
   try {
-    const updates = { fit1mm: !!fit1mm, common: !!common };
-    window.firebaseDB.ref(`bend_tools_edits/${id}`).update(updates).then(() => {
-      // Also update the in-memory catalog immediately
-      const cat = window.KD_TOOLING;
-      const all = (cat.punches || []).concat(cat.dies || []);
-      const t = all.find(x => x.id === id);
-      if (t) { t.fit1mm = !!fit1mm; t.common = !!common; }
-      render();
-    }).catch(e => console.warn('Star flag save failed:', e));
+    window.firebaseDB.ref(`bend_tools_edits/${id}`).update(updates)
+      .catch(e => console.warn('Star flag save failed:', e));
   } catch (e) { console.warn('Star flag error:', e); }
 }
 
