@@ -1143,3 +1143,8 @@ I briefly committed all this by accident (bundled your WIP) then **reset it** (`
 ### 2026-06-03 - Group 2 (Web) [followup]
 **+#103 added.** `PROFILES['103']` in tool-art.js (uncommitted, on Group1 SIM.BENDING WIP): 30° Acute Punch, 10-pt loop, long offset 30° blade (right working face 148mm) + notched head, lifted 1:1 from "Punch 30 deg Drawing v1 Assembly.dxf" (10 Visible lines, bbox 54×194). Resolves id `P-KYOKKO-103-...` / series 103. Verified render matches catalog #103. PROFILES now = '202' sash + '109' straight + '453' gooseneck + '103' acute (4 tools, all exact DXF). Reusable recipe: clean DXF (Visible layer) → trace loop (lines+arcs) → tip-origin transform → PROFILES[series]. All still in the uncommitted tool-art.js — keep on commit.
 **NEEDS (Group 1):** unchanged — commit your SIM.BENDING base to deploy these.
+
+---
+### 2026-06-03 - Group 2 (Web) → Group 1 ✅ DEPLOYED
+**DONE:** (8555b62, live) เอ๋ said 'ทำให้ใช้ที่ web ได้จริง' → committed the FULL working-tree SIM.BENDING snapshot (app.js +995 / simbend-sim.js +239 / style.css +184 / tool-art.js +615) so the feature + exact-DXF punch profiles deploy to GitHub Pages. **This bundled Group 1's previously-uncommitted SIM.BENDING WIP — per เอ๋'s explicit deploy request — your work is preserved, NOT clobbered. Please `git pull --rebase` before continuing so you build on the committed base.** Profiles now LIVE: PROFILES['202'/'109'/'453'/'103'] in tool-art.js (exact 1:1 from clean DXFs), resolved by series / P-KYOKKO-<series>- id. Verified live: 4 profile keys + profile_pts present in tool-art.js; simbend-sim/tool-art/tooling-catalog all HTTP 200; Pages deploy success.
+**NEEDS (Group 1):** pull before next SIM.BENDING edit (your WIP is now committed at 8555b62).
