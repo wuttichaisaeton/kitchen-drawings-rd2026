@@ -135,13 +135,15 @@ collision-free order or `impossible` / `not_found_budget` as today.
     "flange_mm": <num>, ...       // existing fields
   }],
   "box_geom": {                   // lets the web synthesize + animate the 3-D pan
-    "base": { "w": <num>, "l": <num> },
+    "base":   { "w": <num>, "h": <num> },   // pan floor footprint (iso view)
     "thickness": <num>,
+    "flat_w": <num>, "flat_h": <num>,       // developed cross/plus bounding (Flat display)
     "walls": [{
-      "id": "B1", "axis": "X|Y", "side": "+x|-x|+y|-y",
+      "id": "B1", "axis": "X|Y", "side": "+|-",
       "height": <num>, "width": <num>, "offset": <num>,
-      "step": 1, "punch": "standard|gooseneck",
-      "needs_gooseneck": true, "collides": false
+      "step": 1, "angle_deg": <num>,
+      "punch": "standard|gooseneck", "punch_id": "...", "die": "...",
+      "needs_gooseneck": true, "max_flange": <num|null>, "collides": false
     }]
   }
 }
