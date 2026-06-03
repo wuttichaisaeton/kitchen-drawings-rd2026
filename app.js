@@ -5693,11 +5693,10 @@ function renderSimBendHome() {
       _simController = (rec.kind === 'box' && window.kdSimBend3D)
         ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
         : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
-      // For box parts also mount the 2-D PRESS CROSS-SECTION beside it (left
-      // column) — per-bend section (base on die → flange tips up → gooseneck),
-      // not the linear-strip view which is meaningless for a pan.
-      if (canvas2d && window.kdSimBend3D && window.kdSimBend3D.mount2d)
-        _simController2D = window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded);
+      // For box parts also mount the original 2-D press sim beside it (left column)
+      // — เอ๋ 'แบบเดิมถูกแล้ว' (the original 2-D view was correct).
+      if (canvas2d && window.kdSimBend)
+        _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
@@ -5893,7 +5892,9 @@ function renderSimBendHome() {
         
         rec.n_problems = nProblems;
         rec.bendable = nProblems === 0;
-        rec.kind = rec.bendable ? 'found' : 'impossible';
+        // keep box parts as kind:"box" so the 3-D isometric stays mounted after a
+        // tool change (เอ๋: right column must stay isometric) — only linear parts flip.
+        if (rec.kind !== 'box') rec.kind = rec.bendable ? 'found' : 'impossible';
         rec.reason = rec.bendable ? '' : 'one or more bends have problems';
         
         if (_simController) {
@@ -5904,8 +5905,8 @@ function renderSimBendHome() {
         ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
         : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
           const canvas2d = card.querySelector('.sb-sim-canvas-2d');
-          if (canvas2d && window.kdSimBend3D && window.kdSimBend3D.mount2d)
-            _simController2D = window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded);
+          if (canvas2d && window.kdSimBend)
+            _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
           _simController.onstatus = (t) => { if (status) status.textContent = t; };
           const playBtn = card.querySelector('.sb-sim-play');
           if (playBtn) playBtn.textContent = '⏸ Pause';
