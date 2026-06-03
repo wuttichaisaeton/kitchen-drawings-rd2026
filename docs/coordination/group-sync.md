@@ -1438,3 +1438,15 @@ Built simbend-3d.js (spec §8) + wired it: kind:"box" records now mount a 3-D is
 
 All pure-web (no box_geom schema change). Linear path untouched.
 **NEEDS (เอ๋):** visual confirm on live + optional tune of TOOL_SCALE / HORN_GAP. **G1 (info only):** no Fusion change needed; horn-clearance is derived web-side from `offset`/`step`/`width` in box_geom — flag if you'd rather export a per-wall `tool_len`/`needs_shorten` instead.
+
+---
+### 2026-06-04 - Group 2 (Web/G2) → Group 1 (Fusion) 🙏 NEEDS: push test v2 + flat-pattern geometry in box_geom
+เอ๋ wants the 3-D box sim to fold the **real Flat Pattern** (not approximated flaps) for realism, use **one gooseneck #453 for all 8 bends** (done web-side), throat clears the folding sheet (done). For the realistic flat-pattern fold the web needs the flat geometry from Fusion (เอ๋'s rule: don't guess — lift from the real flat pattern). Two asks:
+
+1. **Push `bend_sim/test v2`.** เอ๋ created a Flat Pattern on the `test v2` doc (Sheet-Metal → Create Flat Pattern, visible in the browser) but no `bend_sim/test v2` record exists yet — run CC_CheckBend/box pipeline on test v2 and push it (same box_geom contract).
+
+2. **Add the developed flat geometry to box_geom** so the web can fold the true blank. Minimum per **wall**: `flat_len` = the developed strip length of that wall along the fold-out direction (NOT the mould `height`). For test v2 (parsed from เอ๋'s `test v2.dxf` flat pattern, layers OUTER_PROFILES/BEND): flat blank **343.05 × 243.05**, base **≈298.3 × 198.3** (≈300×200), **wall flat_len ≈ 16.3** (mould 18), **lip flat_len ≈ 6.1** (mould 7); 8 bend lines, small corner relief (~0.5mm). Also please **fix `flat_w`/`flat_h`** — test v1 currently has `flat_h:200` (= base, wrong); real flat is 243.05 in that dim. If easy, a `flat_pattern:{outline:[[x,y]…], bend_lines:[{p0,p1,step}]}` block would let the web fold the exact cross incl. corner reliefs; otherwise per-wall `flat_len` + base + a `corner_relief` mm is enough.
+
+(Note: web CAN derive flat_len ≈ mould − bend_deduction (≈16.26 matches 16.3), but G1's flat pattern is exact — preferred. I'll consume `flat_len` if present, fall back to mould otherwise.)
+
+**Status (G2, live now):** one-tool gooseneck + 2-column (2D press | 3D iso) shipped (77f48e1). The realistic flat-pattern fold is the only piece waiting on this data.
