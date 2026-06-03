@@ -5343,6 +5343,12 @@ function searchAutoSequence(rec, ownedOnly) {
       return angleOk && flangeOk && radiusOk;
     });
     dies.sort((a, b_die) => {
+      // Prefer the user's ★-recommended (fit1mm) then ○-common dies first, then
+      // closest-V radius fit. fit1mm encodes the 1mm-material sweet spot, so it
+      // correctly beats a radius-exact-but-too-thin die (e.g. V8 over V5 for 1mm
+      // when the record radius is a default) — เอ๋ 'ใช้มีด/die ที่เลือกไว้ก่อน เป็นอันดับแรก'.
+      if (!!a.fit1mm !== !!b_die.fit1mm) return a.fit1mm ? -1 : 1;
+      if (!!a.common !== !!b_die.common) return a.common ? -1 : 1;
       const vA = a.v_list ? a.v_list[0] : 8;
       const vB = b_die.v_list ? b_die.v_list[0] : 8;
       return Math.abs(0.16 * vA - ir) - Math.abs(0.16 * vB - ir);
@@ -5354,6 +5360,11 @@ function searchAutoSequence(rec, ownedOnly) {
       const ta = typeOrder[a.type] != null ? typeOrder[a.type] : 99;
       const tb = typeOrder[b_punch.type] != null ? typeOrder[b_punch.type] : 99;
       if (ta !== tb) return ta - tb;
+      // Within a type, prefer ★-recommended (fit1mm) then ○-common punches.
+      // Type order stays primary — a gooseneck is only chosen when the collision
+      // check forces it, never just because it's starred (เอ๋ 'ใช้มีดที่เลือกไว้ก่อน').
+      if (!!a.fit1mm !== !!b_punch.fit1mm) return a.fit1mm ? -1 : 1;
+      if (!!a.common !== !!b_punch.common) return a.common ? -1 : 1;
       return a.tip_radius_mm - b_punch.tip_radius_mm;
     });
 
@@ -5407,7 +5418,30 @@ function searchAutoSequence(rec, ownedOnly) {
           });
           a[i] = bends[i].angle_deg;
 
-          const res = window.kdSimBend.checkCollisionAt(model, i, a, punch, die);
+          // checkCollisionAt expects the resolved tool shape ({type, angle,
+          // radius, height} / {type, angle, v, height, vList}) — the SAME shape
+          // resolvePunch/resolveDie feed the animation. Passing the raw catalog
+          // objects (angle_deg / tip_radius_mm / v_list) left .angle/.radius/.v
+          // undefined → degenerate polygons → the check NEVER saw a collision →
+          // every part was falsely "bendable" while the anim (correct shape)
+          // drew the real collision red. This normalisation is the actual fix for
+          // เอ๋ 'บอกว่าพับได้ แต่ขึ้นแดง'. Defaults mirror resolvePunch/resolveDie.
+          const punchGeom = {
+            type: punch.type || 'standard',
+            angle: punch.angle_deg != null ? punch.angle_deg : 88,
+            radius: punch.tip_radius_mm != null ? punch.tip_radius_mm : 0.8,
+            height: punch.height_mm != null ? punch.height_mm : 120
+          };
+          const dieV = die.v_list ? die.v_list[0] : 8;
+          const dieGeom = {
+            type: die.type || '1V',
+            angle: die.angle_deg != null ? die.angle_deg : 88,
+            v: dieV,
+            height: die.height_mm != null ? die.height_mm : 60,
+            vList: die.v_list || [dieV]
+          };
+
+          const res = window.kdSimBend.checkCollisionAt(model, i, a, punchGeom, dieGeom);
           if (!res.collides) {
             const nextAssigned = { ...assignedTools };
             nextAssigned[bends[i].bend] = { punch, die };
@@ -5472,7 +5506,10 @@ function getRecordWithAuto(code, rec) {
     updatedRec.order = autoPlan.order;
     updatedRec.bendable = autoPlan.bendable;
     updatedRec.kind = autoPlan.kind;
-    updatedRec.reason = autoPlan.reason || rec.reason;
+    // The fresh auto-search fully owns `reason`: when bendable it returns no
+    // reason → clear to '' (do NOT fall back to the stale saved rec.reason, which
+    // caused "✓ BENDABLE yet red 'B2 HITS THE PUNCH'" — เอ๋ 'พับได้แต่ขึ้นแดง').
+    updatedRec.reason = autoPlan.reason || '';
     updatedRec.n_problems = autoPlan.n_problems;
     
     updatedRec.per_bend.forEach(b => {
@@ -5482,6 +5519,16 @@ function getRecordWithAuto(code, rec) {
         b.die = assigned.die.id;
         b.v_mm = assigned.die.v_list ? assigned.die.v_list[0] : 8;
         b.needs_purchase = assigned.punch.isKyokkoPreset || assigned.die.isKyokkoPreset;
+        // The auto-search verified this tool is collision-free for this bend (now
+        // that its collision check actually runs — see searchAutoSequence), so
+        // clear the stale Fusion per-bend flags. Otherwise the step table still
+        // marks it a problem step (→ forces ⚙ Auto), the HUD shows the old
+        // collision, and buildModel stops the bend at the stale at_angle.
+        b.ok = true;
+        b.collides = false;
+        b.reason = 'formable';
+        b.hits = null;
+        b.at_angle = null;
       }
     });
     return updatedRec;
@@ -5517,6 +5564,14 @@ function renderSimBendHome() {
     return;
   }
   
+  // Expose the FULL flattened catalog (owned + Kyokko presets) so the SIM's
+  // resolvePunch/resolveDie can look up auto-assigned P-KYOKKO-* tools. Without
+  // this the sim only saw window.KD_TOOLING (no Kyokko) → fell back to a string
+  // heuristic → mislabelled needs-purchase punches as STANDARD and fed wrong
+  // geometry to the dynamic collision check (เอ๋ DST200 'PUNCH STANDARD vs table
+  // HEMMING' + 'พับได้แต่ขึ้นแดง' for parts only bendable via not-owned tools).
+  window.KD_TOOLING_FULL = getFlattenedCatalog(false);
+
   const processedCache = {};
   codes.forEach(c => {
     processedCache[c] = getRecordWithAuto(c, _bendSimCache[c]);

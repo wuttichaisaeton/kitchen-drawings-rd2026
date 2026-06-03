@@ -82,13 +82,47 @@
         if (t < p.t0) { moving = true; a[p.idx] = 0; descend = 0; }
         else if (t < p.tFold) {
           var f = (t - p.t0) / FOLD; a[p.idx] = lerp(0, p.target, f); descend = f;
-        } else { a[p.idx] = p.target; descend = 1; if (p.blocking) collide = true; }
+          // Dynamic collision checking during folding
+          if (active != null) {
+            var rp = resolvePunch(model, { ab: ab });
+            var rd = resolveDie(model, { ab: ab });
+            var colRes = checkCollisionAt(model, active, a, rp, rd);
+            if (colRes.collides && colRes.at_angle <= Math.abs(a[active])) {
+              collide = true;
+            }
+          }
+        } else {
+          a[p.idx] = p.target; descend = 1;
+          // Dynamic collision checking at full bend stroke
+          if (active != null) {
+            var rp = resolvePunch(model, { ab: ab });
+            var rd = resolveDie(model, { ab: ab });
+            var colRes = checkCollisionAt(model, active, a, rp, rd);
+            if (colRes.collides) {
+              collide = true;
+            }
+          }
+        }
       }
     }
     if (t >= model.totalT - END_HOLD) {
       var lp = model.phases[model.phases.length - 1];
-      if (lp) { step = lp.step; active = lp.idx; ab = lp.b; a[lp.idx] = lp.target; descend = 1;
-        if (lp.blocking || !model.bendable) collide = lp.blocking || collide; }
+      if (lp) {
+        step = lp.step; active = lp.idx; ab = lp.b; a[lp.idx] = lp.target; descend = 1;
+        // Dynamic collision checking at final hold state
+        if (active != null) {
+          var rp = resolvePunch(model, { ab: ab });
+          var rd = resolveDie(model, { ab: ab });
+          var colRes = checkCollisionAt(model, active, a, rp, rd);
+          if (colRes.collides) {
+            collide = true;
+          }
+        }
+        if (!model.bendable && !model.overridePunchId && !model.overrideDieId) {
+          // Fallback: if part is not bendable and no override has been touched, keep original collision status
+          collide = lp.blocking || collide;
+        }
+      }
     }
     return { a: a, active: active, step: step, collide: collide, ab: ab, descend: descend, moving: moving };
   }
@@ -133,7 +167,11 @@
   }
 
   function resolvePunch(model, st) {
-    var cat = window.KD_TOOLING || { punches: [], dies: [] };
+    // Resolve against the FULL catalog (owned + Kyokko presets) that the auto-
+    // search assigned from — window.KD_TOOLING alone lacks the P-KYOKKO-* presets,
+    // which made needs-purchase punches fall through to the string heuristic and
+    // mislabel as STANDARD (เอ๋ DST200). Falls back to KD_TOOLING if FULL absent.
+    var cat = window.KD_TOOLING_FULL || window.KD_TOOLING || { punches: [], dies: [] };
     var pType = 'standard';
     var pAngle = 88;
     var pRadius = 0.8;
@@ -176,7 +214,9 @@
   }
 
   function resolveDie(model, st) {
-    var cat = window.KD_TOOLING || { punches: [], dies: [] };
+    // Full catalog incl. Kyokko presets (see resolvePunch) so auto-assigned
+    // P-KYOKKO-* dies resolve to real geometry instead of the heuristic.
+    var cat = window.KD_TOOLING_FULL || window.KD_TOOLING || { punches: [], dies: [] };
     var dType = '1V';
     var dAngle = 88;
     var dV = 8;
@@ -498,10 +538,25 @@
         drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile);
       }
 
-      // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
+      // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal dynamically
       model.spatial.forEach(function (sp) {
         var vtx = P[sp.idx + 1]; if (!vtx) return;
-        var isBad = !sp.ok || sp.collides;
+        var rp = resolvePunch(model, { ab: sp });
+        var rd = resolveDie(model, { ab: sp });
+        var V = rd.v;
+        var angleOk = rd.angle <= sp.angle + 2.0;
+        var flangeOk = sp.flange >= 0.67 * V;
+        
+        var aTest = {};
+        model.spatial.forEach(function (s) { aTest[s.idx] = 0; });
+        for (var k = 0; k < model.order.length; k++) {
+          var oIdx = model.order[k];
+          aTest[oIdx] = model.spatial[oIdx].angle;
+          if (oIdx === sp.idx) break;
+        }
+        
+        var colRes = checkCollisionAt(model, sp.idx, aTest, rp, rd);
+        var isBad = !angleOk || !flangeOk || colRes.collides;
         if (isBad) {
           ctx.strokeStyle = '#e0574a';
           ctx.lineWidth = 1.5 * dpr;
@@ -542,17 +597,24 @@
       ctx.lineWidth = 1 * dpr;
       ctx.beginPath(); ctx.moveTo(0, 28 * dpr); ctx.lineTo(w, 28 * dpr); ctx.stroke();
 
-      // Top Bar Text (Left-aligned details)
+      // Top Bar Text (Left-aligned details & dynamic error calculations)
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
+      var hasErr = false;
+      var angleOk = true;
+      var flangeOk = true;
+      var rpInfo = null;
+      var rdInfo = null;
       if (st.ab) {
         var phaseTxt = (st.moving ? 'position' : 'press').toUpperCase();
-        var rpInfo = resolvePunch(model, st);
-        var rdInfo = resolveDie(model, st);
-        // Drop the tool info from the left label when a right-aligned error is
-        // shown, so the two don't overlap on narrow cards (เอ๋ 2026-06-03
-        // 'ตัวแดงซ้อนทับกัน'). The tools are listed in the step table anyway.
-        var hasErr = !st.ab.ok || st.collide;
+        rpInfo = resolvePunch(model, st);
+        rdInfo = resolveDie(model, st);
+        
+        var V = rdInfo.v;
+        angleOk = rdInfo.angle <= st.ab.angle + 2.0;
+        flangeOk = st.ab.flange >= 0.67 * V;
+        hasErr = !angleOk || !flangeOk || st.collide;
+        
         var toolInfo = hasErr ? '' : ('  ·  PUNCH: ' + rpInfo.type.toUpperCase() + '  ·  DIE: V' + rdInfo.v);
         ctx.fillText('STEP ' + st.step + '/' + model.phases.length + '  ·  ' +
           st.ab.id + '  ·  ' +
@@ -560,12 +622,28 @@
       }
 
       // Top Bar Text (Right-aligned error/warning)
-      if (st.ab && (!st.ab.ok || st.collide)) {
+      if (st.ab && hasErr) {
         ctx.fillStyle = '#e0574a'; ctx.textBaseline = 'middle'; ctx.textAlign = 'right';
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
         var errorMsg = '';
         if (st.collide) {
-          errorMsg = '✗ HITS ' + (st.ab.hits || 'PUNCH').toUpperCase() + (st.ab.at_angle != null ? ' @' + Math.round(st.ab.at_angle) + '°' : '');
+          // Detect whether it collides with punch or die dynamically
+          var pts = vertices(model, st.a);
+          var ptsAnchored = anchorWithDescend(pts, st.active, st.a, st.descend, rdInfo.v);
+          var diePoly = getDiePolygon(rdInfo.type, rdInfo.angle, rdInfo.v, rdInfo.height, rdInfo.vList);
+          
+          var hitsWhat = 'PUNCH';
+          for (var i = 0; i < model.N; i++) {
+            if (i === st.active || i === st.active + 1) continue;
+            var p1 = ptsAnchored[i]; var p2 = ptsAnchored[i + 1];
+            if (!p1 || !p2) continue;
+            if (segmentIntersectsPolygon(p1, p2, diePoly)) { hitsWhat = 'DIE'; break; }
+          }
+          errorMsg = '✗ HITS ' + hitsWhat + ' @' + Math.round(st.ab.angle * st.descend) + '°';
+        } else if (!angleOk) {
+          errorMsg = '✗ DIE ANGLE TOO OBTUSE';
+        } else if (!flangeOk) {
+          errorMsg = '✗ FLANGE TOO SHORT';
         } else {
           errorMsg = '✗ ' + (st.ab.reason || 'REJECTED').toUpperCase();
         }
