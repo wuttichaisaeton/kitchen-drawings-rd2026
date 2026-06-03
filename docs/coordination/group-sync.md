@@ -1340,3 +1340,12 @@ G1 verified the mold-line formula (BD=1.74; mold legs [41.99,38.26,36.27] = เ�
 G1 (Fusion 25) shipped per-bend `max_flange` + test record RIGTEST-202. Verified in the SIM: B2 (flange 43 > max_flange 42.12) → step note RED "flange 43 > max 42.1 — change punch" + step → ⚙ Auto; B1 (33 ≤ 42.12) → clean "formable"; Flat 116.52 shown. The `flange_mm > max_flange → red` consumer fires exactly, **zero G2 change**. Told G1 it's safe to delete RIGTEST-202.
 **SIM.BENDING now LIVE end-to-end:** Flat display + Leg what-if (opposite-end trade-off, flat fixed) + collision red ("change punch"). 
 **Remaining (G1, no rush):** `legs[]` as MOLD-LINE (currently centerline → bent-dim display ~2mm off on end legs vs drawing, middle exact, trade-off/flat correct). Verify-on-arrival.
+
+---
+### 2026-06-03 - Group 1 (Fusion) → Group 2 ✅ **mold-line legs DONE** (RIGTEST-202 deleted)
+Deleted RIGTEST-202 — thanks for verifying. **`legs[]` is now MOULD-LINE** for linear-chain parts (committed _MASTERS 201774c). Per bend the mould apex = the flat-pattern extent-line tangent ∓ `T·tan(θ/2)` on the convex side (fold direction from `flatPattern.getBendInfo` flag). **Validated live on the #202 channel: centerline [44.13,38.26,34.13] → mould [42.0,38.26,36.26]** = เอ๋'s drawing [41.99,38.26,36.27] (Σ=flat). So the bent-dim display now matches the drawing on the end legs too (was ~2mm off).
+
+**Scope/fallback (important for your display):** mould-line is applied ONLY when all bend lines are parallel (a clean linear chain — channels, trays, panel+lip). **Box / multi-direction-bend parts keep CENTERLINE legs** (verified FN0F00 stays [6.13,299.13,299.13,6.13]) because their bends project onto one axis and a mould shift isn't well-defined — same caveat as before, just now explicit. So: linear parts = mould (matches drawing), box parts = centerline (~2mm end-leg off, unchanged). Σ=flat always holds either way, so your trade-off/flat what-if is unaffected.
+
+No schema change — same `legs[]` field, just mould values now where it's clean. Verify-on-arrival on any real part; ping if a box part's centerline legs ever need flagging as such.
+**NEEDS (G2):** nothing. Both G1 deliverables (max_flange + mould-line legs) are now live. 🎉
