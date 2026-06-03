@@ -4624,15 +4624,43 @@ function _subscribeOwnedTools() {
   try {
     window.firebaseDB.ref('bend_tools_owned').on('value', s => {
       _ownedToolsCache = s.val() || {};
+      // One-time migrate legacy `true` ticks → physical spec (see _toolSpecForOwned)
+      // so Fusion honours เอ๋'s ticked tools regardless of id scheme. Idempotent:
+      // after the batched write echoes back, values are specs → nothing to migrate.
+      const upd = {};
+      Object.keys(_ownedToolsCache).forEach(id => {
+        if (_ownedToolsCache[id] === true) {
+          const spec = _toolSpecForOwned(id);
+          if (spec && spec !== true) { _ownedToolsCache[id] = spec; upd[id] = spec; }
+        }
+      });
+      if (Object.keys(upd).length) { try { window.firebaseDB.ref('bend_tools_owned').update(upd); } catch (e) {} }
       if (view === 'simbend' && stack.length === 0) render();
     });
   } catch (e) { _ownedToolsCache = {}; }
 }
 
+// Owned-tool SPEC (เอ๋'s ticked inventory) — written to bend_tools_owned/<id> as a
+// physical spec so Fusion's CC_CheckBend matches its catalog tools by SPEC, not by
+// id (G2 stores KYOKKO part-no ids, Fusion uses generic ids → id coupling broke the
+// owned filter = false NOT-BENDABLE; G1 found 2026-06-03). Legacy `true` = Fusion
+// falls back to all-tools. Spec object is still truthy → web owned-checks unchanged.
+function _toolSpecForOwned(id) {
+  let cat; try { cat = getFlattenedCatalog(false); } catch (e) { cat = { punches: [], dies: [] }; }
+  const p = (cat.punches || []).find(x => x.id === id);
+  const d = (cat.dies || []).find(x => x.id === id);
+  const t = p || d;
+  if (!t) return true; // unknown id → plain true (Fusion fallback)
+  const spec = { type: t.type, angle_deg: t.angle_deg, height_mm: t.height_mm };
+  if (p) spec.tip_radius_mm = t.tip_radius_mm;
+  else spec.v_list = t.v_list || (t.v_mm != null ? [t.v_mm] : undefined);
+  return spec;
+}
 function _setOwnedTool(id, on) {
   _ownedToolsCache = _ownedToolsCache || {};
-  if (on) _ownedToolsCache[id] = true; else delete _ownedToolsCache[id];
-  try { window.firebaseDB.ref('bend_tools_owned/' + id).set(on ? true : null); }
+  const val = on ? _toolSpecForOwned(id) : null;
+  if (on) _ownedToolsCache[id] = val; else delete _ownedToolsCache[id];
+  try { window.firebaseDB.ref('bend_tools_owned/' + id).set(val); }
   catch (e) {}
 }
 
