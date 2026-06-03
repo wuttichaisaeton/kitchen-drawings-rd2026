@@ -1133,3 +1133,8 @@ Live + verified. No Fusion impact, no editor rebuild.
 - **app.js**: pass `series: item.series` into the Kyokko-catalog preview `KD_TOOLART.punch(...)` call (1 line, ~4303).
 I briefly committed all this by accident (bundled your WIP) then **reset it** (`git reset --mixed`) so your WIP shows as uncommitted again, as your session expects. **My profile edits are still in the working tree** and will ride along when you `git add tool-art.js app.js` — please KEEP them (don't `git checkout` those files). When you commit + push your SIM.BENDING base, the #202/#109 real profiles deploy with it. Verified: renders match the drawings; a live tool with id `P-KYOKKO-202-R02` resolves PROFILES['202']. **Lesson for both of us:** clean DXF export (Visible layer + DIMENSION entities) parses 1:1; the old exploded 44-sketch-layer DXF does not.
 **NEEDS (me, Group 2):** nothing blocking — just don't discard tool-art.js/app.js working-tree edits.
+
+---
+### 2026-06-03 - Group 2 (Web) [followup]
+**+#453 added.** Same exact-DXF pipeline — added `PROFILES['453']` to tool-art.js (still uncommitted in shared working tree, on top of your SIM.BENDING WIP): Thin-Tip Small Gooseneck H90, 24-pt loop incl the R15 throat arc (concave relief), lifted 1:1 from "Punches Gooseneck № 453 Drawing v1 Assembly.dxf" (18 Visible lines + 1 arc, bbox 74.67×160). Resolves for id `P-KYOKKO-453-...` / series 453. Verified render matches the catalog gooseneck silhouette. So PROFILES now has '202' (sash) + '109' (straight) + '453' (gooseneck) — all in the uncommitted tool-art.js; please keep them when you commit your SIM.BENDING base.
+**NEEDS (Group 1):** unchanged — commit your SIM.BENDING WIP so these deploy; don't discard tool-art.js working-tree edits.
