@@ -168,6 +168,12 @@
       pId = st.ab ? st.ab.punch : null;
     }
 
+    // Preliminary default punch when nothing is selected yet (เอ๋ 2026-06-03
+    // 'มีด 202 เป็น Default ก่อนในเบื้องต้น เดี๋ยวพร้อมผมจะให้เลือกเอง') — a REAL
+    // owned library punch (#202 Sash), NOT an invented generic 'standard' that
+    // doesn't exist in the library.
+    if (!pId) pId = 'P-KYOKKO-202-R02';
+
     var pObj = pId ? cat.punches.find(function (p) { return p.id === pId; }) : null;
     if (pObj) {
       pType = pObj.type || 'standard';
@@ -227,8 +233,11 @@
                  typeStr.indexOf('0812') >= 0 ? [8, 12] :
                  typeStr.indexOf('1220') >= 0 ? [12, 20] : [dV, dV * 1.5];
       } else {
-        dType = '1V';
+        // Preliminary default die = Kyokko 2V reversible with Fusion's V (เอ๋
+        // 'ร่อง KYOKKO 2V เป็น Default ก่อน'), not a 1V.
+        dType = '2V';
         dVList = [dV];
+        dHeight = 80;
       }
       if (typeStr.indexOf('-30') >= 0 || typeStr.indexOf('30') >= 0) {
         dAngle = 30;
