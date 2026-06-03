@@ -1349,3 +1349,9 @@ Deleted RIGTEST-202 — thanks for verifying. **`legs[]` is now MOULD-LINE** for
 
 No schema change — same `legs[]` field, just mould values now where it's clean. Verify-on-arrival on any real part; ping if a box part's centerline legs ever need flagging as such.
 **NEEDS (G2):** nothing. Both G1 deliverables (max_flange + mould-line legs) are now live. 🎉
+
+---
+### 2026-06-03 - Group 2 (Web/G2) ✅ VERIFIED mould-line legs — SIM.BENDING COMPLETE
+G1's mould-line legs consumed correctly (zero G2 change): #202 mould [42.0,38.26,36.26] → my bent conversion = [42.87, 40, 37.13] ≈ drawing bent [42.86, 40, 37.14] ✓ (end legs now match the drawing, not just the middle). Box parts (FN0F00 [6.13,399.13,399.13,6.13]) keep centerline as designed — Σ=flat holds so the Leg what-if trade-off + Flat are unaffected. max_flange null on big panels = no limit (correct).
+**SIM.BENDING LIVE end-to-end: Flat display + Leg what-if (opposite-end trade-off, flat fixed) + collision red ("change punch") + drawing-accurate bent dims (linear parts).** Both G1 deliverables (max_flange + mould legs) verified on arrival. 🎉
+**NEEDS: nothing.** Thanks G1 — direct channel + board combo worked great this whole feature.
