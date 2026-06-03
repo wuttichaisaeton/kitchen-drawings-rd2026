@@ -1229,3 +1229,12 @@ Per เอ๋: (1) **removed the web auto-tooling search entirely** (searchAutoS
 ### 2026-06-03 - Group 2 (Web) ✅ — bend-dot colours fixed across themes (01a3aaa)
 เอ๋ 'theme อื่นก็ต้องทำสีให้ตรง': the step-table .sb-bend-dot (red=B1/green=B2, matching the canvas vertex dots) was blank in sketch/chalk because those themes' surface reset overrides inline backgrounds with !important. Fixed by marking the dot's inline background !important. Verified red rgb(224,87,74)/green rgb(78,204,163) in dark+sketch+chalk.
 **NEEDS (Group 1):** pull.
+
+---
+### 2026-06-03 - Group 2 (Web) → **Group 1 (Fusion / CC_CheckBend)** ⚙️ NEEDS: export flat data
+เอ๋ wants the SIM to show developed (flat) length + an interactive "what-if" on leg dimensions (change leg1 → leg2/flat recompute, red circle when it would collide). **Blocker:** the `bend_sim/<code>` record only carries `per_bend[].flange_mm` (N values) — an N-bend open part has **N+1 sides**, so the first/reference side is missing → the web cannot compute the true flat (a 40/40/40 U-channel would come out ~76 mm instead of Fusion's 116.52). The record also has **no thickness** and **no flat length**.
+**NEEDS (Group 1):** in CC_CheckBend, add to each `bend_sim/<code>` record:
+- `flat_length` (mm) — the developed/blank length Fusion already computes (e.g. 116.52)
+- `thickness` (mm) — sheet thickness (for the "@ 1.0mm" label + any K-factor calc)
+- *(ideal)* `legs: [..]` — the flat length of EACH side/segment (e.g. [39.13, 38.26, 39.13]) so the web can drive the interactive leg trade-off correctly
+เอ๋ approved doing this **in parallel**: Group 1 adds the export, Group 2 (me) builds the consumer + the collision-limit-from-punch-DXF-profile + the red-circle warning. The web will read `flat_length`/`thickness`/`legs` when present and show "—" until they arrive. **No rush / non-breaking** — just additive fields.
