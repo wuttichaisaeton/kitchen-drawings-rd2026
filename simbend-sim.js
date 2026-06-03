@@ -116,7 +116,27 @@
     var bis;
     if (r1 && r2) bis = { x: r1.x + r2.x, y: r1.y + r2.y };
     else { var r = r1 || r2; bis = { x: -r.x, y: -r.y }; }
-    if (Math.hypot(bis.x, bis.y) < 1e-6) bis = { x: 0, y: 1 };
+    if (Math.hypot(bis.x, bis.y) < 1e-6) {
+      // Active bend not folded yet (flanges collinear): the old {0,1} default kept
+      // the baseline at its local orientation — OK for a 1st bend (already flat)
+      // but a 2nd+ bend's baseline is VERTICAL after the prior fold, so the part
+      // stood on end / sank into the die. Lay it FLAT instead (เอ๋ 'ต้องวางราบ
+      // แนวนอน'): orient perpendicular to the baseline, choosing the side that puts
+      // the rest of the part (already-formed flanges) ABOVE the die.
+      var base = r2 || r1;
+      var perp = { x: -base.y, y: base.x };
+      var meanY = function (b) {
+        var bg = Math.atan2(b.y, b.x), rt = Math.PI / 2 - bg;
+        var cc = Math.cos(rt), ss = Math.sin(rt), sy = 0, n = 0;
+        pts.forEach(function (p, i) {
+          if (i === Vi) return;
+          sy += (p.x - V.x) * ss + (p.y - V.y) * cc; n++;
+        });
+        return n ? sy / n : 0;
+      };
+      bis = meanY(perp) >= meanY({ x: -perp.x, y: -perp.y })
+        ? perp : { x: -perp.x, y: -perp.y };
+    }
     var bang = Math.atan2(bis.y, bis.x);
     var rot = Math.PI / 2 - bang;            // bisector -> +y (up toward punch)
     var c = Math.cos(rot), s = Math.sin(rot);
@@ -648,7 +668,27 @@
     var bis;
     if (r1 && r2) bis = { x: r1.x + r2.x, y: r1.y + r2.y };
     else { var r = r1 || r2; bis = { x: -r.x, y: -r.y }; }
-    if (Math.hypot(bis.x, bis.y) < 1e-6) bis = { x: 0, y: 1 };
+    if (Math.hypot(bis.x, bis.y) < 1e-6) {
+      // Active bend not folded yet (flanges collinear): the old {0,1} default kept
+      // the baseline at its local orientation — OK for a 1st bend (already flat)
+      // but a 2nd+ bend's baseline is VERTICAL after the prior fold, so the part
+      // stood on end / sank into the die. Lay it FLAT instead (เอ๋ 'ต้องวางราบ
+      // แนวนอน'): orient perpendicular to the baseline, choosing the side that puts
+      // the rest of the part (already-formed flanges) ABOVE the die.
+      var base = r2 || r1;
+      var perp = { x: -base.y, y: base.x };
+      var meanY = function (b) {
+        var bg = Math.atan2(b.y, b.x), rt = Math.PI / 2 - bg;
+        var cc = Math.cos(rt), ss = Math.sin(rt), sy = 0, n = 0;
+        pts.forEach(function (p, i) {
+          if (i === Vi) return;
+          sy += (p.x - V.x) * ss + (p.y - V.y) * cc; n++;
+        });
+        return n ? sy / n : 0;
+      };
+      bis = meanY(perp) >= meanY({ x: -perp.x, y: -perp.y })
+        ? perp : { x: -perp.x, y: -perp.y };
+    }
     var bang = Math.atan2(bis.y, bis.x);
     var rot = Math.PI / 2 - bang;
     var c = Math.cos(rot), s = Math.sin(rot);
