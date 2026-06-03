@@ -5422,7 +5422,11 @@ function renderSimBendHome() {
         // Colored dot matching the simulation canvas — uses original bend index
         const bendOrigIdx = (rec.per_bend || []).indexOf(b);
         const dotColor = getBendColor(bendOrigIdx >= 0 ? bendOrigIdx : seqIdx);
-        const dotHtml = `<span class="sb-bend-dot" style="background:${dotColor};" title="${escapeHtml(b.bend)}"></span>`;
+        // !important so the bend-colour survives the sketch/chalk theme resets,
+        // which override inline backgrounds and left the dots blank (เอ๋ 2026-06-03
+        // 'theme อื่นก็ต้องทำสีให้ตรง'). Canvas dots use getBendColor directly so
+        // they already match in every theme; this keeps the step-table dots in sync.
+        const dotHtml = `<span class="sb-bend-dot" style="background:${dotColor} !important;" title="${escapeHtml(b.bend)}"></span>`;
         if (canEdit) {
           const isFirst = seqIdx === 0;
           const isLast = seqIdx === sortedBends.length - 1;
