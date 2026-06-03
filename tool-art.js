@@ -30,6 +30,21 @@
     '103': [[0,0],[38.317,143],[34.067,143],[34.067,158.6],[40.067,158.6],[40.067,194],[14.067,194],[14.067,134],[-13.933,134],[-13.933,52]]
   };
 
+  // Resolve a tool's exact DXF profile_pts: explicit tool.profile_pts, else a
+  // known PROFILES entry matched by profile_id / series / Kyokko id. Returns
+  // the ordered [x,y] mm loop (tip at origin, Y up) or null. Shared by the
+  // punch() art AND the SIM animation (window.KD_TOOLART.profileFor) so both
+  // draw the same real silhouette.
+  function resolveProfile(tool) {
+    if (!tool) return null;
+    if (Object.prototype.toString.call(tool.profile_pts) === '[object Array]' && tool.profile_pts.length >= 3) {
+      return tool.profile_pts;
+    }
+    var pkey = tool.profile_id || tool.series || null;
+    if (!pkey && typeof tool.id === 'string') { var pm = tool.id.match(/KYOKKO-([^-]+)-/); if (pm) pkey = pm[1]; }
+    return (pkey && PROFILES[pkey]) ? PROFILES[pkey] : null;
+  }
+
   // ---- PUNCH (tip points DOWN) -----------------------------------------
   // All coords are in mm-scale. ViewBox auto-fits with padding.
   function punch(tool, opt) {
@@ -273,18 +288,8 @@
     // EXACT-profile mode: tool.profile_pts = ordered [x,y] mm loop (tip at
     // origin, Y up) lifted straight from the tool's DXF (the "Visible" layer).
     // Renders the real silhouette 1:1 instead of the parametric approximation.
-    // Resolve an exact DXF profile: explicit tool.profile_pts, else a known
-    // PROFILES entry matched by series / profile_id / Kyokko id.
-    var resolvedPts = null;
-    if (tool) {
-      if (Object.prototype.toString.call(tool.profile_pts) === '[object Array]' && tool.profile_pts.length >= 3) {
-        resolvedPts = tool.profile_pts;
-      } else {
-        var pkey = tool.profile_id || tool.series || null;
-        if (!pkey && typeof tool.id === 'string') { var pm = tool.id.match(/KYOKKO-([^-]+)-/); if (pm) pkey = pm[1]; }
-        if (pkey && PROFILES[pkey]) resolvedPts = PROFILES[pkey];
-      }
-    }
+    // Resolve an exact DXF profile (shared with the SIM via profileFor below).
+    var resolvedPts = resolveProfile(tool);
     var usePts = !!resolvedPts;
     var fullPath, minX, maxX, minY, maxY;
     var padX = 8, padY = 8;
@@ -531,5 +536,5 @@
       inner + '</svg>';
   }
 
-  window.KD_TOOLART = { punch: punch, die: die };
+  window.KD_TOOLART = { punch: punch, die: die, profileFor: resolveProfile };
 })();

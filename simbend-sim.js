@@ -167,7 +167,12 @@
         pType = 'standard';
       }
     }
-    return { type: pType, angle: pAngle, radius: pRadius, height: pHeight };
+    // Real DXF silhouette for the selected punch (shared with the tooling art)
+    // so the SIM draws the actual tool, not a generic shape (เอ๋ 2026-06-03
+    // 'รูปมีดยังไม่ตรงกับที่เลือก').
+    var prof = (pObj && window.KD_TOOLART && window.KD_TOOLART.profileFor)
+      ? window.KD_TOOLART.profileFor(pObj) : null;
+    return { type: pType, angle: pAngle, radius: pRadius, height: pHeight, profile: prof };
   }
 
   function resolveDie(model, st) {
@@ -306,10 +311,27 @@
       ctx.fill(); ctx.stroke();
     }
 
-    function drawPunch(cx, tipY, blocked, type, t, scale, angle, radius, height) {
+    function drawPunch(cx, tipY, blocked, type, t, scale, angle, radius, height, profile) {
       var shake = blocked ? Math.sin(t / 35) * 2.5 * dpr : 0;
       var x = cx + shake;
-      
+
+      // EXACT profile (from the tool's DXF): tip at origin, Y up, mm. Map to
+      // canvas — tip sits at (x, tipY), Y flips, scale = mm→px. Draws the real
+      // selected punch instead of the parametric shape below.
+      if (profile && profile.length >= 3) {
+        ctx.fillStyle = blocked ? 'rgba(224,87,74,0.95)' : '#6c757d';
+        ctx.strokeStyle = blocked ? '#ff7a6c' : '#495057';
+        ctx.lineWidth = 1.4 * dpr;
+        ctx.beginPath();
+        ctx.moveTo(x + profile[0][0] * scale, tipY - profile[0][1] * scale);
+        for (var qi = 1; qi < profile.length; qi++) {
+          ctx.lineTo(x + profile[qi][0] * scale, tipY - profile[qi][1] * scale);
+        }
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+        return;
+      }
+
       var H = height != null ? height : 120;
       var ang = angle != null ? angle : 88;
       var R = radius != null ? radius : 0.8;
@@ -473,7 +495,7 @@
       if (st.active != null) {
         var Vtx = P[st.active + 1];
         var rp = resolvePunch(model, st);
-        drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height);
+        drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile);
       }
 
       // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
