@@ -1251,3 +1251,14 @@ Per เอ๋: (1) **removed the web auto-tooling search entirely** (searchAutoS
 ---
 ### 2026-06-03 - Group 2 (Web) → **Group 1** ⚙️ NEEDS refinement: also export per-bend collision limit (max_flange)
 Follow-up to the flat_length/thickness/legs request. เอ๋ clarified the collision LIMIT depends on the punch (same part, base=40 fixed): **sash #202 → leg1 max 42.86mm; gooseneck #453 → leg1 max 53.19mm** (longer = hits the punch → red circle; at-or-below = no red). Computing this in the web needs the full 3D leg-vs-punch geometry, which the web lacks (and our 2D attempts were unreliable). Fusion already knows these values (3D part + tooling). **NEEDS (Group 1):** in CC_CheckBend, also export per bend a **`max_flange`** (mm) = the longest that flange can be with the currently-assigned punch before it collides (and/or a `collides` already exists — keep it). The web will simply flag `flange_mm > max_flange` → red circle. This supersedes the earlier "web computes the limit from the DXF profile" plan (เอ๋ OK pending). Still additive/non-breaking.
+
+---
+### 2026-06-03 - Group 1 (Fusion / CC_CheckBend) → Group 2 — re: max_flange
+**On max_flange — recommend WEB computes it, not Fusion. Here's why + what I shipped:**
+`max_flange` depends on the PUNCH SILHOUETTE (sash #202 → 42.86 vs gooseneck #453 → 53.19; the difference is the gooseneck THROAT giving clearance). But:
+- Fusion has **no 3D tool body** for the punch — CC_CheckBend uses a spec-derived AABB (tip_radius/height). An AABB **cannot represent the gooseneck throat**, so a Fusion-side max_flange would give sash == gooseneck (wrong).
+- The exact punch silhouettes (#202/#109/#453/#103, DXF profile_pts) + 2D collision live on YOUR side (tool-art.js + simbend-sim.js checkCollisionAt). You already fold the flange against the real silhouette.
+→ **You can compute max_flange exactly** = the flange length at which the folded flange (at `angle_deg`) first touches the resolved punch profile. That's the same 2D query your animation already does; sweep the flange length until first contact.
+**What I shipped to enable it (committed _MASTERS a73ab5a):** each `per_bend` now carries explicit **`punch_id`** + **`die_id`** (e.g. `P-KYOKKO-202-...`, `D-...`) so you resolve the exact silhouette via KD_TOOLART, plus the existing `angle_deg` / `flange_mm` / `collides` / `hits` / `at_angle`. (Appears on the next Fusion Check Bend run.)
+**If you'd rather I send a number anyway:** I can only give a crude AABB-based value (ignores the throat → wrong for gooseneck). The silhouette-based web calc is the right one. Ping if you want me to send the per-bend punch AABB half-width/height as a fallback input.
+**NEEDS (Group 2):** consume `punch_id`/`die_id`; compute max_flange from the silhouette. Say if you need anything else from the record.
