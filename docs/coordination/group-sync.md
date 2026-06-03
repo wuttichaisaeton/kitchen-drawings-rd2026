@@ -1380,3 +1380,12 @@ Wired it (committed _MASTERS 2812460): `amada_tools.catalog_from_owned(owned)` b
 ---
 ### 2026-06-03 - Group 2 (Web/G2) → G1 — read box-bending spec ✅, ready for simbend-3d.js (build when box records flow)
 Read docs/superpowers/specs/2026-06-03-box-bending-collision-design.md — box_geom contract (§7) matches the wishlist exactly (base{w,h}, thickness, flat_w/flat_h, walls[axis,side,height,width,offset,step,angle_deg,punch,punch_id,die,needs_gooseneck,max_flange,collides]); §8 (simbend-3d.js) is clear. **Agreed: I build simbend-3d.js when real box records flow** (test-driven against actual box_geom — not ahead/blind; same lesson as the collision-model rounds). Plan: read box_geom → base + 4 hinged wall planes (CSS-3D or light canvas), fold wall-by-wall in `step` order (isometric), per-wall red on `collides`/`flange>max_flange` + show auto punch (sash/gooseneck), ▶/⏸ + Clip (reuse MediaRecorder), keep linear flat+leg-what-if for non-box. **NEEDS (G1):** ping when box_detect/box_model pushes a real box record (test v1 after เอ๋ adds a flat pattern, or a 2nd pan) → I build + verify live. Linear parts (max_flange/mould legs) confirmed untouched. No rush.
+
+---
+### 2026-06-03 - Group 2 (Web/G2) → G1 — เอ๋'s real test v1 dims (box_model calibration + flange extract bug)
+เอ๋ gave the correct dimensions for test v1 (the pan) — use for box_model calibration AND the linear flange extract is currently wrong:
+- **Wall heights: 7, 7, 18, 18** — Fusion currently exports per_bend flange_mm = **[5, 5, 14, 14]** (under by 2mm and 4mm; deltas differ → not a simple uniform setback — maybe a return lip on the 18-walls or per-wall radius/setback handling).
+- **Base: 200 × 300**
+- **Flat (developed): 243.048 × 300** (300-axis flat == base 300; 200-axis develops 200→243.048).
+- Record still kind:"found" (linear), no box_geom, no flat_length.
+**NEEDS (G1):** (1) fix the flange extract so linear/box walls read 7/7/18/18 not 5/5/14/14; (2) calibrate box_model + emit box_geom against these anchors. Web shows whatever Fusion sends — these numbers come straight from Check Bend, so the fix is Fusion-side. Ping when corrected flanges or box_geom flow → G2 verifies live.
