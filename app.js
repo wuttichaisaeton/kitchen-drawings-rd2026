@@ -3913,6 +3913,33 @@ function _simVerdict(rec) {
   return { cls: 'sb-bad', txt: '✗ NOT BENDABLE' };
 }
 
+// ── Interactive leg what-if (เอ๋: ปรับขา → ขาอื่น+flat คำนวณใหม่) ──────────
+// Fusion sends legs[] (FLAT segment lengths, N+1) + flat_length. The blank is
+// fixed; moving a bend line trades length between adjacent sides. Convert flat
+// legs → BENT outer dims (what เอ๋ sees: 40/40/40) via bend deduction:
+//   bent = flat + (adjacent bend count × BD/2)   [end side: 1 bend, middle: 2]
+// Verified: legs [44.13,38.26,34.13] + BD≈1.74 → [45,40,35] (เอ๋'s example).
+function _bendDeductionMM(R, T, angleDeg, K) {
+  const rad = Math.PI / 180, A = angleDeg || 90;
+  const BA = rad * A * (R + K * T);
+  const OSSB = Math.tan(rad * A / 2) * (R + T);
+  return 2 * OSSB - BA;
+}
+function _bentSidesFromLegs(rec) {
+  const legs = rec && rec.legs;
+  if (!Array.isArray(legs) || legs.length < 2) return null;
+  const T = rec.thickness != null ? +rec.thickness : 1.0;
+  const per = (rec.per_bend || []);
+  const R = (per[0] && per[0].radius_mm != null) ? +per[0].radius_mm : 1.0;
+  const A = (per[0] && per[0].angle_deg != null) ? +per[0].angle_deg : 90;
+  const BD = _bendDeductionMM(R, T, A, 0.44);
+  const last = legs.length - 1;
+  const bent = legs.map((L, i) => +L + ((i === 0 || i === last) ? 1 : 2) * (BD / 2));
+  const flatTotal = rec.flat_length != null ? +rec.flat_length
+    : legs.reduce((s, x) => s + (+x), 0);
+  return { bent: bent.map(x => Math.round(x * 100) / 100), flatTotal, BD, T };
+}
+
 // ── My Tooling picker (which Amada punches/dies เอ๋ owns) ──────────────
 // Catalog = window.KD_TOOLING (tooling-catalog.js). Ownership persists to RTDB
 // bend_tools_owned/<toolId>=true; CC_CheckBend reads it to pick only owned tools.
@@ -5519,6 +5546,15 @@ function renderSimBendHome() {
           <span><strong>Not Owned / Needs Purchase:</strong> Some tools in this bend plan are not in your library. Purchase required for production.</span>
         </div>` : '';
 
+      const _wif = _bentSidesFromLegs(rec);
+      const whatIfHtml = (_wif && canEdit) ? `
+        <div class="sb-whatif" onclick="event.stopPropagation()" style="border-top:1px solid #2b3340; padding-top:10px; margin-top:12px;">
+          <div style="font-size:11px; opacity:0.8; margin-bottom:6px;">Leg what-if · <strong>Flat: ${_wif.flatTotal.toFixed(2)} mm</strong> (fixed @ ${_wif.T.toFixed(1)}mm) — change a side, the opposite end adjusts to keep the blank length</div>
+          <div class="sb-wif-row" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center;">
+            ${_wif.bent.map((b, i) => `<label style="font-size:11px; display:flex; align-items:center; gap:4px;">Side ${i + 1} <input type="number" class="sb-wif-leg" data-idx="${i}" value="${b}" step="0.5" style="width:64px; background:#16202c; color:#cad6e6; border:1px solid #2a3744; border-radius:4px; padding:2px; font-size:11px; text-align:center;"></label>`).join('')}
+          </div>
+        </div>` : '';
+
       detail = `
         <div class="sb-detail">
           ${purchaseWarningBanner}
@@ -5552,6 +5588,7 @@ function renderSimBendHome() {
             <tbody>${rows || '<tr><td colspan="8" class="muted">no per-bend data</td></tr>'}</tbody>
           </table>
           </div>
+          ${whatIfHtml}
           ${saveControlsHtml}
           ${when ? `<div class="sb-when" style="margin-top: 10px;">checked ${escapeHtml(when)}${rec.checked_by ? ' · ' + escapeHtml(rec.checked_by) : ''}</div>` : ''}
         </div>`;
@@ -5815,6 +5852,25 @@ function renderSimBendHome() {
       card.querySelectorAll('.sb-edit-angle, .sb-edit-flange, .sb-edit-v').forEach(inp => {
         inp.addEventListener('input', onOverrideChange);
       });
+
+      // Leg what-if: editing a side trades length with the OPPOSITE END so the
+      // flat blank stays constant (เอ๋ 'ปรับขา1 → ขา2 ปรับตาม, flat คงที่'). Pure
+      // in-place DOM update (no re-render → keeps focus). Collision red lands
+      // when Fusion's max_flange arrives (consumer already wired).
+      const wifInputs = [].slice.call(card.querySelectorAll('.sb-wif-leg'));
+      if (wifInputs.length >= 2) {
+        const prevW = wifInputs.map(x => +x.value);
+        wifInputs.forEach((inp, i) => {
+          inp.addEventListener('input', () => {
+            const v = +inp.value; if (isNaN(v)) return;
+            const d = v - prevW[i];
+            const j = (i === wifInputs.length - 1) ? 0 : wifInputs.length - 1;
+            const nv = Math.round((+wifInputs[j].value - d) * 100) / 100;
+            wifInputs[j].value = nv;
+            prevW[i] = v; prevW[j] = nv;
+          });
+        });
+      }
 
       card.querySelectorAll('.sb-step-move-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {

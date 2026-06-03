@@ -3580,10 +3580,11 @@ button.cut-status:focus-visible {
    (เอ๋ 2026-06-03 'เอาลูกศรขึ้นลงออก') — keeps the ANG/FLAN/V cells clean. */
 .sb-edit-angle::-webkit-outer-spin-button, .sb-edit-angle::-webkit-inner-spin-button,
 .sb-edit-flange::-webkit-outer-spin-button, .sb-edit-flange::-webkit-inner-spin-button,
-.sb-edit-v::-webkit-outer-spin-button, .sb-edit-v::-webkit-inner-spin-button {
+.sb-edit-v::-webkit-outer-spin-button, .sb-edit-v::-webkit-inner-spin-button,
+.sb-wif-leg::-webkit-outer-spin-button, .sb-wif-leg::-webkit-inner-spin-button {
   -webkit-appearance: none; margin: 0;
 }
-.sb-edit-angle, .sb-edit-flange, .sb-edit-v { -moz-appearance: textfield; appearance: textfield; }
+.sb-edit-angle, .sb-edit-flange, .sb-edit-v, .sb-wif-leg { -moz-appearance: textfield; appearance: textfield; }
 .sb-when { font-size: 11px; opacity: 0.55; margin-top: 8px; }
 .sb-sim-wrap { margin: 4px 0 14px; }
 .sb-sim-canvas {
