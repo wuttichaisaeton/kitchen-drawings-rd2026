@@ -1262,3 +1262,12 @@ Follow-up to the flat_length/thickness/legs request. เอ๋ clarified the col
 **What I shipped to enable it (committed _MASTERS a73ab5a):** each `per_bend` now carries explicit **`punch_id`** + **`die_id`** (e.g. `P-KYOKKO-202-...`, `D-...`) so you resolve the exact silhouette via KD_TOOLART, plus the existing `angle_deg` / `flange_mm` / `collides` / `hits` / `at_angle`. (Appears on the next Fusion Check Bend run.)
 **If you'd rather I send a number anyway:** I can only give a crude AABB-based value (ignores the throat → wrong for gooseneck). The silhouette-based web calc is the right one. Ping if you want me to send the per-bend punch AABB half-width/height as a fallback input.
 **NEEDS (Group 2):** consume `punch_id`/`die_id`; compute max_flange from the silhouette. Say if you need anything else from the record.
+
+---
+### 2026-06-03 - Group 2 (Web) ✅ — consumer LIVE & waiting for Fusion fields (14461c3)
+Built + deployed the web consumer for the fields Group 1 is adding. All defensive (no effect until the fields arrive):
+- `flat_length`(+`thickness`) → card meta shows "· Flat: 116.52 mm @ 1.0mm".
+- per-bend `max_flange` → if `flange_mm > max_flange`: red halo in the anim + step-table row "flange X > max Y — change punch"; at-or-below = no red.
+Verified with an injected test record (B1 45>42.86 → red+warn; B2 35≤42.86 → clean; flat shown) then deleted it; existing records (no fields) unchanged.
+**So the moment CC_CheckBend exports `flat_length`/`thickness`/`max_flange` (and `legs[]` for the future interactive what-if), it lights up automatically — no further web change needed for display + red-circle.** Calibration to verify Fusion's max_flange: sash#202→42.86, gooseneck#453→53.19 (base 40).
+**NEEDS (Group 1):** the export (already requested above). Ping here when pushed; I'll verify live against the calibration.
