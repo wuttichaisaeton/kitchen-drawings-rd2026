@@ -633,7 +633,7 @@
           var diePoly = getDiePolygon(rdInfo.type, rdInfo.angle, rdInfo.v, rdInfo.height, rdInfo.vList);
           
           var hitsWhat = 'PUNCH';
-          for (var i = 0; i < model.N; i++) {
+          for (var i = 0; i <= model.N; i++) {   // all N+1 flanges (see checkCollisionAt)
             if (i === st.active || i === st.active + 1) continue;
             var p1 = ptsAnchored[i]; var p2 = ptsAnchored[i + 1];
             if (!p1 || !p2) continue;
@@ -865,12 +865,18 @@
       var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x, y: p.y - pen }; });
       var diePoly = getDiePolygon(die.type, die.angle, die.v, die.height, die.vList);
       
-      for (var i = 0; i < model.N; i++) {
+      // Check EVERY flange segment (0..N) — there are N+1 segments for N bends,
+      // so the old `i < model.N` bound silently skipped the last formed flange
+      // (the one that most often swings into the punch on the final step). That
+      // under-detection is why parts that visibly collide were still reported
+      // bendable (เอ๋ 'มันชน ทำไมแจ้งพับได้'). Still skip the two flanges joined
+      // at the active vertex (they ride the punch tip by definition).
+      for (var i = 0; i <= model.N; i++) {
         if (i === activeBendIdx || i === activeBendIdx + 1) continue;
         var p1 = ptsAnchored[i];
         var p2 = ptsAnchored[i + 1];
         if (!p1 || !p2) continue;
-        
+
         if (segmentIntersectsPolygon(p1, p2, punchPolyTrans)) {
           return { collides: true, with: 'punch', at_angle: a[activeBendIdx] * desc };
         }
