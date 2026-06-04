@@ -175,13 +175,11 @@
       var F = fl.ax === 'V' ? fvAround : fhAround;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
       var p3 = fl.poly.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; });
-      // เอ๋: ผนังตั้ง 90° ตลอด ไม่มีปีกกาง — every wall/lip is drawn fully folded
-      // (90°) at all times so the box always looks formed; no flat wings ever splay
-      // out (เฉียง). The active wall is highlighted + the punch presses it per step.
-      var thw = Math.PI / 2;
+      var thw = gfold(fl.step, t) * Math.PI / 2;
       if (fl.wline != null) {
         var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
-        var thw2 = Math.PI / 2;
+        var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
+        var thw2 = gfold(wstep, t) * Math.PI / 2;
         p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
         return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
       }
