@@ -22,11 +22,9 @@
 
   // ── tool cross-sections (shared by the 3-D fold + the 2-D press view) ──
   // [u across hinge, z up], tip at origin. REAL outlines lifted 1:1 from เอ๋'s clean
-  // DXF/STEP: SASH = Kyokko #202, GOOSE = gooseneck #453 v4 (concave throat, tip→top
-  // 120, width 56). TOOL_SCALE = 1.0 → the cross-section renders at TRUE mm so the
-  // length:height proportion matches the real tool (เอ๋ 2026-06-04: "หน้าตาเป็นแบบนี้"
-  // — a 186-long bar is 120 tall, not the squashed 60 that 0.5 gave).
-  var TOOL_SCALE = 1.0;
+  // DXFs: SASH = Kyokko #202, GOOSE = gooseneck #453 (concave throat). TOOL_SCALE
+  // shrinks them so the real-mm tool doesn't dwarf small flanges.
+  var TOOL_SCALE = 0.5;
   function scaleProf(p, k) { return p.map(function (q) { return [q[0] * k, q[1] * k]; }); }
   var DIE_PROF = [[-13, 0], [-4, 0], [0, -6], [4, 0], [13, 0], [13, -16], [-13, -16]];
   var SASH_PROF = scaleProf([[0,0],[12.728,12.728],[12.728,87],[20.728,95],[20.728,105],[17.728,105],[17.728,112.5],[20.728,112.5],[20.728,130],[7.728,130],[7.728,100],[-5.272,100],[-5.272,95],[2.728,87],[2.728,13.618],[-5.444,5.445]], TOOL_SCALE);
@@ -209,30 +207,18 @@
     function fvAround(p, X0, side, th) { var dx = p.x - X0; return { x: X0 + dx * Math.cos(th) - side * p.z * Math.sin(th), y: p.y, z: side * dx * Math.sin(th) + p.z * Math.cos(th) }; }
     function fhAround(p, Y0, side, th) { var dy = p.y - Y0; return { x: p.x, y: Y0 + dy * Math.cos(th) - side * p.z * Math.sin(th), z: side * dy * Math.sin(th) + p.z * Math.cos(th) }; }
     function fpStepOf(name) { for (var i = 0; i < fpFlaps.length; i++) if (fpFlaps[i].name === name) return fpFlaps[i].step; return 0; }
-    // A side's WALL must stand up at/before its LIP folds, otherwise the lip folds while
-    // the blank is still flat — landing one wall-width OUTSIDE the box, and the punch
-    // looks like it pokes past the tray (เอ๋ 2026-06-04 "มีดต้องอยู่ในกล่อง ด้านนอกไม่ได้").
-    // So a wall folds at the EARLIER of its own step and its lip's step; the lip rides
-    // that same step. The whole side forms together, lip ends up INSIDE, punch presses
-    // from inside the box edge.
-    function effFoldStep(name, isWall) {
-      var own = fpStepOf(name);
-      var sib = fpStepOf(name.charAt(0) + name.charAt(1) + (isWall ? 'l' : 'w'));
-      return (sib > 0) ? Math.min(own, sib) : own;
-    }
     function foldedFlap(fl, t) {
       var F = fl.ax === 'V' ? fvAround : fhAround;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
       var p3 = fl.poly.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; });
-      if (fl.wline != null) {                                    // lip: fold at lip line, then ride the wall (same early step)
+      var thw = gfold(fl.step, t) * Math.PI / 2;
+      if (fl.wline != null) {                                    // lip: fold at lip line, then ride the wall
         var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
-        var rideStep = effFoldStep(fl.name, false);
-        var thwl = gfold(fl.step, t) * Math.PI / 2;
-        var thw2 = gfold(rideStep, t) * Math.PI / 2;
-        p3 = p3.map(function (p) { return F(p, L0, fl.side, thwl); });
+        var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
+        var thw2 = gfold(wstep, t) * Math.PI / 2;
+        p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
         return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
       }
-      var thw = gfold(effFoldStep(fl.name, true), t) * Math.PI / 2;   // wall: stand up with its lip
       return p3.map(function (p) { return F(p, L0, fl.side, thw); });
     }
     function fpBasePts() { return fpBase.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; }); }
@@ -257,21 +243,14 @@
     function fpActiveTool(active) {
       var fl = null; fpFlaps.forEach(function (x) { if (x.step === active) fl = x; });
       if (!fl) return null;
-      // Seat the tooling at the WALL bend line (the box edge), not the lip's flat line —
-      // the side stands up at this step, so the punch presses from inside the box edge.
-      var toolLine = (fl.wline != null) ? fl.wline : fl.line;
-      var L0 = fl.ax === 'V' ? toolLine - fpCx : toolLine - fpCy;
+      var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
       // Punch length = the INNER OPENING of that side (เอ๋ measured it in Fusion:
       // short 186, long 286). The opening = base edge − 2×(the perpendicular returns'
       // flat length). The returns are the LIPS, whose developed length is flat_len≈6.13
       // — NOT the 7mm mould height (that gave 184.26/284.26, ~1.74mm short each side).
       //   V-axis (X-wall, folds along Y): base.h − 2·lip = 198.26 − 12.26 = 186.00
       //   H-axis (Y-wall, folds along X): base.w − 2·lip = 298.26 − 12.26 = 286.00
-      // Pull each end IN by a clear margin so the tall tool never reaches the box corner
-      // (in the angled ISO view a 120-tall punch whose end sits AT the corner reads as
-      // poking past the frame — เอ๋ 2026-06-04). Tool sits clearly INSIDE with a gap.
-      var END_GAP = 35;   // mm pulled in at each end
-      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2 - END_GAP);
+      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
     }
@@ -408,8 +387,7 @@
         // up around the active bend line at the die (base + walls rise together), then
         // settles flat as the press completes. The die/punch stay fixed; the part tilts.
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
-        var afLine = af ? (af.wline != null ? af.wline : af.line) : 0;   // pivot at the wall (box) edge, not the lip's flat line
-        var afL0 = af ? (af.ax === 'V' ? afLine - fpCx : afLine - fpCy) : 0;
+        var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
         var bump = af ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * (30 * R) : 0;   // V tips only after the punch touches
         function vlift(arr) { return (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr; }
@@ -434,21 +412,46 @@
           var pFill = collides ? C_RED : C_PUNCH;
           var pStroke = collides ? C_RED : C_PUNCH_E;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
-
-          // The curved (gooseneck) punch is a STRAIGHT extrusion CUT FLAT at both ends,
-          // SYMMETRIC about the centre (เอ๋ 2026-06-04: "มีดบนล่างเท่ากัน ตัดตรง" — both end
-          // caps equal + planar, total length = the side's inner opening 186/286). So we
-          // use ±eHalf directly — NO per-side clip (that made the two ends unequal).
-          activeTlen = Math.round(2 * tw.eHalf);
-          // The gooseneck profile has a small BACK lip 7mm behind the tip (u<0). With the
-          // tip seated in the die at the bend line, that back pokes 7mm PAST the tray edge
-          // → in ISO it looks like the 286 punch overhangs the 300 tray (เอ๋ 2026-06-04
-          // "ทำไมเหมือนมีดยื่นออกมา"). It doesn't (286<300); it's the back lip. Square the
-          // back off AT the bend line (u≥0) so the punch sits flush to the tray edge. Tip,
-          // throat, body, length 286, height 120 all unchanged; only the 3-D punch (the 2-D
-          // cross-section keeps the full profile).
-          var pProf = pk.goose ? pk.prof.map(function (p) { return [Math.max(0, p[0]), p[1]]; }) : pk.prof;
-          addExtrusion(items, tw, pProf, penZ2, pFill, pStroke, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
+          
+          // Sizing the punch according to the inner dimension of the part (เพื่อไม่ให้ติดด้านข้าง)
+          var eMin = -tw.eHalf;
+          var eMax = tw.eHalf;
+          if (record.box_geom) {
+            var clearance = 1.0; // 1mm clearance on each side
+            fpFlaps.forEach(function (fl) {
+              if (fl.step >= active) return; // only check already-folded walls
+              
+              if (tw.axis === 'X') {
+                // Active bend runs along Y. Perpendicular walls are horizontal (ax === 'H')
+                if (fl.ax === 'H') {
+                  var pts = foldedFlap(fl, 1e9);
+                  if (fl.side < 0) {
+                    var yMax = Math.max.apply(null, pts.map(function (p) { return p.y; }));
+                    eMin = Math.max(eMin, yMax + clearance);
+                  } else {
+                    var yMin = Math.min.apply(null, pts.map(function (p) { return p.y; }));
+                    eMax = Math.min(eMax, yMin - clearance);
+                  }
+                }
+              } else {
+                // Active bend runs along X. Perpendicular walls are vertical (ax === 'V')
+                if (fl.ax === 'V') {
+                  var pts = foldedFlap(fl, 1e9);
+                  if (fl.side < 0) {
+                    var xMax = Math.max.apply(null, pts.map(function (p) { return p.x; }));
+                    eMin = Math.max(eMin, xMax + clearance);
+                  } else {
+                    var xMin = Math.min.apply(null, pts.map(function (p) { return p.x; }));
+                    eMax = Math.min(eMax, xMin - clearance);
+                  }
+                }
+              }
+            });
+          }
+          activeTlen = Math.round(eMax - eMin);
+          
+          // straight bar so the L/R end caps show the concave gooseneck (เอ๋); throat to flange.
+          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, eMin, pk.goose ? (tw.side === '+' ? -1 : 1) : 1, eMax);
         }
       } else {
       var bq = baseQuad();
