@@ -72,7 +72,9 @@
 
     // ── 3-D point builders (z up; base in z=0 plane, centred at origin) ──
     function wallQuad(w, deg) {
-      var th = deg * R, off = w.offset, h = w.height, hw = w.width / 2;
+      // fold the DEVELOPED strip (flat_len from the real flat pattern) so the blank
+      // unrolls truthfully; fall back to the mould height if flat_len is absent.
+      var th = deg * R, off = w.offset, h = (w.flat_len != null ? w.flat_len : w.height), hw = w.width / 2;
       var sg = w.side === '+' ? 1 : -1;
       var cz = Math.sin(th) * h, cc = off + Math.cos(th) * h;
       if (w.axis === 'X') {
@@ -86,7 +88,7 @@
     function lipQuad(main, mainDeg, lip, lipDeg) {
       var fe = wallQuad(main, mainDeg);           // main free edge = pts [2],[3]
       var a = fe[3], b = fe[2];                    // free-edge corners
-      var tot = (mainDeg + lipDeg) * R, h = lip.height;
+      var tot = (mainDeg + lipDeg) * R, h = (lip.flat_len != null ? lip.flat_len : lip.height);
       var sg = main.side === '+' ? 1 : -1;
       var dx, dy, dz = Math.sin(tot) * h, c = Math.cos(tot) * h;
       if (main.axis === 'X') { dx = sg * c; dy = 0; } else { dx = 0; dy = sg * c; }
