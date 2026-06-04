@@ -64,6 +64,16 @@
     // #202 is the default, but a pan that needs the clearance is correctly bent with
     // the gooseneck #453 (เอ๋: "กรณีนี้ที่ถูกคือ 453") — concave horn ends + throat.
     var USE_GOOSE = allWalls.some(function (x) { return x.needs_gooseneck || x.punch === 'gooseneck'; });
+    // resolve the punch for a step from the per-bend override (เอ๋: เปลี่ยนมีดใน dropdown
+    // แล้วภาพต้องเปลี่ยนตาม). AUTO → gooseneck if the pan needs it, else #202 sash.
+    function punchForStep(step) {
+      var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
+      var pid = (b && b.punch && b.punch !== 'AUTO') ? ('' + b.punch).toUpperCase() : '';
+      if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
+      if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
+      if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
+      return USE_GOOSE ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
+    }
 
     // fold fraction 0..1 for a given step at time t
     function frac(step, t) {
@@ -326,11 +336,10 @@
         var tw = fpActiveTool(active);
         if (tw && active >= 1) {
           var penZ2 = gpunchZ(frac(active, t));     // punch descends + touches, then rides the sheet up
+          var pk = punchForStep(active);            // per-step punch (respects the dropdown override)
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
-          // straight bar so the LEFT/RIGHT end caps clearly show the concave gooseneck
-          // outline (เอ๋: "ปลายซ้ายขวาต้องเว้า"); #202 default, pan → #453, throat to flange.
-          var prof3 = USE_GOOSE ? GOOSE_PROF : SASH_PROF;
-          addExtrusion(items, tw, prof3, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, USE_GOOSE ? (tw.side === '+' ? -1 : 1) : 1);
+          // straight bar so the L/R end caps show the concave gooseneck (เอ๋); throat to flange.
+          addExtrusion(items, tw, pk.prof, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
         }
       } else {
       var bq = baseQuad();
@@ -380,7 +389,7 @@
       var tlen = Math.round(ONE_TOOL_HALF * 2);
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
-           '  ·  PUNCH: ' + (USE_GOOSE ? 'GOOSENECK #453' : '#202 SASH') +
+           '  ·  PUNCH: ' + punchForStep(active).name +
            '  ·  TOOL ' + tlen + 'mm')
         : 'PAN FOLD  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
@@ -457,6 +466,14 @@
     var maxStep = walls.reduce(function (m, w) { return Math.max(m, w.step || 0); }, 0);
     var totalT = START + maxStep * (MOVE + HOLD) + END;
     var USE_GOOSE = walls.some(function (x) { return x.needs_gooseneck || x.punch === 'gooseneck'; });
+    function punchForStep(step) {
+      var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
+      var pid = (b && b.punch && b.punch !== 'AUTO') ? ('' + b.punch).toUpperCase() : '';
+      if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202' };
+      if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GN#453' };
+      if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
+      return USE_GOOSE ? { prof: GOOSE_PROF, goose: true, name: 'GN#453' } : { prof: SASH_PROF, goose: false, name: '#202' };
+    }
     function frac(step, t) {
       var s = START + (step - 1) * (MOVE + HOLD);
       if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE;
@@ -517,13 +534,13 @@
       line([chain[2], chain[3]], C_BASE, 7);                                         // base (cumulative shape held)
       line([chain[3], chain[4]], C_WALL, 7); line([chain[4], chain[5]], C_LIP, 6);   // right wall + lip
       var penZ = f < TOUCH2 ? PEN_HI * (1 - f / TOUCH2) + 1 : 1;   // descends + touches, then rides the sheet
-      var prof2 = USE_GOOSE ? GOOSE_PROF : SASH_PROF;
-      var pp = prof2.map(function (p) { return [p[0], p[1] + penZ]; });
+      var pk = punchForStep(active);               // per-step punch (respects the dropdown override)
+      var pp = pk.prof.map(function (p) { return [p[0], p[1] + penZ]; });
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
       // HUD
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'X' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + (USE_GOOSE ? 'GN#453' : '#202')) : '2D PRESS', 10 * dpr, 14 * dpr);
+      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'X' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + punchForStep(active).name) : '2D PRESS', 10 * dpr, 14 * dpr);
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
