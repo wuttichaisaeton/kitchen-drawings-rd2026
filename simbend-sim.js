@@ -288,6 +288,31 @@
     var raf = null, playing = false, startT = 0, pausedAt = 0, statusCb = null;
     var maxFlange = Math.max.apply(null, model.segLen);
 
+    // ── Pre-compute fixed scale (computed ONCE so the die never moves) ──────
+    // Scan all steps to find the tallest die and tallest punch in this record,
+    // then size the viewport so every step fits without jumping.
+    (function computeFixedCamera() {
+      var cat = window.KD_TOOLING_FULL || window.KD_TOOLING || { punches: [], dies: [] };
+      var maxDieH = 60, maxPunchH = 120;
+      // Scan each per-bend entry
+      var per = (record && record.per_bend) || [];
+      per.forEach(function (b) {
+        // Die height
+        var dObj = b.die ? cat.dies.find(function (d) { return d.id === b.die; }) : null;
+        var dh = dObj && dObj.height_mm != null ? dObj.height_mm : 60;
+        if (dh > maxDieH) maxDieH = dh;
+        // Punch height
+        var pObj = b.punch ? cat.punches.find(function (p) { return p.id === b.punch; }) : null;
+        var ph = pObj && pObj.height_mm != null ? pObj.height_mm : 120;
+        if (ph > maxPunchH) maxPunchH = ph;
+      });
+      // Fallback: check override / useGoose flag
+      if (model.useGoose) maxPunchH = Math.max(maxPunchH, 150);
+
+      // Recalculate whenever canvas resizes; store results on model so frame() can use them.
+      model._cam = { maxDieH: maxDieH, maxPunchH: maxPunchH };
+    })();
+
     function resize() {
       var w = canvas.clientWidth || 600, h = canvas.clientHeight || 340;
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
@@ -517,33 +542,42 @@
       var P = an.pts;
 
       // ── Fixed-camera layout ───────────────────────────────────────────────
-      // Die is anchored at bottom-center and never moves.  Scale is set so
-      // the die block fills ~1/4 of the canvas height; the punch must also
-      // fit fully in the first frame (before it descends into the V), so we
-      // cap the scale by the available head-room above the die as well.
-      // Sheet flanges will run off the sides — the focus is the bending zone.
+      // Scale is computed ONCE at mount() (model._cam) using worst-case heights
+      // across ALL steps — so the die never jumps when the active step changes.
       var rd = resolveDie(model, st);
-      var rp_for_scale = resolvePunch(model, st);
-      var dieH  = rd.height || 60;   // mm — how tall the die block is
-      var punchH = rp_for_scale.height || 120; // mm — punch height above tip
+      var cam = model._cam || { maxDieH: 60, maxPunchH: 120 };
+      var dieH   = cam.maxDieH;   // worst-case die height (constant)
+      var punchH = cam.maxPunchH; // worst-case punch height (constant)
 
       // Bottom HUD bar is 28px; leave 6px gap below the die flange.
       var bottomPad = (28 + 6) * dpr;
       // Scale so die = 1/4 canvas height
       var scaleByDie   = (h * 0.25) / dieH;
-      // Scale so punch (from die top upward) fits in remaining 3/4
+      // Scale so punch (from die top upward) fits in remaining space
       var headRoom = h - (h * 0.25) - bottomPad - 28 * dpr; // minus top HUD bar too
       var scaleByPunch = headRoom / punchH;
       var scale = Math.max(0.5 * dpr, Math.min(scaleByDie, scaleByPunch));
 
-      // Die top-edge Y (canvas coords): fixed near the bottom
-      var dieCx = w / 2;
+      // Die top-edge Y (canvas coords): fixed near the bottom — never changes
+      var dieCx = w / 2;                   // die V and punch tip: always screen-centre
       var dieCy = h - bottomPad - dieH * scale;
       function px(p) { return dieCx + p.x * scale; }
+
+      // Resolve punch uSign (mirror) before drawing, but do NOT shift dieCx —
+      // the die V stays fixed at canvas centre; the punch body may run off-frame.
+      var _uSign = 1, _rp = null;
+      if (st.active != null) {
+        _rp = resolvePunch(model, st);
+        var _leftMaxY = 0, _rightMaxY = 0;
+        for (var qi = 0; qi <= st.active; qi++) { if (P[qi] && P[qi].y > _leftMaxY) _leftMaxY = P[qi].y; }
+        for (var qi = st.active + 2; qi < P.length; qi++) { if (P[qi] && P[qi].y > _rightMaxY) _rightMaxY = P[qi].y; }
+        _uSign = (_rp.type === 'gooseneck' || _rp.type === 'sash') ? (_rightMaxY >= _leftMaxY ? -1 : 1) : 1;
+      }
+
       function py(p) { return dieCy - p.y * scale; }
 
       ctx.clearRect(0, 0, w, h);
-      // ram guide line
+      // ram guide line (through punch tip / die V-centre)
       ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1 * dpr;
       ctx.beginPath(); ctx.moveTo(dieCx, 0); ctx.lineTo(dieCx, h); ctx.stroke();
 
@@ -558,30 +592,10 @@
       for (var i = 1; i < P.length; i++) ctx.lineTo(px(P[i]), py(P[i]));
       ctx.stroke();
 
-      // punch tip sits at the active bend vertex (descending into the V)
-      if (st.active != null) {
+      // punch descends into the V
+      if (st.active != null && _rp) {
         var Vtx = P[st.active + 1];
-        var rp = resolvePunch(model, st);
-        
-        // Dynamic mirror: compare max Y of left vs right flange segments.
-        // Throat (curved cutout) faces the taller flange to give clearance.
-        var leftMaxY = 0, rightMaxY = 0;
-        for (var qi = 0; qi <= st.active; qi++) { if (P[qi] && P[qi].y > leftMaxY) leftMaxY = P[qi].y; }
-        for (var qi = st.active + 2; qi < P.length; qi++) { if (P[qi] && P[qi].y > rightMaxY) rightMaxY = P[qi].y; }
-        var uSign = (rp.type === 'gooseneck' || rp.type === 'sash') ? (rightMaxY >= leftMaxY ? -1 : 1) : 1;
-
-        // Shift dieCx so the punch body's visual centre sits at canvas centre.
-        // Profile X coords are tip-relative (tip=0); apply uSign to get canvas X.
-        if (rp.profile && rp.profile.length) {
-          var profXs = rp.profile.map(function(pt) { return pt[0] * uSign; });
-          var profMinX = Math.min.apply(null, profXs);
-          var profMaxX = Math.max.apply(null, profXs);
-          var profCenterX = (profMinX + profMaxX) / 2; // mm from tip
-          // Shift canvas so punch centre (not tip) is at canvas centre
-          dieCx = w / 2 - profCenterX * scale;
-        }
-        
-        drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile, uSign);
+        drawPunch(dieCx, py(Vtx), st.collide, _rp.type, t, scale, _rp.angle, _rp.radius, _rp.height, _rp.profile, _uSign);
       }
 
       // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
