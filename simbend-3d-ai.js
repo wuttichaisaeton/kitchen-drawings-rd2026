@@ -342,6 +342,16 @@
         }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
+          // เอ๋ (circled): the two slanted triangles = walls that haven't folded yet,
+          // lying FLAT with mitered (45°) corner edges → look slanted in iso. Hide a flap
+          // until its own fold step, so no un-folded wall is ever shown flat. AND hide an
+          // outer flap (lip / 2nd wall) until its PARENT wall has folded, so it never floats
+          // detached above a still-hidden wall (that was the "แผ่นขาดจากกัน" tear).
+          if (fl.step > active) return;
+          if (fl.wline != null) {
+            var _pw = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
+            if (_pw > active) return;
+          }
           var wObj = null;
           for (var i = 0; i < allWalls.length; i++) {
             if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
