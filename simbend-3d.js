@@ -557,5 +557,8 @@
     };
   }
 
-  window.kdSimBend3D = { mount: mount, mount2d: mount2d };
+  // Expose the REAL tool silhouettes so the 2D press can draw the SAME punch as the
+  // ISO view (เอ๋ 2026-06-04 'มีดต้องเหมือน Iso'). These are tip-at-origin, +y up.
+  window.kdSimBend3D = { mount: mount, mount2d: mount2d,
+                         SASH_PROF: SASH_PROF, GOOSE_PROF: GOOSE_PROF };
 })();

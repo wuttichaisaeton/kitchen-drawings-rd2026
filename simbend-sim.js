@@ -40,7 +40,12 @@
         gooseneck: pType === 'gooseneck',
         reason: b.reason || null,
         v: v,
-        flange: Math.max(18, (b.flange_mm != null ? b.flange_mm : 35))
+        // Real developed length of THIS flap: prefer the flat-pattern flat_len,
+        // else the flange (mould) height. NO 18mm floor — that flattened the lip
+        // (≈6mm) and the wall (≈16mm) to the same length so the part read wrong
+        // (เอ๋ 2026-06-04 '2D คำนวณความยาว...พับผิด'). Tiny floor only for visibility.
+        flange: Math.max(4, (b.flat_len != null ? b.flat_len
+                            : (b.flange_mm != null ? b.flange_mm : 35)))
       };
     });
     var N = spatial.length;
@@ -50,8 +55,14 @@
       : spatial.map(function (s) { return s.idx; });
     var segLen = [Math.max(20, spatial[0] ? spatial[0].flange : 30)];
     for (var k = 0; k < N; k++) segLen.push(spatial[k].flange);
+    // Does this part need the gooseneck? Mirror the 3D-ISO rule exactly so the 2D
+    // press draws the SAME punch as the ISO view (เอ๋ 2026-06-04 'มีดต้องเหมือน Iso').
+    var bx = record && record.box_geom;
+    var useGoose = !!(bx && (bx.walls || []).some(function (w) {
+      return w.needs_gooseneck || w.punch === 'gooseneck';
+    }));
     var model = { record: record, spatial: spatial, N: N, order: order,
-                  segLen: segLen, bendable: !!record.bendable };
+                  segLen: segLen, bendable: !!record.bendable, useGoose: useGoose };
     buildTimeline(model);
     return model;
   }
@@ -173,7 +184,7 @@
     // 'มีด 202 เป็น Default ก่อนในเบื้องต้น เดี๋ยวพร้อมผมจะให้เลือกเอง') — a REAL
     // owned library punch (#202 Sash), NOT an invented generic 'standard' that
     // doesn't exist in the library.
-    if (!pId) pId = 'P-KYOKKO-202-R02';
+    if (!pId) pId = model.useGoose ? 'GN-453-AUTO' : 'P-KYOKKO-202-R02';
 
     var pObj = pId ? cat.punches.find(function (p) { return p.id === pId; }) : null;
     if (pObj) {
@@ -199,6 +210,12 @@
     // 'รูปมีดยังไม่ตรงกับที่เลือก').
     var prof = (pObj && window.KD_TOOLART && window.KD_TOOLART.profileFor)
       ? window.KD_TOOLART.profileFor(pObj) : null;
+    // No DXF silhouette for this pick → fall back to the SAME tool outline the ISO
+    // view draws, so the 2D punch is identical to the 3D punch (เอ๋ 'มีดต้องเหมือน Iso').
+    if (!prof && window.kdSimBend3D) {
+      if (pType === 'gooseneck') prof = window.kdSimBend3D.GOOSE_PROF;
+      else if (pType === 'standard') prof = window.kdSimBend3D.SASH_PROF;
+    }
     return { type: pType, angle: pAngle, radius: pRadius, height: pHeight, profile: prof };
   }
 
@@ -502,9 +519,9 @@
       // the fold collides ('พับแล้วติดหรือไม่'). Clamp maxFlange so a long base segment
       // can't shrink everything; the far ends of the strip just run off-frame.
       var maxF = Math.min(maxFlange, 55);
-      var scale = Math.max(0.7, Math.min(6 * dpr,
-        (h * 0.23) / Math.max(maxF, 30)));
-      var dieCx = w / 2, dieCy = h * 0.74;
+      var scale = Math.max(0.6, Math.min(6 * dpr,
+        (h * 0.195) / Math.max(maxF, 36)));
+      var dieCx = w / 2, dieCy = h * 0.72;
       function px(p) { return dieCx + p.x * scale; }
       function py(p) { return dieCy - p.y * scale; }
 
