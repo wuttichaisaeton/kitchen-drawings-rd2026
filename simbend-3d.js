@@ -412,46 +412,13 @@
           var pFill = collides ? C_RED : C_PUNCH;
           var pStroke = collides ? C_RED : C_PUNCH_E;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
-          
-          // Sizing the punch according to the inner dimension of the part (เพื่อไม่ให้ติดด้านข้าง)
-          var eMin = -tw.eHalf;
-          var eMax = tw.eHalf;
-          if (record.box_geom) {
-            var clearance = 1.0; // 1mm clearance on each side
-            fpFlaps.forEach(function (fl) {
-              if (fl.step >= active) return; // only check already-folded walls
-              
-              if (tw.axis === 'X') {
-                // Active bend runs along Y. Perpendicular walls are horizontal (ax === 'H')
-                if (fl.ax === 'H') {
-                  var pts = foldedFlap(fl, 1e9);
-                  if (fl.side < 0) {
-                    var yMax = Math.max.apply(null, pts.map(function (p) { return p.y; }));
-                    eMin = Math.max(eMin, yMax + clearance);
-                  } else {
-                    var yMin = Math.min.apply(null, pts.map(function (p) { return p.y; }));
-                    eMax = Math.min(eMax, yMin - clearance);
-                  }
-                }
-              } else {
-                // Active bend runs along X. Perpendicular walls are vertical (ax === 'V')
-                if (fl.ax === 'V') {
-                  var pts = foldedFlap(fl, 1e9);
-                  if (fl.side < 0) {
-                    var xMax = Math.max.apply(null, pts.map(function (p) { return p.x; }));
-                    eMin = Math.max(eMin, xMax + clearance);
-                  } else {
-                    var xMin = Math.min.apply(null, pts.map(function (p) { return p.x; }));
-                    eMax = Math.min(eMax, xMin - clearance);
-                  }
-                }
-              }
-            });
-          }
-          activeTlen = Math.round(eMax - eMin);
-          
-          // straight bar so the L/R end caps show the concave gooseneck (เอ๋); throat to flange.
-          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, eMin, pk.goose ? (tw.side === '+' ? -1 : 1) : 1, eMax);
+
+          // The curved (gooseneck) punch is a STRAIGHT extrusion CUT FLAT at both ends,
+          // SYMMETRIC about the centre (เอ๋ 2026-06-04: "มีดบนล่างเท่ากัน ตัดตรง" — both end
+          // caps equal + planar, total length = the side's inner opening 186/286). So we
+          // use ±eHalf directly — NO per-side clip (that made the two ends unequal).
+          activeTlen = Math.round(2 * tw.eHalf);
+          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
         }
       } else {
       var bq = baseQuad();
