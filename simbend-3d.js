@@ -121,29 +121,30 @@
     function gpunchZ(f) { return f < TOUCH ? PEN_HI * (1 - f / TOUCH) + 1 : 1; }   // descends to the sheet, then rides it
 
     // ── 3-D point builders (z up; base in z=0 plane, centred at origin) ──
-    function wallQuad(w, deg) {
-      // fold the DEVELOPED strip (flat_len from the real flat pattern) so the blank
-      // unrolls truthfully; fall back to the mould height if flat_len is absent.
+        function wallQuad(w, deg) {
       var th = deg * R, off = w.offset, h = (w.flat_len != null ? w.flat_len : w.height), hw = w.width / 2;
       var sg = w.side === '+' ? 1 : -1;
       var cz = Math.sin(th) * h, cc = off + Math.cos(th) * h;
+      var miter = h; if (miter > hw) miter = hw;
       if (w.axis === 'X') {
         return [{ x: sg * off, y: -hw, z: 0 }, { x: sg * off, y: hw, z: 0 },
-                { x: sg * cc, y: hw, z: cz }, { x: sg * cc, y: -hw, z: cz }];
+                { x: sg * cc, y: hw - miter, z: cz }, { x: sg * cc, y: -hw + miter, z: cz }];
       }
       return [{ x: -hw, y: sg * off, z: 0 }, { x: hw, y: sg * off, z: 0 },
-              { x: hw, y: sg * cc, z: cz }, { x: -hw, y: sg * cc, z: cz }];
+              { x: hw - miter, y: sg * cc, z: cz }, { x: -hw + miter, y: sg * cc, z: cz }];
     }
-    // lip rides the wall: total bend = wallDeg + lipDeg from horizontal-outward.
     function lipQuad(main, mainDeg, lip, lipDeg) {
-      var fe = wallQuad(main, mainDeg);           // main free edge = pts [2],[3]
-      var a = fe[3], b = fe[2];                    // free-edge corners
+      var fe = wallQuad(main, mainDeg);
+      var a = fe[3], b = fe[2];
       var tot = (mainDeg + lipDeg) * R, h = (lip.flat_len != null ? lip.flat_len : lip.height);
       var sg = main.side === '+' ? 1 : -1;
       var dx, dy, dz = Math.sin(tot) * h, c = Math.cos(tot) * h;
       if (main.axis === 'X') { dx = sg * c; dy = 0; } else { dx = 0; dy = sg * c; }
-      return [a, b, { x: b.x + dx, y: b.y + dy, z: b.z + dz },
-                    { x: a.x + dx, y: a.y + dy, z: a.z + dz }];
+      var miter = h;
+      var ax = a.x + dx, ay = a.y + dy, az = a.z + dz;
+      var bx = b.x + dx, by = b.y + dy, bz = b.z + dz;
+      if (main.axis === 'X') { ay += miter; by -= miter; } else { ax += miter; bx -= miter; }
+      return [a, b, { x: bx, y: by, z: bz }, { x: ax, y: ay, z: az }];
     }
     function baseQuad() {
       var hw = base.w / 2, hh = base.h / 2;
@@ -157,7 +158,7 @@
     // when box_geom.flat_pattern is present; else the box_geom rectangular fold below
     // is the fallback. ──
     var FP = box.flat_pattern;
-    var FLAT = !!(FP && FP.outline && FP.outline.length >= 3 && FP.bend_lines && FP.bend_lines.length >= 8);
+    var FLAT = false;
     var fpBase = null, fpFlaps = [], fpCx = 0, fpCy = 0, fpHalfW = base.w / 2, fpHalfH = base.h / 2;
     function clipHP(poly, inside, inter) {
       var out = [], n = poly.length;
@@ -464,31 +465,64 @@
           addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, eMin, pk.goose ? (tw.side === '+' ? -1 : 1) : 1, eMax);
         }
       } else {
-      var bq = baseQuad();
+      
+      var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
+      var bump = aw ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * (30 * R) : 0;
+      var SINK = 7;
+      var sink = aw ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * SINK : 0;
+      function fvAround(p, X0, side, th) { var dx = p.x - X0; return { x: X0 + dx * Math.cos(th) - side * p.z * Math.sin(th), y: p.y, z: side * dx * Math.sin(th) + p.z * Math.cos(th) }; }
+      function fhAround(p, Y0, side, th) { var dy = p.y - Y0; return { x: p.x, y: Y0 + dy * Math.cos(th) - side * p.z * Math.sin(th), z: side * dy * Math.sin(th) + p.z * Math.cos(th) }; }
+      function vlift(arr) {
+        if (aw && bump) {
+          var L0 = (aw.side === '+' ? 1 : -1) * aw.offset;
+          var afF = (aw.axis === 'X') ? fvAround : fhAround;
+          var sideSign = aw.side === '+' ? -1 : 1;
+          arr = arr.map(function(p) { return afF(p, L0, sideSign, bump); });
+        }
+        return sink ? arr.map(function (p) { return { x: p.x, y: p.y, z: p.z - sink }; }) : arr;
+      }
+      var bq = vlift(baseQuad());
       items.push({ pts: bq, fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
       pairs.forEach(function (pr) {
         var m = pr.main, mw = m.collides ? C_RED : C_SASH;
         var md = (m.angle_deg || 90) * frac(m.step, t);
-        var mq = wallQuad(m, md);
+        var mq = vlift(wallQuad(m, md));
         var act = (m.step === active);
-        items.push({ pts: mq, fill: shade(mw, act ? 0.95 : 0.78), stroke: m.collides ? C_RED : '#2b3340', lw: act ? 2 : 1.2,
-                     d: cen(mq), label: m });
+        items.push({ pts: mq, fill: shade(mw, act ? 0.95 : 0.78), stroke: m.collides ? C_RED : '#2b3340', lw: act ? 2 : 1.2, d: cen(mq), label: m });
         if (pr.lip) {
           var ld = (pr.lip.angle_deg || 90) * frac(pr.lip.step, t);
-          var lq = lipQuad(m, md, pr.lip, ld);
+          var lq = vlift(lipQuad(m, md, pr.lip, ld));
           items.push({ pts: lq, fill: pr.lip.collides ? C_RED : shade(mw, 0.6), stroke: pr.lip.collides ? C_RED : '#2b3340', lw: 1, d: cen(lq) + 0.5 });
         }
       });
-      var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
       if (aw && active >= 1) {
         var f = frac(aw.step, t);
-        var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
+        var penZ2 = gpunchZ(f) - sink;
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
-        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, ONE_TOOL_HALF, 1);
-        addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, ONE_TOOL_HALF, 1);
+        var pk = punchForStep(active);
+        var tw = { axis: aw.axis, side: aw.side, offset: Math.abs(aw.offset) };
+        var eMin = -10, eMax = 10, clearance = 1.0;
+        allWalls.forEach(function (fl) {
+          if (fl.step >= active) return;
+          var isLip = fl.height < 12;
+          var pr = pairs.find(function(p){ return p.main === fl || p.lip === fl; });
+          if (!pr) return;
+          var pts = isLip ? lipQuad(pr.main, pr.main.angle_deg||90, fl, fl.angle_deg||90) : wallQuad(fl, fl.angle_deg||90);
+          if (aw.axis === 'X' && fl.axis === 'Y') {
+            if (fl.side === '-') { var yMax = Math.max.apply(null, pts.map(function(p){return p.y;})); eMin = Math.max(eMin, yMax + clearance); }
+            else { var yMin = Math.min.apply(null, pts.map(function(p){return p.y;})); eMax = Math.min(eMax, yMin - clearance); }
+          } else if (aw.axis === 'Y' && fl.axis === 'X') {
+            if (fl.side === '-') { var xMax = Math.max.apply(null, pts.map(function(p){return p.x;})); eMin = Math.max(eMin, xMax + clearance); }
+            else { var xMin = Math.min.apply(null, pts.map(function(p){return p.x;})); eMax = Math.min(eMax, xMin - clearance); }
+          }
+        });
+        if (eMin >= eMax) { eMin = -ONE_TOOL_HALF; eMax = ONE_TOOL_HALF; } // fallback
+        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, eMin, 1, eMax);
+        addExtrusion(items, aw, pk.prof, penZ2, pFill, pStroke, 6, eMin, pk.goose ? (aw.side === '+' ? -1 : 1) : 1, eMax);
+        activeTlen = Math.round(eMax - eMin);
       }
-      activeTlen = Math.round(ONE_TOOL_HALF * 2);
       }
+
 
       items.sort(function (a, b) { return a.d - b.d; });
       items.forEach(function (it) { fillQuad(it.pts, it.fill, it.stroke, it.lw); });
