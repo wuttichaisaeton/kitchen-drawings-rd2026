@@ -342,16 +342,6 @@
         }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
-          // เอ๋ (circled): the two slanted triangles = walls that haven't folded yet,
-          // lying FLAT with mitered (45°) corner edges → look slanted in iso. Hide a flap
-          // until its own fold step, so no un-folded wall is ever shown flat. AND hide an
-          // outer flap (lip / 2nd wall) until its PARENT wall has folded, so it never floats
-          // detached above a still-hidden wall (that was the "แผ่นขาดจากกัน" tear).
-          if (fl.step > active) return;
-          if (fl.wline != null) {
-            var _pw = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
-            if (_pw > active) return;
-          }
           var wObj = null;
           for (var i = 0; i < allWalls.length; i++) {
             if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
@@ -694,9 +684,11 @@
       // Zoom in tighter (เอ๋: zoom เข้าไปอีก) — the bend + die + punch throat fill the frame; the
       // top of the punch shank is allowed to crop under the HUD bar. Die V-notch stays near the bottom.
       var botPad = 12 * dpr;                        // die V-notch near the bottom (groove peeks up)
-      var baseY = H - botPad;                       // die V-notch screen y (fixed)
+      var baseY0 = H - botPad;                      // die reference (drives the SCALE only)
       var ZOOM2D = 1.5;                             // >1 zooms in; raise for more, lower for less
-      var s = ZOOM2D * (baseY - 34 * dpr) / punchTopZ;  // constant scale (no per-step drift)
+      var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;  // constant scale — ZOOM UNCHANGED (เอ๋)
+      var PAN_UP = 0.18 * H;                        // เอ๋: pan the 2D view UP (same zoom); raise/lower to taste
+      var baseY = baseY0 - PAN_UP;                  // shift all content up by PAN_UP
       var ox = W / 2;                               // die V-notch horizontally centred (fixed)
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
