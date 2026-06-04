@@ -250,8 +250,8 @@
       // — NOT the 7mm mould height (that gave 184.26/284.26, ~1.74mm short each side).
       //   V-axis (X-wall, folds along Y): base.h − 2·lip = 198.26 − 12.26 = 186.00
       //   H-axis (Y-wall, folds along X): base.w − 2·lip = 298.26 − 12.26 = 286.00
-      // เอ๋ 2026-06-04: try short 86, long 186 (inner − 100mm, i.e. 50mm/end).
-      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2 - 50);
+      // เอ๋ 2026-06-04: short 170, long 270 (inner − 16mm, i.e. 8mm/end).
+      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2 - 8);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
     }
