@@ -429,9 +429,12 @@
     };
   }
 
-  // ── 2-D press cross-section of a BOX, per bend (เอ๋: the linear strip view is
-  // wrong for a pan). Shows the active wall's section: base flat on the die, the
-  // wall flange tipping up, the gooseneck punch descending — synced to the 3-D. ──
+  // ── 2-D press cross-section from the REAL flat pattern (เอ๋): the developed strip
+  // ALONG the active bend's axis, at true DXF lengths — X-walls bend in the 343 mm
+  // direction (base 298), Y-walls in the 243 mm direction (base 198), so the two are
+  // different and you can SEE which side is bending. Bends fold at their Layer-BEND
+  // positions, and during the active bend the whole strip tips up at the die (press-
+  // brake V), synced to the 3-D step. ──
   function mount2d(canvas, record, code) {
     var box = record && record.box_geom;
     if (!box || !canvas) return null;
@@ -441,45 +444,59 @@
     if (!walls.length) return null;
     var maxStep = walls.reduce(function (m, w) { return Math.max(m, w.step || 0); }, 0);
     var totalT = START + maxStep * (MOVE + HOLD) + END;
-    var ONE_GOOSE = walls.some(function (x) { return x.punch === 'gooseneck' || x.needs_gooseneck; });
     function frac(step, t) {
       var s = START + (step - 1) * (MOVE + HOLD);
       if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE;
     }
     var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f',
-        C_BASE = '#9aa6b2', C_FLAP = '#4a90e2', C_RED = '#e0574a';
+        C_BASE = '#9aa6b2', C_WALL = '#e8923a', C_LIP = '#c77a2e', C_RED = '#e0574a';
+    // developed base half-length along each axis (from the flat pattern; fallback to box.base)
+    function baseHalf(axis) {
+      if (box.flat_w && box.flat_h) {
+        // flat_w spans X (343), flat_h spans Y (243). base = flat − 2*(wall+lip).
+        var devSide = 2 * (FLEN_WALL + FLEN_LIP);
+        return ((axis === 'X' ? box.flat_w : box.flat_h) - devSide) / 2;
+      }
+      return (axis === 'X' ? (box.base.w) : (box.base.h)) / 2;
+    }
+    var FLEN_WALL = 16.26, FLEN_LIP = 6.13;
+    walls.forEach(function (w) { if (w.flat_len != null) { if (w.height >= 12) FLEN_WALL = w.flat_len; else FLEN_LIP = w.flat_len; } });
 
     function frame(t) {
       var W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
       var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
-      var h = aw ? aw.height : 18;
-      var topZ = PEN_HI + 130 * TOOL_SCALE + 6;
-      var uMin = -46, uMax = 46, zMin = -20, zMax = Math.max(topZ, h + 6);
-      var s = Math.min((W * 0.9) / (uMax - uMin), (H * 0.82) / (zMax - zMin));
-      var ox = W / 2, baseY = H - 28 * dpr;
+      var axis = aw ? aw.axis : 'X';
+      var bh = baseHalf(axis), total = 2 * (bh + FLEN_WALL + FLEN_LIP);
+      // the ACTIVE bend sits at the die (u=0): the part beyond it (the flange being
+      // formed) folds up on one side; the rest of the blank lies on the other side.
+      var activeIsWall = aw ? aw.height >= 12 : true;
+      var flangeArm = aw ? (activeIsWall ? FLEN_WALL + FLEN_LIP : FLEN_LIP) : FLEN_WALL;
+      var restArm = total - flangeArm;                       // long side → shows the blank length per axis
+      var f = frac(active, t), th = f * (Math.PI / 2);
+      var bump = Math.sin(Math.min(1, f) * Math.PI) * (24 * Math.PI / 180);
+      function vlift(p) { return [p[0] * Math.cos(bump), p[1] + Math.abs(p[0]) * Math.sin(bump)]; }   // press V about u=0
+      var pRest = [vlift([0, 0]), vlift([restArm, 0])];                                   // rest of blank (+u, flat)
+      var pFlEnd = vlift([-flangeArm * Math.cos(th), flangeArm * Math.sin(th)]);          // flange tipping up (-u)
+      var pHinge = vlift([0, 0]);
+      var uMax = restArm * 1.06, zTop = PEN_HI + 130 * TOOL_SCALE + 6;
+      var s = Math.min((W * 0.92) / (uMax + flangeArm + 8), (H * 0.8) / (zTop + 24));
+      var ox = W * 0.42, baseY = H - 26 * dpr;
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
-      function poly(pts, fill, stroke, lw) {
-        ctx.beginPath(); pts.forEach(function (p, i) { var x = X(p[0]), y = Y(p[1]); if (i) ctx.lineTo(x, y); else ctx.moveTo(x, y); });
-        ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); }
-      }
-      function seg(a, b, col, lw) { ctx.beginPath(); ctx.moveTo(X(a[0]), Y(a[1])); ctx.lineTo(X(b[0]), Y(b[1])); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineCap = 'round'; ctx.stroke(); }
-      poly(DIE_PROF, C_DIE, C_DIE_E, 1);                       // die, V up at u=0
-      if (aw) {
-        var f = frac(active, t), th = (aw.angle_deg || 90) * f * R;
-        seg([0, 0], [42, 0], C_BASE, 7 * dpr / dpr);          // base: interior (+u), flat on die
-        var fx = -h * Math.cos(th), fz = h * Math.sin(th);
-        seg([0, 0], [fx, fz], aw.collides ? C_RED : C_FLAP, 7); // flange: outside (-u), tips up
-        var penZ = PEN_HI * (1 - f) + 1;
-        var prof = (ONE_GOOSE || aw.punch === 'gooseneck') ? GOOSE_PROF : SASH_PROF;
-        var pp = prof.map(function (p) { return [-p[0], p[1] + penZ]; }); // throat to -u (outside / flap side)
-        poly(pp, aw.collides ? C_RED : C_PUNCH, aw.collides ? C_RED : C_PUNCH_E, 1);
-      }
+      function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
+      function poly(pts, fill, stroke, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); } }
+      poly(DIE_PROF, C_DIE, C_DIE_E, 1);                     // die fixed, V up at u=0 (the active bend)
+      line(pRest, C_BASE, 7);                                // the rest of the blank (long → the side length)
+      line([pHinge, pFlEnd], activeIsWall ? C_WALL : C_LIP, 7);  // the flange tipping up
+      var penZ = PEN_HI * (1 - f) + 1;                       // #202 punch pressing the active bend
+      var pp = SASH_PROF.map(function (p) { return [p[0], p[1] + penZ]; });
+      poly(pp, C_PUNCH, C_PUNCH_E, 1);
+      // HUD
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + Math.round((aw.angle_deg || 90) * frac(active, t)) + '°  ·  PRESS  ·  ' + (ONE_GOOSE ? 'GOOSENECK #453' : 'SASH')) : '2D PRESS', 10 * dpr, 14 * dpr);
+      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'X' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  #202') : '2D PRESS', 10 * dpr, 14 * dpr);
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
