@@ -541,30 +541,18 @@
       var an = st.active != null ? anchor(pts, model, st) : { pts: pts, pen: 0 };
       var P = an.pts;
 
-      // ── Fixed-camera layout ───────────────────────────────────────────────
-      // Scale is computed ONCE at mount() (model._cam) using worst-case heights
-      // across ALL steps — so the die never jumps when the active step changes.
+      // ── Camera: Track A's proven formula (เอ๋ approved this exact framing) ──
+      // Zoom tight on the active bend — the 2D view shows collision.
+      // Clamp maxFlange so a long base segment can't shrink everything;
+      // far ends of the strip just run off-frame (correct press-brake behaviour).
       var rd = resolveDie(model, st);
-      var cam = model._cam || { maxDieH: 60, maxPunchH: 120 };
-      var dieH   = cam.maxDieH;   // worst-case die height (constant)
-      var punchH = cam.maxPunchH; // worst-case punch height (constant)
-
-      // Bottom HUD bar is 28px; leave 6px gap below the die flange.
-      var bottomPad = (28 + 6) * dpr;
-      // Scale so die = 1/4 canvas height
-      var scaleByDie   = (h * 0.25) / dieH;
-      // Scale so punch (from die top upward) fits in remaining space
-      var headRoom = h - (h * 0.25) - bottomPad - 28 * dpr; // minus top HUD bar too
-      var scaleByPunch = headRoom / punchH;
-      var scale = Math.max(0.5 * dpr, Math.min(scaleByDie, scaleByPunch));
-
-      // Die top-edge Y (canvas coords): fixed near the bottom — never changes
-      var dieCx = w / 2;                   // die V and punch tip: always screen-centre
-      var dieCy = h - bottomPad - dieH * scale;
+      var maxF = Math.min(maxFlange, 55);
+      var scale = Math.max(0.6, Math.min(6 * dpr, (h * 0.195) / Math.max(maxF, 36)));
+      var dieCx = w / 2;      // die V and punch tip: always screen-centre
+      var dieCy = h * 0.72;   // die top edge: fixed at 72% down — never moves
       function px(p) { return dieCx + p.x * scale; }
 
-      // Resolve punch uSign (mirror) before drawing, but do NOT shift dieCx —
-      // the die V stays fixed at canvas centre; the punch body may run off-frame.
+      // Resolve punch uSign (mirror) before drawing — do NOT shift dieCx.
       var _uSign = 1, _rp = null;
       if (st.active != null) {
         _rp = resolvePunch(model, st);
