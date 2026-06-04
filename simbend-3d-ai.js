@@ -299,19 +299,31 @@
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
-        var bump = 0;   // เอ๋: ไม่มีส่วนไหนเฉียง — keep the whole-assembly tip-up OFF
+        var bump = 0;
         var SINK = 7;
         var sink = 0;
         if (af) {
-          // Dropped the press-V tip-up: it rotated the base + ALL flaps about the
-          // active bend line, so the far un-folded flaps drooped down and looked
-          // slanted (เอ๋ circled exactly those). With bump=0 the base stays flat,
-          // each wall folds straight up via gfold (0°→90°), and un-folded flaps lie
-          // coplanar with the base. Keep only the small die-sink so the bend "sits".
+          var targetAng = 90;
+          var wObj = null;
+          for (var i = 0; i < allWalls.length; i++) {
+            if (allWalls[i].step === active) { wObj = allWalls[i]; break; }
+          }
+          if (wObj && wObj.angle_deg != null) targetAng = wObj.angle_deg;
+          var targetAngRad = targetAng * R;
+
           var f = frac(active, t);
-          if (f < 0.25) sink = 0;
-          else if (f < 0.75) sink = ((f - 0.25) / 0.5) * SINK;
-          else sink = (1 - Math.min(1, (f - 0.75) / 0.25)) * SINK;
+          if (f < 0.25) {
+            bump = 0;
+            sink = 0;
+          } else if (f < 0.75) {
+            var ratio = (f - 0.25) / 0.5;
+            bump = ratio * (targetAngRad / 2);
+            sink = ratio * SINK;
+          } else {
+            var ratio = (1 - Math.min(1, (f - 0.75) / 0.25));
+            bump = ratio * (targetAngRad / 2);
+            sink = ratio * SINK;
+          }
         }
         function vlift(arr) {
           var r = (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr;
@@ -595,14 +607,11 @@
       var bh = baseHalf(axis);
       var total = Ls_wall_len + Ls_lip_len + 2 * bh + Rs_wall_len + Rs_lip_len;
       var f = frac(active, t);
-      // 2D press phases (เอ๋: ค้างที่จังหวะ 45° นานหน่อยเพื่อตรวจ collision):
-      //   descend → fold + tip-up → HOLD at the 45° peak (inspection window) → settle back.
-      var HOLD_P0 = 0.16, HOLD_P1 = 0.40, HOLD_P2 = 0.88;   // peak-hold spans P1..P2 (~0.48·MOVE)
       function getFoldFraction(step, t) {
         var ff = frac(step, t);
-        if (ff < HOLD_P0) return 0;
-        if (ff < HOLD_P1) return (ff - HOLD_P0) / (HOLD_P1 - HOLD_P0);
-        return 1;   // stays folded through the peak-hold + settle
+        if (ff < 0.25) return 0;
+        if (ff < 0.75) return (ff - 0.25) / 0.5;
+        return 1;
       }
       function sideW(sd, wall) { return walls.filter(function (w) { return w.axis === axis && w.side === (sd > 0 ? '+' : '-') && (wall ? w.height >= 12 : w.height < 12); })[0]; }
       function buildSide(sd) {
@@ -640,31 +649,27 @@
       var pen = 0;
       var sdSign = (aw && aw.side === '+') ? 1 : -1;
       if (aw) {
-        var pk;   // 0..1 peak factor — 1 = full 45° tip-up + full die penetration
-        if (f < HOLD_P0) pk = 0;
-        else if (f < HOLD_P1) pk = (f - HOLD_P0) / (HOLD_P1 - HOLD_P0);   // ramp up to the peak
-        else if (f < HOLD_P2) pk = 1;                                      // HOLD at 45° — inspect collision
-        else pk = 1 - (f - HOLD_P2) / (1 - HOLD_P2);                       // settle back to flat
-        bump = -sdSign * pk * (Math.PI / 4);
-        pen = pk * maxPen;
+        if (f < 0.25) {
+          bump = 0;
+          pen = 0;
+        } else if (f < 0.75) {
+          var ratio = (f - 0.25) / 0.5;
+          bump = -sdSign * ratio * (Math.PI / 4);
+          pen = ratio * maxPen;
+        } else {
+          var ratio = 1 - Math.min(1, (f - 0.75) / 0.25);
+          bump = -sdSign * ratio * (Math.PI / 4);
+          pen = ratio * maxPen;
+        }
       }
       
       function place(p) { var u = p[0] - av[0], z = p[1] - av[1], c = Math.cos(bump), sn = Math.sin(bump); return [u * c - z * sn, u * sn + z * c - pen]; }
       var chain = [Ls[2], Ls[1], Ls[0], Rs[0], Rs[1], Rs[2]].map(place);
-      // FIXED camera (เอ๋: ร่องพับต้องอยู่กลาง-ล่างนิ่ง ไม่วิ่งไปมา, frame แรกเห็นมีดเต็มตัว,
-      // ชิ้นงานเห็นไม่เต็มก็ได้). The active bend already sits at model-origin (place() subtracts
-      // av), so we pin model-origin to a CONSTANT screen point (bottom-centre) with a CONSTANT
-      // scale sized to the punch+die envelope — never the blank. Result: the die-groove never
-      // drifts between steps and the punch is always fully in frame; the long blank simply runs
-      // off the sides (acceptable per เอ๋).
-      var punchTopZ = PEN_HI + 130 * TOOL_SCALE;   // top of the fully-lifted punch
-      // Zoom in tighter (เอ๋: zoom เข้าไปอีก) — the bend + die + punch throat fill the frame; the
-      // top of the punch shank is allowed to crop under the HUD bar. Die V-notch stays near the bottom.
-      var botPad = 12 * dpr;                        // die V-notch near the bottom (groove peeks up)
-      var baseY = H - botPad;                       // die V-notch screen y (fixed)
-      var ZOOM2D = 1.5;                             // >1 zooms in; raise for more, lower for less
-      var s = ZOOM2D * (baseY - 34 * dpr) / punchTopZ;  // constant scale (no per-step drift)
-      var ox = W / 2;                               // die V-notch horizontally centred (fixed)
+      var allU = chain.map(function (p) { return p[0]; }), allZ = chain.map(function (p) { return p[1]; });
+      var uLo = Math.min.apply(0, allU), uHi = Math.max.apply(0, allU), zLo = Math.min(-18, Math.min.apply(0, allZ)), zHi = Math.max(Math.max.apply(0, allZ), 0);
+      zHi = Math.max(zHi, PEN_HI + 130 * TOOL_SCALE);
+      var s = Math.min((W * 0.92) / Math.max(60, uHi - uLo), (H * 0.78) / Math.max(60, zHi - zLo));
+      var ox = W / 2 - ((uLo + uHi) / 2) * s, baseY = H / 2 + ((zLo + zHi) / 2) * s;
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
@@ -679,12 +684,12 @@
       
       var penZ = PEN_HI;
       if (aw) {
-        if (f < HOLD_P0) {
-          penZ = PEN_HI * (1 - f / HOLD_P0) - pen;                 // punch descends to the die
-        } else if (f < HOLD_P2) {
-          penZ = -pen;                                             // down through fold + the 45° hold
+        if (f < 0.25) {
+          penZ = PEN_HI * (1 - f / 0.25) - pen;
+        } else if (f < 0.75) {
+          penZ = -pen;
         } else {
-          penZ = -pen + PEN_HI * ((f - HOLD_P2) / (1 - HOLD_P2));  // lift after the inspection hold
+          penZ = -pen + PEN_HI * ((f - 0.75) / 0.25);
         }
       }
       var pk = punchForStep(active);
