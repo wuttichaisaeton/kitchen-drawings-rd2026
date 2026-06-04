@@ -11,7 +11,11 @@
 (function () {
   'use strict';
   var R = Math.PI / 180;
-  var START = 350, MOVE = 700, HOLD = 220, END = 900;   // ms
+  // Timeline MATCHED to the 2D press (simbend-sim.js: MOVE 450 descend + FOLD 900 fold
+  // + HOLD 350, no start offset, END_HOLD 800) so the ISO and the 2D march through the
+  // SAME bend at the SAME instant (เอ๋ 2026-06-04 'จุดที่พับต้องตรงกัน'). Here MOVE is the
+  // combined descend+fold window (1350) gated by TOUCH≈450/1350; HOLD/END/period match.
+  var START = 0, MOVE = 1350, HOLD = 350, END = 800;   // ms — keep MOVE+HOLD = 2D's 1700/step
   var PEN_HI = 34;   // punch tip lift above the bend line when the wall is flat (descends to ~1 when folded)
   var HORN_LEN = 70;    // mm at each punch end where the bottom relief (horn) ramps up
   var HORN_RISE = 20;   // how far the bottom tip lifts at the very ends (top stays flat → #453)
@@ -85,7 +89,7 @@
     // The punch must first come DOWN and touch the sheet, THEN the sheet tips up into
     // the V (เอ๋: "มีดกดลงโดนแผ่น แผ่นถึงค่อยๆกระดกเป็นรูปตัว V"). So the FOLD is gated to
     // the back part of the move while the punch descends over the front part.
-    var TOUCH = 0.34;
+    var TOUCH = 0.333;   // = 2D MOVE(450) / 3D MOVE(1350): punch finishes descending, then folds
     function gfold(step, t) { var f = frac(step, t); return f <= TOUCH ? 0 : (f - TOUCH) / (1 - TOUCH); }
     function gpunchZ(f) { return f < TOUCH ? PEN_HI * (1 - f / TOUCH) + 1 : 1; }   // descends to the sheet, then rides it
 
