@@ -232,21 +232,25 @@
         else if (w.axis === 'Y') lipHeightY = w.height;
       }
     });
+    // The inner opening = base − 2×(lip DEVELOPED length). The lip is the shortest
+    // return; its flat_len (≈6.13) is what projects inward, not the 7mm mould height.
+    var lipFlat = Math.min.apply(null, allWalls.map(function (w) {
+      return (w.flat_len != null ? w.flat_len : w.height);
+    }));
+    if (!isFinite(lipFlat) || lipFlat <= 0) lipFlat = 6.13;
 
     // pseudo-wall for the active flap's tooling (die/punch along the bend line)
     function fpActiveTool(active) {
       var fl = null; fpFlaps.forEach(function (x) { if (x.step === active) fl = x; });
       if (!fl) return null;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
-      // Punch length = the ACTIVE wall's own bend-line length, stored on the wall as
-      // `width` (the inner edge between the perpendicular returns = base − 2×band).
-      // เอ๋ 2026-06-04: each side's tool must be exactly the inner dimension she circled —
-      // X-walls 184.26 (≈186), Y-walls 284.26 (≈286). This already leaves ~7mm clearance
-      // to the standing perpendicular walls, so no further shortening is needed.
-      var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
-      var eHalf = (aw && aw.width) ? aw.width / 2
-                : Math.max(10, ((fl.ax === 'V' ? base.h : base.w)
-                    - 2 * (fl.ax === 'V' ? lipHeightY : lipHeightX)) / 2);
+      // Punch length = the INNER OPENING of that side (เอ๋ measured it in Fusion:
+      // short 186, long 286). The opening = base edge − 2×(the perpendicular returns'
+      // flat length). The returns are the LIPS, whose developed length is flat_len≈6.13
+      // — NOT the 7mm mould height (that gave 184.26/284.26, ~1.74mm short each side).
+      //   V-axis (X-wall, folds along Y): base.h − 2·lip = 198.26 − 12.26 = 186.00
+      //   H-axis (Y-wall, folds along X): base.w − 2·lip = 298.26 − 12.26 = 286.00
+      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
     }
