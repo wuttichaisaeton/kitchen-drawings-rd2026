@@ -250,8 +250,7 @@
       // — NOT the 7mm mould height (that gave 184.26/284.26, ~1.74mm short each side).
       //   V-axis (X-wall, folds along Y): base.h − 2·lip = 198.26 − 12.26 = 186.00
       //   H-axis (Y-wall, folds along X): base.w − 2·lip = 298.26 − 12.26 = 286.00
-      // เอ๋ 2026-06-04: short 170, long 270 (inner − 16mm, i.e. 8mm/end).
-      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2 - 8);
+      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
     }
@@ -308,7 +307,10 @@
     var C_BASE = '#9aa6b2', C_BASE_E = '#5d6b78';
     var C_SASH = '#e8923a', C_GOOSE = '#4a90e2', C_RED = '#e0574a';
     var C_LIP = 'rgba(255,255,255,0.12)';
-    var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f';
+    // die + punch rendered TRANSPARENT so you can see the bend/part through the tooling
+    // (เอ๋ 2026-06-04 'ทำมีดกับร่องให้โปร่งใส'). Fills are low-alpha; edges stay visible.
+    var C_DIE = 'rgba(115,125,136,0.32)', C_DIE_E = 'rgba(69,78,88,0.7)',
+        C_PUNCH = 'rgba(170,179,189,0.32)', C_PUNCH_E = 'rgba(76,85,95,0.75)';
 
     // press tooling at the active wall's bend line — die (V block, below) + punch
     // (real silhouette, descends from above). One solid bar, gooseneck throat out.
