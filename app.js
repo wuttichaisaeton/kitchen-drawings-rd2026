@@ -5456,16 +5456,26 @@ function renderSimBendHome() {
     let flatDims = [];
     if (rec.box_geom && rec.box_geom.flat_w != null && rec.box_geom.flat_h != null) {
       let sorted = [+rec.box_geom.flat_w, +rec.box_geom.flat_h].sort(function(a, b) { return b - a; });
-      flatDims.push(sorted[0].toFixed(2));
-      flatDims.push(sorted[1].toFixed(2));
-    } else if (rec.flat_length != null && !isNaN(+rec.flat_length)) {
-      if (rec.flat_width != null && !isNaN(+rec.flat_width)) {
-        let sorted = [+rec.flat_length, +rec.flat_width].sort(function(a, b) { return b - a; });
-        flatDims.push(sorted[0].toFixed(2));
-        flatDims.push(sorted[1].toFixed(2));
-      } else {
-        flatDims.push((+rec.flat_length).toFixed(2));
+      flatDims = [sorted[0].toFixed(2), sorted[1].toFixed(2)];
+    } else if (rec.flat_width != null && !isNaN(+rec.flat_width)) {
+      let sorted = [+rec.flat_length, +rec.flat_width].sort(function(a, b) { return b - a; });
+      flatDims = [sorted[0].toFixed(2), sorted[1].toFixed(2)];
+    } else {
+      let uniqueFlats = [];
+      if (rec.flat_length != null && !isNaN(+rec.flat_length)) uniqueFlats.push(+rec.flat_length);
+      if (rec.per_bend && Array.isArray(rec.per_bend)) {
+        rec.per_bend.forEach(function(b) {
+          if (b.flat_len != null && !isNaN(+b.flat_len)) {
+            let val = +b.flat_len;
+            if (!uniqueFlats.some(function(existing) { return Math.abs(existing - val) < 0.1; })) {
+              uniqueFlats.push(val);
+            }
+          }
+        });
       }
+      uniqueFlats.sort(function(a, b) { return b - a; });
+      if (uniqueFlats.length > 2) uniqueFlats = [uniqueFlats[0], uniqueFlats[1]]; // Keep max 2 dimensions (W x H)
+      flatDims = uniqueFlats.map(function(n) { return n.toFixed(2); });
     }
     
     const flatStr = flatDims.length > 0
