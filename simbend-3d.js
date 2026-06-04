@@ -125,13 +125,12 @@
       var th = deg * R, off = w.offset, h = (w.flat_len != null ? w.flat_len : w.height), hw = w.width / 2;
       var sg = w.side === '+' ? 1 : -1;
       var cz = Math.sin(th) * h, cc = off + Math.cos(th) * h;
-      var miter = h; if (miter > hw) miter = hw;
       if (w.axis === 'X') {
         return [{ x: sg * off, y: -hw, z: 0 }, { x: sg * off, y: hw, z: 0 },
-                { x: sg * cc, y: hw - miter, z: cz }, { x: sg * cc, y: -hw + miter, z: cz }];
+                { x: sg * cc, y: hw, z: cz }, { x: sg * cc, y: -hw, z: cz }];
       }
       return [{ x: -hw, y: sg * off, z: 0 }, { x: hw, y: sg * off, z: 0 },
-              { x: hw - miter, y: sg * cc, z: cz }, { x: -hw + miter, y: sg * cc, z: cz }];
+              { x: hw, y: sg * cc, z: cz }, { x: -hw, y: sg * cc, z: cz }];
     }
     function lipQuad(main, mainDeg, lip, lipDeg) {
       var fe = wallQuad(main, mainDeg);
