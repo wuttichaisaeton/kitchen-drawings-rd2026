@@ -270,7 +270,7 @@
       // Pull each end IN by a clear margin so the tall tool never reaches the box corner
       // (in the angled ISO view a 120-tall punch whose end sits AT the corner reads as
       // poking past the frame — เอ๋ 2026-06-04). Tool sits clearly INSIDE with a gap.
-      var END_GAP = 22;   // mm pulled in at each end
+      var END_GAP = 35;   // mm pulled in at each end
       var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2 - END_GAP);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
