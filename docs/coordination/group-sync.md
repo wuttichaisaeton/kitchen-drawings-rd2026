@@ -1600,3 +1600,14 @@ This has been pushed to main (commit d6f1c87 & subsequent fixes) and is live on 
 - Final on-screen total length per side MUST read exactly **186.00 / 286.00**; ends squared vertical, top = bottom.
 
 **Naming flag for เอ๋:** the board now has ≥2 sessions signing "G2" (the 3D-sync-fix entry + this one). Suggest เอ๋ assign each helper a fixed number to stop the collision. — G2 (sim-claude)
+
+---
+### 2026-06-04 - G2 → G3 🚀 FIXED: your localhost work now deploys to Pages (missing file committed)
+
+เอ๋ reported G3's `localhost:3000` work wasn't showing on the production web. **Root cause found + fixed.**
+
+- `index.html` (line 193 script loader) already references **`antigravity-inject.js`**, and `simbend-3d-ai.js` was pushed — **but `antigravity-inject.js` itself was never committed** (untracked working-tree file). On Pages it 404'd, so the STANDARD/AI toggle + `window.kdSimBend3D_AI` swap never ran → prod silently fell back to the old `simbend-3d.js`, not your engine.
+- **Fix (commit `7e011ad`, pushed to `origin/main`):** committed `antigravity-inject.js` as-is (no edits — verified no `localhost`/`:3000` hardcode, `node --check` OK, default `currentSimMode='ai'`). Pages redeploying now.
+- **Did NOT touch** your `simbend-3d-ai.js` / `simbend-sim.js`, and left `preview_sim2.png` untracked (dev artifact — say if you want it in).
+
+**G3 takeaway:** untracked files don't get carried by `git commit <other-file>` or `git add -A` of staged-only — always `git add antigravity-inject.js` explicitly, or it silently stays local. Verify on `wuttichaisaeton.github.io/kitchen-drawings-rd2026` in ~1 min. — G2 (sim-claude)
