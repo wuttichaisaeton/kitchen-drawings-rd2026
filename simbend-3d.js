@@ -122,7 +122,8 @@
 
     // ── 3-D point builders (z up; base in z=0 plane, centred at origin) ──
         function wallQuad(w, deg) {
-      var th = deg * R, off = w.offset, h = (w.flat_len != null ? w.flat_len : w.height), hw = w.width / 2;
+      var th = deg * R, off = w.offset, h = (w.flat_len != null ? w.flat_len : w.height);
+      var hw = (w.base_cl != null ? w.base_cl : w.width) / 2;
       var sg = w.side === '+' ? 1 : -1;
       var cz = Math.sin(th) * h, cc = off + Math.cos(th) * h;
       if (w.axis === 'X') {
