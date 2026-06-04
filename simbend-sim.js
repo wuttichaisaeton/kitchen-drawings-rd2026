@@ -498,10 +498,13 @@
       var an = st.active != null ? anchor(pts, model, st) : { pts: pts, pen: 0 };
       var P = an.pts;
 
-      // Zoomed out so the full tool + part fit with headroom (เอ๋ 'Zoom out ออกมาอีก').
-      var scale = Math.max(0.4, Math.min(4 * dpr,
-        (h * 0.19) / Math.max(maxFlange, 26)));
-      var dieCx = w / 2, dieCy = h * 0.66;
+      // Zoomed IN tight on the active bend — the 2D press view is for seeing whether
+      // the fold collides ('พับแล้วติดหรือไม่'). Clamp maxFlange so a long base segment
+      // can't shrink everything; the far ends of the strip just run off-frame.
+      var maxF = Math.min(maxFlange, 55);
+      var scale = Math.max(0.7, Math.min(6 * dpr,
+        (h * 0.23) / Math.max(maxF, 30)));
+      var dieCx = w / 2, dieCy = h * 0.74;
       function px(p) { return dieCx + p.x * scale; }
       function py(p) { return dieCy - p.y * scale; }
 
