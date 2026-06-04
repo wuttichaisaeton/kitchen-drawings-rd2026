@@ -541,16 +541,21 @@
       var an = st.active != null ? anchor(pts, model, st) : { pts: pts, pen: 0 };
       var P = an.pts;
 
-      // ── Camera: Track A's proven formula (เอ๋ approved this exact framing) ──
-      // Zoom tight on the active bend — the 2D view shows collision.
-      // Clamp maxFlange so a long base segment can't shrink everything;
-      // far ends of the strip just run off-frame (correct press-brake behaviour).
+      // ── Camera: Fixed bottom-center layout with full punch visibility (เอ๋'s spec) ──
+      // "Fix ร่องพับให้อยู่กับที่กลาง ล่าง เห็นร่องขึ้นมานิดหน่อย และให้มีใน Frame แรกเห็นมีดเต็มตัว"
       var rd = resolveDie(model, st);
       var maxF = Math.min(maxFlange, 55);
-      var scale = Math.max(0.6, Math.min(6 * dpr, (h * 0.195) / Math.max(maxF, 36)));
-      var dieCx = w / 2;      // die V and punch tip: always screen-centre
-      var dieCy = h * 0.72;   // die top edge: fixed at 72% down — never moves
+      
+      // Use EXACTLY Track A's scale so the sheet shape (รูปร่าง) isn't shrunken!
+      var scale = Math.max(0.6 * dpr, Math.min(6 * dpr, (h * 0.195) / Math.max(maxF, 36)));
+      
+      // Die top edge fixed near the bottom, showing only the V groove
+      var bottomPad = 50; 
+      var dieCx = w / 2;
+      var dieCy = h - bottomPad;
+      
       function px(p) { return dieCx + p.x * scale; }
+      function py(p) { return dieCy - p.y * scale; }
 
       // Resolve punch uSign (mirror) before drawing — do NOT shift dieCx.
       var _uSign = 1, _rp = null;
@@ -561,8 +566,6 @@
         for (var qi = st.active + 2; qi < P.length; qi++) { if (P[qi] && P[qi].y > _rightMaxY) _rightMaxY = P[qi].y; }
         _uSign = (_rp.type === 'gooseneck' || _rp.type === 'sash') ? (_rightMaxY >= _leftMaxY ? -1 : 1) : 1;
       }
-
-      function py(p) { return dieCy - p.y * scale; }
 
       ctx.clearRect(0, 0, w, h);
       // ram guide line (through punch tip / die V-centre)
@@ -583,7 +586,24 @@
       // punch descends into the V
       if (st.active != null && _rp) {
         var Vtx = P[st.active + 1];
-        drawPunch(dieCx, py(Vtx), st.collide, _rp.type, t, scale, _rp.angle, _rp.radius, _rp.height, _rp.profile, _uSign);
+        
+        // Dynamic punch stroke animation: lift the punch up, but don't let it clip off the top of the canvas
+        var punchH = _rp.height != null ? _rp.height : (_rp.type === 'gooseneck' ? 150 : 120);
+        var topOfPunchWhenDown = py(Vtx) - punchH * scale; // Y coord when pressed
+        var availableLift = Math.max(0, topOfPunchWhenDown - (10 * dpr)); // keep 10px top margin
+        var maxStrokeMm = 80;
+        var strokeMm = Math.min(maxStrokeMm, availableLift / scale); // clamp stroke to fit
+        
+        // FOLD(0)=moving down, HOLD(1)=pressing, MOVE(2)=up, END_HOLD(3)=up
+        var strokeOffset = 0;
+        if (st.phase === 0) strokeOffset = strokeMm * (1 - st.phaseP); // Down stroke
+        else if (st.phase === 1) strokeOffset = 0; // Pressed
+        else if (st.phase === 2) strokeOffset = strokeMm; // Up during sheet move
+        else if (st.phase === 3) strokeOffset = strokeMm; // Up at end
+        
+        var punchTipY = py(Vtx) - strokeOffset * scale;
+        
+        drawPunch(dieCx, punchTipY, st.collide, _rp.type, t, scale, _rp.angle, _rp.radius, _rp.height, _rp.profile, _uSign);
       }
 
       // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
