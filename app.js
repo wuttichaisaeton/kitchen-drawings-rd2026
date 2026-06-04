@@ -5455,12 +5455,17 @@ function renderSimBendHome() {
     // (เอ๋ 'ขึ้น Flat: 116.52 mm @ 1.0mm'). Absent → nothing shown (no regression).
     let flatDims = [];
     if (rec.box_geom && rec.box_geom.flat_w != null && rec.box_geom.flat_h != null) {
-      // Box/Tray part: show both dimensions (e.g. 343.05 x 243.05). Sort so longest is first.
       let sorted = [+rec.box_geom.flat_w, +rec.box_geom.flat_h].sort(function(a, b) { return b - a; });
       flatDims.push(sorted[0].toFixed(2));
       flatDims.push(sorted[1].toFixed(2));
     } else if (rec.flat_length != null && !isNaN(+rec.flat_length)) {
-      flatDims.push((+rec.flat_length).toFixed(2));
+      if (rec.flat_width != null && !isNaN(+rec.flat_width)) {
+        let sorted = [+rec.flat_length, +rec.flat_width].sort(function(a, b) { return b - a; });
+        flatDims.push(sorted[0].toFixed(2));
+        flatDims.push(sorted[1].toFixed(2));
+      } else {
+        flatDims.push((+rec.flat_length).toFixed(2));
+      }
     }
     
     const flatStr = flatDims.length > 0
