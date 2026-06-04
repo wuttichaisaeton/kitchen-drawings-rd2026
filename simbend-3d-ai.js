@@ -672,9 +672,13 @@
       // drifts between steps and the punch is always fully in frame; the long blank simply runs
       // off the sides (acceptable per เอ๋).
       var punchTopZ = PEN_HI + 130 * TOOL_SCALE;   // top of the fully-lifted punch
-      var s = (H * 0.86) / (punchTopZ + 20);        // constant; +20mm headroom under the V-notch
+      // Zoom tighter (เอ๋: zoom เข้าไปอีกนิด) — use the FULL canvas height: die V-notch near the
+      // bottom, punch top just under the HUD bar. Still shows the whole punch, just bigger.
+      var topPad = 34 * dpr;                        // just below the 28·dpr HUD bar
+      var botPad = 12 * dpr;                        // die V-notch near the bottom (groove peeks up)
+      var baseY = H - botPad;                       // die V-notch screen y (fixed)
+      var s = (baseY - topPad) / punchTopZ;         // constant scale; punch top lands at topPad
       var ox = W / 2;                               // die V-notch horizontally centred (fixed)
-      var baseY = H - 20 * dpr;                     // die V-notch near the bottom (groove peeks up)
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
