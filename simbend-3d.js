@@ -309,8 +309,8 @@
     var C_LIP = 'rgba(255,255,255,0.12)';
     // die + punch rendered TRANSPARENT so you can see the bend/part through the tooling
     // (เอ๋ 2026-06-04 'ทำมีดกับร่องให้โปร่งใส'). Fills are low-alpha; edges stay visible.
-    var C_DIE = 'rgba(115,125,136,0.32)', C_DIE_E = 'rgba(69,78,88,0.7)',
-        C_PUNCH = 'rgba(170,179,189,0.32)', C_PUNCH_E = 'rgba(76,85,95,0.75)';
+    var C_DIE = 'rgba(115,125,136,0.12)', C_DIE_E = 'rgba(120,140,165,0.85)',
+        C_PUNCH = 'rgba(170,179,189,0.12)', C_PUNCH_E = 'rgba(150,170,195,0.9)';
 
     // press tooling at the active wall's bend line — die (V block, below) + punch
     // (real silhouette, descends from above). One solid bar, gooseneck throat out.
