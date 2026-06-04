@@ -331,6 +331,9 @@
         }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
+          // เอ๋: ซ่อนแผงที่ยังไม่ถึงคิวพับ (step > active) — ไม่ให้มันนอนราบกางออกเป็นปีกเฉียง.
+          // เหลือแต่ฐาน + ผนังที่พับแล้ว (ตั้ง 90°) + ผนัง active ที่กำลังพับ → จบเป็นถาดสะอาด.
+          if (fl.step > active) return;
           var wObj = null;
           for (var i = 0; i < allWalls.length; i++) {
             if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
