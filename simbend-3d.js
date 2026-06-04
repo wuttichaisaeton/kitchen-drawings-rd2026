@@ -238,16 +238,15 @@
       var fl = null; fpFlaps.forEach(function (x) { if (x.step === active) fl = x; });
       if (!fl) return null;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
-      var eHalf;
-      if (fl.ax === 'V') {
-        // active bend line runs along Y. Length of fold is base height.
-        // perpendicular return lips are on the Y sides (which fold along X)
-        eHalf = Math.max(10, (base.h - 2 * lipHeightY) / 2);
-      } else {
-        // active bend line runs along X. Length of fold is base width.
-        // perpendicular return lips are on the X sides (which fold along Y)
-        eHalf = Math.max(10, (base.w - 2 * lipHeightX) / 2);
-      }
+      // Punch length = the ACTIVE wall's own bend-line length, stored on the wall as
+      // `width` (the inner edge between the perpendicular returns = base − 2×band).
+      // เอ๋ 2026-06-04: each side's tool must be exactly the inner dimension she circled —
+      // X-walls 184.26 (≈186), Y-walls 284.26 (≈286). This already leaves ~7mm clearance
+      // to the standing perpendicular walls, so no further shortening is needed.
+      var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
+      var eHalf = (aw && aw.width) ? aw.width / 2
+                : Math.max(10, ((fl.ax === 'V' ? base.h : base.w)
+                    - 2 * (fl.ax === 'V' ? lipHeightY : lipHeightX)) / 2);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
     }
