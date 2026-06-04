@@ -72,6 +72,12 @@
       if (t >= s + MOVE) return 1;
       return (t - s) / MOVE;
     }
+    // The punch must first come DOWN and touch the sheet, THEN the sheet tips up into
+    // the V (เอ๋: "มีดกดลงโดนแผ่น แผ่นถึงค่อยๆกระดกเป็นรูปตัว V"). So the FOLD is gated to
+    // the back part of the move while the punch descends over the front part.
+    var TOUCH = 0.34;
+    function gfold(step, t) { var f = frac(step, t); return f <= TOUCH ? 0 : (f - TOUCH) / (1 - TOUCH); }
+    function gpunchZ(f) { return f < TOUCH ? PEN_HI * (1 - f / TOUCH) + 1 : 1; }   // descends to the sheet, then rides it
 
     // ── 3-D point builders (z up; base in z=0 plane, centred at origin) ──
     function wallQuad(w, deg) {
@@ -163,11 +169,11 @@
       var F = fl.ax === 'V' ? fvAround : fhAround;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
       var p3 = fl.poly.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; });
-      var thw = frac(fl.step, t) * Math.PI / 2;
+      var thw = gfold(fl.step, t) * Math.PI / 2;
       if (fl.wline != null) {                                    // lip: fold at lip line, then ride the wall
         var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
         var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
-        var thw2 = frac(wstep, t) * Math.PI / 2;
+        var thw2 = gfold(wstep, t) * Math.PI / 2;
         p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
         return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
       }
@@ -309,7 +315,7 @@
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
-        var bump = af ? Math.sin(Math.min(1, frac(active, t)) * Math.PI) * (30 * R) : 0;
+        var bump = af ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * (30 * R) : 0;   // V tips only after the punch touches
         function vlift(arr) { return (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr; }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
@@ -319,10 +325,10 @@
         });
         var tw = fpActiveTool(active);
         if (tw && active >= 1) {
-          var ff = frac(active, t), penZ2 = PEN_HI * (1 - ff) + 1;
+          var penZ2 = gpunchZ(frac(active, t));     // punch descends + touches, then rides the sheet up
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
-          if (USE_GOOSE) {  // #202 default, but a pan needs the gooseneck #453 (concave horn ends, throat to workpiece)
-            sweptPunch(items, tw, GOOSE_PROF, penZ2, tw.eHalf, tw.side === '+' ? 1 : -1, C_PUNCH, C_PUNCH_E, 6);
+          if (USE_GOOSE) {  // #202 default, but a pan needs the gooseneck #453 (concave horn ends, throat to the rising flange)
+            sweptPunch(items, tw, GOOSE_PROF, penZ2, tw.eHalf, tw.side === '+' ? -1 : 1, C_PUNCH, C_PUNCH_E, 6);
           } else {
             addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);
           }
@@ -482,8 +488,10 @@
       var activeIsWall = aw ? aw.height >= 12 : true;
       var flangeArm = aw ? (activeIsWall ? FLEN_WALL + FLEN_LIP : FLEN_LIP) : FLEN_WALL;
       var restArm = total - flangeArm;                       // long side → shows the blank length per axis
-      var f = frac(active, t), th = f * (Math.PI / 2);
-      var bump = Math.sin(Math.min(1, f) * Math.PI) * (24 * Math.PI / 180);
+      var f = frac(active, t), TOUCH2 = 0.34;
+      var fp = f <= TOUCH2 ? 0 : (f - TOUCH2) / (1 - TOUCH2);  // fold only after the punch touches the sheet
+      var th = fp * (Math.PI / 2);
+      var bump = Math.sin(Math.min(1, fp) * Math.PI) * (24 * Math.PI / 180);
       function vlift(p) { return [p[0] * Math.cos(bump), p[1] + Math.abs(p[0]) * Math.sin(bump)]; }   // press V about u=0
       var pRest = [vlift([0, 0]), vlift([restArm, 0])];                                   // rest of blank (+u, flat)
       var pFlEnd = vlift([-flangeArm * Math.cos(th), flangeArm * Math.sin(th)]);          // flange tipping up (-u)
@@ -498,8 +506,8 @@
       poly(DIE_PROF, C_DIE, C_DIE_E, 1);                     // die fixed, V up at u=0 (the active bend)
       line(pRest, C_BASE, 7);                                // the rest of the blank (long → the side length)
       line([pHinge, pFlEnd], activeIsWall ? C_WALL : C_LIP, 7);  // the flange tipping up
-      var penZ = PEN_HI * (1 - f) + 1;                       // punch pressing the active bend (throat to the flange / -u)
-      var prof2 = USE_GOOSE ? GOOSE_PROF.map(function (p) { return [-p[0], p[1]]; }) : SASH_PROF;
+      var penZ = f < TOUCH2 ? PEN_HI * (1 - f / TOUCH2) + 1 : 1;   // descends + touches, then rides the sheet
+      var prof2 = USE_GOOSE ? GOOSE_PROF : SASH_PROF;        // gooseneck throat on -u = toward the flange (folds on -u)
       var pp = prof2.map(function (p) { return [p[0], p[1] + penZ]; });
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
       // HUD
