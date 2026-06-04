@@ -101,6 +101,85 @@
               { x: hw, y: hh, z: 0 }, { x: -hw, y: hh, z: 0 }];
     }
 
+    // ── REAL flat-pattern fold (เอ๋): clip the developed outline — which carries the
+    // 45° corner reliefs — into base + 4 walls + 4 lips by the BEND lines, then fold
+    // each strip up around its bend line in step order (lips ride their wall). Used
+    // when box_geom.flat_pattern is present; else the box_geom rectangular fold below
+    // is the fallback. ──
+    var FP = box.flat_pattern;
+    var FLAT = !!(FP && FP.outline && FP.outline.length >= 3 && FP.bend_lines && FP.bend_lines.length >= 8);
+    var fpBase = null, fpFlaps = [], fpCx = 0, fpCy = 0, fpHalfW = base.w / 2, fpHalfH = base.h / 2;
+    function clipHP(poly, inside, inter) {
+      var out = [], n = poly.length;
+      for (var i = 0; i < n; i++) {
+        var a = poly[i], b = poly[(i + 1) % n], ina = inside(a), inb = inside(b);
+        if (ina) out.push(a);
+        if (ina !== inb) out.push(inter(a, b));
+      }
+      return out;
+    }
+    function clipRect(poly, x0, x1, y0, y1) {
+      var p = poly;
+      p = clipHP(p, function (q) { return q[0] >= x0; }, function (a, b) { return [x0, a[1] + (b[1]-a[1])*(x0-a[0])/(b[0]-a[0])]; });
+      p = clipHP(p, function (q) { return q[0] <= x1; }, function (a, b) { return [x1, a[1] + (b[1]-a[1])*(x1-a[0])/(b[0]-a[0])]; });
+      p = clipHP(p, function (q) { return q[1] >= y0; }, function (a, b) { return [a[0] + (b[0]-a[0])*(y0-a[1])/(b[1]-a[1]), y0]; });
+      p = clipHP(p, function (q) { return q[1] <= y1; }, function (a, b) { return [a[0] + (b[0]-a[0])*(y1-a[1])/(b[1]-a[1]), y1]; });
+      return p;
+    }
+    if (FLAT) (function buildFP() {
+      var poly = FP.outline.map(function (p) { return [p[0], p[1]]; });
+      var vx = [], hy = [];
+      FP.bend_lines.forEach(function (s) {
+        if (Math.abs(s[0][0] - s[1][0]) < 1) vx.push((s[0][0] + s[1][0]) / 2);
+        else hy.push((s[0][1] + s[1][1]) / 2);
+      });
+      vx.sort(function (a, b) { return a - b; }); hy.sort(function (a, b) { return a - b; });
+      if (vx.length < 4 || hy.length < 4) { FLAT = false; return; }
+      var bx0 = vx[1], bx1 = vx[2], by0 = hy[1], by1 = hy[2], BIG = 1e4;
+      fpCx = (bx0 + bx1) / 2; fpCy = (by0 + by1) / 2; fpHalfW = (bx1 - bx0) / 2; fpHalfH = (by1 - by0) / 2;
+      fpBase = clipRect(poly, bx0, bx1, by0, by1);
+      var defs = [   // name, axis, foldLine, side, step, rect, wallLine(lip only)
+        ['Xnw', 'V', bx0, -1, 3, [vx[0], bx0, by0, by1], null],
+        ['Xpw', 'V', bx1,  1, 4, [bx1, vx[3], by0, by1], null],
+        ['Ynw', 'H', by0, -1, 8, [bx0, bx1, hy[0], by0], null],
+        ['Ypw', 'H', by1,  1, 7, [bx0, bx1, by1, hy[3]], null],
+        ['Xnl', 'V', vx[0], -1, 1, [-BIG, vx[0], by0, by1], bx0],
+        ['Xpl', 'V', vx[3],  1, 2, [vx[3], BIG, by0, by1], bx1],
+        ['Ynl', 'H', hy[0], -1, 5, [bx0, bx1, -BIG, hy[0]], by0],
+        ['Ypl', 'H', hy[3],  1, 6, [bx0, bx1, hy[3], BIG], by1],
+      ];
+      defs.forEach(function (d) {
+        var r = d[5], pl = clipRect(poly, r[0], r[1], r[2], r[3]);
+        if (pl.length >= 3) fpFlaps.push({ name: d[0], ax: d[1], line: d[2], side: d[3], step: d[4], wline: d[6], poly: pl });
+      });
+    })();
+    function fvAround(p, X0, side, th) { var dx = p.x - X0; return { x: X0 + dx * Math.cos(th) - side * p.z * Math.sin(th), y: p.y, z: side * dx * Math.sin(th) + p.z * Math.cos(th) }; }
+    function fhAround(p, Y0, side, th) { var dy = p.y - Y0; return { x: p.x, y: Y0 + dy * Math.cos(th) - side * p.z * Math.sin(th), z: side * dy * Math.sin(th) + p.z * Math.cos(th) }; }
+    function fpStepOf(name) { for (var i = 0; i < fpFlaps.length; i++) if (fpFlaps[i].name === name) return fpFlaps[i].step; return 0; }
+    function foldedFlap(fl, t) {
+      var F = fl.ax === 'V' ? fvAround : fhAround;
+      var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
+      var p3 = fl.poly.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; });
+      var thw = frac(fl.step, t) * Math.PI / 2;
+      if (fl.wline != null) {                                    // lip: fold at lip line, then ride the wall
+        var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
+        var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
+        var thw2 = frac(wstep, t) * Math.PI / 2;
+        p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
+        return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
+      }
+      return p3.map(function (p) { return F(p, L0, fl.side, thw); });
+    }
+    function fpBasePts() { return fpBase.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; }); }
+    // pseudo-wall for the active flap's tooling (die/punch along the bend line)
+    function fpActiveTool(active) {
+      var fl = null; fpFlaps.forEach(function (x) { if (x.step === active) fl = x; });
+      if (!fl) return null;
+      var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
+      return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
+               eHalf: fl.ax === 'V' ? fpHalfH : fpHalfW };
+    }
+
     // ── isometric projection (camera az/elev fixed) ──
     var ISO = 26 * R;
     // view from ABOVE: world +z renders UP on screen (tray opens up / หงายขึ้น),
@@ -111,8 +190,15 @@
     // static scale/centre from the fully-folded bounds (stable, no jump)
     var scale = 1, cx = 0, cy = 0;
     function computeFit(w, h) {
-      var pts = [].concat(baseQuad());
-      pairs.forEach(function (pr) {
+      var pts = FLAT ? fpBasePts() : [].concat(baseQuad());
+      if (FLAT) {
+        fpFlaps.forEach(function (fl) { pts = pts.concat(foldedFlap(fl, 1e9)); });   // fully folded bounds
+        // tooling envelope (#202 punch + die) at each flap bend line so it never clips
+        fpFlaps.forEach(function (fl) {
+          var pw = { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy) };
+          SASH_PROF.forEach(function (p) { pts.push(csTo3d(pw, p[0], p[1] + PEN_HI, 0)); });
+        });
+      } else pairs.forEach(function (pr) {
         pts = pts.concat(wallQuad(pr.main, pr.main.angle_deg || 90));
         if (pr.lip) pts = pts.concat(lipQuad(pr.main, pr.main.angle_deg || 90, pr.lip, pr.lip.angle_deg || 90));
         // include the (real, tall) tooling envelope so the punch never clips off-canvas
@@ -211,8 +297,22 @@
       var active = 0;
       for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
 
-      // collect drawables (base + per wall its quad, + lip) with depth + style
+      // collect drawables (base + folded flaps/walls + lips) with depth + style
       var items = [];
+      if (FLAT) {
+        items.push({ pts: fpBasePts(), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
+        fpFlaps.forEach(function (fl) {
+          var fp3 = foldedFlap(fl, t), act = (fl.step === active), isLip = fl.wline != null;
+          items.push({ pts: fp3, fill: shade(C_SASH, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: '#2b3340',
+                       lw: act ? 2 : 1.1, d: cenN(fp3) + (isLip ? 0.5 : 0) });
+        });
+        var tw = fpActiveTool(active);
+        if (tw && active >= 1) {
+          var ff = frac(active, t), penZ2 = PEN_HI * (1 - ff) + 1;
+          addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend
+          addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);    // #202 punch from above
+        }
+      } else {
       var bq = baseQuad();
       items.push({ pts: bq, fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
       pairs.forEach(function (pr) {
@@ -228,18 +328,14 @@
           items.push({ pts: lq, fill: pr.lip.collides ? C_RED : shade(mw, 0.6), stroke: pr.lip.collides ? C_RED : '#2b3340', lw: 1, d: cen(lq) + 0.5 });
         }
       });
-
-      // press tooling at the active wall's bend line: die (static, below) +
-      // punch (descends from above as the wall folds; sash vs gooseneck shape).
       var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
       if (aw && active >= 1) {
         var f = frac(aw.step, t);
         var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
-        var eHalf = ONE_TOOL_HALF;                   // one fixed length for every step
-        var prof = SASH_PROF;                        // default tool = Kyokko #202 sash (เอ๋: #202 everywhere, no auto-gooseneck)
-        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, eHalf, 1);          // die: one solid bar
-        addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, 1);            // punch: #202 sash, one solid bar
+        addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, ONE_TOOL_HALF, 1);
+        addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, ONE_TOOL_HALF, 1);
+      }
       }
 
       items.sort(function (a, b) { return a.d - b.d; });
@@ -248,6 +344,7 @@
       drawHud(w, h, active, t);
     }
     function cen(q) { var c = { x: 0, y: 0, z: 0 }; q.forEach(function (p) { c.x += p.x / 4; c.y += p.y / 4; c.z += p.z / 4; }); return depth(c); }
+    function cenN(q) { var n = q.length, c = { x: 0, y: 0, z: 0 }; q.forEach(function (p) { c.x += p.x / n; c.y += p.y / n; c.z += p.z / n; }); return depth(c); }
     function shade(hex, k) {
       if (hex.indexOf('#') !== 0) return hex;
       var n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
