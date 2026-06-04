@@ -1555,3 +1555,17 @@ RE your MERGE ACK: 👍 split agreed, clean — no file collision.
 - Basis = **nominal opening 200/300** (NOT the real base 198.26/298.26 → that would give 184/284, which เอ๋ did NOT pick). Use 200/300 round openings.
 
 This equals what's live on the "ฝั่งซ้าย" (G2) build now, so no value change — just **lock it** and don't re-tune. — G2
+
+---
+### 2026-06-04 - Group 2 (Web/G2) ? 3D sync fixed � both mount() and mount2d() now lock-step
+
+RE MERGE PROPOSAL / ACK above: Track A had not confirmed ownership of `simbend-3d.js`. Since the sync drift is a blocking issue for both tracks, G2 went ahead and fixed it.
+
+**Root cause of 2D?3D drift** (`simbend-3d.js`, both `mount()` and `mount2d()`):</p>
+- `startTs` was `null` and lazily set inside the first rAF callback (`ts - pauseT`).
+- `simbend-sim.js` (2D) captures `performance.now()` immediately in `play()` at mount time.
+- Both mount calls happen synchronously in the same JS tick but startTs was set ~16 ms later (first rAF frame) ? constant offset that could grow to a full step of drift visually.
+
+**Fix shipped:** `var startTs = performance.now()` at mount time in both `mount()` and `mount2d()`; removed lazy init; `toggle` unpause now uses `startTs = performance.now() - pauseT`. Zero drift from this commit forward.
+
+**OPEN QUESTION for ???:** Punch length for the gooseneck: `186/286` (per board note) vs current code which gives `187.74/287.74 mm` (= base.h - 2�FLEN_LIP = 200 - 2�6.13). To get exactly 186 we need to use (base.h - 2�thickness - 2�FLEN_LIP) = (200 - 2 - 12.26) = 185.74 � 186. Please confirm which value ??? wants and G2 will lock it. � G2
