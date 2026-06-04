@@ -164,15 +164,7 @@
       ];
       defs.forEach(function (d) {
         var r = d[4], pl = clipRect(poly, r[0], r[1], r[2], r[3]);
-        // เอ๋: use the real per-bend-line step from CheckBend's fold_template when
-        // present (folds in the true order); else fall back to the flange-height guess.
         var stepNum = getStepForFlapName(d[0]);
-        if (FP.fold_template) {
-          for (var fti = 0; fti < FP.fold_template.length; fti++) {
-            var fte = FP.fold_template[fti];
-            if (fte.ax === d[1] && fte.step != null && Math.abs(fte.line - d[2]) < 1.0) { stepNum = fte.step; break; }
-          }
-        }
         if (pl.length >= 3) fpFlaps.push({ name: d[0], ax: d[1], line: d[2], side: d[3], step: stepNum, wline: d[5], poly: pl });
       });
     })();
@@ -307,19 +299,31 @@
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
-        // เอ๋: ตอนพับห้ามเอียงทั้งกล่อง. The press-V tip-up rotated the WHOLE base +
-        // flaps about the active bend line (~22° mid-press), so the formed box tipped
-        // and looked slanted during playback — that was the last "เฉียง". Drop it:
-        // bump stays 0 so the base is flat the whole time and each wall folds straight
-        // up via gfold; keep only the small vertical die-sink.
         var bump = 0;
         var SINK = 7;
         var sink = 0;
         if (af) {
+          var targetAng = 90;
+          var wObj = null;
+          for (var i = 0; i < allWalls.length; i++) {
+            if (allWalls[i].step === active) { wObj = allWalls[i]; break; }
+          }
+          if (wObj && wObj.angle_deg != null) targetAng = wObj.angle_deg;
+          var targetAngRad = targetAng * R;
+
           var f = frac(active, t);
-          if (f < 0.25) sink = 0;
-          else if (f < 0.75) sink = ((f - 0.25) / 0.5) * SINK;
-          else sink = (1 - Math.min(1, (f - 0.75) / 0.25)) * SINK;
+          if (f < 0.25) {
+            bump = 0;
+            sink = 0;
+          } else if (f < 0.75) {
+            var ratio = (f - 0.25) / 0.5;
+            bump = ratio * (targetAngRad / 2);
+            sink = ratio * SINK;
+          } else {
+            var ratio = (1 - Math.min(1, (f - 0.75) / 0.25));
+            bump = ratio * (targetAngRad / 2);
+            sink = ratio * SINK;
+          }
         }
         function vlift(arr) {
           var r = (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr;
@@ -327,9 +331,6 @@
         }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
-          // เอ๋: ซ่อนแผงที่ยังไม่ถึงคิวพับ (step > active) — ไม่ให้มันนอนราบกางออกเป็นปีกเฉียง.
-          // เหลือแต่ฐาน + ผนังที่พับแล้ว (ตั้ง 90°) + ผนัง active ที่กำลังพับ → จบเป็นถาดสะอาด.
-          if (fl.step > active) return;
           var wObj = null;
           for (var i = 0; i < allWalls.length; i++) {
             if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
