@@ -209,18 +209,30 @@
     function fvAround(p, X0, side, th) { var dx = p.x - X0; return { x: X0 + dx * Math.cos(th) - side * p.z * Math.sin(th), y: p.y, z: side * dx * Math.sin(th) + p.z * Math.cos(th) }; }
     function fhAround(p, Y0, side, th) { var dy = p.y - Y0; return { x: p.x, y: Y0 + dy * Math.cos(th) - side * p.z * Math.sin(th), z: side * dy * Math.sin(th) + p.z * Math.cos(th) }; }
     function fpStepOf(name) { for (var i = 0; i < fpFlaps.length; i++) if (fpFlaps[i].name === name) return fpFlaps[i].step; return 0; }
+    // A side's WALL must stand up at/before its LIP folds, otherwise the lip folds while
+    // the blank is still flat — landing one wall-width OUTSIDE the box, and the punch
+    // looks like it pokes past the tray (เอ๋ 2026-06-04 "มีดต้องอยู่ในกล่อง ด้านนอกไม่ได้").
+    // So a wall folds at the EARLIER of its own step and its lip's step; the lip rides
+    // that same step. The whole side forms together, lip ends up INSIDE, punch presses
+    // from inside the box edge.
+    function effFoldStep(name, isWall) {
+      var own = fpStepOf(name);
+      var sib = fpStepOf(name.charAt(0) + name.charAt(1) + (isWall ? 'l' : 'w'));
+      return (sib > 0) ? Math.min(own, sib) : own;
+    }
     function foldedFlap(fl, t) {
       var F = fl.ax === 'V' ? fvAround : fhAround;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
       var p3 = fl.poly.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; });
-      var thw = gfold(fl.step, t) * Math.PI / 2;
-      if (fl.wline != null) {                                    // lip: fold at lip line, then ride the wall
+      if (fl.wline != null) {                                    // lip: fold at lip line, then ride the wall (same early step)
         var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
-        var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
-        var thw2 = gfold(wstep, t) * Math.PI / 2;
-        p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
+        var rideStep = effFoldStep(fl.name, false);
+        var thwl = gfold(fl.step, t) * Math.PI / 2;
+        var thw2 = gfold(rideStep, t) * Math.PI / 2;
+        p3 = p3.map(function (p) { return F(p, L0, fl.side, thwl); });
         return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
       }
+      var thw = gfold(effFoldStep(fl.name, true), t) * Math.PI / 2;   // wall: stand up with its lip
       return p3.map(function (p) { return F(p, L0, fl.side, thw); });
     }
     function fpBasePts() { return fpBase.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; }); }
@@ -245,7 +257,10 @@
     function fpActiveTool(active) {
       var fl = null; fpFlaps.forEach(function (x) { if (x.step === active) fl = x; });
       if (!fl) return null;
-      var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
+      // Seat the tooling at the WALL bend line (the box edge), not the lip's flat line —
+      // the side stands up at this step, so the punch presses from inside the box edge.
+      var toolLine = (fl.wline != null) ? fl.wline : fl.line;
+      var L0 = fl.ax === 'V' ? toolLine - fpCx : toolLine - fpCy;
       // Punch length = the INNER OPENING of that side (เอ๋ measured it in Fusion:
       // short 186, long 286). The opening = base edge − 2×(the perpendicular returns'
       // flat length). The returns are the LIPS, whose developed length is flat_len≈6.13
@@ -389,7 +404,8 @@
         // up around the active bend line at the die (base + walls rise together), then
         // settles flat as the press completes. The die/punch stay fixed; the part tilts.
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
-        var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
+        var afLine = af ? (af.wline != null ? af.wline : af.line) : 0;   // pivot at the wall (box) edge, not the lip's flat line
+        var afL0 = af ? (af.ax === 'V' ? afLine - fpCx : afLine - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
         var bump = af ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * (30 * R) : 0;   // V tips only after the punch touches
         function vlift(arr) { return (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr; }
