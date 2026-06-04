@@ -847,16 +847,21 @@
   }
 
   function checkCollisionAt(model, activeBendIdx, a, punch, die) {
-    var pts = vertices(model, a);
     var descends = [0.0, 0.5, 1.0];
     for (var di = 0; di < descends.length; di++) {
       var desc = descends[di];
-      var pen = (die.v / 2) * Math.tan(rad((a[activeBendIdx] || 0) / 2)) * desc;
-      var ptsAnchored = anchorWithDescend(pts, activeBendIdx, a, desc, die.v);
+      var a_step = {};
+      for (var k in a) { a_step[k] = a[k]; }
+      a_step[activeBendIdx] = (a[activeBendIdx] || 0) * desc;
+      
+      var pts = vertices(model, a_step);
+      var pen = (die.v / 2) * Math.tan(rad((a_step[activeBendIdx] || 0) / 2));
+      var ptsAnchored = anchorWithDescend(pts, activeBendIdx, a_step, 1.0, die.v);
       
       var punchPoly = getPunchPolygon(punch.type, punch.angle, punch.radius, punch.height);
-      var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x, y: p.y - pen }; });
+      var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x, y: p.y - pen + 0.05 }; });
       var diePoly = getDiePolygon(die.type, die.angle, die.v, die.height, die.vList);
+      var diePolyTrans = diePoly.map(function(p) { return { x: p.x, y: p.y - 0.05 }; });
       
       for (var i = 0; i < model.N; i++) {
         if (i === activeBendIdx || i === activeBendIdx + 1) continue;
@@ -865,10 +870,10 @@
         if (!p1 || !p2) continue;
         
         if (segmentIntersectsPolygon(p1, p2, punchPolyTrans)) {
-          return { collides: true, with: 'punch', at_angle: a[activeBendIdx] * desc };
+          return { collides: true, with: 'punch', at_angle: (a[activeBendIdx] || 0) * desc };
         }
-        if (segmentIntersectsPolygon(p1, p2, diePoly)) {
-          return { collides: true, with: 'die', at_angle: a[activeBendIdx] * desc };
+        if (segmentIntersectsPolygon(p1, p2, diePolyTrans)) {
+          return { collides: true, with: 'die', at_angle: (a[activeBendIdx] || 0) * desc };
         }
       }
     }

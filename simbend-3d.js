@@ -53,6 +53,13 @@
     var nSteps = allWalls.length;
     var maxStep = allWalls.reduce(function (m, w) { return Math.max(m, w.step || 0); }, 0);
     var totalT = START + maxStep * (MOVE + HOLD) + END;
+    var overridePunchId = 'AUTO';
+    var overridePunchType = 'AUTO';
+    var overrideDieId = 'AUTO';
+    var overrideDieV = 'AUTO';
+    var overrideDieAngle = 'AUTO';
+    var overrideDieType = 'AUTO';
+    var overrideDieVList = 'AUTO';
     // ONE tooling set for the whole job (เอ๋: don't swap tools — set up once, bend all
     // steps). If any wall needs a gooseneck, the gooseneck #453 covers every bend.
     var ONE_GOOSE = allWalls.some(function (x) { return x.punch === 'gooseneck' || x.needs_gooseneck; });
@@ -71,8 +78,13 @@
     // resolve the punch for a step from the per-bend override (เอ๋: เปลี่ยนมีดใน dropdown
     // แล้วภาพต้องเปลี่ยนตาม). AUTO → gooseneck if the pan needs it, else #202 sash.
     function punchForStep(step) {
-      var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
-      var pid = (b && b.punch && b.punch !== 'AUTO') ? ('' + b.punch).toUpperCase() : '';
+      var pid = '';
+      if (overridePunchId && overridePunchId !== 'AUTO') {
+        pid = overridePunchId.toUpperCase();
+      } else {
+        var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
+        pid = (b && b.punch && b.punch !== 'AUTO') ? ('' + b.punch).toUpperCase() : '';
+      }
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
@@ -333,17 +345,27 @@
         function vlift(arr) { return (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr; }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
+          var wObj = null;
+          for (var i = 0; i < allWalls.length; i++) {
+            if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
+          }
+          var collides = wObj && wObj.collides;
+          var baseCol = collides ? C_RED : C_SASH;
           var fp3 = vlift(foldedFlap(fl, t)), act = (fl.step === active), isLip = fl.wline != null;
-          items.push({ pts: fp3, fill: shade(C_SASH, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: '#2b3340',
+          items.push({ pts: fp3, fill: shade(baseCol, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: collides ? C_RED : '#2b3340',
                        lw: act ? 2 : 1.1, d: cenN(fp3) + (isLip ? 0.5 : 0) });
         });
         var tw = fpActiveTool(active);
         if (tw && active >= 1) {
           var penZ2 = gpunchZ(frac(active, t));     // punch descends + touches, then rides the sheet up
           var pk = punchForStep(active);            // per-step punch (respects the dropdown override)
+          var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
+          var collides = aw && aw.collides;
+          var pFill = collides ? C_RED : C_PUNCH;
+          var pStroke = collides ? C_RED : C_PUNCH_E;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
           // straight bar so the L/R end caps show the concave gooseneck (เอ๋); throat to flange.
-          addExtrusion(items, tw, pk.prof, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
+          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
         }
       } else {
       var bq = baseQuad();
@@ -435,6 +457,19 @@
       toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
       isPlaying: function () { return !paused; },
       set onstatus(fn) { statusCb = fn; },
+      setPunchOverride: function (id, type) {
+        overridePunchId = id;
+        overridePunchType = type;
+        frame(pauseT);
+      },
+      setDieOverride: function (id, v, angle, type, vList) {
+        overrideDieId = id;
+        overrideDieV = v;
+        overrideDieAngle = angle;
+        overrideDieType = type;
+        overrideDieVList = vList;
+        frame(pauseT);
+      },
       recordClip: function () {
         try {
           var stream = canvas.captureStream(30);

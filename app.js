@@ -5031,13 +5031,10 @@ function _toolingPickerHtml() {
       const spec = kind === 'punch'
         ? `${t.angle_deg}° · R${t.tip_radius_mm}`
         : `${t.angle_deg}° · V${(t.v_list || []).join('/')}`;
-      // 2-state marker (เอ๋ 2026-06-03 'เอาแค่ ★ ○ ... ○ ให้เป็นทั่วไป' —
-      // supersedes the 3-state ·): ★ = recommended, ○ = common/ทั่วไป.
-      // One tap toggles, so marking ★ always works.
-      const star = t.fit1mm ? '★' : '○';
-      const starClickable = admin
-        ? `<span class="tl-star tl-star-btn" data-id="${escapeHtml(t.id)}" data-fit1mm="${t.fit1mm ? '1' : '0'}" data-common="${t.common ? '1' : '0'}" style="cursor: pointer;" title="Click to toggle: ★ = recommended / ○ = common">${star}</span>`
-        : `<span class="tl-star">${star}</span>`;
+      // 3-state marker: ★ = recommended, · = common/ทั่วไป, ○ = none.
+      // Clickable by all roles.
+      const star = t.fit1mm ? '★' : (t.common ? '·' : '○');
+      const starClickable = `<span class="tl-star tl-star-btn" data-id="${escapeHtml(t.id)}" data-fit1mm="${t.fit1mm ? '1' : '0'}" data-common="${t.common ? '1' : '0'}" style="cursor: pointer;" title="Click to cycle: ★ recommended / · common / ○ none">${star}</span>`;
       const pic = art ? `<span class="tl-pic">${kind === 'punch' ? art.punch(t, { w: 30, h: 40 }) : art.die(t, { w: 44, h: 30 })}</span>` : '';
       const expanded = _toolingExpandedId === t.id;
       const editBtn = (admin)
@@ -5083,7 +5080,7 @@ function _toolingPickerHtml() {
         <a href="https://www.kyokko-thai.com/17311020/catalog-%E3%82%AB%E3%82%BF%E3%83%AD%E3%82%B0" target="_blank" class="tl-catalog-link" style="color: #4ecca3; text-decoration: none; font-size: 11.5px; font-weight: bold;">
           📖 Kyokko Catalog Webpage ↗
         </a>
-        ${admin ? `<span class="tl-hint" style="margin-left: auto;">★ = recommended · ○ = common · saved automatically</span>` : ''}
+        <span class="tl-hint" style="margin-left: auto;">★ = recommended · · = common · ○ = none · saved automatically</span>
       </div>
     </div>`;
   }
@@ -5113,14 +5110,31 @@ function _wireToolingPicker() {
       render();
     });
   });
-  // Star toggle — ★ ↔ ○ (recommended / common). ○ keeps common=true ("ทั่วไป");
-  // one tap flips, so marking ★ always works (เอ๋ 'เอาแค่ ★ ○' / 'mark ★ ไม่ได้').
+  // Star cycle: ★ recommended -> · common -> ○ none -> ★ recommended.
+  // Clickable by all roles.
   ROOT.querySelectorAll('.tl-star-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = btn.getAttribute('data-id');
       const wasFit = btn.getAttribute('data-fit1mm') === '1';
-      _saveToolStarFlag(id, !wasFit, true);
+      const wasCommon = btn.getAttribute('data-common') === '1';
+      
+      let newFit = false;
+      let newCommon = false;
+      if (wasFit) {
+        // ★ -> ·
+        newFit = false;
+        newCommon = true;
+      } else if (wasCommon) {
+        // · -> ○
+        newFit = false;
+        newCommon = false;
+      } else {
+        // ○ -> ★
+        newFit = true;
+        newCommon = true;
+      }
+      _saveToolStarFlag(id, newFit, newCommon);
     });
   });
   ROOT.querySelectorAll('.tl-add-btn').forEach(btn => {
@@ -5709,24 +5723,40 @@ function renderSimBendHome() {
         const pId = punchSel ? punchSel.value : 'AUTO';
         const dId = dieSel ? dieSel.value : 'AUTO';
         if (pId === 'AUTO') {
-          if (_simController.setPunchOverride) {
+          if (_simController && _simController.setPunchOverride) {
             _simController.setPunchOverride('AUTO', 'AUTO');
+          }
+          if (_simController2D && _simController2D.setPunchOverride) {
+            _simController2D.setPunchOverride('AUTO', 'AUTO');
           }
         } else {
           const pObj = cat.punches.find(p => p.id === pId);
-          if (pObj && _simController.setPunchOverride) {
-            _simController.setPunchOverride(pObj.id, pObj.type);
+          if (pObj) {
+            if (_simController && _simController.setPunchOverride) {
+              _simController.setPunchOverride(pObj.id, pObj.type);
+            }
+            if (_simController2D && _simController2D.setPunchOverride) {
+              _simController2D.setPunchOverride(pObj.id, pObj.type);
+            }
           }
         }
         if (dId === 'AUTO') {
-          if (_simController.setDieOverride) {
+          if (_simController && _simController.setDieOverride) {
             _simController.setDieOverride('AUTO', 'AUTO', 'AUTO', 'AUTO', 'AUTO');
+          }
+          if (_simController2D && _simController2D.setDieOverride) {
+            _simController2D.setDieOverride('AUTO', 'AUTO', 'AUTO', 'AUTO', 'AUTO');
           }
         } else {
           const dObj = cat.dies.find(d => d.id === dId);
-          if (dObj && _simController.setDieOverride) {
+          if (dObj) {
             const v = dObj.v_list ? dObj.v_list[0] : 8;
-            _simController.setDieOverride(dObj.id, v, dObj.angle_deg || 88, dObj.type, dObj.v_list);
+            if (_simController && _simController.setDieOverride) {
+              _simController.setDieOverride(dObj.id, v, dObj.angle_deg || 88, dObj.type, dObj.v_list);
+            }
+            if (_simController2D && _simController2D.setDieOverride) {
+              _simController2D.setDieOverride(dObj.id, v, dObj.angle_deg || 88, dObj.type, dObj.v_list);
+            }
           }
         }
       };
@@ -5805,26 +5835,74 @@ function renderSimBendHome() {
               b.v_mm_out = vVal;
             }
           }
+          if (rec.box_geom && rec.box_geom.walls) {
+            const wObj = rec.box_geom.walls.find(w => w.id === b.bend);
+            if (wObj) {
+              wObj.punch = b.punch;
+              wObj.die = b.die;
+              wObj.angle_deg = b.angle_deg;
+              wObj.flat_len = b.flange_mm;
+              if (b.punch === 'gooseneck' || b.punch === 'GN-453-AUTO' || b.punch === 'P-KYOKKO-453-R02') {
+                wObj.needs_gooseneck = true;
+              }
+            }
+          }
         });
 
         const N = rec.per_bend.length;
         const catalog = getFlattenedCatalog(false);
-        const model = window.kdSimBend.buildModel({
-          per_bend: rec.per_bend,
-          order: rec.order
-        });
+        const model = window.kdSimBend.buildModel(rec);
         
         let nProblems = 0;
         
         rec.per_bend.forEach((b, i) => {
-          const punchObj = catalog.punches.find(p => p.id === b.punch);
-          const dieObj = catalog.dies.find(d => d.id === b.die);
+          let pId = b.punch;
+          if (!pId || pId === 'AUTO') {
+            const useGoose = !!(rec.box_geom && (rec.box_geom.walls || []).some(w => w.needs_gooseneck || w.punch === 'gooseneck'));
+            pId = useGoose ? 'GN-453-AUTO' : 'P-KYOKKO-202-R02';
+          }
+          const punchObj = catalog.punches.find(p => p.id === pId);
           
-          const punch = punchObj || { type: 'standard', angle: 88, radius: 0.8, height: 120 };
-          const die = dieObj || { type: '1V', angle: 88, v: b.v_mm || 8, height: 60, vList: [b.v_mm || 8] };
+          let dId = b.die;
+          if (!dId || dId === 'AUTO') {
+            dId = 'D-1V-V08-88';
+          }
+          const dieObj = catalog.dies.find(d => d.id === dId);
           
-          const V = die.v_list ? die.v_list[0] : 8;
-          const angleOk = die.angle_deg <= b.angle_deg + 2.0;
+          let pType = 'standard', pAngle = 88, pRadius = 0.8, pHeight = 120;
+          if (punchObj) {
+            pType = punchObj.type || 'standard';
+            pAngle = punchObj.angle_deg != null ? punchObj.angle_deg : 88;
+            pRadius = punchObj.tip_radius_mm != null ? punchObj.tip_radius_mm : 0.8;
+            pHeight = punchObj.height_mm != null ? punchObj.height_mm : 120;
+          } else {
+            const typeStr = (pId || '').toLowerCase();
+            if (typeStr.indexOf('gn') >= 0 || typeStr.indexOf('gooseneck') >= 0 || typeStr.indexOf('453') >= 0) {
+              pType = 'gooseneck'; pHeight = 150;
+            } else if (typeStr.indexOf('acute') >= 0) {
+              pType = 'acute'; pHeight = 120;
+            } else if (typeStr.indexOf('sash') >= 0 || typeStr.indexOf('202') >= 0) {
+              pType = 'sash'; pHeight = 130;
+            }
+          }
+          const punch = { type: pType, angle: pAngle, radius: pRadius, height: pHeight };
+          
+          let dType = '1V', dAngle = 88, dV = b.v_mm || 8, dHeight = 60, dVList = [b.v_mm || 8];
+          if (dieObj) {
+            dType = dieObj.type || '1V';
+            dAngle = dieObj.angle_deg != null ? dieObj.angle_deg : 88;
+            dHeight = dieObj.height_mm != null ? dieObj.height_mm : 60;
+            dVList = dieObj.v_list || [b.v_mm || 8];
+            dV = dVList[0] || 8;
+          } else {
+            const typeStr = (dId || '').toLowerCase();
+            if (typeStr.indexOf('acute') >= 0) dType = 'acute';
+            else if (typeStr.indexOf('2v') >= 0) dType = '2V';
+          }
+          const die = { type: dType, angle: dAngle, v: dV, height: dHeight, vList: dVList };
+          
+          const V = die.vList ? die.vList[0] : (die.v || 8);
+          const angleOk = die.angle <= b.angle_deg + 2.0;
           const flangeOk = b.flange_mm >= 0.67 * V;
           
           let ok = angleOk && flangeOk;
@@ -5833,16 +5911,23 @@ function renderSimBendHome() {
           if (!flangeOk) reasons.push("flange too short for V");
           
           const a = new Array(N).fill(0);
-          rec.order.forEach(idxName => {
-            const bendIndex = rec.per_bend.findIndex(x => x.bend === idxName);
+          const currentSeqIdx = rec.order.indexOf(b.bend);
+          if (currentSeqIdx !== -1) {
+            rec.order.forEach((idxName, orderIdx) => {
+              if (orderIdx <= currentSeqIdx) {
+                const bendIndex = rec.per_bend.findIndex(x => x.bend === idxName);
+                if (bendIndex >= 0) {
+                  a[bendIndex] = rec.per_bend[bendIndex].angle_deg;
+                }
+              }
+            });
+          } else {
+            const bendIndex = rec.per_bend.findIndex(x => x.bend === b.bend);
             if (bendIndex >= 0) {
-              a[bendIndex] = rec.per_bend[bendIndex].angle_deg;
+              a[bendIndex] = b.angle_deg;
             }
-          });
-          const currentBendIdx = rec.per_bend.findIndex(x => x.bend === b.bend);
-          if (currentBendIdx >= 0) {
-            a[currentBendIdx] = b.angle_deg;
           }
+          const currentBendIdx = rec.per_bend.findIndex(x => x.bend === b.bend);
           
           let collides = false;
           let hits = null;
@@ -5865,6 +5950,14 @@ function renderSimBendHome() {
           b.at_angle = at_angle;
           b.reason = collides ? colReason : (reasons.join('; ') || 'formable');
           b.needs_purchase = (punchObj && punchObj.isKyokkoPreset) || (dieObj && dieObj.isKyokkoPreset);
+          
+          if (rec.box_geom && rec.box_geom.walls) {
+            const wObj = rec.box_geom.walls.find(w => w.id === b.bend);
+            if (wObj) {
+              wObj.collides = collides;
+              wObj.collides_with = hits;
+            }
+          }
           
           if (!b.ok) {
             nProblems++;
@@ -5901,13 +5994,16 @@ function renderSimBendHome() {
           _simController.destroy();
           if (_simController2D) { try { _simController2D.destroy(); } catch (e2) {} _simController2D = null; }
           // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
-      _simController = (rec.kind === 'box' && window.kdSimBend3D)
-        ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
-        : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+          _simController = (rec.kind === 'box' && window.kdSimBend3D)
+            ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
+            : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
           const canvas2d = card.querySelector('.sb-sim-canvas-2d');
           if (canvas2d && window.kdSimBend)
             _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
           _simController.onstatus = (t) => { if (status) status.textContent = t; };
+          
+          updateToolOverrides();
+          
           const playBtn = card.querySelector('.sb-sim-play');
           if (playBtn) playBtn.textContent = '⏸ Pause';
         }
