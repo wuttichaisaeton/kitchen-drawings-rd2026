@@ -665,11 +665,16 @@
       
       function place(p) { var u = p[0] - av[0], z = p[1] - av[1], c = Math.cos(bump), sn = Math.sin(bump); return [u * c - z * sn, u * sn + z * c - pen]; }
       var chain = [Ls[2], Ls[1], Ls[0], Rs[0], Rs[1], Rs[2]].map(place);
-      var allU = chain.map(function (p) { return p[0]; }), allZ = chain.map(function (p) { return p[1]; });
-      var uLo = Math.min.apply(0, allU), uHi = Math.max.apply(0, allU), zLo = Math.min(-18, Math.min.apply(0, allZ)), zHi = Math.max(Math.max.apply(0, allZ), 0);
-      zHi = Math.max(zHi, PEN_HI + 130 * TOOL_SCALE);
-      var s = Math.min((W * 0.92) / Math.max(60, uHi - uLo), (H * 0.78) / Math.max(60, zHi - zLo));
-      var ox = W / 2 - ((uLo + uHi) / 2) * s, baseY = H / 2 + ((zLo + zHi) / 2) * s;
+      // FIXED camera (เอ๋: ร่องพับต้องอยู่กลาง-ล่างนิ่ง ไม่วิ่งไปมา, frame แรกเห็นมีดเต็มตัว,
+      // ชิ้นงานเห็นไม่เต็มก็ได้). The active bend already sits at model-origin (place() subtracts
+      // av), so we pin model-origin to a CONSTANT screen point (bottom-centre) with a CONSTANT
+      // scale sized to the punch+die envelope — never the blank. Result: the die-groove never
+      // drifts between steps and the punch is always fully in frame; the long blank simply runs
+      // off the sides (acceptable per เอ๋).
+      var punchTopZ = PEN_HI + 130 * TOOL_SCALE;   // top of the fully-lifted punch
+      var s = (H * 0.86) / (punchTopZ + 20);        // constant; +20mm headroom under the V-notch
+      var ox = W / 2;                               // die V-notch horizontally centred (fixed)
+      var baseY = H - 20 * dpr;                     // die V-notch near the bottom (groove peeks up)
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }

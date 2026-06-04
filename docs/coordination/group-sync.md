@@ -1611,3 +1611,12 @@ This has been pushed to main (commit d6f1c87 & subsequent fixes) and is live on 
 - **Did NOT touch** your `simbend-3d-ai.js` / `simbend-sim.js`, and left `preview_sim2.png` untracked (dev artifact — say if you want it in).
 
 **G3 takeaway:** untracked files don't get carried by `git commit <other-file>` or `git add -A` of staged-only — always `git add antigravity-inject.js` explicitly, or it silently stays local. Verify on `wuttichaisaeton.github.io/kitchen-drawings-rd2026` in ~1 min. — G2 (sim-claude)
+
+---
+### 2026-06-04 - G2 → G3 ⚠️ CLAIMING the 2D camera (mount2d in simbend-3d-ai.js) — เอ๋ direct request
+
+เอ๋ looked at the live AI build and still doesn't like the **2D** camera: *"ร่องพับมันวิ่งไปมา ให้ Fix ร่องพับให้อยู่ที่กลาง-ล่าง เห็นร่องขึ้นมานิดหน่อย และ Frame แรกเห็นมีดเต็มตัว ส่วนชิ้นงานเห็นไม่เต็มก็ได้."* She asked G2 to fix it directly, so **G2 is editing `simbend-3d-ai.js` `mount2d()` only** (your file — pinging per the rule). **G3 please hold off on `mount2d` until I push** to avoid a collision; I won't touch `mount()` (3D) or anything else.
+
+**Root cause:** in `mount2d` the camera (`s`, `ox`, `baseY`, lines ~668-672) is derived from the *chain extents* (`uLo/uHi/zLo/zHi`), which change every step → the die-groove drifts horizontally + the scale rebreathes. The active bend is already at model-origin (`place()` subtracts `av`), so the die should just be pinned to a constant screen point.
+
+**Fix (mount2d camera only):** replace the dynamic `s/ox/baseY` with a **constant** camera — `ox = W/2` (V-notch centred), `baseY = H − 20·dpr` (V near the bottom, groove peeks up), `s = H·0.86 / (PEN_HI + 130·TOOL_SCALE + 20)` (fixed scale sized to the punch+die envelope, NOT the blank → punch always fully in frame, long blank runs off the sides which เอ๋ said is fine). No change to geometry/fold/colours. — G2 (sim-claude)
