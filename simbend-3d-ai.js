@@ -307,31 +307,19 @@
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
+        // เอ๋: ตอนพับห้ามเอียงทั้งกล่อง. The press-V tip-up rotated the WHOLE base +
+        // flaps about the active bend line (~22° mid-press), so the formed box tipped
+        // and looked slanted during playback — that was the last "เฉียง". Drop it:
+        // bump stays 0 so the base is flat the whole time and each wall folds straight
+        // up via gfold; keep only the small vertical die-sink.
         var bump = 0;
         var SINK = 7;
         var sink = 0;
         if (af) {
-          var targetAng = 90;
-          var wObj = null;
-          for (var i = 0; i < allWalls.length; i++) {
-            if (allWalls[i].step === active) { wObj = allWalls[i]; break; }
-          }
-          if (wObj && wObj.angle_deg != null) targetAng = wObj.angle_deg;
-          var targetAngRad = targetAng * R;
-
           var f = frac(active, t);
-          if (f < 0.25) {
-            bump = 0;
-            sink = 0;
-          } else if (f < 0.75) {
-            var ratio = (f - 0.25) / 0.5;
-            bump = ratio * (targetAngRad / 2);
-            sink = ratio * SINK;
-          } else {
-            var ratio = (1 - Math.min(1, (f - 0.75) / 0.25));
-            bump = ratio * (targetAngRad / 2);
-            sink = ratio * SINK;
-          }
+          if (f < 0.25) sink = 0;
+          else if (f < 0.75) sink = ((f - 0.25) / 0.5) * SINK;
+          else sink = (1 - Math.min(1, (f - 0.75) / 0.25)) * SINK;
         }
         function vlift(arr) {
           var r = (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr;
