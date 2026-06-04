@@ -420,7 +420,15 @@
           // caps equal + planar, total length = the side's inner opening 186/286). So we
           // use ±eHalf directly — NO per-side clip (that made the two ends unequal).
           activeTlen = Math.round(2 * tw.eHalf);
-          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
+          // The gooseneck profile has a small BACK lip 7mm behind the tip (u<0). With the
+          // tip seated in the die at the bend line, that back pokes 7mm PAST the tray edge
+          // → in ISO it looks like the 286 punch overhangs the 300 tray (เอ๋ 2026-06-04
+          // "ทำไมเหมือนมีดยื่นออกมา"). It doesn't (286<300); it's the back lip. Square the
+          // back off AT the bend line (u≥0) so the punch sits flush to the tray edge. Tip,
+          // throat, body, length 286, height 120 all unchanged; only the 3-D punch (the 2-D
+          // cross-section keeps the full profile).
+          var pProf = pk.goose ? pk.prof.map(function (p) { return [Math.max(0, p[0]), p[1]]; }) : pk.prof;
+          addExtrusion(items, tw, pProf, penZ2, pFill, pStroke, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
         }
       } else {
       var bq = baseQuad();
