@@ -1469,3 +1469,39 @@ So you can fold the exact cross: base = the central rect bounded by the inner (w
 **Note on test v1:** its record still has the old `flat_h:200` (pushed before this fix) — re-run Check Bend on the test v1 doc to refresh it, OR just use **test v2** as the canonical box test (it has the flat pattern + corner reliefs). I left v1 as-is since v2 is active.
 
 **NEEDS (G2):** consume `flat_pattern` + `flat_len` for the realistic fold; verify live on `bend_sim/test v2`. Ping if you'd rather have bend_lines tagged with their `step`/`axis` (I can match them Fusion-side) instead of the web associating by orientation/position. 🎉
+
+---
+### 2026-06-04 - MERGE PROPOSAL: reunite the two competing SIM.BENDING tracks (เอ๋ — กลับมาทำงานร่วมกัน)
+
+เอ๋ ran the SIM.BENDING `test v2` box sim as a **competition** between two web tracks. She has now decided to **merge them back into ONE team** — stop competing, sync up, combine the best of each. This entry proposes the plan; **please ack + claim a piece before editing the shared sim files.**
+
+**SOURCE OF TRUTH = "Kitchen by Rough Design"** = this production repo (`drawings-ui` → `kitchen-drawings-rd2026`, served at `wuttichaisaeton.github.io/kitchen-drawings-rd2026`). The competition repo `kitchen-sim-claude` is retired after merge — everything lands here.
+
+**The two versions to combine:**
+- **Track A** (`kitchen-sim-claude` @ `46f2793`) = the side เอ๋ picked for **LOOK + MOTION** ("ฝั่งซ้ายคือที่ผมต้องการ"): 2D press-V — the sheet tips up into a short V at the die, nice camera angle + zoom; 3D press-V tip-up; one gooseneck #453, length = inner edge per side (186/286), `TOOL_SCALE 0.5`.
+  - *Weakness:* the 2D is NOT the real full blank — it shows only the active bend's local V, so blank length + bend positions aren't the true cross-section.
+- **Track B** (this repo, the `simbend-sim.js` WIP = `buildBoxCross`) = correct **GEOMETRY**: real full blank **343/243** + correct bend positions (`lip|wall|base|wall|lip`).
+  - *Weakness:* the look/motion isn't as nice as A.
+
+**TARGET (definition of done):**
+1. **Keep Track A's look + motion + zoom unchanged** — เอ๋ approved this exact framing; do NOT redesign it.
+2. **Feed Track B's correct geometry into Track A's motion**: the *real full blank* (343/243, all bend positions exact) tips up into the press-V at the active bend — so it's both correct AND keeps the look เอ๋ likes. (This is the one synthesis เอ๋ asked for; each side previously had only half.)
+3. **2D ↔ 3D synced to the same bend at the same instant** (currently they drift — e.g. 2D step 4 while 3D step 1).
+4. **Punch:** gooseneck #453, length = inner edge per side. **Finalize ONE value** (186/286 vs 184/284 = real−7−7) — ask เอ๋ before locking.
+
+**HARD CONSTRAINTS (เอ๋, persistent):**
+- No Thai in rendered UI text (Flux Architect can't render it) — **except the Comments feature**. Source-code comments may be Thai.
+- **Never trigger Ctrl+S in Fusion** (เอ๋ saves .f3d/.f2d herself). git / file edits / push are fine.
+- Tool + die profiles **lifted from clean DXF only — don't guess shapes** (#202 sash, #453 gooseneck already lifted).
+- **No full rewrites** — change one agreed thing at a time (เอ๋: "ปรับทุกอย่างเละ" happened before — avoid it).
+
+**COORDINATION (so we don't clobber each other — we share this working tree):**
+- `git pull --rebase origin main` before any work; talk here (append-only, never edit each other's past entries).
+- **File ownership:** one track owns **2D (`simbend-sim.js`)**, the other owns **3D (`simbend-3d.js`)**. Note here before touching the other's file.
+- Commit only your own files by explicit path (`git add <file>`), never `git add -A` — the tree carries the other session's WIP.
+
+**PROPOSED SPLIT (adjust if you prefer):**
+- **Track A owner → 2D merge:** port Track B's `buildBoxCross` real-blank geometry into Track A's press-V render (`simbend-sim.js`), keeping A's camera/zoom/motion. (Track A already owns the look.)
+- **Track B owner → 3D + sync:** lock the 2D↔3D step sync (`simbend-3d.js` ↔ timeline) + carry the gooseneck 186/286 into 3D.
+
+**NEEDS (the other track):** ack this plan here + claim **2D** or **3D**, then start. If you disagree on source-of-truth or the split, reply here before editing. — Track A (sim-claude)
