@@ -299,31 +299,19 @@
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
-        var bump = 0;
+        var bump = 0;   // เอ๋: ไม่มีส่วนไหนเฉียง — keep the whole-assembly tip-up OFF
         var SINK = 7;
         var sink = 0;
         if (af) {
-          var targetAng = 90;
-          var wObj = null;
-          for (var i = 0; i < allWalls.length; i++) {
-            if (allWalls[i].step === active) { wObj = allWalls[i]; break; }
-          }
-          if (wObj && wObj.angle_deg != null) targetAng = wObj.angle_deg;
-          var targetAngRad = targetAng * R;
-
+          // Dropped the press-V tip-up: it rotated the base + ALL flaps about the
+          // active bend line, so the far un-folded flaps drooped down and looked
+          // slanted (เอ๋ circled exactly those). With bump=0 the base stays flat,
+          // each wall folds straight up via gfold (0°→90°), and un-folded flaps lie
+          // coplanar with the base. Keep only the small die-sink so the bend "sits".
           var f = frac(active, t);
-          if (f < 0.25) {
-            bump = 0;
-            sink = 0;
-          } else if (f < 0.75) {
-            var ratio = (f - 0.25) / 0.5;
-            bump = ratio * (targetAngRad / 2);
-            sink = ratio * SINK;
-          } else {
-            var ratio = (1 - Math.min(1, (f - 0.75) / 0.25));
-            bump = ratio * (targetAngRad / 2);
-            sink = ratio * SINK;
-          }
+          if (f < 0.25) sink = 0;
+          else if (f < 0.75) sink = ((f - 0.25) / 0.5) * SINK;
+          else sink = (1 - Math.min(1, (f - 0.75) / 0.25)) * SINK;
         }
         function vlift(arr) {
           var r = (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr;
