@@ -267,7 +267,11 @@
       // — NOT the 7mm mould height (that gave 184.26/284.26, ~1.74mm short each side).
       //   V-axis (X-wall, folds along Y): base.h − 2·lip = 198.26 − 12.26 = 186.00
       //   H-axis (Y-wall, folds along X): base.w − 2·lip = 298.26 − 12.26 = 286.00
-      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2);
+      // Pull each end IN by a clear margin so the tall tool never reaches the box corner
+      // (in the angled ISO view a 120-tall punch whose end sits AT the corner reads as
+      // poking past the frame — เอ๋ 2026-06-04). Tool sits clearly INSIDE with a gap.
+      var END_GAP = 22;   // mm pulled in at each end
+      var eHalf = Math.max(10, ((fl.ax === 'V' ? base.h : base.w) - 2 * lipFlat) / 2 - END_GAP);
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
                eHalf: eHalf };
     }
