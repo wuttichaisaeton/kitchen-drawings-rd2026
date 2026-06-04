@@ -39,6 +39,21 @@
     var allWalls = (box.walls || []).slice();
     if (!allWalls.length) return null;
 
+    var activeTlen = 0;
+    function getStepForFlapName(name) {
+      var axis = name.charAt(0); // 'X' or 'Y'
+      var side = name.charAt(1) === 'p' ? '+' : '-';
+      var isLip = name.charAt(2) === 'l';
+      
+      var matching = allWalls.filter(function (w) {
+        return w.axis === axis && w.side === side;
+      });
+      if (matching.length === 0) return 0;
+      matching.sort(function (a, b) { return a.height - b.height; });
+      var wallObj = isLip ? matching[0] : (matching[1] || matching[0]);
+      return wallObj ? wallObj.step : 0;
+    }
+
     // ── pair each side's main wall (taller) with its return lip (shorter) ──
     var groups = {};
     allWalls.forEach(function (w) {
@@ -173,19 +188,20 @@
       var bx0 = vx[1], bx1 = vx[2], by0 = hy[1], by1 = hy[2], BIG = 1e4;
       fpCx = (bx0 + bx1) / 2; fpCy = (by0 + by1) / 2; fpHalfW = (bx1 - bx0) / 2; fpHalfH = (by1 - by0) / 2;
       fpBase = clipRect(poly, bx0, bx1, by0, by1);
-      var defs = [   // name, axis, foldLine, side, step, rect, wallLine(lip only)
-        ['Xnw', 'V', bx0, -1, 3, [vx[0], bx0, by0, by1], null],
-        ['Xpw', 'V', bx1,  1, 4, [bx1, vx[3], by0, by1], null],
-        ['Ynw', 'H', by0, -1, 8, [bx0, bx1, hy[0], by0], null],
-        ['Ypw', 'H', by1,  1, 7, [bx0, bx1, by1, hy[3]], null],
-        ['Xnl', 'V', vx[0], -1, 1, [-BIG, vx[0], by0, by1], bx0],
-        ['Xpl', 'V', vx[3],  1, 2, [vx[3], BIG, by0, by1], bx1],
-        ['Ynl', 'H', hy[0], -1, 5, [bx0, bx1, -BIG, hy[0]], by0],
-        ['Ypl', 'H', hy[3],  1, 6, [bx0, bx1, hy[3], BIG], by1],
+      var defs = [   // name, axis, foldLine, side, rect, wallLine(lip only)
+        ['Xnw', 'V', bx0, -1, [vx[0], bx0, by0, by1], null],
+        ['Xpw', 'V', bx1,  1, [bx1, vx[3], by0, by1], null],
+        ['Ynw', 'H', by0, -1, [bx0, bx1, hy[0], by0], null],
+        ['Ypw', 'H', by1,  1, [bx0, bx1, by1, hy[3]], null],
+        ['Xnl', 'V', vx[0], -1, [-BIG, vx[0], by0, by1], bx0],
+        ['Xpl', 'V', vx[3],  1, [vx[3], BIG, by0, by1], bx1],
+        ['Ynl', 'H', hy[0], -1, [bx0, bx1, -BIG, hy[0]], by0],
+        ['Ypl', 'H', hy[3],  1, [bx0, bx1, hy[3], BIG], by1],
       ];
       defs.forEach(function (d) {
-        var r = d[5], pl = clipRect(poly, r[0], r[1], r[2], r[3]);
-        if (pl.length >= 3) fpFlaps.push({ name: d[0], ax: d[1], line: d[2], side: d[3], step: d[4], wline: d[6], poly: pl });
+        var r = d[4], pl = clipRect(poly, r[0], r[1], r[2], r[3]);
+        var stepNum = getStepForFlapName(d[0]);
+        if (pl.length >= 3) fpFlaps.push({ name: d[0], ax: d[1], line: d[2], side: d[3], step: stepNum, wline: d[5], poly: pl });
       });
     })();
     function fvAround(p, X0, side, th) { var dx = p.x - X0; return { x: X0 + dx * Math.cos(th) - side * p.z * Math.sin(th), y: p.y, z: side * dx * Math.sin(th) + p.z * Math.cos(th) }; }
@@ -206,13 +222,34 @@
       return p3.map(function (p) { return F(p, L0, fl.side, thw); });
     }
     function fpBasePts() { return fpBase.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; }); }
+    
+    // find return lip heights for axis X and Y (usually 7mm)
+    var lipHeightX = 0;
+    var lipHeightY = 0;
+    allWalls.forEach(function (w) {
+      if (w.height < 12) {
+        if (w.axis === 'X') lipHeightX = w.height;
+        else if (w.axis === 'Y') lipHeightY = w.height;
+      }
+    });
+
     // pseudo-wall for the active flap's tooling (die/punch along the bend line)
     function fpActiveTool(active) {
       var fl = null; fpFlaps.forEach(function (x) { if (x.step === active) fl = x; });
       if (!fl) return null;
       var L0 = fl.ax === 'V' ? fl.line - fpCx : fl.line - fpCy;
+      var eHalf;
+      if (fl.ax === 'V') {
+        // active bend line runs along Y. Length of fold is base height.
+        // perpendicular return lips are on the Y sides (which fold along X)
+        eHalf = Math.max(10, (base.h - 2 * lipHeightY) / 2);
+      } else {
+        // active bend line runs along X. Length of fold is base width.
+        // perpendicular return lips are on the X sides (which fold along Y)
+        eHalf = Math.max(10, (base.w - 2 * lipHeightX) / 2);
+      }
       return { axis: fl.ax === 'V' ? 'X' : 'Y', side: fl.side > 0 ? '+' : '-', offset: Math.abs(L0),
-               eHalf: fl.ax === 'V' ? fpHalfH : fpHalfW };
+               eHalf: eHalf };
     }
 
     // ── isometric projection (camera az/elev fixed) ──
@@ -377,21 +414,38 @@
           var eMin = -tw.eHalf;
           var eMax = tw.eHalf;
           if (record.box_geom) {
-            var thick = record.box_geom.thickness || 1.0;
-            var gap = 1.0; // 1mm clearance on each side
-            var shorten = thick + gap;
-            if (tw.axis === 'X') {
-              var botWall = allWalls.filter(function (x) { return x.axis === 'Y' && x.side === '-'; })[0];
-              var topWall = allWalls.filter(function (x) { return x.axis === 'Y' && x.side === '+'; })[0];
-              if (botWall && botWall.step < active) eMin = -fpHalfH + shorten;
-              if (topWall && topWall.step < active) eMax = fpHalfH - shorten;
-            } else {
-              var leftWall = allWalls.filter(function (x) { return x.axis === 'X' && x.side === '-'; })[0];
-              var rightWall = allWalls.filter(function (x) { return x.axis === 'X' && x.side === '+'; })[0];
-              if (leftWall && leftWall.step < active) eMin = -fpHalfW + shorten;
-              if (rightWall && rightWall.step < active) eMax = fpHalfW - shorten;
-            }
+            var clearance = 1.0; // 1mm clearance on each side
+            fpFlaps.forEach(function (fl) {
+              if (fl.step >= active) return; // only check already-folded walls
+              
+              if (tw.axis === 'X') {
+                // Active bend runs along Y. Perpendicular walls are horizontal (ax === 'H')
+                if (fl.ax === 'H') {
+                  var pts = foldedFlap(fl, 1e9);
+                  if (fl.side < 0) {
+                    var yMax = Math.max.apply(null, pts.map(function (p) { return p.y; }));
+                    eMin = Math.max(eMin, yMax + clearance);
+                  } else {
+                    var yMin = Math.min.apply(null, pts.map(function (p) { return p.y; }));
+                    eMax = Math.min(eMax, yMin - clearance);
+                  }
+                }
+              } else {
+                // Active bend runs along X. Perpendicular walls are vertical (ax === 'V')
+                if (fl.ax === 'V') {
+                  var pts = foldedFlap(fl, 1e9);
+                  if (fl.side < 0) {
+                    var xMax = Math.max.apply(null, pts.map(function (p) { return p.x; }));
+                    eMin = Math.max(eMin, xMax + clearance);
+                  } else {
+                    var xMin = Math.min.apply(null, pts.map(function (p) { return p.x; }));
+                    eMax = Math.min(eMax, xMin - clearance);
+                  }
+                }
+              }
+            });
           }
+          activeTlen = Math.round(eMax - eMin);
           
           // straight bar so the L/R end caps show the concave gooseneck (เอ๋); throat to flange.
           addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, eMin, pk.goose ? (tw.side === '+' ? -1 : 1) : 1, eMax);
@@ -420,6 +474,7 @@
         addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, ONE_TOOL_HALF, 1);
         addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, ONE_TOOL_HALF, 1);
       }
+      activeTlen = Math.round(ONE_TOOL_HALF * 2);
       }
 
       items.sort(function (a, b) { return a.d - b.d; });
@@ -441,7 +496,7 @@
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, w, 30 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
       ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      var tlen = Math.round(ONE_TOOL_HALF * 2);
+      var tlen = activeTlen || Math.round(ONE_TOOL_HALF * 2);
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
            '  ·  PUNCH: ' + punchForStep(active).name +
@@ -482,6 +537,8 @@
     raf = requestAnimationFrame(loop);
 
     return {
+      frame: frame,
+      setTime: function (val) { pauseT = val; frame(val); },
       destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) try { ro.disconnect(); } catch (e) {} },
       toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
       isPlaying: function () { return !paused; },
