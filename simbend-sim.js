@@ -293,14 +293,14 @@
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     }
 
-    function drawDie(cx, cy, v, scale, dieAngle, type, vList) {
+    function drawDie(cx, cy, v, scale, dieAngle, type, vList, height) {
       dieAngle = dieAngle || 88;
       type = type || '1V';
       vList = vList || [v];
       var halfAng = rad(dieAngle / 2);
       var depth = (v / 2) / Math.tan(halfAng);
       
-      var H = type === '2V' ? 30 : 25;
+      var H = height || (type === '2V' ? 80 : 60);
 
       ctx.fillStyle = '#6c757d';
       ctx.strokeStyle = '#495057';
@@ -358,7 +358,8 @@
       ctx.fill(); ctx.stroke();
     }
 
-    function drawPunch(cx, tipY, blocked, type, t, scale, angle, radius, height, profile) {
+    function drawPunch(cx, tipY, blocked, type, t, scale, angle, radius, height, profile, uSign) {
+      uSign = uSign || 1;
       var shake = blocked ? Math.sin(t / 35) * 2.5 * dpr : 0;
       var x = cx + shake;
 
@@ -370,9 +371,9 @@
         ctx.strokeStyle = blocked ? '#ff7a6c' : '#495057';
         ctx.lineWidth = 1.4 * dpr;
         ctx.beginPath();
-        ctx.moveTo(x + profile[0][0] * scale, tipY - profile[0][1] * scale);
+        ctx.moveTo(x + profile[0][0] * uSign * scale, tipY - profile[0][1] * scale);
         for (var qi = 1; qi < profile.length; qi++) {
-          ctx.lineTo(x + profile[qi][0] * scale, tipY - profile[qi][1] * scale);
+          ctx.lineTo(x + profile[qi][0] * uSign * scale, tipY - profile[qi][1] * scale);
         }
         ctx.closePath();
         ctx.fill(); ctx.stroke();
@@ -405,7 +406,7 @@
       var tangY1 = topY;
       var tangY2 = topY + tangH;
 
-      function tx(artX) { return x + (artX - 50) * scale; }
+      function tx(artX) { return x + (artX - 50) * uSign * scale; }
       function ty(artY) { return tipY - (160 - artY) * scale; }
 
       var bodyW = 28;
@@ -449,11 +450,11 @@
 
         if (type === 'gooseneck') {
           var Bh = 160 - tangY2;
-          var rx3 = cx + 14;
+          var rx3 = 50 + 14;
           var ry3 = tangY2 + 4;
-          var rx2 = cx + 24;
+          var rx2 = 50 + 24;
           var ry2 = tangY2 + Bh * 0.3;
-          var rx1 = cx + 24;
+          var rx1 = 50 + 24;
           ry1 = ty2 - (rx1 - tx2);
 
           ctx.lineTo(tx(rx3), ty(ry3));
@@ -474,11 +475,11 @@
           var Bh = 160 - tangY2;
           var neckT = 9 * (Bh / 90);
           var neckH = neckT * 1.414;
-          var xIntersect = cx - neckH / 2;
+          var xIntersect = 50 - neckH / 2;
           var yIntersect = ty2 + dx - neckH / 2;
           var yNeckEnd = ry1;
           var xNeckEnd = xIntersect + (yIntersect - yNeckEnd);
-          var throatX = cx + 10;
+          var throatX = 50 + 10;
           var throatY = tangY2 + Bh * 0.45;
 
           ctx.lineTo(tx(xIntersect), ty(yIntersect));
@@ -531,7 +532,7 @@
       ctx.beginPath(); ctx.moveTo(dieCx, 0); ctx.lineTo(dieCx, h); ctx.stroke();
 
       var rd = resolveDie(model, st);
-      drawDie(dieCx, dieCy, rd.v, scale, rd.angle, rd.type, rd.vList);
+      drawDie(dieCx, dieCy, rd.v, scale, rd.angle, rd.type, rd.vList, rd.height);
 
       // sheet (the part) — thick steel polyline
       ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.lineWidth = 6 * dpr;
@@ -546,7 +547,15 @@
       if (st.active != null) {
         var Vtx = P[st.active + 1];
         var rp = resolvePunch(model, st);
-        drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile);
+        
+        // Dynamic mirror: compare max Y of left vs right flange segments.
+        // Throat (curved cutout) faces the taller flange to give clearance.
+        var leftMaxY = 0, rightMaxY = 0;
+        for (var qi = 0; qi <= st.active; qi++) { if (P[qi] && P[qi].y > leftMaxY) leftMaxY = P[qi].y; }
+        for (var qi = st.active + 2; qi < P.length; qi++) { if (P[qi] && P[qi].y > rightMaxY) rightMaxY = P[qi].y; }
+        var uSign = (rp.type === 'gooseneck' || rp.type === 'sash') ? (rightMaxY >= leftMaxY ? -1 : 1) : 1;
+        
+        drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile, uSign);
       }
 
       // Draw red halos (circles) around unbendable/colliding bend vertices on the sheet metal
@@ -671,7 +680,8 @@
     }
 
     resize(); frame(0); play();
-    return { play: play, pause: pause, toggle: toggle, restart: restart,
+    var controller = { play: play, pause: pause, toggle: toggle, restart: restart,
+             setTime: function (val) { pausedAt = val; frame(val); },
              recordClip: recordClip, destroy: destroy,
              isPlaying: function () { return playing; },
              setPunchOverride: function (id, type) {
@@ -688,6 +698,8 @@
                frame(pausedAt);
              },
              set onstatus(fn) { statusCb = fn; } };
+    window.__active2DController = controller;
+    return controller;
   }
 
   // ---- 2D Collision Checking helpers (Requirement 1 & 4) ----------------
@@ -858,8 +870,14 @@
       var pen = (die.v / 2) * Math.tan(rad((a_step[activeBendIdx] || 0) / 2));
       var ptsAnchored = anchorWithDescend(pts, activeBendIdx, a_step, 1.0, die.v);
       
+      // Dynamic mirror matching frame() logic
+      var leftMaxY = 0, rightMaxY = 0;
+      for (var qi = 0; qi <= activeBendIdx; qi++) { if (ptsAnchored[qi] && ptsAnchored[qi].y > leftMaxY) leftMaxY = ptsAnchored[qi].y; }
+      for (var qi = activeBendIdx + 2; qi < ptsAnchored.length; qi++) { if (ptsAnchored[qi] && ptsAnchored[qi].y > rightMaxY) rightMaxY = ptsAnchored[qi].y; }
+      var uSign = (punch.type === 'gooseneck' || punch.type === 'sash') ? (rightMaxY >= leftMaxY ? -1 : 1) : 1;
+      
       var punchPoly = getPunchPolygon(punch.type, punch.angle, punch.radius, punch.height);
-      var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x, y: p.y - pen + 0.05 }; });
+      var punchPolyTrans = punchPoly.map(function(p) { return { x: p.x * uSign, y: p.y - pen + 0.05 }; });
       var diePoly = getDiePolygon(die.type, die.angle, die.v, die.height, die.vList);
       var diePolyTrans = diePoly.map(function(p) { return { x: p.x, y: p.y - 0.05 }; });
       
