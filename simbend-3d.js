@@ -307,10 +307,9 @@
     var C_BASE = '#9aa6b2', C_BASE_E = '#5d6b78';
     var C_SASH = '#e8923a', C_GOOSE = '#4a90e2', C_RED = '#e0574a';
     var C_LIP = 'rgba(255,255,255,0.12)';
-    // die + punch rendered TRANSPARENT so you can see the bend/part through the tooling
-    // (เอ๋ 2026-06-04 'ทำมีดกับร่องให้โปร่งใส'). Fills are low-alpha; edges stay visible.
-    var C_DIE = 'rgba(115,125,136,0.12)', C_DIE_E = 'rgba(120,140,165,0.85)',
-        C_PUNCH = 'rgba(170,179,189,0.12)', C_PUNCH_E = 'rgba(150,170,195,0.9)';
+    // solid die + punch (เอ๋ 2026-06-04 'ไม่เอาโปร่งใสแล้ว' — keep the 186/286 proportion,
+    // drop the transparency).
+    var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f';
 
     // press tooling at the active wall's bend line — die (V block, below) + punch
     // (real silhouette, descends from above). One solid bar, gooseneck throat out.
