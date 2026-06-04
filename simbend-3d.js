@@ -392,7 +392,15 @@
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
         var bump = af ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * (30 * R) : 0;   // V tips only after the punch touches
-        function vlift(arr) { return (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr; }
+        // #1 real press kinematics: as the punch presses, the active bend is pushed DOWN
+        // into the V-die groove (sheet sinks, flats slide on the die mouth), then springs
+        // back as the punch retracts — a sin-bump in z, parallel to the tip-up.
+        var SINK = 7;   // mm the bend dips into the V at peak stroke
+        var sink = af ? Math.sin(Math.min(1, gfold(active, t)) * Math.PI) * SINK : 0;
+        function vlift(arr) {
+          var r = (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr;
+          return sink ? r.map(function (p) { return { x: p.x, y: p.y, z: p.z - sink }; }) : r;
+        }
         items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
           var wObj = null;
@@ -407,7 +415,7 @@
         });
         var tw = fpActiveTool(active);
         if (tw && active >= 1) {
-          var penZ2 = gpunchZ(frac(active, t));     // punch descends + touches, then rides the sheet up
+          var penZ2 = gpunchZ(frac(active, t)) - sink;     // punch descends, touches, then rides the sheet DOWN into the V
           var pk = punchForStep(active);            // per-step punch (respects the dropdown override)
           var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
           var collides = aw && aw.collides;
