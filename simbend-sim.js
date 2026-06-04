@@ -396,9 +396,13 @@
         ctx.strokeStyle = blocked ? '#ff7a6c' : '#495057';
         ctx.lineWidth = 1.4 * dpr;
         ctx.beginPath();
-        ctx.moveTo(x + profile[0][0] * uSign * scale, tipY - profile[0][1] * scale);
+        
+        // Reverse simbend-3d.js TOOL_SCALE (0.5) if this is a fallback profile
+        var profScale = (profile === (window.kdSimBend3D || {}).GOOSE_PROF || profile === (window.kdSimBend3D || {}).SASH_PROF) ? 2.0 : 1.0;
+        
+        ctx.moveTo(x + profile[0][0] * profScale * uSign * scale, tipY - profile[0][1] * profScale * scale);
         for (var qi = 1; qi < profile.length; qi++) {
-          ctx.lineTo(x + profile[qi][0] * uSign * scale, tipY - profile[qi][1] * scale);
+          ctx.lineTo(x + profile[qi][0] * profScale * uSign * scale, tipY - profile[qi][1] * profScale * scale);
         }
         ctx.closePath();
         ctx.fill(); ctx.stroke();
