@@ -61,6 +61,9 @@
     // full long-side length; the horns (raised bottom at the ends) clear the
     // standing short walls — so the bar isn't shortened (เอ๋: หลบด้วย horn).
     var ONE_TOOL_HALF = _longWall.width / 2;
+    // #202 is the default, but a pan that needs the clearance is correctly bent with
+    // the gooseneck #453 (เอ๋: "กรณีนี้ที่ถูกคือ 453") — concave horn ends + throat.
+    var USE_GOOSE = allWalls.some(function (x) { return x.needs_gooseneck || x.punch === 'gooseneck'; });
 
     // fold fraction 0..1 for a given step at time t
     function frac(step, t) {
@@ -318,7 +321,11 @@
         if (tw && active >= 1) {
           var ff = frac(active, t), penZ2 = PEN_HI * (1 - ff) + 1;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
-          addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);    // #202 punch from above (fixed)
+          if (USE_GOOSE) {  // #202 default, but a pan needs the gooseneck #453 (concave horn ends, throat to workpiece)
+            sweptPunch(items, tw, GOOSE_PROF, penZ2, tw.eHalf, tw.side === '+' ? 1 : -1, C_PUNCH, C_PUNCH_E, 6);
+          } else {
+            addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);
+          }
         }
       } else {
       var bq = baseQuad();
@@ -368,8 +375,8 @@
       var tlen = Math.round(ONE_TOOL_HALF * 2);
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
-           '  ·  PUNCH: #202 SASH' +
-           '  ·  TOOL ' + tlen + 'mm (1 size)')
+           '  ·  PUNCH: ' + (USE_GOOSE ? 'GOOSENECK #453' : '#202 SASH') +
+           '  ·  TOOL ' + tlen + 'mm')
         : 'PAN FOLD  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
 
@@ -444,6 +451,7 @@
     if (!walls.length) return null;
     var maxStep = walls.reduce(function (m, w) { return Math.max(m, w.step || 0); }, 0);
     var totalT = START + maxStep * (MOVE + HOLD) + END;
+    var USE_GOOSE = walls.some(function (x) { return x.needs_gooseneck || x.punch === 'gooseneck'; });
     function frac(step, t) {
       var s = START + (step - 1) * (MOVE + HOLD);
       if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE;
@@ -490,13 +498,14 @@
       poly(DIE_PROF, C_DIE, C_DIE_E, 1);                     // die fixed, V up at u=0 (the active bend)
       line(pRest, C_BASE, 7);                                // the rest of the blank (long → the side length)
       line([pHinge, pFlEnd], activeIsWall ? C_WALL : C_LIP, 7);  // the flange tipping up
-      var penZ = PEN_HI * (1 - f) + 1;                       // #202 punch pressing the active bend
-      var pp = SASH_PROF.map(function (p) { return [p[0], p[1] + penZ]; });
+      var penZ = PEN_HI * (1 - f) + 1;                       // punch pressing the active bend (throat to the flange / -u)
+      var prof2 = USE_GOOSE ? GOOSE_PROF.map(function (p) { return [-p[0], p[1]]; }) : SASH_PROF;
+      var pp = prof2.map(function (p) { return [p[0], p[1] + penZ]; });
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
       // HUD
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'X' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  #202') : '2D PRESS', 10 * dpr, 14 * dpr);
+      ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'X' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + (USE_GOOSE ? 'GN#453' : '#202')) : '2D PRESS', 10 * dpr, 14 * dpr);
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
