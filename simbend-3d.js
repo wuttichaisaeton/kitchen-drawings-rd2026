@@ -279,11 +279,19 @@
     // Extrude a tool cross-section as ONE solid bar (เอ๋: no section/segment cuts).
     // eHalf = half-length along the bend line; uSign flips the profile across u so
     // the gooseneck throat (concave) faces OUTSIDE the workpiece.
-    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias, eHalf, uSign) {
-      if (eHalf == null) eHalf = w.width / 2;
+    function addExtrusion(items, w, prof, zOff, fill, stroke, dbias, eMinOrHalf, uSign, eMax) {
+      var eMin, eMaxVal;
+      if (eMax !== undefined) {
+        eMin = eMinOrHalf;
+        eMaxVal = eMax;
+      } else {
+        var eHalf = eMinOrHalf != null ? eMinOrHalf : w.width / 2;
+        eMin = -eHalf;
+        eMaxVal = eHalf;
+      }
       if (uSign && uSign !== 1) prof = prof.map(function (p) { return [p[0] * uSign, p[1]]; });
-      var front = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, eHalf); });
-      var back = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, -eHalf); });
+      var front = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, eMaxVal); });
+      var back = prof.map(function (p) { return csTo3d(w, p[0], p[1] + zOff, eMin); });
       for (var i = 0; i < prof.length; i++) {
         var j = (i + 1) % prof.length;
         var q = [front[i], front[j], back[j], back[i]];
@@ -364,8 +372,29 @@
           var pFill = collides ? C_RED : C_PUNCH;
           var pStroke = collides ? C_RED : C_PUNCH_E;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
+          
+          // Sizing the punch according to the inner dimension of the part (เพื่อไม่ให้ติดด้านข้าง)
+          var eMin = -tw.eHalf;
+          var eMax = tw.eHalf;
+          if (record.box_geom) {
+            var thick = record.box_geom.thickness || 1.0;
+            var gap = 1.0; // 1mm clearance on each side
+            var shorten = thick + gap;
+            if (tw.axis === 'X') {
+              var botWall = allWalls.filter(function (x) { return x.axis === 'Y' && x.side === '-'; })[0];
+              var topWall = allWalls.filter(function (x) { return x.axis === 'Y' && x.side === '+'; })[0];
+              if (botWall && botWall.step < active) eMin = -fpHalfH + shorten;
+              if (topWall && topWall.step < active) eMax = fpHalfH - shorten;
+            } else {
+              var leftWall = allWalls.filter(function (x) { return x.axis === 'X' && x.side === '-'; })[0];
+              var rightWall = allWalls.filter(function (x) { return x.axis === 'X' && x.side === '+'; })[0];
+              if (leftWall && leftWall.step < active) eMin = -fpHalfW + shorten;
+              if (rightWall && rightWall.step < active) eMax = fpHalfW - shorten;
+            }
+          }
+          
           // straight bar so the L/R end caps show the concave gooseneck (เอ๋); throat to flange.
-          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, tw.eHalf, pk.goose ? (tw.side === '+' ? -1 : 1) : 1);
+          addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, eMin, pk.goose ? (tw.side === '+' ? -1 : 1) : 1, eMax);
         }
       } else {
       var bq = baseQuad();
