@@ -164,7 +164,15 @@
       ];
       defs.forEach(function (d) {
         var r = d[4], pl = clipRect(poly, r[0], r[1], r[2], r[3]);
+        // เอ๋: fold in the real order from CheckBend's fold_template if present
+        // (each flap's own fold line carries its step); else fall back to the guess.
         var stepNum = getStepForFlapName(d[0]);
+        if (FP.fold_template) {
+          for (var fti = 0; fti < FP.fold_template.length; fti++) {
+            var fte = FP.fold_template[fti];
+            if (fte.ax === d[1] && fte.step != null && Math.abs(fte.line - d[2]) < 1.0) { stepNum = fte.step; break; }
+          }
+        }
         if (pl.length >= 3) fpFlaps.push({ name: d[0], ax: d[1], line: d[2], side: d[3], step: stepNum, wline: d[5], poly: pl });
       });
     })();
@@ -299,31 +307,19 @@
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
         var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
         var afF = (af && af.ax === 'V') ? fvAround : fhAround;
+        // เอ๋: ผนังที่ยังไม่พับต้อง "แบน" (นอนราบเสมอฐาน). The press-V tip-up rotated
+        // the WHOLE base + every flap about the active bend line, so the un-folded
+        // walls drooped/tilted and looked slanted. Keep bump = 0 so the base stays
+        // flat and un-folded flaps lie coplanar with it; each wall just folds 0°→90°
+        // about its own bend line via gfold. Keep only the small vertical die-sink.
         var bump = 0;
         var SINK = 7;
         var sink = 0;
         if (af) {
-          var targetAng = 90;
-          var wObj = null;
-          for (var i = 0; i < allWalls.length; i++) {
-            if (allWalls[i].step === active) { wObj = allWalls[i]; break; }
-          }
-          if (wObj && wObj.angle_deg != null) targetAng = wObj.angle_deg;
-          var targetAngRad = targetAng * R;
-
           var f = frac(active, t);
-          if (f < 0.25) {
-            bump = 0;
-            sink = 0;
-          } else if (f < 0.75) {
-            var ratio = (f - 0.25) / 0.5;
-            bump = ratio * (targetAngRad / 2);
-            sink = ratio * SINK;
-          } else {
-            var ratio = (1 - Math.min(1, (f - 0.75) / 0.25));
-            bump = ratio * (targetAngRad / 2);
-            sink = ratio * SINK;
-          }
+          if (f < 0.25) sink = 0;
+          else if (f < 0.75) sink = ((f - 0.25) / 0.5) * SINK;
+          else sink = (1 - Math.min(1, (f - 0.75) / 0.25)) * SINK;
         }
         function vlift(arr) {
           var r = (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr;
