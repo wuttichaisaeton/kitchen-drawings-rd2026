@@ -531,14 +531,17 @@
     }
 
     // ── animation loop ──
-    var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null;
+    // Capture performance.now() at mount time — same as simbend-sim.js (2D) which also
+    // captures performance.now() immediately in play(). Both sims now share the SAME time
+    // origin (set synchronously in the same JS tick), so the 2D and 3D show the SAME
+    // step/bend at the SAME wall-clock instant with no drift (เอ๋ 'จุดที่พับต้องตรงกัน').
+    var raf = null, startTs = performance.now(), paused = false, pauseT = 0, statusCb = null;
     function resize() {
       var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560;
       canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr);
     }
     function loop(ts) {
       if (paused) return;
-      if (startTs == null) startTs = ts - pauseT;
       var t = (ts - startTs) % totalT;
       pauseT = t;
       frame(t);
@@ -553,7 +556,7 @@
       frame: frame,
       setTime: function (val) { pauseT = val; frame(val); },
       destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) try { ro.disconnect(); } catch (e) {} },
-      toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
+      toggle: function () { paused = !paused; if (!paused) { startTs = performance.now() - pauseT; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
       isPlaying: function () { return !paused; },
       set onstatus(fn) { statusCb = fn; },
       setPunchOverride: function (id, type) {
@@ -681,14 +684,14 @@
       ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'X' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + punchForStep(active).name) : '2D PRESS', 10 * dpr, 14 * dpr);
     }
 
-    var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
+    var raf = null, startTs = performance.now(), paused = false, pauseT = 0, statusCb = null, ro = null;
     function resize() { var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr); }
-    function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
+    function loop(ts) { if (paused) return; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
     resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
     raf = requestAnimationFrame(loop);
     return {
       destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) try { ro.disconnect(); } catch (e) {} },
-      toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
+      toggle: function () { paused = !paused; if (!paused) { startTs = performance.now() - pauseT; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
       isPlaying: function () { return !paused; },
       set onstatus(fn) { statusCb = fn; },
       recordClip: function () { if (statusCb) statusCb('use the 3-D clip'); }

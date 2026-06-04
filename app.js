@@ -5709,8 +5709,11 @@ function renderSimBendHome() {
         : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
       // For box parts also mount the original 2-D press sim beside it (left column)
       // — เอ๋ 'แบบเดิมถูกแล้ว' (the original 2-D view was correct).
-      if (canvas2d && window.kdSimBend)
-        _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
+      if (canvas2d) {
+        _simController2D = (rec.kind === 'box' && window.kdSimBend3D)
+          ? window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded)
+          : (window.kdSimBend ? window.kdSimBend.mount(canvas2d, rec, _simBendExpanded) : null);
+      }
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
@@ -5998,8 +6001,11 @@ function renderSimBendHome() {
             ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
             : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
           const canvas2d = card.querySelector('.sb-sim-canvas-2d');
-          if (canvas2d && window.kdSimBend)
-            _simController2D = window.kdSimBend.mount(canvas2d, rec, _simBendExpanded);
+          if (canvas2d) {
+            _simController2D = (rec.kind === 'box' && window.kdSimBend3D)
+              ? window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded)
+              : (window.kdSimBend ? window.kdSimBend.mount(canvas2d, rec, _simBendExpanded) : null);
+          }
           _simController.onstatus = (t) => { if (status) status.textContent = t; };
           
           updateToolOverrides();
