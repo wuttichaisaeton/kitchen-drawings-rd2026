@@ -22,9 +22,11 @@
 
   // ── tool cross-sections (shared by the 3-D fold + the 2-D press view) ──
   // [u across hinge, z up], tip at origin. REAL outlines lifted 1:1 from เอ๋'s clean
-  // DXFs: SASH = Kyokko #202, GOOSE = gooseneck #453 (concave throat). TOOL_SCALE
-  // shrinks them so the real-mm tool doesn't dwarf small flanges.
-  var TOOL_SCALE = 0.5;
+  // DXF/STEP: SASH = Kyokko #202, GOOSE = gooseneck #453 v4 (concave throat, tip→top
+  // 120, width 56). TOOL_SCALE = 1.0 → the cross-section renders at TRUE mm so the
+  // length:height proportion matches the real tool (เอ๋ 2026-06-04: "หน้าตาเป็นแบบนี้"
+  // — a 186-long bar is 120 tall, not the squashed 60 that 0.5 gave).
+  var TOOL_SCALE = 1.0;
   function scaleProf(p, k) { return p.map(function (q) { return [q[0] * k, q[1] * k]; }); }
   var DIE_PROF = [[-13, 0], [-4, 0], [0, -6], [4, 0], [13, 0], [13, -16], [-13, -16]];
   var SASH_PROF = scaleProf([[0,0],[12.728,12.728],[12.728,87],[20.728,95],[20.728,105],[17.728,105],[17.728,112.5],[20.728,112.5],[20.728,130],[7.728,130],[7.728,100],[-5.272,100],[-5.272,95],[2.728,87],[2.728,13.618],[-5.444,5.445]], TOOL_SCALE);
