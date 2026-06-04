@@ -114,7 +114,7 @@
         pts = pts.concat(wallQuad(pr.main, pr.main.angle_deg || 90));
         if (pr.lip) pts = pts.concat(lipQuad(pr.main, pr.main.angle_deg || 90, pr.lip, pr.lip.angle_deg || 90));
         // include the (real, tall) tooling envelope so the punch never clips off-canvas
-        var prof = pr.main.punch === 'gooseneck' ? GOOSE_PROF : SASH_PROF;
+        var prof = SASH_PROF;   // default tool = Kyokko #202 sash (เอ๋: #202 default everywhere)
         prof.forEach(function (p) { pts.push(csTo3d(pr.main, p[0], p[1] + PEN_HI, 0)); });
         DIE_PROF.forEach(function (p) { pts.push(csTo3d(pr.main, p[0], p[1], 0)); });
       });
@@ -214,7 +214,7 @@
       var bq = baseQuad();
       items.push({ pts: bq, fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
       pairs.forEach(function (pr) {
-        var m = pr.main, mw = m.collides ? C_RED : (ONE_GOOSE || m.punch === 'gooseneck' ? C_GOOSE : C_SASH);
+        var m = pr.main, mw = m.collides ? C_RED : C_SASH;
         var md = (m.angle_deg || 90) * frac(m.step, t);
         var mq = wallQuad(m, md);
         var act = (m.step === active);
@@ -234,11 +234,10 @@
         var f = frac(aw.step, t);
         var penZ = PEN_HI * (1 - f) + 1;             // punch tip: high when flat → ~0 when folded
         var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
-        var eHalf = ONE_TOOL_HALF;                   // one fixed length for every step (no resize; overhangs short walls)
-        var uSign = aw.side === '+' ? -1 : 1;        // throat (concave) faces OUTSIDE the workpiece (เอ๋)
-        var prof = (ONE_GOOSE || aw.punch === 'gooseneck') ? GOOSE_PROF : SASH_PROF;
+        var eHalf = ONE_TOOL_HALF;                   // one fixed length for every step
+        var prof = SASH_PROF;                        // default tool = Kyokko #202 sash (เอ๋: #202 everywhere, no auto-gooseneck)
         addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, eHalf, 1);          // die: one solid bar
-        sweptPunch(items, aw, prof, penZ, eHalf, uSign, pFill, pStroke, 6);          // punch: one bar + horn relief, throat out
+        addExtrusion(items, aw, prof, penZ, pFill, pStroke, 6, eHalf, 1);            // punch: #202 sash, one solid bar
       }
 
       items.sort(function (a, b) { return a.d - b.d; });
@@ -262,7 +261,7 @@
       var tlen = Math.round(ONE_TOOL_HALF * 2);
       var hud = wall
         ? ('STEP ' + active + '/' + maxStep + '  ·  ' + wall.id + '  ·  ' + wall.axis + (wall.side || '') +
-           '  ·  PUNCH: ' + (ONE_GOOSE ? 'GOOSENECK #453' : (wall.punch || 'sash').toUpperCase()) + (ONE_GOOSE ? ' (1 setup, all ' + maxStep + ')' : '') +
+           '  ·  PUNCH: #202 SASH' +
            '  ·  TOOL ' + tlen + 'mm (1 size)')
         : 'PAN FOLD  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
