@@ -5453,8 +5453,18 @@ function renderSimBendHome() {
     const when = rec.checked_at ? String(rec.checked_at).slice(0, 16).replace('T', ' ') : '';
     // Developed (flat) length — shown only once Fusion (CC_CheckBend) exports it
     // (เอ๋ 'ขึ้น Flat: 116.52 mm @ 1.0mm'). Absent → nothing shown (no regression).
-    const flatStr = (rec.flat_length != null && !isNaN(+rec.flat_length))
-      ? ` · <strong>Flat: ${(+rec.flat_length).toFixed(2)} mm</strong>${rec.thickness != null ? ` @ ${(+rec.thickness).toFixed(1)}mm` : ''}`
+    let flatDims = [];
+    if (rec.box_geom && rec.box_geom.flat_w != null && rec.box_geom.flat_h != null) {
+      // Box/Tray part: show both dimensions (e.g. 343.05 x 243.05). Sort so longest is first.
+      let sorted = [+rec.box_geom.flat_w, +rec.box_geom.flat_h].sort(function(a, b) { return b - a; });
+      flatDims.push(sorted[0].toFixed(2));
+      flatDims.push(sorted[1].toFixed(2));
+    } else if (rec.flat_length != null && !isNaN(+rec.flat_length)) {
+      flatDims.push((+rec.flat_length).toFixed(2));
+    }
+    
+    const flatStr = flatDims.length > 0
+      ? ` · <strong style="text-transform:uppercase;">Flat: ${flatDims.join(' x ')} mm</strong>${rec.thickness != null ? ` @ ${(+rec.thickness).toFixed(1)}mm` : ''}`
       : '';
     
     let hasNotOwnedTools = false;
