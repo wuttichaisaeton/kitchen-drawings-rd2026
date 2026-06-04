@@ -327,11 +327,10 @@
         if (tw && active >= 1) {
           var penZ2 = gpunchZ(frac(active, t));     // punch descends + touches, then rides the sheet up
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
-          if (USE_GOOSE) {  // #202 default, but a pan needs the gooseneck #453 (concave horn ends, throat to the rising flange)
-            sweptPunch(items, tw, GOOSE_PROF, penZ2, tw.eHalf, tw.side === '+' ? -1 : 1, C_PUNCH, C_PUNCH_E, 6);
-          } else {
-            addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);
-          }
+          // straight bar so the LEFT/RIGHT end caps clearly show the concave gooseneck
+          // outline (เอ๋: "ปลายซ้ายขวาต้องเว้า"); #202 default, pan → #453, throat to flange.
+          var prof3 = USE_GOOSE ? GOOSE_PROF : SASH_PROF;
+          addExtrusion(items, tw, prof3, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, USE_GOOSE ? (tw.side === '+' ? -1 : 1) : 1);
         }
       } else {
       var bq = baseQuad();
