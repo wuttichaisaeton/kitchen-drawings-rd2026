@@ -164,7 +164,15 @@
       ];
       defs.forEach(function (d) {
         var r = d[4], pl = clipRect(poly, r[0], r[1], r[2], r[3]);
+        // เอ๋: use the real per-bend-line step from CheckBend's fold_template when
+        // present (folds in the true order); else fall back to the flange-height guess.
         var stepNum = getStepForFlapName(d[0]);
+        if (FP.fold_template) {
+          for (var fti = 0; fti < FP.fold_template.length; fti++) {
+            var fte = FP.fold_template[fti];
+            if (fte.ax === d[1] && fte.step != null && Math.abs(fte.line - d[2]) < 1.0) { stepNum = fte.step; break; }
+          }
+        }
         if (pl.length >= 3) fpFlaps.push({ name: d[0], ax: d[1], line: d[2], side: d[3], step: stepNum, wline: d[5], poly: pl });
       });
     })();
