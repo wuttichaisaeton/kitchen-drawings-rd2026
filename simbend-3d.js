@@ -300,17 +300,25 @@
       // collect drawables (base + folded flaps/walls + lips) with depth + style
       var items = [];
       if (FLAT) {
-        items.push({ pts: fpBasePts(), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
+        // press-brake V (เอ๋ confirmed): while a bend is forming, the WHOLE piece tips
+        // up around the active bend line at the die (base + walls rise together), then
+        // settles flat as the press completes. The die/punch stay fixed; the part tilts.
+        var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
+        var afL0 = af ? (af.ax === 'V' ? af.line - fpCx : af.line - fpCy) : 0;
+        var afF = (af && af.ax === 'V') ? fvAround : fhAround;
+        var bump = af ? Math.sin(Math.min(1, frac(active, t)) * Math.PI) * (30 * R) : 0;
+        function vlift(arr) { return (af && bump) ? arr.map(function (p) { return afF(p, afL0, -af.side, bump); }) : arr; }
+        items.push({ pts: vlift(fpBasePts()), fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         fpFlaps.forEach(function (fl) {
-          var fp3 = foldedFlap(fl, t), act = (fl.step === active), isLip = fl.wline != null;
+          var fp3 = vlift(foldedFlap(fl, t)), act = (fl.step === active), isLip = fl.wline != null;
           items.push({ pts: fp3, fill: shade(C_SASH, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: '#2b3340',
                        lw: act ? 2 : 1.1, d: cenN(fp3) + (isLip ? 0.5 : 0) });
         });
         var tw = fpActiveTool(active);
         if (tw && active >= 1) {
           var ff = frac(active, t), penZ2 = PEN_HI * (1 - ff) + 1;
-          addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend
-          addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);    // #202 punch from above
+          addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);            // die under the active bend (fixed)
+          addExtrusion(items, tw, SASH_PROF, penZ2, C_PUNCH, C_PUNCH_E, 6, tw.eHalf, 1);    // #202 punch from above (fixed)
         }
       } else {
       var bq = baseQuad();
