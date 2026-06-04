@@ -482,31 +482,42 @@
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
       var axis = aw ? aw.axis : 'X';
       var bh = baseHalf(axis), total = 2 * (bh + FLEN_WALL + FLEN_LIP);
-      // the ACTIVE bend sits at the die (u=0): the part beyond it (the flange being
-      // formed) folds up on one side; the rest of the blank lies on the other side.
-      var activeIsWall = aw ? aw.height >= 12 : true;
-      var flangeArm = aw ? (activeIsWall ? FLEN_WALL + FLEN_LIP : FLEN_LIP) : FLEN_WALL;
-      var restArm = total - flangeArm;                       // long side → shows the blank length per axis
       var f = frac(active, t), TOUCH2 = 0.34;
-      var fp = f <= TOUCH2 ? 0 : (f - TOUCH2) / (1 - TOUCH2);  // fold only after the punch touches the sheet
-      var th = fp * (Math.PI / 2);
-      var bump = Math.sin(Math.min(1, fp) * Math.PI) * (24 * Math.PI / 180);
-      function vlift(p) { return [p[0] * Math.cos(bump), p[1] + Math.abs(p[0]) * Math.sin(bump)]; }   // press V about u=0
-      var pRest = [vlift([0, 0]), vlift([restArm, 0])];                                   // rest of blank (+u, flat)
-      var pFlEnd = vlift([-flangeArm * Math.cos(th), flangeArm * Math.sin(th)]);          // flange tipping up (-u)
-      var pHinge = vlift([0, 0]);
-      var uMax = restArm * 1.06, zTop = PEN_HI + 130 * TOOL_SCALE + 6;
-      var s = Math.min((W * 0.92) / (uMax + flangeArm + 8), (H * 0.8) / (zTop + 24));
-      var ox = W * 0.42, baseY = H - 26 * dpr;
+      function g2(step) { var ff = frac(step, t); return ff <= TOUCH2 ? 0 : (ff - TOUCH2) / (1 - TOUCH2); }   // gated fold (touch first)
+      function sideW(sd, wall) { return walls.filter(function (w) { return w.axis === axis && w.side === (sd > 0 ? '+' : '-') && (wall ? w.height >= 12 : w.height < 12); })[0]; }
+      // CUMULATIVE chain: every bend of this axis stays folded at its own step (เอ๋:
+      // "เมื่อพับเป็นฉากแล้วต้องคงรูป") — base flat, wall folds up, lip rides the wall.
+      function buildSide(sd) {
+        var wall = sideW(sd, true), lip = sideW(sd, false);
+        var u = sd * bh, z = 0, ang = 0, pts = [[u, z]];                 // [0] wall bend (base edge)
+        if (wall) ang += g2(wall.step) * (Math.PI / 2);
+        u += sd * FLEN_WALL * Math.cos(ang); z += FLEN_WALL * Math.sin(ang); pts.push([u, z]);   // [1] lip bend
+        if (lip) ang += g2(lip.step) * (Math.PI / 2);
+        u += sd * FLEN_LIP * Math.cos(ang); z += FLEN_LIP * Math.sin(ang); pts.push([u, z]);     // [2] lip end
+        return pts;
+      }
+      var Rs = buildSide(1), Ls = buildSide(-1);
+      var av = [0, 0];                                        // active bend vertex → goes to the die
+      if (aw) { var S = aw.side === '+' ? Rs : Ls; av = aw.height >= 12 ? S[0] : S[1]; }
+      var bump = Math.sin(Math.min(1, g2(active)) * Math.PI) * (24 * Math.PI / 180);   // press-brake V tilt
+      function place(p) { var u = p[0] - av[0], z = p[1] - av[1], c = Math.cos(bump), sn = Math.sin(bump); return [u * c - z * sn, u * sn + z * c]; }
+      var chain = [Ls[2], Ls[1], Ls[0], Rs[0], Rs[1], Rs[2]].map(place);
+      // fit from the placed chain + punch reach
+      var allU = chain.map(function (p) { return p[0]; }), allZ = chain.map(function (p) { return p[1]; });
+      var uLo = Math.min.apply(0, allU), uHi = Math.max.apply(0, allU), zLo = Math.min(-18, Math.min.apply(0, allZ)), zHi = Math.max.apply(0, allZ);
+      zHi = Math.max(zHi, PEN_HI + 130 * TOOL_SCALE);
+      var s = Math.min((W * 0.92) / Math.max(60, uHi - uLo), (H * 0.78) / Math.max(60, zHi - zLo));
+      var ox = W / 2 - ((uLo + uHi) / 2) * s, baseY = H / 2 + ((zLo + zHi) / 2) * s;
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
       function poly(pts, fill, stroke, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); } }
-      poly(DIE_PROF, C_DIE, C_DIE_E, 1);                     // die fixed, V up at u=0 (the active bend)
-      line(pRest, C_BASE, 7);                                // the rest of the blank (long → the side length)
-      line([pHinge, pFlEnd], activeIsWall ? C_WALL : C_LIP, 7);  // the flange tipping up
+      poly(DIE_PROF, C_DIE, C_DIE_E, 1);                     // die fixed at the active bend (origin)
+      line([chain[1], chain[2]], C_LIP, 6); line([chain[0], chain[1]], C_WALL, 7);   // left lip + wall
+      line([chain[2], chain[3]], C_BASE, 7);                                         // base (cumulative shape held)
+      line([chain[3], chain[4]], C_WALL, 7); line([chain[4], chain[5]], C_LIP, 6);   // right wall + lip
       var penZ = f < TOUCH2 ? PEN_HI * (1 - f / TOUCH2) + 1 : 1;   // descends + touches, then rides the sheet
-      var prof2 = USE_GOOSE ? GOOSE_PROF : SASH_PROF;        // gooseneck throat on -u = toward the flange (folds on -u)
+      var prof2 = USE_GOOSE ? GOOSE_PROF : SASH_PROF;
       var pp = prof2.map(function (p) { return [p[0], p[1] + penZ]; });
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
       // HUD
