@@ -516,13 +516,29 @@
       var an = st.active != null ? anchor(pts, model, st) : { pts: pts, pen: 0 };
       var P = an.pts;
 
-      // Zoomed IN tight on the active bend — the 2D press view is for seeing whether
-      // the fold collides ('พับแล้วติดหรือไม่'). Clamp maxFlange so a long base segment
-      // can't shrink everything; the far ends of the strip just run off-frame.
-      var maxF = Math.min(maxFlange, 55);
-      var scale = Math.max(0.6, Math.min(6 * dpr,
-        (h * 0.195) / Math.max(maxF, 36)));
-      var dieCx = w / 2, dieCy = h * 0.72;
+      // ── Fixed-camera layout ───────────────────────────────────────────────
+      // Die is anchored at bottom-center and never moves.  Scale is set so
+      // the die block fills ~1/4 of the canvas height; the punch must also
+      // fit fully in the first frame (before it descends into the V), so we
+      // cap the scale by the available head-room above the die as well.
+      // Sheet flanges will run off the sides — the focus is the bending zone.
+      var rd = resolveDie(model, st);
+      var rp_for_scale = resolvePunch(model, st);
+      var dieH  = rd.height || 60;   // mm — how tall the die block is
+      var punchH = rp_for_scale.height || 120; // mm — punch height above tip
+
+      // Bottom HUD bar is 28px; leave 6px gap below the die flange.
+      var bottomPad = (28 + 6) * dpr;
+      // Scale so die = 1/4 canvas height
+      var scaleByDie   = (h * 0.25) / dieH;
+      // Scale so punch (from die top upward) fits in remaining 3/4
+      var headRoom = h - (h * 0.25) - bottomPad - 28 * dpr; // minus top HUD bar too
+      var scaleByPunch = headRoom / punchH;
+      var scale = Math.max(0.5 * dpr, Math.min(scaleByDie, scaleByPunch));
+
+      // Die top-edge Y (canvas coords): fixed near the bottom
+      var dieCx = w / 2;
+      var dieCy = h - bottomPad - dieH * scale;
       function px(p) { return dieCx + p.x * scale; }
       function py(p) { return dieCy - p.y * scale; }
 
@@ -531,7 +547,6 @@
       ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1 * dpr;
       ctx.beginPath(); ctx.moveTo(dieCx, 0); ctx.lineTo(dieCx, h); ctx.stroke();
 
-      var rd = resolveDie(model, st);
       drawDie(dieCx, dieCy, rd.v, scale, rd.angle, rd.type, rd.vList, rd.height);
 
       // sheet (the part) — thick steel polyline
@@ -554,6 +569,17 @@
         for (var qi = 0; qi <= st.active; qi++) { if (P[qi] && P[qi].y > leftMaxY) leftMaxY = P[qi].y; }
         for (var qi = st.active + 2; qi < P.length; qi++) { if (P[qi] && P[qi].y > rightMaxY) rightMaxY = P[qi].y; }
         var uSign = (rp.type === 'gooseneck' || rp.type === 'sash') ? (rightMaxY >= leftMaxY ? -1 : 1) : 1;
+
+        // Shift dieCx so the punch body's visual centre sits at canvas centre.
+        // Profile X coords are tip-relative (tip=0); apply uSign to get canvas X.
+        if (rp.profile && rp.profile.length) {
+          var profXs = rp.profile.map(function(pt) { return pt[0] * uSign; });
+          var profMinX = Math.min.apply(null, profXs);
+          var profMaxX = Math.max.apply(null, profXs);
+          var profCenterX = (profMinX + profMaxX) / 2; // mm from tip
+          // Shift canvas so punch centre (not tip) is at canvas centre
+          dieCx = w / 2 - profCenterX * scale;
+        }
         
         drawPunch(dieCx, py(Vtx), st.collide, rp.type, t, scale, rp.angle, rp.radius, rp.height, rp.profile, uSign);
       }
