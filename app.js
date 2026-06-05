@@ -3927,6 +3927,20 @@ function _openBendTable(code) {
   ov.innerHTML = `<div class="bt-modal" role="dialog"><button class="bt-close" aria-label="Close">✕</button>${html}</div>`;
   ov.addEventListener('click', e => { if (e.target === ov || e.target.classList.contains('bt-close')) ov.remove(); });
   document.body.appendChild(ov);
+  // The sketch/chalk themes reset surfaces+text to transparent/ink with high-specificity
+  // !important rules. Inline !important is the only thing that always beats them, so force
+  // the dark popup look here (works on every theme). [เอ๋]
+  const setP = (el, k, v) => el && el.style.setProperty(k, v, 'important');
+  setP(ov, 'background-color', 'rgba(8,12,18,0.66)');
+  const modal = ov.querySelector('.bt-modal');
+  setP(modal, 'background-color', '#11181f');
+  setP(modal, 'border-color', '#2b3340');
+  ov.querySelectorAll('.bt-modal, .bt-head, .bt-table th, .bt-table td, .bt-close')
+    .forEach(e => setP(e, 'color', '#e6edf4'));
+  ov.querySelectorAll('.bt-order, .bt-foot').forEach(e => setP(e, 'color', 'rgba(230,237,244,0.6)'));
+  ov.querySelectorAll('.bt-ok').forEach(e => setP(e, 'color', '#4ecca3'));
+  ov.querySelectorAll('.bt-bad').forEach(e => setP(e, 'color', '#e0574a'));
+  ov.querySelectorAll('.bt-table th, .bt-table td').forEach(e => setP(e, 'border-bottom-color', '#1c2530'));
 }
 let _bendSimSubscribed = false;
 let _simBendExpanded = null;       // code currently expanded inline
