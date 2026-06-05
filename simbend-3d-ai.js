@@ -190,12 +190,11 @@
     var USE_GOOSE = allWalls.some(function (x) { return x.needs_gooseneck || x.punch === 'gooseneck'; });
     function punchForStep(step) {
       var pid = '';
-      if (overridePunchId && overridePunchId !== 'AUTO') {
-        pid = overridePunchId.toUpperCase();
-      } else {
-        var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
-        pid = (b && b.punch && b.punch !== 'AUTO') ? ('' + b.punch).toUpperCase() : '';
-      }
+      // เอ๋ 'เปลี่ยนมีดแล้ว แบบไม่เปลี่ยน': a per-STEP punch (table row) is the most specific
+      // → it WINS over the global override, which only applies to rows left on AUTO.
+      var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
+      if (b && b.punch && b.punch !== 'AUTO') pid = ('' + b.punch).toUpperCase();
+      else if (overridePunchId && overridePunchId !== 'AUTO') pid = overridePunchId.toUpperCase();
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
@@ -738,12 +737,11 @@
 
     function punchForStep(step) {
       var pid = '';
-      if (overridePunchId && overridePunchId !== 'AUTO') {
-        pid = overridePunchId.toUpperCase();
-      } else {
-        var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
-        pid = (b && b.punch && b.punch !== 'AUTO') ? ('' + b.punch).toUpperCase() : '';
-      }
+      // เอ๋ 'เปลี่ยนมีดแล้ว แบบไม่เปลี่ยน': a per-STEP punch (table row) is the most specific
+      // → it WINS over the global override, which only applies to rows left on AUTO.
+      var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
+      if (b && b.punch && b.punch !== 'AUTO') pid = ('' + b.punch).toUpperCase();
+      else if (overridePunchId && overridePunchId !== 'AUTO') pid = overridePunchId.toUpperCase();
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
