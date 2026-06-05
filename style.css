@@ -6360,29 +6360,32 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
 }
 .part-bend-btn.part-bend-bad { background: rgba(224, 87, 74, 0.16); border-color: rgba(224, 87, 74, 0.55); }
 .part-row .part-bend-btn + .part-actions { margin-left: 6px; }
+/* !important throughout — the sketch/chalk theme resets surfaces to transparent
+   (specificity 0,2,6), which would make this popup see-through. Force a fixed dark
+   card so it reads on every theme. */
 .bt-overlay {
-  position: fixed; inset: 0; z-index: 9000; background: rgba(8, 12, 18, 0.62);
+  position: fixed; inset: 0; z-index: 9000; background: rgba(8, 12, 18, 0.66) !important;
   display: flex; align-items: center; justify-content: center; padding: 16px;
 }
 .bt-modal {
-  position: relative; background: #11181f; color: #e6edf4; border: 1px solid #2b3340;
-  border-radius: 12px; padding: 16px 16px 12px; max-width: 460px; width: 100%;
-  max-height: 86vh; overflow: auto; box-shadow: 0 14px 40px rgba(0,0,0,0.5);
-  font-family: "Flux Architect", monospace;
+  position: relative; background: #11181f !important; color: #e6edf4 !important;
+  border: 1px solid #2b3340 !important; border-radius: 12px; padding: 16px 16px 12px;
+  max-width: 460px; width: 100%; max-height: 86vh; overflow: auto;
+  box-shadow: 0 14px 40px rgba(0,0,0,0.5); font-family: "Flux Architect", monospace;
 }
 .bt-close {
   position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; cursor: pointer;
-  background: transparent; border: 0; color: #9fb0c0; font-size: 17px; line-height: 1;
+  background: transparent !important; border: 0; color: #9fb0c0 !important; font-size: 17px; line-height: 1;
 }
-.bt-head { font-size: 13px; font-weight: 700; margin: 2px 28px 10px 2px; letter-spacing: .3px; }
-.bt-ok { color: #4ecca3; }
-.bt-bad { color: #e0574a; }
+.bt-head { font-size: 13px; font-weight: 700; margin: 2px 28px 10px 2px; letter-spacing: .3px; color: #e6edf4 !important; }
+.bt-ok { color: #4ecca3 !important; }
+.bt-bad { color: #e0574a !important; }
 .bt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-.bt-table th, .bt-table td { text-align: center; padding: 5px 6px; border-bottom: 1px solid #1c2530; white-space: nowrap; }
-.bt-table th { opacity: .6; font-weight: 600; font-size: 11px; }
+.bt-table th, .bt-table td { text-align: center; padding: 5px 6px; border-bottom: 1px solid #1c2530 !important; white-space: nowrap; color: #e6edf4 !important; }
+.bt-table th { color: rgba(230,237,244,0.6) !important; font-weight: 600; font-size: 11px; }
 .bt-table td:nth-child(2) { font-weight: 700; }
-.bt-order { margin-top: 9px; font-size: 11px; opacity: .7; }
-.bt-foot { margin-top: 6px; font-size: 10px; opacity: .45; }
+.bt-order { margin-top: 9px; font-size: 11px; color: rgba(230,237,244,0.7) !important; }
+.bt-foot { margin-top: 6px; font-size: 10px; color: rgba(230,237,244,0.45) !important; }
 
 
 
