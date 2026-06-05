@@ -15,6 +15,16 @@
   var SASH_PROF = scaleProf([[0,0],[12.728,12.728],[12.728,87],[20.728,95],[20.728,105],[17.728,105],[17.728,112.5],[20.728,112.5],[20.728,130],[7.728,130],[7.728,100],[-5.272,100],[-5.272,95],[2.728,87],[2.728,13.618],[-5.444,5.445]], TOOL_SCALE);
   var GOOSE_PROF = scaleProf([[0,0],[4.09,4.39],[4.09,4.85],[8.9,10],[20.31,22.24],[28.65,31.18],[49,53],[49,77],[36,90],[20,90],[20,95],[17,95],[17,103],[20,103],[17,120],[7,120],[7,90],[-7,90],[-7,81],[11.84,61.5],[13.01,60.13],[14.01,58.62],[14.82,57.01],[15.43,55.31],[15.84,53.56],[16.03,51.76],[16,49.95],[15.76,48.17],[15.3,46.42],[14.64,44.74],[8.32,31.18],[4.15,22.24],[-1.56,10],[-4.24,4.25]], TOOL_SCALE);
 
+  // step/bend dot palette — MIRRORS app.js BEND_COLORS so the sim's circled-step
+  // badge background matches the table dot for that bend (เอ๋: 'สีพื้นหลังวงกลม
+  // สัมพันธ์กับสี step'). Indexed by bend number: B1→0, B2→1, ...
+  var BEND_COLORS = ['#e0574a', '#4ecca3', '#4a90e2', '#f2b84e', '#c471ed', '#2ecc71', '#e67e22', '#1abc9c', '#e84393', '#6c5ce7'];
+  function bendColor(id) {
+    var n = parseInt(String(id || '').replace(/\D/g, ''), 10);
+    if (!n || isNaN(n)) return '#e0574a';
+    return BEND_COLORS[(n - 1) % BEND_COLORS.length];
+  }
+
   function mount(canvas, record, code) {
     window.__activeRecord = record;
     var box = record && record.box_geom;
@@ -462,15 +472,16 @@
         : 'PAN FOLD [AI]  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
 
-      // เอ๋: small circled CURRENT-STEP number, top-right (which step is folding now)
+      // เอ๋: small circled CURRENT-STEP number, top-right — circle bg = this step's colour
       if (active) {
         var bx = w - 24 * dpr, by = 50 * dpr, br = 14 * dpr;
         ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fill();
-        ctx.lineWidth = 2 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = wall ? bendColor(wall.id) : '#e0574a'; ctx.fill();
+        ctx.lineWidth = 2 * dpr; ctx.strokeStyle = 'rgba(12,19,27,0.85)'; ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = 'bold ' + (15 * dpr) + 'px "Flux Architect", monospace';
-        ctx.fillText(String(active), bx, by + dpr);
+        ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(12,19,27,0.55)'; ctx.strokeText(String(active), bx, by + dpr);
+        ctx.fillStyle = '#fff'; ctx.fillText(String(active), bx, by + dpr);
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       }
 
@@ -701,14 +712,9 @@
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
       function poly(pts, fill, stroke, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); } }
       poly(DIE_PROF, C_DIE, C_DIE_E, 1);
-      
-      for (var si = 0; si < cSegs.length; si++) {
-        var seg = cSegs[si];
-        var col = (seg == null) ? C_BASE : (seg.step === active ? C_RED : (seg.height >= 12 ? C_WALL : C_LIP));
-        var lw = (seg && seg.height < 12) ? 6 : 7;
-        line([chain[si], chain[si + 1]], col, lw);
-      }
-      
+
+      // PUNCH first so the metal sheet is drawn ON TOP of it — เอ๋:
+      // 'แสดงโลหะอยู่หน้ามีด' (the workpiece must read in front of the blade).
       var penZ = PEN_HI;
       if (aw) {
         if (f < HOLD_P0) {
@@ -723,20 +729,43 @@
       var uSign = pk.goose ? ((aw && aw.side === '+') ? -1 : 1) : 1;
       var pp = pk.prof.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
-      
+
+      // metal drawn AFTER (= in front of) the punch so the sheet is always visible
+      for (var si = 0; si < cSegs.length; si++) {
+        var seg = cSegs[si];
+        var col = (seg == null) ? C_BASE : (seg.step === active ? C_RED : (seg.height >= 12 ? C_WALL : C_LIP));
+        var lw = (seg && seg.height < 12) ? 6 : 7;
+        line([chain[si], chain[si + 1]], col, lw);
+      }
+
+      // COLLISION — the solver flagged this bend as hitting an already-formed wall
+      // (or the chosen punch can't clear it). เอ๋: 'ต้องขึ้นเตือนเมื่อเกิดการชนกัน'.
+      // Switch a gooseneck step to a STANDARD punch (PUNCH dropdown) to see it fire.
+      var collide = !!(aw && aw.collides);
+
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
       var tlen = aw ? Math.round((axis === 'X' ? base.h : base.w) - 14) : Math.round(ONE_TOOL_HALF * 2);
       ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'Y' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + punchForStep(active).name + '  ·  TOOL ' + tlen + 'mm [AI]') : '2D PRESS [AI]', 10 * dpr, 14 * dpr);
-      // เอ๋: small circled CURRENT-STEP number, top-right (same as the 3D)
+      // COLLISION warning banner — เอ๋: 'ต้องขึ้นเตือนเมื่อเกิดการชนกัน'
+      if (collide) {
+        var ch = 22 * dpr;
+        ctx.fillStyle = 'rgba(224,87,74,0.95)'; ctx.fillRect(0, 28 * dpr, W, ch);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
+        var hitTxt = (aw && aw.collides_with) ? (' hits ' + aw.collides_with) : '';
+        ctx.fillText('⚠ COLLISION — ' + (aw ? aw.id : '') + hitTxt + ' — change punch / order', 10 * dpr, 28 * dpr + ch / 2);
+      }
+      // เอ๋: small circled CURRENT-STEP number, top-right — circle bg = this step's colour
       if (active) {
         var bx = W - 24 * dpr, by = 48 * dpr, br = 14 * dpr;
         ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fill();
-        ctx.lineWidth = 2 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
-        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = aw ? bendColor(aw.id) : '#e0574a'; ctx.fill();
+        ctx.lineWidth = 2 * dpr; ctx.strokeStyle = 'rgba(12,19,27,0.85)'; ctx.stroke();
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.font = 'bold ' + (15 * dpr) + 'px "Flux Architect", monospace';
-        ctx.fillText(String(active), bx, by + dpr);
+        ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(12,19,27,0.55)'; ctx.strokeText(String(active), bx, by + dpr);
+        ctx.fillStyle = '#fff'; ctx.fillText(String(active), bx, by + dpr);
         ctx.textAlign = 'left';
       }
     }
