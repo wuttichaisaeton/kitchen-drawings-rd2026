@@ -24,6 +24,24 @@
     if (!n || isNaN(n)) return '#e0574a';
     return BEND_COLORS[(n - 1) % BEND_COLORS.length];
   }
+  // How tall a STANDING wall the blade can clear at its side (mm). Mirrors
+  // box_model.DEFAULT_PERP_CLEAR: a gooseneck throat ~42, a straight/sash ~10.
+  function punchClearMm(goose) { return goose ? 42 : 10; }
+  // Stacked-wall collision the per-axis solver misses (เอ๋: 'step 7,8 ชน'): folding an
+  // INNER wall while a taller OUTER wall on the SAME axis+side is already standing —
+  // if that formed wall is taller than the blade can clear, the punch hits it. Returns
+  // the offending wall id (or null).
+  function stackedHitId(walls, aw, active, goose) {
+    if (!aw) return null;
+    var clr = punchClearMm(goose);
+    for (var i = 0; i < walls.length; i++) {
+      var w = walls[i];
+      if (w === aw) continue;
+      if (w.axis === aw.axis && w.side === aw.side &&
+          (w.step || 0) < active && (w.height || 0) > clr) return w.id;
+    }
+    return null;
+  }
 
   function mount(canvas, record, code) {
     window.__activeRecord = record;
@@ -315,6 +333,18 @@
         activeCb(_awid, active);
       }
 
+      // transient stacked-collision flags for THIS frame (เอ๋: 'step 7,8 ชน') — folding an
+      // inner wall while a taller same-side wall is already standing & the blade can't
+      // clear it. Cleared every frame so nothing leaks into the data/table.
+      for (var _si = 0; _si < allWalls.length; _si++) { allWalls[_si]._stk = false; allWalls[_si]._stkWith = null; }
+      var _awWall = null;
+      for (var _wi = 0; _wi < allWalls.length; _wi++) { if (allWalls[_wi].step === active) { _awWall = allWalls[_wi]; break; } }
+      var _stkHit = stackedHitId(allWalls, _awWall, active, punchForStep(active).goose);
+      if (_stkHit && _awWall) {
+        _awWall._stk = true; _awWall._stkWith = _stkHit;
+        for (var _hi = 0; _hi < allWalls.length; _hi++) { if (allWalls[_hi].id === _stkHit) allWalls[_hi]._stk = true; }
+      }
+
       var items = [];
       if (FLAT) {
         var af = null; fpFlaps.forEach(function (x) { if (x.step === active) af = x; });
@@ -356,7 +386,7 @@
           for (var i = 0; i < allWalls.length; i++) {
             if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
           }
-          var collides = wObj && wObj.collides;
+          var collides = wObj && (wObj.collides || wObj._stk);
           var baseCol = collides ? C_RED : C_SASH;
           var fp3 = vlift(foldedFlap(fl, t)), act = (fl.step === active), isLip = fl.wline != null;
           items.push({ pts: fp3, fill: shade(baseCol, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: collides ? C_RED : '#2b3340',
@@ -375,7 +405,7 @@
           }
           var pk = punchForStep(active);
           var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
-          var collides = aw && aw.collides;
+          var collides = aw && (aw.collides || aw._stk);
           var pFill = collides ? C_RED : C_PUNCH;
           var pStroke = collides ? C_RED : C_PUNCH_E;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);
@@ -419,23 +449,24 @@
         var bq = baseQuad();
         items.push({ pts: bq, fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         pairs.forEach(function (pr) {
-          var m = pr.main, mw = m.collides ? C_RED : C_SASH;
+          var m = pr.main, mCol = (m.collides || m._stk), mw = mCol ? C_RED : C_SASH;
           var md = (m.angle_deg || 90) * frac(m.step, t);
           var mq = wallQuad(m, md);
           var act = (m.step === active);
-          items.push({ pts: mq, fill: shade(mw, act ? 0.95 : 0.78), stroke: m.collides ? C_RED : '#2b3340', lw: act ? 2 : 1.2,
+          items.push({ pts: mq, fill: shade(mw, act ? 0.95 : 0.78), stroke: mCol ? C_RED : '#2b3340', lw: act ? 2 : 1.2,
                        d: cen(mq), label: m });
           if (pr.lip) {
+            var lCol = (pr.lip.collides || pr.lip._stk);
             var ld = (pr.lip.angle_deg || 90) * frac(pr.lip.step, t);
             var lq = lipQuad(m, md, pr.lip, ld);
-            items.push({ pts: lq, fill: pr.lip.collides ? C_RED : shade(mw, 0.6), stroke: pr.lip.collides ? C_RED : '#2b3340', lw: 1, d: cen(lq) + 0.5 });
+            items.push({ pts: lq, fill: lCol ? C_RED : shade(mw, 0.6), stroke: lCol ? C_RED : '#2b3340', lw: 1, d: cen(lq) + 0.5 });
           }
         });
         var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
         if (aw && active >= 1) {
           var f = frac(aw.step, t);
           var penZ = PEN_HI * (1 - f) + 1;
-          var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
+          var pFill = (aw.collides || aw._stk) ? C_RED : C_PUNCH, pStroke = (aw.collides || aw._stk) ? C_RED : C_PUNCH_E;
           var pWidthHalf = Math.max(10, (aw.width - 14.0) / 2);
           addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, pWidthHalf, 1);
           addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, pWidthHalf, 1);
@@ -485,16 +516,17 @@
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       }
 
-      if (wall && wall.collides) {
+      if (wall && (wall.collides || wall._stk)) {
         ctx.fillStyle = C_RED; ctx.textAlign = 'right';
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
-        ctx.fillText('✗ HITS ' + (wall.collides_with || 'WALL'), w - 10 * dpr, 15 * dpr);
+        ctx.fillText('✗ HITS ' + (wall.collides_with || wall._stkWith || 'WALL'), w - 10 * dpr, 15 * dpr);
       }
-      var anyCol = allWalls.some(function (x) { return x.collides; });
+      var anyCol = allWalls.some(function (x) { return x.collides || x._stk; });
+      var stkAny = allWalls.some(function (x) { return x._stk; });
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, h - 26 * dpr, w, 26 * dpr);
       ctx.textAlign = 'left'; ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
       if (record.bendable && !anyCol) { ctx.fillStyle = '#4ecca3'; ctx.fillText('✓ BENDABLE (box)  ·  ' + (record.order || []).join(' → '), 10 * dpr, h - 13 * dpr); }
-      else { ctx.fillStyle = C_RED; ctx.fillText('✗ ' + (record.reason || 'collision').toUpperCase(), 10 * dpr, h - 13 * dpr); }
+      else { ctx.fillStyle = C_RED; ctx.fillText('✗ ' + ((stkAny && !record.reason) ? 'STACKED WALL COLLISION — INNER FOLD BLOCKED BY OUTER' : (record.reason || 'collision').toUpperCase()), 10 * dpr, h - 13 * dpr); }
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null;
@@ -738,10 +770,11 @@
         line([chain[si], chain[si + 1]], col, lw);
       }
 
-      // COLLISION — the solver flagged this bend as hitting an already-formed wall
-      // (or the chosen punch can't clear it). เอ๋: 'ต้องขึ้นเตือนเมื่อเกิดการชนกัน'.
-      // Switch a gooseneck step to a STANDARD punch (PUNCH dropdown) to see it fire.
-      var collide = !!(aw && aw.collides);
+      // COLLISION — either the solver flagged this bend, OR a taller stacked wall on the
+      // same side is already up and the blade can't clear it (เอ๋: 'step 7,8 ชน').
+      var stackHit = stackedHitId(walls, aw, active, punchForStep(active).goose);
+      var collideWith = (aw && aw.collides_with) || stackHit;
+      var collide = !!(aw && aw.collides) || !!stackHit;
 
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
@@ -753,7 +786,7 @@
         ctx.fillStyle = 'rgba(224,87,74,0.95)'; ctx.fillRect(0, 28 * dpr, W, ch);
         ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
-        var hitTxt = (aw && aw.collides_with) ? (' hits ' + aw.collides_with) : '';
+        var hitTxt = collideWith ? (' hits ' + collideWith) : '';
         ctx.fillText('⚠ COLLISION — ' + (aw ? aw.id : '') + hitTxt + ' — change punch / order', 10 * dpr, 28 * dpr + ch / 2);
       }
       // เอ๋: small circled CURRENT-STEP number, top-right — circle bg = this step's colour
