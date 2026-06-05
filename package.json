@@ -6,13 +6,15 @@
     "start": "serve . -l tcp://0.0.0.0:${PORT:-3000} --no-clipboard --no-port-switching",
     "dev": "serve . -l 3000",
     "build:editor": "node editor/build.mjs",
-    "watch:editor": "node editor/build.mjs --watch"
+    "watch:editor": "node editor/build.mjs --watch",
+    "stamp": "node scripts/stamp_bends.mjs"
   },
   "dependencies": {
-    "serve": "^14.2.0",
     "@xyflow/react": "^12.3.5",
+    "pdf-lib": "^1.17.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "serve": "^14.2.0"
   },
   "devDependencies": {
     "esbuild": "^0.24.0"
