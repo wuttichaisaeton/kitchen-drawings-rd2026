@@ -817,10 +817,23 @@
       // wall, not drawn here) → gate on the punch-engaged window so it still flashes sensibly.
       var showCol = collide && (hitSegIdx >= 0 ? !!contactPt : (f >= HOLD_P0 && f <= HOLD_P2));
 
-      // ring the exact contact point
+      // ring the exact contact point — pulsing "alarm" effect [เอ๋: เพิ่ม Effect]
       if (showCol && contactPt) {
-        ctx.beginPath(); ctx.arc(X(contactPt[0]), Y(contactPt[1]), 18 * dpr, 0, Math.PI * 2);
-        ctx.lineWidth = 3 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
+        var cx = X(contactPt[0]), cy = Y(contactPt[1]);
+        var ping = (t % 720) / 720;                  // 0..1 expanding radar ping
+        var throb = 0.5 + 0.5 * Math.sin(t / 95);    // 0..1 glow + size throb
+        ctx.save();
+        // expanding ping ring — grows outward and fades
+        ctx.beginPath(); ctx.arc(cx, cy, (15 + ping * 18) * dpr, 0, Math.PI * 2);
+        ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(224,87,74,' + (0.9 * (1 - ping)).toFixed(3) + ')'; ctx.stroke();
+        // glowing main ring — throbs
+        ctx.shadowColor = '#e0574a'; ctx.shadowBlur = (6 + 12 * throb) * dpr;
+        ctx.beginPath(); ctx.arc(cx, cy, 15 * dpr, 0, Math.PI * 2);
+        ctx.lineWidth = (3 + 1.5 * throb) * dpr; ctx.strokeStyle = '#ff6f60'; ctx.stroke();
+        ctx.shadowBlur = 0;
+        // bright spark at the contact
+        ctx.beginPath(); ctx.arc(cx, cy, 2.6 * dpr, 0, Math.PI * 2); ctx.fillStyle = '#fff2ef'; ctx.fill();
+        ctx.restore();
       }
 
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
