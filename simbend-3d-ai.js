@@ -24,6 +24,46 @@
     if (!n || isNaN(n)) return '#e0574a';
     return BEND_COLORS[(n - 1) % BEND_COLORS.length];
   }
+  // ── collision alarm sound (Web Audio) — เอ๋: 'มีเสียงด้วยได้ไหม' ───────────────
+  var _audioCtx = null;
+  function _ensureAudio() {
+    try {
+      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (_audioCtx.state === 'suspended') _audioCtx.resume();
+      return _audioCtx;
+    } catch (e) { return null; }
+  }
+  // browsers block audio until a user gesture — unlock on the first click anywhere
+  (function () {
+    var unlock = function () {
+      _ensureAudio();
+      document.removeEventListener('pointerdown', unlock, true);
+      document.removeEventListener('click', unlock, true);
+    };
+    try {
+      document.addEventListener('pointerdown', unlock, true);
+      document.addEventListener('click', unlock, true);
+    } catch (e) {}
+  })();
+  var _lastAlarmAt = -1e9;
+  function playCollisionAlarm() {
+    var ctx = _ensureAudio();
+    if (!ctx || ctx.state !== 'running') return;
+    var now = ctx.currentTime;
+    if (now - _lastAlarmAt < 0.25) return;   // debounce double-fires
+    _lastAlarmAt = now;
+    [0, 0.16].forEach(function (off) {       // two short harsh beeps
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(340, now + off);
+      o.frequency.setValueAtTime(250, now + off + 0.07);
+      g.gain.setValueAtTime(0.0001, now + off);
+      g.gain.exponentialRampToValueAtTime(0.16, now + off + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + off + 0.13);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(now + off); o.stop(now + off + 0.14);
+    });
+  }
   // How tall a STANDING wall the blade can clear at its side (mm). Mirrors
   // box_model.DEFAULT_PERP_CLEAR: a gooseneck throat ~42, a straight/sash ~10.
   function punchClearMm(goose) { return goose ? 42 : 10; }
@@ -843,6 +883,8 @@
       // hit wall in this cross-section → gate on real contact; else (hits DIE / perpendicular
       // wall, not drawn here) → gate on the punch-engaged window so it still flashes sensibly.
       var showCol = collide && (hitSegIdx >= 0 ? !!contactPt : (f >= HOLD_P0 && f <= HOLD_P2));
+      if (showCol && !_colWasOn) playCollisionAlarm();   // beep on the contact rising edge [เอ๋]
+      _colWasOn = showCol;
 
       // ring the exact contact point — pulsing "alarm" effect [เอ๋: เพิ่ม Effect]
       if (showCol && contactPt) {
@@ -891,7 +933,7 @@
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
-    var activeCb = null, _lastActive = -2;
+    var activeCb = null, _lastActive = -2, _colWasOn = false;
     function resize() { var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr); }
     function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
     resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
