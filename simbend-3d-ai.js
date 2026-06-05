@@ -24,31 +24,55 @@
     if (!n || isNaN(n)) return '#e0574a';
     return BEND_COLORS[(n - 1) % BEND_COLORS.length];
   }
-  // ── collision alarm sound (Web Audio) — เอ๋: 'มีเสียงด้วยได้ไหม' ───────────────
-  var _audioCtx = null;
+  // ── collision alarm sound (Web Audio) — เอ๋: 'มีเสียงด้วยได้ไหม' (+ iOS iPad/iPhone) ──
+  // iPadOS 13+ reports as "Mac" but has touch — treat touch-capable Apple as iOS.
+  var _isIOS = /iP(hone|ad|od)/.test(navigator.platform || '') ||
+               (/Macintosh/.test(navigator.userAgent || '') && 'ontouchend' in document);
+  var _audioCtx = null, _mediaDest = null, _unmuteEl = null;
   function _ensureAudio() {
     try {
-      if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!_audioCtx) {
+        _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // iOS: also feed an inline <audio> element via a MediaStream so playback uses the
+        // media session — lets the beep be heard even with the ring/silent switch engaged.
+        try {
+          if (_audioCtx.createMediaStreamDestination) {
+            _mediaDest = _audioCtx.createMediaStreamDestination();
+            _unmuteEl = document.createElement('audio');
+            _unmuteEl.setAttribute('playsinline', '');
+            _unmuteEl.setAttribute('webkit-playsinline', '');
+            _unmuteEl.muted = false; _unmuteEl.volume = 1;
+            _unmuteEl.srcObject = _mediaDest.stream;
+            _unmuteEl.style.cssText = 'position:absolute;width:0;height:0;opacity:0';
+            document.body.appendChild(_unmuteEl);
+          }
+        } catch (e) { _mediaDest = null; }
+      }
       if (_audioCtx.state === 'suspended') _audioCtx.resume();
       return _audioCtx;
     } catch (e) { return null; }
   }
-  // browsers block audio until a user gesture — unlock on the first click anywhere
+  // audio is blocked until a user gesture — unlock on the first touch/click. iOS needs an
+  // actual node started INSIDE the gesture + the media element to begin playing.
   (function () {
+    var done = false, evs = ['touchend', 'touchstart', 'pointerdown', 'mousedown', 'click', 'keydown'];
     var unlock = function () {
-      _ensureAudio();
-      document.removeEventListener('pointerdown', unlock, true);
-      document.removeEventListener('click', unlock, true);
+      if (done) return; done = true;
+      var ctx = _ensureAudio();
+      if (ctx) {
+        try { ctx.resume(); } catch (e) {}
+        try { var b = ctx.createBuffer(1, 1, 22050), s = ctx.createBufferSource(); s.buffer = b; s.connect(ctx.destination); s.start(0); } catch (e) {}
+      }
+      if (_unmuteEl) { try { _unmuteEl.play(); } catch (e) {} }
+      evs.forEach(function (ev) { document.removeEventListener(ev, unlock, true); });
     };
-    try {
-      document.addEventListener('pointerdown', unlock, true);
-      document.addEventListener('click', unlock, true);
-    } catch (e) {}
+    evs.forEach(function (ev) { try { document.addEventListener(ev, unlock, true); } catch (e) {} });
   })();
   var _lastAlarmAt = -1e9;
   function playCollisionAlarm() {
     var ctx = _ensureAudio();
     if (!ctx || ctx.state !== 'running') return;
+    if (_unmuteEl && _unmuteEl.paused) { try { _unmuteEl.play(); } catch (e) {} }
     var now = ctx.currentTime;
     if (now - _lastAlarmAt < 0.25) return;   // debounce double-fires
     _lastAlarmAt = now;
@@ -60,7 +84,9 @@
       g.gain.setValueAtTime(0.0001, now + off);
       g.gain.exponentialRampToValueAtTime(0.16, now + off + 0.012);
       g.gain.exponentialRampToValueAtTime(0.0001, now + off + 0.13);
-      o.connect(g); g.connect(ctx.destination);
+      o.connect(g);
+      g.connect(ctx.destination);                       // normal speaker path
+      if (_isIOS && _mediaDest) g.connect(_mediaDest);  // iOS media-session path (silent switch)
       o.start(now + off); o.stop(now + off + 0.14);
     });
   }
