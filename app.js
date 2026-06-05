@@ -3964,6 +3964,9 @@ function renderDrawingGallery() {
   }));
   if (sortMode === 'date') all.sort((a, b) => (b.dateMs - a.dateMs) || a.code.localeCompare(b.code));
   else all.sort((a, b) => a.code.localeCompare(b.code));
+  // เอ๋: the top search box filters THIS gallery (live) instead of a global jump
+  const q = (SEARCH.value || '').trim().toLowerCase();
+  if (q) all = all.filter(p => p.code.toLowerCase().includes(q) || displayCodeFor(p.code).toLowerCase().includes(q));
   if (typeof COUNT_EL !== 'undefined' && COUNT_EL) COUNT_EL.textContent = all.length + ' drawings';
   const fmtDate = ms => { try { return ms ? new Date(ms).toISOString().slice(0, 10) : ''; } catch (e) { return ''; } };
   const rows = all.map(p => {
@@ -3985,13 +3988,15 @@ function renderDrawingGallery() {
   ROOT.innerHTML = `
     <div class="dwg-gallery">
       <div class="dwg-bar">
-        <div class="dwg-head">📐 DRAWINGS · ${all.length} parts</div>
+        <div class="dwg-head">📐 DRAWINGS · ${all.length}${q ? ` matching "${escapeHtml(q)}"` : ' parts'}</div>
         <div class="dwg-sort">
           <button class="dwg-sort-btn${sortMode === 'az' ? ' active' : ''}" data-sort="az">A–Z</button>
           <button class="dwg-sort-btn${sortMode === 'date' ? ' active' : ''}" data-sort="date">Date</button>
         </div>
       </div>
-      <div class="dwg-grid">${rows || '<div class="pdxf-empty">No drawings yet — upload a PDF in Library, or run CC_DrawingPDF in Fusion.</div>'}</div>
+      <div class="dwg-grid">${rows || (q
+        ? `<div class="pdxf-empty">No drawing matches "${escapeHtml(q)}"</div>`
+        : '<div class="pdxf-empty">No drawings yet — upload a PDF in Library, or run CC_DrawingPDF in Fusion.</div>')}</div>
     </div>`;
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
@@ -10428,6 +10433,12 @@ SEARCH.addEventListener('input', () => {
   }
   if (!q) {
     render();
+    return;
+  }
+  // In the DRAWING gallery the search box filters the grid in place (เอ๋), not a
+  // global jump.
+  if (view === 'drawing' && stack.length === 0) {
+    renderDrawingGallery();
     return;
   }
   renderSearch(q);
