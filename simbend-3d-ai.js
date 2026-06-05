@@ -93,13 +93,20 @@
   // How tall a STANDING wall the blade can clear at its side (mm). Mirrors
   // box_model.DEFAULT_PERP_CLEAR: a gooseneck throat ~42, a straight/sash ~10.
   function punchClearMm(goose) { return goose ? 42 : 10; }
+  // How tall a SAME-SIDE stacked outer wall a punch can clear while folding the inner
+  // wall behind it (mm). KEY: a gooseneck's 42mm throat is oriented to clear
+  // PERPENDICULAR end-walls — it does NOT help a wall stacked on the SAME side, right
+  // on the fold path, where the punch body blocks the inner fold like a straight punch
+  // (เอ๋: '#103 same-side คอ goose ไม่ช่วย — ต้องเตือน'). Tune if a punch genuinely
+  // clears taller same-side walls.
+  var SAME_SIDE_CLEAR_MM = 10;
   // Stacked-wall collision the per-axis solver misses (เอ๋: 'step 7,8 ชน'): folding an
   // INNER wall while a taller OUTER wall on the SAME axis+side is already standing —
   // if that formed wall is taller than the blade can clear, the punch hits it. Returns
   // the offending wall id (or null).
   function stackedHitId(walls, aw, active, goose) {
     if (!aw) return null;
-    var clr = punchClearMm(goose);
+    var clr = SAME_SIDE_CLEAR_MM;   // goose throat doesn't help same-side (param kept for callers)
     for (var i = 0; i < walls.length; i++) {
       var w = walls[i];
       if (w === aw) continue;
@@ -966,7 +973,14 @@
       }
       // hit wall in this cross-section → gate on real contact; else (hits DIE / perpendicular
       // wall, not drawn here) → gate on the punch-engaged window so it still flashes sensibly.
-      var showCol = collide && (hitSegIdx >= 0 ? !!contactPt : (f >= HOLD_P0 && f <= HOLD_P2));
+      // EXCEPTION: a same-side STACKED collision (taller outer wall blocks the inner fold) is a
+      // 3-D blockage the flat cross-section can't always show as a polygon overlap — the punch
+      // may be drawn clearing the shorter wall — so gate it on the press-hold window like the
+      // ISO view, never on geometric contact (เอ๋: 'ต้องเตือน'). [_isStacked]
+      var _isStacked = !!stackHit && !(aw && aw.collides);
+      var showCol = collide && (_isStacked
+        ? (f >= HOLD_P0 && f <= HOLD_P2)
+        : (hitSegIdx >= 0 ? !!contactPt : (f >= HOLD_P0 && f <= HOLD_P2)));
       if (showCol && !_colWasOn) playCollisionAlarm();   // beep on the contact rising edge [เอ๋]
       _colWasOn = showCol;
 
