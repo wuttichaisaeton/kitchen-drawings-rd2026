@@ -177,22 +177,15 @@
       var p3 = fl.poly.map(function (q) { return { x: q[0] - fpCx, y: q[1] - fpCy, z: 0 }; });
       var thw = gfold(fl.step, t) * Math.PI / 2;
       if (fl.wline != null) {
-        // Outer flap. A real short LIP (height<12) rides the inner wall (double-fold).
-        // But if this side is TWO walls (no lip — e.g. test v5's h18+h52), the outer
-        // flap is itself a wall: fold it ONCE so it stands STRAIGHT, instead of folding
-        // it 90° onto the inner wall (which slanted it). [เอ๋: ผนังนั้นเอียง → ทำให้ตรง]
-        var sAxis = fl.ax === 'V' ? 'X' : 'Y';
-        var sSign = fl.side > 0 ? '+' : '-';
-        var hasLip = allWalls.some(function (w) {
-          return w.axis === sAxis && w.side === sSign && (w.height || 0) < 12;
-        });
-        if (hasLip) {
-          var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
-          var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
-          var thw2 = gfold(wstep, t) * Math.PI / 2;
-          p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
-          return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
-        }
+        // Outer flap rides its inner wall (double-fold) so it stays CONNECTED — the
+        // single-fold experiment detached the tall outer wall (ขาดออกจากกัน). With the
+        // outline now extracted in correct order (rectangular walls), the double-fold
+        // gives a clean connected wall, not a slanted triangle. [เอ๋]
+        var wl = fl.ax === 'V' ? fl.wline - fpCx : fl.wline - fpCy;
+        var wstep = fpStepOf(fl.name.charAt(0) + fl.name.charAt(1) + 'w');
+        var thw2 = gfold(wstep, t) * Math.PI / 2;
+        p3 = p3.map(function (p) { return F(p, L0, fl.side, thw); });
+        return p3.map(function (p) { return F(p, wl, fl.side, thw2); });
       }
       return p3.map(function (p) { return F(p, L0, fl.side, thw); });
     }
