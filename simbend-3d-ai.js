@@ -188,16 +188,33 @@
     });
     var ONE_TOOL_HALF = _longWall.width / 2;
     var USE_GOOSE = allWalls.some(function (x) { return x.needs_gooseneck || x.punch === 'gooseneck'; });
+    var _PNAME = { '202': '#202 SASH', '109': '#109 STRAIGHT', '453': 'GOOSENECK #453', '103': '#103 ACUTE GN' };
+    function _exactProf(profId) {
+      try { if (window.KD_TOOLART && window.KD_TOOLART.profileFor) { var p = window.KD_TOOLART.profileFor({ profile_id: profId }); if (p && p.length >= 3) return scaleProf(p, TOOL_SCALE); } } catch (e) {}
+      return null;
+    }
     function punchForStep(step) {
-      var pid = '';
+      var rawId = '';
       // เอ๋ 'เปลี่ยนมีดแล้ว แบบไม่เปลี่ยน': a per-STEP punch (table row) is the most specific
       // → it WINS over the global override, which only applies to rows left on AUTO.
       var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
-      if (b && b.punch && b.punch !== 'AUTO') pid = ('' + b.punch).toUpperCase();
-      else if (overridePunchId && overridePunchId !== 'AUTO') pid = overridePunchId.toUpperCase();
+      if (b && b.punch && b.punch !== 'AUTO') rawId = '' + b.punch;
+      else if (overridePunchId && overridePunchId !== 'AUTO') rawId = '' + overridePunchId;
+      var pid = rawId.toUpperCase();
+      var series = (pid.match(/KYOKKO-([^-]+)/) || [])[1] || '';
+      var isGoose = (series === '453' || series === '103' || pid.indexOf('GOOSE') >= 0 || pid.indexOf('GN') >= 0);
+      // เอ๋ 'มีด 103,109 ไม่ขึ้น': draw the REAL shared DXF outline (tool-art) for every
+      // punch — 202 / 109 / 453 / 103 — not just two hard-coded shapes.
+      if (series) {
+        var ex = _exactProf(series);
+        if (ex) return { prof: ex, goose: isGoose, name: _PNAME[series] || ('#' + series) };
+      }
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
+      // AUTO: prefer the shared exact outline for the chosen kind, else the built-in shape
+      var aS = USE_GOOSE ? '453' : '202', aex = _exactProf(aS);
+      if (aex) return { prof: aex, goose: USE_GOOSE, name: USE_GOOSE ? 'GOOSENECK #453' : '#202 SASH' };
       return USE_GOOSE ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
     }
 
@@ -735,16 +752,33 @@
     var overrideDieType = 'AUTO';
     var overrideDieVList = 'AUTO';
 
+    var _PNAME = { '202': '#202 SASH', '109': '#109 STRAIGHT', '453': 'GOOSENECK #453', '103': '#103 ACUTE GN' };
+    function _exactProf(profId) {
+      try { if (window.KD_TOOLART && window.KD_TOOLART.profileFor) { var p = window.KD_TOOLART.profileFor({ profile_id: profId }); if (p && p.length >= 3) return scaleProf(p, TOOL_SCALE); } } catch (e) {}
+      return null;
+    }
     function punchForStep(step) {
-      var pid = '';
+      var rawId = '';
       // เอ๋ 'เปลี่ยนมีดแล้ว แบบไม่เปลี่ยน': a per-STEP punch (table row) is the most specific
       // → it WINS over the global override, which only applies to rows left on AUTO.
       var b = (record.per_bend || []).filter(function (x) { return x.step === step; })[0];
-      if (b && b.punch && b.punch !== 'AUTO') pid = ('' + b.punch).toUpperCase();
-      else if (overridePunchId && overridePunchId !== 'AUTO') pid = overridePunchId.toUpperCase();
+      if (b && b.punch && b.punch !== 'AUTO') rawId = '' + b.punch;
+      else if (overridePunchId && overridePunchId !== 'AUTO') rawId = '' + overridePunchId;
+      var pid = rawId.toUpperCase();
+      var series = (pid.match(/KYOKKO-([^-]+)/) || [])[1] || '';
+      var isGoose = (series === '453' || series === '103' || pid.indexOf('GOOSE') >= 0 || pid.indexOf('GN') >= 0);
+      // เอ๋ 'มีด 103,109 ไม่ขึ้น': draw the REAL shared DXF outline (tool-art) for every
+      // punch — 202 / 109 / 453 / 103 — not just two hard-coded shapes.
+      if (series) {
+        var ex = _exactProf(series);
+        if (ex) return { prof: ex, goose: isGoose, name: _PNAME[series] || ('#' + series) };
+      }
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
+      // AUTO: prefer the shared exact outline for the chosen kind, else the built-in shape
+      var aS = USE_GOOSE ? '453' : '202', aex = _exactProf(aS);
+      if (aex) return { prof: aex, goose: USE_GOOSE, name: USE_GOOSE ? 'GOOSENECK #453' : '#202 SASH' };
       return USE_GOOSE ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
     }
     function frac(step, t) {
