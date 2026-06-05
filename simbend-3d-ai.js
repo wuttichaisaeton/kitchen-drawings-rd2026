@@ -81,6 +81,7 @@
     if (!allWalls.length) return null;
 
     var activeTlen = 0;
+    var _stkScreenPt = null;   // screen pos of the colliding wall this frame (for the ISO alarm ring)
     function getStepForFlapName(name) {
       var axis = name.charAt(0);
       var side = name.charAt(1) === 'p' ? '+' : '-';
@@ -371,6 +372,7 @@
         _awWall._stk = true; _awWall._stkWith = _stkHit;
         for (var _hi = 0; _hi < allWalls.length; _hi++) { if (allWalls[_hi].id === _stkHit) allWalls[_hi]._stk = true; }
       }
+      _stkScreenPt = null;   // recomputed below from the hit wall's projected centroid
 
       var items = [];
       if (FLAT) {
@@ -418,6 +420,12 @@
           var fp3 = vlift(foldedFlap(fl, t)), act = (fl.step === active), isLip = fl.wline != null;
           items.push({ pts: fp3, fill: shade(baseCol, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: collides ? C_RED : '#2b3340',
                        lw: act ? 2 : 1.1, d: cenN(fp3) + (isLip ? 0.5 : 0) });
+          // capture the colliding wall's screen centroid for the ISO alarm ring [เอ๋]
+          if (wObj && _awWall && wObj.id === _awWall._stkWith) {
+            var _cc = { x: 0, y: 0, z: 0 }, _nn = fp3.length || 1;
+            fp3.forEach(function (p) { _cc.x += p.x / _nn; _cc.y += p.y / _nn; _cc.z += p.z / _nn; });
+            _stkScreenPt = toScreen(_cc);
+          }
         });
         var tw = fpActiveTool(active);
         if (tw && active >= 1) {
@@ -547,6 +555,23 @@
         ctx.fillStyle = C_RED; ctx.textAlign = 'right';
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
         ctx.fillText('✗ HITS ' + (wall.collides_with || wall._stkWith || 'WALL'), w - 10 * dpr, 15 * dpr);
+      }
+      // เอ๋: ISO collision alarm — pulsing ring on the colliding wall during the press
+      var _fA = frac(active, t);
+      if (_stkScreenPt && _fA >= 0.22 && _fA <= 0.82) {
+        var rx = _stkScreenPt.x, ry = _stkScreenPt.y;
+        var ping = (t % 720) / 720;
+        var throb = 0.5 + 0.5 * Math.sin(t / 95);
+        ctx.save();
+        ctx.beginPath(); ctx.arc(rx, ry, (16 + ping * 22) * dpr, 0, Math.PI * 2);
+        ctx.lineWidth = 3 * dpr; ctx.strokeStyle = 'rgba(224,87,74,' + (0.9 * (1 - ping)).toFixed(3) + ')'; ctx.stroke();
+        ctx.shadowColor = '#e0574a'; ctx.shadowBlur = (8 + 14 * throb) * dpr;
+        ctx.beginPath(); ctx.arc(rx, ry, 16 * dpr, 0, Math.PI * 2);
+        ctx.lineWidth = (3 + 1.5 * throb) * dpr; ctx.strokeStyle = '#ff6f60'; ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(rx, ry, 3 * dpr, 0, Math.PI * 2); ctx.fillStyle = '#fff2ef'; ctx.fill();
+        ctx.restore();
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       }
       var anyCol = allWalls.some(function (x) { return x.collides || x._stk; });
       var stkAny = allWalls.some(function (x) { return x._stk; });
