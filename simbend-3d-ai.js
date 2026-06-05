@@ -890,6 +890,24 @@
         line([chain[si], chain[si + 1]], col, lw);
       }
 
+      // เอ๋: number each folded line with its flange length (mm); active line in red
+      for (var di = 0; di < cSegs.length; di++) {
+        var dseg = cSegs[di];
+        if (!dseg) continue;                       // skip the flat base
+        var lbl = String(Math.round(dseg.height || 0));
+        var actL = dseg.step === active;
+        var mxp = X((chain[di][0] + chain[di + 1][0]) / 2);
+        var myp = Y((chain[di][1] + chain[di + 1][1]) / 2);
+        ctx.font = 'bold ' + ((actL ? 13 : 11) * dpr) + 'px "Flux Architect", monospace';
+        var twd = ctx.measureText(lbl).width, padx = 4 * dpr;
+        var bw = twd + padx * 2, bh2 = (actL ? 17 : 15) * dpr;
+        ctx.fillStyle = actL ? 'rgba(224,87,74,0.95)' : 'rgba(12,19,27,0.74)';
+        ctx.fillRect(mxp - bw / 2, myp - bh2 / 2, bw, bh2);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(lbl, mxp, myp + dpr);
+        ctx.textAlign = 'left';
+      }
+
       // COLLISION — either the solver flagged this bend, OR a taller stacked wall on the
       // same side is already up and the blade can't clear it (เอ๋: 'step 7,8 ชน').
       var stackHit = stackedHitId(walls, aw, active, punchForStep(active).goose);
