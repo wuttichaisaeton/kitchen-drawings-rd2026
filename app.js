@@ -3950,6 +3950,7 @@ function _openBendTable(code) {
 function renderDrawingGallery() {
   _subscribeBendSim();
   document.getElementById('tab-drawing') && document.getElementById('tab-drawing').classList.add('active');
+  const sortMode = localStorage.getItem('kd_dwg_sort') === 'date' ? 'date' : 'az';
   const by = partsByFamily();
   const seen = new Set();
   let all = [];
@@ -3957,10 +3958,14 @@ function renderDrawingGallery() {
     const url = p.url || pdfUrlForCode(p.code);
     if (!url || seen.has(p.code)) return;
     seen.add(p.code);
-    all.push({ code: p.code, family: p.family, url });
+    const dateMs = p.uploaded_at ? +p.uploaded_at
+      : (p.generated_at ? (Date.parse(p.generated_at) || 0) : 0);
+    all.push({ code: p.code, family: p.family, url, dateMs });
   }));
-  all.sort((a, b) => a.code.localeCompare(b.code));
+  if (sortMode === 'date') all.sort((a, b) => (b.dateMs - a.dateMs) || a.code.localeCompare(b.code));
+  else all.sort((a, b) => a.code.localeCompare(b.code));
   if (typeof COUNT_EL !== 'undefined' && COUNT_EL) COUNT_EL.textContent = all.length + ' drawings';
+  const fmtDate = ms => { try { return ms ? new Date(ms).toISOString().slice(0, 10) : ''; } catch (e) { return ''; } };
   const rows = all.map(p => {
     const fam = p.family;
     const display = displayCodeFor(p.code);
@@ -3968,15 +3973,24 @@ function renderDrawingGallery() {
     const bendChip = (_bend && Array.isArray(_bend.per_bend) && _bend.per_bend.length)
       ? `<button class="part-bend-btn${_bend.bendable === false ? ' part-bend-bad' : ''}" data-bend-code="${escapeHtml(p.code)}" aria-label="Bend sequence" title="Bend sequence & tooling">🔧</button>`
       : '';
+    // always render the date span (empty if none) so it right-aligns the chip
+    const dateLbl = `<span class="dwg-date">${fmtDate(p.dateMs)}</span>`;
     return `<div class="part-row" data-url="${escapeHtml(p.url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon">${familyIcon(fam)}</span>
         <span class="part-code">${escapeHtml(display)}</span>
+        ${dateLbl}
         ${bendChip}
       </div>`;
   }).join('');
   ROOT.innerHTML = `
     <div class="dwg-gallery">
-      <div class="dwg-head">📐 DRAWINGS · ${all.length} parts · tap to open</div>
+      <div class="dwg-bar">
+        <div class="dwg-head">📐 DRAWINGS · ${all.length} parts</div>
+        <div class="dwg-sort">
+          <button class="dwg-sort-btn${sortMode === 'az' ? ' active' : ''}" data-sort="az">A–Z</button>
+          <button class="dwg-sort-btn${sortMode === 'date' ? ' active' : ''}" data-sort="date">Date</button>
+        </div>
+      </div>
       <div class="dwg-grid">${rows || '<div class="pdxf-empty">No drawings yet — upload a PDF in Library, or run CC_DrawingPDF in Fusion.</div>'}</div>
     </div>`;
   ROOT.querySelectorAll('.part-row').forEach(el => {
@@ -3987,6 +4001,9 @@ function renderDrawingGallery() {
   });
   ROOT.querySelectorAll('.part-bend-btn').forEach(btn => {
     btn.addEventListener('click', (ev) => { ev.stopPropagation(); _openBendTable(btn.dataset.bendCode); });
+  });
+  ROOT.querySelectorAll('.dwg-sort-btn').forEach(b => {
+    b.addEventListener('click', () => { localStorage.setItem('kd_dwg_sort', b.dataset.sort); renderDrawingGallery(); });
   });
 }
 

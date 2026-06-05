@@ -6389,9 +6389,15 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
 
 /* เอ๋: DRAWING gallery — flat grid of every part's drawing PDF (no folders) */
 .dwg-gallery { padding: 6px 2px 28px; }
-.dwg-head { font-size: 12px; font-weight: 700; letter-spacing: .4px; opacity: .65; margin: 6px 6px 12px; }
+.dwg-bar { display: flex; align-items: center; gap: 10px; margin: 6px 6px 12px; }
+.dwg-head { font-size: 12px; font-weight: 700; letter-spacing: .4px; opacity: .65; }
+.dwg-sort { margin-left: auto; display: inline-flex; gap: 0; border: 1px solid var(--faint, #2b3340); border-radius: 8px; overflow: hidden; }
+.dwg-sort-btn { cursor: pointer; background: transparent; border: 0; color: inherit; padding: 5px 12px; font-size: 12px; font-family: inherit; opacity: .65; }
+.dwg-sort-btn.active { background: var(--fam-color, #4a90e2); color: #fff; opacity: 1; font-weight: 700; }
 .dwg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
 .dwg-grid .part-row { margin: 0; }
+.dwg-date { margin-left: auto; font-size: 11px; opacity: .5; white-space: nowrap; }
+.dwg-grid .part-bend-btn { margin-left: 8px; }
 
 
 
