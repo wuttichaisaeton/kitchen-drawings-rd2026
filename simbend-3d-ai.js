@@ -776,6 +776,19 @@
       var collideWith = (aw && aw.collides_with) || stackHit;
       var collide = !!(aw && aw.collides) || !!stackHit;
 
+      // เอ๋: ring the spot where it hits — circle the colliding wall on the 2D
+      if (collide && collideWith) {
+        for (var hi = 0; hi < cSegs.length; hi++) {
+          if (cSegs[hi] && cSegs[hi].id === collideWith) {
+            var cxp = X((chain[hi][0] + chain[hi + 1][0]) / 2);
+            var cyp = Y((chain[hi][1] + chain[hi + 1][1]) / 2);
+            ctx.beginPath(); ctx.arc(cxp, cyp, 18 * dpr, 0, Math.PI * 2);
+            ctx.lineWidth = 3 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
+            break;
+          }
+        }
+      }
+
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
       var tlen = aw ? Math.round((axis === 'X' ? base.h : base.w) - 14) : Math.round(ONE_TOOL_HALF * 2);
