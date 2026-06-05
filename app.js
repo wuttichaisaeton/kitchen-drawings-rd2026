@@ -5872,10 +5872,20 @@ function renderSimBendHome() {
       const highlightActiveRow = (bendId) => {
         const table = card.querySelector('.sb-table');
         if (!table) return;
-        table.querySelectorAll('tbody tr.sb-row-active').forEach(r => r.classList.remove('sb-row-active'));
+        table.querySelectorAll('tbody tr.sb-row-active').forEach(r => {
+          r.classList.remove('sb-row-active');
+          r.style.removeProperty('--sb-active-col');
+        });
         if (bendId == null) return;
         const row = table.querySelector(`tbody tr[data-bend="${String(bendId).replace(/"/g, '')}"]`);
-        if (row) row.classList.add('sb-row-active');
+        if (row) {
+          // Colour the active-row frame to MATCH this step's own colour — read the row's
+          // bend dot so the box 'ตรงกับ Step ที่พับ' in every theme (เอ๋), not a fixed red.
+          const dot = row.querySelector('.sb-bend-dot');
+          const col = dot ? getComputedStyle(dot).backgroundColor : '';
+          if (col) row.style.setProperty('--sb-active-col', col);
+          row.classList.add('sb-row-active');
+        }
       };
 
       const punchSel = card.querySelector('.sb-sim-punch-select');
