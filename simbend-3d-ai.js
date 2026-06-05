@@ -415,7 +415,9 @@
           for (var i = 0; i < allWalls.length; i++) {
             if (allWalls[i].step === fl.step) { wObj = allWalls[i]; break; }
           }
-          var collides = wObj && (wObj.collides || wObj._stk);
+          // เอ๋: on ISO the pulsing ring marks the hit — keep the plate/punch their NORMAL
+          // colour (only a real solver collision still tints red; stacked _stk → ring only).
+          var collides = wObj && wObj.collides;
           var baseCol = collides ? C_RED : C_SASH;
           var fp3 = vlift(foldedFlap(fl, t)), act = (fl.step === active), isLip = fl.wline != null;
           items.push({ pts: fp3, fill: shade(baseCol, act ? 0.98 : (isLip ? 0.6 : 0.82)), stroke: collides ? C_RED : '#2b3340',
@@ -440,7 +442,7 @@
           }
           var pk = punchForStep(active);
           var aw = null; allWalls.forEach(function (x) { if (x.step === active) aw = x; });
-          var collides = aw && (aw.collides || aw._stk);
+          var collides = aw && aw.collides;
           var pFill = collides ? C_RED : C_PUNCH;
           var pStroke = collides ? C_RED : C_PUNCH_E;
           addExtrusion(items, tw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, tw.eHalf, 1);
@@ -484,14 +486,14 @@
         var bq = baseQuad();
         items.push({ pts: bq, fill: C_BASE, stroke: C_BASE_E, lw: 1.5, d: depth({ x: 0, y: 0, z: 0 }) - 1e6 });
         pairs.forEach(function (pr) {
-          var m = pr.main, mCol = (m.collides || m._stk), mw = mCol ? C_RED : C_SASH;
+          var m = pr.main, mCol = m.collides, mw = mCol ? C_RED : C_SASH;
           var md = (m.angle_deg || 90) * frac(m.step, t);
           var mq = wallQuad(m, md);
           var act = (m.step === active);
           items.push({ pts: mq, fill: shade(mw, act ? 0.95 : 0.78), stroke: mCol ? C_RED : '#2b3340', lw: act ? 2 : 1.2,
                        d: cen(mq), label: m });
           if (pr.lip) {
-            var lCol = (pr.lip.collides || pr.lip._stk);
+            var lCol = pr.lip.collides;
             var ld = (pr.lip.angle_deg || 90) * frac(pr.lip.step, t);
             var lq = lipQuad(m, md, pr.lip, ld);
             items.push({ pts: lq, fill: lCol ? C_RED : shade(mw, 0.6), stroke: lCol ? C_RED : '#2b3340', lw: 1, d: cen(lq) + 0.5 });
@@ -501,7 +503,7 @@
         if (aw && active >= 1) {
           var f = frac(aw.step, t);
           var penZ = PEN_HI * (1 - f) + 1;
-          var pFill = (aw.collides || aw._stk) ? C_RED : C_PUNCH, pStroke = (aw.collides || aw._stk) ? C_RED : C_PUNCH_E;
+          var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
           var pWidthHalf = Math.max(10, (aw.width - 14.0) / 2);
           addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, pWidthHalf, 1);
           addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, pWidthHalf, 1);
