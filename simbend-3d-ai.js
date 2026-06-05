@@ -42,6 +42,33 @@
     }
     return null;
   }
+  // ── 2D contact geometry: is a wall segment actually touching the punch THIS frame ──
+  function segInt(p1, p2, p3, p4) {
+    var d = (p4[1] - p3[1]) * (p2[0] - p1[0]) - (p4[0] - p3[0]) * (p2[1] - p1[1]);
+    if (Math.abs(d) < 1e-9) return null;
+    var ua = ((p4[0] - p3[0]) * (p1[1] - p3[1]) - (p4[1] - p3[1]) * (p1[0] - p3[0])) / d;
+    var ub = ((p2[0] - p1[0]) * (p1[1] - p3[1]) - (p2[1] - p1[1]) * (p1[0] - p3[0])) / d;
+    if (ua < 0 || ua > 1 || ub < 0 || ub > 1) return null;
+    return [p1[0] + ua * (p2[0] - p1[0]), p1[1] + ua * (p2[1] - p1[1])];
+  }
+  function ptInPoly(p, poly) {
+    var x = p[0], y = p[1], inside = false;
+    for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      var xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+      if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+  // Return the contact point where wall segment a→b meets punch polygon `poly`, else null.
+  function segVsPoly(a, b, poly) {
+    for (var i = 0; i < poly.length; i++) {
+      var ix = segInt(a, b, poly[i], poly[(i + 1) % poly.length]);
+      if (ix) return ix;
+    }
+    if (ptInPoly(b, poly)) return b;
+    if (ptInPoly(a, poly)) return a;
+    return null;
+  }
 
   function mount(canvas, record, code) {
     window.__activeRecord = record;
@@ -776,25 +803,32 @@
       var collideWith = (aw && aw.collides_with) || stackHit;
       var collide = !!(aw && aw.collides) || !!stackHit;
 
-      // เอ๋: ring the spot where it hits — circle the colliding wall on the 2D
+      // เอ๋: warning + ring track the ACTUAL contact frames — show only while the colliding
+      // wall is really touching the punch this frame, hidden before it reaches / after it
+      // clears. Geometric: does the hit wall's segment intersect the punch polygon now?
+      var contactPt = null, hitSegIdx = -1;
       if (collide && collideWith) {
         for (var hi = 0; hi < cSegs.length; hi++) {
-          if (cSegs[hi] && cSegs[hi].id === collideWith) {
-            var cxp = X((chain[hi][0] + chain[hi + 1][0]) / 2);
-            var cyp = Y((chain[hi][1] + chain[hi + 1][1]) / 2);
-            ctx.beginPath(); ctx.arc(cxp, cyp, 18 * dpr, 0, Math.PI * 2);
-            ctx.lineWidth = 3 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
-            break;
-          }
+          if (cSegs[hi] && cSegs[hi].id === collideWith) { hitSegIdx = hi; break; }
         }
+        if (hitSegIdx >= 0) contactPt = segVsPoly(chain[hitSegIdx], chain[hitSegIdx + 1], pp);
+      }
+      // hit wall in this cross-section → gate on real contact; else (hits DIE / perpendicular
+      // wall, not drawn here) → gate on the punch-engaged window so it still flashes sensibly.
+      var showCol = collide && (hitSegIdx >= 0 ? !!contactPt : (f >= HOLD_P0 && f <= HOLD_P2));
+
+      // ring the exact contact point
+      if (showCol && contactPt) {
+        ctx.beginPath(); ctx.arc(X(contactPt[0]), Y(contactPt[1]), 18 * dpr, 0, Math.PI * 2);
+        ctx.lineWidth = 3 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
       }
 
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 28 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
       var tlen = aw ? Math.round((axis === 'X' ? base.h : base.w) - 14) : Math.round(ONE_TOOL_HALF * 2);
       ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'Y' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + punchForStep(active).name + '  ·  TOOL ' + tlen + 'mm [AI]') : '2D PRESS [AI]', 10 * dpr, 14 * dpr);
-      // COLLISION warning banner — เอ๋: 'ต้องขึ้นเตือนเมื่อเกิดการชนกัน'
-      if (collide) {
+      // COLLISION warning banner — only while actually in contact (เอ๋: เฟรมที่ชนเท่านั้น)
+      if (showCol) {
         var ch = 22 * dpr;
         ctx.fillStyle = 'rgba(224,87,74,0.95)'; ctx.fillRect(0, 28 * dpr, W, ch);
         ctx.fillStyle = '#fff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
