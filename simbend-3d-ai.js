@@ -583,7 +583,11 @@
       var Rs_wall_len = 0, Rs_lip_len = 0;
       walls.forEach(function (w) {
         if (w.axis === axis) {
-          var len = w.flat_len != null ? w.flat_len : w.height;
+          // เอ๋: a WALL (h>=12) uses its mould HEIGHT for the press cross-section — its
+          // flat_len from CheckBend was the neighbour wall's tiny length for stacked
+          // walls (h18+h52), making the 52mm flange look too short. A real LIP (h<12)
+          // still uses flat_len. So the h52 flange now reads as the longest segment.
+          var len = (w.height || 0) >= 12 ? w.height : (w.flat_len != null ? w.flat_len : w.height);
           if (w.side === '-') {
             if (w.height >= 12) Ls_wall_len = len;
             else Ls_lip_len = len;
@@ -610,7 +614,11 @@
       var Rs_wall_len = 0, Rs_lip_len = 0;
       walls.forEach(function (w) {
         if (w.axis === axis) {
-          var len = w.flat_len != null ? w.flat_len : w.height;
+          // เอ๋: a WALL (h>=12) uses its mould HEIGHT for the press cross-section — its
+          // flat_len from CheckBend was the neighbour wall's tiny length for stacked
+          // walls (h18+h52), making the 52mm flange look too short. A real LIP (h<12)
+          // still uses flat_len. So the h52 flange now reads as the longest segment.
+          var len = (w.height || 0) >= 12 ? w.height : (w.flat_len != null ? w.flat_len : w.height);
           if (w.side === '-') {
             if (w.height >= 12) Ls_wall_len = len;
             else Ls_lip_len = len;
