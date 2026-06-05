@@ -297,6 +297,13 @@
 
       var active = 0;
       for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
+      // report the active step/bend so the app can highlight the matching table row [เอ๋]
+      if (activeCb && active !== _lastActive) {
+        _lastActive = active;
+        var _awid = null;
+        for (var _ai = 0; _ai < allWalls.length; _ai++) { if (allWalls[_ai].step === active) { _awid = allWalls[_ai].id; break; } }
+        activeCb(_awid, active);
+      }
 
       var items = [];
       if (FLAT) {
@@ -480,6 +487,7 @@
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null;
+    var activeCb = null, _lastActive = -2;
     function resize() {
       var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560;
       canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr);
@@ -504,6 +512,7 @@
       toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
       isPlaying: function () { return !paused; },
       set onstatus(fn) { statusCb = fn; },
+      set onactive(fn) { activeCb = fn; _lastActive = -2; },
       setPunchOverride: function (id, type) {
         overridePunchId = id;
         overridePunchType = type;
@@ -599,6 +608,7 @@
       ctx.clearRect(0, 0, W, H);
       var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
+      if (activeCb && active !== _lastActive) { _lastActive = active; activeCb(aw ? aw.id : null, active); }
       var axis = aw ? aw.axis : 'X';
       var bh = baseHalf(axis);
       var total = 2 * bh;
@@ -732,6 +742,7 @@
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
+    var activeCb = null, _lastActive = -2;
     function resize() { var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr); }
     function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
     resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
@@ -743,6 +754,7 @@
       toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
       isPlaying: function () { return !paused; },
       set onstatus(fn) { statusCb = fn; },
+      set onactive(fn) { activeCb = fn; _lastActive = -2; },
       setPunchOverride: function (id, type) {
         overridePunchId = id;
         overridePunchType = type;

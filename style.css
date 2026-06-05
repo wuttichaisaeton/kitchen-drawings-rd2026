@@ -3563,6 +3563,9 @@ button.cut-status:focus-visible {
 .sb-table th, .sb-table td { text-align: left; padding: 4px 6px; border-bottom: 1px solid #18212c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sb-table th { opacity: 0.6; font-weight: 600; font-size: 11px; }
 .sb-table .sb-row-bad td { color: #e0574a; }
+/* เอ๋: highlight the step currently being folded in the 2D/3D sim */
+.sb-table tbody tr.sb-row-active td { background: rgba(224, 87, 74, 0.16); }
+.sb-table tbody tr.sb-row-active td:first-child { box-shadow: inset 3px 0 0 #e0574a; }
 .sb-table th:nth-child(1), .sb-table td:nth-child(1) { width: 17%; }              /* step / bend */
 .sb-table th:nth-child(2), .sb-table td:nth-child(2),
 .sb-table th:nth-child(3), .sb-table td:nth-child(3) { width: 22%; }              /* punch / die (selects) */

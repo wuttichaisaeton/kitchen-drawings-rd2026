@@ -5742,7 +5742,16 @@ function renderSimBendHome() {
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
-      
+      // เอ๋: highlight the bend-table row for the step currently being folded.
+      const highlightActiveRow = (bendId) => {
+        const table = card.querySelector('.sb-table');
+        if (!table) return;
+        table.querySelectorAll('tbody tr.sb-row-active').forEach(r => r.classList.remove('sb-row-active'));
+        if (bendId == null) return;
+        const row = table.querySelector(`tbody tr[data-bend="${String(bendId).replace(/"/g, '')}"]`);
+        if (row) row.classList.add('sb-row-active');
+      };
+
       const punchSel = card.querySelector('.sb-sim-punch-select');
       const dieSel = card.querySelector('.sb-sim-die-select');
       
@@ -5801,6 +5810,8 @@ function renderSimBendHome() {
       }
 
       _simController.onstatus = (t) => { if (status) status.textContent = t; };
+      _simController.onactive = (bendId) => highlightActiveRow(bendId);
+      if (_simController2D) _simController2D.onactive = (bendId) => highlightActiveRow(bendId);
 
       if (playBtn) playBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -6032,6 +6043,8 @@ function renderSimBendHome() {
               : (window.kdSimBend ? window.kdSimBend.mount(canvas2d, rec, _simBendExpanded) : null);
           }
           _simController.onstatus = (t) => { if (status) status.textContent = t; };
+      _simController.onactive = (bendId) => highlightActiveRow(bendId);
+      if (_simController2D) _simController2D.onactive = (bendId) => highlightActiveRow(bendId);
           
           updateToolOverrides();
           
