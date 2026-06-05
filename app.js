@@ -3851,6 +3851,7 @@ function render() {
   // Always sync the header Back button visibility before painting the
   // view — every render either reveals or hides it based on stack depth.
   _updateHeaderBack();
+  _subscribeBendSim();   // keep _bendSimCache live so 🔧 bend chips show in the library [เอ๋]
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
     if (view === 'nest')     return renderNestHome();
@@ -3889,6 +3890,44 @@ const BEND_COLORS = [
   '#6c5ce7', // B10 — indigo
 ];
 function getBendColor(idx) { return BEND_COLORS[idx % BEND_COLORS.length]; }
+
+// ── Bend-table popup (เอ๋: show the step/punch sequence next to the drawing) ──
+// Tapping the 🔧 chip on a part-row opens a compact table pulled from bend_sim.
+function _bendPunchShort(pid) {
+  if (!pid) return 'AUTO';
+  const m = String(pid).match(/KYOKKO-([^-]+)/i);
+  if (m) return '#' + m[1];
+  if (/HEM/i.test(pid)) return 'HEM';
+  return String(pid).replace(/^P-/, '');
+}
+function _bendSimTableHtml(code) {
+  const rec = _bendSimCache && _bendSimCache[code];
+  if (!rec || !Array.isArray(rec.per_bend) || !rec.per_bend.length) return null;
+  const rows = rec.per_bend.slice().sort((a, b) => (a.step || 0) - (b.step || 0));
+  const trs = rows.map(b => `<tr>
+      <td>${b.step != null ? b.step : ''}</td>
+      <td>${escapeHtml(b.bend || '')}</td>
+      <td>${escapeHtml(_bendPunchShort(b.punch_id))}</td>
+      <td>V${b.v_mm != null ? b.v_mm : ''}</td>
+      <td>${b.angle_deg != null ? Math.round(b.angle_deg) + '°' : ''}</td>
+      <td>${b.tonnage_kN != null ? Math.round(b.tonnage_kN) + 'kN' : ''}</td>
+    </tr>`).join('');
+  const ord = (rec.order || []).join(' → ');
+  const verdict = rec.bendable ? '✓ BENDABLE' : '✗ ' + ((rec.reason || 'problem').toUpperCase());
+  return `<div class="bt-head">${escapeHtml(displayCodeFor(code))} · ${rows.length} BENDS · <span class="${rec.bendable ? 'bt-ok' : 'bt-bad'}">${escapeHtml(verdict)}</span></div>
+    <table class="bt-table"><thead><tr><th>ST</th><th>BEND</th><th>PUNCH</th><th>DIE</th><th>ANG</th><th>TON</th></tr></thead><tbody>${trs}</tbody></table>
+    ${ord ? `<div class="bt-order">ORDER: ${escapeHtml(ord)}</div>` : ''}
+    <div class="bt-foot">from CC_CheckBend${rec.checked_at ? ' · ' + escapeHtml(rec.checked_at) : ''}</div>`;
+}
+function _openBendTable(code) {
+  const html = _bendSimTableHtml(code);
+  if (!html) { alert('No bend data for "' + code + '".\nRun CC_CheckBend on it in Fusion first.'); return; }
+  const ov = document.createElement('div');
+  ov.className = 'bt-overlay';
+  ov.innerHTML = `<div class="bt-modal" role="dialog"><button class="bt-close" aria-label="Close">✕</button>${html}</div>`;
+  ov.addEventListener('click', e => { if (e.target === ov || e.target.classList.contains('bt-close')) ov.remove(); });
+  document.body.appendChild(ov);
+}
 let _bendSimSubscribed = false;
 let _simBendExpanded = null;       // code currently expanded inline
 let _simController = null;         // active sim controller (3-D for box, else 2-D)
@@ -3900,7 +3939,10 @@ function _subscribeBendSim() {
   try {
     window.firebaseDB.ref('bend_sim').on('value', snap => {
       _bendSimCache = snap.val() || {};
-      if (view === 'simbend' && stack.length === 0) render();
+      // re-render so the 🔧 bend chips appear/update in the library too (skip while
+      // the mindmap editor is mounted — it manages its own state). [เอ๋]
+      if (!document.getElementById('kme-mount') &&
+          ((view === 'simbend' && stack.length === 0) || view === 'library')) render();
     });
   } catch (e) {
     _bendSimCache = {};
@@ -9917,11 +9959,18 @@ function renderFamily(fam, highlight) {
         <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>${dxfBtn}
       </div>`;
     }
+    // 🔧 bend chip — only for parts that have a bend_sim record (เอ๋: show the
+    // step/punch table next to the drawing). Tapping opens the popup, not the PDF.
+    const _bend = _bendSimCache && _bendSimCache[p.code];
+    const bendChip = (_bend && Array.isArray(_bend.per_bend) && _bend.per_bend.length)
+      ? `<button class="part-bend-btn${_bend.bendable === false ? ' part-bend-bad' : ''}" data-bend-code="${escapeHtml(p.code)}" aria-label="Bend sequence" title="Bend sequence & tooling">🔧</button>`
+      : '';
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon">${familyIcon(fam)}</span>
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${ver}
+        ${bendChip}
         ${adminBtns}
       </div>`;
   }).join('');
@@ -9985,13 +10034,21 @@ function renderFamily(fam, highlight) {
 
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
-      // Ignore clicks on admin buttons — each has its own handler.
-      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn')) return;
+      // Ignore clicks on admin buttons + the bend chip — each has its own handler.
+      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn')) return;
       // _openInNewTab handles the iPad PWA standalone case (same-window
       // navigation) vs browser (new tab). Plain window.open '_blank'
       // opens an invisible off-screen webview on standalone PWAs —
       // workshop sees "nothing happens" when tapping the row.
       _openInNewTab(el.dataset.url);
+    });
+  });
+
+  // 🔧 bend chip → open the bend-sequence table popup (not the PDF). [เอ๋]
+  ROOT.querySelectorAll('.part-bend-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _openBendTable(btn.dataset.bendCode);
     });
   });
 
