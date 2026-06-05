@@ -545,7 +545,8 @@
             });
           }
           activeTlen = Math.round(eMax - eMin);
-          var punchUSign = pk.goose ? (aw && aw.side === '+' ? -1 : 1) : 1;
+          // เอ๋: SASH is asymmetric too — mirror by side like the gooseneck (not goose-only)
+          var punchUSign = (aw && aw.side === '+') ? -1 : 1;
           addExtrusion(items, tw, pk.prof, penZ2, pFill, pStroke, 6, eMin, punchUSign, eMax);
         }
       } else {
@@ -572,7 +573,7 @@
           var pFill = aw.collides ? C_RED : C_PUNCH, pStroke = aw.collides ? C_RED : C_PUNCH_E;
           var pWidthHalf = Math.max(10, (aw.width - 14.0) / 2);
           addExtrusion(items, aw, DIE_PROF, 0, C_DIE, C_DIE_E, -3, pWidthHalf, 1);
-          addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, pWidthHalf, 1);
+          addExtrusion(items, aw, SASH_PROF, penZ, pFill, pStroke, 6, pWidthHalf, (aw.side === '+') ? -1 : 1);
           activeTlen = Math.round(pWidthHalf * 2);
         } else {
           activeTlen = Math.round(ONE_TOOL_HALF * 2);
@@ -878,7 +879,9 @@
         }
       }
       var pk = punchForStep(active);
-      var uSign = pk.goose ? ((aw && aw.side === '+') ? -1 : 1) : 1;
+      // เอ๋: the SASH blade is asymmetric too — mirror it by side like the gooseneck so its
+      // lean faces the workpiece (not just the gooseneck).
+      var uSign = (aw && aw.side === '+') ? -1 : 1;
       var pp = pk.prof.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
 
