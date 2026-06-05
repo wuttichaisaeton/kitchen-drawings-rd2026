@@ -5968,33 +5968,23 @@ function renderSimBendHome() {
           }
           const currentBendIdx = rec.per_bend.findIndex(x => x.bend === b.bend);
           
-          let collides = false;
-          let hits = null;
-          let at_angle = null;
-          let colReason = "";
-          
-          if (ok && currentBendIdx >= 0) {
-            const colRes = window.kdSimBend.checkCollisionAt(model, currentBendIdx, a, punch, die);
-            if (colRes.collides) {
-              collides = true;
-              hits = colRes.with;
-              at_angle = colRes.at_angle;
-              colReason = `hits ${colRes.with} @${Math.round(colRes.at_angle)}°`;
-            }
-          }
-          
-          b.ok = ok && !collides;
-          b.collides = collides;
-          b.hits = hits;
-          b.at_angle = at_angle;
-          b.reason = collides ? colReason : (reasons.join('; ') || 'formable');
+          // เอ๋ 'อย่าเตือนมั่ว ไม่ชนก็เตือน': do NOT run the 2D collision model on a tool
+          // override — checkCollisionAt false-flags 'hits @0°' (a collision on the FLAT
+          // sheet). Web auto-collision was already dropped as unreliable; real press
+          // collisions are shown live in the SIM (geometry-based stacked-wall check).
+          // Trust the die-angle / flange-vs-V checks + Fusion's result only.
+          b.ok = ok;
+          b.collides = false;
+          b.hits = null;
+          b.at_angle = null;
+          b.reason = reasons.join('; ') || 'formable';
           b.needs_purchase = (punchObj && punchObj.isKyokkoPreset) || (dieObj && dieObj.isKyokkoPreset);
-          
+
           if (rec.box_geom && rec.box_geom.walls) {
             const wObj = rec.box_geom.walls.find(w => w.id === b.bend);
             if (wObj) {
-              wObj.collides = collides;
-              wObj.collides_with = hits;
+              wObj.collides = false;
+              wObj.collides_with = null;
             }
           }
           

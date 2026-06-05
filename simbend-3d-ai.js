@@ -434,7 +434,11 @@
       var _awWall = null;
       for (var _wi = 0; _wi < allWalls.length; _wi++) { if (allWalls[_wi].step === active) { _awWall = allWalls[_wi]; break; } }
       var _stkHit = stackedHitId(allWalls, _awWall, active, punchForStep(active).goose);
-      if (_stkHit && _awWall) {
+      // เอ๋ 'ไม่ชนก็เตือน': only flag while the blade is actually pressed down (the contact
+      // window) — not during the approach or the lift. Otherwise the warning shows the
+      // whole step even when nothing is touching.
+      var _stkFrac = frac(active, t);
+      if (_stkHit && _awWall && _stkFrac >= 0.28 && _stkFrac <= 0.80) {
         _awWall._stk = true; _awWall._stkWith = _stkHit;
         for (var _hi = 0; _hi < allWalls.length; _hi++) { if (allWalls[_hi].id === _stkHit) allWalls[_hi]._stk = true; }
       }
