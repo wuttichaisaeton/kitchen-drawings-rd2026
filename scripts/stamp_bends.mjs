@@ -38,11 +38,19 @@ function pdfPathForCode(code) {
   return null;
 }
 
-async function stampOne(code, rec) {
+async function stampOne(code, rec, state) {
   const pdfPath = pdfPathForCode(code);
   if (!pdfPath) return { code, status: 'skip-no-unique-pdf' };
   const rows = (rec.per_bend || []).slice().sort((x, y) => (x.step || 0) - (y.step || 0));
   if (!rows.length) return { code, status: 'skip-no-bends' };
+
+  // freshness: skip unless bend_sim changed (checked_at) OR the PDF was re-exported
+  // from Fusion since our last stamp (file mtime differs). [เอ๋: 'ถ้า Fusion ใหม่กว่า → save ทับ']
+  const mtime = Math.round(fs.statSync(pdfPath).mtimeMs);
+  const st = state[code];
+  if (!FORCE && st && st.checked_at === (rec.checked_at || '') && st.mtime === mtime) {
+    return { code, status: 'skip-current' };
+  }
 
   const bytes = fs.readFileSync(pdfPath);
   const pdf = await PDFDocument.load(bytes);
@@ -116,6 +124,9 @@ async function stampOne(code, rec) {
 
   const out = await pdf.save();
   fs.writeFileSync(pdfPath, out);
+  // record the post-write mtime so a later run skips unless Fusion re-exports the PDF
+  const newMtime = Math.round(fs.statSync(pdfPath).mtimeMs);
+  state[code] = { checked_at: rec.checked_at || '', mtime: newMtime };
   return { code, status: 'stamped', pdf: path.relative(ROOT, pdfPath) };
 }
 
@@ -126,10 +137,14 @@ async function main() {
   const codes = Object.keys(all).filter(c => Array.isArray(all[c].per_bend) && all[c].per_bend.length);
   console.log('bend_sim parts:', codes.length, FORCE ? '(--force)' : '');
 
+  const STATE_FILE = path.join(DRAWINGS, '_bend_stamp_state.json');
+  let state = {};
+  try { state = JSON.parse(fs.readFileSync(STATE_FILE, 'utf8')) || {}; } catch (e) {}
+
   const summary = {};
   for (const code of codes) {
     try {
-      const r = await stampOne(code, all[code]);
+      const r = await stampOne(code, all[code], state);
       summary[r.status] = (summary[r.status] || 0) + 1;
       console.log(' ', r.status.padEnd(20), code, r.pdf ? '-> ' + r.pdf : '');
     } catch (e) {
@@ -137,6 +152,7 @@ async function main() {
       console.log('  ERROR               ', code, e.message);
     }
   }
+  fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2) + '\n');
   console.log('\nDone:', JSON.stringify(summary));
 }
 main().catch(e => { console.error(e); process.exit(1); });

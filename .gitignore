@@ -3,3 +3,6 @@ node_modules/
 .env
 *.log
 .claude/
+
+# bend-stamp local state (machine-specific mtimes)
+Drawings/_bend_stamp_state.json
