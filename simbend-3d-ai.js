@@ -897,9 +897,11 @@
         line([chain[si], chain[si + 1]], col, lw);
       }
 
-      // เอ๋: number each folded line with its flange length (mm) — INVERTED text, no chip,
-      // no border, no fill. 'difference' blend with white inverts whatever is underneath,
-      // so the number reads on any colour (wall / punch / background) with no box.
+      // เอ๋: number each folded line with its flange length (mm). Colour follows the theme:
+      // BLACK on the light "Pencil" (sketch) paper, WHITE on the dark themes (default /
+      // chalk / Luxury-obsidian). No box, no border, no fill.
+      var _thm = document.documentElement.getAttribute('data-theme') || '';
+      var _numCol = (_thm === 'sketch') ? '#1b1815' : '#ffffff';
       for (var di = 0; di < cSegs.length; di++) {
         var dseg = cSegs[di];
         if (!dseg) continue;                       // skip the flat base
@@ -907,13 +909,10 @@
         var actL = dseg.step === active;
         var mxp = X((chain[di][0] + chain[di + 1][0]) / 2);
         var myp = Y((chain[di][1] + chain[di + 1][1]) / 2);
-        ctx.save();
-        ctx.globalCompositeOperation = 'difference';
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = _numCol;
         ctx.font = 'bold ' + ((actL ? 14 : 11) * dpr) + 'px "Flux Architect", monospace';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(lbl, mxp, myp);
-        ctx.restore();
         ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
       }
 
