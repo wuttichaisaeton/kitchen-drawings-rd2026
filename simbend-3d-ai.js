@@ -462,6 +462,18 @@
         : 'PAN FOLD [AI]  ·  ' + pairs.length + ' walls';
       ctx.fillText(hud, 10 * dpr, 15 * dpr);
 
+      // เอ๋: small circled CURRENT-STEP number, top-right (which step is folding now)
+      if (active) {
+        var bx = w - 24 * dpr, by = 50 * dpr, br = 14 * dpr;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fill();
+        ctx.lineWidth = 2 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold ' + (15 * dpr) + 'px "Flux Architect", monospace';
+        ctx.fillText(String(active), bx, by + dpr);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      }
+
       if (wall && wall.collides) {
         ctx.fillStyle = C_RED; ctx.textAlign = 'right';
         ctx.font = 'bold ' + (12 * dpr) + 'px "Flux Architect", monospace';
@@ -721,6 +733,17 @@
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
       var tlen = aw ? Math.round((axis === 'X' ? base.h : base.w) - 14) : Math.round(ONE_TOOL_HALF * 2);
       ctx.fillText(aw ? ('STEP ' + active + '/' + maxStep + '  ·  ' + aw.id + '  ·  ' + (axis === 'Y' ? 'LONG' : 'SHORT') + ' side  ·  blank ' + Math.round(total) + 'mm  ·  ' + punchForStep(active).name + '  ·  TOOL ' + tlen + 'mm [AI]') : '2D PRESS [AI]', 10 * dpr, 14 * dpr);
+      // เอ๋: small circled CURRENT-STEP number, top-right (same as the 3D)
+      if (active) {
+        var bx = W - 24 * dpr, by = 48 * dpr, br = 14 * dpr;
+        ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fill();
+        ctx.lineWidth = 2 * dpr; ctx.strokeStyle = '#e0574a'; ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold ' + (15 * dpr) + 'px "Flux Architect", monospace';
+        ctx.fillText(String(active), bx, by + dpr);
+        ctx.textAlign = 'left';
+      }
     }
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
