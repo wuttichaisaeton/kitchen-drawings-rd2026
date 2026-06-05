@@ -6387,5 +6387,11 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
 .bt-order { margin-top: 9px; font-size: 11px; color: rgba(230,237,244,0.7) !important; }
 .bt-foot { margin-top: 6px; font-size: 10px; color: rgba(230,237,244,0.45) !important; }
 
+/* เอ๋: DRAWING gallery — flat grid of every part's drawing PDF (no folders) */
+.dwg-gallery { padding: 6px 2px 28px; }
+.dwg-head { font-size: 12px; font-weight: 700; letter-spacing: .4px; opacity: .65; margin: 6px 6px 12px; }
+.dwg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+.dwg-grid .part-row { margin: 0; }
+
 
 

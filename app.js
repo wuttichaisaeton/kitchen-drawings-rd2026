@@ -3856,6 +3856,7 @@ function render() {
     if (view === 'projects') return renderProjectsHome();
     if (view === 'nest')     return renderNestHome();
     if (view === 'simbend')  return renderSimBendHome();
+    if (view === 'drawing')  return renderDrawingGallery();
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
@@ -3942,6 +3943,53 @@ function _openBendTable(code) {
   ov.querySelectorAll('.bt-bad').forEach(e => setP(e, 'color', '#e0574a'));
   ov.querySelectorAll('.bt-table th, .bt-table td').forEach(e => setP(e, 'border-bottom-color', '#1c2530'));
 }
+
+// ── DRAWING gallery (เอ๋: flat grid of EVERY part's drawing PDF, no folders) ──
+// Tab next to Library. Workshop browses/opens any drawing in one place; the 🔧
+// bend chip rides along on parts that have a bend_sim record.
+function renderDrawingGallery() {
+  _subscribeBendSim();
+  document.getElementById('tab-drawing') && document.getElementById('tab-drawing').classList.add('active');
+  const by = partsByFamily();
+  const seen = new Set();
+  let all = [];
+  Object.values(by).forEach(list => list.forEach(p => {
+    const url = p.url || pdfUrlForCode(p.code);
+    if (!url || seen.has(p.code)) return;
+    seen.add(p.code);
+    all.push({ code: p.code, family: p.family, url });
+  }));
+  all.sort((a, b) => a.code.localeCompare(b.code));
+  if (typeof COUNT_EL !== 'undefined' && COUNT_EL) COUNT_EL.textContent = all.length + ' drawings';
+  const rows = all.map(p => {
+    const fam = p.family;
+    const display = displayCodeFor(p.code);
+    const _bend = _bendSimCache && _bendSimCache[p.code];
+    const bendChip = (_bend && Array.isArray(_bend.per_bend) && _bend.per_bend.length)
+      ? `<button class="part-bend-btn${_bend.bendable === false ? ' part-bend-bad' : ''}" data-bend-code="${escapeHtml(p.code)}" aria-label="Bend sequence" title="Bend sequence & tooling">🔧</button>`
+      : '';
+    return `<div class="part-row" data-url="${escapeHtml(p.url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+        <span class="part-icon">${familyIcon(fam)}</span>
+        <span class="part-code">${escapeHtml(display)}</span>
+        ${bendChip}
+      </div>`;
+  }).join('');
+  ROOT.innerHTML = `
+    <div class="dwg-gallery">
+      <div class="dwg-head">📐 DRAWINGS · ${all.length} parts · tap to open</div>
+      <div class="dwg-grid">${rows || '<div class="pdxf-empty">No drawings yet — upload a PDF in Library, or run CC_DrawingPDF in Fusion.</div>'}</div>
+    </div>`;
+  ROOT.querySelectorAll('.part-row').forEach(el => {
+    el.addEventListener('click', (ev) => {
+      if (ev.target.closest('.part-bend-btn')) return;
+      _openInNewTab(el.dataset.url);
+    });
+  });
+  ROOT.querySelectorAll('.part-bend-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => { ev.stopPropagation(); _openBendTable(btn.dataset.bendCode); });
+  });
+}
+
 let _bendSimSubscribed = false;
 let _simBendExpanded = null;       // code currently expanded inline
 let _simController = null;         // active sim controller (3-D for box, else 2-D)
