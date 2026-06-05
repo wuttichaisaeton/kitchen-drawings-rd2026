@@ -578,28 +578,18 @@
     }
     var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f',
         C_BASE = '#9aa6b2', C_WALL = '#e8923a', C_LIP = '#c77a2e', C_RED = '#e0574a';
+    // Developed length of one wall/lip for the press cross-section. A WALL (h>=12) uses
+    // its mould HEIGHT (CheckBend's flat_len was the neighbour wall's tiny length for
+    // stacked walls h18+h52 — made the 52mm flange too short); a real LIP (h<12) uses
+    // flat_len. [เอ๋]
+    function _featLen(w) {
+      return (w.height || 0) >= 12 ? w.height : (w.flat_len != null ? w.flat_len : w.height);
+    }
     function baseHalf(axis) {
-      var Ls_wall_len = 0, Ls_lip_len = 0;
-      var Rs_wall_len = 0, Rs_lip_len = 0;
-      walls.forEach(function (w) {
-        if (w.axis === axis) {
-          // เอ๋: a WALL (h>=12) uses its mould HEIGHT for the press cross-section — its
-          // flat_len from CheckBend was the neighbour wall's tiny length for stacked
-          // walls (h18+h52), making the 52mm flange look too short. A real LIP (h<12)
-          // still uses flat_len. So the h52 flange now reads as the longest segment.
-          var len = (w.height || 0) >= 12 ? w.height : (w.flat_len != null ? w.flat_len : w.height);
-          if (w.side === '-') {
-            if (w.height >= 12) Ls_wall_len = len;
-            else Ls_lip_len = len;
-          } else {
-            if (w.height >= 12) Rs_wall_len = len;
-            else Rs_lip_len = len;
-          }
-        }
-      });
-      var devSide = Ls_wall_len + Ls_lip_len + Rs_wall_len + Rs_lip_len;
+      var dev = 0;
+      walls.forEach(function (w) { if (w.axis === axis) dev += _featLen(w); });
       if (box.flat_w && box.flat_h) {
-        return ((axis === 'X' ? box.flat_w : box.flat_h) - devSide) / 2;
+        return ((axis === 'X' ? box.flat_w : box.flat_h) - dev) / 2;
       }
       return (axis === 'X' ? (box.base.w) : (box.base.h)) / 2;
     }
@@ -610,26 +600,9 @@
       var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
       var axis = aw ? aw.axis : 'X';
-      var Ls_wall_len = 0, Ls_lip_len = 0;
-      var Rs_wall_len = 0, Rs_lip_len = 0;
-      walls.forEach(function (w) {
-        if (w.axis === axis) {
-          // เอ๋: a WALL (h>=12) uses its mould HEIGHT for the press cross-section — its
-          // flat_len from CheckBend was the neighbour wall's tiny length for stacked
-          // walls (h18+h52), making the 52mm flange look too short. A real LIP (h<12)
-          // still uses flat_len. So the h52 flange now reads as the longest segment.
-          var len = (w.height || 0) >= 12 ? w.height : (w.flat_len != null ? w.flat_len : w.height);
-          if (w.side === '-') {
-            if (w.height >= 12) Ls_wall_len = len;
-            else Ls_lip_len = len;
-          } else {
-            if (w.height >= 12) Rs_wall_len = len;
-            else Rs_lip_len = len;
-          }
-        }
-      });
       var bh = baseHalf(axis);
-      var total = Ls_wall_len + Ls_lip_len + 2 * bh + Rs_wall_len + Rs_lip_len;
+      var total = 2 * bh;
+      walls.forEach(function (w) { if (w.axis === axis) total += _featLen(w); });
       var f = frac(active, t);
       // 2D press phases (เอ๋: ค้างที่จังหวะ 45° นานหน่อยเพื่อตรวจ collision):
       //   descend → fold + tip-up → HOLD at the 45° peak (inspection window) → settle back.
@@ -640,30 +613,33 @@
         if (ff < HOLD_P1) return (ff - HOLD_P0) / (HOLD_P1 - HOLD_P0);
         return 1;   // stays folded through the peak-hold + settle
       }
-      function sideW(sd, wall) { return walls.filter(function (w) { return w.axis === axis && w.side === (sd > 0 ? '+' : '-') && (wall ? w.height >= 12 : w.height < 12); })[0]; }
+      // Build a full developed side: base edge → each wall/lip in order (walls inner→outer
+      // by height, then the lip). Supports MORE THAN ONE wall per side (test v6 h18+h52),
+      // so the tall 52mm flange shows its real length. Returns {pts, segs}. [เอ๋]
       function buildSide(sd) {
-        var wall = sideW(sd, true), lip = sideW(sd, false);
-        var wLen = sd > 0 ? Rs_wall_len : Ls_wall_len;
-        var lLen = sd > 0 ? Rs_lip_len : Ls_lip_len;
-        
-        var u = sd * bh, z = 0, ang = 0, pts = [[u, z]];
-        if (wall && wLen > 0) {
-          ang += getFoldFraction(wall.step, t) * (Math.PI / 2);
-          u += sd * wLen * Math.cos(ang); z += wLen * Math.sin(ang);
-        }
-        pts.push([u, z]);
-        
-        if (lip && lLen > 0) {
-          ang += getFoldFraction(lip.step, t) * (Math.PI / 2);
-          u += sd * lLen * Math.cos(ang); z += lLen * Math.sin(ang);
-        }
-        pts.push([u, z]);
-        
-        return pts;
+        var sg = sd > 0 ? '+' : '-';
+        var feats = walls.filter(function (w) { return w.axis === axis && w.side === sg; })
+          .sort(function (a, b) {
+            var ka = (a.height >= 12 ? 0 : 1), kb = (b.height >= 12 ? 0 : 1);
+            return ka !== kb ? ka - kb : a.height - b.height;
+          });
+        var u = sd * bh, z = 0, ang = 0, pts = [[u, z]], segs = [];
+        feats.forEach(function (w) {
+          var len = _featLen(w);
+          ang += getFoldFraction(w.step, t) * (Math.PI / 2);
+          u += sd * len * Math.cos(ang); z += len * Math.sin(ang);
+          pts.push([u, z]); segs.push(w);
+        });
+        return { pts: pts, segs: segs };
       }
-      var Rs = buildSide(1), Ls = buildSide(-1);
+      var Rside = buildSide(1), Lside = buildSide(-1);
+      // active vertex = the fold line of the active wall (centre it at the die)
       var av = [0, 0];
-      if (aw) { var S = aw.side === '+' ? Rs : Ls; av = aw.height >= 12 ? S[0] : S[1]; }
+      if (aw) {
+        var sObj = aw.side === '+' ? Rside : Lside, ai = 0;
+        for (var i = 0; i < sObj.segs.length; i++) { if (sObj.segs[i].step === active) { ai = i; break; } }
+        av = sObj.pts[ai];
+      }
       
       var activeV = 8;
       if (aw) {
@@ -686,7 +662,14 @@
       }
       
       function place(p) { var u = p[0] - av[0], z = p[1] - av[1], c = Math.cos(bump), sn = Math.sin(bump); return [u * c - z * sn, u * sn + z * c - pen]; }
-      var chain = [Ls[2], Ls[1], Ls[0], Rs[0], Rs[1], Rs[2]].map(place);
+      // Stitch the full cross-section: L outermost → L base → R base → R outermost.
+      // cSegs[i] = the wall/lip for the segment chain[i]→chain[i+1] (null = the base). [เอ๋]
+      var Lpts = Lside.pts, Rpts = Rside.pts, cPts = [], cSegs = [];
+      for (var ci = Lpts.length - 1; ci >= 1; ci--) { cPts.push(Lpts[ci]); cSegs.push(Lside.segs[ci - 1]); }
+      cPts.push(Lpts[0]); cSegs.push(null);          // L base corner, then the BASE segment
+      cPts.push(Rpts[0]);                            // R base corner
+      for (var cj = 1; cj < Rpts.length; cj++) { cSegs.push(Rside.segs[cj - 1]); cPts.push(Rpts[cj]); }
+      var chain = cPts.map(place);
       // FIXED camera (เอ๋: ร่องพับต้องอยู่กลาง-ล่างนิ่ง ไม่วิ่งไปมา, frame แรกเห็นมีดเต็มตัว,
       // ชิ้นงานเห็นไม่เต็มก็ได้). The active bend already sits at model-origin (place() subtracts
       // av), so we pin model-origin to a CONSTANT screen point (bottom-centre) with a CONSTANT
@@ -709,11 +692,12 @@
       function poly(pts, fill, stroke, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); } }
       poly(DIE_PROF, C_DIE, C_DIE_E, 1);
       
-      line([chain[1], chain[2]], C_WALL, 7);
-      line([chain[0], chain[1]], C_LIP, 6);
-      line([chain[2], chain[3]], C_BASE, 7);
-      line([chain[3], chain[4]], C_WALL, 7);
-      line([chain[4], chain[5]], C_LIP, 6);
+      for (var si = 0; si < cSegs.length; si++) {
+        var seg = cSegs[si];
+        var col = (seg == null) ? C_BASE : (seg.step === active ? C_RED : (seg.height >= 12 ? C_WALL : C_LIP));
+        var lw = (seg && seg.height < 12) ? 6 : 7;
+        line([chain[si], chain[si + 1]], col, lw);
+      }
       
       var penZ = PEN_HI;
       if (aw) {
