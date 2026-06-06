@@ -3564,15 +3564,21 @@ button.cut-status:focus-visible {
 .sb-table th { opacity: 0.6; font-weight: 600; font-size: 11px; }
 .sb-table .sb-row-bad td { color: #e0574a; }
 /* เอ๋: highlight the step currently being folded in the 2D/3D sim — a clear BOX
-   around the whole active row ('สร้างกรอบให้ตรงกับ Step ที่พับ'). box-shadow insets
-   draw top+bottom on every cell, left on the first cell, right on the last → a
-   continuous frame that survives any table border-collapse model. */
-/* Frame colour = the active step's own colour, set per-row via --sb-active-col (JS reads
-   the row's bend dot). color-mix tints the fill faintly; browsers without color-mix just
-   skip the background and still show the coloured frame. Falls back to red if no var. */
-.sb-table tbody tr.sb-row-active td { background: color-mix(in srgb, var(--sb-active-col, #e0574a) 16%, transparent); box-shadow: inset 0 2px 0 var(--sb-active-col, #e0574a), inset 0 -2px 0 var(--sb-active-col, #e0574a); }
-.sb-table tbody tr.sb-row-active td:first-child { box-shadow: inset 5px 0 0 var(--sb-active-col, #e0574a), inset 0 2px 0 var(--sb-active-col, #e0574a), inset 0 -2px 0 var(--sb-active-col, #e0574a); font-weight: 700; }
-.sb-table tbody tr.sb-row-active td:last-child { box-shadow: inset -2px 0 0 var(--sb-active-col, #e0574a), inset 0 2px 0 var(--sb-active-col, #e0574a), inset 0 -2px 0 var(--sb-active-col, #e0574a); }
+   around the active row ('สร้างกรอบสีให้ตรงกับ Step ที่พับ'). Frame colour = the
+   active step's OWN colour, set per-row via --sb-active-col (JS reads the row's bend
+   dot). box-shadow insets draw top+bottom on every cell, left on the first, right on
+   the last → a continuous frame regardless of border-collapse.
+
+   CRITICAL: the Sketch/Chalk themes ship a reset
+     html[data-theme="sketch"] body :not(svg)... { box-shadow:none !important }
+   at specificity (0,2,6) that also forces border-color + background to the paper
+   palette — so a coloured box-shadow is the ONLY frame that can show, and only if we
+   OUT-specify the reset. The html[data-theme] prefix lifts us to (0,3,4) and
+   !important wins the !important cascade. Verified live in the sketch theme (the box
+   was invisible without this — that's why เอ๋ saw no frame). */
+html[data-theme] .sb-table tbody tr.sb-row-active td { box-shadow: inset 0 2px 0 var(--sb-active-col, #e0574a), inset 0 -2px 0 var(--sb-active-col, #e0574a) !important; }
+html[data-theme] .sb-table tbody tr.sb-row-active td:first-child { box-shadow: inset 5px 0 0 var(--sb-active-col, #e0574a), inset 0 2px 0 var(--sb-active-col, #e0574a), inset 0 -2px 0 var(--sb-active-col, #e0574a) !important; font-weight: 700; }
+html[data-theme] .sb-table tbody tr.sb-row-active td:last-child { box-shadow: inset -2px 0 0 var(--sb-active-col, #e0574a), inset 0 2px 0 var(--sb-active-col, #e0574a), inset 0 -2px 0 var(--sb-active-col, #e0574a) !important; }
 .sb-table th:nth-child(1), .sb-table td:nth-child(1) { width: 17%; }              /* step / bend */
 .sb-table th:nth-child(2), .sb-table td:nth-child(2),
 .sb-table th:nth-child(3), .sb-table td:nth-child(3) { width: 22%; }              /* punch / die (selects) */
