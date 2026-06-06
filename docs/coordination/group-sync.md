@@ -1620,3 +1620,21 @@ This has been pushed to main (commit d6f1c87 & subsequent fixes) and is live on 
 **Root cause:** in `mount2d` the camera (`s`, `ox`, `baseY`, lines ~668-672) is derived from the *chain extents* (`uLo/uHi/zLo/zHi`), which change every step → the die-groove drifts horizontally + the scale rebreathes. The active bend is already at model-origin (`place()` subtracts `av`), so the die should just be pinned to a constant screen point.
 
 **Fix (mount2d camera only):** replace the dynamic `s/ox/baseY` with a **constant** camera — `ox = W/2` (V-notch centred), `baseY = H − 20·dpr` (V near the bottom, groove peeks up), `s = H·0.86 / (PEN_HI + 130·TOOL_SCALE + 20)` (fixed scale sized to the punch+die envelope, NOT the blank → punch always fully in frame, long blank runs off the sides which เอ๋ said is fine). No change to geometry/fold/colours. — G2 (sim-claude)
+
+---
+### 2026-06-06 - → G1 (Fusion session) 🔧 HANDOFF — pending Fusion tasks (เอ๋ asked to pass these to G1)
+
+Long combined session (web + Fusion via MCP) wrapping up. **Pending Fusion-side work for G1:**
+
+**1. 🔴🟢 red/green dots that won't clear — in `1CSVB2-105003` (carousel corner cabinet).** RULED OUT: NOT custom graphics (root + all 41 comps = 0), NOT sketches/construction/origin/joints (hid them all via the Fusion MCP, dots still there). เอ๋ clicked a dot → it selects the WHOLE model and the dots are NOT selected → they're an **overlay redrawn by an add-in** (not selectable geometry, and clearing customGraphicsGroups doesn't stick = something redraws). **Strong suspect = CC_SyncOccNames** drawing per-occurrence sync status (🔴 name not synced / 🟢 synced). **NEXT STEP (was about to do):** Stop CC_SyncOccNames (Shift+S → Add-Ins → Stop, or via MCP) → confirm dots vanish → if yes, add a toggle to suppress the status overlay without stopping name-sync.
+
+**2. box_model.py (CC_CheckBend) misses SAME-SIDE stacked collision** (fusion_skill G49). `_evaluate_order` only checks perpendicular walls → verdict stays green BENDABLE even when an inner fold is blocked by a taller outer wall on the same side. Fix `_evaluate_order` + per-punch throat clearance (deep GN #453≈42mm, acute #103≈12mm — see Punch & Die DXFs) then re-run CC_CheckBend. The web SIM already warns correctly (per-punch `sameSideClearMm`); only the Fusion verdict lags.
+
+**Done this session (Fusion-side):**
+- CC_Auto palette now auto-opens on Fusion start (G51: `run(context)` is a DICT → read `context['IsApplicationStartup']`, not hasattr; palette won't render on the Home screen → added one-shot `documentActivated` show; defer 2.5s). Single-file add-in → restart Fusion to load shell edits.
+- CC_CheckHoles REGISTERED in JSLoadedScriptsinfo (Fusion CLOSED, latin1, runOnStartup:true) + clear-overlay fix = clears ALL custom graphics on empty selection (G52/G53). Forced the cached `_action` to reload via `sys.modules.pop('CC_CheckHoles_action', None)`.
+- CC_SimplePDF auto-registers `Drawings/manifest.json` (G50 — the commit MUST include manifest.json, not just the PDF).
+
+**Fusion MCP is LIVE + verified** (G53, server 127.0.0.1:27182): `mcp__Autodesk_Fusion__fusion_mcp_execute` (featureType=script, object.script defines `def run(_context):`, print()=output, do NOT catch exceptions) + `fusion_mcp_read` (queryType=screenshot). Operate Fusion DIRECTLY (เอ๋ likes "เข้ามาทำเองเลย"). **Gotcha:** the active design switches whenever เอ๋ changes the Fusion tab — combine activate+work in ONE script, or read a non-active doc's design via `doc.products.itemByProductType('DesignProductType')`. A big `design.allComponents` walk can hit the MCP request timeout even though the script completes in Fusion.
+
+**NEEDS (G1):** (a) confirm + fix the suspected CC_SyncOccNames status-overlay dots, (b) box_model.py same-side stacked collision. Memory updated: [[reference_fusion_mcp]], [[reference_cc_auto]], fusion_skill.md G49–G53. — handed off by the 2026-06-06 combined session (per เอ๋ "ส่งต่อให้ G1")
