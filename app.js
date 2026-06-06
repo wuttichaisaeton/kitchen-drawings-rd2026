@@ -84,35 +84,52 @@ function updateAdminBadge() {
   } else if (badge) {
     badge.remove();
   }
-  // Workshop users don't manage Library taxonomy — hide the tab so they
-  // can't accidentally drill in and start uploading PDFs / re-filing
-  // parts. Admin (and PWA in admin mode) still sees it.
-  // Bending workers (ช่างพับ) only need Projects + Sim.Bending — hide Library
-  // (part taxonomy) and Nest (laser nesting) for the bend role too, even in
-  // admin mode (เอ๋ 2026-06-03 'ช่างพับ ไม่ควรเห็น 2 ช่องนี้').
-  const showLibNest = isAdmin() && !isBendUser();
-  const libTab = document.getElementById('tab-library');
-  if (libTab) {
-    libTab.style.display = showLibNest ? '' : 'none';
+  // Per-role tab visibility (rules in applyTabVisibility). Drives which of
+  // the 5 header tabs each role sees + bounces off a now-hidden tab.
+  applyTabVisibility();
+}
+
+// ── Per-role tab visibility (เอ๋ 2026-06-07) ──────────────────────────
+// Each workshop role sees only its own work (Projects, role-tinted into
+// the cut/bend/assembly list) plus the ONE extra tab its job needs:
+//   laser    → Projects + Nest          (ช่างตัด: nest then cut)
+//   bend     → Projects + Sim.Bending   (ช่างพับ: bend simulation)
+//   assemble → Projects + Drawing       (ช่างประกอบ: assembly drawings)
+//   workshop → Projects + Drawing (generic viewer); ADMIN sees all 5.
+// Library is part-taxonomy management — admin + workshop only.
+// The ROLE drives this for everyone: เอ๋ on a worker link (?role=laser)
+// sees exactly the worker's view; back in the default workshop role the
+// admin sees all 5 tabs again. (เอ๋ 2026-06-07 'admin ปกติเห็นครบ 5 แต่ถ้า
+// เข้า Link ช่าง มองเห็นแบบช่าง'.)
+function _visibleTabsForRole() {
+  switch (getRole()) {
+    case 'laser':    return { projects: true, library: false, drawing: false, nest: true,  simbend: false };
+    case 'bend':     return { projects: true, library: false, drawing: false, nest: false, simbend: true  };
+    case 'assemble': return { projects: true, library: false, drawing: true,  nest: false, simbend: false };
+    default:         return isAdmin()
+      ? { projects: true, library: true,  drawing: true, nest: true,  simbend: true  }   // admin in workshop = full
+      : { projects: true, library: false, drawing: true, nest: false, simbend: false };  // generic viewer
   }
-  // Nest tab — admin-only too (user 2026-05-28: 'nest ให้ย้ายไปต่อ
-  // library admin ใช้ได้คนเดียว'). The Nest workspace itself can be
-  // demanding (browser-side DXF parse + pack) and producing wrong
-  // nests has real cost, so we keep it gated behind the admin flag.
-  const nestTab = document.getElementById('tab-nest');
-  if (nestTab) {
-    nestTab.style.display = showLibNest ? '' : 'none';
+}
+
+const _TAB_IDS = { projects: 'tab-projects', library: 'tab-library', drawing: 'tab-drawing', nest: 'tab-nest', simbend: 'tab-simbend' };
+
+function applyTabVisibility() {
+  const vis = _visibleTabsForRole();
+  for (const [key, id] of Object.entries(_TAB_IDS)) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = vis[key] ? '' : 'none';
   }
-  // If a workshop user somehow lands on a gated view (e.g. legacy URL
-  // or auto-switch when no projects yet), bounce them back to Projects
-  // so the empty hidden tab can't trap them.
-  if (!showLibNest && typeof view !== 'undefined' && (view === 'library' || view === 'nest')) {
+  // If the current view is now hidden (worker link landing on a gated tab,
+  // legacy URL, or a role switch), bounce back to Projects so the hidden
+  // tab can't trap the user.
+  if (typeof view !== 'undefined' && _TAB_IDS[view] && !vis[view]) {
     view = 'projects';
     stack = [];
-    const projTab = document.getElementById('tab-projects');
-    if (projTab) projTab.classList.add('active');
-    if (libTab) libTab.classList.remove('active');
-    if (nestTab) nestTab.classList.remove('active');
+    document.getElementById('tab-projects')?.classList.add('active');
+    for (const [key, id] of Object.entries(_TAB_IDS)) {
+      if (key !== 'projects') document.getElementById(id)?.classList.remove('active');
+    }
     try { render(); } catch {}
   }
 }
@@ -10354,10 +10371,11 @@ function renderSearch(q) {
 document.querySelectorAll('.tab').forEach(btn => {
   btn.addEventListener('click', () => {
     const v = btn.dataset.view;
-    // Belt-and-braces: workshop can't navigate to Library OR Nest even
-    // if the hidden tab is somehow exposed (devtools, scripted click).
-    // Admin unrestricted.
-    if ((v === 'library' || v === 'nest') && !isAdmin()) return;
+    // Belt-and-braces: block navigation to any tab the current role can't
+    // see (devtools / scripted click on a hidden tab). Same source of
+    // truth as applyTabVisibility so the rule can't drift.
+    const _vis = _visibleTabsForRole();
+    if (_TAB_IDS[v] && !_vis[v]) return;
     if (v === view) return;
     view = v;
     stack = [];
