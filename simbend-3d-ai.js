@@ -94,19 +94,24 @@
   // box_model.DEFAULT_PERP_CLEAR: a gooseneck throat ~42, a straight/sash ~10.
   function punchClearMm(goose) { return goose ? 42 : 10; }
   // How tall a SAME-SIDE stacked outer wall a punch can clear while folding the inner
-  // wall behind it (mm). KEY: a gooseneck's 42mm throat is oriented to clear
-  // PERPENDICULAR end-walls — it does NOT help a wall stacked on the SAME side, right
-  // on the fold path, where the punch body blocks the inner fold like a straight punch
-  // (เอ๋: '#103 same-side คอ goose ไม่ช่วย — ต้องเตือน'). Tune if a punch genuinely
-  // clears taller same-side walls.
-  var SAME_SIDE_CLEAR_MM = 10;
+  // wall behind it (mm). PER-PUNCH, because the blade shapes differ completely (เอ๋
+  // showed the Punch & Die DXFs): a deep gooseneck (#453 — R15 throat + a 135° relief
+  // face) clears a tall standing wall on the same side; an acute spike (#103 — 30° blade,
+  // no side relief) clears almost nothing; a straight/sash clears ~10. A flat value
+  // wrongly warned for #453. Tune from the real DXF throat if a number is off.
+  function sameSideClearMm(p) {
+    var n = (p && p.name) || '';
+    if (/453/.test(n)) return 42;   // deep gooseneck relief — clears tall same-side walls
+    if (/103/.test(n)) return 12;   // acute spike — minimal side clearance
+    return 10;                       // straight / sash / default
+  }
   // Stacked-wall collision the per-axis solver misses (เอ๋: 'step 7,8 ชน'): folding an
   // INNER wall while a taller OUTER wall on the SAME axis+side is already standing —
-  // if that formed wall is taller than the blade can clear, the punch hits it. Returns
-  // the offending wall id (or null).
-  function stackedHitId(walls, aw, active, goose) {
+  // if that formed wall is taller than the active punch can clear at its side, the punch
+  // hits it. Returns the offending wall id (or null).
+  function stackedHitId(walls, aw, active, punch) {
     if (!aw) return null;
-    var clr = SAME_SIDE_CLEAR_MM;   // goose throat doesn't help same-side (param kept for callers)
+    var clr = sameSideClearMm(punch);   // per-punch (deep GN clears, acute spike doesn't)
     for (var i = 0; i < walls.length; i++) {
       var w = walls[i];
       if (w === aw) continue;
@@ -456,7 +461,7 @@
       for (var _si = 0; _si < allWalls.length; _si++) { allWalls[_si]._stk = false; allWalls[_si]._stkWith = null; }
       var _awWall = null;
       for (var _wi = 0; _wi < allWalls.length; _wi++) { if (allWalls[_wi].step === active) { _awWall = allWalls[_wi]; break; } }
-      var _stkHit = stackedHitId(allWalls, _awWall, active, punchForStep(active).goose);
+      var _stkHit = stackedHitId(allWalls, _awWall, active, punchForStep(active));
       // เอ๋ 'ไม่ชนก็เตือน': only flag while the blade is actually pressed down (the contact
       // window) — not during the approach or the lift. Otherwise the warning shows the
       // whole step even when nothing is touching.
@@ -957,7 +962,7 @@
 
       // COLLISION — either the solver flagged this bend, OR a taller stacked wall on the
       // same side is already up and the blade can't clear it (เอ๋: 'step 7,8 ชน').
-      var stackHit = stackedHitId(walls, aw, active, punchForStep(active).goose);
+      var stackHit = stackedHitId(walls, aw, active, punchForStep(active));
       var collideWith = (aw && aw.collides_with) || stackHit;
       var collide = !!(aw && aw.collides) || !!stackHit;
 
