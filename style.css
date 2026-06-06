@@ -568,6 +568,21 @@ h1 {
   border-color: #3d5a3d;
 }
 .filter-btn.all-pdf-btn:not([disabled]):hover { background: #3d5a3d; }
+
+/* 📐 Cut Sheets — make it stand out from the plain grey filter chips so the
+   laser/workshop spots it (เอ๋ 2026-06-07 'ทำปุ่ม cut sheet ให้เด่นชัด').
+   Teal cut-sheet accent + bold + soft glow. */
+.filter-btn.project-cut-sheets-btn {
+  background: linear-gradient(135deg, #1f6f5c, #2aa888);
+  color: #eafff8;
+  border-color: #4ecca3;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(78, 204, 163, 0.35), 0 2px 10px rgba(78, 204, 163, 0.3);
+}
+.filter-btn.project-cut-sheets-btn:hover {
+  background: linear-gradient(135deg, #248068, #34c4a0);
+  box-shadow: 0 0 0 1px rgba(78, 204, 163, 0.5), 0 2px 14px rgba(78, 204, 163, 0.45);
+}
 .filter-btn.all-pdf-btn[disabled] {
   opacity: 0.7;
   cursor: progress;
