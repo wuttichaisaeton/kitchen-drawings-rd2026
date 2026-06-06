@@ -1511,7 +1511,8 @@ function _renderCutSheetsModal(triggerBtn, projectKey, project) {
               <span class="cs-sub">${escapeHtml(ago)}${via}</span>
               ${partsSummary ? `<span class="cs-parts" title="Parts on this sheet">${partsSummary}</span>` : ''}
             </div>
-            <button class="cs-download-btn" data-action="download">⬇</button>
+            <button class="cs-preview-btn" data-action="preview" title="Preview the nested sheet">👁</button>
+            <button class="cs-download-btn" data-action="download" title="Download DXF">⬇</button>
             ${adminMode ? `<button class="cs-delete-btn" data-action="delete" title="Delete cut sheet">✕</button>` : ''}
           </div>`;
       }).join('')
@@ -1540,21 +1541,60 @@ function _renderCutSheetsModal(triggerBtn, projectKey, project) {
   `;
   document.body.appendChild(pop);
 
-  const r = triggerBtn.getBoundingClientRect();
+  let _csBackdrop = null;
   pop.style.position = 'fixed';
-  pop.style.top    = (r.bottom + 4) + 'px';
-  pop.style.right  = (window.innerWidth - r.right) + 'px';
-  pop.style.maxHeight = `${Math.max(360, window.innerHeight - r.bottom - 20)}px`;
   pop.style.overflowY = 'auto';
+  // Mobile: the desktop top-right anchor pushed the modal off the left edge,
+  // so the dialog was invisible (เอ๋ 2026-06-07 'บนมือถือมองไม่เห็น Dialog box').
+  // On narrow screens centre it as a near-full-width sheet + dim the page
+  // behind it so it reads as a real dialog instead of bleeding into the list.
+  if (window.innerWidth < 640) {
+    _csBackdrop = document.createElement('div');
+    _csBackdrop.className = 'cs-backdrop';
+    _csBackdrop.id = 'kd-cs-backdrop';   // ID so the dim beats the Sketch/Chalk
+                                         // theme's high-specificity bg reset.
+    document.body.appendChild(_csBackdrop);
+    pop.style.left = '3vw';
+    pop.style.right = '3vw';
+    pop.style.top = '6vh';
+    pop.style.width = 'auto';
+    pop.style.maxHeight = '88vh';
+  } else {
+    const r = triggerBtn.getBoundingClientRect();
+    pop.style.top    = (r.bottom + 4) + 'px';
+    pop.style.right  = (window.innerWidth - r.right) + 'px';
+    pop.style.maxHeight = `${Math.max(360, window.innerHeight - r.bottom - 20)}px`;
+  }
 
   let close;
 
-  // Row click → download (anywhere except buttons)
+  // Preview the nested sheet — renders the DXF to a canvas (works on mobile
+  // + desktop). Row click + 👁 button both preview; ⬇ still downloads the
+  // DXF for CAD. (เอ๋ 2026-06-07 'DXF ใน Folder cut sheet ให้แสดงรูปได้ …
+  // Preview จากมือถือ หรือ desktop'.)
+  const _sheetById = new Map(sheets.map(s => [s.id, s]));
+  const _previewSheet = (row) => {
+    if (!row) return;
+    const s = _sheetById.get(row.dataset.id);
+    if (s && s.url) _renderDxfPreviewModal({ ...s, filename: row.dataset.filename });
+  };
+
   pop.querySelectorAll('.cs-row').forEach(row => {
     row.addEventListener('click', (ev) => {
-      if (ev.target.closest('.cs-delete-btn')) return;  // delete handled separately
+      // Buttons handle themselves (stopPropagation); row body → preview.
+      if (ev.target.closest('button')) return;
       ev.stopPropagation();
-      _downloadFile(row.dataset.url, row.dataset.filename);
+      _previewSheet(row);
+    });
+  });
+  pop.querySelectorAll('.cs-preview-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => { ev.stopPropagation(); _previewSheet(btn.closest('.cs-row')); });
+  });
+  pop.querySelectorAll('.cs-download-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const row = btn.closest('.cs-row');
+      if (row) _downloadFile(row.dataset.url, row.dataset.filename);
     });
   });
 
@@ -1616,6 +1656,7 @@ function _renderCutSheetsModal(triggerBtn, projectKey, project) {
   setTimeout(() => {
     close = () => {
       pop.remove();
+      if (_csBackdrop) _csBackdrop.remove();
       document.removeEventListener('click',   dismiss, true);
       document.removeEventListener('keydown', onKey);
       window.removeEventListener('scroll',    onScroll, true);

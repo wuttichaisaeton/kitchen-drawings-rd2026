@@ -3258,6 +3258,7 @@ button.cut-status:focus-visible {
   color: #88aab1;
   margin-top: 1px;
 }
+.cs-preview-btn,
 .cs-download-btn,
 .cs-delete-btn {
   background: transparent;
@@ -3270,8 +3271,28 @@ button.cut-status:focus-visible {
   flex: 0 0 auto;
   font-family: inherit;
 }
+.cs-preview-btn:hover  { background: rgba(78, 204, 163, 0.15); border-color: #4ecca3; color: #4ecca3; }
 .cs-download-btn:hover { background: rgba(78, 204, 163, 0.15); border-color: #4ecca3; color: #4ecca3; }
 .cs-delete-btn:hover   { background: rgba(194, 85, 85, 0.15); border-color: #c25555; color: #c25555; }
+
+/* Mobile: let the Cut Sheets modal shrink below its 400px desktop min-width
+   so it fits the screen (เอ๋ 2026-06-07 'บนมือถือมองไม่เห็น Dialog box').
+   JS (_renderCutSheetsModal) also re-anchors it centred on narrow screens. */
+@media (max-width: 640px) {
+  .cs-modal { min-width: 0; max-width: none; }
+}
+/* Dim backdrop behind the Cut Sheets modal on mobile (added by JS only on
+   narrow screens) so the dialog reads cleanly instead of bleeding into the
+   project list behind it. Sits just under the popover (z 9999). Tap = close.
+   Styled by #id (not just .class) + !important on background so it beats the
+   Sketch/Chalk theme's `body :not(...) { background: transparent !important }`
+   reset (see feedback_web_themes — high-specificity reset trap). */
+#kd-cs-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5) !important;
+  z-index: 9998;
+}
 
 .cs-empty {
   padding: 20px;
