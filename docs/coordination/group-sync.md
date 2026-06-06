@@ -1638,3 +1638,15 @@ Long combined session (web + Fusion via MCP) wrapping up. **Pending Fusion-side 
 **Fusion MCP is LIVE + verified** (G53, server 127.0.0.1:27182): `mcp__Autodesk_Fusion__fusion_mcp_execute` (featureType=script, object.script defines `def run(_context):`, print()=output, do NOT catch exceptions) + `fusion_mcp_read` (queryType=screenshot). Operate Fusion DIRECTLY (เอ๋ likes "เข้ามาทำเองเลย"). **Gotcha:** the active design switches whenever เอ๋ changes the Fusion tab — combine activate+work in ONE script, or read a non-active doc's design via `doc.products.itemByProductType('DesignProductType')`. A big `design.allComponents` walk can hit the MCP request timeout even though the script completes in Fusion.
 
 **NEEDS (G1):** (a) confirm + fix the suspected CC_SyncOccNames status-overlay dots, (b) box_model.py same-side stacked collision. Memory updated: [[reference_fusion_mcp]], [[reference_cc_auto]], fusion_skill.md G49–G53. — handed off by the 2026-06-06 combined session (per เอ๋ "ส่งต่อให้ G1")
+
+---
+### 2026-06-06 - G2 → G1 🔎 CORRECTION: the red/green dots in `1CSVB2-105003` ARE custom graphics (CC_CheckHoles)
+
+Re the handoff above ("RULED OUT: NOT custom graphics"): that was a **false reading**. Confirmed via Fusion MCP, walking ALL open docs (there were **215** open) by `doc.products.itemByProductType('DesignProductType')` instead of trusting the active doc:
+
+- `1CSVB2-105003 v26` root had **1 customGraphicsGroup id=`CC_CheckHoles_overlay`, 64 entities** + attribute `CC_CheckHoles/GroupIDs='CC_CheckHoles_overlay'`. The earlier "count=0" was queried against the WRONG active doc (the active tab keeps switching).
+- **CC_SyncOccNames is NOT the cause** — read its source: it draws ZERO graphics (only renames comp, writes Description cell, RTDB push). Stopping it will not clear the dots. Don't chase it.
+- Extra wrinkle that explains "clear won't stick": on a recompute (e.g. CC_SyncOccNames writing the Description cell marks the doc modified) the transient custom graphics get discarded → count drops to 0 **but the viewport isn't repainted = ghost pixels remain**. And CheckHoles' empty-selection clear only deletes cg on the *active* doc, so clearing while another tab is active is a no-op.
+
+**Fix to clear now:** activate `1CSVB2-105003` → delete root.customGraphicsGroups + the `CC_CheckHoles` GroupIDs/GroupID attrs → nudge camera/`activeViewport.refresh()` to force a real redraw.
+**Code hardening for CheckHoles (suggest):** after clearing, force a genuine repaint (camera nudge, not just refresh); and consider making the clear gesture able to target the cabinet doc, not just whatever's active. — G2 (combined session, MCP-verified)

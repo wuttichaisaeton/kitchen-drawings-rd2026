@@ -2460,15 +2460,13 @@
     const origText = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = '⏫ Uploading…'; }
 
-    // Wipe the project's OLD cut sheets first so each Save REPLACES the Laser
-    // cut list, never appends (เอ๋ 2026-05-31 'เวลา save ไป cut list ให้ลบของเดิม
-    // ออกก่อน และ save ของใหม่เข้าไปแทนที่เสมอ'). Each save writes
-    // cut_sheets/<pk>/<project_ts_sN> under a fresh per-run id, so without this
-    // the node piled up stale sheets from every previous run. nest_parts below
-    // already .set()-overwrites; this brings cut_sheets to the same replace
-    // semantics. (nest_jobs history is intentionally NOT wiped.)
-    try { await window.firebaseDB.ref(`cut_sheets/${projectKey}`).remove(); }
-    catch (e) { /* non-fatal — per-sheet writes below still overwrite by id */ }
+    // Save now ACCUMULATES — it never deletes old data. (เอ๋ 2026-06-06: 'กด save
+    // project ไม่ต้องลบของเก่า ถ้าจะลบเดี๋ยวผมลบเอง แต่ให้ update ค่าใหม่' — covers
+    // BOTH parts and cut sheets.) This REVERSES the 2026-05-31 cut_sheets wipe:
+    // each save writes its sheets under fresh per-run ids (project_ts_sN), so
+    // prior runs' cut sheets stay in the Laser list and pile up by design —
+    // เอ๋ prunes them manually. nest_parts below MERGES by code instead of
+    // overwriting (see there). (nest_jobs history was already never wiped.)
 
     let ok = 0, fail = 0, firstErr = '';
     for (let i = 0; i < S.flatSheets.length; i++) {
@@ -2527,8 +2525,21 @@
     let jobSaved = false, jobErr = '';
     try {
       await window.firebaseDB.ref(`nest_jobs/${projectKey}/${jobId}`).set(job);
+      // Merge into nest_parts by code instead of overwriting — keep parts saved
+      // by earlier runs, update the ones in THIS run, add any new codes. (เอ๋
+      // 2026-06-06: 'ไม่ต้องลบของเก่า … update ค่าใหม่'.) jobId/saved_at advance to
+      // this run so the 📍 locator still resolves the freshest saved layout.
+      const _byCode = new Map();
+      try {
+        const _snap = await window.firebaseDB.ref(`nest_parts/${projectKey}/parts`).once('value');
+        const _existing = _snap.val();
+        const _list = Array.isArray(_existing) ? _existing
+          : (_existing && typeof _existing === 'object' ? Object.values(_existing) : []);
+        for (const p of _list) { if (p && p.code) _byCode.set(p.code, p); }
+      } catch (e) { /* read failed — fall back to writing just this run's parts */ }
+      for (const p of job.parts) { if (p && p.code) _byCode.set(p.code, p); }  // new wins
       await window.firebaseDB.ref(`nest_parts/${projectKey}`).set({
-        saved_at: job.saved_at, jobId: jobId, parts: job.parts,
+        saved_at: job.saved_at, jobId: jobId, parts: Array.from(_byCode.values()),
       });
       S.lastSavedJobId = jobId;
       jobSaved = true;
