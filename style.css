@@ -283,7 +283,13 @@ h1 {
    .tab { flex: 1 } so each tab sizes to its content rather than
    collapsing to zero inside this non-full-width parent. */
 .header-controls .tabs {
-  flex: 0 0 auto;
+  /* Shrink + wrap so all tabs stay visible on narrow screens instead of
+     overflowing off the right edge (เอ๋ 2026-06-07 'header ให้ column Auto' —
+     the 5th tab was clipped on mobile). Desktop is unaffected: basis=auto
+     still lays them on one line when there's room; only when space runs out
+     do they wrap into auto columns. */
+  flex: 0 1 auto;
+  flex-wrap: wrap;
   margin: 0;
 }
 .header-controls .tab {
