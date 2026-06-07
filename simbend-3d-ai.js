@@ -103,8 +103,8 @@
   // Keyed by the punch name from punchForStep() ({prof, goose, name}).
   function sameSideClearMm(punch) {
     var n = (punch && punch.name) || '';
-    if (/453|463/.test(n)) return 42;          // deep gooseneck relief
-    if (punch && punch.goose) return 42;       // any gooseneck
+    if (/453|463/.test(n)) return 45;          // deep gooseneck relief (เอ๋ 2026-06-07: 45 clears, 46 hits)
+    if (punch && punch.goose) return 45;       // any gooseneck
     if (/103|acute/i.test(n)) return 12;       // acute spike
     if (/202|sash/i.test(n)) return 12;        // sash punch
     if (/109|straight/i.test(n)) return 10;    // straight punch
