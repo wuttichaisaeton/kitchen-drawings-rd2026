@@ -6075,6 +6075,7 @@ function renderSimBendHome() {
               wObj.die = b.die;
               wObj.angle_deg = b.angle_deg;
               wObj.flat_len = b.flange_mm;
+              wObj.height = b.flange_mm;   // drive 2D label + 2D/3D length + collision (เอ๋ 2026-06-07)
               if (b.punch === 'gooseneck' || b.punch === 'GN-453-AUTO' || b.punch === 'P-KYOKKO-453-R02') {
                 wObj.needs_gooseneck = true;
               }
