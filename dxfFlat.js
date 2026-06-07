@@ -202,15 +202,15 @@
     return null;
   }
   function progress(step, t) { return t >= 1e9 ? 1 : Math.max(0, Math.min(1, (t - (step - 1)))); }
+  // Rotate ALL of a point about a hinge line (the panel calling this is wholly on one side of
+  // the hinge, so every point pivots together — no base-side short-circuit). เอ๋ 2026-06-08.
   function rotateAboutHinge(p, hg, ang) {
     var c = Math.cos(ang), s = Math.sin(ang);
     if (hg.axis === 'x') {           // hinge line y=at, rotate in Y-Z
       var dy = p[1] - hg.at;
-      if (dy <= 0) return p;          // material on the base side of the hinge does not move
       return [p[0], hg.at + dy * c, p[2] + dy * s];
     } else {                          // hinge line x=at, rotate in X-Z
       var dx = p[0] - hg.at;
-      if (dx <= 0) return p;
       return [hg.at + dx * c, p[1], p[2] + dx * s];
     }
   }
@@ -246,9 +246,14 @@
       chain.reverse();
       chain.forEach(function (ci) {
         var hg = hinges[ci], bd = bendAt(hg); if (!hg || !bd) return;
-        var ang = (bd.angle_deg || 90) * Math.PI / 180 * progress(bd.step, t);
-        var sgn = bd.side === '-' ? -1 : 1;
-        pts = pts.map(function (p) { return rotateAboutHinge(p, hg, ang * sgn); });
+        // Fold every flange UP (toward +z) the same way (a tray opens up), regardless of which
+        // edge it's on — `side` from box_geom is the EDGE, not the up/down direction. The sign
+        // that lifts this panel toward +z depends only on which side of the hinge it sits on.
+        // (เอ๋ 2026-06-08: was using bd.side → folded edges DOWN/opposite = looked flat + wrong.)
+        var r = raw[ci].rect, cen = hg.axis === 'x' ? (r[1] + r[3]) / 2 : (r[0] + r[2]) / 2;
+        var sideSign = (cen > hg.at) ? 1 : -1;
+        var ang = (bd.angle_deg || 90) * Math.PI / 180 * progress(bd.step, t) * sideSign;
+        pts = pts.map(function (p) { return rotateAboutHinge(p, hg, ang); });
       });
       return pts;
     }

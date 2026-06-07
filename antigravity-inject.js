@@ -25,6 +25,7 @@
   observer.observe(document.body, { childList: true, subtree: true });
 
   function injectToggle(parent) {
+    return; // เอ๋ 2026-06-08: ไม่ต้องขึ้นปุ่ม Antigravity (AI) — AI engine เปิดอยู่ตลอด (currentSimMode='ai')
     const container = document.createElement('div');
     container.className = 'sb-sim-mode-toggle';
     container.style.cssText = `
