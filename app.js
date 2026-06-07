@@ -5976,7 +5976,11 @@ function renderSimBendHome() {
       fetch(_url).then(r => r.ok ? r.text() : null).then(text => {
         if (!text || _simBendExpanded !== _code) return;                    // expanded card changed/closed
         const flat = window.KD_DXFFLAT.parseFlatDxf(text); if (!flat || !flat.bends.length) return;
-        const bends = window.KD_DXFFLAT.mergeBends(flat, rec.per_bend || [], (rec.box_geom.walls) || []);
+        // 3-D fold order from wallsFromFlat (เอ๋ 2026-06-08) — the SAME clean heuristic the 2-D press
+        // uses, so 2-D/3-D tell one story (lip→return→wall, every step folds + shows the clip). Falls
+        // back to mergeBends (box_geom-garbage steps) only if the heuristic can't derive walls.
+        const bends = window.KD_DXFFLAT.foldBendsFromFlat(flat)
+          || window.KD_DXFFLAT.mergeBends(flat, rec.per_bend || [], (rec.box_geom.walls) || []);
         const card2 = ROOT.querySelector(`.sb-card[data-code="${_code.replace(/"/g, '')}"]`);
         const cv3 = card2 && card2.querySelector('.sb-sim-canvas');
         const cv2 = card2 && card2.querySelector('.sb-sim-canvas-2d');

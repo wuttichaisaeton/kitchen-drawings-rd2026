@@ -99,3 +99,56 @@ test('wallsFromFlat: null-safe on empty / bend-less input', () => {
   assert.equal(KD.wallsFromFlat(null), null);
   assert.equal(KD.wallsFromFlat({ bbox: { minX: 0, minY: 0, maxX: 10, maxY: 10, w: 10, h: 10 }, bends: [] }), null);
 });
+
+test('wallsFromFlat: every wall carries its inner fold-line coordinate (foldCoord)', () => {
+  const m = wf();
+  m.walls.forEach(w => assert.ok(Number.isFinite(w.foldCoord), `${w.id} has a numeric foldCoord`));
+  // the +Y stack fold lines step inward→outward: wall(seq0) nearest base has the LOWEST foldCoord
+  const back = m.walls.filter(w => w.axis === 'Y' && w.side === '+').sort((a, b) => a.seq - b.seq);
+  assert.ok(back[0].foldCoord < back[1].foldCoord && back[1].foldCoord < back[2].foldCoord,
+    `+Y foldCoords grow outward: ${back.map(w => w.foldCoord)}`);
+});
+
+// ── foldBendsFromFlat: the 3-D fold order (shares the 2-D heuristic, no box_geom) ──
+function fb() { return KD.foldBendsFromFlat(KD.parseFlatDxf(DXF)); }
+
+test('foldBendsFromFlat: returns one entry per flat bend, foldFlat-shaped', () => {
+  const flat = KD.parseFlatDxf(DXF);
+  const bends = KD.foldBendsFromFlat(flat);
+  assert.equal(bends.length, flat.bends.length, 'one per DXF bend');
+  bends.forEach(b => {
+    ['a', 'b', 'dir', 'len', 'mid', 'step'].forEach(k => assert.ok(b[k] != null, `bend has ${k}`));
+  });
+});
+
+test('foldBendsFromFlat: full-span bends get clean steps 1..6, tabs get 0', () => {
+  const bends = fb();
+  const stepped = bends.filter(b => b.step > 0).map(b => b.step).sort((a, b) => a - b);
+  assert.deepEqual(stepped, [1, 2, 3, 4, 5, 6], `six full-span flanges get steps 1..6, got ${stepped}`);
+  // the 7 short ~23mm tabs are NOT in the press sequence (step 0, never a hinge)
+  const tabs = bends.filter(b => b.dir === 'H' && b.len > 18 && b.len < 30);
+  assert.equal(tabs.length, 7, 'seven tabs present');
+  tabs.forEach(t => assert.equal(t.step, 0, 'tab is step 0'));
+  assert.equal(Math.max(...bends.map(b => b.step || 0)), 6, 'maxStep is 6 (not inflated by tabs)');
+});
+
+test('foldBendsFromFlat: each step maps to exactly one full-span bend (unique active per step)', () => {
+  const bends = fb();
+  for (let s = 1; s <= 6; s++) {
+    assert.equal(bends.filter(b => b.step === s).length, 1, `exactly one bend at step ${s}`);
+  }
+});
+
+test('foldBendsFromFlat: matches the 2-D walls — same id per step (one story)', () => {
+  const flat = KD.parseFlatDxf(DXF);
+  const walls = KD.wallsFromFlat(flat).walls;
+  const bends = KD.foldBendsFromFlat(flat);
+  for (let s = 1; s <= 6; s++) {
+    const w = walls.find(x => x.step === s), b = bends.find(x => x.step === s);
+    assert.equal(b.id, w.id, `step ${s}: 3-D bend id ${b.id} == 2-D wall id ${w.id}`);
+  }
+});
+
+test('foldBendsFromFlat: null-safe', () => {
+  assert.equal(KD.foldBendsFromFlat(null), null);
+});

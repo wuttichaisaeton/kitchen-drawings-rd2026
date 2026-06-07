@@ -320,8 +320,10 @@
       var cuts = uniqSorted([lo, hi].concat(coords));
       var bi = 0; for (var i = 0; i + 1 < cuts.length; i++) { if (cuts[i] <= center && center <= cuts[i + 1]) { bi = i; break; } }
       var walls = [], seq;
-      seq = 0; for (var k = bi - 1; k >= 0; k--) walls.push({ side: '-', height: +(cuts[k + 1] - cuts[k]).toFixed(2), seq: seq++ });
-      seq = 0; for (var m = bi + 1; m + 1 < cuts.length; m++) walls.push({ side: '+', height: +(cuts[m + 1] - cuts[m]).toFixed(2), seq: seq++ });
+      // `foldCoord` = the wall's INNER edge (the fold line nearest the base) — used to map this wall
+      // back to its full-span DXF bend so the 3-D fold can share the 2-D's clean step order.
+      seq = 0; for (var k = bi - 1; k >= 0; k--) walls.push({ side: '-', height: +(cuts[k + 1] - cuts[k]).toFixed(2), seq: seq++, foldCoord: +cuts[k + 1].toFixed(2) });
+      seq = 0; for (var m = bi + 1; m + 1 < cuts.length; m++) walls.push({ side: '+', height: +(cuts[m + 1] - cuts[m]).toFixed(2), seq: seq++, foldCoord: +cuts[m].toFixed(2) });
       return { base: +(cuts[bi + 1] - cuts[bi]).toFixed(2), walls: walls };
     }
     var hC = flat.bends.filter(function (b) { return b.dir === 'H' && b.len > 0.6 * W; }).map(function (b) { return b.mid[1]; });
@@ -329,8 +331,8 @@
     var yS = stripsAlong(hC, bb.minY, bb.maxY, cy);   // H bend folds about a horizontal line → axis 'Y'
     var xS = stripsAlong(vC, bb.minX, bb.maxX, cx);   // V bend folds about a vertical line   → axis 'X'
     var walls = [];
-    yS.walls.forEach(function (w) { walls.push({ axis: 'Y', side: w.side, height: w.height, seq: w.seq }); });
-    xS.walls.forEach(function (w) { walls.push({ axis: 'X', side: w.side, height: w.height, seq: w.seq }); });
+    yS.walls.forEach(function (w) { walls.push({ axis: 'Y', side: w.side, height: w.height, seq: w.seq, foldCoord: w.foldCoord }); });
+    xS.walls.forEach(function (w) { walls.push({ axis: 'X', side: w.side, height: w.height, seq: w.seq, foldCoord: w.foldCoord }); });
     if (!walls.length) return null;
     // gooseneck = an INNER wall in its (axis,side) stack (an outer same-side wall forms first and must
     // be cleared). The outermost of each stack + every standalone wall = sash.
@@ -356,5 +358,39 @@
     return { base: { w: xS.base, h: yS.base }, walls: walls, flat_w: bb.w, flat_h: bb.h, per_bend: per_bend };
   }
 
-  return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat, crossSection: crossSection, wallsFromFlat: wallsFromFlat };
+  // Fold-order bends for the 3-D iso (เอ๋ 2026-06-08 "ทำ 3D ให้ใช้ wallsFromFlat เหมือน 2D"). Returns
+  // flat.bends in foldFlat's shape but with the CLEAN heuristic step from wallsFromFlat instead of
+  // mergeBends' box_geom-garbage steps — so the 3-D folds in the same order as the 2-D press (a hem's
+  // lip→return→wall, every step folds something + shows the clip) and the end state is identical (only
+  // the step NUMBERS change; foldFlat's hinge geometry is untouched). Each full-span bend is matched to
+  // its wall by the wall's `foldCoord`; tabs / non-full-span bends get step 0 (never a hinge → ignored).
+  function foldBendsFromFlat(flat) {
+    if (!flat || !flat.bbox || !flat.bends) return null;
+    var wf = wallsFromFlat(flat); if (!wf) return null;
+    var bb = flat.bbox, W = bb.maxX - bb.minX, H = bb.maxY - bb.minY;
+    return flat.bends.map(function (b) {
+      var fullSpan = (b.dir === 'H' && b.len > 0.6 * W) || (b.dir === 'V' && b.len > 0.6 * H);
+      var wall = null;
+      if (fullSpan) {
+        var wantAxis = b.dir === 'H' ? 'Y' : 'X';
+        var coord = b.dir === 'H' ? b.mid[1] : b.mid[0], best = 2;   // ≤2mm tolerance
+        wf.walls.forEach(function (w) {
+          if (w.axis !== wantAxis) return;
+          var d = Math.abs(w.foldCoord - coord);
+          if (d < best) { best = d; wall = w; }
+        });
+      }
+      return {
+        a: b.a, b: b.b, dir: b.dir, len: b.len, mid: b.mid,
+        id: wall ? wall.id : (b.id || null),
+        side: wall ? wall.side : '+',
+        angle_deg: wall ? wall.angle_deg : 90,
+        step: wall ? wall.step : 0,            // unmatched / tabs → 0 (not in the press sequence, not a hinge)
+        needs_gooseneck: wall ? wall.needs_gooseneck : false,
+        matched: !!wall
+      };
+    });
+  }
+
+  return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat, crossSection: crossSection, wallsFromFlat: wallsFromFlat, foldBendsFromFlat: foldBendsFromFlat };
 });
