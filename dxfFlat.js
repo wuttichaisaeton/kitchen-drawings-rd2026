@@ -122,10 +122,21 @@
         mid: [+( (a[0] + b[0]) / 2 ).toFixed(3), +( (a[1] + b[1]) / 2 ).toFixed(3)]
       });
     });
+    var holes = [];
+    ents.forEach(function (e) {
+      if (e.layer !== 'INTERIOR_PROFILES') return;
+      if (e.type === 'CIRCLE') {
+        holes.push({ type: 'circle', c: [+e.codes[10][0], +e.codes[20][0]], r: +e.codes[40][0] });
+      } else if (e.type === 'LWPOLYLINE') {
+        var xs = e.codes[10] || [], ys = e.codes[20] || [], pts = [];
+        for (var i = 0; i < xs.length; i++) pts.push([+xs[i], +ys[i]]);
+        if (pts.length) holes.push({ type: 'rect', pts: pts });
+      }
+    });
     return {
       _ents: ents,
       bbox: { minX: minX, minY: minY, maxX: maxX, maxY: maxY, w: +(maxX - minX).toFixed(3), h: +(maxY - minY).toFixed(3) },
-      outline: stitch(outerSegs(ents)), holes: [], bends: bends
+      outline: stitch(outerSegs(ents)), holes: holes, bends: bends
     };
   }              // Task 2-5
   function mergeBends(flat, perBend, walls) { return []; }  // Task 6

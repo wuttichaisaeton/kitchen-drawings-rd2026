@@ -46,3 +46,12 @@ test('parseFlatDxf: outline is a closed loop spanning the bbox', () => {
   const first = m.outline[0], last = m.outline[m.outline.length - 1];
   assert.ok(Math.hypot(first[0] - last[0], first[1] - last[1]) < 1.0, 'loop closes');
 });
+
+test('parseFlatDxf: holes include circles (mounting holes) and slots', () => {
+  const m = KD.parseFlatDxf(DXF);
+  const circ = m.holes.filter(h => h.type === 'circle');
+  const rect = m.holes.filter(h => h.type === 'rect');
+  assert.ok(circ.length > 20, `many mounting holes, got ${circ.length}`);
+  assert.ok(rect.length >= 7, `slots, got ${rect.length}`);
+  circ.forEach(h => assert.ok(h.r > 0 && Array.isArray(h.c), 'circle has c/r'));
+});
