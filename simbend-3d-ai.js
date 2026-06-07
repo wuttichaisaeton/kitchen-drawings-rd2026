@@ -825,10 +825,11 @@
       ctx.clearRect(0, 0, W, H);
       var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
-      // Does the ACTIVE step collide this frame? Drives the auto-zoom in the camera
-      // block below (เอ๋ 2026-06-07: 'เมื่อชน ให้ zoom เข้าไปดูจุดที่ชน').
-      var _2dColliding = !!(aw && (stackedHitId(walls, aw, active, punchForStep(active)) || aw.collides_with));
-      var _2dHitSign = (aw && aw.side === '+') ? -1 : 1;   // offending wall stands on this side
+      // Does the ACTIVE step collide this frame? Collision uses the CATALOG clearance
+      // (graph value) — เอ๋: 'เอาค่าตามกราฟเป็นหลัก'. The offending wall id is kept so the
+      // camera can zoom + CENTRE on the actual contact (เอ๋: 'zoom เข้าไปดูจุดที่ชน').
+      var _2dHitId = aw && (stackedHitId(walls, aw, active, punchForStep(active)) || aw.collides_with);
+      var _2dColliding = !!_2dHitId;
       if (activeCb && active !== _lastActive) { _lastActive = active; activeCb(aw ? aw.id : null, active); }
       var axis = aw ? aw.axis : 'X';
       var bh = baseHalf(axis);
@@ -908,41 +909,53 @@
       // drifts between steps and the punch is always fully in frame; the long blank simply runs
       // off the sides (acceptable per เอ๋).
       var punchTopZ = PEN_HI + 130 * TOOL_SCALE;   // top of the fully-lifted punch
-      // Zoom in tighter (เอ๋: zoom เข้าไปอีก) — the bend + die + punch throat fill the frame; the
-      // top of the punch shank is allowed to crop under the HUD bar. Die V-notch stays near the bottom.
       var botPad = 12 * dpr;                        // die V-notch near the bottom (groove peeks up)
       var baseY0 = H - botPad;                      // die reference (drives the SCALE only)
-      // Auto-zoom into the collision (เอ๋ 2026-06-07): when the active step hits, zoom
-      // tighter + pan toward the offending wall's side so the contact fills the frame.
-      // Non-colliding → the original fixed camera (1.5 / 0.18·H / centred), unchanged.
-      var ZOOM2D = _2dColliding ? 2.6 : 1.5;        // >1 zooms in
+
+      // Punch polygon (MODEL coords) — built here (before the camera) so we can locate
+      // the collision contact to centre the zoom on. Reused by the punch draw below.
+      var penZ = PEN_HI;
+      if (aw) {
+        if (f < HOLD_P0) penZ = PEN_HI * (1 - f / HOLD_P0) - pen;       // descends to the die
+        else if (f < HOLD_P2) penZ = -pen;                              // down through fold + 45° hold
+        else penZ = -pen + PEN_HI * ((f - HOLD_P2) / (1 - HOLD_P2));    // lift after the hold
+      }
+      var pk = punchForStep(active);
+      var uSign = (aw && aw.side === '+') ? -1 : 1;   // mirror the blade lean toward the workpiece
+      var pp = pk.prof.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
+
+      // Auto-zoom + CENTRE on the collision (เอ๋ 2026-06-07 'zoom เข้าไปดูจุดที่ชน'). Collision
+      // itself uses the catalog clearance (graph value); here we only find WHERE to point the
+      // camera: the offending wall's contact with the punch (else its top). Non-colliding →
+      // original fixed bottom-centre frame.
+      var ZOOM2D = _2dColliding ? 2.6 : 1.5;
       var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;
-      var PAN_UP = (_2dColliding ? 0.30 : 0.18) * H; // lift the contact zone toward centre on a hit
-      var baseY = baseY0 - PAN_UP;                  // shift all content up by PAN_UP
-      var ox = W / 2 + (_2dColliding ? _2dHitSign * 0.18 * W : 0);  // pan toward the offending wall's side
+      var _ctr = null;
+      if (_2dColliding && _2dHitId) {
+        for (var _ci = 0; _ci < cSegs.length; _ci++) {
+          if (cSegs[_ci] && cSegs[_ci].id === _2dHitId) {
+            var _cp = segVsPoly(chain[_ci], chain[_ci + 1], pp);
+            _ctr = _cp || (chain[_ci][1] > chain[_ci + 1][1] ? chain[_ci] : chain[_ci + 1]);
+            break;
+          }
+        }
+      }
+      var ox, baseY;
+      if (_ctr) {
+        ox = W / 2 - _ctr[0] * s;          // centre the contact horizontally
+        baseY = H * 0.46 + _ctr[1] * s;    // centre the contact vertically
+      } else {
+        baseY = baseY0 - 0.18 * H;          // original fixed frame (pan up)
+        ox = W / 2;
+      }
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
       function poly(pts, fill, stroke, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); } }
       poly(DIE_PROF, C_DIE, C_DIE_E, 1);
 
-      // PUNCH first so the metal sheet is drawn ON TOP of it — เอ๋:
-      // 'แสดงโลหะอยู่หน้ามีด' (the workpiece must read in front of the blade).
-      var penZ = PEN_HI;
-      if (aw) {
-        if (f < HOLD_P0) {
-          penZ = PEN_HI * (1 - f / HOLD_P0) - pen;                 // punch descends to the die
-        } else if (f < HOLD_P2) {
-          penZ = -pen;                                             // down through fold + the 45° hold
-        } else {
-          penZ = -pen + PEN_HI * ((f - HOLD_P2) / (1 - HOLD_P2));  // lift after the inspection hold
-        }
-      }
-      var pk = punchForStep(active);
-      // เอ๋: the SASH blade is asymmetric too — mirror it by side like the gooseneck so its
-      // lean faces the workpiece (not just the gooseneck).
-      var uSign = (aw && aw.side === '+') ? -1 : 1;
-      var pp = pk.prof.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
+      // PUNCH first so the metal sheet is drawn ON TOP of it (เอ๋: 'แสดงโลหะอยู่หน้ามีด').
+      // pk / penZ / uSign / pp were computed before the camera block (above).
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
 
       // metal drawn AFTER (= in front of) the punch so the sheet is always visible
