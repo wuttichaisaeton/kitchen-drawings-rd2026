@@ -8526,7 +8526,7 @@ function renderProject(key) {
         ${_showAllPdf ? `
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>` : ''}
         ${_showDxfsBtn ? `
-        <button class="filter-btn project-cut-sheets-btn" id="project-cut-sheets-btn" data-project-key="${escapeHtml(key)}" title="Nested cut sheets uploaded for this project — from NestingTool's Save sheets to Laser or admin drag-drop">📐 Cut Sheets (${cutSheetsForProject(key).length})</button>` : ''}
+        <button class="filter-btn project-cut-sheets-btn" id="project-cut-sheets-btn" data-project-key="${escapeHtml(key)}" title="Nested cut sheets uploaded for this project — from NestingTool's Save sheets to Laser or admin drag-drop"><span class="cs-btn-ico" aria-hidden="true">📐</span> Cut Sheets (${cutSheetsForProject(key).length})</button>` : ''}
         ${'' /* ▶ Nest button moved to its own admin-only tab next to
               Library (user 2026-05-28: 'nest ให้ย้ายไปต่อ library admin
               ใช้ได้คนเดียว'). Tab handler in renderNestHome shows a

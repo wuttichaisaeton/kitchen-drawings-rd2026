@@ -583,6 +583,20 @@ h1 {
   background: linear-gradient(135deg, #248068, #34c4a0);
   box-shadow: 0 0 0 1px rgba(78, 204, 163, 0.5), 0 2px 14px rgba(78, 204, 163, 0.45);
 }
+/* 📐 icon breathing effect — pulses scale + teal glow to pull the eye to the
+   Cut Sheets button (เอ๋ 2026-06-07 'icon cut sheet มี effect'). */
+.project-cut-sheets-btn .cs-btn-ico {
+  display: inline-block;
+  transform-origin: center;
+  animation: cs-ico-pulse 1.7s ease-in-out infinite;
+}
+@keyframes cs-ico-pulse {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 0 rgba(78, 204, 163, 0)); }
+  50%      { transform: scale(1.25); filter: drop-shadow(0 0 6px rgba(120, 245, 205, 0.95)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-cut-sheets-btn .cs-btn-ico { animation: none; }
+}
 .filter-btn.all-pdf-btn[disabled] {
   opacity: 0.7;
   cursor: progress;
