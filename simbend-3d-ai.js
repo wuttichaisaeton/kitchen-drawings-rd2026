@@ -935,24 +935,16 @@
       // pk / penZ / uSign / pp were computed before the camera block (above).
       poly(pp, C_PUNCH, C_PUNCH_E, 1);
 
-      // metal drawn AFTER (= in front of) the punch so the sheet is always visible
+      // metal drawn AFTER (= in front of) the punch so the sheet is always visible.
+      // Every flange line is drawn at its REAL length (mm × the constant scale), the same
+      // across all steps (เอ๋ 2026-06-07 'ยาวตาม mm จริง สเกลเดียวทุก step'): a 42mm wall is the
+      // same length whether it's the active fold or a formed wall, and an 18mm wall is 18/42
+      // of it. No clipping (clipping distorted the formed-wall length).
       for (var si = 0; si < cSegs.length; si++) {
         var seg = cSegs[si];
         var col = (seg == null) ? C_BASE : (seg.step === active ? C_RED : (seg.height >= 12 ? C_WALL : C_LIP));
         var lw = (seg && seg.height < 12) ? 6 : 7;
-        var q0 = chain[si], q1 = chain[si + 1];
-        // A FORMED wall must not be drawn INSIDE the blade (เอ๋ 2026-06-07 'เส้นเกินเข้าไปในมีด
-        // ผู้ใช้จะงง'): clip its line to the part OUTSIDE the punch profile so it stops at the
-        // blade, never penetrates it. (Collision is still decided by the catalog clearance.)
-        if (seg && (seg.step || 0) < active) {
-          var qi0 = ptInPoly(q0, pp), qi1 = ptInPoly(q1, pp);
-          if (qi0 && qi1) continue;                       // fully inside the blade → don't draw
-          if (qi0 !== qi1) {
-            var qc = segVsPoly(q0, q1, pp);
-            if (qc) { if (qi0) q0 = qc; else q1 = qc; }   // keep only the outside part
-          }
-        }
-        line([q0, q1], col, lw);
+        line([chain[si], chain[si + 1]], col, lw);
       }
 
       // Reference marker (เอ๋ 2026-06-07 'เส้น marker จากกราฟ'): on each FORMED same-side wall,
