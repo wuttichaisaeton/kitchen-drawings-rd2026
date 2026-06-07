@@ -42,6 +42,54 @@
     return ents;
   }
 
+  function snap(p) { return [Math.round(p[0] * 100) / 100, Math.round(p[1] * 100) / 100]; }
+
+  // Collect OUTER_PROFILES entities as polyline segments (array of point arrays).
+  function outerSegs(ents) {
+    var segs = [];
+    ents.forEach(function (e) {
+      if (e.layer !== 'OUTER_PROFILES') return;
+      if (e.type === 'LINE') {
+        segs.push([ snap([+e.codes[10][0], +e.codes[20][0]]), snap([+e.codes[11][0], +e.codes[21][0]]) ]);
+      } else if (e.type === 'SPLINE' || e.type === 'LWPOLYLINE') {
+        var xs = e.codes[10] || [], ys = e.codes[20] || [], pts = [];
+        for (var i = 0; i < xs.length; i++) pts.push(snap([+xs[i], +ys[i]]));
+        if (pts.length >= 2) segs.push(pts);
+      } else if (e.type === 'ARC') {
+        var c = [+e.codes[10][0], +e.codes[20][0]], r = +e.codes[40][0];
+        var a0 = (+e.codes[50][0]) * Math.PI / 180, a1 = (+e.codes[51][0]) * Math.PI / 180;
+        if (a1 < a0) a1 += 2 * Math.PI;
+        var ap = [];
+        for (var s = 0; s <= 8; s++) { var a = a0 + (a1 - a0) * s / 8; ap.push(snap([c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)])); }
+        segs.push(ap);
+      }
+    });
+    return segs;
+  }
+
+  // Walk segments into one ordered loop by matching endpoints.
+  function stitch(segs) {
+    if (!segs.length) return [];
+    var used = new Array(segs.length).fill(false);
+    var loop = segs[0].slice(); used[0] = true;
+    var guard = segs.length * 2;
+    while (guard-- > 0) {
+      var tail = loop[loop.length - 1], best = -1, rev = false, bd = 0.5;
+      for (var i = 0; i < segs.length; i++) {
+        if (used[i]) continue;
+        var s = segs[i], df = Math.hypot(s[0][0] - tail[0], s[0][1] - tail[1]),
+            dl = Math.hypot(s[s.length - 1][0] - tail[0], s[s.length - 1][1] - tail[1]);
+        if (df < bd) { bd = df; best = i; rev = false; }
+        if (dl < bd) { bd = dl; best = i; rev = true; }
+      }
+      if (best < 0) break;
+      used[best] = true;
+      var seg = rev ? segs[best].slice().reverse() : segs[best].slice();
+      for (var k = 1; k < seg.length; k++) loop.push(seg[k]);
+    }
+    return loop;
+  }
+
   function parseFlatDxf(text) {
     if (!text || typeof text !== 'string') return null;
     var ents = entitiesOf(tokenize(text));
@@ -77,7 +125,7 @@
     return {
       _ents: ents,
       bbox: { minX: minX, minY: minY, maxX: maxX, maxY: maxY, w: +(maxX - minX).toFixed(3), h: +(maxY - minY).toFixed(3) },
-      outline: [], holes: [], bends: bends
+      outline: stitch(outerSegs(ents)), holes: [], bends: bends
     };
   }              // Task 2-5
   function mergeBends(flat, perBend, walls) { return []; }  // Task 6

@@ -36,3 +36,13 @@ test('parseFlatDxf: bends include 2 long V side-walls + the 7 short H tabs', () 
     assert.ok(b.dir === 'H' || b.dir === 'V', 'bend has dir');
   });
 });
+
+test('parseFlatDxf: outline is a closed loop spanning the bbox', () => {
+  const m = KD.parseFlatDxf(DXF);
+  assert.ok(m.outline.length > 6, `outline has points, got ${m.outline.length}`);
+  const xs = m.outline.map(p => p[0]), ys = m.outline.map(p => p[1]);
+  assert.ok(Math.max(...xs) - Math.min(...xs) > 2000, 'outline spans width');
+  assert.ok(Math.max(...ys) - Math.min(...ys) > 950, 'outline spans height');
+  const first = m.outline[0], last = m.outline[m.outline.length - 1];
+  assert.ok(Math.hypot(first[0] - last[0], first[1] - last[1]) < 1.0, 'loop closes');
+});
