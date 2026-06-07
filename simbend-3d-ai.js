@@ -238,10 +238,14 @@
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
-      // AUTO: prefer the shared exact outline for the chosen kind, else the built-in shape
-      var aS = USE_GOOSE ? '453' : '202', aex = _exactProf(aS);
-      if (aex) return { prof: aex, goose: USE_GOOSE, name: USE_GOOSE ? 'GOOSENECK #453' : '#202 SASH' };
-      return USE_GOOSE ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
+      // AUTO: use THIS bend's OWN punch kind (the solver's per_bend.punch_type / needs_gooseneck),
+      // NOT the global USE_GOOSE — which forced a gooseneck on EVERY auto step (เอ๋ 2026-06-07:
+      // CVIL00-205093's 15mm tray side-walls B5/B6 came out as goosenecks while only the tiny
+      // end-tabs B1-B4/B7 actually need one).
+      var _sg = b ? (b.needs_gooseneck || b.punch_type === 'gooseneck') : USE_GOOSE;
+      var aS = _sg ? '453' : '202', aex = _exactProf(aS);
+      if (aex) return { prof: aex, goose: _sg, name: _sg ? 'GOOSENECK #453' : '#202 SASH' };
+      return _sg ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
     }
 
     function frac(step, t) {
@@ -802,10 +806,14 @@
       if (pid.indexOf('202') >= 0 || pid.indexOf('SASH') >= 0) return { prof: SASH_PROF, goose: false, name: '#202 SASH' };
       if (pid.indexOf('453') >= 0 || pid.indexOf('GN') >= 0 || pid.indexOf('GOOSE') >= 0) return { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' };
       if (pid.indexOf('109') >= 0) return { prof: SASH_PROF, goose: false, name: '#109' };
-      // AUTO: prefer the shared exact outline for the chosen kind, else the built-in shape
-      var aS = USE_GOOSE ? '453' : '202', aex = _exactProf(aS);
-      if (aex) return { prof: aex, goose: USE_GOOSE, name: USE_GOOSE ? 'GOOSENECK #453' : '#202 SASH' };
-      return USE_GOOSE ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
+      // AUTO: use THIS bend's OWN punch kind (the solver's per_bend.punch_type / needs_gooseneck),
+      // NOT the global USE_GOOSE — which forced a gooseneck on EVERY auto step (เอ๋ 2026-06-07:
+      // CVIL00-205093's 15mm tray side-walls B5/B6 came out as goosenecks while only the tiny
+      // end-tabs B1-B4/B7 actually need one).
+      var _sg = b ? (b.needs_gooseneck || b.punch_type === 'gooseneck') : USE_GOOSE;
+      var aS = _sg ? '453' : '202', aex = _exactProf(aS);
+      if (aex) return { prof: aex, goose: _sg, name: _sg ? 'GOOSENECK #453' : '#202 SASH' };
+      return _sg ? { prof: GOOSE_PROF, goose: true, name: 'GOOSENECK #453' } : { prof: SASH_PROF, goose: false, name: '#202 SASH' };
     }
     function frac(step, t) {
       var s = START + (step - 1) * (MOVE + HOLD);
