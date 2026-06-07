@@ -1120,7 +1120,7 @@
 
     var raf = null, startTs = null, paused = false, pauseT = 0, statusCb = null, ro = null;
     var activeCb = null, _lastActive = -2, _colWasOn = false;
-    function resize() { var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(300 * dpr); }
+    function resize() { var cw = canvas.clientWidth || canvas.parentElement && canvas.parentElement.clientWidth || 560; var chh = canvas.clientHeight || 300; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(chh * dpr); }
     function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
     resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
     raf = requestAnimationFrame(loop);

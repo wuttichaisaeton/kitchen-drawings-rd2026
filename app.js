@@ -5813,7 +5813,7 @@ function renderSimBendHome() {
           <div class="sb-sim-wrap">
             ${rec.kind === 'box' ? `
             <div class="sb-sim-cols">
-              <div class="sb-sim-col"><div class="sb-sim-col-lbl">2D press</div><canvas class="sb-sim-canvas-2d"></canvas></div>
+              <div class="sb-sim-col"><div class="sb-sim-col-lbl">2D press</div><div class="sb-2d-canvas-wrap"><button class="sb-fs-btn" type="button">⛶ Full Screen</button><canvas class="sb-sim-canvas-2d"></canvas></div></div>
               <div class="sb-sim-col"><div class="sb-sim-col-lbl">3D isometric</div><canvas class="sb-sim-canvas"></canvas></div>
             </div>` : `<canvas class="sb-sim-canvas"></canvas>`}
             <div class="sb-sim-ctrls" style="flex-wrap: wrap; gap: 10px;">
@@ -5939,6 +5939,20 @@ function renderSimBendHome() {
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
+      // เอ๋ 2026-06-07: Full-Screen toggle for the 2D press (button top-left → CSS pseudo-fullscreen
+      // → label becomes '← Back'). CSS-class based so it works on iPad too. The canvas's own
+      // ResizeObserver re-fits it to the new box; a resize event nudges it as a backup.
+      const fsBtn = card.querySelector('.sb-fs-btn');
+      const fsWrap = card.querySelector('.sb-2d-canvas-wrap');
+      if (fsBtn && fsWrap) {
+        fsBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const on = fsWrap.classList.toggle('sb-fs-on');
+          document.body.classList.toggle('sb-fs-lock', on);
+          fsBtn.textContent = on ? '← Back' : '⛶ Full Screen';
+          try { window.dispatchEvent(new Event('resize')); } catch (err) {}
+        });
+      }
       // เอ๋: highlight the bend-table row for the step currently being folded.
       const highlightActiveRow = (bendId) => {
         const table = card.querySelector('.sb-table');

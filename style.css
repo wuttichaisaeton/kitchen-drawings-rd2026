@@ -3704,6 +3704,24 @@ html[data-theme] .sb-table tbody tr.sb-row-active { animation: sbActiveGlow 1.4s
   background: radial-gradient(circle at 50% 36%, #16202c, #0b121a);
   border: 1px solid #1c2530; border-radius: 8px; cursor: default;
 }
+/* 2D press Full-Screen toggle (เอ๋ 2026-06-07): button top-left → CSS pseudo-fullscreen
+   (works on iPad + desktop, unlike the Fullscreen API on iOS) → button becomes 'Back'. */
+.sb-2d-canvas-wrap { position: relative; }
+.sb-fs-btn {
+  position: absolute; top: 8px; left: 8px; z-index: 6;
+  font: 11px 'Flux Architect', monospace; cursor: pointer;
+  background: rgba(22, 32, 44, 0.92); color: #cad6e6;
+  border: 1px solid #2a3744; border-radius: 6px; padding: 5px 10px; letter-spacing: 0.4px;
+}
+.sb-fs-btn:hover { background: #1d2937; }
+.sb-2d-canvas-wrap.sb-fs-on {
+  position: fixed; inset: 0; z-index: 9999; margin: 0;
+  background: #0b121a; display: flex; align-items: center; justify-content: center;
+}
+.sb-2d-canvas-wrap.sb-fs-on .sb-sim-canvas-2d {
+  width: 100vw; height: 100vh; border-radius: 0; border: none;
+}
+body.sb-fs-lock { overflow: hidden; }
 .sb-sim-ctrls { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .sb-sim-btn {
   font: inherit; font-size: 12px; cursor: pointer;
