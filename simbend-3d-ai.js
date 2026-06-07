@@ -94,16 +94,38 @@
   // box_model.DEFAULT_PERP_CLEAR: a gooseneck throat ~42, a straight/sash ~10.
   function punchClearMm(goose) { return goose ? 42 : 10; }
   // How tall a SAME-SIDE stacked outer wall a punch can clear while folding the inner
-  // wall behind it (mm). PER-PUNCH, because the blade shapes differ completely (เอ๋
-  // showed the Punch & Die DXFs): a deep gooseneck (#453 — R15 throat + a 135° relief
-  // face) clears a tall standing wall on the same side; an acute spike (#103 — 30° blade,
-  // no side relief) clears almost nothing; a straight/sash clears ~10. A flat value
-  // wrongly warned for #453. Tune from the real DXF throat if a number is off.
-  function sameSideClearMm(p) {
-    var n = (p && p.name) || '';
-    if (/453/.test(n)) return 42;   // deep gooseneck relief — clears tall same-side walls
-    if (/103/.test(n)) return 12;   // acute spike — minimal side clearance
-    return 10;                       // straight / sash / default
+  // wall behind it (mm). Computed geometrically from the punch's exact DXF profile
+  // polygon (tip-origin pts from tool-art PROFILES): scan a standing wall upward and
+  // see how high it rises before the blade's relief side intrudes past xWall. A deep
+  // gooseneck (#453) clears tall walls on its relief side; an acute spike (#103) clears
+  // little. Calibration anchors: 453≈42, 103≈12 (catalog override — no single
+  // THROAT_OFFSET reconciles both geometrically); all other punches resolve from geometry.
+  var THROAT_OFFSET = 2.0;
+  var THROAT_OVERRIDE = { '453': 42, '103': 12 };
+  function throatClearForProfile(prof, seriesHint) {
+    if (seriesHint && THROAT_OVERRIDE[seriesHint] != null) return THROAT_OVERRIDE[seriesHint];
+    if (!prof || prof.length < 3) return 10;
+    var tipHW = 0, maxY = 0, i, j;
+    for (i = 0; i < prof.length; i++) { if (prof[i][1] > maxY) maxY = prof[i][1]; if (prof[i][1] <= 8 && Math.abs(prof[i][0]) > tipHW) tipHW = Math.abs(prof[i][0]); }
+    var xWall = tipHW + THROAT_OFFSET;
+    function sideClearance(sign) {
+      var clear = 0, y;
+      for (y = 1; y <= maxY; y += 0.5) {
+        var halfX = 0;
+        for (i = 0, j = prof.length - 1; i < prof.length; j = i++) {
+          var y1 = prof[i][1], y2 = prof[j][1], x1 = prof[i][0], x2 = prof[j][0];
+          if ((y1 <= y && y2 >= y) || (y2 <= y && y1 >= y)) {
+            var t = Math.abs(y2 - y1) < 1e-9 ? 0 : (y - y1) / (y2 - y1);
+            var xc = x1 + t * (x2 - x1);
+            var ext = sign > 0 ? xc : -xc;
+            if (ext > halfX) halfX = ext;
+          }
+        }
+        if (halfX <= xWall) clear = y; else break;
+      }
+      return clear;
+    }
+    return Math.max(sideClearance(1), sideClearance(-1));
   }
   // Stacked-wall collision the per-axis solver misses (เอ๋: 'step 7,8 ชน'): folding an
   // INNER wall while a taller OUTER wall on the SAME axis+side is already standing —
