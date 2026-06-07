@@ -94,38 +94,21 @@
   // box_model.DEFAULT_PERP_CLEAR: a gooseneck throat ~42, a straight/sash ~10.
   function punchClearMm(goose) { return goose ? 42 : 10; }
   // How tall a SAME-SIDE stacked outer wall a punch can clear while folding the inner
-  // wall behind it (mm). Computed geometrically from the punch's exact DXF profile
-  // polygon (tip-origin pts from tool-art PROFILES): scan a standing wall upward and
-  // see how high it rises before the blade's relief side intrudes past xWall. A deep
-  // gooseneck (#453) clears tall walls on its relief side; an acute spike (#103) clears
-  // little. Calibration anchors: 453≈42, 103≈12 (catalog override — no single
-  // THROAT_OFFSET reconciles both geometrically); all other punches resolve from geometry.
-  var THROAT_OFFSET = 2.0;
-  var THROAT_OVERRIDE = { '453': 42, '103': 12 };
-  function throatClearForProfile(prof, seriesHint) {
-    if (seriesHint && THROAT_OVERRIDE[seriesHint] != null) return THROAT_OVERRIDE[seriesHint];
-    if (!prof || prof.length < 3) return 10;
-    var tipHW = 0, maxY = 0, i, j;
-    for (i = 0; i < prof.length; i++) { if (prof[i][1] > maxY) maxY = prof[i][1]; if (prof[i][1] <= 8 && Math.abs(prof[i][0]) > tipHW) tipHW = Math.abs(prof[i][0]); }
-    var xWall = tipHW + THROAT_OFFSET;
-    function sideClearance(sign) {
-      var clear = 0, y;
-      for (y = 1; y <= maxY; y += 0.5) {
-        var halfX = 0;
-        for (i = 0, j = prof.length - 1; i < prof.length; j = i++) {
-          var y1 = prof[i][1], y2 = prof[j][1], x1 = prof[i][0], x2 = prof[j][0];
-          if ((y1 <= y && y2 >= y) || (y2 <= y && y1 >= y)) {
-            var t = Math.abs(y2 - y1) < 1e-9 ? 0 : (y - y1) / (y2 - y1);
-            var xc = x1 + t * (x2 - x1);
-            var ext = sign > 0 ? xc : -xc;
-            if (ext > halfX) halfX = ext;
-          }
-        }
-        if (halfX <= xWall) clear = y; else break;
-      }
-      return clear;
-    }
-    return Math.max(sideClearance(1), sideClearance(-1));
+  // wall behind it (mm). Per-punch catalog/shop values (เอ๋ 2026-06-07). NOTE: pure
+  // geometry from the DXF profile was tried and rejected — it over-cleared the narrow-
+  // shank sash/straight punches (gave 130/69 where the shop value is ~12/10), so the
+  // collision would never warn for the most common punch. Anchor every known punch to
+  // its KYOKKO/shop value instead: deep gooseneck #453/#463 ≈ 42 (relief clears tall
+  // same-side walls); acute #103 ≈ 12; sash #202 ≈ 12; straight #109 ≈ 10; unknown → 10.
+  // Keyed by the punch name from punchForStep() ({prof, goose, name}).
+  function sameSideClearMm(punch) {
+    var n = (punch && punch.name) || '';
+    if (/453|463/.test(n)) return 42;          // deep gooseneck relief
+    if (punch && punch.goose) return 42;       // any gooseneck
+    if (/103|acute/i.test(n)) return 12;       // acute spike
+    if (/202|sash/i.test(n)) return 12;        // sash punch
+    if (/109|straight/i.test(n)) return 10;    // straight punch
+    return 10;                                  // default / unknown
   }
   // Stacked-wall collision the per-axis solver misses (เอ๋: 'step 7,8 ชน'): folding an
   // INNER wall while a taller OUTER wall on the SAME axis+side is already standing —
