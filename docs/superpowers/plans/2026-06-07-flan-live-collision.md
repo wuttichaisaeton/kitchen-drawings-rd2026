@@ -310,7 +310,68 @@ git commit -m "feat(sim): live FLAN edit — update in-memory rec + re-mount sim
 
 ---
 
-## Task 5: Integration — live verify + deploy
+## Task 5: Auto-zoom the 2-D press into the collision
+
+**Files:**
+- Modify: `drawings-ui/simbend-3d-ai.js` (`mount2d` camera block ~895-912; reuse the existing 2-D collision determination ~963+)
+
+Behaviour (เอ๋ 2026-06-07): when the **active step collides**, the 2-D press camera zooms in tighter and pans toward the offending wall's side so the punch–wall contact fills the frame; a non-colliding step keeps the normal fixed camera. 2-D only; automatic.
+
+- [ ] **Step 1: Hoist the active-step collision flag above the camera block**
+
+In `mount2d`, the active-step collision is already determined lower in the frame (search `~963` for the `// COLLISION —` block / the `stackedHitId` or solver check that flags the active bend). Compute it ONCE near the top of the per-frame draw, **before** the camera block (~line 906). Add:
+
+```js
+      // Does the ACTIVE step collide this frame? (drives the auto-zoom below)
+      var _2dHit = stackedHitId(allWalls, aw, active, punchForStep(active));
+      var _2dColliding = !!_2dHit || (aw && (aw.collides_with || aw._stkWith));
+```
+(Use the SAME wall list + active-wall vars the existing collision block uses — confirm their names while reading ~963; `allWalls`/`aw`/`active` mirror the 3-D `mount`. If the existing block already stores a boolean, reuse that variable instead of recomputing.)
+
+- [ ] **Step 2: Make the camera react to the collision flag**
+
+Replace the constant camera lines (simbend-3d-ai.js ~906-910):
+
+```js
+      var ZOOM2D = 1.5;                             // >1 zooms in; raise for more, lower for less
+      var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;  // constant scale — ZOOM UNCHANGED (เอ๋)
+      var PAN_UP = 0.18 * H;                        // เอ๋: pan the 2D view UP (same zoom); raise/lower to taste
+      var baseY = baseY0 - PAN_UP;                  // shift all content up by PAN_UP
+      var ox = W / 2;                               // die V-notch horizontally centred (fixed)
+```
+
+with a collision-aware camera (default values UNCHANGED when not colliding):
+
+```js
+      // Auto-zoom into the collision (เอ๋ 2026-06-07): when the active step hits,
+      // zoom tighter + pan toward the offending wall's side so the contact fills
+      // the frame. Non-colliding → the original fixed camera, unchanged.
+      var _zSign = (aw && aw.side === '+') ? -1 : 1;     // offending wall sits on this side
+      var ZOOM2D = _2dColliding ? 2.6 : 1.5;
+      var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;
+      var PAN_UP = (_2dColliding ? 0.30 : 0.18) * H;
+      var baseY = baseY0 - PAN_UP;
+      var ox = W / 2 + (_2dColliding ? _zSign * 0.18 * W : 0);
+```
+
+- [ ] **Step 3: Syntax gate**
+
+Run: `cd drawings-ui && node --check simbend-3d-ai.js`
+Expected: exit 0.
+
+- [ ] **Step 4: Live-tune the zoom (preview) + commit**
+
+In the preview, drive a step into collision (Task 4 method: set a FLAN long enough to collide). Confirm the 2-D view zooms in + pans toward the contact when colliding, and returns to normal when not. Adjust the `2.6` / `0.30` / `0.18·W` constants if the contact isn't well-centred (these are the knobs; keep non-colliding values exactly `1.5`/`0.18`/`0`). Then:
+
+```bash
+cd drawings-ui
+git add simbend-3d-ai.js
+git commit -m "feat(sim): auto-zoom the 2D press into the collision on a hit (เอ๋)"
+```
+
+---
+
+## Task 6: Integration — live verify + deploy
 
 **Files:** none (verification only)
 
@@ -324,7 +385,7 @@ Expected: `OK`.
 Start the preview (`drawings-ui` config, port 3030), open a **box** part's Sim.Bending (e.g. `Bung 01` parts; admin role to see Sim.Bending). With the step table visible:
 
 1. Edit a FLAN cell to a larger number (e.g. a #453 gooseneck step 18 → 50) and blur.
-   - Expected: the 2-D flange visibly lengthens; the on-part number changes from 18 → 50; the 2-D/3-D collision banner re-evaluates (✗ STACKED WALL COLLISION when the formed same-side wall now exceeds the punch clearance).
+   - Expected: the 2-D flange visibly lengthens; the on-part number changes from 18 → 50; the 2-D/3-D collision banner re-evaluates (✗ STACKED WALL COLLISION when the formed same-side wall now exceeds the punch clearance); **and on collision the 2-D press auto-zooms in on the contact (Task 5)** — zooms back out when the step no longer collides.
 2. Edit it back down (50 → 10).
    - Expected: flange shortens, number → 10, banner returns to ✓ BENDABLE.
 3. Confirm via `preview_eval` that `processedCache[<code>]` changed but RTDB `bend_sim/<code>` is unchanged (no SAVE).
@@ -358,6 +419,7 @@ Summarise: calibrated clearance values (453/103/202/109), the live behaviour con
 - What-if (no part change until SAVE) → Task 4 (in-memory `rec` only). ✓
 - Replace hard-coded `sameSideClearMm` → Tasks 1+2. ✓
 - Covers other punches → Task 1 (geometry per profile; #463 inherits gooseneck until traced). ✓
+- Auto-zoom 2-D into the collision (spec §4.5) → Task 5. ✓
 
 **Placeholder scan:** No TBD/TODO; every code step shows code. The calibration loop (Task 1 Step 3) is a real tune-until-anchors-pass step with a concrete fallback, not a placeholder. ✓
 

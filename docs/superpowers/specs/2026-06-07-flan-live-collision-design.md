@@ -60,7 +60,16 @@ SAVE CONFIG keeps persisting the override (unchanged path). A what-if that isn't
 
 ### 4.4 2-D dimension label follows FLAN
 
-The 2-D press view's dimension number for the active wall must read the (possibly-overridden) `flange_mm` so the on-screen "25/18" updates with the cell. (Label draw is in the 2-D controller; point it at the effective flange value.)
+The 2-D press view's dimension number for the active wall must read the (possibly-overridden) `flange_mm` so the on-screen "25/18" updates with the cell. (Label draw is in the 2-D controller; point it at the effective flange value — currently `dseg.height` at simbend-3d-ai.js ~952, which now follows FLAN via §4.2.)
+
+### 4.5 Auto-zoom to the collision (2-D press) — เอ๋ 2026-06-07
+
+When the **active step collides** (stacked-wall hit on the 2-D press), besides the existing warning banner + red marking, the 2-D camera **auto-zooms in on the collision area** so เอ๋ can see exactly where the punch hits the formed wall. A non-colliding step keeps the normal fixed camera.
+
+- **Trigger:** automatic — purely a function of "does the active step collide" (no button).
+- **Scope:** 2-D press view only (not the 3-D isometric).
+- **Mechanism:** the 2-D camera is a constant scale `s = ZOOM2D·…` + fixed `ox`/`baseY` (simbend-3d-ai.js ~906-910), with the active bend pinned at model-origin (bottom-centre). The collision (offending stacked wall) stands right beside the punch on the active bend's side. On collision: raise `ZOOM2D` (tighter) and nudge the pan toward the offending wall's side (`aw.side`/`uSign`) so the punch–wall contact fills the frame. Compute the collision once per frame **before** the camera block (it's currently determined later). Non-colliding → unchanged camera.
+- Keep it smooth/non-jarring (a stronger fixed zoom is acceptable; an animated ease is optional polish).
 
 ## 5. Components & isolation
 
