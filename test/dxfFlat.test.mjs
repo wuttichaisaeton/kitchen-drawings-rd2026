@@ -77,3 +77,16 @@ test('mergeBends: every bend gets angle, side, step from walls', () => {
   const longV = merged.filter(b => b.dir === 'V' && b.len > 800);
   assert.ok(longV.every(b => b.angle_deg === 90), 'long side bends are 90');
 });
+
+test('foldFlat: an L-bracket flat partitions into 2 panels (base + flange)', () => {
+  const flat = {
+    bbox: { minX: 0, minY: 0, maxX: 100, maxY: 60, w: 100, h: 60 },
+    outline: [[0,0],[100,0],[100,60],[0,60],[0,0]], holes: [],
+    bends: [{ a:[0,40], b:[100,40], dir:'H', len:100, mid:[50,40] }]
+  };
+  const bends = [{ ...flat.bends[0], side:'+', angle_deg:90, step:1, id:'B1', matched:true }];
+  const out = KD.foldFlat(flat, bends, 1e9);
+  assert.ok(out, 'returns a result');
+  assert.equal(out.panels.length, 2, `2 panels, got ${out.panels.length}`);
+  // (fold/z behaviour is verified in the next task)
+});

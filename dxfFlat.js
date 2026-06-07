@@ -163,7 +163,38 @@
       };
     });
   }  // Task 6
-  function foldFlat(flat, bends, t) { return null; }        // Task 7-8
+  function uniqSorted(a) {
+    a = a.slice().sort(function (x, y) { return x - y; });
+    var out = [a[0]];
+    for (var i = 1; i < a.length; i++) if (Math.abs(a[i] - out[out.length - 1]) > 0.5) out.push(a[i]);
+    return out;
+  }
+  // Build axis-aligned rectangular panels from the bbox cut by full-span bend lines.
+  // Returns [{rect:[x0,y0,x1,y1], pts2:[[x,y]...]}].
+  function partition(flat, bends) {
+    var bb = flat.bbox, W = bb.maxX - bb.minX, H = bb.maxY - bb.minY;
+    var cutsX = [bb.minX, bb.maxX], cutsY = [bb.minY, bb.maxY];
+    bends.forEach(function (b) {
+      if (b.dir === 'V' && b.len > 0.6 * H) cutsX.push(b.mid[0]);
+      else if (b.dir === 'H' && b.len > 0.6 * W) cutsY.push(b.mid[1]);
+    });
+    cutsX = uniqSorted(cutsX); cutsY = uniqSorted(cutsY);
+    var panels = [];
+    for (var i = 0; i + 1 < cutsX.length; i++) {
+      for (var j = 0; j + 1 < cutsY.length; j++) {
+        var x0 = cutsX[i], x1 = cutsX[i + 1], y0 = cutsY[j], y1 = cutsY[j + 1];
+        panels.push({ rect: [x0, y0, x1, y1], pts2: [[x0, y0], [x1, y0], [x1, y1], [x0, y1]] });
+      }
+    }
+    return panels;
+  }
+  function foldFlat(flat, bends, t) {
+    if (!flat || !flat.bbox) return null;
+    var panels = partition(flat, bends).map(function (p) {
+      return { rect: p.rect, pts2: p.pts2, pts3: p.pts2.map(function (q) { return [q[0], q[1], 0]; }) };
+    });
+    return { panels: panels, active: null };
+  }        // Task 7-8
 
   return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat };
 });
