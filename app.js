@@ -5979,15 +5979,13 @@ function renderSimBendHome() {
         const bends = window.KD_DXFFLAT.mergeBends(flat, rec.per_bend || [], (rec.box_geom.walls) || []);
         const card2 = ROOT.querySelector(`.sb-card[data-code="${_code.replace(/"/g, '')}"]`);
         const cv3 = card2 && card2.querySelector('.sb-sim-canvas');
-        const cv2 = card2 && card2.querySelector('.sb-sim-canvas-2d');
         if (!cv3) return;
         if (_simController && _simController.destroy) { try { _simController.destroy(); } catch (e) {} }
         _simController = window.kdSimBend3D_AI.mountFromFlat(cv3, flat, bends, rec, _code);
-        // 2D press from the DXF cross-section (active flange folds up at the die) — เอ๋ 2026-06-08
-        if (cv2 && window.kdSimBend3D_AI.mount2dFromFlat) {
-          if (_simController2D && _simController2D.destroy) { try { _simController2D.destroy(); } catch (e) {} }
-          _simController2D = window.kdSimBend3D_AI.mount2dFromFlat(cv2, flat, bends, rec, _code);
-        }
+        // 2-D press stays on box_geom mount2d for now (mounted sync above). เอ๋ 2026-06-08:
+        // rolled back the DXF mount2dFromFlat swap — it was "เพี้ยนมากว่าเดิม" (crude separate
+        // renderer, no collision-freeze/dim-labels/per-step-punch). Rebuild = feed DXF-derived
+        // walls into the mature mount2d instead. The 3-D DXF render above is unchanged (approved).
       }).catch(() => {});
     }
     return card;
