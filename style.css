@@ -3707,13 +3707,23 @@ html[data-theme] .sb-table tbody tr.sb-row-active { animation: sbActiveGlow 1.4s
 /* 2D press Full-Screen toggle (เอ๋ 2026-06-07): button top-left → CSS pseudo-fullscreen
    (works on iPad + desktop, unlike the Fullscreen API on iOS) → button becomes 'Back'. */
 .sb-2d-canvas-wrap { position: relative; }
-.sb-fs-btn {
-  position: absolute; top: 8px; left: 8px; z-index: 6;
-  font: 11px 'Flux Architect', monospace; cursor: pointer;
-  background: rgba(22, 32, 44, 0.92); color: #cad6e6;
-  border: 1px solid #2a3744; border-radius: 6px; padding: 5px 10px; letter-spacing: 0.4px;
+/* BOTTOM-left, high-contrast on every theme. The double-class selector (0,2,0) + !important
+   beats the sketch/chalk reset `html[data-theme] body *:not(svg){background:transparent!important}`
+   (0,1,3) that was wiping the button's fill → invisible (เอ๋ 'มองไม่เห็นเลย'). Glow uses
+   filter:drop-shadow (passes through that reset) for the pulsing Effect. */
+.sb-2d-canvas-wrap .sb-fs-btn {
+  position: absolute; bottom: 10px; left: 10px; top: auto; z-index: 7;
+  font: 700 11.5px 'Flux Architect', monospace; letter-spacing: 0.6px; cursor: pointer;
+  background: #18c08c !important; color: #06281f !important;
+  border: 1.5px solid #0b121a !important; border-radius: 8px; padding: 7px 12px;
+  animation: sb-fs-pulse 1.5s ease-in-out infinite;
 }
-.sb-fs-btn:hover { background: #1d2937; }
+.sb-2d-canvas-wrap .sb-fs-btn:hover { background: #2ee0a6 !important; }
+.sb-2d-canvas-wrap.sb-fs-on .sb-fs-btn { bottom: 16px; left: 16px; }
+@keyframes sb-fs-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(46, 224, 166, 0.55)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(46, 224, 166, 0.95)); }
+}
 .sb-2d-canvas-wrap.sb-fs-on {
   position: fixed; inset: 0; z-index: 9999; margin: 0;
   background: #0b121a; display: flex; align-items: center; justify-content: center;

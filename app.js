@@ -5813,7 +5813,7 @@ function renderSimBendHome() {
           <div class="sb-sim-wrap">
             ${rec.kind === 'box' ? `
             <div class="sb-sim-cols">
-              <div class="sb-sim-col"><div class="sb-sim-col-lbl">2D press</div><div class="sb-2d-canvas-wrap"><button class="sb-fs-btn" type="button">⛶ Full Screen</button><canvas class="sb-sim-canvas-2d"></canvas></div></div>
+              <div class="sb-sim-col"><div class="sb-sim-col-lbl">2D press</div><div class="sb-2d-canvas-wrap"><button class="sb-fs-btn" type="button" style="background:#18c08c !important;color:#06281f !important;border-color:#0b121a !important">⛶ Full Screen</button><canvas class="sb-sim-canvas-2d"></canvas></div></div>
               <div class="sb-sim-col"><div class="sb-sim-col-lbl">3D isometric</div><canvas class="sb-sim-canvas"></canvas></div>
             </div>` : `<canvas class="sb-sim-canvas"></canvas>`}
             <div class="sb-sim-ctrls" style="flex-wrap: wrap; gap: 10px;">
