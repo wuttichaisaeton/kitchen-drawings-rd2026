@@ -152,6 +152,15 @@
     if (ptInPoly(a, poly)) return a;
     return null;
   }
+  // KYOKKO gooseneck CLEARANCE ENVELOPE — traced 1:1 from เอ๋'s clean DXF (453.svg, 2026-06-07):
+  // model coords, tip at origin, Y up → tip → 60mm@45° up the relief side → punch neck. Drawn in
+  // the 2D press as a visual clearance GUIDE (เอ๋ 'ลากเส้น envelope จาก DXF'); the collision verdict
+  // stays on the stable numeric sameSideClearMm (เอ๋ chose 'เลขนิ่ง 45 + วาดเส้น'). null = no envelope.
+  function clearEnvelope(punch) {
+    var n = (punch && punch.name) || '';
+    if (/453|463/.test(n) || (punch && punch.goose)) return [[0, 0], [-42.43, 42.43], [-5, 79.85]];
+    return null;
+  }
 
   function mount(canvas, record, code) {
     window.__activeRecord = record;
@@ -950,32 +959,50 @@
       // Reference marker (เอ๋ 2026-06-07 'เส้น marker จากกราฟ'): on each FORMED same-side wall,
       // an amber dashed tick at the punch's max same-side clearance (the catalog/graph value).
       // The wall is drawn full length, so any part past the tick = it would hit the blade.
-      var _clr = aw ? sameSideClearMm(pk) : 0;
-      if (_clr > 0) {
+      // Gooseneck → draw the REAL clearance envelope straight from the punch's DXF, anchored at the
+      // punch tip (เอ๋ 'ลากเส้น envelope จาก DXF'). Other punches → the per-wall 'max N' tick.
+      var _envG = aw ? clearEnvelope(pk) : null;
+      if (_envG) {
+        var envM = _envG.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
         ctx.save();
         ctx.setLineDash([5 * dpr, 4 * dpr]);
-        ctx.strokeStyle = '#ffb74d'; ctx.fillStyle = '#ffb74d';
-        ctx.font = 'bold ' + (10 * dpr) + 'px "Flux Architect", monospace';
-        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-        for (var ki = 0; ki < cSegs.length; ki++) {
-          var ks = cSegs[ki];
-          if (!ks || ks.step == null || ks.step >= active) continue;
-          if (ks.axis !== aw.axis || ks.side !== aw.side) continue;   // same-side formed walls only
-          var e0 = chain[ki], e1 = chain[ki + 1];
-          var kbase = e0[1] < e1[1] ? e0 : e1;     // smaller model-z = base (near die)
-          var ktop = e0[1] < e1[1] ? e1 : e0;
-          var klen = Math.hypot(ktop[0] - kbase[0], ktop[1] - kbase[1]) || 1;
-          if (klen <= _clr) continue;              // wall shorter than the limit → nothing to flag
-          var kux = (ktop[0] - kbase[0]) / klen, kuz = (ktop[1] - kbase[1]) / klen;
-          var lim = [kbase[0] + kux * _clr, kbase[1] + kuz * _clr];   // limit point along the wall
-          var pxu = -kuz, pzu = kux, tkm = 6;                          // perpendicular tick (model units)
-          ctx.beginPath();
-          ctx.moveTo(X(lim[0] - pxu * tkm), Y(lim[1] - pzu * tkm));
-          ctx.lineTo(X(lim[0] + pxu * tkm), Y(lim[1] + pzu * tkm));
-          ctx.lineWidth = 2 * dpr; ctx.stroke();
-          ctx.fillText('max ' + Math.round(_clr), X(lim[0] + pxu * tkm) + 3 * dpr, Y(lim[1] + pzu * tkm));
-        }
+        ctx.strokeStyle = '#ffb74d'; ctx.lineWidth = 2 * dpr; ctx.lineJoin = ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (var ei = 0; ei < envM.length; ei++) { var _ex = X(envM[ei][0]), _ey = Y(envM[ei][1]); if (ei) ctx.lineTo(_ex, _ey); else ctx.moveTo(_ex, _ey); }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = '#ffb74d'; ctx.font = 'bold ' + (10 * dpr) + 'px "Flux Architect", monospace';
+        ctx.textAlign = (uSign < 0) ? 'right' : 'left'; ctx.textBaseline = 'middle';
+        ctx.fillText('clearance', X(envM[1][0]) + (uSign < 0 ? -4 : 4) * dpr, Y(envM[1][1]));
         ctx.restore();
+      } else {
+        var _clr = aw ? sameSideClearMm(pk) : 0;
+        if (_clr > 0) {
+          ctx.save();
+          ctx.setLineDash([5 * dpr, 4 * dpr]);
+          ctx.strokeStyle = '#ffb74d'; ctx.fillStyle = '#ffb74d';
+          ctx.font = 'bold ' + (10 * dpr) + 'px "Flux Architect", monospace';
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          for (var ki = 0; ki < cSegs.length; ki++) {
+            var ks = cSegs[ki];
+            if (!ks || ks.step == null || ks.step >= active) continue;
+            if (ks.axis !== aw.axis || ks.side !== aw.side) continue;   // same-side formed walls only
+            var e0 = chain[ki], e1 = chain[ki + 1];
+            var kbase = e0[1] < e1[1] ? e0 : e1;     // smaller model-z = base (near die)
+            var ktop = e0[1] < e1[1] ? e1 : e0;
+            var klen = Math.hypot(ktop[0] - kbase[0], ktop[1] - kbase[1]) || 1;
+            if (klen <= _clr) continue;              // wall shorter than the limit → nothing to flag
+            var kux = (ktop[0] - kbase[0]) / klen, kuz = (ktop[1] - kbase[1]) / klen;
+            var lim = [kbase[0] + kux * _clr, kbase[1] + kuz * _clr];   // limit point along the wall
+            var pxu = -kuz, pzu = kux, tkm = 6;                          // perpendicular tick (model units)
+            ctx.beginPath();
+            ctx.moveTo(X(lim[0] - pxu * tkm), Y(lim[1] - pzu * tkm));
+            ctx.lineTo(X(lim[0] + pxu * tkm), Y(lim[1] + pzu * tkm));
+            ctx.lineWidth = 2 * dpr; ctx.stroke();
+            ctx.fillText('max ' + Math.round(_clr), X(lim[0] + pxu * tkm) + 3 * dpr, Y(lim[1] + pzu * tkm));
+          }
+          ctx.restore();
+        }
       }
 
       // เอ๋: number each folded line with its flange length (mm). Colour follows the theme:
