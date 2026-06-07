@@ -858,15 +858,10 @@
       // so the tall 52mm flange shows its real length. Returns {pts, segs}. [เอ๋]
       function buildSide(sd) {
         var sg = sd > 0 ? '+' : '-';
-        // Order on each side = base → structural WALL (inner) → return/hem (outer). เอ๋ 2026-06-07:
-        // when two same-side features stack, the TALLER one is the real wall (stands vertical from
-        // the base) and the SHORTER one is the return/hem folded back at the wall's top — so taller
-        // sorts INNER, shorter OUTER (was ascending = shorter inner, which made the 42mm wall the
-        // 'return' and folded it over into the blade). Lips (<12) always go outermost.
         var feats = walls.filter(function (w) { return w.axis === axis && w.side === sg; })
           .sort(function (a, b) {
             var ka = (a.height >= 12 ? 0 : 1), kb = (b.height >= 12 ? 0 : 1);
-            return ka !== kb ? ka - kb : b.height - a.height;
+            return ka !== kb ? ka - kb : a.height - b.height;
           });
         var u = sd * bh, z = 0, ang = 0, pts = [[u, z]], segs = [];
         feats.forEach(function (w) {
