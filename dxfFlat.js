@@ -298,5 +298,63 @@
     return { segments: segs };   // each = [[u,z],[u,z]]; u re-centred on the bend, z = fold height
   }
 
-  return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat, crossSection: crossSection };
+  // Derive a box_geom-style WALL model straight from the flat DXF, for the 2-D press (เอ๋ 2026-06-08).
+  // Fusion CheckBend's box_geom mis-derives complex trays (CVIL: base 21.76 vs the real 928mm, 7
+  // garbage walls at offsets that don't match the DXF) → the DXF is the only correct geometry, but it
+  // has no fold ORDER / punch info. So read the real flanges from the DXF and ASSIGN a sensible order
+  // + punch heuristic (เอ๋ chose "DXF ล้วน + เดา step เอง"). The result feeds the mature mount2d, so the
+  // 2-D press keeps collision/freeze/dim-labels/clearance while showing DXF-true sizes.
+  //
+  // Walls = FULL-SPAN fold lines only (a bend whose length spans most of the perpendicular dimension);
+  // partial-width bends (tabs) are skipped — one developed cross-section can't place them. Each strip
+  // OUTSIDE the base panel = one wall, ordered outward (seq 0 = nearest the base). A stack of same-side
+  // walls (flange + return + lip, e.g. a hem) folds OUTER-FIRST (hem before the wall it lands on); an
+  // INNER wall that must then clear an already-formed outer wall is given a gooseneck.
+  function wallsFromFlat(flat) {
+    if (!flat || !flat.bbox || !flat.bends || !flat.bends.length) return null;
+    var bb = flat.bbox, W = bb.maxX - bb.minX, H = bb.maxY - bb.minY;
+    var cx = (bb.minX + bb.maxX) / 2, cy = (bb.minY + bb.maxY) / 2;
+    // Cut [lo,hi] by the full-span fold coords; the strip containing `center` is the base, the strips
+    // outside it become walls (seq 0 nearest the base, growing outward), tagged '-' below / '+' above.
+    function stripsAlong(coords, lo, hi, center) {
+      var cuts = uniqSorted([lo, hi].concat(coords));
+      var bi = 0; for (var i = 0; i + 1 < cuts.length; i++) { if (cuts[i] <= center && center <= cuts[i + 1]) { bi = i; break; } }
+      var walls = [], seq;
+      seq = 0; for (var k = bi - 1; k >= 0; k--) walls.push({ side: '-', height: +(cuts[k + 1] - cuts[k]).toFixed(2), seq: seq++ });
+      seq = 0; for (var m = bi + 1; m + 1 < cuts.length; m++) walls.push({ side: '+', height: +(cuts[m + 1] - cuts[m]).toFixed(2), seq: seq++ });
+      return { base: +(cuts[bi + 1] - cuts[bi]).toFixed(2), walls: walls };
+    }
+    var hC = flat.bends.filter(function (b) { return b.dir === 'H' && b.len > 0.6 * W; }).map(function (b) { return b.mid[1]; });
+    var vC = flat.bends.filter(function (b) { return b.dir === 'V' && b.len > 0.6 * H; }).map(function (b) { return b.mid[0]; });
+    var yS = stripsAlong(hC, bb.minY, bb.maxY, cy);   // H bend folds about a horizontal line → axis 'Y'
+    var xS = stripsAlong(vC, bb.minX, bb.maxX, cx);   // V bend folds about a vertical line   → axis 'X'
+    var walls = [];
+    yS.walls.forEach(function (w) { walls.push({ axis: 'Y', side: w.side, height: w.height, seq: w.seq }); });
+    xS.walls.forEach(function (w) { walls.push({ axis: 'X', side: w.side, height: w.height, seq: w.seq }); });
+    if (!walls.length) return null;
+    // gooseneck = an INNER wall in its (axis,side) stack (an outer same-side wall forms first and must
+    // be cleared). The outermost of each stack + every standalone wall = sash.
+    walls.forEach(function (w) {
+      var maxSeq = 0; walls.forEach(function (o) { if (o.axis === w.axis && o.side === w.side && o.seq > maxSeq) maxSeq = o.seq; });
+      w.needs_gooseneck = w.seq < maxSeq;
+    });
+    // Fold order: outer-first (higher seq earlier), then a fixed group order so steps are deterministic.
+    var GROUP = { 'X-': 0, 'X+': 1, 'Y-': 2, 'Y+': 3 };
+    walls.sort(function (a, b) { return b.seq !== a.seq ? b.seq - a.seq : GROUP[a.axis + a.side] - GROUP[b.axis + b.side]; });
+    walls.forEach(function (w, i) {
+      w.step = i + 1;
+      w.id = 'F' + (i + 1);            // F = DXF-derived flange; distinct from the table's Bn so no false row-highlight
+      w.flat_len = w.height;
+      w.collides = false;
+      w.punch_type = w.needs_gooseneck ? 'gooseneck' : 'sash';
+      w.angle_deg = 90;
+      w.v_mm = 6;
+    });
+    var per_bend = walls.map(function (w) {
+      return { bend: w.id, step: w.step, angle_deg: 90, needs_gooseneck: w.needs_gooseneck, punch_type: w.punch_type, v_mm: w.v_mm };
+    });
+    return { base: { w: xS.base, h: yS.base }, walls: walls, flat_w: bb.w, flat_h: bb.h, per_bend: per_bend };
+  }
+
+  return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat, crossSection: crossSection, wallsFromFlat: wallsFromFlat };
 });

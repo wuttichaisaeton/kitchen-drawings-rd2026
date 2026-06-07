@@ -883,6 +883,10 @@
         var sg = sd > 0 ? '+' : '-';
         var feats = walls.filter(function (w) { return w.axis === axis && w.side === sg; })
           .sort(function (a, b) {
+            // DXF-derived walls carry an explicit `seq` (developed order from the base outward —
+            // wall→return→lip) so a hem stacks in the REAL order; box_geom walls have no seq → keep
+            // the original height heuristic (taller=inner wall, shorter=outer return). เอ๋ 2026-06-08.
+            if (a.seq != null && b.seq != null) return a.seq - b.seq;
             var ka = (a.height >= 12 ? 0 : 1), kb = (b.height >= 12 ? 0 : 1);
             return ka !== kb ? ka - kb : a.height - b.height;
           });

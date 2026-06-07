@@ -5979,13 +5979,23 @@ function renderSimBendHome() {
         const bends = window.KD_DXFFLAT.mergeBends(flat, rec.per_bend || [], (rec.box_geom.walls) || []);
         const card2 = ROOT.querySelector(`.sb-card[data-code="${_code.replace(/"/g, '')}"]`);
         const cv3 = card2 && card2.querySelector('.sb-sim-canvas');
+        const cv2 = card2 && card2.querySelector('.sb-sim-canvas-2d');
         if (!cv3) return;
         if (_simController && _simController.destroy) { try { _simController.destroy(); } catch (e) {} }
         _simController = window.kdSimBend3D_AI.mountFromFlat(cv3, flat, bends, rec, _code);
-        // 2-D press stays on box_geom mount2d for now (mounted sync above). เอ๋ 2026-06-08:
-        // rolled back the DXF mount2dFromFlat swap — it was "เพี้ยนมากว่าเดิม" (crude separate
-        // renderer, no collision-freeze/dim-labels/per-step-punch). Rebuild = feed DXF-derived
-        // walls into the mature mount2d instead. The 3-D DXF render above is unchanged (approved).
+        // 2-D press REBUILT (เอ๋ 2026-06-08 "ทำใหม่ — DXF ล้วน + เดา step เอง"): the previous
+        // mount2dFromFlat drew raw cross-section segments = "เพี้ยนมากว่าเดิม". Fusion's box_geom is
+        // mis-derived for this tray, so derive REAL walls from the DXF (KD_DXFFLAT.wallsFromFlat —
+        // full-span flanges, heuristic fold order + gooseneck) and feed the MATURE mount2d, which
+        // brings collision/freeze/dim-labels/clearance/per-step-punch but now at DXF-true sizes.
+        if (cv2 && window.kdSimBend3D_AI.mount2d && window.KD_DXFFLAT.wallsFromFlat) {
+          const wf = window.KD_DXFFLAT.wallsFromFlat(flat);
+          if (wf && wf.walls && wf.walls.length) {
+            const synthetic = { kind: 'box', box_geom: { base: wf.base, walls: wf.walls, flat_w: wf.flat_w, flat_h: wf.flat_h }, per_bend: wf.per_bend };
+            if (_simController2D && _simController2D.destroy) { try { _simController2D.destroy(); } catch (e) {} }
+            _simController2D = window.kdSimBend3D_AI.mount2d(cv2, synthetic, _code);
+          }
+        }
       }).catch(() => {});
     }
     return card;
