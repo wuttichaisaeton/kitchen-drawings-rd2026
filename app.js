@@ -2688,6 +2688,42 @@ async function uploadPdfFromDrop(file, code, family) {
   }
 }
 
+// เอ๋ 2026-06-08: upload a part's FLAT-PATTERN DXF (for the DXF-driven Sim.Bending) via the
+// same GitHub-PAT Contents API as the PDF upload, to Drawings/flat/<code>.dxf. The sim fetches
+// it on open and renders the real folded geometry; absent → falls back to box_geom.
+async function uploadDxfFromDrop(file, code) {
+  if (!file || !/\.dxf$/i.test(file.name)) { alert('Please drop a DXF file (.dxf).'); return false; }
+  if (!code) return false;
+  const path = `Drawings/flat/${code}.dxf`;
+  try {
+    const content = await fileToBase64(file);
+    const existingSha = await _ghGetFileSha(path);
+    const resp = await _ghContentsRequest(path, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `Upload flat DXF ${code}` + (existingSha ? ' (replace)' : ''),
+        content, branch: GH_BRANCH,
+        ...(existingSha ? { sha: existingSha } : {}),
+      }),
+    });
+    if (!resp.ok) {
+      const errBody = await resp.text();
+      if (resp.status === 401 || resp.status === 403) { resetGitHubPat(); alert(`GitHub auth failed (${resp.status}). PAT cleared — try again.`); }
+      else alert(`DXF upload failed (${resp.status}):\n\n${errBody.slice(0, 500)}`);
+      return false;
+    }
+    const json = await resp.json();
+    const commitSha = json.commit && json.commit.sha;
+    alert(`Uploaded flat DXF ${code} (${Math.round(file.size / 1024)} KB)\nGitHub commit: ${commitSha ? commitSha.slice(0, 7) : 'OK'}\nSim.Bending uses it in ~1 min (Pages rebuild).`);
+    return true;
+  } catch (e) {
+    console.error('[dxf-upload] FAILED:', e);
+    alert('DXF upload failed:\n\n' + (e.message || e));
+    return false;
+  }
+}
+
 async function deleteUploadedPdf(code) {
   if (!code) return false;
   const path = `${GH_UPLOAD_PATH}/${code}.pdf`;
@@ -5928,6 +5964,25 @@ function renderSimBendHome() {
       _simController2D = (rec.kind === 'box' && window.kdSimBend3D)
         ? window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded)
         : (window.kdSimBend ? window.kdSimBend.mount(canvas2d, rec, _simBendExpanded) : null);
+    }
+    // เอ๋ 2026-06-08: if a flat-pattern DXF was uploaded for this part, UPGRADE the 3-D pane to the
+    // accurate DXF-folded render (box_geom above shows instantly; this swaps in when the fetch
+    // resolves). Async + non-breaking — _remountSimBend stays sync. 404/parse-fail → keep box_geom.
+    // (2-D press stays box_geom for now — true DXF cross-section is a follow-up.)
+    if (rec.kind === 'box' && window.kdSimBend3D_AI && window.kdSimBend3D_AI.mountFromFlat &&
+        window.KD_DXFFLAT && rec.box_geom) {
+      const _code = _simBendExpanded;
+      const _url = 'Drawings/flat/' + encodeURIComponent(_code) + '.dxf';   // relative → works on Pages + local
+      fetch(_url).then(r => r.ok ? r.text() : null).then(text => {
+        if (!text || _simBendExpanded !== _code) return;                    // expanded card changed/closed
+        const flat = window.KD_DXFFLAT.parseFlatDxf(text); if (!flat || !flat.bends.length) return;
+        const bends = window.KD_DXFFLAT.mergeBends(flat, rec.per_bend || [], (rec.box_geom.walls) || []);
+        const card2 = ROOT.querySelector(`.sb-card[data-code="${_code.replace(/"/g, '')}"]`);
+        const cv3 = card2 && card2.querySelector('.sb-sim-canvas');
+        if (!cv3) return;
+        if (_simController && _simController.destroy) { try { _simController.destroy(); } catch (e) {} }
+        _simController = window.kdSimBend3D_AI.mountFromFlat(cv3, flat, bends, rec, _code);
+      }).catch(() => {});
     }
     return card;
   }
@@ -10085,19 +10140,20 @@ function renderLibraryHome() {
         el.classList.remove('drag-over');
         const file = ev.dataTransfer?.files?.[0];
         if (!file) return;
-        if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
-          alert('PDF only — got ' + (file.type || file.name));
+        const isDxf = /\.dxf$/i.test(file.name);
+        if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name) && !isDxf) {
+          alert('PDF or DXF only — got ' + (file.type || file.name));
           return;
         }
         const fam = el.dataset.family;
-        const guess = file.name.replace(/\.pdf$/i, '');
+        const guess = file.name.replace(/\.(pdf|dxf)$/i, '');
         const code = prompt(
-          `Upload PDF to family "${fam}":\n\n` +
-          `Enter the part CODE this drawing covers ` +
+          `Upload ${isDxf ? 'flat DXF (Sim.Bending)' : 'PDF drawing'} to family "${fam}":\n\n` +
+          `Enter the part CODE this file covers ` +
           `(prefix-shares means any other config of the same prefix will inherit too):`,
           guess);
         if (!code) return;
-        const ok = await uploadPdfFromDrop(file, code.trim(), fam);
+        const ok = isDxf ? await uploadDxfFromDrop(file, code.trim()) : await uploadPdfFromDrop(file, code.trim(), fam);
         if (ok) {
           // Firebase listener triggers render — but force one in case
           // of timing.
@@ -10294,15 +10350,16 @@ function renderFamily(fam, highlight) {
         rowEl.classList.remove('part-row-drag-over');
         const file = ev.dataTransfer?.files?.[0];
         if (!file) return;
-        if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
-          alert('PDF only — got ' + (file.type || file.name));
+        const isDxf = /\.dxf$/i.test(file.name);
+        if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name) && !isDxf) {
+          alert('PDF or DXF only — got ' + (file.type || file.name));
           return;
         }
         const code = rowEl.dataset.code;
         if (!code) return;
-        if (!confirm(`Upload "${file.name}" as the drawing for "${code}"?\n\n(Replaces any existing PDF for this code.)`)) return;
+        if (!confirm(`Upload "${file.name}" as the ${isDxf ? 'flat DXF (Sim.Bending)' : 'drawing'} for "${code}"?\n\n(Replaces any existing ${isDxf ? 'DXF' : 'PDF'} for this code.)`)) return;
         rowEl.classList.add('part-row-uploading');
-        const ok = await uploadPdfFromDrop(file, code, fam);
+        const ok = isDxf ? await uploadDxfFromDrop(file, code) : await uploadPdfFromDrop(file, code, fam);
         rowEl.classList.remove('part-row-uploading');
         if (ok) {
           // Firebase listener triggers render — force one in case of timing.

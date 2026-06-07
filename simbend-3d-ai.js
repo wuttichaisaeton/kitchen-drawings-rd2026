@@ -1159,6 +1159,60 @@
     return controller;
   }
 
-  window.kdSimBend3D_AI = { mount: mount, mount2d: mount2d,
+  // ── DXF-driven 3D iso (เอ๋ 2026-06-08) ────────────────────────────────────────
+  // Self-contained: folds the part each frame via window.KD_DXFFLAT.foldFlat and draws
+  // the panels in a standard isometric projection (no dependency on mount()'s closures).
+  // Used when a part has an uploaded flat-pattern DXF; otherwise mount() (box_geom) runs.
+  function mountFromFlat(canvas, flat, bends, record, code) {
+    if (!canvas || !flat || !(window.KD_DXFFLAT && window.KD_DXFFLAT.foldFlat)) return null;
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.max(1, window.devicePixelRatio || 1);
+    var maxStep = bends.reduce(function (m, b) { return Math.max(m, b.step || 0); }, 0) || 1;
+    var totalT = START + maxStep * (MOVE + HOLD) + END;
+    function fracL(step, t) { var s = START + (step - 1) * (MOVE + HOLD); if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE; }
+    function foldT(t) { var st = 0; for (var s = 1; s <= maxStep; s++) { if (t >= START + (s - 1) * (MOVE + HOLD)) st = s; } return (st - 1) + fracL(st, t); }
+    var ca = Math.cos(Math.PI / 6), sa = Math.sin(Math.PI / 6);
+    function iso(v) { return [(v[0] - v[1]) * ca, (v[0] + v[1]) * sa - v[2]]; }
+
+    function frame(t) {
+      var W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
+      var out = window.KD_DXFFLAT.foldFlat(flat, bends, foldT(t));
+      if (!out || !out.panels.length) return;
+      var ip = []; out.panels.forEach(function (p) { p.pts3.forEach(function (v) { ip.push(iso(v)); }); });
+      var minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
+      ip.forEach(function (q) { if (q[0] < minx) minx = q[0]; if (q[0] > maxx) maxx = q[0]; if (q[1] < miny) miny = q[1]; if (q[1] > maxy) maxy = q[1]; });
+      var pad = 26 * dpr;
+      var sc = Math.min((W - 2 * pad) / ((maxx - minx) || 1), (H - 2 * pad) / ((maxy - miny) || 1));
+      var ox = (W - (maxx + minx) * sc) / 2, oy = (H - (maxy + miny) * sc) / 2;
+      function S(v) { var q = iso(v); return [ox + q[0] * sc, oy + q[1] * sc]; }
+      function depth(p) { var s = 0; p.pts3.forEach(function (v) { s += v[0] + v[1] + v[2]; }); return s / p.pts3.length; }
+      var order = out.panels.map(function (_, i) { return i; }).sort(function (a, b) { return depth(out.panels[a]) - depth(out.panels[b]); });
+      order.forEach(function (i) {
+        var p = out.panels[i], sp = p.pts3.map(S);
+        ctx.beginPath(); sp.forEach(function (q, k) { if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.closePath();
+        ctx.fillStyle = (out.active && p.parent != null && p.parent >= 0) ? 'rgba(224,87,74,0.16)' : 'rgba(170,179,189,0.30)';
+        ctx.fill(); ctx.strokeStyle = '#aab3bd'; ctx.lineWidth = 1.4 * dpr; ctx.lineJoin = 'round'; ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 26 * dpr);
+      ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
+      ctx.fillText('3D (DXF) · ' + (code || '') + ' · ' + out.panels.length + ' panels' + (out.active ? '  ·  bending ' + (out.active.id || '') : ''), 10 * dpr, 13 * dpr);
+      if (activeCb && out.active && out.active.id !== _lastA) { _lastA = out.active.id; activeCb(out.active.id, out.active.step); }
+    }
+    var raf = null, startTs = null, paused = false, pauseT = 0, activeCb = null, _lastA = null, ro = null;
+    function resize() { var cw = canvas.clientWidth || 560, chh = canvas.clientHeight || 300; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(chh * dpr); }
+    function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
+    resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
+    raf = requestAnimationFrame(loop);
+    return {
+      frame: frame, setTime: function (v) { pauseT = v; frame(v); },
+      destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) try { ro.disconnect(); } catch (e) {} },
+      toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
+      isPlaying: function () { return !paused; },
+      set onstatus(fn) {}, set onactive(fn) { activeCb = fn; _lastA = null; },
+      setPunchOverride: function () {}, setDieOverride: function () {}, recordClip: function () {}
+    };
+  }
+
+  window.kdSimBend3D_AI = { mount: mount, mount2d: mount2d, mountFromFlat: mountFromFlat,
                             SASH_PROF: SASH_PROF, GOOSE_PROF: GOOSE_PROF };
 })();
