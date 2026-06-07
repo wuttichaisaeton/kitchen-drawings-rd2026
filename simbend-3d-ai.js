@@ -996,7 +996,7 @@
       if (_envG) {
         var envM = _envG.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
         ctx.save();
-        ctx.globalAlpha = 0.5;   // เอ๋ 2026-06-08: clearance line + label at 50% transparency
+        ctx.globalAlpha = 0.25;  // เอ๋ 2026-06-08: clearance line + label fainter — 25% (was 50%)
         ctx.setLineDash([5 * dpr, 4 * dpr]);
         ctx.strokeStyle = '#ffb74d'; ctx.lineWidth = 2 * dpr; ctx.lineJoin = ctx.lineCap = 'round';
         ctx.beginPath();
@@ -1178,30 +1178,61 @@
     function foldT(t) { var st = 0; for (var s = 1; s <= maxStep; s++) { if (t >= START + (s - 1) * (MOVE + HOLD)) st = s; } return (st - 1) + fracL(st, t); }
     var ca = Math.cos(Math.PI / 6), sa = Math.sin(Math.PI / 6);
     function iso(v) { return [(v[0] - v[1]) * ca, (v[0] + v[1]) * sa - v[2]]; }
+    var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f';
+    // The press-brake "clip" (เอ๋ 2026-06-08 'ทำ 3D ให้แสดง Clip'): a V-die below the active hinge +
+    // a punch descending onto it, extruded along the bend line. Attached to the bend foldFlat is
+    // animating THIS step (step === st), so it always clamps the flange that's bending, in sync.
+    function toolingFor(ab, f) {
+      var A = ab.a, B = ab.b, dx = B[0] - A[0], dy = B[1] - A[1], L = Math.hypot(dx, dy) || 1;
+      var nx = -dy / L, ny = dx / L;                          // unit perpendicular to the hinge (in XY)
+      var penZ = (f < 0.16) ? PEN_HI * (1 - f / 0.16) : (f < 0.88 ? 0 : PEN_HI * ((f - 0.88) / 0.12));
+      function ring(prof, zOff, end) { return prof.map(function (p) { return [end[0] + p[0] * nx, end[1] + p[0] * ny, p[1] + zOff]; }); }
+      return { die: [ring(DIE_PROF, 0, A), ring(DIE_PROF, 0, B)], punch: [ring(SASH_PROF, penZ, A), ring(SASH_PROF, penZ, B)] };
+    }
+    function favg(face) { var s = 0; face.forEach(function (v) { s += v[0] + v[1] + v[2]; }); return s / face.length; }
 
     function frame(t) {
       var W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
       var out = window.KD_DXFFLAT.foldFlat(flat, bends, foldT(t));
       if (!out || !out.panels.length) return;
+      // the bend bending THIS step (the same step foldFlat is animating) → the tooling clips it.
+      var st = 0; for (var s = 1; s <= maxStep; s++) { if (t >= START + (s - 1) * (MOVE + HOLD)) st = s; }
+      var ab = null; bends.forEach(function (b) { if (b.step === st) ab = b; });
+      var tool = ab ? toolingFor(ab, fracL(st, t)) : null;
+      // screen mapping spans the part AND the tooling so the punch stays in frame
       var ip = []; out.panels.forEach(function (p) { p.pts3.forEach(function (v) { ip.push(iso(v)); }); });
+      if (tool) [tool.die[0], tool.die[1], tool.punch[0], tool.punch[1]].forEach(function (r) { r.forEach(function (v) { ip.push(iso(v)); }); });
       var minx = Infinity, maxx = -Infinity, miny = Infinity, maxy = -Infinity;
       ip.forEach(function (q) { if (q[0] < minx) minx = q[0]; if (q[0] > maxx) maxx = q[0]; if (q[1] < miny) miny = q[1]; if (q[1] > maxy) maxy = q[1]; });
       var pad = 26 * dpr;
       var sc = Math.min((W - 2 * pad) / ((maxx - minx) || 1), (H - 2 * pad) / ((maxy - miny) || 1));
       var ox = (W - (maxx + minx) * sc) / 2, oy = (H - (maxy + miny) * sc) / 2;
       function S(v) { var q = iso(v); return [ox + q[0] * sc, oy + q[1] * sc]; }
+      // extrude a tool (front+back profile rings) as a depth-sorted solid
+      function drawTool(rings, fill, stroke) {
+        var front = rings[0], back = rings[1], faces = [];
+        for (var i = 0; i < front.length; i++) { var j = (i + 1) % front.length; faces.push([front[i], front[j], back[j], back[i]]); }
+        faces.push(front.slice()); faces.push(back.slice());
+        faces.sort(function (a, b) { return favg(a) - favg(b); });
+        faces.forEach(function (fc) {
+          var sp = fc.map(S); ctx.beginPath(); sp.forEach(function (q, k) { if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.closePath();
+          ctx.fillStyle = fill; ctx.fill(); ctx.strokeStyle = stroke; ctx.lineWidth = 1 * dpr; ctx.lineJoin = 'round'; ctx.stroke();
+        });
+      }
       function depth(p) { var s = 0; p.pts3.forEach(function (v) { s += v[0] + v[1] + v[2]; }); return s / p.pts3.length; }
       var order = out.panels.map(function (_, i) { return i; }).sort(function (a, b) { return depth(out.panels[a]) - depth(out.panels[b]); });
+      if (tool) drawTool(tool.die, C_DIE, C_DIE_E);            // die below/behind the sheet → drawn first
       order.forEach(function (i) {
         var p = out.panels[i], sp = p.pts3.map(S);
         ctx.beginPath(); sp.forEach(function (q, k) { if (k) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); }); ctx.closePath();
         ctx.fillStyle = (out.active && p.parent != null && p.parent >= 0) ? 'rgba(224,87,74,0.16)' : 'rgba(170,179,189,0.30)';
         ctx.fill(); ctx.strokeStyle = '#aab3bd'; ctx.lineWidth = 1.4 * dpr; ctx.lineJoin = 'round'; ctx.stroke();
       });
+      if (tool) drawTool(tool.punch, C_PUNCH, C_PUNCH_E);      // punch above the sheet → drawn on top
       ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 26 * dpr);
       ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
-      ctx.fillText('3D (DXF) · ' + (code || '') + ' · ' + out.panels.length + ' panels' + (out.active ? '  ·  bending ' + (out.active.id || '') : ''), 10 * dpr, 13 * dpr);
-      if (activeCb && out.active && out.active.id !== _lastA) { _lastA = out.active.id; activeCb(out.active.id, out.active.step); }
+      ctx.fillText('3D (DXF) · ' + (code || '') + ' · ' + out.panels.length + ' panels' + (ab ? '  ·  STEP ' + st + '/' + maxStep + '  ·  bending ' + (ab.id || '') : ''), 10 * dpr, 13 * dpr);
+      if (activeCb && ab && ab.id !== _lastA) { _lastA = ab.id; activeCb(ab.id, ab.step); }
     }
     var raf = null, startTs = null, paused = false, pauseT = 0, activeCb = null, _lastA = null, ro = null;
     function resize() { var cw = canvas.clientWidth || 560, chh = canvas.clientHeight || 300; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(chh * dpr); }
