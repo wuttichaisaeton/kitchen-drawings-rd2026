@@ -61,10 +61,23 @@
       }
     });
     if (!isFinite(minX)) return null;
+    var bends = [];
+    ents.forEach(function (e) {
+      if (e.type !== 'LINE' || e.layer !== 'BEND') return;
+      var a = [parseFloat(e.codes[10][0]), parseFloat(e.codes[20][0])];
+      var b = [parseFloat(e.codes[11][0]), parseFloat(e.codes[21][0])];
+      var dx = b[0] - a[0], dy = b[1] - a[1];
+      var dir = Math.abs(dx) >= Math.abs(dy) ? 'H' : 'V';   // H = horizontal line (fold axis along X)
+      bends.push({
+        a: a, b: b, dir: dir,
+        len: +Math.hypot(dx, dy).toFixed(3),
+        mid: [+( (a[0] + b[0]) / 2 ).toFixed(3), +( (a[1] + b[1]) / 2 ).toFixed(3)]
+      });
+    });
     return {
       _ents: ents,
       bbox: { minX: minX, minY: minY, maxX: maxX, maxY: maxY, w: +(maxX - minX).toFixed(3), h: +(maxY - minY).toFixed(3) },
-      outline: [], holes: [], bends: []   // filled in later tasks
+      outline: [], holes: [], bends: bends
     };
   }              // Task 2-5
   function mergeBends(flat, perBend, walls) { return []; }  // Task 6

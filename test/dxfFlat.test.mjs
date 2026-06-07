@@ -23,3 +23,16 @@ test('parseFlatDxf: returns a bbox covering the ~2076 x 976 flat', () => {
   assert.ok(m.bbox.w > 2000 && m.bbox.w < 2120, `width ~2076, got ${m.bbox.w}`);
   assert.ok(m.bbox.h > 950 && m.bbox.h < 1000, `height ~976, got ${m.bbox.h}`);
 });
+
+test('parseFlatDxf: bends include 2 long V side-walls + the 7 short H tabs', () => {
+  const m = KD.parseFlatDxf(DXF);
+  const V = m.bends.filter(b => b.dir === 'V');
+  const Hshort = m.bends.filter(b => b.dir === 'H' && b.len > 18 && b.len < 30);
+  const Vlong = V.filter(b => b.len > 800);
+  assert.equal(Vlong.length, 2, `2 long vertical side bends, got ${Vlong.length}`);
+  assert.equal(Hshort.length, 7, `7 short ~23mm tabs, got ${Hshort.length}`);
+  m.bends.forEach(b => {
+    assert.ok(Array.isArray(b.a) && Array.isArray(b.b), 'bend has a/b points');
+    assert.ok(b.dir === 'H' || b.dir === 'V', 'bend has dir');
+  });
+});
