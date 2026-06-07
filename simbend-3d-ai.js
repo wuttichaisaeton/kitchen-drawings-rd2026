@@ -831,27 +831,14 @@
       var total = 2 * bh;
       walls.forEach(function (w) { if (w.axis === axis) total += _featLen(w); });
       var f = frac(active, t);
-      // 2D press phases. เอ๋ 2026-06-07: ไม่เอียงทั้งชิ้นงานแล้ว (เดิม whole-part tip-up 45°
-      // ทำให้ผนังที่พับเสร็จเหวี่ยงไปทับแก้มมีด) — ผนังที่พับเสร็จ "ยืนนิ่ง" ที่ 90°, มีแค่ปีกที่
-      //   กำลังพับ (active) ที่เอียงขึ้น 45° เป็นจังหวะ inspection แล้วคลายกลับ + มีดที่กดลง.
-      //   descend → active flange folds to 45° → HOLD (inspection) → settle back.
+      // 2D press phases (เอ๋: ค้างที่จังหวะ 45° นานหน่อยเพื่อตรวจ collision):
+      //   descend → fold + tip-up → HOLD at the 45° peak (inspection window) → settle back.
       var HOLD_P0 = 0.16, HOLD_P1 = 0.40, HOLD_P2 = 0.88;   // peak-hold spans P1..P2 (~0.48·MOVE)
-      // FORMED walls: fully upright (90°) and stay there — they don't move while a later bend runs.
       function getFoldFraction(step, t) {
         var ff = frac(step, t);
         if (ff < HOLD_P0) return 0;
         if (ff < HOLD_P1) return (ff - HOLD_P0) / (HOLD_P1 - HOLD_P0);
         return 1;   // stays folded through the peak-hold + settle
-      }
-      // ACTIVE flange only: lean up to 45° (0.5) for the inspection hold, pivoting at its own
-      // bend line, then settle back. The base + already-formed walls never move (เอ๋ 2026-06-07).
-      function activeFoldFraction(t) {
-        var ff = frac(active, t), p;
-        if (ff < HOLD_P0) p = 0;
-        else if (ff < HOLD_P1) p = (ff - HOLD_P0) / (HOLD_P1 - HOLD_P0);
-        else if (ff < HOLD_P2) p = 1;
-        else p = 1 - (ff - HOLD_P2) / (1 - HOLD_P2);
-        return p * 0.5;   // 0.5 → 45°
       }
       // Build a full developed side: base edge → each wall/lip in order (walls inner→outer
       // by height, then the lip). Supports MORE THAN ONE wall per side (test v6 h18+h52),
@@ -866,8 +853,7 @@
         var u = sd * bh, z = 0, ang = 0, pts = [[u, z]], segs = [];
         feats.forEach(function (w) {
           var len = _featLen(w);
-          var fr = (w.step === active) ? activeFoldFraction(t) : getFoldFraction(w.step, t);
-          ang += fr * (Math.PI / 2);
+          ang += getFoldFraction(w.step, t) * (Math.PI / 2);
           u += sd * len * Math.cos(ang); z += len * Math.sin(ang);
           pts.push([u, z]); segs.push(w);
         });
@@ -889,19 +875,20 @@
       }
       var maxPen = activeV / 2;
       
-      // เอ๋ 2026-06-07: NO whole-part tip-up — the workpiece never rotates/sinks. Only the punch
-      // penetrates the die (pen, used by penZ below) and only the active flange leans (above).
+      var bump = 0;
       var pen = 0;
+      var sdSign = (aw && aw.side === '+') ? 1 : -1;
       if (aw) {
-        var pk0;   // 0..1 punch-press factor (descend → hold → lift)
-        if (f < HOLD_P0) pk0 = 0;
-        else if (f < HOLD_P1) pk0 = (f - HOLD_P0) / (HOLD_P1 - HOLD_P0);
-        else if (f < HOLD_P2) pk0 = 1;
-        else pk0 = 1 - (f - HOLD_P2) / (1 - HOLD_P2);
-        pen = pk0 * maxPen;
+        var pk;   // 0..1 peak factor — 1 = full 45° tip-up + full die penetration
+        if (f < HOLD_P0) pk = 0;
+        else if (f < HOLD_P1) pk = (f - HOLD_P0) / (HOLD_P1 - HOLD_P0);   // ramp up to the peak
+        else if (f < HOLD_P2) pk = 1;                                      // HOLD at 45° — inspect collision
+        else pk = 1 - (f - HOLD_P2) / (1 - HOLD_P2);                       // settle back to flat
+        bump = -sdSign * pk * (Math.PI / 4);
+        pen = pk * maxPen;
       }
-
-      function place(p) { return [p[0] - av[0], p[1] - av[1]]; }
+      
+      function place(p) { var u = p[0] - av[0], z = p[1] - av[1], c = Math.cos(bump), sn = Math.sin(bump); return [u * c - z * sn, u * sn + z * c - pen]; }
       // Stitch the full cross-section: L outermost → L base → R base → R outermost.
       // cSegs[i] = the wall/lip for the segment chain[i]→chain[i+1] (null = the base). [เอ๋]
       var Lpts = Lside.pts, Rpts = Rside.pts, cPts = [], cSegs = [];
