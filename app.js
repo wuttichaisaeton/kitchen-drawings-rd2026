@@ -5904,25 +5904,38 @@ function renderSimBendHome() {
     });
   });
 
-  if (_simController) { try { _simController.destroy(); } catch (e) {} _simController = null; }
-  if (_simController2D) { try { _simController2D.destroy(); } catch (e) {} _simController2D = null; }
-  if (_simBendExpanded && window.kdSimBend) {
+  // เอ๋ 2026-06-07: reusable destroy + re-mount of the bend sim so a live FLAN
+  // edit can re-extrude the flange / refresh the on-part number / re-run collision
+  // (a what-if). Mounts the 3-D iso for box parts, the 2-D press sim otherwise,
+  // plus the side 2-D column for box parts. Returns the `.sb-card` element (or
+  // null when nothing is expanded) so callers can keep wiring `card`/`rec`.
+  function _remountSimBend() {
+    if (_simController) { try { _simController.destroy(); } catch (e) {} _simController = null; }
+    if (_simController2D) { try { _simController2D.destroy(); } catch (e) {} _simController2D = null; }
+    if (!_simBendExpanded || !window.kdSimBend) return null;
     const card = ROOT.querySelector(`.sb-card[data-code="${_simBendExpanded.replace(/"/g, '')}"]`);
     const canvas = card && card.querySelector('.sb-sim-canvas');
     const canvas2d = card && card.querySelector('.sb-sim-canvas-2d');   // box only
     const rec = processedCache[_simBendExpanded];
-    if (canvas && rec) {
-      // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
-      _simController = (rec.kind === 'box' && window.kdSimBend3D)
-        ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
-        : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
-      // For box parts also mount the original 2-D press sim beside it (left column)
-      // — เอ๋ 'แบบเดิมถูกแล้ว' (the original 2-D view was correct).
-      if (canvas2d) {
-        _simController2D = (rec.kind === 'box' && window.kdSimBend3D)
-          ? window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded)
-          : (window.kdSimBend ? window.kdSimBend.mount(canvas2d, rec, _simBendExpanded) : null);
-      }
+    if (!canvas || !rec) return card;
+    // Box parts (kind:"box") → 3-D isometric pan fold (simbend-3d.js); linear → 2-D press sim.
+    _simController = (rec.kind === 'box' && window.kdSimBend3D)
+      ? window.kdSimBend3D.mount(canvas, rec, _simBendExpanded)
+      : window.kdSimBend.mount(canvas, rec, _simBendExpanded);
+    // For box parts also mount the original 2-D press sim beside it (left column)
+    // — เอ๋ 'แบบเดิมถูกแล้ว' (the original 2-D view was correct).
+    if (canvas2d) {
+      _simController2D = (rec.kind === 'box' && window.kdSimBend3D)
+        ? window.kdSimBend3D.mount2d(canvas2d, rec, _simBendExpanded)
+        : (window.kdSimBend ? window.kdSimBend.mount(canvas2d, rec, _simBendExpanded) : null);
+    }
+    return card;
+  }
+
+  const card = _remountSimBend();
+  if (_simBendExpanded && window.kdSimBend && card) {
+    const rec = processedCache[_simBendExpanded];
+    if (card.querySelector('.sb-sim-canvas') && rec) {
       const playBtn = card.querySelector('.sb-sim-play');
       const recBtn = card.querySelector('.sb-sim-rec');
       const status = card.querySelector('.sb-sim-status');
@@ -6243,6 +6256,29 @@ function renderSimBendHome() {
       });
       card.querySelectorAll('.sb-edit-angle, .sb-edit-flange, .sb-edit-v').forEach(inp => {
         inp.addEventListener('input', onOverrideChange);
+      });
+
+      // เอ๋ 2026-06-07: live FLAN what-if. Editing a flange cell mutates the
+      // in-memory `rec` only (flange_mm + box wall flat_len/height → drives the
+      // 2-D label, the on-part number, the 2-D/3-D length and collision) and
+      // re-mounts the sim so the flange visibly grows / shrinks. Does NOT touch
+      // Firebase — SAVE CONFIG still persists separately.
+      ROOT.querySelectorAll('.sb-edit-flange').forEach(inp => {
+        inp.addEventListener('change', () => {
+          const code = _simBendExpanded;
+          const rec2 = code && processedCache[code];
+          if (!rec2) return;
+          const bendId = inp.dataset.bend;
+          const v = parseFloat(inp.value);
+          if (isNaN(v)) return;
+          const b = (rec2.per_bend || []).find(x => x.bend === bendId);
+          if (b) { b.flange_mm = v; b.flange_mm_out = v; }
+          if (rec2.box_geom && rec2.box_geom.walls) {
+            const w = rec2.box_geom.walls.find(x => x.id === bendId);
+            if (w) { w.flat_len = v; w.height = v; }   // one value → label + length + collision
+          }
+          _remountSimBend();   // re-extrudes flange, redraws the number, re-runs collision
+        });
       });
 
       // Leg what-if: editing a side trades length with the OPPOSITE END so the
