@@ -825,6 +825,10 @@
       ctx.clearRect(0, 0, W, H);
       var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
+      // Does the ACTIVE step collide this frame? Drives the auto-zoom in the camera
+      // block below (เอ๋ 2026-06-07: 'เมื่อชน ให้ zoom เข้าไปดูจุดที่ชน').
+      var _2dColliding = !!(aw && (stackedHitId(walls, aw, active, punchForStep(active)) || aw.collides_with));
+      var _2dHitSign = (aw && aw.side === '+') ? -1 : 1;   // offending wall stands on this side
       if (activeCb && active !== _lastActive) { _lastActive = active; activeCb(aw ? aw.id : null, active); }
       var axis = aw ? aw.axis : 'X';
       var bh = baseHalf(axis);
@@ -908,11 +912,14 @@
       // top of the punch shank is allowed to crop under the HUD bar. Die V-notch stays near the bottom.
       var botPad = 12 * dpr;                        // die V-notch near the bottom (groove peeks up)
       var baseY0 = H - botPad;                      // die reference (drives the SCALE only)
-      var ZOOM2D = 1.5;                             // >1 zooms in; raise for more, lower for less
-      var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;  // constant scale — ZOOM UNCHANGED (เอ๋)
-      var PAN_UP = 0.18 * H;                        // เอ๋: pan the 2D view UP (same zoom); raise/lower to taste
+      // Auto-zoom into the collision (เอ๋ 2026-06-07): when the active step hits, zoom
+      // tighter + pan toward the offending wall's side so the contact fills the frame.
+      // Non-colliding → the original fixed camera (1.5 / 0.18·H / centred), unchanged.
+      var ZOOM2D = _2dColliding ? 2.6 : 1.5;        // >1 zooms in
+      var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;
+      var PAN_UP = (_2dColliding ? 0.30 : 0.18) * H; // lift the contact zone toward centre on a hit
       var baseY = baseY0 - PAN_UP;                  // shift all content up by PAN_UP
-      var ox = W / 2;                               // die V-notch horizontally centred (fixed)
+      var ox = W / 2 + (_2dColliding ? _2dHitSign * 0.18 * W : 0);  // pan toward the offending wall's side
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
