@@ -811,6 +811,18 @@
       var s = START + (step - 1) * (MOVE + HOLD);
       if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE;
     }
+    // เอ๋ 'ค้างจุดที่ชนไว้สักพักเพื่อดูรายละเอียด': a step whose verdict is COLLISION lingers an extra
+    // EXTRA_HOLD ms FROZEN at its press peak (where the contact + alarm ring show) before playing on.
+    // _stepCol[step] is static (the verdict doesn't depend on t); stepRealStart() is the stretched
+    // timeline. frame() maps real time → a canonical uniform time so the rest of the draw is unchanged.
+    var EXTRA_HOLD = 1500;
+    var _stepCol = [];
+    for (var _cs = 1; _cs <= maxStep; _cs++) {
+      var _caw = null; for (var _ci = 0; _ci < walls.length; _ci++) { if (walls[_ci].step === _cs) { _caw = walls[_ci]; break; } }
+      _stepCol[_cs] = !!(_caw && _caw.collides) || !!stackedHitId(walls, _caw, _cs, punchForStep(_cs));
+    }
+    function stepRealStart(st) { var s = START; for (var k = 1; k < st; k++) { s += (MOVE + HOLD) + (_stepCol[k] ? EXTRA_HOLD : 0); } return s; }
+    totalT = stepRealStart(maxStep) + (MOVE + HOLD) + (_stepCol[maxStep] ? EXTRA_HOLD : 0) + END;
     var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f',
         C_BASE = '#9aa6b2', C_WALL = '#e8923a', C_LIP = '#c77a2e', C_RED = '#e0574a';
     // Developed length of one wall/lip for the press cross-section. A WALL (h>=12) uses
@@ -829,10 +841,17 @@
       return (axis === 'X' ? (box.base.w) : (box.base.h)) / 2;
     }
 
-    function frame(t) {
+    function frame(tReal) {
       var W = canvas.width, H = canvas.height;
       ctx.clearRect(0, 0, W, H);
-      var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
+      // active step from the REAL (collision-stretched) timeline, then remap to a CANONICAL uniform
+      // time `t` that FREEZES a colliding step at its press peak (HOLD_P1 = 0.40·MOVE) for
+      // EXTRA_HOLD ms — so frac()/folds/penZ/collision draw exactly as before. เอ๋ 'ค้างจุดที่ชน'.
+      var active = 0; for (var st = 1; st <= maxStep; st++) { if (tReal >= stepRealStart(st)) active = st; }
+      var _localT = tReal - stepRealStart(active);
+      var _peakT = 0.40 * MOVE;
+      var _cLocal = (_stepCol[active] && _localT > _peakT) ? (_peakT + Math.max(0, _localT - _peakT - EXTRA_HOLD)) : _localT;
+      var t = START + (active - 1) * (MOVE + HOLD) + _cLocal;
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
       if (activeCb && active !== _lastActive) { _lastActive = active; activeCb(aw ? aw.id : null, active); }
       var axis = aw ? aw.axis : 'X';
@@ -1056,8 +1075,8 @@
       // ring the exact contact point — pulsing "alarm" effect [เอ๋: เพิ่ม Effect]
       if (showCol && contactPt) {
         var cx = X(contactPt[0]), cy = Y(contactPt[1]);
-        var ping = (t % 720) / 720;                  // 0..1 expanding radar ping
-        var throb = 0.5 + 0.5 * Math.sin(t / 95);    // 0..1 glow + size throb
+        var ping = (tReal % 720) / 720;              // 0..1 expanding radar ping (real time → keeps
+        var throb = 0.5 + 0.5 * Math.sin(tReal / 95); // pulsing during the collision freeze) [เอ๋]
         ctx.save();
         // expanding ping ring — grows outward and fades
         ctx.beginPath(); ctx.arc(cx, cy, (15 + ping * 18) * dpr, 0, Math.PI * 2);
