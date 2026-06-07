@@ -825,11 +825,6 @@
       ctx.clearRect(0, 0, W, H);
       var active = 0; for (var st = 1; st <= maxStep; st++) { if (t >= START + (st - 1) * (MOVE + HOLD)) active = st; }
       var aw = null; walls.forEach(function (x) { if (x.step === active) aw = x; });
-      // Does the ACTIVE step collide this frame? Collision uses the CATALOG clearance
-      // (graph value) — เอ๋: 'เอาค่าตามกราฟเป็นหลัก'. The offending wall id is kept so the
-      // camera can zoom + CENTRE on the actual contact (เอ๋: 'zoom เข้าไปดูจุดที่ชน').
-      var _2dHitId = aw && (stackedHitId(walls, aw, active, punchForStep(active)) || aw.collides_with);
-      var _2dColliding = !!_2dHitId;
       if (activeCb && active !== _lastActive) { _lastActive = active; activeCb(aw ? aw.id : null, active); }
       var axis = aw ? aw.axis : 'X';
       var bh = baseHalf(axis);
@@ -924,30 +919,12 @@
       var uSign = (aw && aw.side === '+') ? -1 : 1;   // mirror the blade lean toward the workpiece
       var pp = pk.prof.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
 
-      // Auto-zoom + CENTRE on the collision (เอ๋ 2026-06-07 'zoom เข้าไปดูจุดที่ชน'). Collision
-      // itself uses the catalog clearance (graph value); here we only find WHERE to point the
-      // camera: the offending wall's contact with the punch (else its top). Non-colliding →
-      // original fixed bottom-centre frame.
-      var ZOOM2D = _2dColliding ? 2.6 : 1.5;
+      // FIXED camera — no auto-zoom (เอ๋ 2026-06-07 'ไม่เอา Zoom แล้ว มันวิ่งไปมา'). Constant
+      // scale, die-groove pinned bottom-centre; the long blank runs off the sides.
+      var ZOOM2D = 1.5;
       var s = ZOOM2D * (baseY0 - 34 * dpr) / punchTopZ;
-      var _ctr = null;
-      if (_2dColliding && _2dHitId) {
-        for (var _ci = 0; _ci < cSegs.length; _ci++) {
-          if (cSegs[_ci] && cSegs[_ci].id === _2dHitId) {
-            var _cp = segVsPoly(chain[_ci], chain[_ci + 1], pp);
-            _ctr = _cp || (chain[_ci][1] > chain[_ci + 1][1] ? chain[_ci] : chain[_ci + 1]);
-            break;
-          }
-        }
-      }
-      var ox, baseY;
-      if (_ctr) {
-        ox = W / 2 - _ctr[0] * s;          // centre the contact horizontally
-        baseY = H * 0.46 + _ctr[1] * s;    // centre the contact vertically
-      } else {
-        baseY = baseY0 - 0.18 * H;          // original fixed frame (pan up)
-        ox = W / 2;
-      }
+      var baseY = baseY0 - 0.18 * H;
+      var ox = W / 2;
       function X(u) { return ox + u * s; }
       function Y(z) { return baseY - z * s; }
       function line(pts, col, lw) { ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1]); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.strokeStyle = col; ctx.lineWidth = lw * dpr; ctx.lineJoin = ctx.lineCap = 'round'; ctx.stroke(); }
@@ -963,7 +940,19 @@
         var seg = cSegs[si];
         var col = (seg == null) ? C_BASE : (seg.step === active ? C_RED : (seg.height >= 12 ? C_WALL : C_LIP));
         var lw = (seg && seg.height < 12) ? 6 : 7;
-        line([chain[si], chain[si + 1]], col, lw);
+        var q0 = chain[si], q1 = chain[si + 1];
+        // A FORMED wall must not be drawn INSIDE the blade (เอ๋ 2026-06-07 'เส้นเกินเข้าไปในมีด
+        // ผู้ใช้จะงง'): clip its line to the part OUTSIDE the punch profile so it stops at the
+        // blade, never penetrates it. (Collision is still decided by the catalog clearance.)
+        if (seg && (seg.step || 0) < active) {
+          var qi0 = ptInPoly(q0, pp), qi1 = ptInPoly(q1, pp);
+          if (qi0 && qi1) continue;                       // fully inside the blade → don't draw
+          if (qi0 !== qi1) {
+            var qc = segVsPoly(q0, q1, pp);
+            if (qc) { if (qi0) q0 = qc; else q1 = qc; }   // keep only the outside part
+          }
+        }
+        line([q0, q1], col, lw);
       }
 
       // Reference marker (เอ๋ 2026-06-07 'เส้น marker จากกราฟ'): on each FORMED same-side wall,
