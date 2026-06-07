@@ -5979,9 +5979,15 @@ function renderSimBendHome() {
         const bends = window.KD_DXFFLAT.mergeBends(flat, rec.per_bend || [], (rec.box_geom.walls) || []);
         const card2 = ROOT.querySelector(`.sb-card[data-code="${_code.replace(/"/g, '')}"]`);
         const cv3 = card2 && card2.querySelector('.sb-sim-canvas');
+        const cv2 = card2 && card2.querySelector('.sb-sim-canvas-2d');
         if (!cv3) return;
         if (_simController && _simController.destroy) { try { _simController.destroy(); } catch (e) {} }
         _simController = window.kdSimBend3D_AI.mountFromFlat(cv3, flat, bends, rec, _code);
+        // 2D press from the DXF cross-section (active flange folds up at the die) — เอ๋ 2026-06-08
+        if (cv2 && window.kdSimBend3D_AI.mount2dFromFlat) {
+          if (_simController2D && _simController2D.destroy) { try { _simController2D.destroy(); } catch (e) {} }
+          _simController2D = window.kdSimBend3D_AI.mount2dFromFlat(cv2, flat, bends, rec, _code);
+        }
       }).catch(() => {});
     }
     return card;

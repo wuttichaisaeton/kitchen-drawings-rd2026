@@ -1214,6 +1214,74 @@
     };
   }
 
-  window.kdSimBend3D_AI = { mount: mount, mount2d: mount2d, mountFromFlat: mountFromFlat,
+  // ── DXF-driven 2D PRESS (เอ๋ 2026-06-08) ──────────────────────────────────────
+  // For the active bend, draws the TRUE cross-section from KD_DXFFLAT.crossSection (the active
+  // flange folds UP at the die — เอ๋'s "point 1 → point 2") + the die + the descending punch +
+  // the 50%-alpha gooseneck clearance envelope. The long base runs off the right (like the box sim).
+  function mount2dFromFlat(canvas, flat, bends, record, code) {
+    if (!canvas || !flat || !(window.KD_DXFFLAT && window.KD_DXFFLAT.crossSection)) return null;
+    var ctx = canvas.getContext('2d');
+    var dpr = Math.max(1, window.devicePixelRatio || 1);
+    var maxStep = bends.reduce(function (m, b) { return Math.max(m, b.step || 0); }, 0) || 1;
+    var totalT = START + maxStep * (MOVE + HOLD) + END;
+    var C_DIE = '#737d88', C_DIE_E = '#454e58', C_PUNCH = '#aab3bd', C_PUNCH_E = '#4c555f';
+    function fracL(step, t) { var s = START + (step - 1) * (MOVE + HOLD); if (t < s) return 0; if (t >= s + MOVE) return 1; return (t - s) / MOVE; }
+    function foldT(t) { var st = 0; for (var s = 1; s <= maxStep; s++) { if (t >= START + (s - 1) * (MOVE + HOLD)) st = s; } return (st - 1) + fracL(st, t); }
+    function gooseProf() { try { var p = window.KD_TOOLART && window.KD_TOOLART.profileFor({ id: 'P-KYOKKO-453-R15' }); if (p && p.length >= 3) return p; } catch (e) {} return GOOSE_PROF; }
+
+    function frame(t) {
+      var W = canvas.width, H = canvas.height; ctx.clearRect(0, 0, W, H);
+      var st = 0; for (var s2 = 1; s2 <= maxStep; s2++) { if (t >= START + (s2 - 1) * (MOVE + HOLD)) st = s2; }
+      var aw = null; bends.forEach(function (b) { if (b.step === st) aw = b; }); if (!aw) aw = bends[0];
+      var cs = window.KD_DXFFLAT.crossSection(flat, bends, foldT(t), aw);
+      var sc = (H * 0.5) / 90;                       // px per mm (≈90mm tall view)
+      var baseY = H * 0.80, ox = W * 0.42;
+      function X(u) { return ox + u * sc; }
+      function Y(z) { return baseY - z * sc; }
+      function poly(pts, fill, stroke, lw, off) { off = off || 0; ctx.beginPath(); pts.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1] + off); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.closePath(); if (fill) { ctx.fillStyle = fill; ctx.fill(); } if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = (lw || 1) * dpr; ctx.lineJoin = 'round'; ctx.stroke(); } }
+      // DIE (V-notch at u=0). DIE_PROF y is downward (negative) → fed as z so Y() flips it below.
+      poly(DIE_PROF.map(function (p) { return [p[0], p[1]]; }), C_DIE, C_DIE_E, 1.2);
+      // PUNCH descending into the die V over the active step's MOVE phase.
+      var f = fracL(st, t);
+      var penZ = (f < 0.16) ? PEN_HI * (1 - f / 0.16) : (f < 0.88 ? 0 : PEN_HI * ((f - 0.88) / 0.12));
+      var pp = gooseProf().map(function (p) { return [p[0], p[1] + penZ]; });
+      poly(pp, C_PUNCH, C_PUNCH_E, 1);
+      // 50%-alpha clearance envelope (gooseneck)
+      var env = clearEnvelope({ name: 'GOOSENECK #453', goose: true });
+      if (env) {
+        ctx.save(); ctx.globalAlpha = 0.5; ctx.setLineDash([5 * dpr, 4 * dpr]);
+        ctx.strokeStyle = '#ffb74d'; ctx.lineWidth = 2 * dpr; ctx.lineJoin = ctx.lineCap = 'round';
+        ctx.beginPath(); env.forEach(function (p, i) { var xx = X(p[0]), yy = Y(p[1] + penZ); if (i) ctx.lineTo(xx, yy); else ctx.moveTo(xx, yy); }); ctx.stroke();
+        ctx.setLineDash([]); ctx.fillStyle = '#ffb74d'; ctx.font = 'bold ' + (10 * dpr) + 'px "Flux Architect", monospace'; ctx.textBaseline = 'middle';
+        ctx.fillText('clearance', X(env[1][0]) + 4 * dpr, Y(env[1][1] + penZ)); ctx.restore();
+      }
+      // METAL cross-section — active flange (near u=0, z>0) red, the rest orange. Base runs off-screen.
+      if (cs) cs.segments.forEach(function (seg) {
+        var nearBend = Math.abs(seg[0][0]) < 30 && Math.abs(seg[1][0]) < 30;
+        var rises = Math.max(seg[0][1], seg[1][1]) > 1.5;
+        ctx.beginPath(); ctx.moveTo(X(seg[0][0]), Y(seg[0][1])); ctx.lineTo(X(seg[1][0]), Y(seg[1][1]));
+        ctx.strokeStyle = (nearBend && rises) ? '#e0574a' : '#e8923a'; ctx.lineWidth = 7 * dpr; ctx.lineCap = 'round'; ctx.stroke();
+      });
+      ctx.fillStyle = 'rgba(12,19,27,0.82)'; ctx.fillRect(0, 0, W, 26 * dpr);
+      ctx.fillStyle = '#cad6e6'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left'; ctx.font = (12 * dpr) + 'px "Flux Architect", monospace';
+      ctx.fillText('2D PRESS (DXF) · STEP ' + st + '/' + maxStep + ' · ' + (aw.id || '') + ' · GOOSENECK #453', 10 * dpr, 13 * dpr);
+      if (activeCb && aw && aw.id !== _lastA) { _lastA = aw.id; activeCb(aw.id, aw.step); }
+    }
+    var raf = null, startTs = null, paused = false, pauseT = 0, activeCb = null, _lastA = null, ro = null;
+    function resize() { var cw = canvas.clientWidth || 560, chh = canvas.clientHeight || 300; canvas.width = Math.round(cw * dpr); canvas.height = Math.round(chh * dpr); }
+    function loop(ts) { if (paused) return; if (startTs == null) startTs = ts - pauseT; var t = (ts - startTs) % totalT; pauseT = t; frame(t); raf = requestAnimationFrame(loop); }
+    resize(); try { ro = new ResizeObserver(function () { resize(); frame(pauseT); }); ro.observe(canvas); } catch (e) {}
+    raf = requestAnimationFrame(loop);
+    return {
+      frame: frame, setTime: function (v) { pauseT = v; frame(v); },
+      destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) try { ro.disconnect(); } catch (e) {} },
+      toggle: function () { paused = !paused; if (!paused) { startTs = null; raf = requestAnimationFrame(loop); } else if (raf) cancelAnimationFrame(raf); },
+      isPlaying: function () { return !paused; },
+      set onstatus(fn) {}, set onactive(fn) { activeCb = fn; _lastA = null; },
+      setPunchOverride: function () {}, setDieOverride: function () {}, recordClip: function () {}
+    };
+  }
+
+  window.kdSimBend3D_AI = { mount: mount, mount2d: mount2d, mountFromFlat: mountFromFlat, mount2dFromFlat: mount2dFromFlat,
                             SASH_PROF: SASH_PROF, GOOSE_PROF: GOOSE_PROF };
 })();
