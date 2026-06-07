@@ -139,7 +139,30 @@
       outline: stitch(outerSegs(ents)), holes: holes, bends: bends
     };
   }              // Task 2-5
-  function mergeBends(flat, perBend, walls) { return []; }  // Task 6
+  function mergeBends(flat, perBend, walls) {
+    perBend = perBend || []; walls = walls || [];
+    var cx = (flat.bbox.minX + flat.bbox.maxX) / 2, cy = (flat.bbox.minY + flat.bbox.maxY) / 2;
+    var pbByBend = {}; perBend.forEach(function (p) { pbByBend[p.bend] = p; });
+    return flat.bends.map(function (b) {
+      var wantAxis = b.dir === 'V' ? 'X' : 'Y';
+      var bendOff = b.dir === 'V' ? Math.abs(b.mid[0] - cx) : Math.abs(b.mid[1] - cy);
+      var best = null, bestD = Infinity;
+      walls.forEach(function (w) {
+        if (w.axis !== wantAxis) return;
+        var d = Math.abs((w.offset != null ? w.offset : 0) - bendOff);
+        if (d < bestD) { bestD = d; best = w; }
+      });
+      var pb = best ? pbByBend[best.id] : null;
+      return {
+        a: b.a, b: b.b, dir: b.dir, len: b.len, mid: b.mid,
+        id: best ? best.id : null,
+        side: best ? best.side : (b.mid[1] > cy || b.mid[0] > cx ? '+' : '-'),
+        angle_deg: (pb && pb.angle_deg != null) ? pb.angle_deg : (best && best.angle_deg != null ? best.angle_deg : 90),
+        step: pb ? pb.step : (best && best.step != null ? best.step : 999),
+        matched: !!best
+      };
+    });
+  }  // Task 6
   function foldFlat(flat, bends, t) { return null; }        // Task 7-8
 
   return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat };

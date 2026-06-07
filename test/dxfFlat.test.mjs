@@ -55,3 +55,25 @@ test('parseFlatDxf: holes include circles (mounting holes) and slots', () => {
   assert.ok(rect.length >= 7, `slots, got ${rect.length}`);
   circ.forEach(h => assert.ok(h.r > 0 && Array.isArray(h.c), 'circle has c/r'));
 });
+
+test('mergeBends: every bend gets angle, side, step from walls', () => {
+  const m = KD.parseFlatDxf(DXF);
+  const walls = [
+    { id: 'B5', axis: 'Y', side: '-', height: 15, offset: 1024, step: 1 },
+    { id: 'B6', axis: 'Y', side: '+', height: 15, offset: 1024, step: 2 },
+    { id: 'B1', axis: 'X', side: '+', height: 21, offset: 10.5, step: 6 }
+  ];
+  const perBend = [
+    { bend: 'B5', step: 1, angle_deg: 90 }, { bend: 'B6', step: 2, angle_deg: 90 },
+    { bend: 'B1', step: 6, angle_deg: 90 }
+  ];
+  const merged = KD.mergeBends(m, perBend, walls);
+  assert.equal(merged.length, m.bends.length, 'one entry per DXF bend');
+  merged.forEach(b => {
+    assert.equal(typeof b.angle_deg, 'number', 'has angle');
+    assert.ok(b.side === '+' || b.side === '-', 'has side');
+    assert.equal(typeof b.step, 'number', 'has step');
+  });
+  const longV = merged.filter(b => b.dir === 'V' && b.len > 800);
+  assert.ok(longV.every(b => b.angle_deg === 90), 'long side bends are 90');
+});
