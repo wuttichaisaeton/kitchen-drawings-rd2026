@@ -188,12 +188,76 @@
     }
     return panels;
   }
+  function area(r) { return Math.abs((r[2] - r[0]) * (r[3] - r[1])); }
+  // shared hinge between two rects → {axis:'x'|'y', at:Number} or null
+  function hinge(a, b) {
+    if (Math.abs(a[2] - b[0]) < 0.6 || Math.abs(b[2] - a[0]) < 0.6) {
+      var x = Math.abs(a[2] - b[0]) < 0.6 ? a[2] : a[0];
+      if (Math.min(a[3], b[3]) - Math.max(a[1], b[1]) > 0.6) return { axis: 'y', at: x };
+    }
+    if (Math.abs(a[3] - b[1]) < 0.6 || Math.abs(b[3] - a[1]) < 0.6) {
+      var y = Math.abs(a[3] - b[1]) < 0.6 ? a[3] : a[1];
+      if (Math.min(a[2], b[2]) - Math.max(a[0], b[0]) > 0.6) return { axis: 'x', at: y };
+    }
+    return null;
+  }
+  function progress(step, t) { return t >= 1e9 ? 1 : Math.max(0, Math.min(1, (t - (step - 1)))); }
+  function rotateAboutHinge(p, hg, ang) {
+    var c = Math.cos(ang), s = Math.sin(ang);
+    if (hg.axis === 'x') {           // hinge line y=at, rotate in Y-Z
+      var dy = p[1] - hg.at;
+      if (dy <= 0) return p;          // material on the base side of the hinge does not move
+      return [p[0], hg.at + dy * c, p[2] + dy * s];
+    } else {                          // hinge line x=at, rotate in X-Z
+      var dx = p[0] - hg.at;
+      if (dx <= 0) return p;
+      return [hg.at + dx * c, p[1], p[2] + dx * s];
+    }
+  }
+
   function foldFlat(flat, bends, t) {
     if (!flat || !flat.bbox) return null;
-    var panels = partition(flat, bends).map(function (p) {
-      return { rect: p.rect, pts2: p.pts2, pts3: p.pts2.map(function (q) { return [q[0], q[1], 0]; }) };
+    var raw = partition(flat, bends);
+    if (!raw.length) return null;
+    var baseIdx = 0; for (var i = 1; i < raw.length; i++) if (area(raw[i].rect) > area(raw[baseIdx].rect)) baseIdx = i;
+    var parent = new Array(raw.length).fill(-1), hinges = new Array(raw.length).fill(null);
+    var queue = [baseIdx], seen = {}; seen[baseIdx] = true;
+    while (queue.length) {
+      var u = queue.shift();
+      for (var v = 0; v < raw.length; v++) {
+        if (seen[v]) continue;
+        var hg = hinge(raw[u].rect, raw[v].rect);
+        if (hg) { parent[v] = u; hinges[v] = hg; seen[v] = true; queue.push(v); }
+      }
+    }
+    function bendAt(hg) {
+      if (!hg) return null; var best = null, bd = 2;
+      bends.forEach(function (b) {
+        var coord = hg.axis === 'x' ? b.mid[1] : b.mid[0];
+        var want = (hg.axis === 'x' && b.dir === 'H') || (hg.axis === 'y' && b.dir === 'V');
+        if (want && Math.abs(coord - hg.at) < bd) { bd = Math.abs(coord - hg.at); best = b; }
+      });
+      return best;
+    }
+    function foldPanel(idx) {
+      var pts = raw[idx].pts2.map(function (q) { return [q[0], q[1], 0]; });
+      var chain = []; var k = idx;
+      while (parent[k] >= 0) { chain.push(k); k = parent[k]; }
+      chain.reverse();
+      chain.forEach(function (ci) {
+        var hg = hinges[ci], bd = bendAt(hg); if (!hg || !bd) return;
+        var ang = (bd.angle_deg || 90) * Math.PI / 180 * progress(bd.step, t);
+        var sgn = bd.side === '-' ? -1 : 1;
+        pts = pts.map(function (p) { return rotateAboutHinge(p, hg, ang * sgn); });
+      });
+      return pts;
+    }
+    var panels = raw.map(function (p, idx) {
+      return { rect: p.rect, pts2: p.pts2, pts3: idx === baseIdx ? p.pts2.map(function (q) { return [q[0], q[1], 0]; }) : foldPanel(idx), parent: parent[idx] };
     });
-    return { panels: panels, active: null };
+    var active = null;
+    bends.forEach(function (b) { var pr = progress(b.step, t); if (pr > 0 && pr < 1) active = b; });
+    return { panels: panels, active: active, base: baseIdx };
   }        // Task 7-8
 
   return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat };

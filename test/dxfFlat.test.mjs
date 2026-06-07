@@ -90,3 +90,29 @@ test('foldFlat: an L-bracket flat partitions into 2 panels (base + flange)', () 
   assert.equal(out.panels.length, 2, `2 panels, got ${out.panels.length}`);
   // (fold/z behaviour is verified in the next task)
 });
+
+test('foldFlat: L-bracket flange folds ~90 up at full t', () => {
+  const flat = {
+    bbox:{minX:0,minY:0,maxX:100,maxY:60,w:100,h:60},
+    outline:[[0,0],[100,0],[100,60],[0,60],[0,0]], holes:[],
+    bends:[{a:[0,40],b:[100,40],dir:'H',len:100,mid:[50,40]}]
+  };
+  const bends=[{...flat.bends[0],side:'+',angle_deg:90,step:1,id:'B1',matched:true}];
+  const out = KD.foldFlat(flat, bends, 1e9);
+  const flange = out.panels.find(p => (p.rect[1]+p.rect[3])/2 > 40);
+  const top = Math.max(...flange.pts3.map(v => v[2]));
+  assert.ok(top > 15 && top < 21, `flange (20mm) stands ~vertical, top z=${top}`);
+  const base = out.panels.find(p => (p.rect[1]+p.rect[3])/2 < 40);
+  assert.ok(base.pts3.every(v => Math.abs(v[2]) < 0.01), 'base stays flat');
+});
+
+test('foldFlat: CVIL00 folds without throwing and yields >3 panels', () => {
+  const m = KD.parseFlatDxf(DXF);
+  const walls = [
+    {id:'B5',axis:'Y',side:'-',height:15,offset:1024,step:1},
+    {id:'B6',axis:'Y',side:'+',height:15,offset:1024,step:2}
+  ];
+  const merged = KD.mergeBends(m, [{bend:'B5',step:1,angle_deg:90},{bend:'B6',step:2,angle_deg:90}], walls);
+  const out = KD.foldFlat(m, merged, 1e9);
+  assert.ok(out && out.panels.length >= 3, `panels, got ${out && out.panels.length}`);
+});
