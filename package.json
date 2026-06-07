@@ -7,7 +7,8 @@
     "dev": "serve . -l 3000",
     "build:editor": "node editor/build.mjs",
     "watch:editor": "node editor/build.mjs --watch",
-    "stamp": "node scripts/stamp_bends.mjs"
+    "stamp": "node scripts/stamp_bends.mjs",
+    "test": "node --test test/*.mjs"
   },
   "dependencies": {
     "@xyflow/react": "^12.3.5",
