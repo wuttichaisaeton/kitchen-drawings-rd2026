@@ -16,3 +16,10 @@ test('harness: module loads and exposes the API', () => {
   assert.equal(typeof KD.foldFlat, 'function');
   assert.ok(DXF.includes('OUTER_PROFILES'), 'fixture has the OUTER_PROFILES layer');
 });
+
+test('parseFlatDxf: returns a bbox covering the ~2076 x 976 flat', () => {
+  const m = KD.parseFlatDxf(DXF);
+  assert.ok(m, 'returns a model');
+  assert.ok(m.bbox.w > 2000 && m.bbox.w < 2120, `width ~2076, got ${m.bbox.w}`);
+  assert.ok(m.bbox.h > 950 && m.bbox.h < 1000, `height ~976, got ${m.bbox.h}`);
+});
