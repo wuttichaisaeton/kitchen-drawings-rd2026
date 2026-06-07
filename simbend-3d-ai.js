@@ -992,6 +992,7 @@
       if (_envG) {
         var envM = _envG.map(function (p) { return [p[0] * uSign, p[1] + penZ]; });
         ctx.save();
+        ctx.globalAlpha = 0.5;   // เอ๋ 2026-06-08: clearance line + label at 50% transparency
         ctx.setLineDash([5 * dpr, 4 * dpr]);
         ctx.strokeStyle = '#ffb74d'; ctx.lineWidth = 2 * dpr; ctx.lineJoin = ctx.lineCap = 'round';
         ctx.beginPath();

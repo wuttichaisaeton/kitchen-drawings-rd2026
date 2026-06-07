@@ -144,7 +144,10 @@
     var cx = (flat.bbox.minX + flat.bbox.maxX) / 2, cy = (flat.bbox.minY + flat.bbox.maxY) / 2;
     var pbByBend = {}; perBend.forEach(function (p) { pbByBend[p.bend] = p; });
     return flat.bends.map(function (b) {
-      var wantAxis = b.dir === 'V' ? 'X' : 'Y';
+      // A DXF VERTICAL bend (vertical fold line) folds about the Y axis → matches a box_geom
+      // wall whose axis is 'Y' (e.g. CVIL00 long side flanges B5/B6). HORIZONTAL → 'X' (the tabs).
+      // (เอ๋ 2026-06-08: was flipped V→X/H→Y, so the side flanges never matched → never folded.)
+      var wantAxis = b.dir === 'V' ? 'Y' : 'X';
       var bendOff = b.dir === 'V' ? Math.abs(b.mid[0] - cx) : Math.abs(b.mid[1] - cy);
       var best = null, bestD = Infinity;
       walls.forEach(function (w) {
@@ -263,7 +266,37 @@
     var active = null;
     bends.forEach(function (b) { var pr = progress(b.step, t); if (pr > 0 && pr < 1) active = b; });
     return { panels: panels, active: active, base: baseIdx };
-  }        // Task 7-8
+  }
 
-  return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat };
+  // Cross-section through ONE bend, for the 2-D press view (เอ๋ 2026-06-08). Slices the FOLDED
+  // panels with the plane perpendicular to `bend` at its mid (so the active flange shows folding
+  // UP at the die). Returns ordered profile points [u,z] where u = the perpendicular axis
+  // (Y for an H bend, X for a V bend) re-centred on the bend, z = fold height. Plus the index of
+  // the profile vertex nearest the bend (the press point). null if nothing crosses.
+  function crossSection(flat, bends, t, bend) {
+    if (!flat || !bend) return null;
+    var out = foldFlat(flat, bends, t); if (!out) return null;
+    var horiz = bend.dir === 'H';            // H bend = horizontal line, fold axis along X
+    var c0 = horiz ? bend.mid[0] : bend.mid[1];   // the cut coordinate (cut plane is at this)
+    var u0 = horiz ? bend.mid[1] : bend.mid[0];   // the bend's perpendicular position (re-centre)
+    var segs = [];
+    out.panels.forEach(function (p) {
+      var pts = p.pts3, hits = [];
+      for (var i = 0; i < pts.length; i++) {
+        var a = pts[i], b = pts[(i + 1) % pts.length];
+        var ca = horiz ? a[0] : a[1], cb = horiz ? b[0] : b[1];
+        if ((ca - c0) * (cb - c0) < 0) {                 // edge crosses the cut plane
+          var f = (c0 - ca) / (cb - ca);
+          var u = (horiz ? (a[1] + f * (b[1] - a[1])) : (a[0] + f * (b[0] - a[0]))) - u0;
+          var z = a[2] + f * (b[2] - a[2]);
+          hits.push([+u.toFixed(3), +z.toFixed(3)]);
+        }
+      }
+      if (hits.length >= 2) segs.push([hits[0], hits[1]]);
+    });
+    if (!segs.length) return null;
+    return { segments: segs };   // each = [[u,z],[u,z]]; u re-centred on the bend, z = fold height
+  }
+
+  return { parseFlatDxf: parseFlatDxf, mergeBends: mergeBends, foldFlat: foldFlat, crossSection: crossSection };
 });
