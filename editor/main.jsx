@@ -1046,6 +1046,12 @@ function _writeCollapsedState(pk, state) {
 // User 2026-05-29: 'ไม่ต้องยุ่งเรื่อง pan zoom ... ให้ user จัดการเอง'.
 const _vpCache = {};
 
+// Seed (collapse-to-cabinets) guard — module-scoped so the auto-seed runs ONCE
+// per PAGE LOAD per project, NOT per mount: a Firebase/timer remount must not
+// re-seed (it would snap a deliberate in-session "Show all" shut), but a fresh
+// reload re-enters and re-seeds the clean cabinet view (clearing a stuck
+// revealAll wall). (เอ๋/G1 2026-06-09)
+const _kmeSeededProjects = new Set();
 function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepLinkCode, autoFullscreen }) {
   const [nodes, setNodes] = useState(initialNodes || []);
   const [edges, setEdges] = useState(initialEdges || []);
@@ -1293,24 +1299,28 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // initial view is "project + variants only". A user who then expands
   // some variants stores that explicit choice; the seed never runs again
   // for this project unless they hit Reset (which clears the LS entry).
-  const seededProjectRef = useRef(null);
   useEffect(() => {
     if (!inChecklistMode) return;
-    if (seededProjectRef.current === projectKey) return;
-    seededProjectRef.current = projectKey;
-    // Auto-seed (collapse all variants) only ONCE per project, ever. The
-    // persisted `seeded` flag — set here and by Show all — means a later
-    // remount with an empty collapse set is treated as "user expanded
-    // everything" rather than "fresh project", so we don't snap the
-    // variants shut and strand their kids faded. (regression 2026-05-29)
-    if (_readCollapsedState(projectKey).seeded) return;
-    if (collapsedNodes.size > 0) return;
+    // Seed ONCE per PAGE LOAD per project (module-scoped guard above). A
+    // Firebase/timer REMOUNT must not re-seed (it would snap a deliberate
+    // in-session "Show all" shut); a fresh reload re-enters here and re-seeds
+    // the clean cabinet view. This REPLACES the old persisted-`seeded`
+    // early-return, which made "Show all" a sticky one-way wall (เอ๋/G1
+    // 2026-06-09: revealAll:true persisted → §1+§3 force-expanded all 204 rows
+    // with no way back to the 15 cabinet boards).
+    if (_kmeSeededProjects.has(projectKey)) return;
+    // A real user-authored collapse state (they drilled into some cabinets) has
+    // a NON-empty nodes list — never override it. The stuck-wall state has an
+    // EMPTY collapse set (Show all wiped it) → fall through and re-seed.
+    if (collapsedNodes.size > 0) { _kmeSeededProjects.add(projectKey); return; }
     const variantIds = nodes.filter(n => n.data?.isVariantRoot).map(n => n.id);
     if (!variantIds.length) return;
+    _kmeSeededProjects.add(projectKey);
     const seeded = new Set(variantIds);
     setCollapsedNodes(seeded);
-    _writeCollapsedState(projectKey, { center: collapsed, nodes: seeded, seeded: true });
-  }, [inChecklistMode, projectKey, nodes, collapsedNodes, collapsed, _persistCollapse]);
+    setRevealAllState(false);   // clear any stuck "Show all" so the fade re-applies
+    _writeCollapsedState(projectKey, { center: collapsed, nodes: seeded, hidden: new Set(), seeded: true, revealAll: false });
+  }, [inChecklistMode, projectKey, nodes, collapsedNodes, collapsed]);
 
   // Compact-mode positions for collapsed variants: keep them close to the
   // project center so a freshly-opened mindmap fits a phone viewport
@@ -1390,6 +1400,30 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     setStatus('show all');
     setTimeout(() => fitNow({ duration: 600 }), 120);
   }, [projectKey, fitNow]);
+
+  // "Collapse all" — the OTHER half of the Show-all toggle (เอ๋/G1 2026-06-09:
+  // "Show all" was a STICKY one-way wall — once pressed it persisted
+  // revealAll:true and §1 kanban + §3 mindmap force-expanded all 204 rows with
+  // no way back to the cabinet boards). Re-seeds every depth-0 cabinet
+  // collapsed, clears revealAll, and persists that clean state so reopening
+  // stays grouped.
+  const collapseAll = useCallback(() => {
+    const variantIds = nodes.filter(n => n.data?.isVariantRoot).map(n => n.id);
+    const seeded = new Set(variantIds);
+    setCollapsedState(false);            // center expanded → the cabinets show
+    setCollapsedNodes(seeded);           // every cabinet collapsed → cabinet boards
+    setHiddenAnchorsRaw(new Set());
+    setRevealAllState(false);
+    _writeCollapsedState(projectKey, { center: false, nodes: seeded, hidden: new Set(), seeded: true, revealAll: false });
+    setStatus('collapsed to cabinets');
+    setTimeout(() => fitNow({ duration: 600 }), 120);
+  }, [nodes, projectKey, fitNow]);
+
+  // The Show-all control is a real TOGGLE now: when everything is already shown
+  // (revealAll), collapse back to the cabinet boards; otherwise show everything.
+  const toggleShowAll = useCallback(() => {
+    if (revealAll) collapseAll(); else showAll();
+  }, [revealAll, collapseAll, showAll]);
 
   // Tap empty canvas → toggle fullscreen. The canvas grows/shrinks, so
   // re-fit once the CSS size transition settles. (request 2026-05-29 #3)
@@ -1810,7 +1844,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           title="Back to projects"
         >← Back</button>
         <span className="kme-shell-title">Assembly</span>
-        <button className="kme-shell-showall" onClick={showAll} title="Show every node — clears all hide/collapse">⊞ Show all</button>
+        <button className="kme-shell-showall" onClick={toggleShowAll} title={revealAll ? 'Collapse back to the cabinet boards' : 'Show every node — clears all hide/collapse'}>{revealAll ? '⊟ Collapse' : '⊞ Show all'}</button>
       </div>
 
       {/* §1 Assembly Tree — capsule list, shares state with §3 Kanban */}
@@ -1882,7 +1916,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             </button>
           </>
         )}
-        <button className="kme-showall" onClick={showAll} title="Show every node — clears all hide/collapse and re-frames the whole map">
+        <button className="kme-showall" onClick={toggleShowAll} title={revealAll ? 'Collapse back to the cabinet boards' : 'Show every node — clears all hide/collapse and re-frames the whole map'}>
           <svg className="kme-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <circle cx="8" cy="8" r="2.1"/>
             <circle cx="3" cy="3" r="1.4"/>
@@ -1894,7 +1928,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
             <line x1="6.4" y1="9.6" x2="4" y2="12"/>
             <line x1="9.6" y1="9.6" x2="12" y2="12"/>
           </svg>
-          <span>Show all</span>
+          <span>{revealAll ? 'Collapse' : 'Show all'}</span>
         </button>
         <div className="kme-spacer" />
         <div className="kme-status">
@@ -1982,8 +2016,8 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           <Panel position="bottom-left">
             <button
               className="kme-showall kme-showall-float"
-              onClick={showAll}
-              title="Show every node — clears all hide/collapse and re-frames the whole map"
+              onClick={toggleShowAll}
+              title={revealAll ? 'Collapse back to the cabinet boards' : 'Show every node — clears all hide/collapse and re-frames the whole map'}
             >
               <svg className="kme-btn-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="8" cy="8" r="2.1"/>
@@ -1996,7 +2030,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
                 <line x1="6.4" y1="9.6" x2="4" y2="12"/>
                 <line x1="9.6" y1="9.6" x2="12" y2="12"/>
               </svg>
-              <span>Show all</span>
+              <span>{revealAll ? 'Collapse' : 'Show all'}</span>
             </button>
           </Panel>
           {/* Checklist panel removed from the fullscreen Mindmap — the §2
