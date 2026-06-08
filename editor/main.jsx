@@ -51,7 +51,7 @@ async function openInFusion(urn, fallbackUrl) {
 // code below. Click opens the project's master PDF (same as the SVG
 // .mm-center click used to). Admin can drag it; workshop view-only.
 function ProjectCenterNode({ id, data, selected }) {
-  const { label, code, projectKey, collapsed, admin } = data;
+  const { label, code, projectKey, collapsed, admin, logoRadius } = data;
   const displayCode = code || label || projectKey;
   // Admin drag-drop PDF onto the center → uploads as <projectKey>.pdf,
   // i.e. the project master. Same uploadPdfFromDrop path used by BOM
@@ -103,38 +103,60 @@ function ProjectCenterNode({ id, data, selected }) {
   // because React Flow's drag detection on the node container intercepts
   // bubbled clicks in some browsers (admin draggable nodes). The parent
   // handlers run after RF's own gesture detection so they're reliable.
+  // Big "logo" circle (เอ๋ 2026-06-09): when app.js sets data.logoRadius (DEEP
+  // assembly), the project center renders as a BIG circle that the cabinet ring
+  // sits inside. The big disc is a NON-interactive backdrop (pointer-events:none
+  // so it doesn't eat cabinet taps); a small centred .kme-center-hub carries the
+  // logo + project name + the click/collapse/drop affordance.
+  const big = Number(logoRadius) > 0;
+  const sizePx = big ? Math.round(2 * Number(logoRadius)) : null;
   const cls = ['kme-center'];
+  if (big) cls.push('kme-center-logo');
   if (selected) cls.push('kme-selected');
   if (collapsed) cls.push('kme-center-collapsed');
   if (dragOver) cls.push('kme-center-drag-over');
   if (uploading) cls.push('kme-center-uploading');
+  const logoSvg = (
+    <svg className="kme-center-icon" viewBox="0 0 64 64" width="100%" height="100%">
+      <rect x="4" y="52" width="56" height="4" rx="1" fill="#7F8C8D"/>
+      <rect x="6" y="36" width="52" height="16" rx="1" fill="#BDC3C7"/>
+      <rect x="6" y="36" width="52" height="3" fill="#E67E22"/>
+      <rect x="10" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="20" cy="46" r="1" fill="#7F8C8D"/>
+      <rect x="26" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="28" cy="46" r="1" fill="#7F8C8D"/>
+      <rect x="42" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="44" cy="46" r="1" fill="#7F8C8D"/>
+      <rect x="12" y="35" width="16" height="2" fill="#2C3E50"/>
+      <circle cx="16" cy="35" r="2" fill="#E74C3C"/><circle cx="24" cy="35" r="1.5" fill="#E74C3C"/>
+      <path d="M14 8 L34 8 L32 20 L16 20 Z" fill="#34495E"/>
+      <rect x="10" y="20" width="28" height="4" rx="0.5" fill="#2C3E50"/>
+      <line x1="44" y1="14" x2="54" y2="14" stroke="#7F8C8D" strokeWidth="1"/>
+      <path d="M46 14 L46 22 M46 22 L45 24 L47 24 Z" stroke="#D35400" strokeWidth="1" fill="none"/>
+      <path d="M50 14 L50 20 A2 2 0 0 0 54 20" stroke="#2980B9" strokeWidth="1" fill="none"/>
+    </svg>
+  );
+  const title = admin
+    ? `Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF · Drop PDF here to upload as ${displayCode}.pdf`
+    : `Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF (${displayCode})`;
   return (
     <div
       className={cls.join(' ')}
-      title={admin
-        ? `Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF · Drop PDF here to upload as ${displayCode}.pdf`
-        : `Click: ${collapsed ? 'expand' : 'collapse'} · Double-click: open project PDF (${displayCode})`}
-      onDragOver={onDragOver}
-      onDragLeave={onDragLeave}
-      onDrop={onDrop}
+      style={big ? { width: sizePx + 'px', height: sizePx + 'px' } : undefined}
+      title={title}
+      onDragOver={big ? undefined : onDragOver}
+      onDragLeave={big ? undefined : onDragLeave}
+      onDrop={big ? undefined : onDrop}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <svg className="kme-center-icon" viewBox="0 0 64 64" width="100%" height="100%">
-        <rect x="4" y="52" width="56" height="4" rx="1" fill="#7F8C8D"/>
-        <rect x="6" y="36" width="52" height="16" rx="1" fill="#BDC3C7"/>
-        <rect x="6" y="36" width="52" height="3" fill="#E67E22"/>
-        <rect x="10" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="20" cy="46" r="1" fill="#7F8C8D"/>
-        <rect x="26" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="28" cy="46" r="1" fill="#7F8C8D"/>
-        <rect x="42" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="44" cy="46" r="1" fill="#7F8C8D"/>
-        <rect x="12" y="35" width="16" height="2" fill="#2C3E50"/>
-        <circle cx="16" cy="35" r="2" fill="#E74C3C"/><circle cx="24" cy="35" r="1.5" fill="#E74C3C"/>
-        <path d="M14 8 L34 8 L32 20 L16 20 Z" fill="#34495E"/>
-        <rect x="10" y="20" width="28" height="4" rx="0.5" fill="#2C3E50"/>
-        <line x1="44" y1="14" x2="54" y2="14" stroke="#7F8C8D" strokeWidth="1"/>
-        <path d="M46 14 L46 22 M46 22 L45 24 L47 24 Z" stroke="#D35400" strokeWidth="1" fill="none"/>
-        <path d="M50 14 L50 20 A2 2 0 0 0 54 20" stroke="#2980B9" strokeWidth="1" fill="none"/>
-      </svg>
-      <div className="kme-center-code">{displayCode}</div>
+      {big ? (
+        <div className="kme-center-hub" onDragOver={onDragOver} onDragLeave={onDragLeave} onDrop={onDrop}>
+          {logoSvg}
+          <div className="kme-center-code">{displayCode}</div>
+        </div>
+      ) : (
+        <>
+          {logoSvg}
+          <div className="kme-center-code">{displayCode}</div>
+        </>
+      )}
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
     </div>
   );

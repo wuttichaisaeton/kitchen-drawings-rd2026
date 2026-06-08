@@ -543,6 +543,37 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   letter-spacing: 0.5px;
 }
 
+/* Big "logo" circle — DEEP assembly view (เอ๋ 2026-06-09 'โลโก้ขยายเกือบเต็ม +
+   16 ตู้อยู่ในนั้น'). app.js sizes the center div inline to 2×logoRadius; this
+   turns it into a faint NON-interactive disc that the 15-16 cabinet cards sit
+   inside (cabinet ring radius < logo radius). pointer-events:none so the cards
+   on top stay tappable; the centred .kme-center-hub is the real interactive
+   logo (click=collapse / dbl=PDF / drop=upload). */
+.kme-center.kme-center-logo {
+  background: radial-gradient(circle, rgba(74,144,226,0.06) 0%, rgba(74,144,226,0.018) 70%, transparent 73%);
+  border: 2px dashed rgba(74,144,226,0.40);
+  box-shadow: none;
+  pointer-events: none;
+}
+.kme-center-hub {
+  pointer-events: auto;
+  width: 176px;
+  height: 176px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #2a6ed6 0%, #1f4a98 75%, #163769 100%);
+  border: 3px solid #4a90e2;
+  box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.18), 0 6px 24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  color: #fff;
+  cursor: pointer;
+}
+.kme-center-hub .kme-center-icon { width: 60px; height: 60px; }
+.kme-center-hub .kme-center-code { font-size: 15px; max-width: 150px; }
+
 /* ── Leaf nodes (no children) — dashed border + clickable ───────── */
 /* Heavy dashed (3.5px + bigger dash gap) so it's obviously different
    from a solid wrapper, even at small zoom levels. */

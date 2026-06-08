@@ -7073,62 +7073,117 @@ function _buildBomNodes(project, parts, projectKey) {
     });
   }
 
-  // ── Compact radial tidy-tree — staggered annulus (2026-06-08, G2; เอ๋ "กระชับขึ้น") ──
-  // Same provable no-overlap as the one-ring version, ~HALF the diameter. The old
-  // version put every leaf on ONE outer ring → radius scales with N (~130) → a huge
-  // sparse circle. Here ALL nodes pack into a tight ANNULUS of K concentric rings in
-  // DFS PRE-ORDER (a family's anchor + its whole subtree stay contiguous = one "ก้อน").
   // The rendered card is up to ~314px wide (measured live: long code + a "NO PDF" pill).
-  //   • angle  = DFS pre-order index g → an even slot around the full circle (N slots).
-  //   • radius = R0 + (g mod K)·ROW_STEP — consecutive nodes ALTERNATE rings, so any two
-  //              adjacent nodes are ROW_STEP apart RADIALLY (clears CARD_W at 3 o'clock);
-  //              same-ring nodes (g, g+K) are K slots apart ANGULARLY (chord ≥ MIN_SPACING).
-  // K is chosen to MINIMISE the outer radius. Min node-to-node distance ≥ the card
-  // diagonal ⇒ no two cards overlap at any angle. No global cap.
   const CARD_W = 314;                 // measured max rendered card width  (px)
   const CARD_H = 121;                 // measured max rendered card height (px)
   const MIN_SPACING = 350;            // ≥ diagonal(314,121)=337 → clears the widest card at every angle
-  const ROW_STEP = MIN_SPACING;       // radial gap between annulus rings
+  const ROW_STEP = MIN_SPACING;       // radial gap between rings
   const TWO_PI = 2 * Math.PI;
-
-  // N = every node except the project center (all packed into the annulus).
-  let N = 0;
-  (function count(list) { for (const n of list) { N++; if (n.children?.length) count(n.children); } })(roots);
-  N = Math.max(1, N);
-  const SLOT_ANG = TWO_PI / N;
-  // Pick K (ring count) that MINIMISES the outer radius. R0 (innermost ring) is sized
-  // so two same-ring nodes (K slots apart) clear MIN_SPACING as a chord; outer radius =
-  // R0 + (K-1)·ROW_STEP. Clamp the angle ≤ π/2 so tiny trees don't divide by ~0.
-  let K = 1, R0 = 360, bestOuter = Infinity;
-  for (let k = 1; k <= 8; k++) {
-    const r = Math.max(360, MIN_SPACING / (2 * Math.sin(Math.min(Math.PI / 2, (k * Math.PI) / N))));
-    const outer = r + (k - 1) * ROW_STEP;
-    if (outer < bestOuter) { bestOuter = outer; K = k; R0 = r; }
-  }
-
-  // Walk the tree in DFS pre-order, placing each node at its annulus slot + the edge
-  // from its parent. `isTop` = a direct child of the project center (a family anchor);
-  // `anchorId` threads that anchor's id down so the editor's checklist / collapse keeps
-  // working. `g` = the running pre-order index (anchor BEFORE its kids ⇒ contiguous arc).
   const centerId = `project:${projectKey}`;
-  let _g = 0;
-  function emitTree(node, parentSourceId, anchorId, isTop) {
-    const g = _g++;
-    const a = -Math.PI / 2 + (g + 0.5) * SLOT_ANG;
-    const r = R0 + (g % K) * ROW_STEP;
-    const x = r * Math.cos(a), y = r * Math.sin(a);
-    const hasKids = !!node.children?.length;
-    const { nodeKey, color } = emitNode(node, x, y,
-      isTop ? { forceIsAnchor: (!!node._is_variant_root || hasKids) }
-            : { anchorNodeId: anchorId });
-    const myId = `bom:${nodeKey}`;
-    emitEdge(parentSourceId, nodeKey, color, isTop);   // center→family edges drawn stronger
-    if (hasKids) {
-      const childAnchor = isTop ? myId : anchorId;
-      for (const c of node.children) emitTree(c, myId, childAnchor, false);
+
+  // DEEP = a real assembly hierarchy (≤30 top-level cabinets, some with children —
+  // e.g. 02 Ruth after CC_Assembly's deep export). Use the 16-cabinet ring layout.
+  // Otherwise (shallow project = parts straight off the center) fall back to the
+  // compact staggered annulus.
+  const isDeep = roots.length <= 30 && roots.some(r => r.children && r.children.length);
+
+  if (isDeep) {
+    // ── 16-CABINET RING (เอ๋ 2026-06-09 'โลโก้ขยายเกือบเต็ม + 16 ตู้อยู่ในนั้น') ──
+    // Cabinets sit on an INNER RING (inside the big logo circle); each cabinet's
+    // whole subtree fans OUTWARD beyond the circle in the cabinet's own angular
+    // WEDGE. Wedge width = an equal FLOOR (so even 0-descendant cabinets clear
+    // their neighbours on the inner ring) + a PROPORTIONAL share (so a 36-desc
+    // cabinet gets a wide fan, a 0-desc one stays thin). Sums to 2π → tiles, no
+    // gaps/overlap. Provably 0-overlap: cabinets clear on the ring; within a
+    // wedge it's a staggered annulus (same-ring K-apart ≥ MIN_SPACING, rings
+    // ROW_STEP apart); across wedges an angPad gap keeps boundaries clear.
+    function _descCount(node) { let n = 0; for (const c of (node.children || [])) n += 1 + _descCount(c); return n; }
+    const cabs = roots.map(r => ({ node: r, desc: _descCount(r) }));
+    const NC = cabs.length;
+    const totalDesc = Math.max(1, cabs.reduce((s, c) => s + c.desc, 0));
+    const FLOOR_FRAC = 0.5, PROP_FRAC = 0.5;
+    const wedge = cabs.map(c => TWO_PI * (FLOOR_FRAC / NC + PROP_FRAC * (c.desc / totalDesc)));
+    let minSep = Infinity;
+    for (let i = 0; i < NC; i++) { const sep = (wedge[i] + wedge[(i + 1) % NC]) / 2; if (sep < minSep) minSep = sep; }
+    const R_CAB = Math.max(900, MIN_SPACING / (2 * Math.sin(Math.min(Math.PI / 2, minSep / 2))));
+    const R_LOGO = R_CAB + CARD_W * 0.5 + 140;   // big "logo" circle encloses the cabinet ring
+    const R_PARTS = R_LOGO + ROW_STEP;           // descendants begin just OUTSIDE the circle
+    const angPad = Math.asin(Math.min(0.9, MIN_SPACING / (2 * R_PARTS)));
+
+    // Big "logo" circle: enlarge the project center to the circle radius so it
+    // fills the middle with the 15-16 cabinets sitting on it (เอ๋ 'โลโก้ขยาย
+    // เกือบเต็ม + 16 ตู้อยู่ในนั้น'). Re-centre it on the origin (its top-left
+    // must be (−R_LOGO,−R_LOGO) so the circle's centre = the cabinet ring's
+    // centre). The editor reads logoRadius to render the big ring + a small
+    // interactive hub. parts fan OUTSIDE this circle (R_PARTS > R_LOGO).
+    center.data.logoRadius = R_LOGO;
+    center.data.cabRadius = R_CAB;
+    center.position = { x: -R_LOGO, y: -R_LOGO };
+
+    let phi = -Math.PI / 2 - wedge[0] / 2;        // cabinet 0 centred at the top (−90°)
+    for (let i = 0; i < NC; i++) {
+      const c = cabs[i];
+      const wStart = phi, wMid = phi + wedge[i] / 2;
+      phi += wedge[i];
+      const hasKids = !!(c.node.children && c.node.children.length);
+      const { nodeKey: cabKey, color: cabColor } = emitNode(
+        c.node, R_CAB * Math.cos(wMid), R_CAB * Math.sin(wMid),
+        { forceIsAnchor: (!!c.node._is_variant_root || hasKids) });
+      const cabId = `bom:${cabKey}`;
+      emitEdge(centerId, cabKey, cabColor, true);
+      if (!hasKids) continue;
+
+      // Subtree in DFS pre-order (contiguous = readable group), packed into a
+      // staggered annulus confined to this cabinet's wedge, outside the circle.
+      const desc = [];
+      (function collect(node, parentId) {
+        for (const ch of (node.children || [])) {
+          desc.push({ node: ch, parentId });
+          collect(ch, `bom:${ch._id || ch.code + '::'}`);
+        }
+      })(c.node, cabId);
+      const M = desc.length;
+      const usable = Math.max(0.0001, wedge[i] - 2 * angPad);
+      const slotAng = usable / M;
+      let K = 1;  // rings: same-ring nodes (K slots apart) must clear MIN_SPACING at R_PARTS
+      for (let k = 1; k <= 16; k++) { K = k; if (2 * R_PARTS * Math.sin(Math.min(Math.PI / 2, k * slotAng / 2)) >= MIN_SPACING) break; }
+      desc.forEach((d, s) => {
+        const a = wStart + angPad + (s + 0.5) * slotAng;
+        const r = R_PARTS + (s % K) * ROW_STEP;
+        emitNode(d.node, r * Math.cos(a), r * Math.sin(a), { anchorNodeId: cabId });
+        emitEdge(d.parentId, d.node._id || (d.node.code + '::'), cabColor, false);
+      });
     }
+  } else {
+    // ── FLAT fallback: compact staggered annulus (2026-06-08, G2) — unchanged. ──
+    // ALL nodes pack into a tight ANNULUS of K rings in DFS pre-order (each
+    // family contiguous). angle = pre-order slot; radius = R0 + (g mod K)·ROW_STEP
+    // (consecutive alternate rings → ROW_STEP apart radially; same-ring K apart →
+    // chord ≥ MIN_SPACING). K minimises the outer radius. Provably 0-overlap.
+    let N = 0;
+    (function count(list) { for (const n of list) { N++; if (n.children?.length) count(n.children); } })(roots);
+    N = Math.max(1, N);
+    const SLOT_ANG = TWO_PI / N;
+    let K = 1, R0 = 360, bestOuter = Infinity;
+    for (let k = 1; k <= 8; k++) {
+      const r = Math.max(360, MIN_SPACING / (2 * Math.sin(Math.min(Math.PI / 2, (k * Math.PI) / N))));
+      const outer = r + (k - 1) * ROW_STEP;
+      if (outer < bestOuter) { bestOuter = outer; K = k; R0 = r; }
+    }
+    let _g = 0;
+    function emitTree(node, parentSourceId, anchorId, isTop) {
+      const g = _g++;
+      const a = -Math.PI / 2 + (g + 0.5) * SLOT_ANG;
+      const r = R0 + (g % K) * ROW_STEP;
+      const hasKids = !!node.children?.length;
+      const { nodeKey, color } = emitNode(node, r * Math.cos(a), r * Math.sin(a),
+        isTop ? { forceIsAnchor: (!!node._is_variant_root || hasKids) } : { anchorNodeId: anchorId });
+      const myId = `bom:${nodeKey}`;
+      emitEdge(parentSourceId, nodeKey, color, isTop);
+      if (hasKids) { const childAnchor = isTop ? myId : anchorId; for (const ch of node.children) emitTree(ch, myId, childAnchor, false); }
+    }
+    for (const root of roots) emitTree(root, centerId, null, true);
   }
-  for (const root of roots) emitTree(root, centerId, null, true);
 
   // Post-build pass: depth = hops from the Project center along the directed
   // center→child edges. Recolor every BOM node (incl wrapper / variant-root
@@ -7281,11 +7336,21 @@ function _applyOverrides(nodes, overrides) {
   // position overrides blanket most of the nodes it's that bug, not a handful of real admin
   // drags → IGNORE the positions (keep label/rename overrides) so the fresh layout wins.
   const posCount = nodes.reduce((c, n) => { const o = overrides[n.id]; return c + (o && o.x != null && o.y != null ? 1 : 0); }, 0);
-  const blanketFreeze = nodes.length >= 8 && posCount >= 0.6 * nodes.length;
+  // The blanket also misfires when the TREE changes (the 2026-06-09 deep
+  // CC_Assembly export changed node ids) → few overrides match the new nodes,
+  // so posCount alone falls under 60% and the stale positions leak back. A real
+  // admin never hand-drags dozens of nodes, so a large TOTAL count of position
+  // overrides is itself the blanket signal regardless of how many still match.
+  const totalPosOverrides = Object.keys(overrides).reduce((c, k) => { const o = overrides[k]; return c + (o && o.x != null && o.y != null ? 1 : 0); }, 0);
+  const blanketFreeze = nodes.length >= 8 && (posCount >= 0.6 * nodes.length || totalPosOverrides >= 30);
   return nodes.map(n => {
     const o = overrides[n.id];
     if (!o) return n;
-    const hasPosOverride = !blanketFreeze && o.x != null && o.y != null;
+    // The project center is the layout ORIGIN — never honour a saved position
+    // for it; a stale center override shifts the whole big-logo circle off the
+    // cabinet ring (เอ๋ 2026-06-09). label/rename overrides still apply.
+    const isCenter = typeof n.id === 'string' && n.id.startsWith('project:');
+    const hasPosOverride = !blanketFreeze && !isCenter && o.x != null && o.y != null;
     return {
       ...n,
       position: hasPosOverride
