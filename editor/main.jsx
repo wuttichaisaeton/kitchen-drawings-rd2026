@@ -853,7 +853,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
       if (!n || !isBom(n) || seen.has(id)) return;
       seen.add(id);
       const kids = (childrenOf.get(id) || []).filter(k => isBom(byId.get(k)));
-      out.push({ id, node: n, depth, hasKids: kids.length > 0 });
+      out.push({ id, node: n, depth, hasKids: kids.length > 0, kidCount: kids.length });
       if (!collapsedNodes.has(id)) {
         for (const k of kids) walk(k, depth + 1);
       }
@@ -865,9 +865,17 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
       if (seen.has(r.id)) continue;
       walk(r.id, 0);
     }
-    // any BOM node not yet emitted (orphan / cycle) appended at depth 0
+    // Append GENUINE orphans (no bom parent) at depth 0 — but NOT children that are
+    // simply hidden because their parent is COLLAPSED. The old loop re-walked any
+    // un-seen node, so collapsing a parent dumped its kids back in as depth-0 roots and
+    // flattened the whole tree (เอ๋ 2026-06-08: §1 showed 129 'assemblies'). A node with
+    // a bom parent belongs under that parent (collapsed or not), never as a root.
+    const bomChild = new Set();
+    for (const [src, kids] of childrenOf) {
+      if (isBom(byId.get(src))) for (const k of kids) bomChild.add(k);
+    }
     for (const n of nodes) {
-      if (isBom(n) && !seen.has(n.id)) { void rootIds; walk(n.id, 0); }
+      if (isBom(n) && !seen.has(n.id) && !bomChild.has(n.id)) { void rootIds; walk(n.id, 0); }
     }
     return out;
   }, [nodes, edges, collapsedNodes]);
@@ -876,44 +884,36 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   // signal the Kanban node + checklist use.
   const isDone = (code) => !!(code && api.isAssembled && api.isAssembled(projectKey, code));
 
-  // Group the flat DFS row list into columns by ASSEMBLY GROUP, NOT family (เอ๋
-  // 2026-06-08: 'kanban เหมือน mindmap — column ตาม variant/ชุดประกอบ; เรียงตาม family
-  // ดูที่ Library ก็ได้'). Each TOP-LEVEL node (a variant root / assembly master — the
-  // mindmap's branches straight off the project centre) becomes ONE column, and its
-  // whole subtree (the parts that make up that assembly) lists below it. Rows are
-  // DFS-contiguous per root (walk() emits a root then its subtree), so we just split
-  // the flat list at each depth-0 row. Column colour stays _famColor so it still
-  // matches that node's colour in the §3 Mindmap.
-  const columns = useMemo(() => {
-    const groups = [];
-    let cur = null;
-    for (const r of rows) {
-      if (r.depth === 0 || !cur) { cur = { root: r, gRows: [] }; groups.push(cur); }
-      cur.gRows.push(r);
-    }
-    return groups;
-  }, [rows]);
+  // §1 Kanban = a SINGLE EXPANDABLE assembly tree (เอ๋ 2026-06-08: 'kanban ดูไม่ออก
+  // อะไรประกอบกับอะไร แล้วได้เป็นตัวยังไง — ทำแบบ Expand'). Columns (by family then by
+  // assembly) were unreadable. Now it's one outline you DRILL: each top-level node (a
+  // variant root / assembly master — the "ตัวที่ได้") is collapsed by default with a
+  // "N parts" badge; expand it (▸) to reveal the components that make it. Family colour
+  // = a left stripe so groups still read at a glance + match the §3 Mindmap. No column
+  // grouping — the parent→child indent IS the "อะไรประกอบเป็นอะไร".
 
-  const renderRow = ({ id, node, depth, hasKids }) => {
+  const renderRow = ({ id, node, depth, hasKids, kidCount }) => {
     const code = node.data?.label || '';
     const qty = node.data?.qty;
     const collapsed = collapsedNodes.has(id);
     const done = isDone(code);
     const comments = api.getComments ? (api.getComments(code) || []) : [];
     const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
+    const fc = _famColor(_famOf(code));
     return (
       <div
         key={id}
-        className={'kme-tree-row' + (done ? ' is-done' : '')}
-        style={{ paddingLeft: (8 + depth * 16) + 'px' }}
+        className={'kme-tree-row' + (done ? ' is-done' : '') + (depth === 0 ? ' is-assembly' : '')}
+        style={{ paddingLeft: (8 + depth * 20) + 'px', borderLeft: '3px solid ' + fc.border }}
       >
         <button
           className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf') + (collapsed ? ' is-collapsed' : '')}
           onClick={() => hasKids && toggleNodeCollapse(id)}
-          title={hasKids ? (collapsed ? 'Expand' : 'Collapse') : ''}
+          title={hasKids ? (collapsed ? 'Expand — show parts' : 'Collapse') : ''}
           disabled={!hasKids}
         >{hasKids ? (collapsed ? '▸' : '▾') : '·'}</button>
         <span className="kme-tree-label" title={code}>{code}</span>
+        {hasKids && collapsed && <span className="kme-tree-mk" title={kidCount + ' part(s) make this'}>🧩 {kidCount}</span>}
         {qty != null && <span className="kme-tree-qty">×{qty}</span>}
         {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
         {hasPdf && (
@@ -942,34 +942,14 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
     return <div className="kme-tree"><div className="kme-tree-empty">No assembly tree for this project.</div></div>;
   }
 
+  const topCount = rows.filter(r => r.depth === 0).length;
+  const doneTop = rows.filter(r => r.depth === 0 && isDone(r.node.data?.label || '')).length;
   return (
-    <div className="kme-tree-board">
-      {columns.map(({ root, gRows }) => {
-        const rootCode = root.node.data?.label || '';
-        const fc = _famColor(_famOf(rootCode));
-        const doneCount = gRows.filter(r => isDone(r.node.data?.label || '')).length;
-        // Header = the assembly/variant code; body = its parts (the descendants),
-        // re-based so the column's own tree starts at indent 0. A single-part group
-        // (no children) shows that part itself as the one card.
-        const hasKids = gRows.length > 1;
-        const bodyRows = hasKids ? gRows.slice(1) : gRows;
-        const reBase = hasKids ? 1 : 0;
-        return (
-          <div
-            key={root.id}
-            className="kme-tree-col"
-            style={{ '--fam-border': fc.border, '--fam-head': fc.head, '--fam-soft': fc.soft }}
-          >
-            <div className="kme-tree-col-head" style={{ background: fc.head, borderColor: fc.border }}>
-              <span className="kme-tree-col-name" title={rootCode}>{rootCode}</span>
-              <span className="kme-tree-col-count">{doneCount}/{gRows.length}</span>
-            </div>
-            <div className="kme-tree-col-body">
-              {bodyRows.map(r => renderRow({ ...r, depth: Math.max(0, r.depth - reBase) }))}
-            </div>
-          </div>
-        );
-      })}
+    <div className="kme-tree kme-tree-single">
+      <div className="kme-tree-hint">
+        ▸ Tap an assembly to expand its parts · {doneTop}/{topCount} assembled
+      </div>
+      {rows.map(renderRow)}
     </div>
   );
 }
@@ -981,7 +961,10 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
 // LS shape: { projectKey: { center?: true, nodes?: ['bom:foo', 'bom:bar', ...] } }
 // - center=true means the project center is collapsed (everything hidden).
 // - nodes=[...] are individual parent nodes whose subtrees are hidden.
-const LS_COLLAPSED = 'kme_collapsed_v2';
+// v3 (เอ๋ 2026-06-08): bumped from v2 so the §1 Kanban→expandable-tree rework re-seeds
+// COLLAPSED on every device (a device that already opened the project had seeded=true and
+// would otherwise show the full 130-row wall instead of "tap an assembly to expand").
+const LS_COLLAPSED = 'kme_collapsed_v3';
 
 function _readCollapsedState(pk) {
   try {
