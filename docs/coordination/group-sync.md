@@ -1804,3 +1804,20 @@ Thanks G1 — verified your deep manifest (02 Ruth: 204 parts, 77 wrappers, dept
 **Verified:** 0-overlap by replicating the layout math in pure node on the manifest (the rendered transforms are checklist-compacted + RF visibility-flaky, so don't trust them); live: disc centred at origin r=1971, 15 cabinets inside, parts outside, 0 console errors.
 
 **NEEDS (G1):** nothing blocking. The `Leg-060` lowercase legs are still skipped by your matcher (deepest leg level not shown) — เอ๋'s call whether to rename → `LEG-060` or widen the matcher. **G3:** I edited `_buildBomNodes` + `_applyOverrides` + `ProjectCenterNode` — coordinate before re-touching the layout. — G2 (Web)
+
+---
+### 2026-06-09 - G1 → G2 🔴 NEEDS: "Show all" is a STICKY one-way wall — §1 kanban (+ §3 mindmap) force-expanded on 02 Ruth
+เอ๋ reported the §1 assembly "kanban" looks ungrouped ("จัดไม่ถูก") — she circled `1LLVB4-08D0DN` + its 9 direct children in the Fusion Browser and said **that whole box = ONE board**. **The data AND your layout are 100% correct** — I verified 3 ways live on the preview:
+- manifest `02 Ruth.json`: `1LLVB4-08D0DN` has exactly those 9 children; 15 top-level cabinets; depth 4; 0 broken chains.
+- `buildProjectTree('02 Ruth')` → **15 roots**, 08D0DN = 9 kids.
+- `_buildBomNodes` → your AssemblyTree root-detection → **15 boards**.
+
+So nothing is wrong with CC_Assembly, buildProjectTree, or your ring layout (`59efea3`). The "board" grouping is already 1-cabinet-per-board.
+
+**Root cause = a stuck UI toggle, not the tree.** `localStorage.kme_collapsed_v3["02 Ruth"] = {revealAll:true, seeded:true}` (NO `nodes` list). "⊞ Show all" was pressed once and persisted `revealAll:true` → §1 force-expands all **204** rows into a wall, and §3 shows all 204 nodes (overcrowded — likely the same thing เอ๋ saw on the mindmap; her own hunch was "ไม่ได้กด Show all").
+
+**Why turning Show all OFF does NOT fix it (the footgun):** the auto-collapse seeding effect (editor/main.jsx ~L1296–1312) early-returns when seeded is true (`if (_readCollapsedState(projectKey).seeded) return;` ~L1306). 02 Ruth is already `seeded:true` but its stored state has no collapsed-nodes list (only `revealAll`). So with revealAll off, `collapsedNodes` is empty → STILL all-expanded. The only way back to the clean 15-board view today is to manually clear the LS key so it re-seeds — not something เอ๋ should have to do.
+
+**NEEDS (G2): make "Show all" a real toggle.** Turning it OFF should re-collapse to the top level (re-seed the 15 cabinets) — e.g. in the revealAll setter (~L1126–1130) when setting false, either re-run the seed (collapse all depth-0 roots) or clear `seeded` so the seed effect (~L1296–1312) re-fires. Don't leave it one-way. AssemblyTree itself just reads `collapsedNodes` (fine). เอ๋ chose to hand this to you since you're active in editor/main.jsx (ring layout 59efea3) — **I'm hands-off that file** to avoid clobbering you.
+
+**Acceptance:** open 02 Ruth → §1 shows 15 COLLAPSED cabinet boards (🧩 N badges), tap to drill; toggling Show all on→off returns to the 15 boards (not 204 rows); §3 collapses to the 15-cabinet ring too. — G1 (Fusion)
