@@ -876,21 +876,22 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   // signal the Kanban node + checklist use.
   const isDone = (code) => !!(code && api.isAssembled && api.isAssembled(projectKey, code));
 
-  // Group the flat DFS row list into columns by family (เอ๋ 2026-05-31
-  // 'Column 1 มี group ของ BK ทั้งหมด · Column 2 SD · Column 3 TS …'). Family =
-  // the leading letters of each row's code (_famOf). Columns sorted A→Z so the
-  // order is stable; rows inside keep their DFS order + depth indent. Each
-  // column is tinted by _famColor so it matches the same family's node colour
-  // in the §3 Mindmap.
+  // Group the flat DFS row list into columns by ASSEMBLY GROUP, NOT family (เอ๋
+  // 2026-06-08: 'kanban เหมือน mindmap — column ตาม variant/ชุดประกอบ; เรียงตาม family
+  // ดูที่ Library ก็ได้'). Each TOP-LEVEL node (a variant root / assembly master — the
+  // mindmap's branches straight off the project centre) becomes ONE column, and its
+  // whole subtree (the parts that make up that assembly) lists below it. Rows are
+  // DFS-contiguous per root (walk() emits a root then its subtree), so we just split
+  // the flat list at each depth-0 row. Column colour stays _famColor so it still
+  // matches that node's colour in the §3 Mindmap.
   const columns = useMemo(() => {
-    const byFam = new Map();
+    const groups = [];
+    let cur = null;
     for (const r of rows) {
-      const code = r.node.data?.label || '';
-      const fam = _famOf(code);
-      if (!byFam.has(fam)) byFam.set(fam, []);
-      byFam.get(fam).push(r);
+      if (r.depth === 0 || !cur) { cur = { root: r, gRows: [] }; groups.push(cur); }
+      cur.gRows.push(r);
     }
-    return [...byFam.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    return groups;
   }, [rows]);
 
   const renderRow = ({ id, node, depth, hasKids }) => {
@@ -943,21 +944,28 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
 
   return (
     <div className="kme-tree-board">
-      {columns.map(([fam, famRows]) => {
-        const fc = _famColor(fam);
-        const doneCount = famRows.filter(r => isDone(r.node.data?.label || '')).length;
+      {columns.map(({ root, gRows }) => {
+        const rootCode = root.node.data?.label || '';
+        const fc = _famColor(_famOf(rootCode));
+        const doneCount = gRows.filter(r => isDone(r.node.data?.label || '')).length;
+        // Header = the assembly/variant code; body = its parts (the descendants),
+        // re-based so the column's own tree starts at indent 0. A single-part group
+        // (no children) shows that part itself as the one card.
+        const hasKids = gRows.length > 1;
+        const bodyRows = hasKids ? gRows.slice(1) : gRows;
+        const reBase = hasKids ? 1 : 0;
         return (
           <div
-            key={fam}
+            key={root.id}
             className="kme-tree-col"
             style={{ '--fam-border': fc.border, '--fam-head': fc.head, '--fam-soft': fc.soft }}
           >
             <div className="kme-tree-col-head" style={{ background: fc.head, borderColor: fc.border }}>
-              <span className="kme-tree-col-name">{fam}</span>
-              <span className="kme-tree-col-count">{doneCount}/{famRows.length}</span>
+              <span className="kme-tree-col-name" title={rootCode}>{rootCode}</span>
+              <span className="kme-tree-col-count">{doneCount}/{gRows.length}</span>
             </div>
             <div className="kme-tree-col-body">
-              {famRows.map(renderRow)}
+              {bodyRows.map(r => renderRow({ ...r, depth: Math.max(0, r.depth - reBase) }))}
             </div>
           </div>
         );
