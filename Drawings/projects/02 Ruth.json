@@ -2,9 +2,9 @@
   "name": "02 Ruth",
   "status": "active",
   "created_at": "2026-06-08T09:23:07.576072+00:00",
-  "updated_at": "2026-06-08T09:23:07.576072+00:00",
-  "total_unique_parts": 90,
-  "total_qty": 221,
+  "updated_at": "2026-06-08T20:50:39.502556+00:00",
+  "total_unique_parts": 93,
+  "total_qty": 225,
   "parts": [
     {
       "code": "BK1DN1-020000",
@@ -111,16 +111,10 @@
       "urn": "urn:adsk.wipprod:dm.lineage:tS_6vfIsRd6TqjwR273DSQ"
     },
     {
-      "code": "BTHL00-140025",
-      "qty": 1,
+      "code": "BTHL00-140100",
+      "qty": 2,
       "family": "Other",
       "urn": "urn:adsk.wipprod:dm.lineage:pdvG2czISk2sjIL-Aj_Q8Q"
-    },
-    {
-      "code": "BTHL00-140100",
-      "qty": 1,
-      "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:o5gnfnPaRwGmoYgGJJ6fWw"
     },
     {
       "code": "BTHL00-170100",
@@ -134,6 +128,38 @@
       "family": "Other",
       "parent_code": "BK2TR1-060000",
       "urn": "urn:adsk.wipprod:dm.lineage:lMU1lx_7TMCj1opNtrVi6w"
+    },
+    {
+      "code": "C10002-000000",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "C1H100-093I30",
+      "variant_root": "C1H100-093I30",
+      "urn": "urn:adsk.wipprod:dm.lineage:I6_gnfnGQTuBOnNamwrlig"
+    },
+    {
+      "code": "C10002-000000-Ruth",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "C1H100-093I30-Ruth",
+      "variant_root": "C1H100-093I30-Ruth",
+      "urn": "urn:adsk.wipprod:dm.lineage:obo9CE37RLutwxVfHdJcXg"
+    },
+    {
+      "code": "C1H101-093I30",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "C1H100-093I30",
+      "variant_root": "C1H100-093I30",
+      "urn": "urn:adsk.wipprod:dm.lineage:H932_j6xSH6DRpuQ58rFmg"
+    },
+    {
+      "code": "C1H101-093I30-Ruth",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "C1H100-093I30-Ruth",
+      "variant_root": "C1H100-093I30-Ruth",
+      "urn": "urn:adsk.wipprod:dm.lineage:DDyMGMUaSb6IT8tAYjbNEw"
     },
     {
       "code": "CLL000-000083",
@@ -613,6 +639,565 @@
       "family": "Top Sup",
       "parent_code": "TS2TR4-060000",
       "urn": "urn:adsk.wipprod:dm.lineage:dmq4SrrzSe6HC8_GNCpevQ"
+    },
+    {
+      "code": "BK0DN0-020000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK0DN0-020000"
+    },
+    {
+      "code": "BK0DN0-050000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK0DN0-050000"
+    },
+    {
+      "code": "BK0DN0-060000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK0DN0-060000"
+    },
+    {
+      "code": "BK0DN0-080000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK0DN0-080000"
+    },
+    {
+      "code": "BK0DN0-105000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK0DN0-105000"
+    },
+    {
+      "code": "BK1DN0-0600MW",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK1DN0-0600MW"
+    },
+    {
+      "code": "BK2TR1-020000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BK0DN0-020000",
+      "variant_root": "BK2TR1-020000"
+    },
+    {
+      "code": "BK2TR1-050000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BK0DN0-050000",
+      "variant_root": "BK2TR1-050000"
+    },
+    {
+      "code": "BK2TR1-060000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BK1DN0-0600MW",
+      "variant_root": "BK2TR1-060000"
+    },
+    {
+      "code": "BK2TR1-080000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BK0DN0-080000",
+      "variant_root": "BK2TR1-080000"
+    },
+    {
+      "code": "BK2TR1-110000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BK0DN0-105000",
+      "variant_root": "BK2TR1-110000"
+    },
+    {
+      "code": "BK2TR1-120000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BKDNC2-120000",
+      "variant_root": "BK2TR1-120000"
+    },
+    {
+      "code": "BKDNC1-120002",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "BKDNC2-120000",
+      "variant_root": "BKDNC1-120002"
+    },
+    {
+      "code": "BKDNC2-120000",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "BKDNC2-120000"
+    },
+    {
+      "code": "BM1LI0-050000",
+      "qty": 0,
+      "family": "Beam",
+      "is_wrapper": true,
+      "variant_root": "BM1LI0-050000"
+    },
+    {
+      "code": "BM1LI0-060000",
+      "qty": 0,
+      "family": "Beam",
+      "is_wrapper": true,
+      "variant_root": "BM1LI0-060000"
+    },
+    {
+      "code": "BM1LI0-080000",
+      "qty": 0,
+      "family": "Beam",
+      "is_wrapper": true,
+      "variant_root": "BM1LI0-080000"
+    },
+    {
+      "code": "BM1NO0-060000",
+      "qty": 0,
+      "family": "Beam",
+      "is_wrapper": true,
+      "variant_root": "BM1NO0-060000"
+    },
+    {
+      "code": "BM2LI1-080000",
+      "qty": 0,
+      "family": "Beam",
+      "is_wrapper": true,
+      "variant_root": "BM2LI1-080000"
+    },
+    {
+      "code": "C1H100-093I30",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "C1H100-093I30"
+    },
+    {
+      "code": "C1H100-093I30-Ruth",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "C1H100-093I30-Ruth"
+    },
+    {
+      "code": "CLL000-000083",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "CLL000-000083"
+    },
+    {
+      "code": "DSB00N-080000",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "variant_root": "DSB00N-080000"
+    },
+    {
+      "code": "DSB0FA-000000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "DSB0FA-080000",
+      "variant_root": "DSB0FA-000000"
+    },
+    {
+      "code": "DSB0FA-080000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "DSB00N-080000",
+      "variant_root": "DSB0FA-080000"
+    },
+    {
+      "code": "DSB0FD-000000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "DSB0FD-060000",
+      "variant_root": "DSB0FD-000000"
+    },
+    {
+      "code": "DSB0FD-060000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "DSVBD1-060000",
+      "variant_root": "DSB0FD-060000"
+    },
+    {
+      "code": "DSB0FD-080000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "DSVBD1-080000",
+      "variant_root": "DSB0FD-080000"
+    },
+    {
+      "code": "DST00N-080010",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "parent_code": "DSB00N-080000",
+      "variant_root": "DST00N-080010"
+    },
+    {
+      "code": "DSV0F0-020080",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "variant_root": "DSV0F0-020080"
+    },
+    {
+      "code": "DSV0L3-050080",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "variant_root": "DSV0L3-050080"
+    },
+    {
+      "code": "DSV0L4-060080",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "variant_root": "DSV0L4-060080"
+    },
+    {
+      "code": "DSV0R3-045080",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "variant_root": "DSV0R3-045080"
+    },
+    {
+      "code": "DSV0R4-060080",
+      "qty": 0,
+      "family": "Drawer",
+      "is_wrapper": true,
+      "variant_root": "DSV0R4-060080"
+    },
+    {
+      "code": "DSVBD1-060000",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "DSVBD1-060000"
+    },
+    {
+      "code": "DSVBD1-080000",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "DSVBD1-080000"
+    },
+    {
+      "code": "DSVBD3-080000",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "DSVBD3-080000"
+    },
+    {
+      "code": "FCLL0C-120007",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "FCLL0C-120007"
+    },
+    {
+      "code": "FCLL0C-120008",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "FCLL0C-120008"
+    },
+    {
+      "code": "FN0FL2-020004",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "variant_root": "FN0FL2-020004"
+    },
+    {
+      "code": "FN0FL2-050004",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "variant_root": "FN0FL2-050004"
+    },
+    {
+      "code": "FN0FL2-060004",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "variant_root": "FN0FL2-060004"
+    },
+    {
+      "code": "FN0FL2-080004",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "variant_root": "FN0FL2-080004"
+    },
+    {
+      "code": "FN0FN2-060004",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "variant_root": "FN0FN2-060004"
+    },
+    {
+      "code": "FN0FN3-080005",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-080004",
+      "variant_root": "FN0FN3-080005"
+    },
+    {
+      "code": "FN1BLA-080000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-080004",
+      "variant_root": "FN1BLA-080000"
+    },
+    {
+      "code": "FN2BLA-050000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-050004",
+      "variant_root": "FN2BLA-050000"
+    },
+    {
+      "code": "FN2BLA-060000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-060004",
+      "variant_root": "FN2BLA-060000"
+    },
+    {
+      "code": "FN2BLA-105003",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120008",
+      "variant_root": "FN2BLA-105003"
+    },
+    {
+      "code": "FN2BLA-120000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120007",
+      "variant_root": "FN2BLA-120000"
+    },
+    {
+      "code": "FN2BNX-020000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-020004",
+      "variant_root": "FN2BNX-020000"
+    },
+    {
+      "code": "FN2BNX-050000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-050004",
+      "variant_root": "FN2BNX-050000"
+    },
+    {
+      "code": "FN2BNX-060000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-060004",
+      "variant_root": "FN2BNX-060000"
+    },
+    {
+      "code": "FN2BNX-080000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-080004",
+      "variant_root": "FN2BNX-080000"
+    },
+    {
+      "code": "FN2BNX-095000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120008",
+      "variant_root": "FN2BNX-095000"
+    },
+    {
+      "code": "FN2BNX-105000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120008",
+      "variant_root": "FN2BNX-105000"
+    },
+    {
+      "code": "FN2BNX-120000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120007",
+      "variant_root": "FN2BNX-120000"
+    },
+    {
+      "code": "FN2NCL-120000",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120007",
+      "variant_root": "FN2NCL-120000"
+    },
+    {
+      "code": "SD00NA-080000",
+      "qty": 0,
+      "family": "Side Panel",
+      "is_wrapper": true,
+      "variant_root": "SD00NA-080000"
+    },
+    {
+      "code": "SH0G00-050035",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "SH0S10-050035",
+      "variant_root": "SH0G00-050035"
+    },
+    {
+      "code": "SH0S10-050035",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "SH0S10-050035"
+    },
+    {
+      "code": "TS004H-020000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS004H-020000"
+    },
+    {
+      "code": "TS004H-050000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS004H-050000"
+    },
+    {
+      "code": "TS004H-060000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS004H-060000"
+    },
+    {
+      "code": "TS004H-075000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS004H-075000"
+    },
+    {
+      "code": "TS004H-080000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS004H-080000"
+    },
+    {
+      "code": "TS004H-120000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS004H-120000"
+    },
+    {
+      "code": "TS0TR0-000000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TSSK2H-120002",
+      "variant_root": "TS0TR0-000000"
+    },
+    {
+      "code": "TS2TR2-075000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TS004H-075000",
+      "variant_root": "TS2TR2-075000"
+    },
+    {
+      "code": "TS2TR4-020000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TS004H-020000",
+      "variant_root": "TS2TR4-020000"
+    },
+    {
+      "code": "TS2TR4-050000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TS004H-050000",
+      "variant_root": "TS2TR4-050000"
+    },
+    {
+      "code": "TS2TR4-060000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TS004H-060000",
+      "variant_root": "TS2TR4-060000"
+    },
+    {
+      "code": "TS2TR4-080000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TS004H-080000",
+      "variant_root": "TS2TR4-080000"
+    },
+    {
+      "code": "TS2TR4-120000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS2TR4-120000"
+    },
+    {
+      "code": "TSSK2H-120002",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "TSSK2H-120002"
     }
   ]
 }

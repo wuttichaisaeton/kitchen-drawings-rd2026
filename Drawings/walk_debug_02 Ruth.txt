@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-08T16:23:07.575230
+CC_Assembly walk debug — 2026-06-09T03:50:39.501373
 Project: 02 Ruth
 Total occurrences visited: 538
 CAM-ALPF tagged components: 0
@@ -543,6 +543,6 @@ depth | SM | CAM | material         | display_name (component)
     1 | SM  |     | ALPF             | FTI000-183095 v3:1 (FTI000-183095 v3)
     1 | SM  |     | ALPF             | FTI000-145095 v4:2 (FTI000-145095 v4)
     1 | SM  |     | ALPF             | FTI000-145095 v4:1 (FTI000-145095 v4)
-    0 | SM  |     | ALPF             | BTHL00-140025 v5:1 (BTHL00-140025 v5)
+    0 | SM  |     | ALPF             | BTHL00-140100 v5:1 (BTHL00-140100 v5)
     0 | SM  |     | ALPF             | BTHL00-140100 v3:1 (BTHL00-140100 v3)
     0 | SM  |     | ALPF             | BTHL00-170100 v3:1 (BTHL00-170100 v3)
