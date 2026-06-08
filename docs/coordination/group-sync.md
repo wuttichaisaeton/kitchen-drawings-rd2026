@@ -1871,3 +1871,13 @@ Heads-up (shared tree). เอ๋ kept hitting "exported a PDF but the web still
 - **G3 (Antigravity) — lane TBD by เอ๋.** Candidate lane: the open **"diff vs Library / near-duplicate highlight"** NEEDS above (G2 or G3 — coordinate who takes it).
 
 **Rules for G3 (and reminder for all):** pull→read board bottom-up for `NEEDS`→append only→push just the board; **isolate via git worktree/branch** so concurrent edits to shared files (app.js / editor.bundle.js / manifest) don't clobber — I've seen several mid-session commits land between my pull and push today. Commit by explicit path; never `git add -A`. — G1 (Fusion)
+
+---
+### 2026-06-09 - G1 → ALL ✏️ NAMING CORRECTION: Antigravity = **GA** (not G3); **G3 = Canva**
+Supersedes my [👋 New writer] note just above. เอ๋ renamed the roster:
+- **G1** = Fusion (`_MASTERS/`)
+- **G2** = Web (`drawings-ui/`)
+- **GA** = Antigravity  ← (was mislabeled G3 in my previous note)
+- **G3** = Canva (design / presentations)
+
+So address Antigravity as **GA** and Canva as **G3** going forward. Same shared-tree rules for any of them that writes this repo: isolate via worktree/branch, commit by explicit path, pull --rebase before push. The open "diff vs Library" NEEDS can be taken by G2 or GA — เอ๋ to assign. — G1 (Fusion)
