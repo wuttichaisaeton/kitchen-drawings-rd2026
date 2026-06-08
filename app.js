@@ -6991,33 +6991,13 @@ function _familyColors(famKey) {
 }
 
 function _buildBomNodes(project, parts, projectKey) {
-  // Layout — two modes, picked by tree shape:
+  // ── Concept-Map Grid Layout (Hierarchical Flow) ───────────
+  // Goal (เอ๋): NEVER overlapping + every node visible + parts grouped into
+  // readable family "ก้อน" (concept-map style).
   //
-  // 1. Option A · local radial per variant (default when buildProjectTree
-  //    emits any _is_variant_root node). Each variant becomes its own
-  //    sub-center sitting on a circle of radius VARIANT_RING around the
-  //    project center. The variant's descendants orbit AROUND THE VARIANT
-  //    at sub-radii [subR0, ~1.5x, ~1.95x] by depth, in a sub-arc centred
-  //    on the outward direction (away from project center). This produces
-  //    visible "ก้อนใหญ่" per variant instead of one big radial fan.
-  //    Per spec docs/superpowers/specs/2026-05-28-assembly-cluster-and-
-  //    project-favorites-design.md §2. Constants table is hard-coded by
-  //    variant count so adjacent clusters don't collide.
-  //
-  // 2. Legacy global-ring (when no _is_variant_root in the tree — older
-  //    Fusion projects whose CC_Assembly export pre-dates the
-  //    variant_root field). Places everything on concentric rings around
-  //    the project center, dividing the full 360° among root subtrees by
-  //    leaf count.
-  //
-  // Leaves (no children) flag isLeaf so the editor renders them dashed
-  // and routes click → leaf-to-Fusion. Center "project" node sits at
-  // (0,0) and is the click target for the project PDF (same as the old
-  // SVG mindmap's .mm-center).
+  // Project Center at the top. Families wrapped in rows below.
+  // Within a family, leaves are placed in a tight grid. Deep trees use hierarchical tree.
   const ps = (parts || project?.parts || []).filter(p => p && p.code);
-  // Offset by half the circle size so the circle's VISUAL center sits
-  // at (0, 0) — that's where every spoke line points to. React Flow's
-  // position.x/y is the node's top-left corner, not its center.
   const CENTER_DIAM = 140;
   const center = {
     id: `project:${projectKey}`,
@@ -7033,25 +7013,10 @@ function _buildBomNodes(project, parts, projectKey) {
   };
   if (!ps.length) return { nodes: [center], edges: [] };
 
-  // Build hierarchical tree using existing logic (handles parent_code +
-  // virtual wrappers + prefix fallback + Pass 4 variant grouping). Same
-  // source the SVG mindmap used.
   const { roots, all } = buildProjectTree(ps, projectKey);
-
   const nodes = [center];
   const edges = [];
 
-  function leafCount(n) {
-    if (!n.children?.length) return 1;
-    return n.children.reduce((s, c) => s + leafCount(c), 0);
-  }
-
-  // Emit a BOM node at (x, y). Returns the node's compound key so callers
-  // can wire edges. Both real variant roots (from CC_Assembly's Pass 4)
-  // and top-level legacy parents with children get marked as anchors
-  // via opts.forceIsAnchor so checklist mode treats them identically.
-  // opts.anchorNodeId lets recursive placeSubtree calls thread the
-  // ancestor anchor id down so kids carry the right variantNodeId.
   function emitNode(node, x, y, opts) {
     opts = opts || {};
     const famKey = _remapFamilyForCode(node.code, node.family);
@@ -7059,32 +7024,14 @@ function _buildBomNodes(project, parts, projectKey) {
     const isLeaf = !node.children?.length;
     const isWrapper = !!node._is_wrapper;
     const partMissing = !isWrapper && !pdfUrlForCode(node.code);
-    // React Flow ID uses the COMPOUND code+variant_root key so a part
-    // that appears in multiple variants gets distinct nodes (per user
-    // 2026-05-28 'ชื่อจะซ้ำไม่เป็นไร'). Falls back to plain code when
-    // the project has no variants — preserves stale-link compatibility.
     const nodeKey = node._id || `${node.code}::`;
-    // isVariantRoot flag — true for real variant roots AND for any
-    // top-level parent that the layout is treating as a cluster anchor
-    // (user 2026-05-28: 'Auto-cluster ตาม parent_code: ทุก top-level
-    // master ที่มี children = ก้อน (collapsible)').
-    const isVariantRoot = opts.forceIsAnchor != null
-      ? !!opts.forceIsAnchor
-      : !!node._is_variant_root;
-    // variantNodeId points at the cluster anchor this node descends
-    // from. For an anchor itself: null. For a descendant: the anchor's
-    // React Flow id, passed in via opts.anchorNodeId. Falls back to the
-    // legacy variant_root code-derived id when no anchor is threaded.
+    const isVariantRoot = opts.forceIsAnchor != null ? !!opts.forceIsAnchor : !!node._is_variant_root;
     let variantNodeId;
-    if (isVariantRoot) {
-      variantNodeId = null;
-    } else if (opts.anchorNodeId) {
-      variantNodeId = opts.anchorNodeId;
-    } else if (node._variant_root) {
-      variantNodeId = `bom:${node._variant_root}::`;
-    } else {
-      variantNodeId = null;
-    }
+    if (isVariantRoot) variantNodeId = null;
+    else if (opts.anchorNodeId) variantNodeId = opts.anchorNodeId;
+    else if (node._variant_root) variantNodeId = `bom:${node._variant_root}::`;
+    else variantNodeId = null;
+
     nodes.push({
       id: `bom:${nodeKey}`,
       type: 'mindmap',
@@ -7099,10 +7046,6 @@ function _buildBomNodes(project, parts, projectKey) {
         projectKey,
         isLeaf,
         isWrapper,
-        // Mark variant-root nodes so the editor's checklist mode can:
-        //   (a) seed them into the initially-collapsed set on first
-        //       open of an assembly view, and
-        //   (b) recognise clicks on them as expand/collapse toggles.
         isVariantRoot,
         variantNodeId,
         missing: partMissing && isLeaf,
@@ -7120,69 +7063,18 @@ function _buildBomNodes(project, parts, projectKey) {
       type: 'floating',
       source: sourceId,
       target: `bom:${targetKey}`,
-      style: {
-        stroke: color,
-        strokeWidth: strong ? 1.6 : 1.2,
-        opacity: strong ? 0.65 : 0.5,
-      },
+      style: { stroke: color, strokeWidth: strong ? 1.6 : 1.2, opacity: strong ? 0.65 : 0.5 },
       selectable: false,
     });
   }
 
-  // Recursive subtree placer — drops `node` at distance `rings[depth-1]`
-  // from (cx, cy), then recurses children inside arcStart..arcEnd. `depth`
-  // is 1-indexed: a direct child of the cluster anchor is depth 1, its
-  // grandchild depth 2, etc. The anchor itself must be emitted by the
-  // caller before calling this.
-  // anchorNodeId threads the cluster anchor's React Flow id down through
-  // the recursion so every descendant carries variantNodeId pointing at
-  // the right anchor. Lets compact mode stack the whole subtree on the
-  // anchor when it's collapsed.
-  function placeSubtree(node, cx, cy, rings, depth, arcStart, arcEnd, anchorNodeId) {
-    const angle = (arcStart + arcEnd) / 2;
-    const r = rings[Math.min(depth - 1, rings.length - 1)];
-    const x = cx + r * Math.cos(angle);
-    const y = cy + r * Math.sin(angle);
-    const { nodeKey, color } = emitNode(node, x, y, { anchorNodeId });
-    if (node.children?.length) {
-      const totalLeaves = leafCount(node);
-      let cursor = arcStart;
-      for (const child of node.children) {
-        const w = leafCount(child) / totalLeaves;
-        const childArcEnd = cursor + (arcEnd - arcStart) * w;
-        const childKey = child._id || `${child.code}::`;
-        emitEdge(`bom:${nodeKey}`, childKey, color, false);
-        placeSubtree(child, cx, cy, rings, depth + 1, cursor, childArcEnd, anchorNodeId);
-        cursor = childArcEnd;
-      }
-    }
-  }
-
-  // ── Family-sectored radial layout (2026-06-08 rewrite) ───────────
-  // Goal (เอ๋): NEVER overlapping + every node visible + parts grouped into
-  // readable family "ก้อน" (concept-map style). Spec:
-  //   docs/superpowers/specs/2026-06-08-mindmap-family-sectored-radial-design.md
-  //
-  // The previous radial put ALL leaves on one outer ring with a hard 2600px
-  // cap — at ~90 leaves the cap forced chord spacing below MIN_SPACING and
-  // cards overlapped. Here each top-level cluster (≈ a family) gets its own
-  // angular SECTOR with a gap to its neighbours, and its leaves fan out in a
-  // compact GRID of sub-rings (rows) × angular slots (cols) — a tight blob,
-  // not one long thin arc. Radii/slots are derived so adjacent cards always
-  // clear MIN_SPACING (chord) and rows clear ROW_STEP (radial); no global cap
-  // bites (only a high sanity ceiling). Admin drag overrides still win.
-  const CARD_W = 168;                 // ~node card width
-  const CARD_H = 70;                  // ~node card height
-  const MIN_SPACING = CARD_W + 26;    // 194 — min chord between cards on a row
-  // Radial gap between a family's sub-rings. Must be >= MIN_SPACING (not just
-  // CARD_H): near the horizontal axis a radial stack is a HORIZONTAL stack, so
-  // the wide card edge (CARD_W) is what must clear — 194 guarantees no overlap
-  // at every angle (when the horizontal component < CARD_W, the vertical one is
-  // already > CARD_H).
-  const ROW_STEP = MIN_SPACING;       // 194
-  const MAX_PER_ROW = 6;              // cap a row so a big family wraps to a blob
-  const GAP_SLOTS = 1.3;              // inter-family gap, in leaf-slot widths
-  const SANITY_MAX_R = 12000;
+  const CARD_W = 168;
+  const CARD_H = 70;
+  const SPACING_X = CARD_W + 30;      // 198
+  const SPACING_Y = CARD_H + 50;      // 120
+  const FAM_GAP_X = 140;              // Gap between families
+  const FAM_GAP_Y = 200;              // Gap between family rows
+  const MAX_ROW_WIDTH = 4000;
 
   function maxDepthOf(node, d) {
     if (!node.children?.length) return d;
@@ -7194,119 +7086,139 @@ function _buildBomNodes(project, parts, projectKey) {
     else for (const c of node.children) leavesOf(c, acc);
     return acc;
   }
-  // "simple" = a 2-level cluster (anchor → leaves only). Deeper clusters fall
-  // back to the recursive placeSubtree fan so all intermediate nodes/edges
-  // still render correctly.
   function isSimpleCluster(root) {
     return !!root.children?.length && root.children.every(c => !c.children?.length);
   }
 
-  // Per-family geometry: leaves, leaves-per-row (~square blob), row count.
+  function computeTreeWidth(node) {
+    if (!node.children?.length) { node._tw = SPACING_X; return node._tw; }
+    node._tw = node.children.reduce((sum, c) => sum + computeTreeWidth(c), 0);
+    return Math.max(SPACING_X, node._tw);
+  }
+
+  function placeTree(node, cx, cy, depth, anchorNodeId, parentColor, isTopRoot) {
+    const isAnchor = !!node._is_variant_root || !!node.children?.length;
+    const { nodeKey, color } = emitNode(node, cx, cy, isTopRoot ? { forceIsAnchor: isAnchor } : { anchorNodeId });
+    if (!isTopRoot && parentColor) {
+      emitEdge(anchorNodeId, nodeKey, parentColor || color, false);
+    }
+    const myAnchor = isTopRoot ? `bom:${nodeKey}` : anchorNodeId;
+    if (node.children?.length) {
+      let currentX = cx - node._tw / 2;
+      for (const child of node.children) {
+        const childCx = currentX + child._tw / 2;
+        placeTree(child, childCx, cy + SPACING_Y, depth + 1, myAnchor, color, false);
+        currentX += child._tw;
+      }
+    }
+  }
+
   const fams = roots.map(root => {
     const leaves = leavesOf(root);
     const L = leaves.length;
-    const perRow = Math.min(MAX_PER_ROW, Math.max(1, Math.round(Math.sqrt(L))));
-    return { root, leaves, L, perRow, simple: isSimpleCluster(root) };
+    const simple = isSimpleCluster(root);
+    let w = 0, h = 0, cols = 1, rows = 1;
+
+    if (!root.children?.length) {
+      w = SPACING_X; h = SPACING_Y;
+    } else if (simple) {
+      cols = Math.min(8, Math.max(1, Math.ceil(Math.sqrt(L))));
+      rows = Math.ceil(L / cols);
+      w = cols * SPACING_X;
+      h = SPACING_Y + rows * SPACING_Y; 
+    } else {
+      w = computeTreeWidth(root);
+      h = maxDepthOf(root, 1) * SPACING_Y;
+    }
+    return { root, leaves, L, simple, w, h, cols, rows };
   });
 
-  // Total angular slots = widest row of each family + a gap per family. The
-  // per-leaf angle is the full circle split across that — so even uncapped the
-  // radius is small because each row holds only ~√L leaves, not all L.
-  const slotSum = fams.reduce((s, f) => s + Math.max(1, f.perRow), 0);
-  const gapSlots = (roots.length > 1 ? roots.length : 0) * GAP_SLOTS;
-  const totalSlots = (slotSum + gapSlots) || 1;
-  const slotAng = (2 * Math.PI) / totalSlots;
-  // R0 = radius of row 0 so the chord between adjacent cards == MIN_SPACING.
-  const R0 = Math.min(SANITY_MAX_R,
-    Math.max(360, MIN_SPACING / (2 * Math.sin(slotAng / 2))));
-  const R_FAM = Math.max(200, R0 - ROW_STEP * 1.3);  // family anchor inner ring
-
-  let cursor = -Math.PI / 2;   // start at 12 o'clock
+  const layoutRows = [];
+  let currentRow = [];
+  let rowW = 0, maxRowH = 0;
   for (const f of fams) {
-    const famArc = Math.max(1, f.perRow) * slotAng;
-    const mid = cursor + famArc / 2;
-
-    if (!f.root.children?.length) {
-      // Single-part family — place the part itself on the family ring.
-      const x = R0 * Math.cos(mid), y = R0 * Math.sin(mid);
-      const { nodeKey, color } = emitNode(f.root, x, y, { forceIsAnchor: false });
-      emitEdge(`project:${projectKey}`, nodeKey, color, true);
-
-    } else if (f.simple) {
-      // Anchor (inner) + leaves fanned in rows × cols (outer blob).
-      const ax = R_FAM * Math.cos(mid), ay = R_FAM * Math.sin(mid);
-      const isAnchor = !!f.root._is_variant_root || !!f.root.children?.length;
-      const { nodeKey: anchorKey, color } =
-        emitNode(f.root, ax, ay, { forceIsAnchor: isAnchor });
-      emitEdge(`project:${projectKey}`, anchorKey, color, true);
-      const anchorId = `bom:${anchorKey}`;
-      f.leaves.forEach((leaf, i) => {
-        const row = Math.floor(i / f.perRow);
-        const col = i % f.perRow;
-        const colsThisRow = Math.min(f.perRow, f.L - row * f.perRow);
-        const Rrow = R0 + row * ROW_STEP;
-        const a = mid + (col - (colsThisRow - 1) / 2) * slotAng;
-        const x = Rrow * Math.cos(a), y = Rrow * Math.sin(a);
-        const leafKey = leaf._id || `${leaf.code}::`;
-        emitNode(leaf, x, y, { anchorNodeId: anchorId });
-        emitEdge(anchorId, leafKey, color, false);
-      });
-
-    } else {
-      // Deep cluster — recursive fan (handles grandchildren); uncapped rings.
-      const md = maxDepthOf(f.root, 1);
-      const rings = [];
-      for (let d = 1; d <= md; d++) rings.push(R_FAM + (d - 1) * ROW_STEP);
-      const fk = _remapFamilyForCode(f.root.code, f.root.family);
-      const col = _familyColors(fk).color;
-      const rootKey = f.root._id || `${f.root.code}::`;
-      emitEdge(`project:${projectKey}`, rootKey, col, true);
-      placeSubtree(f.root, 0, 0, rings, 1, cursor, cursor + famArc, null);
+    if (currentRow.length > 0 && rowW + FAM_GAP_X + f.w > MAX_ROW_WIDTH) {
+      layoutRows.push({ fams: currentRow, w: rowW, h: maxRowH });
+      currentRow = [];
+      rowW = 0; maxRowH = 0;
     }
-    cursor += famArc + GAP_SLOTS * slotAng;
+    currentRow.push(f);
+    rowW += (currentRow.length === 1 ? 0 : FAM_GAP_X) + f.w;
+    maxRowH = Math.max(maxRowH, f.h);
+  }
+  if (currentRow.length) layoutRows.push({ fams: currentRow, w: rowW, h: maxRowH });
+
+  let currentY = SPACING_Y * 2; // Project center is at 0,0. Families start below it.
+  for (const row of layoutRows) {
+    let x = -row.w / 2; // Center the row horizontally
+    for (const f of row.fams) {
+      const cx = x + f.w / 2;
+      const cy = currentY;
+
+      if (!f.root.children?.length) {
+        // Single leaf
+        const { nodeKey, color } = emitNode(f.root, cx, cy, { forceIsAnchor: false });
+        emitEdge(`project:${projectKey}`, nodeKey, color, true);
+      } else if (f.simple) {
+        // Anchor
+        const isAnchor = !!f.root._is_variant_root || !!f.root.children?.length;
+        const { nodeKey: anchorKey, color } = emitNode(f.root, cx, cy, { forceIsAnchor: isAnchor });
+        emitEdge(`project:${projectKey}`, anchorKey, color, true);
+        const anchorId = `bom:${anchorKey}`;
+        
+        // Leaves in grid below anchor
+        const startX = cx - (f.cols * SPACING_X) / 2 + SPACING_X / 2;
+        const startY = cy + SPACING_Y;
+        f.leaves.forEach((leaf, i) => {
+          const r = Math.floor(i / f.cols);
+          const c = i % f.cols;
+          const lx = startX + c * SPACING_X;
+          const ly = startY + r * SPACING_Y;
+          const leafKey = leaf._id || `${leaf.code}::`;
+          emitNode(leaf, lx, ly, { anchorNodeId: anchorId });
+          emitEdge(anchorId, leafKey, color, false);
+        });
+      } else {
+        // Deep tree
+        const rootKey = f.root._id || `${f.root.code}::`;
+        const fk = _remapFamilyForCode(f.root.code, f.root.family);
+        const col = _familyColors(fk).color;
+        emitEdge(`project:${projectKey}`, rootKey, col, true);
+        placeTree(f.root, cx, cy, 0, null, null, true);
+      }
+      x += f.w + FAM_GAP_X;
+    }
+    currentY += row.h + FAM_GAP_Y;
   }
 
   // Post-build pass: depth = hops from the Project center along the directed
   // center→child edges. Recolor every BOM node (incl wrapper / variant-root
   // containers) and each incoming edge by layer. Center stays its blue anchor.
-  function _applyLayerColors(nodes, edges, centerId) {
-    const adj = new Map();
-    for (const e of edges) {
-      if (!adj.has(e.source)) adj.set(e.source, []);
-      adj.get(e.source).push(e.target);
-    }
-    const layerOf = new Map([[centerId, 0]]);
-    const queue = [centerId];
-    while (queue.length) {
-      const id = queue.shift();
-      const d = layerOf.get(id);
-      for (const t of (adj.get(id) || [])) {
-        if (!layerOf.has(t)) { layerOf.set(t, d + 1); queue.push(t); }
+  const depthMap = {};
+  depthMap[`project:${projectKey}`] = 0;
+  let q = [`project:${projectKey}`];
+  while (q.length) {
+    const curr = q.shift();
+    const currD = depthMap[curr];
+    const outs = edges.filter(e => e.source === curr);
+    for (const e of outs) {
+      if (depthMap[e.target] === undefined) {
+        depthMap[e.target] = currD + 1;
+        q.push(e.target);
       }
-    }
-    const byId = new Map(nodes.map(n => [n.id, n]));
-    for (const [id, depth] of layerOf) {
-      if (depth < 1) continue;                       // skip center (layer 0)
-      const node = byId.get(id);
-      if (!node || node.data?.kind !== 'bom') continue;
-      // Leaf tips all share the leaf colour; structural nodes take their layer.
-      const { color, tint } = node.data.isLeaf ? _leafColor() : _layerColor(depth);
-      node.data.color = color;
-      node.data.tint = tint;
-      node.data.layer = depth;                        // exposed for verification/debug
-    }
-    for (const e of edges) {
-      const depth = layerOf.get(e.target);
-      if (depth == null || depth < 1) continue;
-      const tnode = byId.get(e.target);
-      const stroke = (tnode && tnode.data?.isLeaf ? _leafColor() : _layerColor(depth)).color;
-      e.style = { ...(e.style || {}), stroke };
     }
   }
 
-  _applyLayerColors(nodes, edges, `project:${projectKey}`);
+  for (const n of nodes) {
+    if (n.data.kind === 'bom') {
+      const d = depthMap[n.id];
+      n.data.layer = (d !== undefined) ? d : 1;
+    }
+  }
+
   return { nodes, edges };
 }
+
 
 // Expose project-scoped APIs the editor's rich node card needs. The
 // editor bundle is an IIFE, not an ES module — easiest cross-boundary

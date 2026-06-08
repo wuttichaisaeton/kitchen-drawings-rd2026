@@ -119,10 +119,20 @@ function ProjectCenterNode({ id, data, selected }) {
       onDrop={onDrop}
     >
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
-      <svg className="kme-center-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/>
-        <path d="M6 11.5 L12 15 L6 18.5 L0.5 15 Z" transform="translate(2.5 0)"/>
-        <path d="M12 11.5 L18 15 L12 18.5 L6.5 15 Z" transform="translate(3 0)"/>
+      <svg className="kme-center-icon" viewBox="0 0 64 64" width="100%" height="100%">
+        <rect x="4" y="52" width="56" height="4" rx="1" fill="#7F8C8D"/>
+        <rect x="6" y="36" width="52" height="16" rx="1" fill="#BDC3C7"/>
+        <rect x="6" y="36" width="52" height="3" fill="#E67E22"/>
+        <rect x="10" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="20" cy="46" r="1" fill="#7F8C8D"/>
+        <rect x="26" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="28" cy="46" r="1" fill="#7F8C8D"/>
+        <rect x="42" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="44" cy="46" r="1" fill="#7F8C8D"/>
+        <rect x="12" y="35" width="16" height="2" fill="#2C3E50"/>
+        <circle cx="16" cy="35" r="2" fill="#E74C3C"/><circle cx="24" cy="35" r="1.5" fill="#E74C3C"/>
+        <path d="M14 8 L34 8 L32 20 L16 20 Z" fill="#34495E"/>
+        <rect x="10" y="20" width="28" height="4" rx="0.5" fill="#2C3E50"/>
+        <line x1="44" y1="14" x2="54" y2="14" stroke="#7F8C8D" strokeWidth="1"/>
+        <path d="M46 14 L46 22 M46 22 L45 24 L47 24 Z" stroke="#D35400" strokeWidth="1" fill="none"/>
+        <path d="M50 14 L50 20 A2 2 0 0 0 54 20" stroke="#2980B9" strokeWidth="1" fill="none"/>
       </svg>
       <div className="kme-center-code">{displayCode}</div>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
