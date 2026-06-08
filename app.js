@@ -7269,10 +7269,18 @@ async function _loadOverrides(projectKey) {
 
 function _applyOverrides(nodes, overrides) {
   if (!overrides || !Object.keys(overrides).length) return nodes;
+  // ⚠ Legacy auto-save artifact (เอ๋ 2026-06-08): onChange used to persist EVERY node's
+  // position on each render, so any project that was ever VIEWED ends up with a "blanket"
+  // of position overrides covering ~all nodes. That blanket FROZE the layout and made every
+  // _buildBomNodes change (G1/G3/G2) invisible — re-deploys never reached the user. If the
+  // position overrides blanket most of the nodes it's that bug, not a handful of real admin
+  // drags → IGNORE the positions (keep label/rename overrides) so the fresh layout wins.
+  const posCount = nodes.reduce((c, n) => { const o = overrides[n.id]; return c + (o && o.x != null && o.y != null ? 1 : 0); }, 0);
+  const blanketFreeze = nodes.length >= 8 && posCount >= 0.6 * nodes.length;
   return nodes.map(n => {
     const o = overrides[n.id];
     if (!o) return n;
-    const hasPosOverride = o.x != null && o.y != null;
+    const hasPosOverride = !blanketFreeze && o.x != null && o.y != null;
     return {
       ...n,
       position: hasPosOverride
@@ -8631,6 +8639,13 @@ function renderProject(key) {
     const bomNodes = _applyOverrides(bom.nodes, overrides);
     // Custom nodes layer overrides too so renames live in one place.
     const customNodes = _applyOverrides(fresh.nodes || [], overrides);
+    // Fresh DEFAULT positions (pre-override) so onChange only persists a node that the
+    // admin actually MOVED — not every node on every render (the blanket-freeze bug). เอ๋.
+    const _defaultPos = new Map();
+    for (const n of bom.nodes) _defaultPos.set(n.id, { x: n.position.x, y: n.position.y });
+    for (const n of (fresh.nodes || [])) _defaultPos.set(n.id, { x: n.position?.x, y: n.position?.y });
+    const _defaultLabel = new Map();
+    for (const n of bom.nodes) _defaultLabel.set(n.id, n.data?.label);
     // `admin` = full editor powers (edit / move / toolbar) — straight off the
     // device admin flag. (The earlier '&& !isAssembleUser()' gate was reverted
     // 2026-05-29 per user: it was suspected of hiding the node buttons.)
@@ -8721,11 +8736,16 @@ function renderProject(key) {
         };
         for (const n of (data.nodes || [])) {
           if (n.id.startsWith('bom:') || n.id.startsWith('project:')) {
-            _saveOverride(key, n.id, {
-              x: n.position?.x,
-              y: n.position?.y,
-              label: n.data?.label,
-            });
+            // Only persist a node the admin actually MOVED (or renamed) — NOT every node on
+            // every render. The old unconditional save froze all positions into a "blanket"
+            // override that made future layout changes invisible. เอ๋ 2026-06-08.
+            const dp = _defaultPos.get(n.id);
+            const nx = n.position?.x, ny = n.position?.y;
+            const moved = !dp || dp.x == null || Math.abs((nx ?? 0) - dp.x) > 1 || Math.abs((ny ?? 0) - dp.y) > 1;
+            const renamed = n.data?.label != null && n.data.label !== _defaultLabel.get(n.id);
+            if (moved || renamed) {
+              _saveOverride(key, n.id, { x: nx, y: ny, label: n.data?.label });
+            }
           } else {
             customOnly.nodes.push(n);
           }
