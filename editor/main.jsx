@@ -853,75 +853,70 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   const api = window.kdAPI || {};
   void nonce;  // touch so reads of isAssembled re-run after a Firebase tick
 
-  // Build an ordered, depth-tagged row list from the directed edge set.
-  // Roots = BOM nodes with no incoming edge (the project-center is excluded).
-  const rows = useMemo(() => {
+  // §1 = 15 KANBAN BOARD-CARDS, one per top-level cabinet (เอ๋/G1 2026-06-09:
+  // '1 cabinet = 1 board card' — reverses the single expandable tree 6d8497b).
+  // Each card lists its FULL subtree, rendered by DEFAULT and INDEPENDENT of
+  // collapsedNodes/revealAll, so §1 never shows the "Show all" 204-row wall the
+  // §3 mindmap collapse state used to force on it.
+  const cards = useMemo(() => {
     const childrenOf = new Map();
-    const hasParent = new Set();
     for (const e of edges) {
       if (!e.source || !e.target) continue;
       if (!childrenOf.has(e.source)) childrenOf.set(e.source, []);
       childrenOf.get(e.source).push(e.target);
-      hasParent.add(e.target);
     }
     const byId = new Map(nodes.map(n => [n.id, n]));
     const isBom = (n) => n && n.data && n.data.kind === 'bom';
-    // Top roots = BOM nodes whose only parent is the project center (or none).
-    const roots = nodes.filter(n => isBom(n) && (
-      !hasParent.has(n.id) ||
-      (childrenOf.get('project') || []).includes(n.id) ||
-      !nodes.some(p => isBom(p) && (childrenOf.get(p.id) || []).includes(n.id))
-    ));
-    const seen = new Set();
-    const out = [];
-    const walk = (id, depth) => {
-      const n = byId.get(id);
-      if (!n || !isBom(n) || seen.has(id)) return;
-      seen.add(id);
-      const kids = (childrenOf.get(id) || []).filter(k => isBom(byId.get(k)));
-      out.push({ id, node: n, depth, hasKids: kids.length > 0, kidCount: kids.length });
-      if (!collapsedNodes.has(id)) {
-        for (const k of kids) walk(k, depth + 1);
-      }
-    };
-    // de-dup roots (a node reached as a child shouldn't also be a root)
-    const rootIds = new Set(roots.map(r => r.id));
-    for (const r of roots) {
-      // skip if this root is a descendant of another root already walked
-      if (seen.has(r.id)) continue;
-      walk(r.id, 0);
-    }
-    // Append GENUINE orphans (no bom parent) at depth 0 — but NOT children that are
-    // simply hidden because their parent is COLLAPSED. The old loop re-walked any
-    // un-seen node, so collapsing a parent dumped its kids back in as depth-0 roots and
-    // flattened the whole tree (เอ๋ 2026-06-08: §1 showed 129 'assemblies'). A node with
-    // a bom parent belongs under that parent (collapsed or not), never as a root.
+    // A node that is any BOM's child belongs UNDER that cabinet, never a card.
     const bomChild = new Set();
     for (const [src, kids] of childrenOf) {
       if (isBom(byId.get(src))) for (const k of kids) bomChild.add(k);
     }
-    for (const n of nodes) {
-      if (isBom(n) && !seen.has(n.id) && !bomChild.has(n.id)) { void rootIds; walk(n.id, 0); }
+    // Cards = BOM nodes with NO bom parent (the top-level cabinets — their parent
+    // is the project center) + genuine orphans.
+    const roots = nodes.filter(n => isBom(n) && !bomChild.has(n.id));
+    const out = [];
+    for (const r of roots) {
+      const seen = new Set();
+      const rowsOut = [];
+      const walk = (id, depth) => {
+        const n = byId.get(id);
+        if (!n || !isBom(n) || seen.has(id)) return;
+        seen.add(id);
+        const kids = (childrenOf.get(id) || []).filter(k => isBom(byId.get(k)));
+        rowsOut.push({ id, node: n, depth });
+        for (const k of kids) walk(k, depth + 1);   // FULL subtree, always
+      };
+      walk(r.id, 0);
+      // Badge = DIRECT children count (matches เอ๋'s "08D0DN = its 9 children" +
+      // G1's verified per-cabinet list); the body still lists the full subtree.
+      const directCount = rowsOut.filter(rw => rw.depth === 1).length;
+      out.push({ id: r.id, node: r, rows: rowsOut, partCount: directCount, totalCount: rowsOut.length - 1 });
     }
     return out;
-  }, [nodes, edges, collapsedNodes]);
+  }, [nodes, edges]);
 
   // A row is dimmed (assembled/complete) when its code is assembled — same
   // signal the Kanban node + checklist use.
   const isDone = (code) => !!(code && api.isAssembled && api.isAssembled(projectKey, code));
 
-  // §1 Kanban = a SINGLE EXPANDABLE assembly tree (เอ๋ 2026-06-08: 'kanban ดูไม่ออก
-  // อะไรประกอบกับอะไร แล้วได้เป็นตัวยังไง — ทำแบบ Expand'). Columns (by family then by
-  // assembly) were unreadable. Now it's one outline you DRILL: each top-level node (a
-  // variant root / assembly master — the "ตัวที่ได้") is collapsed by default with a
-  // "N parts" badge; expand it (▸) to reveal the components that make it. Family colour
-  // = a left stripe so groups still read at a glance + match the §3 Mindmap. No column
-  // grouping — the parent→child indent IS the "อะไรประกอบเป็นอะไร".
+  // Per-card fold (LOCAL — independent of the §3 mindmap collapse state). Tap a
+  // card header to fold/unfold just that board. Default = all unfolded (the card
+  // lists its parts, which is the whole point of "1 cabinet = 1 board").
+  const [foldedCards, setFoldedCards] = useState(() => new Set());
+  const toggleCard = useCallback((id) => setFoldedCards(prev => {
+    const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s;
+  }), []);
+  const markDone = (code, e) => {
+    if (e) e.stopPropagation();
+    api.markAssembled?.(projectKey, code, !isDone(code));
+  };
 
-  const renderRow = ({ id, node, depth, hasKids, kidCount }) => {
+  // A part row inside a card body — depth 1 = a direct child of the cabinet
+  // (cabinet itself is the card header, not a row), deeper = indented.
+  const renderRow = ({ id, node, depth }) => {
     const code = node.data?.label || '';
     const qty = node.data?.qty;
-    const collapsed = collapsedNodes.has(id);
     const done = isDone(code);
     const comments = api.getComments ? (api.getComments(code) || []) : [];
     const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
@@ -929,53 +924,70 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
     return (
       <div
         key={id}
-        className={'kme-tree-row' + (done ? ' is-done' : '') + (depth === 0 ? ' is-assembly' : '')}
-        style={{ paddingLeft: (8 + depth * 20) + 'px', borderLeft: '3px solid ' + fc.border }}
+        className={'kme-tree-row' + (done ? ' is-done' : '')}
+        style={{ paddingLeft: (6 + Math.max(0, depth - 1) * 16) + 'px', borderLeft: '3px solid ' + fc.border }}
       >
-        <button
-          className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf') + (collapsed ? ' is-collapsed' : '')}
-          onClick={() => hasKids && toggleNodeCollapse(id)}
-          title={hasKids ? (collapsed ? 'Expand — show parts' : 'Collapse') : ''}
-          disabled={!hasKids}
-        >{hasKids ? (collapsed ? '▸' : '▾') : '·'}</button>
         <span className="kme-tree-label" title={code}>{code}</span>
-        {hasKids && collapsed && <span className="kme-tree-mk" title={kidCount + ' part(s) make this'}>🧩 {kidCount}</span>}
         {qty != null && <span className="kme-tree-qty">×{qty}</span>}
         {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
         {hasPdf && (
-          <button
-            className="kme-tree-pdf"
-            onClick={() => _openPdfForCode(code)}
-            title="Open PDF"
-          >📄</button>
+          <button className="kme-tree-pdf" onClick={() => _openPdfForCode(code)} title="Open PDF">📄</button>
         )}
         <button
           className={'kme-tree-done' + (done ? ' is-on' : '')}
-          onClick={() => {
-            const next = !done;
-            api.markAssembled?.(projectKey, code, next);
-            // Mirror the Kanban node: complete → collapse+hide; un-complete → release.
-            if (next) ensureCollapsed?.(id);
-            else releaseNode?.(id);
-          }}
+          onClick={() => markDone(code)}
           title={done ? 'Mark not assembled' : 'Mark assembled'}
         >🧩</button>
       </div>
     );
   };
 
-  if (rows.length === 0) {
+  if (!cards.length) {
     return <div className="kme-tree"><div className="kme-tree-empty">No assembly tree for this project.</div></div>;
   }
 
-  const topCount = rows.filter(r => r.depth === 0).length;
-  const doneTop = rows.filter(r => r.depth === 0 && isDone(r.node.data?.label || '')).length;
+  const doneCount = cards.filter(c => isDone(c.node.data?.label || '')).length;
   return (
-    <div className="kme-tree kme-tree-single">
-      <div className="kme-tree-hint">
-        ▸ Tap an assembly to expand its parts · {doneTop}/{topCount} assembled
+    <div className="kme-tree kme-tree-boards">
+      <div className="kme-tree-hint">{cards.length} cabinet boards · {doneCount}/{cards.length} assembled · tap a header to fold</div>
+      <div className="kme-tree-board">
+        {cards.map(card => {
+          const code = card.node.data?.label || '';
+          const fc = _famColor(_famOf(code));
+          const folded = foldedCards.has(card.id);
+          const done = isDone(code);
+          return (
+            <div
+              key={card.id}
+              className={'kme-tree-col' + (done ? ' is-done' : '')}
+              style={{ '--fam-border': fc.border, '--fam-soft': fc.soft }}
+            >
+              <div
+                className="kme-tree-col-head"
+                style={{ background: fc.head || fc.dark, cursor: 'pointer' }}
+                onClick={() => toggleCard(card.id)}
+                title="Tap to fold / unfold this board"
+              >
+                <span className="kme-tree-col-name" title={code}>{folded ? '▸ ' : ''}{code}</span>
+                <span className="kme-tree-col-count">{card.partCount > 0 ? `🧩 ${card.partCount}` : 'single'}</span>
+                <button
+                  className={'kme-tree-done' + (done ? ' is-on' : '')}
+                  onClick={(e) => markDone(code, e)}
+                  title={done ? 'Mark not assembled' : 'Mark assembled'}
+                >🧩</button>
+              </div>
+              {!folded && (
+                <div className="kme-tree-col-body">
+                  {card.rows.slice(1).map(renderRow)}
+                  {card.partCount === 0 && (
+                    <div className="kme-tree-empty" style={{ padding: '6px 8px', fontSize: '11px' }}>single part — no sub-components</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      {rows.map(renderRow)}
     </div>
   );
 }

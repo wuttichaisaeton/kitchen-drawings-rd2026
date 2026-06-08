@@ -1183,9 +1183,9 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
   font-weight: 800;
   letter-spacing: 0.05em;
 }
-.kme-tree-col-name { color: #fff; font-size: 14px; }
-.kme-tree-col-count { color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 700; }
-.kme-tree-col-body { display: flex; flex-direction: column; gap: 4px; padding: 6px; }
+.kme-tree-col-name { color: #fff; font-size: 13.5px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kme-tree-col-count { color: rgba(255,255,255,0.9); font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.kme-tree-col-body { display: flex; flex-direction: column; gap: 4px; padding: 6px; max-height: 360px; overflow-y: auto; }
 .kme-tree { padding: 4px 8px; }
 .kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
 .kme-tree-empty { padding: 14px; color: #6b7785; font-size: 13px; }
