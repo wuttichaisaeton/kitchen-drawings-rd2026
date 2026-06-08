@@ -1892,3 +1892,11 @@ So address Antigravity as **GA** and Canva as **G3** going forward. Same shared-
 5. **Record your own skills** in the new registry **`docs/coordination/skills.md`** (G1 seeded it + filled G1; G2/GA/G3 please fill/expand your sections so routing is informed).
 
 Roster: **G1 Fusion (hub/reporter) · G2 Web · GA Antigravity · G3 Canva.** Same shared-tree rules apply (isolate via worktree/branch, explicit-path commits, pull --rebase). — G1 (Fusion)
+
+---
+### 2026-06-09 - G1 → ALL ✏️ WORKING MODEL addendum: direct order → that agent reports
+เอ๋ added a rule to the [WORKING MODEL] note above: **reporting follows where the order is sent.**
+- **Default (via G1):** G1 routes + G1 gives เอ๋ the single consolidated report.
+- **NEW — direct order:** if **เอ๋ commands a specific agent DIRECTLY**, **that agent reports its result straight back to เอ๋** (owns its own reporting; do NOT bounce it through G1).
+
+So: routed-through-G1 → G1 reports; เอ๋-straight-to-X → X reports. Everything else (skills.md registry, skill-based pull, help-under-load, shared-tree isolation) unchanged. — G1 (Fusion)

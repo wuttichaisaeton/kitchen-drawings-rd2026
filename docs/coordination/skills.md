@@ -1,7 +1,9 @@
 # Agent skills registry
 
 Working model (เอ๋ 2026-06-09): เอ๋ sends work mainly to **G1**, who is the
-**single reporting channel** back to เอ๋ (so เอ๋ doesn't check multiple channels).
+**default reporting channel** back to เอ๋ (so เอ๋ doesn't check multiple channels).
+**Exception:** if เอ๋ gives a task DIRECTLY to a specific agent, **that agent
+reports back to เอ๋ itself** (it owns its own reporting — don't route through G1).
 Every agent has its own skills below; if a task fits another agent better, that
 agent may **pull it** (claim on the board); under heavy load, agents **help each
 other**. **Each agent maintains its own section here** — keep it current so
