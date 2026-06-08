@@ -7158,82 +7158,112 @@ function _buildBomNodes(project, parts, projectKey) {
     }
   }
 
-  // ── Radial tree layout (2026-05-29 rewrite) ──────────────────────
-  // Goals (user 2026-05-29): tidy, even gaps, as CLOSE to the project
-  // center as possible, and NEVER overlapping. Standard radial tree:
-  //   • every leaf gets an equal angular slot (plus a small gap between
-  //     top-level clusters so variants read as separate "ก้อน");
-  //   • an internal node sits at the angular MIDPOINT of its subtree
-  //     (parents inner / children outer = clear hierarchy);
-  //   • ring radius grows one even step per depth;
-  //   • the outer ring radius is scaled to the leaf count so adjacent
-  //     leaf cards always clear MIN_SPACING center-to-center — this is
-  //     what guarantees no overlap, while keeping the whole map as
-  //     compact as that constraint allows.
-  // Node moves stay admin-only (onNodesChange drops non-admin position
-  // changes), so this auto-layout is the canonical arrangement.
+  // ── Family-sectored radial layout (2026-06-08 rewrite) ───────────
+  // Goal (เอ๋): NEVER overlapping + every node visible + parts grouped into
+  // readable family "ก้อน" (concept-map style). Spec:
+  //   docs/superpowers/specs/2026-06-08-mindmap-family-sectored-radial-design.md
+  //
+  // The previous radial put ALL leaves on one outer ring with a hard 2600px
+  // cap — at ~90 leaves the cap forced chord spacing below MIN_SPACING and
+  // cards overlapped. Here each top-level cluster (≈ a family) gets its own
+  // angular SECTOR with a gap to its neighbours, and its leaves fan out in a
+  // compact GRID of sub-rings (rows) × angular slots (cols) — a tight blob,
+  // not one long thin arc. Radii/slots are derived so adjacent cards always
+  // clear MIN_SPACING (chord) and rows clear ROW_STEP (radial); no global cap
+  // bites (only a high sanity ceiling). Admin drag overrides still win.
   const CARD_W = 168;                 // ~node card width
   const CARD_H = 70;                  // ~node card height
-  const MIN_SPACING = CARD_W + 26;    // min center-to-center on a ring
+  const MIN_SPACING = CARD_W + 26;    // 194 — min chord between cards on a row
+  // Radial gap between a family's sub-rings. Must be >= MIN_SPACING (not just
+  // CARD_H): near the horizontal axis a radial stack is a HORIZONTAL stack, so
+  // the wide card edge (CARD_W) is what must clear — 194 guarantees no overlap
+  // at every angle (when the horizontal component < CARD_W, the vertical one is
+  // already > CARD_H).
+  const ROW_STEP = MIN_SPACING;       // 194
+  const MAX_PER_ROW = 6;              // cap a row so a big family wraps to a blob
+  const GAP_SLOTS = 1.3;              // inter-family gap, in leaf-slot widths
+  const SANITY_MAX_R = 12000;
 
   function maxDepthOf(node, d) {
     if (!node.children?.length) return d;
     return Math.max(...node.children.map((c) => maxDepthOf(c, d + 1)));
   }
-  const maxDepth = Math.max(1, ...roots.map((r) => maxDepthOf(r, 1)));
-  const totalLeaves = roots.reduce((s, r) => s + leafCount(r), 0) || 1;
+  function leavesOf(node, acc) {
+    acc = acc || [];
+    if (!node.children?.length) acc.push(node);
+    else for (const c of node.children) leavesOf(c, acc);
+    return acc;
+  }
+  // "simple" = a 2-level cluster (anchor → leaves only). Deeper clusters fall
+  // back to the recursive placeSubtree fan so all intermediate nodes/edges
+  // still render correctly.
+  function isSimpleCluster(root) {
+    return !!root.children?.length && root.children.every(c => !c.children?.length);
+  }
 
-  // Gap between top-level clusters, in leaf-slot widths (0 for a single
-  // cluster so it isn't pushed off-center).
-  const CLUSTER_GAP = roots.length > 1 ? 0.7 : 0;
-  const effLeaves = totalLeaves + CLUSTER_GAP * roots.length;
-  const slot = (2 * Math.PI) / effLeaves;   // radians per leaf
+  // Per-family geometry: leaves, leaves-per-row (~square blob), row count.
+  const fams = roots.map(root => {
+    const leaves = leavesOf(root);
+    const L = leaves.length;
+    const perRow = Math.min(MAX_PER_ROW, Math.max(1, Math.round(Math.sqrt(L))));
+    return { root, leaves, L, perRow, simple: isSimpleCluster(root) };
+  });
 
-  // Outer radius so leaf slots clear MIN_SPACING; floored so a tiny tree
-  // isn't cramped, capped so a huge one stays sane.
-  const Router = Math.min(2600, Math.max(340, MIN_SPACING / slot));
-  // One even ring step per depth — never tighter than a card height + gap
-  // so stacked rings can't overlap vertically either.
-  const RING_STEP = Math.max(Router / maxDepth, CARD_H + 85);
+  // Total angular slots = widest row of each family + a gap per family. The
+  // per-leaf angle is the full circle split across that — so even uncapped the
+  // radius is small because each row holds only ~√L leaves, not all L.
+  const slotSum = fams.reduce((s, f) => s + Math.max(1, f.perRow), 0);
+  const gapSlots = (roots.length > 1 ? roots.length : 0) * GAP_SLOTS;
+  const totalSlots = (slotSum + gapSlots) || 1;
+  const slotAng = (2 * Math.PI) / totalSlots;
+  // R0 = radius of row 0 so the chord between adjacent cards == MIN_SPACING.
+  const R0 = Math.min(SANITY_MAX_R,
+    Math.max(360, MIN_SPACING / (2 * Math.sin(slotAng / 2))));
+  const R_FAM = Math.max(200, R0 - ROW_STEP * 1.3);  // family anchor inner ring
 
-  // Pass 1 — assign every node an angle. Post-order: place a leaf into the
-  // next slot, an internal node at the midpoint of its subtree's span.
-  let leafCursor = -Math.PI / 2;   // start at 12 o'clock
-  function assignAngles(node) {
-    if (!node.children?.length) {
-      node._ang = leafCursor + slot / 2;
-      leafCursor += slot;
-      return;
+  let cursor = -Math.PI / 2;   // start at 12 o'clock
+  for (const f of fams) {
+    const famArc = Math.max(1, f.perRow) * slotAng;
+    const mid = cursor + famArc / 2;
+
+    if (!f.root.children?.length) {
+      // Single-part family — place the part itself on the family ring.
+      const x = R0 * Math.cos(mid), y = R0 * Math.sin(mid);
+      const { nodeKey, color } = emitNode(f.root, x, y, { forceIsAnchor: false });
+      emitEdge(`project:${projectKey}`, nodeKey, color, true);
+
+    } else if (f.simple) {
+      // Anchor (inner) + leaves fanned in rows × cols (outer blob).
+      const ax = R_FAM * Math.cos(mid), ay = R_FAM * Math.sin(mid);
+      const isAnchor = !!f.root._is_variant_root || !!f.root.children?.length;
+      const { nodeKey: anchorKey, color } =
+        emitNode(f.root, ax, ay, { forceIsAnchor: isAnchor });
+      emitEdge(`project:${projectKey}`, anchorKey, color, true);
+      const anchorId = `bom:${anchorKey}`;
+      f.leaves.forEach((leaf, i) => {
+        const row = Math.floor(i / f.perRow);
+        const col = i % f.perRow;
+        const colsThisRow = Math.min(f.perRow, f.L - row * f.perRow);
+        const Rrow = R0 + row * ROW_STEP;
+        const a = mid + (col - (colsThisRow - 1) / 2) * slotAng;
+        const x = Rrow * Math.cos(a), y = Rrow * Math.sin(a);
+        const leafKey = leaf._id || `${leaf.code}::`;
+        emitNode(leaf, x, y, { anchorNodeId: anchorId });
+        emitEdge(anchorId, leafKey, color, false);
+      });
+
+    } else {
+      // Deep cluster — recursive fan (handles grandchildren); uncapped rings.
+      const md = maxDepthOf(f.root, 1);
+      const rings = [];
+      for (let d = 1; d <= md; d++) rings.push(R_FAM + (d - 1) * ROW_STEP);
+      const fk = _remapFamilyForCode(f.root.code, f.root.family);
+      const col = _familyColors(fk).color;
+      const rootKey = f.root._id || `${f.root.code}::`;
+      emitEdge(`project:${projectKey}`, rootKey, col, true);
+      placeSubtree(f.root, 0, 0, rings, 1, cursor, cursor + famArc, null);
     }
-    const start = leafCursor;
-    for (const c of node.children) assignAngles(c);
-    node._ang = (start + leafCursor) / 2;
-  }
-  for (const root of roots) {
-    assignAngles(root);
-    leafCursor += CLUSTER_GAP * slot;   // breathing room before next cluster
-  }
-
-  // Pass 2 — place each node on its depth ring at its assigned angle and
-  // wire the edges. Top roots (depth 1) connect to the project center.
-  function placeRadial(node, depth, anchorNodeId, parentSourceId, parentColor, isTopRoot) {
-    const r = RING_STEP * depth;
-    const x = r * Math.cos(node._ang);
-    const y = r * Math.sin(node._ang);
-    const isAnchor = !!node._is_variant_root || !!node.children?.length;
-    const { nodeKey, color } = emitNode(node, x, y,
-      isTopRoot ? { forceIsAnchor: isAnchor } : { anchorNodeId });
-    if (isTopRoot) emitEdge(`project:${projectKey}`, nodeKey, color, true);
-    else emitEdge(parentSourceId, nodeKey, parentColor || color, false);
-    const myAnchor = isTopRoot ? `bom:${nodeKey}` : anchorNodeId;
-    if (node.children?.length) {
-      for (const c of node.children) {
-        placeRadial(c, depth + 1, myAnchor, `bom:${nodeKey}`, color, false);
-      }
-    }
-  }
-  for (const root of roots) {
-    placeRadial(root, 1, null, null, null, true);
+    cursor += famArc + GAP_SLOTS * slotAng;
   }
 
   // Post-build pass: depth = hops from the Project center along the directed
