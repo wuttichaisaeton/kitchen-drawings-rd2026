@@ -95,20 +95,24 @@ function updateAdminBadge() {
 //   laser    → Projects + Nest          (ช่างตัด: nest then cut)
 //   bend     → Projects + Sim.Bending   (ช่างพับ: bend simulation)
 //   assemble → Projects + Drawing       (ช่างประกอบ: assembly drawings)
-//   workshop → Projects + Drawing (generic viewer); ADMIN sees all 5.
-// Library is part-taxonomy management — admin + workshop only.
-// The ROLE drives this for everyone: เอ๋ on a worker link (?role=laser)
-// sees exactly the worker's view; back in the default workshop role the
-// admin sees all 5 tabs again. (เอ๋ 2026-06-07 'admin ปกติเห็นครบ 5 แต่ถ้า
-// เข้า Link ช่าง มองเห็นแบบช่าง'.)
+//   workshop → Projects + Drawing (generic viewer).
+// Library is part-taxonomy management — admin only (workshop viewer doesn't see it).
+// ADMIN overrides everything: the owner ALWAYS sees all 5 tabs in any role (เอ๋ 2026-06-08
+// 'admin เห็นครบ 5 เสมอ' — an admin who'd switched into a worker role used to get trapped in
+// that role's 2-tab view). The role still tints the lists/colours for the admin; to preview a
+// worker's hidden-tab experience, turn admin OFF first, then the per-role gating below applies.
+// (Supersedes the 2026-06-07 'admin on a worker link sees the worker view' rule.)
 function _visibleTabsForRole() {
+  // Admin ALWAYS sees all 5 tabs (เอ๋ 2026-06-08 'admin เห็นครบ 5 เสมอ'). The role still tints the
+  // lists/colours, but it no longer HIDES tabs for the owner — an admin who had switched into a
+  // worker role (or opened a worker link) used to get trapped in that role's 2-tab view. To preview
+  // a worker's hidden-tab experience, turn admin OFF first (then the role gating below applies).
+  if (isAdmin()) return { projects: true, library: true, drawing: true, nest: true, simbend: true };
   switch (getRole()) {
     case 'laser':    return { projects: true, library: false, drawing: false, nest: true,  simbend: false };
     case 'bend':     return { projects: true, library: false, drawing: false, nest: false, simbend: true  };
     case 'assemble': return { projects: true, library: false, drawing: true,  nest: false, simbend: false };
-    default:         return isAdmin()
-      ? { projects: true, library: true,  drawing: true, nest: true,  simbend: true  }   // admin in workshop = full
-      : { projects: true, library: false, drawing: true, nest: false, simbend: false };  // generic viewer
+    default:         return { projects: true, library: false, drawing: true,  nest: false, simbend: false };  // generic viewer
   }
 }
 
