@@ -7068,128 +7068,65 @@ function _buildBomNodes(project, parts, projectKey) {
     });
   }
 
-  const CARD_W = 168;
-  const CARD_H = 70;
-  const SPACING_X = CARD_W + 30;      // 198
-  const SPACING_Y = CARD_H + 50;      // 120
-  const FAM_GAP_X = 140;              // Gap between families
-  const FAM_GAP_Y = 200;              // Gap between family rows
-  const MAX_ROW_WIDTH = 4000;
+  // ── Radial tidy-tree layout (2026-06-08, G2 — เอ๋ "ไม่ซ้อนทับ เห็นครบทุกตัว") ──────
+  // Provably non-overlapping for ANY tree depth. KEY FIX both prior attempts
+  // missed: the RENDERED card is up to ~314px wide (a long code + a "NO PDF"
+  // pill), NOT 168 — measured live on 02 Ruth. Sized to 168 the wide cards
+  // overlap their neighbours. Here:
+  //   • angle  — leaves take even slots around the FULL circle in DFS order, so a
+  //              family's leaves are one contiguous arc (a readable "ก้อน"); every
+  //              parent sits at the angular MIDPOINT of its descendants' arc.
+  //   • radius — depth → ring. R_BASE is sized so even the tightest pair (1 slot
+  //              apart) clears MIN_SPACING as a chord; rings are ROW_STEP apart.
+  // Adjacent same-ring nodes are ALWAYS ≥ 1 slot apart (DFS contiguity), and
+  // MIN_SPACING ≥ the card DIAGONAL ⇒ no two cards overlap at any angle. No cap.
+  const CARD_W = 314;                 // measured max rendered card width  (px)
+  const CARD_H = 121;                 // measured max rendered card height (px)
+  const MIN_SPACING = 350;            // ≥ diagonal(314,121)=337 → clears the widest card at every angle
+  const ROW_STEP = MIN_SPACING;       // radial gap between depth rings
+  const TWO_PI = 2 * Math.PI;
 
-  function maxDepthOf(node, d) {
-    if (!node.children?.length) return d;
-    return Math.max(...node.children.map((c) => maxDepthOf(c, d + 1)));
-  }
-  function leavesOf(node, acc) {
-    acc = acc || [];
-    if (!node.children?.length) acc.push(node);
-    else for (const c of node.children) leavesOf(c, acc);
-    return acc;
-  }
-  function isSimpleCluster(root) {
-    return !!root.children?.length && root.children.every(c => !c.children?.length);
-  }
-
-  function computeTreeWidth(node) {
-    if (!node.children?.length) { node._tw = SPACING_X; return node._tw; }
-    node._tw = node.children.reduce((sum, c) => sum + computeTreeWidth(c), 0);
-    return Math.max(SPACING_X, node._tw);
-  }
-
-  function placeTree(node, cx, cy, depth, anchorNodeId, parentColor, isTopRoot) {
-    const isAnchor = !!node._is_variant_root || !!node.children?.length;
-    const { nodeKey, color } = emitNode(node, cx, cy, isTopRoot ? { forceIsAnchor: isAnchor } : { anchorNodeId });
-    if (!isTopRoot && parentColor) {
-      emitEdge(anchorNodeId, nodeKey, parentColor || color, false);
+  // Annotate every node with its DFS leaf-slot range [_s0.._s1] + _depth (1 = a
+  // top-level family). Leaves take one slot each, in DFS order → family-contiguous.
+  let _slot = 0;
+  (function annotate(list, depth) {
+    for (const n of list) {
+      n._depth = depth;
+      if (n.children?.length) {
+        annotate(n.children, depth + 1);
+        n._s0 = n.children[0]._s0;
+        n._s1 = n.children[n.children.length - 1]._s1;
+      } else { n._s0 = _slot; n._s1 = _slot; _slot++; }
     }
-    const myAnchor = isTopRoot ? `bom:${nodeKey}` : anchorNodeId;
-    if (node.children?.length) {
-      let currentX = cx - node._tw / 2;
-      for (const child of node.children) {
-        const childCx = currentX + child._tw / 2;
-        placeTree(child, childCx, cy + SPACING_Y, depth + 1, myAnchor, color, false);
-        currentX += child._tw;
-      }
+  })(roots, 1);
+  const L = Math.max(1, _slot);
+  const SLOT_ANG = TWO_PI / L;
+  // R_BASE = radius at which a 1-slot chord == MIN_SPACING (the tightest pair).
+  // Clamp the angle to ≤ π/2 so tiny trees (L = 1, 2) don't divide by ~0.
+  const R_BASE = Math.max(360, MIN_SPACING / (2 * Math.sin(Math.min(Math.PI / 2, Math.PI / L))));
+  const angOf = (n) => -Math.PI / 2 + ((n._s0 + n._s1) / 2 + 0.5) * SLOT_ANG;
+  const radOf = (n) => R_BASE + (n._depth - 1) * ROW_STEP;
+
+  // Walk the tree, emitting each node at its polar position + the edge from its
+  // parent. `isTop` = a direct child of the project center (a family anchor);
+  // `anchorId` threads that anchor's id down so the editor's checklist / collapse
+  // keeps working. Function DECLARATION so it can self-recurse.
+  const centerId = `project:${projectKey}`;
+  function emitTree(node, parentSourceId, anchorId, isTop) {
+    const a = angOf(node), r = radOf(node);
+    const x = r * Math.cos(a), y = r * Math.sin(a);
+    const hasKids = !!node.children?.length;
+    const { nodeKey, color } = emitNode(node, x, y,
+      isTop ? { forceIsAnchor: (!!node._is_variant_root || hasKids) }
+            : { anchorNodeId: anchorId });
+    const myId = `bom:${nodeKey}`;
+    emitEdge(parentSourceId, nodeKey, color, isTop);   // center→family edges drawn stronger
+    if (hasKids) {
+      const childAnchor = isTop ? myId : anchorId;
+      for (const c of node.children) emitTree(c, myId, childAnchor, false);
     }
   }
-
-  const fams = roots.map(root => {
-    const leaves = leavesOf(root);
-    const L = leaves.length;
-    const simple = isSimpleCluster(root);
-    let w = 0, h = 0, cols = 1, rows = 1;
-
-    if (!root.children?.length) {
-      w = SPACING_X; h = SPACING_Y;
-    } else if (simple) {
-      cols = Math.min(8, Math.max(1, Math.ceil(Math.sqrt(L))));
-      rows = Math.ceil(L / cols);
-      w = cols * SPACING_X;
-      h = SPACING_Y + rows * SPACING_Y; 
-    } else {
-      w = computeTreeWidth(root);
-      h = maxDepthOf(root, 1) * SPACING_Y;
-    }
-    return { root, leaves, L, simple, w, h, cols, rows };
-  });
-
-  const layoutRows = [];
-  let currentRow = [];
-  let rowW = 0, maxRowH = 0;
-  for (const f of fams) {
-    if (currentRow.length > 0 && rowW + FAM_GAP_X + f.w > MAX_ROW_WIDTH) {
-      layoutRows.push({ fams: currentRow, w: rowW, h: maxRowH });
-      currentRow = [];
-      rowW = 0; maxRowH = 0;
-    }
-    currentRow.push(f);
-    rowW += (currentRow.length === 1 ? 0 : FAM_GAP_X) + f.w;
-    maxRowH = Math.max(maxRowH, f.h);
-  }
-  if (currentRow.length) layoutRows.push({ fams: currentRow, w: rowW, h: maxRowH });
-
-  let currentY = SPACING_Y * 2; // Project center is at 0,0. Families start below it.
-  for (const row of layoutRows) {
-    let x = -row.w / 2; // Center the row horizontally
-    for (const f of row.fams) {
-      const cx = x + f.w / 2;
-      const cy = currentY;
-
-      if (!f.root.children?.length) {
-        // Single leaf
-        const { nodeKey, color } = emitNode(f.root, cx, cy, { forceIsAnchor: false });
-        emitEdge(`project:${projectKey}`, nodeKey, color, true);
-      } else if (f.simple) {
-        // Anchor
-        const isAnchor = !!f.root._is_variant_root || !!f.root.children?.length;
-        const { nodeKey: anchorKey, color } = emitNode(f.root, cx, cy, { forceIsAnchor: isAnchor });
-        emitEdge(`project:${projectKey}`, anchorKey, color, true);
-        const anchorId = `bom:${anchorKey}`;
-        
-        // Leaves in grid below anchor
-        const startX = cx - (f.cols * SPACING_X) / 2 + SPACING_X / 2;
-        const startY = cy + SPACING_Y;
-        f.leaves.forEach((leaf, i) => {
-          const r = Math.floor(i / f.cols);
-          const c = i % f.cols;
-          const lx = startX + c * SPACING_X;
-          const ly = startY + r * SPACING_Y;
-          const leafKey = leaf._id || `${leaf.code}::`;
-          emitNode(leaf, lx, ly, { anchorNodeId: anchorId });
-          emitEdge(anchorId, leafKey, color, false);
-        });
-      } else {
-        // Deep tree
-        const rootKey = f.root._id || `${f.root.code}::`;
-        const fk = _remapFamilyForCode(f.root.code, f.root.family);
-        const col = _familyColors(fk).color;
-        emitEdge(`project:${projectKey}`, rootKey, col, true);
-        placeTree(f.root, cx, cy, 0, null, null, true);
-      }
-      x += f.w + FAM_GAP_X;
-    }
-    currentY += row.h + FAM_GAP_Y;
-  }
+  for (const root of roots) emitTree(root, centerId, null, true);
 
   // Post-build pass: depth = hops from the Project center along the directed
   // center→child edges. Recolor every BOM node (incl wrapper / variant-root
