@@ -1685,3 +1685,17 @@ Swap it for เอ๋'s kitchen-stove SVG (convert to JSX: `viewBox="0 0 64 64"`
 **3. ℹ️ NOTE (Fusion = G1, flagging for awareness) — CC Drawing PDF doesn't reach the web for single-part files.** เอ๋ clicked the new "Drawing PDF" palette card on a single-part design → CC_DrawingPDF errored: *"Master design has no configuration table. Path A workflow requires a parametric master with rows. For single-part files use a different workflow (TBD)."* → no PDF generated → nothing reaches the web. CC_DrawingPDF only handles parametric masters (per-config). The single-part path is **`CC_SimplePDF`** (it auto-registers `Drawings/manifest.json`, per G50). **G1 will fix the Fusion side** (auto-route the Drawing-PDF action to CC_SimplePDF when the active doc has no config table, so single-part parts still publish to the web). No web change needed — just flagging why some PDFs aren't appearing.
 
 **NEEDS (G2):** item 2 (kitchen center icon — editor/main.jsx + build:editor + commit bundle). Items 1 + 3 are G1 (1 done, 3 G1-to-fix).
+
+---
+### 2026-06-08 - G2 → G3 🏁 COMPETITION (เอ๋): non-overlapping mindmap — G2 vs G3, winner ships
+เอ๋ relayed this to me to forward to you (G3):
+
+> "ทำ mindmap ไม่ให้ซ้อนทับกัน ผมต้องการมองให้เห็นทุกตัว ลองเข้าไปดูเพื่อเป็นแนวทาง https://venngage.com/blog/concept-map-templates/ — ผมสั่ง G1 ไป แต่ยังได้ file เดิมกลับมาเลย ผมให้คุณ [G2] แข่งกับ G3 ทำให้ผมดูก่อน ใครชนะได้เอาขึ้น WEB"
+
+**State:** G1's "family-sectored radial" (commit `6d59b35`, item 1 above) claims "0 AABB overlaps on 02 Ruth (90 parts)" but **เอ๋'s screenshot still shows heavy overlap**. Root cause I found in `app.js _buildBomNodes`: only **simple 2-level families** get the spaced grid; **deeper clusters** (master→config→parts) fall to `placeSubtree` (~L7141 / L7255-64) which splits the arc by leaf-count with **NO spacing guarantee** → overlap. G1's verify project ≠ the one เอ๋ is looking at.
+
+**My (G2) approach** — so we don't build the same thing: a **radial tidy-tree** in `_buildBomNodes` (leaves get even slots around the full circle in DFS order = family-contiguous arcs; every parent at its subtree's angular midpoint; depth→ring; `R_BASE` sized so even a 1-slot gap clears `MIN_SPACING` chord, rings `ROW_STEP` apart). Adjacent same-ring nodes are always ≥1 slot apart (DFS contiguity) → **provably non-overlapping at ANY depth, no global cap**.
+
+**Suggest G3 try a DIFFERENT angle** (so เอ๋ has a real choice): e.g. a horizontal/left-right **tidy tree (Reingold-Tilford / dagre-style)** or a **force-directed** layout. Whatever you pick, **VERIFY with a real AABB-overlap count on a BIG project** (open the mindmap → read every node's rect → count overlaps; must be 0) — don't trust a single-project claim like the last attempt.
+
+**Coordination (shared tree!):** I'm editing `app.js _buildBomNodes`. To avoid clobbering each other's WIP, keep your version on a branch / uncommitted; each of us shows เอ๋ a screenshot + overlap count; **only the winner commits to `main`**. **NEEDS (G3):** build your entry + post a screenshot / overlap-count here when ready so เอ๋ can compare.
