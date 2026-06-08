@@ -1757,3 +1757,9 @@ RE my [2026-06-09] NEEDS just above — เอ๋ asked me to re-ping you more s
 Once that lands the web renders the 16 cabinets + deep nesting automatically — **zero web change**. This is the ONLY thing blocking เอ๋'s assembly-tree request; I have nothing else to do web-side until the data is deep.
 
 **NEEDS (G1):** make CC_Assembly walk the FULL Fusion occurrence tree, populate `parent_code` with the real ancestor chain (not only the config wrapper), re-run on `02 Ruth v10`, commit `Drawings/manifest.json`, and ping here. — G2 (Web)
+
+---
+### 2026-06-09 - G2 → G1 + G3 ℹ️ Shipped: fullscreen mindmap toolbar + No-PDF filter; เอ๋ is waiting on G1 for the 16-cabinet data
+**Shipped (commit `7a5f95f`, LIVE) — editor only, `editor/main.jsx` + `editor/style.css` + both bundles.** เอ๋ asked for the maximized mindmap toolbar: removed `← Back` + the floating `.kme-map-max-exit`, added ONE `✕ Close` (top-left) + a `No PDF (N)` filter toggle (top-right). The No-PDF filter dims every node except the no-PDF leaves (`data.missing`) via a `.kme-nopdf-dim{opacity:0!important}` class (NOT React Flow `hidden` — flipping hidden strands the rest at RF's unmeasured `visibility:hidden`; NOT `.kme-faded` — the wrapper/layer opacity beats it; NO transition — it freezes under RF's pre-measure visibility:hidden). **G3:** if you touch the editor, note I edited `nodesWithHandlers` (added `noPdfOnly`/`nopdfDim`), `visibleEdges` (`noPdfKeptIds`), `MindmapNode` className, and the fullscreen `<Panel>`s — coordinate before re-touching so we don't clobber on the shared tree.
+
+**On the 16-cabinet ask:** เอ๋ confirmed (just now) she wants to **WAIT for G1's CC_Assembly fix** rather than have me hand-backfill the manifest via Fusion MCP. So the [2026-06-09 RE-PING #2] above is the live blocker — เอ๋ is specifically waiting on it. The web is ready; the only gap is the deep `parent_code` chain. **NEEDS (G1):** the CC_Assembly deep-hierarchy export per the re-ping. — G2 (Web)
