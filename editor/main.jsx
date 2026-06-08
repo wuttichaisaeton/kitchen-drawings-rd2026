@@ -145,7 +145,7 @@ function MindmapNode({ id, data, selected }) {
   const { label, fusion_link, kind, qty, admin, color, tint, projectKey, missing, family,
           isLeaf, isWrapper, status, urn, drawing_urn, layer,
           isCollapsedParent, hasChildren,
-          isVariantRoot, inChecklistMode, faded, ensureCollapsed, releaseNode, revealAll } = data;
+          isVariantRoot, inChecklistMode, faded, ensureCollapsed, releaseNode, revealAll, nopdfDim } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
   const code = isBom ? label : null;
@@ -375,6 +375,10 @@ function MindmapNode({ id, data, selected }) {
   if (isCollapsedParent) cls.push('kme-parent-collapsed');
   if (isVariantRoot) cls.push('kme-variant-root');
   if (isFadedNode) cls.push('kme-faded');
+  // No-PDF filter dim — a dedicated class (NOT kme-faded) with !important so it
+  // beats the wrapper/layer opacity rules that kme-faded loses to on container
+  // nodes. Missing parts never get this, so they stay fully visible.
+  if (nopdfDim) cls.push('kme-nopdf-dim');
   // Assembled/complete BOM parts get a clear "done" marker on the canvas
   // (green ✓ badge + struck label, styled in editor/style.css → works in every
   // theme). Without this, a checklist-ticked node stays visible but looks
@@ -1061,6 +1065,15 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // on enter so the whole map is framed at the new size.
   const [mapMax, setMapMax] = useState(false);
 
+  // "No PDF" filter — เอ๋ 2026-06-09: a top-right toggle in the fullscreen
+  // mindmap that isolates the parts still missing a drawing. data.missing =
+  // leaf parts with no resolvable PDF (the SAME set as the ⚠ NO PDF badge /
+  // the .kme-missing node class). ON → every node WITHOUT that flag (pdf'd
+  // parts, wrappers, the cabinet containers) fades out via CSS, leaving only
+  // the no-PDF parts + the project center so she sees what's left to draw at
+  // a glance. In-memory only (transient view filter, never persisted).
+  const [noPdfOnly, setNoPdfOnly] = useState(false);
+
   // External-sync nonce. app.js dispatches a 'kme:extsync' window event when
   // a Firebase assembled/bent write lands (our own echo OR a remote device's
   // change) INSTEAD of calling its global render() — render() rebuilds
@@ -1379,6 +1392,22 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     return () => el.classList.remove('kme-fs-on');
   }, [fullscreen]);
 
+  // No-PDF filter sets: the count for the button label + the ids kept
+  // VISIBLE when the filter is on (the project center + every node flagged
+  // data.missing). Edges use noPdfKeptIds to drop any spoke that would
+  // otherwise dangle to a faded node. Memoised off `nodes` only.
+  const noPdfCount = useMemo(
+    () => nodes.reduce((acc, n) => acc + (n.data?.missing ? 1 : 0), 0),
+    [nodes]
+  );
+  const noPdfKeptIds = useMemo(() => {
+    const s = new Set();
+    for (const n of nodes) {
+      if (n.data?.kind === 'project' || n.data?.missing) s.add(n.id);
+    }
+    return s;
+  }, [nodes]);
+
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
   // too because contentEditable + double-click-to-edit are per-node UX.
@@ -1401,8 +1430,17 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     // SKIPPED when the node carries data.hasPosOverride (admin has
     // dragged it before) — preserves admin layout per user 2026-05-28:
     // 'ให้ แอดมิน ย้าย node ได้'.
+    const isMissing = !!n.data?.missing;
+    // No-PDF filter (เอ๋ 2026-06-09) owns visibility while active: every no-PDF
+    // part shows at its REAL position (un-faded, skipping the compact stack);
+    // every other node gets nopdfDim → a `.kme-nopdf-dim` class that fades it
+    // out with !important (so it beats the .kme-node.kme-wrapper{opacity:.85} +
+    // layer/faded opacity rules). We deliberately DON'T flip React Flow's
+    // `hidden` prop for the filter — toggling hidden on dozens of nodes leaves
+    // the rest stuck at RF's unmeasured `visibility:hidden`.
+    const nopdfDim = noPdfOnly && !isProject && !isMissing;
     let position = n.position;
-    if (inChecklistMode && !n.data?.hasPosOverride) {
+    if (!noPdfOnly && inChecklistMode && !n.data?.hasPosOverride) {
       if (n.data?.isVariantRoot && compactByVariantId.has(n.id)) {
         position = compactByVariantId.get(n.id);
       } else if (n.data?.variantNodeId && compactByVariantId.has(n.data.variantNodeId)) {
@@ -1434,8 +1472,11 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         ensureCollapsed,
         releaseNode,
         revealAll,
-        // revealAll wins over every fade source so Show all truly shows all.
-        faded: revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false)),
+        // No-PDF filter forces every node un-faded HERE and dims the pdf'd
+        // ones via nopdfDim instead (so it works even when revealAll is on).
+        // Else revealAll wins over every fade source so Show all truly shows all.
+        faded: noPdfOnly ? false : (revealAll ? false : (hiddenByTap3 || (inChecklistMode ? isHidden : false))),
+        nopdfDim,
         ...(isProject ? { collapsed, onToggleCollapsed: toggleCollapsed } : {}),
         // Bumped by the kme:extsync event so MindmapNode re-reads
         // api.isAssembled/isBent in place when a Firebase tick lands —
@@ -1453,7 +1494,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // 🧩/📄 button taps for workers).
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll, extSyncNonce]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll, extSyncNonce, noPdfOnly]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
@@ -1461,6 +1502,12 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   // hiddenAnchors (tap-3 hide) also makes the spoke disappear — user
   // 2026-05-28 'เส้นโยงก็หายไปด้วย'.
   const visibleEdges = useMemo(() => edges.map(e => {
+    // No-PDF filter: keep an edge only when BOTH endpoints survive the filter
+    // (the project center or a no-PDF part) — otherwise it'd dangle to a
+    // CSS-faded node. Takes precedence over the collapse/checklist edge logic.
+    if (noPdfOnly) {
+      return { ...e, hidden: !(noPdfKeptIds.has(e.source) && noPdfKeptIds.has(e.target)) };
+    }
     const endpointHidden = hiddenIds.has(e.source) || hiddenIds.has(e.target)
       || hiddenAnchors.has(e.source) || hiddenAnchors.has(e.target);
     if (inChecklistMode) {
@@ -1469,7 +1516,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
         : { ...e, style: { ...(e.style || {}), transition: 'opacity 0.8s ease' } };
     }
     return { ...e, hidden: endpointHidden };
-  }), [edges, hiddenIds, inChecklistMode, hiddenAnchors]);
+  }), [edges, hiddenIds, inChecklistMode, hiddenAnchors, noPdfOnly, noPdfKeptIds]);
 
   const onNodesChange = useCallback((changes) => {
     // View-only: only allow 'select' changes — block drag/dimension/etc.
@@ -1934,31 +1981,50 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
               Checklist section in the accordion already covers it, and it was
               overlapping Show all at bottom-left (เอ๋ 2026-05-31 'ที่ Mindmap
               full screen ยกเลิก checklist เพราะมีที่ด้านนอกแล้ว'). */}
-          {/* Back to the project list — only while fullscreen (the app
-              header that normally holds the ← arrow is hidden). Top-left,
-              opposite the Show all button on the right. User 2026-05-29:
-              'ย้ายปุ่ม back มาอยู่ใน full screen คนละฝั่งกับ show all'. */}
-          {fullscreen && (
+          {/* Top-left = Close (เอ๋ 2026-06-09: 'ยกเลิกปุ่ม Back ให้ Close ไป
+              แทนที่'). In the maximized mindmap Close drops back to the
+              accordion; in the worker auto-fullscreen view it leaves to the
+              project list (clearing the <html> class explicitly because app.js
+              detaches #kme-mount without unmounting, so the editor's cleanup
+              never fires — without this the list renders with its header
+              still hidden). Replaces both the old ← Back panel and the
+              floating ✕ Close exit. */}
+          {(fullscreen || mapMax) && (
             <Panel position="top-left">
               <button
                 className="kme-fs-back"
                 onClick={(e) => {
                   e.stopPropagation();
-                  // Leave fullscreen + go to the project list. Clear the
-                  // <html> class explicitly: app.js detaches #kme-mount from
-                  // the DOM without calling root.unmount(), so the editor's
-                  // useEffect cleanup never fires — without this the project
-                  // list would render with its header still hidden.
+                  if (mapMax) { setMapMax(false); return; }
                   document.documentElement.classList.remove('kme-fs-on');
                   setFullscreen(false);
                   (window.kdAPI?.back || (() => {}))();
                 }}
-                title="Back to projects"
+                title={mapMax ? 'Close — back to the assembly view' : 'Close — back to projects'}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M19 12H5M12 19l-7-7 7-7"/>
+                  <path d="M6 6l12 12M18 6L6 18"/>
                 </svg>
-                <span>Back</span>
+                <span>Close</span>
+              </button>
+            </Panel>
+          )}
+          {/* Top-right = No PDF filter toggle (เอ๋ 2026-06-09: 'ด้านขวาบนเป็น
+              ปุ่ม No PDF'). Isolates the parts still missing a drawing; label
+              carries the live count. */}
+          {(fullscreen || mapMax) && (
+            <Panel position="top-right">
+              <button
+                className={'kme-nopdf-btn' + (noPdfOnly ? ' is-active' : '')}
+                onClick={(e) => { e.stopPropagation(); setNoPdfOnly(v => !v); }}
+                title={noPdfOnly ? 'Show all parts again' : 'Show only the parts with no PDF'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/>
+                  <path d="M14 3v5h5"/>
+                  <line x1="4" y1="4" x2="20" y2="20"/>
+                </svg>
+                <span>No PDF{noPdfCount ? ` (${noPdfCount})` : ''}</span>
               </button>
             </Panel>
           )}
@@ -1966,16 +2032,9 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       </div>
     </div>
       </section>
-      {/* Floating exit — only while the mindmap is maximized; the section's
-          own ✕ in the header sits UNDER the maxed canvas (z-index), so this
-          fixed button is the reachable way back to the accordion. */}
-      {mapMax && (
-        <button
-          className="kme-map-max-exit"
-          onClick={() => setMapMax(false)}
-          title="Exit fullscreen mindmap"
-        >✕ Close</button>
-      )}
+      {/* (The maximized-mindmap exit is now the top-left Close Panel inside
+          the canvas — see above; เอ๋ 2026-06-09. The old floating
+          .kme-map-max-exit button was removed with the ← Back panel.) */}
     </div>
   );
 }

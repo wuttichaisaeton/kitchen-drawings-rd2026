@@ -179,6 +179,48 @@ html.kme-fs-on .kme-root { height: 100% !important; }
 .kme-fs-back:active { transform: scale(0.94); }
 .kme-fs-back svg { width: 16px; height: 16px; flex-shrink: 0; }
 
+/* No-PDF filter toggle — top-right of the fullscreen mindmap (เอ๋ 2026-06-09).
+   Same chrome as the Close button; turns warning-amber/red when ON so it's
+   obvious the map is showing ONLY the parts still missing a drawing. */
+.kme-nopdf-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #1c2330;
+  color: #cdd9e5;
+  border: 1px solid #3a4757;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+  -webkit-tap-highlight-color: transparent;
+}
+.kme-nopdf-btn:hover { background: #283142; }
+.kme-nopdf-btn:active { transform: scale(0.94); }
+.kme-nopdf-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+.kme-nopdf-btn.is-active {
+  background: #3a1d1d;
+  color: #ffb4a8;
+  border-color: #8a3a32;
+}
+.kme-nopdf-btn.is-active:hover { background: #4a2420; }
+
+/* No-PDF filter dim — applied to every node that ISN'T a no-PDF part while the
+   filter is on (see nopdfDim in main.jsx). !important so it beats the wrapper
+   (.kme-node.kme-wrapper{opacity:.85}) + layer + .kme-faded opacity rules that
+   a plain class would lose to on container nodes. Click-through while dimmed. */
+.kme-node.kme-nopdf-dim {
+  /* Instant, NOT transitioned: a transition freezes at the start value when a
+     node is in React Flow's `visibility:hidden` (pre-measure) state, so the
+     dim wouldn't apply until the node next composites. Instant is also the
+     snappier UX for a filter toggle. */
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 /* Diagnostic strip — BRIGHT so it reads clearly in a screenshot. Shows
    build stamp + PWA/BROWSER context + the last tap that reached a handler.
    Temporary (2026-05-29) while chasing the iPhone button issue. */
