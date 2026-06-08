@@ -1849,3 +1849,16 @@ Done. `AssemblyTree` rebuilt as **15 board-cards, 1 per top-level cabinet** (reu
 ---
 ### 2026-06-09 - G1 → G2 ℹ️ FYI: I touched app.js data-loader (cache-bust manifest) — your kanban-cards work untouched
 Heads-up (shared tree). เอ๋ kept hitting "exported a PDF but the web still says NO PDF" (3rd time). Root cause = GitHub Pages serves `Drawings/*.json` with **Cache-Control: max-age=600** (Fastly CDN) + the network-first service worker → `cache:'no-store'` only bypasses the BROWSER cache, not the CDN edge, so a normal reload shows a stale manifest for up to 10 min after a publish. **Fix (commit `30abd06`, deployed):** added `_cacheBust(url)` (appends `?t=Date.now()`) in `fetchJson`'s neighbourhood and wrapped the 3 Drawings loads — manifest / missing.json / drawing_aliases.json (NOT families.json). Pure data-loader, **no change to buildProjectTree / _buildBomNodes / AssemblyTree** — your kanban-cards (db8a4c8/ed627f7) untouched. Verified: live app.js has `_cacheBust`, loader still parses (14 projects, 02 Ruth ok). Users need ONE hard-reload to pick up the new app.js; after that every publish shows on a normal reload. Also FYI your auto-sync is now stronger: CC_SimplePDF fires sync.bat too (was the gap), and sync.bat now stamps + `pull --rebase` before push. — G1 (Fusion)
+
+---
+### 2026-06-09 - G1 → G2 🟡 NEEDS (เอ๋ asked to route to you): "diff vs Library" — flag near-duplicate drawings + highlight what differs
+เอ๋ relayed a feature idea + said to hand it to G2 ("ถ้างานเยอะเกิน ส่งให้ G2 ช่วยทำก็ได้"). It's web/Library, your domain.
+
+**Ask (เอ๋, verbatim intent):** when looking at a Drawing, be able to SEE/CIRCLE how it differs from a similar one already in the Library — *"บางทีคล้ายกัน แค่แตกต่างกันที่รูเจาะ อะไรแบบนี้"* (often near-identical, differ only in hole positions). Goal: avoid duplicate drawings + instantly spot what changed between two near-twins (e.g. FCLF10-105003 vs a sibling that's the same panel with shifted/extra holes).
+
+**Why it's non-trivial (so you can scope, not just build):** the web only has the manifest (code/family/dims) + the PDF — it does NOT have hole coordinates. So a true geometric hole-diff needs a data source. Approaches to weigh (your call):
+- **(a) v1, cheap — "similar drawings" finder:** group by family + outer size (the WWWHHH in the code / dims field) → list near-duplicate candidates, show the two PDFs side-by-side so เอ๋ eyeballs the diff. No pixel/geom work. Ships fast.
+- **(b) visual diff:** render both PDFs to canvas, diff pixels, draw circles around the differing regions (where holes moved/added). Pure client-side, no new data, but PDF→canvas + alignment is fiddly.
+- **(c) geometric hole-diff (most accurate):** the laser DXFs per part already exist (`uploaded_dxfs/<stem>` RTDB / `Drawings/dxf/...`). Parse two DXFs' circles → set-diff hole centers → highlight the deltas. Most precise but needs DXF parsing + both parts having a DXF.
+
+**Suggest:** start with (a) (immediate value, low risk), layer (b)/(c) later if เอ๋ wants auto-highlight. **Needs a quick scope pass with เอ๋** on which depth she wants. Pure web — no Fusion/CC_ change. G1 has nothing to build here. **NEEDS (G2):** scope with เอ๋ + build. — G1 (Fusion)
