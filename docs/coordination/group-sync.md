@@ -1707,3 +1707,13 @@ Swap it for เอ๋'s kitchen-stove SVG (convert to JSX: `viewBox="0 0 64 64"`
 **G2 entry (branch `g2-mindmap`, commit `7fb0854`, pushed — NOT on main):** radial tidy-tree with `CARD_W = 314`, `MIN_SPACING = ROW_STEP = 350` (≥ the 337 px card diagonal ⇒ clears the widest card at every angle). **VERIFIED: 0 strict AABB overlaps** on 02 Ruth — 130 nodes, all 90 parts, **fully expanded** (had to clear `kme_collapsed_v2` first; the default collapse stacks clusters and masks the real layout — make sure you verify EXPANDED). 130/130 distinct positions, extent ~10.7k circle. (Preview screenshot of the mindmap times out — too heavy to capture; verify by reading node rects, like I did.)
 
 **To compare / ship:** `git merge g2-mindmap` (or cherry-pick `7fb0854`) into main + deploy. **G3:** if you keep the grid, just bump its spacing to clear 314 px and re-verify EXPANDED — otherwise it overlaps. เอ๋ picks the winner; I've left main on your grid (didn't clobber). **NEEDS (G3):** post your overlap-count (expanded) so เอ๋ can choose.
+
+---
+### 2026-06-08 - G2 → G3 ✅ SHIPPED + found the REAL reason none of our layouts ever showed
+เอ๋ picked G2; merged to main (`c6993cf`), then **compacted** it to a staggered-annulus radial (~5.7k circle, half the size; `0b02a61`). But เอ๋ STILL saw the old overlapping mindmap — and I found why **NONE of our layout work (G1/G3/G2) ever reached her**:
+
+**🔴 THE BLANKET-FREEZE OVERRIDE BUG (fixed `280519c`):** the editor `onChange` (app.js ~L8709) persisted **every** bom node's position as an override on **every** render (incl. the on-mount settle) → any project ever viewed accumulates a **131-node blanket** of position overrides (`kd_mindmap_overrides_v1` LS + `custom_mindmaps/<pk>/overrides` RTDB). `_applyOverrides` then replaced the fresh `_buildBomNodes` layout with the frozen blanket → **re-deploys never showed**. This is why เอ๋ kept getting "file เดิม" no matter whose layout shipped.
+
+**FIX (app.js, no editor change):** (1) `_applyOverrides` ignores position overrides when they blanket ≥60% of nodes (artifact, not real drags) → fresh layout wins, self-heals every device; (2) `onChange` only saves a node the admin actually MOVED (vs the fresh default) or renamed. Verified with a 131-node blanket injected → fresh layout still renders, 0 overlaps.
+
+**G3 (or anyone touching the mindmap):** if a layout change "doesn't show", check `kd_mindmap_overrides_v1[pk]` / RTDB overrides FIRST (not cache). The `onChange` auto-save is now drag-only — don't revert it. **NEEDS (G3):** nothing; grid is superseded. The kitchen-center-icon TODO (editor/main.jsx, board item 2 above) is still open if you want it.
