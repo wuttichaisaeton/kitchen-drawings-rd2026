@@ -7068,52 +7068,49 @@ function _buildBomNodes(project, parts, projectKey) {
     });
   }
 
-  // ── Radial tidy-tree layout (2026-06-08, G2 — เอ๋ "ไม่ซ้อนทับ เห็นครบทุกตัว") ──────
-  // Provably non-overlapping for ANY tree depth. KEY FIX both prior attempts
-  // missed: the RENDERED card is up to ~314px wide (a long code + a "NO PDF"
-  // pill), NOT 168 — measured live on 02 Ruth. Sized to 168 the wide cards
-  // overlap their neighbours. Here:
-  //   • angle  — leaves take even slots around the FULL circle in DFS order, so a
-  //              family's leaves are one contiguous arc (a readable "ก้อน"); every
-  //              parent sits at the angular MIDPOINT of its descendants' arc.
-  //   • radius — depth → ring. R_BASE is sized so even the tightest pair (1 slot
-  //              apart) clears MIN_SPACING as a chord; rings are ROW_STEP apart.
-  // Adjacent same-ring nodes are ALWAYS ≥ 1 slot apart (DFS contiguity), and
-  // MIN_SPACING ≥ the card DIAGONAL ⇒ no two cards overlap at any angle. No cap.
+  // ── Compact radial tidy-tree — staggered annulus (2026-06-08, G2; เอ๋ "กระชับขึ้น") ──
+  // Same provable no-overlap as the one-ring version, ~HALF the diameter. The old
+  // version put every leaf on ONE outer ring → radius scales with N (~130) → a huge
+  // sparse circle. Here ALL nodes pack into a tight ANNULUS of K concentric rings in
+  // DFS PRE-ORDER (a family's anchor + its whole subtree stay contiguous = one "ก้อน").
+  // The rendered card is up to ~314px wide (measured live: long code + a "NO PDF" pill).
+  //   • angle  = DFS pre-order index g → an even slot around the full circle (N slots).
+  //   • radius = R0 + (g mod K)·ROW_STEP — consecutive nodes ALTERNATE rings, so any two
+  //              adjacent nodes are ROW_STEP apart RADIALLY (clears CARD_W at 3 o'clock);
+  //              same-ring nodes (g, g+K) are K slots apart ANGULARLY (chord ≥ MIN_SPACING).
+  // K is chosen to MINIMISE the outer radius. Min node-to-node distance ≥ the card
+  // diagonal ⇒ no two cards overlap at any angle. No global cap.
   const CARD_W = 314;                 // measured max rendered card width  (px)
   const CARD_H = 121;                 // measured max rendered card height (px)
   const MIN_SPACING = 350;            // ≥ diagonal(314,121)=337 → clears the widest card at every angle
-  const ROW_STEP = MIN_SPACING;       // radial gap between depth rings
+  const ROW_STEP = MIN_SPACING;       // radial gap between annulus rings
   const TWO_PI = 2 * Math.PI;
 
-  // Annotate every node with its DFS leaf-slot range [_s0.._s1] + _depth (1 = a
-  // top-level family). Leaves take one slot each, in DFS order → family-contiguous.
-  let _slot = 0;
-  (function annotate(list, depth) {
-    for (const n of list) {
-      n._depth = depth;
-      if (n.children?.length) {
-        annotate(n.children, depth + 1);
-        n._s0 = n.children[0]._s0;
-        n._s1 = n.children[n.children.length - 1]._s1;
-      } else { n._s0 = _slot; n._s1 = _slot; _slot++; }
-    }
-  })(roots, 1);
-  const L = Math.max(1, _slot);
-  const SLOT_ANG = TWO_PI / L;
-  // R_BASE = radius at which a 1-slot chord == MIN_SPACING (the tightest pair).
-  // Clamp the angle to ≤ π/2 so tiny trees (L = 1, 2) don't divide by ~0.
-  const R_BASE = Math.max(360, MIN_SPACING / (2 * Math.sin(Math.min(Math.PI / 2, Math.PI / L))));
-  const angOf = (n) => -Math.PI / 2 + ((n._s0 + n._s1) / 2 + 0.5) * SLOT_ANG;
-  const radOf = (n) => R_BASE + (n._depth - 1) * ROW_STEP;
+  // N = every node except the project center (all packed into the annulus).
+  let N = 0;
+  (function count(list) { for (const n of list) { N++; if (n.children?.length) count(n.children); } })(roots);
+  N = Math.max(1, N);
+  const SLOT_ANG = TWO_PI / N;
+  // Pick K (ring count) that MINIMISES the outer radius. R0 (innermost ring) is sized
+  // so two same-ring nodes (K slots apart) clear MIN_SPACING as a chord; outer radius =
+  // R0 + (K-1)·ROW_STEP. Clamp the angle ≤ π/2 so tiny trees don't divide by ~0.
+  let K = 1, R0 = 360, bestOuter = Infinity;
+  for (let k = 1; k <= 8; k++) {
+    const r = Math.max(360, MIN_SPACING / (2 * Math.sin(Math.min(Math.PI / 2, (k * Math.PI) / N))));
+    const outer = r + (k - 1) * ROW_STEP;
+    if (outer < bestOuter) { bestOuter = outer; K = k; R0 = r; }
+  }
 
-  // Walk the tree, emitting each node at its polar position + the edge from its
-  // parent. `isTop` = a direct child of the project center (a family anchor);
-  // `anchorId` threads that anchor's id down so the editor's checklist / collapse
-  // keeps working. Function DECLARATION so it can self-recurse.
+  // Walk the tree in DFS pre-order, placing each node at its annulus slot + the edge
+  // from its parent. `isTop` = a direct child of the project center (a family anchor);
+  // `anchorId` threads that anchor's id down so the editor's checklist / collapse keeps
+  // working. `g` = the running pre-order index (anchor BEFORE its kids ⇒ contiguous arc).
   const centerId = `project:${projectKey}`;
+  let _g = 0;
   function emitTree(node, parentSourceId, anchorId, isTop) {
-    const a = angOf(node), r = radOf(node);
+    const g = _g++;
+    const a = -Math.PI / 2 + (g + 0.5) * SLOT_ANG;
+    const r = R0 + (g % K) * ROW_STEP;
     const x = r * Math.cos(a), y = r * Math.sin(a);
     const hasKids = !!node.children?.length;
     const { nodeKey, color } = emitNode(node, x, y,
