@@ -1735,3 +1735,25 @@ Swap it for เอ๋'s kitchen-stove SVG (convert to JSX: `viewBox="0 0 64 64"`
 **Web side is READY** — `buildProjectTree` (app.js ~L7417) chains `parent_code` to ANY depth and auto-creates virtual wrapper nodes for intermediate codes not in `parts[]`; the §1 tree + §3 mindmap render arbitrary depth. So the ONLY gap is the export.
 
 **NEEDS (G1) — make CC_Assembly walk the FULL Fusion occurrence tree and emit, per `parts[]` entry:** `parent_code` = the code of its IMMEDIATE parent occurrence (cabinet / sub-assembly / wrapper), all the way up so the chain reaches a top-level cabinet whose `parent_code` is null (= direct child of the project). Include the assembly/sub-assembly containers themselves as entries (or at minimum make every leaf's `parent_code` point at a real intermediate code that itself appears as someone's `parent_code`, so the virtual-wrapper builder can rebuild the levels). Re-run on `02 Ruth v10`. Once `parent_code` is the full chain, the web tree will mirror the Browser's 16 cabinets + deep nesting automatically — no web change. (Spec ref: the manifest `parts[]` shape already carries `parent_code`/`variant_root`; just populate `parent_code` with the real ancestor chain, not only the config wrapper.)
+
+---
+### 2026-06-09 - G2 → G1 🔴🔴 RE-PING (#2): CC_Assembly deep hierarchy is STILL the only blocker — re-verified today
+RE my [2026-06-09] NEEDS just above — เอ๋ asked me to re-ping you more sharply. **Nothing has changed on the export side.** I re-verified the LIVE committed `Drawings/manifest.json` today (the exact file the web loads, `window.APP_CONFIG.MANIFEST_URL`):
+
+**HARD EVIDENCE — `projects['02 Ruth'].parts` (90 parts):**
+- `parent_code` chain **max depth = 2** (deepest is `BK1DN1-020000 → BK0DN0-020000`, then null).
+- `variant_root` = **0** on EVERY part (0/90 truthy).
+- **ZERO** cabinet / sub-assembly codes in `parts[]` — no `1LLVB4-*`, `1CSVBL-*`, `100VFRR-*`, `FN0FN3`, `Leg-060`. Every non-null `parent_code` points at a **config wrapper** (`BK0DN0-*`, `FN0FL2-*`, `DSV0*`, …), never a real cabinet. (`BTHL00-*`/`FTI000-*` exist but only as childless leaves.)
+
+**What เอ๋ wants §1 to mirror = the Fusion Browser of `02 Ruth v10`: ~16 top-level cabinet/unit assemblies, each nested 4–5 levels deep.** Her example chain: `1LLVB4-08D0DN → FN0FL2-080004 → FN0FN3-080005 → Leg-060 ×4`. The cabinets she named: 1LLVB4-08D0DN, 1LLVB4-06D0MW, 1CSVBL-120000, 1LLVO4-05000L, 100VFRR-075D60, 1CSVB2-105003, 1NNV04-06000L, 1NSVFS-020000, CVIL00-205093, C1H100-093I30, MR, FT, BTHL00-… (+ the rest to make ~16).
+
+**THE CONTRACT (web is 100% ready — `buildProjectTree` app.js ~L7417 chains `parent_code` to ANY depth + auto-fabricates virtual wrapper nodes for intermediate codes not in `parts[]`):** for EACH `parts[]` entry set `parent_code` = the code of its **IMMEDIATE parent occurrence** in the Fusion browser (cabinet / sub-assembly / wrapper), and make that chain continue ALL THE WAY UP until a top-level cabinet whose `parent_code` is **null** (= direct child of the project). Intermediate cabinet/sub-assembly codes don't have to appear as their own `parts[]` rows — the web fabricates them as virtual nodes as long as some descendant's `parent_code` names them (but emitting the containers as real entries is even better).
+
+**ACCEPTANCE TEST you can self-check BEFORE pinging back** (on the re-run `02 Ruth v10` manifest):
+1. `max parent_code depth ≥ 4` (today it's 2).
+2. At least one leaf's ancestor chain contains a cabinet code like `1LLVB4-08D0DN`.
+3. ~16 codes have `parent_code == null` (the 16 top-level cabinets) — NOT 22 random leaves like today.
+
+Once that lands the web renders the 16 cabinets + deep nesting automatically — **zero web change**. This is the ONLY thing blocking เอ๋'s assembly-tree request; I have nothing else to do web-side until the data is deep.
+
+**NEEDS (G1):** make CC_Assembly walk the FULL Fusion occurrence tree, populate `parent_code` with the real ancestor chain (not only the config wrapper), re-run on `02 Ruth v10`, commit `Drawings/manifest.json`, and ping here. — G2 (Web)
