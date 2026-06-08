@@ -884,7 +884,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
         if (!n || !isBom(n) || seen.has(id)) return;
         seen.add(id);
         const kids = (childrenOf.get(id) || []).filter(k => isBom(byId.get(k)));
-        rowsOut.push({ id, node: n, depth });
+        rowsOut.push({ id, node: n, depth, hasKids: kids.length > 0 });
         for (const k of kids) walk(k, depth + 1);   // FULL subtree, always
       };
       walk(r.id, 0);
@@ -907,39 +907,67 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   const toggleCard = useCallback((id) => setFoldedCards(prev => {
     const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s;
   }), []);
+
+  // Per-row expand inside a card body — a TREE drill-down (เอ๋ 2026-06-09:
+  // 'tree ลูกศรชี้ขวา/ลง capsule expand'). A row with children shows ▸ (collapsed)
+  // / ▾ (expanded); tap the capsule to toggle. Default = collapsed → only the
+  // cabinet's DIRECT children show; drill to reveal deeper parts. LOCAL state.
+  const [expandedRows, setExpandedRows] = useState(() => new Set());
+  const toggleRow = useCallback((id) => setExpandedRows(prev => {
+    const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s;
+  }), []);
   const markDone = (code, e) => {
     if (e) e.stopPropagation();
     api.markAssembled?.(projectKey, code, !isDone(code));
   };
 
   // A part row inside a card body — depth 1 = a direct child of the cabinet
-  // (cabinet itself is the card header, not a row), deeper = indented.
-  const renderRow = ({ id, node, depth }) => {
+  // (cabinet itself is the card header), deeper = indented. A row WITH children
+  // is a tree node: ▸ collapsed / ▾ expanded; the whole capsule toggles.
+  const renderRow = ({ id, node, depth, hasKids }) => {
     const code = node.data?.label || '';
     const qty = node.data?.qty;
     const done = isDone(code);
     const comments = api.getComments ? (api.getComments(code) || []) : [];
     const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
     const fc = _famColor(_famOf(code));
+    const expanded = expandedRows.has(id);
     return (
       <div
         key={id}
-        className={'kme-tree-row' + (done ? ' is-done' : '')}
-        style={{ paddingLeft: (6 + Math.max(0, depth - 1) * 16) + 'px', borderLeft: '3px solid ' + fc.border }}
+        className={'kme-tree-row' + (done ? ' is-done' : '') + (hasKids ? ' has-kids' : '')}
+        style={{ paddingLeft: (6 + Math.max(0, depth - 1) * 16) + 'px', borderLeft: '3px solid ' + fc.border, cursor: hasKids ? 'pointer' : 'default' }}
+        onClick={hasKids ? () => toggleRow(id) : undefined}
+        title={hasKids ? (expanded ? 'Collapse' : 'Expand — show parts') : ''}
       >
+        <span className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf')}>{hasKids ? (expanded ? '▾' : '▸') : '·'}</span>
         <span className="kme-tree-label" title={code}>{code}</span>
         {qty != null && <span className="kme-tree-qty">×{qty}</span>}
         {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
         {hasPdf && (
-          <button className="kme-tree-pdf" onClick={() => _openPdfForCode(code)} title="Open PDF">📄</button>
+          <button className="kme-tree-pdf" onClick={(e) => { e.stopPropagation(); _openPdfForCode(code); }} title="Open PDF">📄</button>
         )}
         <button
           className={'kme-tree-done' + (done ? ' is-on' : '')}
-          onClick={() => markDone(code)}
+          onClick={(e) => { e.stopPropagation(); markDone(code); }}
           title={done ? 'Mark not assembled' : 'Mark assembled'}
         >🧩</button>
       </div>
     );
+  };
+
+  // Visible rows of a card = the cabinet's subtree drilled to the user's expand
+  // state: a row shows only if every ancestor up to the cabinet is expanded.
+  const visibleRows = (card) => {
+    const out = [];
+    let allowDepth = 1;            // depth-1 (direct children) always allowed
+    for (const r of card.rows) {
+      if (r.depth === 0) continue; // cabinet = the card header, not a body row
+      if (r.depth > allowDepth) continue;             // hidden under a collapsed ancestor
+      out.push(r);
+      allowDepth = (r.hasKids && expandedRows.has(r.id)) ? r.depth + 1 : r.depth;
+    }
+    return out;
   };
 
   if (!cards.length) {
@@ -968,7 +996,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
                 onClick={() => toggleCard(card.id)}
                 title="Tap to fold / unfold this board"
               >
-                <span className="kme-tree-col-name" title={code}>{folded ? '▸ ' : ''}{code}</span>
+                <span className="kme-tree-col-name" title={code}><span className="kme-tree-chev">{folded ? '▸' : '▾'}</span> {code}</span>
                 <span className="kme-tree-col-count">{card.partCount > 0 ? `🧩 ${card.partCount}` : 'single'}</span>
                 <button
                   className={'kme-tree-done' + (done ? ' is-on' : '')}
@@ -978,7 +1006,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
               </div>
               {!folded && (
                 <div className="kme-tree-col-body">
-                  {card.rows.slice(1).map(renderRow)}
+                  {visibleRows(card).map(renderRow)}
                   {card.partCount === 0 && (
                     <div className="kme-tree-empty" style={{ padding: '6px 8px', fontSize: '11px' }}>single part — no sub-components</div>
                   )}
