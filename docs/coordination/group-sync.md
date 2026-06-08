@@ -1650,3 +1650,38 @@ Re the handoff above ("RULED OUT: NOT custom graphics"): that was a **false read
 
 **Fix to clear now:** activate `1CSVB2-105003` → delete root.customGraphicsGroups + the `CC_CheckHoles` GroupIDs/GroupID attrs → nudge camera/`activeViewport.refresh()` to force a real redraw.
 **Code hardening for CheckHoles (suggest):** after clearing, force a genuine repaint (camera nudge, not just refresh); and consider making the clear gesture able to target the cabinet doc, not just whatever's active. — G2 (combined session, MCP-verified)
+
+---
+### 2026-06-08 - G1 → G2 📋 WEB handoff: kitchen center icon + new mindmap layout (live) + a PDF-to-web note
+เอ๋ asked me to record the WEB items here and hand them to G2.
+
+**1. ✅ DONE (G1, live) — mindmap family-sectored radial layout.** The project mindmap overlapped at ~90 nodes (single outer ring + 2600px cap). Rewrote `app.js _buildBomNodes` radial block → **family-sectored fan**: each top-level cluster (≈ family) gets its own angular sector + inter-family gap; its leaves fan into a compact grid of sub-rings (rows≈√L × cols); radii/slots derived so adjacent cards always clear MIN_SPACING(194) chord + ROW_STEP(194) radial (covers the horizontal-stack case at 3/9 o'clock); 2600 cap removed (sanity 12000). Single-part families place the part directly; deep clusters fall back to `placeSubtree`. **Verified 0 AABB overlaps on real 02 Ruth (90 parts, 21 families).** Editor render / admin drag overrides / pan-zoom / fitView untouched. Commit `6d59b35`, deployed. Spec: `docs/superpowers/specs/2026-06-08-mindmap-family-sectored-radial-design.md`. Tunables if เอ๋ wants tighter/looser: `GAP_SLOTS`, `MAX_PER_ROW`, `perRow=round(√L)`.
+
+**2. 🟡 TODO (G2) — replace the project CENTER node icon with เอ๋'s kitchen icon.** Currently the cube/blocks SVG in `editor/main.jsx` → `ProjectCenterNode` (~L122–126):
+```jsx
+<svg className="kme-center-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" ...>
+  <path d="M12 3 L18 6.5 L12 10 L6 6.5 Z"/> ... (3 cubes)
+</svg>
+```
+Swap it for เอ๋'s kitchen-stove SVG (convert to JSX: `viewBox="0 0 64 64"`, keep the `fill="#..."` colors, camelCase `strokeWidth`/`strokeLinecap`, add `className="kme-center-icon"`). Check `.kme-center-icon` sizing in `editor/style.css` (it was sized for 24×24; the kitchen art is colored/filled so `stroke="currentColor"` no longer applies — make sure it isn't tinted/clipped). Then `npm run build:editor` + commit the rebuilt `editor.bundle.js`. The SVG เอ๋ wants:
+```svg
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%">
+  <rect x="4" y="52" width="56" height="4" rx="1" fill="#7F8C8D"/>
+  <rect x="6" y="36" width="52" height="16" rx="1" fill="#BDC3C7"/>
+  <rect x="6" y="36" width="52" height="3" fill="#E67E22"/>
+  <rect x="10" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="20" cy="46" r="1" fill="#7F8C8D"/>
+  <rect x="26" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="28" cy="46" r="1" fill="#7F8C8D"/>
+  <rect x="42" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="44" cy="46" r="1" fill="#7F8C8D"/>
+  <rect x="12" y="35" width="16" height="2" fill="#2C3E50"/>
+  <circle cx="16" cy="35" r="2" fill="#E74C3C"/><circle cx="24" cy="35" r="1.5" fill="#E74C3C"/>
+  <path d="M14 8 L34 8 L32 20 L16 20 Z" fill="#34495E"/>
+  <rect x="10" y="20" width="28" height="4" rx="0.5" fill="#2C3E50"/>
+  <line x1="44" y1="14" x2="54" y2="14" stroke="#7F8C8D" stroke-width="1"/>
+  <path d="M46 14 L46 22 M46 22 L45 24 L47 24 Z" stroke="#D35400" stroke-width="1" fill="none"/>
+  <path d="M50 14 L50 20 A2 2 0 0 0 54 20" stroke="#2980B9" stroke-width="1" fill="none"/>
+</svg>
+```
+
+**3. ℹ️ NOTE (Fusion = G1, flagging for awareness) — CC Drawing PDF doesn't reach the web for single-part files.** เอ๋ clicked the new "Drawing PDF" palette card on a single-part design → CC_DrawingPDF errored: *"Master design has no configuration table. Path A workflow requires a parametric master with rows. For single-part files use a different workflow (TBD)."* → no PDF generated → nothing reaches the web. CC_DrawingPDF only handles parametric masters (per-config). The single-part path is **`CC_SimplePDF`** (it auto-registers `Drawings/manifest.json`, per G50). **G1 will fix the Fusion side** (auto-route the Drawing-PDF action to CC_SimplePDF when the active doc has no config table, so single-part parts still publish to the web). No web change needed — just flagging why some PDFs aren't appearing.
+
+**NEEDS (G2):** item 2 (kitchen center icon — editor/main.jsx + build:editor + commit bundle). Items 1 + 3 are G1 (1 done, 3 G1-to-fix).
