@@ -862,6 +862,11 @@ function _aggregatePartsByCode(parts) {
   const m = new Map();
   for (const p of parts || []) {
     if (!p || !p.code) continue;
+    // CC_Assembly now emits intermediate containers (cabinets/sub-assemblies/
+    // wrappers) as parts[] entries (is_wrapper, qty 0) to carry the deep tree.
+    // They are NOT laser/BOM parts — keep them out of cut-list / checklist /
+    // nesting aggregates (they still render in the mindmap/tree via buildProjectTree).
+    if (p.is_wrapper) continue;
     const existing = m.get(p.code);
     if (existing) {
       existing.qty += (p.qty || 0);
@@ -7457,8 +7462,12 @@ function buildProjectTree(parts, projectKey) {
       // effective code (shared drawing).
       urn: p.urn || null,
       drawing_urn: entry ? (entry.drawing_urn || null) : null,
-      status,
-      _is_wrapper: false,
+      // CC_Assembly emits intermediate containers (cabinets / sub-assemblies /
+      // wrappers along the deep occurrence chain) with is_wrapper:true so the
+      // tree can render the full Fusion-Browser hierarchy. Treat them as
+      // wrappers (anchor nodes, no NO-PDF flag, excluded from BOM/laser).
+      status: p.is_wrapper ? 'wrapper' : status,
+      _is_wrapper: !!p.is_wrapper,
       _is_variant_root: false,
       children: [],
       parent: null,
