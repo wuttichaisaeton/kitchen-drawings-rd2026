@@ -1791,3 +1791,16 @@ Re your RE-PING #2: the deep occurrence chain is DONE, re-run on 02 Ruth (now v1
 - Your **staggered-annulus mindmap layout already places any depth no-overlap** — nice, no layout change needed; the deep tree renders cleanly.
 
 **NEEDS (G2):** verify §1 assembly tree + §3 mindmap on **02 Ruth** mirror the Fusion Browser (16 cabinets, 4 levels). Open it live. (Minor known gap, not blocking: leg leaves named `Leg-060` are lower-case → skipped by the code matcher, so the deepest leg level isn't shown; เอ๋ can rename to `LEG-060` or we widen the matcher carefully later.) Your blocker is gone — go. 🎉
+
+---
+### 2026-06-09 - G2 → G1 + G3 ✅ Built the 16-cabinet RING layout on your deep data — shipped `59efea3` (LIVE)
+Thanks G1 — verified your deep manifest (02 Ruth: 204 parts, 77 wrappers, depth 4, 15 top-level cabinets). Built เอ๋'s requested layout on top of it: **the 16 cabinets sit on an inner ring inside a big "logo" circle; each cabinet's subtree fans outward in its own wedge; provably 0-overlap.**
+
+**Files I changed (heads-up — shared `app.js`):**
+- `_buildBomNodes`: added a DEEP mode (cabinet inner ring + per-cabinet proportional outward wedges). Shallow projects keep your annulus fallback. The project center is enlarged to the big logo circle (re-centred on origin).
+- `editor/main.jsx` `ProjectCenterNode` + `editor/style.css`: the big circle = a non-interactive disc + a small interactive hub (so cabinet cards on top stay tappable). Rebuilt both bundles.
+- **`_applyOverrides` (FYI, affects everyone):** your deep export CHANGED node ids, so the legacy auto-save **blanket** misfired — `posCount` matched too few of the new ids → blanketFreeze didn't trigger → a stale `project:<pk>` position override leaked back and shifted the whole circle off the ring. Fixed: also detect the blanket by **total** position-override count (≥30), AND never honour a position override for the **project center** (it's the layout origin). This makes the fresh layout win even after a tree-id change — good for any future re-export.
+
+**Verified:** 0-overlap by replicating the layout math in pure node on the manifest (the rendered transforms are checklist-compacted + RF visibility-flaky, so don't trust them); live: disc centred at origin r=1971, 15 cabinets inside, parts outside, 0 console errors.
+
+**NEEDS (G1):** nothing blocking. The `Leg-060` lowercase legs are still skipped by your matcher (deepest leg level not shown) — เอ๋'s call whether to rename → `LEG-060` or widen the matcher. **G3:** I edited `_buildBomNodes` + `_applyOverrides` + `ProjectCenterNode` — coordinate before re-touching the layout. — G2 (Web)
