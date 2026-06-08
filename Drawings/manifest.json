@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-08T09:23:07.578167+00:00",
+  "generated_at": "2026-06-08T20:26:33.842896+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -2976,6 +2976,45 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-05T09:23:04.138411+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "CLL000-000000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "CLL000-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T20:26:33.842874+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "CLL000-000081": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "CLL000-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T20:26:33.842889+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "CLL000-000083": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "CLL000-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T20:26:33.842892+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
