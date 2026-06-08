@@ -357,6 +357,17 @@ async function fetchJson(url) {
   return r.json();
 }
 
+// Append a unique cache-bust param. GitHub Pages serves Drawings/*.json with
+// Cache-Control: max-age=600 (10 min) via the Fastly CDN, and the app has a
+// network-first service worker — so after a publish (CC_SimplePDF → sync.bat)
+// the part is live on the host but a NORMAL reload keeps showing the stale
+// manifest for up to 10 min → "I exported the PDF but the web still says NO
+// PDF". cache:'no-store' only bypasses the BROWSER cache, not the CDN edge.
+// A unique ?t= makes every load a CDN cache-miss = always fresh. (เอ๋ 2026-06-09)
+function _cacheBust(url) {
+  return url + (url.includes('?') ? '&' : '?') + 't=' + Date.now();
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Drawing aliases — groups / prefix-shares of part codes that share one
 // workshop drawing. Source: drawings-ui/Drawings/drawing_aliases.json.
@@ -10652,7 +10663,7 @@ async function init() {
 
   try {
     const [m, f] = await Promise.all([
-      fetchJson(window.APP_CONFIG.MANIFEST_URL),
+      fetchJson(_cacheBust(window.APP_CONFIG.MANIFEST_URL)),
       fetchJson('families.json'),
     ]);
     manifest = m;
@@ -10667,7 +10678,7 @@ async function init() {
     try {
       const mu = window.APP_CONFIG.MANIFEST_URL || 'Drawings/manifest.json';
       const missingPath = mu.replace(/[^/]+$/, 'missing.json');
-      missingData = await fetchJson(missingPath);
+      missingData = await fetchJson(_cacheBust(missingPath));
     } catch (e) {
       missingData = null;
     }
@@ -10677,7 +10688,7 @@ async function init() {
     try {
       const mu = window.APP_CONFIG.MANIFEST_URL || 'Drawings/manifest.json';
       const aliasesPath = mu.replace(/[^/]+$/, 'drawing_aliases.json');
-      const aliasData = await fetchJson(aliasesPath);
+      const aliasData = await fetchJson(_cacheBust(aliasesPath));
       _buildDrawingAliasIndex(aliasData);
     } catch (e) {
       _buildDrawingAliasIndex(null);
