@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-08T22:55:14.762110+00:00",
+  "generated_at": "2026-06-08T23:10:06.290088+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3067,6 +3067,19 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-08T22:55:14.762110+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "FCLF10-105003": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "FCLF10-105003.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T23:10:06.290088+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
