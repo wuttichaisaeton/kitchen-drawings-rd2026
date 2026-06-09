@@ -652,6 +652,19 @@
       "fusion_teams_url": null,
       "page_number": 1
     },
+    "DSV200-000080": {
+      "family": "Drawer",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "DSV200-000080.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-09T08:30:00.000000+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
     "DSV2B0-000000": {
       "family": "Drawer",
       "last_drawn_version": 0,
