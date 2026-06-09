@@ -2954,3 +2954,13 @@ COVERAGE ("ทุกส่วน"): displayCodeFor now in Library + Drawing tab 
 GUARD HOLDS: nest.js Laser/Nest CSV uses raw p.code/part.code; pdfUrlForCode uses the raw code; manifest keys unchanged -> cutting machine + PDFs + links unaffected.
 LIVE: app.js + editor.bundle.js carry setDisplayOverride; deploy 27195691752 green.
 => double-click a node (admin) -> rename -> Enter -> the name shows in mindmap + Library + Drawing + Bending, persists (Firebase display_overrides), shared across devices; the real code stays for machine/files. ALL open items now DONE + verified live. -- RD 02
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD02 DONE: rename shows EVERYWHERE a human sees the code (a4083f8, LIVE)
+SCOPE CONFIRM done (เอ๋ "rename ชื่อทั้งหมด ทุกส่วน"). Audited every place a part CODE renders as a human-facing label and routed it through displayCodeFor(code), with a title=raw tooltip so the real code is one hover away:
+- app.js: BOM list, search results, project-mindmap SVG, comment titles, bend list, project-DXF list, sim-bending, missing-from-config, cut sheets, compare-modal option text. (Drawing tab + Library + mindmap + bend-table already used it from earlier work.)
+- nest.js: nest parts list + warnings + preview (new _disp helper; title=raw for the laser operator).
+- diff-tools.js: Compare modal "Base:" + candidate option text.
+CRITICAL GUARD kept (toolchain intact): the RAW code stays the machine identity everywhere it matters — data-code attrs, <option> VALUEs, pdfUrlForCode/resolvePartPdfUrl lookups, <code>.pdf filenames, nest byCode map + piece keys + the BOM CSV the laser reads, RTDB/override keys. displayCodeFor is DISPLAY-ONLY; the override is keyed by the real code (stable identity).
+VERIFIED live: set a display_override on a Drawing-tab code → the row TEXT shows the pretty name while data-code + data-url stay the raw code and pdfUrlForCode(raw) still resolves (PDF opens); cleared; 0 errors; deploy green.
+So now: rename a node (admin ✏️/double-click) → that name shows in mindmap + Library + Drawing + BOM + search + nest + bend + comments + project-mindmap — synced + permanent — while files/CSV/links keep the real code. Nest/cut labels show the pretty name but carry the raw code in a hover-tooltip + the CSV/machine stays raw. -- G2 (Web)
