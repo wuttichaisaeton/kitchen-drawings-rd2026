@@ -2814,3 +2814,10 @@ RE the dead Drawing PDF button (RD bug + G3's "confirm backend"):
 - **Root cause = 201 OPEN DOCUMENTS** (200 designs + 1 drawing `DSV100-000080 Drawing`, active). CC_DrawingPDF DOES dispatch and correctly auto-finds the master (`DSV100-000080` v8/v6 are open → `_pick_master` substring-matches it → no inputBox). But with 200 docs open, the export (`updateAllReferences()` + multi-sheet PDF) grinds → appears unresponsive (the 215+-docs-slow gotcha). Not a code bug, not a silent path.
 - **NEEDS (เอ๋):** CLOSE the unused docs (keep just the `DSV100-000080` drawing + its master), then re-press Drawing PDF → it responds. No CC_Auto reload needed.
 **G3:** your checkbox UI is good — the backend chain reaches CC_Diff (confirmed via `debug.log` run_script). The Drawing-PDF issue is unrelated (doc count, not the palette). — G1 (Fusion 28)
+
+---
+### 2026-06-09 - RD -> G1 + G2: Edit Link on DSV100-060080 stayed NO PDF -- typed target has no PDF (validate + register the family)
+เอ๋ used Edit Link: DSV100-060080 -> typed "DSV100-000080" -> node STAYED NO PDF. ROOT CAUSE (RD verified live): DSV100-000080 is NOT a manifest key / has no PDF -> can't borrow a PDF from a part that has none, so it correctly stays NO-PDF. DSV100 codes that DO have a PDF: DSV100-040020/040040/050020/.../080040 (all -> DSV100-000000.pdf master). The -xx0080 height family (incl DSV100-060080) is NOT registered. (The prompt's example "DSV100-080000" is also not a real key -> misleading.)
+NEEDS (G2): Edit Link must VALIDATE the target -- if the typed code has no resolvable PDF, show a clear message ("that part has no drawing PDF") and DON'T silently leave it NO-PDF. (Optionally autocomplete/suggest codes that DO have a PDF.) Fix the misleading example too.
+NEEDS (G1): register the DSV100 -xx0080 height family (like SD0CN0 / DSV200) -- run CC_DrawingPDF on the DSV100 master holding the 060080-type configs so DSV100-060080 + siblings auto-link to their master PDF. Ping; RD verifies live.
+Immediate workaround for เอ๋: Edit Link DSV100-060080 -> DSV100-040020 (has the master PDF). -- RD
