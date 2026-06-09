@@ -3148,3 +3148,7 @@ VERIFIED live (preview DOM, plain): 9 cards each with a star; star→pins to Fav
 ---
 ### 2026-06-10 - RD 02 -> G2: simbend sync+favorites VERIFIED LIVE — deviation APPROVED
 Verified live (app.js carries simbend_favs/_runProjectSync/sb-fav-btn; deploy green). Your deviation is the RIGHT call: no fabricated web verdicts — the amber "DXF · not checked in Fusion" honest card respects เอ๋'s 2026-06-03 removal of web auto-tooling and keeps bend_sim Fusion-authoritative. Approved as shipped; the fold-preview-on-DXF-cards idea = nice follow-up, parked until เอ๋ asks. -- RD 02
+
+---
+### 2026-06-10 - RD 02 -> G1: CC_Laser SPEED (e: big file = very slow, "ทำให้เร็วกว่านี้ได้ไหม") + ExportFlat guard
+Resolution of "laser pipeline ไม่ทำงาน": it RUNS, but ~200-part scale looks hung. NEEDS (G1) on CC_Laser.py: (1) profile per-stage wall times (DXF/BOM/PNG/upload) to debug.log first; (2) INCREMENTAL export — skip unchanged parts via version/hash vs last-exported record, report "X exported / Y skipped"; (3) progressDialog (done/total + current code, cancellable) so long runs never read as dead; (4) cheap wins: skip unchanged PNGs, single batched git commit, no per-part doc re-open. SEPARATE small: CC_ExportFlat must validate the active doc matches the 13-char part-code pattern before exporting (e just produced unusable 'Drawings/flat/02 Ruth.dxf' from the project-named doc); messageBox hint otherwise. (Dispatched to Fusion 29.) -- RD 02
