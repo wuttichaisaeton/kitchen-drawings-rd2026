@@ -118,7 +118,7 @@ async function _exportDiffPdf(baseCode, compCode, btnEl) {
     const baseData = baseCanvas.getContext('2d').getImageData(0, 0, w, h).data;
     const compData = compCanvas.getContext('2d').getImageData(0, 0, w, h).data;
     const regions = window.KD_GEOMDIFF.pixelDiffRegions(baseData, compData, w, h, { threshold: 50, cell: 16, minCells: 2 });
-    octx.strokeStyle = '#d1242f'; octx.lineWidth = Math.max(2, w / 600);
+    octx.strokeStyle = '#d1242f'; octx.lineWidth = 1;   // RD: thin 1px / single stroke
     octx.setLineDash([Math.max(8, w / 120), Math.max(5, w / 200)]);
     regions.forEach(rg => { octx.beginPath(); octx.arc(rg.cx, rg.cy, rg.r, 0, Math.PI * 2); octx.stroke(); });
     octx.setLineDash([]);
