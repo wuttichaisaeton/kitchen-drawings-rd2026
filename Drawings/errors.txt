@@ -1,1 +1,7 @@
 [2026-05-28T10:37:55.636422] CC_DrawingWatcher: open failed for urn urn:adsk.wipprod:dm.lineage:FFa9leNoRLCIzDodnJtaVA: 2 : InternalValidationError : doc
+[2026-06-09T08:33:32.992742] CC_DrawingPDF: Traceback (most recent call last):
+  File "c:\Users\wutti\OneDrive\เดสก์ท็อป\Work\Stainless Kitchen\_MASTERS\fusion_scripts\CC_DrawingPDF\CC_DrawingPDF.py", line 415, in run
+    manifest_io.merge_save(MANIFEST_PATH, auto_generated=delta['auto_generated'])
+    ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'manifest_io' has no attribute 'merge_save'
+
