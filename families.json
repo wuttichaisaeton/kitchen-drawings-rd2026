@@ -10,5 +10,7 @@
   "Top Sup":    {"icon": "▦",  "image": "icons/top-sup.svg",    "order": 8, "color": "#4ac4c4", "tint": "#15333a"},
   "Beam":       {"icon": "━",  "image": "icons/beam.svg",       "order": 9, "color": "#c44a8a", "tint": "#3a1a2e"},
   "Other":      {"icon": "📄", "image": "icons/other.svg",      "order": 10, "color": "#888888", "tint": "#262626"},
-  "Custom":     {"icon": "✨", "image": "icons/custom.svg",     "order": 11, "color": "#e2c84a", "tint": "#3a3315"}
+  "Custom":     {"icon": "✨", "image": "icons/custom.svg",     "order": 11, "color": "#e2c84a", "tint": "#3a3315"},
+  "F1,2,3":     {"icon": "🗄", "image": "icons/cabinets.svg",   "order": 0.5, "color": "#4a90e2", "tint": "#1a1f24"},
+  "SH":         {"icon": "📚", "image": "icons/shelf.svg",      "order": 9.5, "color": "#4a90e2", "tint": "#1a1f24"}
 }
