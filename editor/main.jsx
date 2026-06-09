@@ -823,7 +823,47 @@ function _famOf(code) {
   const m = String(code).match(/^[A-Za-z]+/);
   return m ? m[0].toUpperCase() : '?';
 }
-// 10 distinct hues; family string hashed into the ring so it's stable.
+// HYBRID family colour (เอ๋ 2026-06-09, board: chose option 1 over flatten/distinct):
+// anchor the well-known families to the "Brushed Steel + Amber" palette tokens
+// (G3 spec) so the mindmap reads cohesive with the new icons, while EVERY OTHER
+// family still hashes into a (muted) ring so families stay distinct — keeping the
+// §1<->§3 family-colour link เอ๋ likes. NOT a flat 5-colour map.
+//   FL (floor)  -> steel-400  · DW (door/drawer) -> blue-500
+//   BK (back)   -> amber-500  · SD (side panel)  -> steel-700
+//   TS (top sup)-> steel-700 (teal lean, distinct from SD)
+// Each token = base hue + saturation; `bL` is the border lightness so steel-400
+// (light) and steel-700 (dark) read apart while sharing the steel hue. soft/dark/
+// head reuse the same lightness ROLES (post-it / gradient / header) per theme.
+const _FAM_TOKENS = {
+  steelLight:   { h: 212, s: 18, bL: 58 }, // FL  ~ steel-400 #8B98A8
+  blue:         { h: 216, s: 84, bL: 58 }, // DW  ~ blue-500  #2F81F7
+  amber:        { h: 37,  s: 84, bL: 56 }, // BK  ~ amber-500 #F2A93B
+  steelDark:    { h: 210, s: 17, bL: 45 }, // SD  ~ steel-700 #3A4757
+  steelTeal:    { h: 198, s: 17, bL: 46 }, // TS  ~ steel-700 (teal lean)
+  steelNeutral: { h: 214, s: 12, bL: 50 }, // ?   digit-led cabinet wrappers -> neutral steel
+};
+// Explicit PREFIX(2) -> token for ambiguous leading letters (BM/SH are NOT back/side,
+// so B-/S-led can't be a blanket rule). NOTE: match on the first TWO letters, because
+// _famOf returns the WHOLE leading letter-run (SDLCN0->"SDLCN", BKDNC1->"BKDNC",
+// BXXTR0->"BXXTR") — an exact-string map would miss every code whose 2-letter family
+// is followed by more letters. D-led (doors DSV/DST/DWV/DWT/DAG + drawers DVS/DVSX/
+// DSB…) and F-led (floor FN/FC/FL/FB…) use first-letter rules so length never matters.
+const _FAM_TOKEN_MAP = {
+  BK: 'amber', BX: 'amber',           // back / back-triangle
+  SD: 'steelDark',                    // side panel
+  TS: 'steelTeal',                    // top support
+};
+function _famTokenOf(fam) {
+  if (!fam || fam === '?') return 'steelNeutral'; // digit-led wrapper codes
+  const p2 = fam.slice(0, 2);
+  if (_FAM_TOKEN_MAP[p2]) return _FAM_TOKEN_MAP[p2];
+  const c0 = fam[0];
+  if (c0 === 'D') return 'blue';        // doors + drawers
+  if (c0 === 'F') return 'steelLight';  // floors (FN/FC/FL/FB)
+  return null;                          // -> cohesive hash fallback (BM/SH/CL…)
+}
+// Muted ring (was 62% sat) for unmapped families: distinct hues, but desaturated
+// so they tonally agree with the steel/amber/blue palette instead of going neon.
 const _FAM_HUES = [145, 205, 38, 275, 330, 12, 175, 95, 250, 300];
 function _famHue(fam) {
   let h = 0;
@@ -832,12 +872,22 @@ function _famHue(fam) {
 }
 // Returns colours for a family: a saturated border/ink + a soft post-it bg.
 function _famColor(fam) {
+  const tok = _famTokenOf(fam);
+  if (tok) {
+    const t = _FAM_TOKENS[tok];
+    return {
+      border: `hsl(${t.h}, ${t.s}%, ${t.bL}%)`,                              // node/capsule border
+      soft:   `hsl(${t.h}, ${Math.min(t.s + 4, 82)}%, 86%)`,                 // sketch/chalk post-it fill
+      dark:   `hsl(${t.h}, ${Math.max(Math.round(t.s * 0.55), 28)}%, 16%)`,  // default-theme gradient end
+      head:   `hsl(${t.h}, ${Math.max(Math.round(t.s * 0.75), 24)}%, 30%)`,  // column header bg
+    };
+  }
   const hue = _famHue(fam);
   return {
-    border: `hsl(${hue}, 62%, 55%)`,   // capsule/node border + edge
-    soft:   `hsl(${hue}, 70%, 84%)`,   // sketch/chalk post-it fill (light)
-    dark:   `hsl(${hue}, 40%, 16%)`,   // default-theme gradient tint endpoint
-    head:   `hsl(${hue}, 55%, 30%)`,   // column header bg
+    border: `hsl(${hue}, 45%, 55%)`,   // capsule/node border + edge (muted)
+    soft:   `hsl(${hue}, 50%, 84%)`,   // sketch/chalk post-it fill (light)
+    dark:   `hsl(${hue}, 38%, 16%)`,   // default-theme gradient tint endpoint
+    head:   `hsl(${hue}, 45%, 30%)`,   // column header bg
   };
 }
 
