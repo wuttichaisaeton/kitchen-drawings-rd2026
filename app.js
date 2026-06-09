@@ -226,8 +226,8 @@ function applyTabVisibility() {
 //                  buttons on top of any role.
 //
 // Toggle:
-//   • Visit  ?role=laser    → enable on this device (persists)
-//   • Visit  ?role=workshop → reset to default
+//   • In-app role chips (header) — the ONLY supported switch since 2026-06-09
+//     (?role= URL links retired per เอ๋; the param is now stripped + ignored)
 //   • Type   :laser         in search box → enable
 //   • Type   :laser off     in search box → reset to workshop
 //
@@ -350,8 +350,8 @@ function _renderAdminRoleSwitcher() {
   // 'เอา workshop ออก ไม่ได้ใช้ทำอะไร'. We only render chips for the
   // explicit roles (Laser / Bending / Assembly). To still let admin flip
   // back to Workshop, the click handler treats a second click on the
-  // already-active chip as a toggle-off to DEFAULT_ROLE. URL ?role=workshop
-  // + the ":laser off" search-box magic word still work as before.
+  // already-active chip as a toggle-off to DEFAULT_ROLE. The ":laser off"
+  // search-box magic word still works (?role= URL links retired 2026-06-09).
   const chipKeys = ROLE_KEYS.filter(rk => rk !== DEFAULT_ROLE);
   bar.innerHTML = chipKeys.map(rk => {
     const r = ROLES[rk];
@@ -392,19 +392,19 @@ function _renderAdminRoleSwitcher() {
       params.delete('admin');
       dirty = true;
     }
+    // ?role= URL links RETIRED per เอ๋ (2026-06-09 — shared role-links surfacing in
+    // LINE chats made it unclear who had what; roles are now switched ONLY via the
+    // in-app role buttons). The param is still stripped from the URL so old shared
+    // links degrade gracefully to the plain site instead of carrying a dead flag.
     if (params.has('role')) {
-      const v = (params.get('role') || '').toLowerCase();
-      setRole(v);
       params.delete('role');
       dirty = true;
     }
     // Deep-link `?p=Bung+01` auto-navigates straight into that project
-    // once the manifest loads. Combined with ?role=assemble this gives
-    // the admin a single URL to send each cabinet team — they tap it
-    // and land in the right project's assembly view without scrolling
-    // a project list. Stashed in window so the manifest-load handler
-    // can pick it up after data arrives (the project may not exist
-    // yet at flag-parse time).
+    // once the manifest loads — a single URL lands a team in the right
+    // project without scrolling the list. Stashed in window so the
+    // manifest-load handler can pick it up after data arrives (the
+    // project may not exist yet at flag-parse time).
     if (params.has('p')) {
       window.__kdInitialProject = params.get('p') || '';
       params.delete('p');
