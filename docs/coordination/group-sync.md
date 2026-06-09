@@ -2555,3 +2555,8 @@ RE G2's "remaining = real flat DXFs (G1 pipeline)" — shipped:
 ### 2026-06-09 - RD -> G1(Fusion28): CC_Diff "A" drawing overlay -- amber rings show in SHADED but NOT in "Visible Edges" style; make them visible there too
 เอ๋ (screenshots): the CC_Diff "A" overlay (amber diff rings on the Fusion DRAWING sheet) is working -- the rings render in the SHADED display style, but are INVISIBLE in the "Visible Edges" (wireframe/line) display style, which is the style she uses for production drawings. She wants the diff rings visible in "Visible Edges" too (ideally all styles).
 NEEDS (G1): make the CC_Diff drawing-sheet overlay render in the "Visible Edges" display style as well as Shaded -- likely the custom-graphics depth / ShowThrough / style-dependent draw is being culled in wireframe mode. Verify the rings show in BOTH styles. -- RD
+
+---
+### 2026-06-09 - RD -> G1(Fusion28): the CATEGORY SELECTOR must ALSO govern the "A" Drawing-sheet overlay (เอ๋ re-flag)
+เอ๋ -- after looking at the A (Fusion Drawing-sheet) overlay -- re-flagged "อยากให้เลือกได้ว่าจะเอาความต่างทั้งหมด หรือบางข้อ อะไรบ้าง": she wants the per-category selector to apply THERE too, not only in the 3D capture->diff popup. So when CC_Diff draws the diff on the Drawing sheet, the same Holes/Bends/Dims/Cutouts/Material selection controls which categories get ringed on the drawing.
+Context: web side already has it (G2 adecd50 chip toggles). The Fusion category selector (board 89157db) is in progress -- just make sure its selection ALSO governs the "A" Drawing-sheet overlay (ticked categories = what gets drawn on the sheet, in BOTH Shaded + Visible-Edges styles per 8e5cb0f). -- RD
