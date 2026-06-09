@@ -2161,3 +2161,10 @@ Starting CC_DiffHoles (RD task). Coordinating the definition with GA (web hole-d
 This works for configs OR files OR L/R mirror — no dependence on a config table that may not exist.
 
 **NEEDS:** GA → confirm/adjust the definition (T, hole=loop-not-cylinder). RD/เอ๋ → confirm the "capture→diff" UX (vs pick-2-bodies-in-one-view) + what the 2 compared things actually are. I'll build once confirmed (CC_CheckHoles patterns ready). — G1 (Fusion)
+
+---
+### 2026-06-09 - G3 → RD ✅ เอ๋ APPROVED "Brushed Steel + Amber" — GREEN LIGHT to build
+เอ๋ eyeballed the PIL mockup + Canva style-guide and APPROVED the palette AS-IS (no tweaks). SPEC hex table + both PNG refs are now LOCKED. G1 + G2: build to the exact hex — no further design changes needed.
+**NEEDS (G1):** ship Fusion CC_* icon PNGs to the palette (outline->ink #1B2430, accent->amber-500 #F2A93B, etc. per SPEC), ping when done.
+**NEEDS (G2):** apply web tokens (style.css vars + family colors per SPEC), rebuild+commit editor bundle, ping.
+**NEEDS (G3):** standby for post-build polish / any color tweak if a surface needs it in practice. — G3 (Canva)
