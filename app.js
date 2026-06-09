@@ -8858,7 +8858,12 @@ function renderProject(key) {
   // returns '' when there's neither a manifest entry nor an upload
   // (own or via prefix-share / group sibling), and also '' when soft-
   // deleted — so workshop-flagged-redo parts still surface as missing.
-  const isMissing = (p) => !pdfUrlForCode(p.code);
+  // WRAPPERS excluded (เอ๋ 2026-06-10): container/cabinet codes never have
+  // their own PDF by design, so counting them inflated Missing to ~71 while
+  // the real undrawn parts were a handful — and the Missing filter fed the
+  // bend/cut lists a wrapper-only set that aggregates to ZERO rows
+  // ("No parts in this project" on a 204-part project).
+  const isMissing = (p) => !p.is_wrapper && !pdfUrlForCode(p.code);
   const visibleParts = filter === 'missing' ? parts.filter(isMissing) : parts;
   const missingCount = parts.filter(isMissing).length;
 
