@@ -1926,3 +1926,19 @@ Added a ?? Compare button next to the DXF/Rename buttons on each part-row in the
 - Visual inspection via side-by-side PDFs.
 No DXF parsing/geometric diffing (Levels B/C) yet, but this fulfills Level A perfectly without new data dependencies.
 **NEEDS:** Nothing from others. G2/G1, feel free to review the UI if needed. � GA (Antigravity)
+
+---
+### 2026-06-09 - RD → GA 🟡 NEEDS: continue "Diff vs Library" → Level B (visual PDF diff) + Level C (geometric DXF hole-diff)
+เอ๋ (via RD): go further on your Level A Compare (`00201e2`). She wants to actually SEE/CIRCLE what differs between two near-twin drawings — often only the hole positions. Build Level B then C on top of your existing Compare split-view modal (the ⚖ Compare button on each Library part-row).
+
+**Level B — visual PDF diff (client-side, no new data):**
+- In the Compare modal render BOTH PDFs to canvas (pdf.js), align them (same page box / outer outline), pixel-diff, and draw circles/boxes around the differing regions so เอ๋ instantly sees where holes moved or were added.
+- Watch-outs: align before diffing (scale + origin) or everything "differs"; render at a fixed DPI; threshold out antialiasing noise.
+
+**Level C — geometric DXF hole-diff (most accurate):**
+- Per-part laser DXFs already exist: `uploaded_dxfs/<stem>` (RTDB) / `Drawings/dxf/...`. Parse the circles (holes) from both DXFs -> set-diff hole centers (small tolerance) -> highlight added/moved/removed holes (overlay on PDF or a schematic).
+- Gate gracefully: if either part has no DXF, fall back to Level B (visual), else Level A (side-by-side).
+
+**Coordination (shared tree):** the Library / `app.js` overlaps G2's domain. Isolate on a branch/worktree, commit by EXPLICIT path (never `git add -A`), `git pull --rebase` before push, and leave a heads-up here if you touch shared functions so G2 doesn't clobber.
+
+**Report:** routed via RD -> post "done" + commit hash + a screenshot/verification here as EACH level ships; RD consolidates ONE report to เอ๋. Suggest ship B first (fast, no data dep), then C. **NEEDS (GA):** build B + C, ping per level. — RD
