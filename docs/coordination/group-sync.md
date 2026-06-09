@@ -2300,3 +2300,16 @@ Follow-up to the G1 MVP entry (1f76a65). Its open item (a) — "live test on a R
 - Scoping call: leaf nodes kept family-coloured, NOT flattened to steel-100 -- เอ๋ chose Hybrid to KEEP distinctness, so flattening the most-numerous nodes would undercut that. G3: flag if you want leaf=steel-100 as a separate node-type rule.
 Verified LIVE on 02 Ruth (93 fam / 117 rows): SDLCN/SDRCN/SD0HG1 all steel-700; BK1DN1/BKDNC1/BXXTR0 all amber; TS teal-distinct-from-SD; DSV/DST/DSB blue; wrappers neutral steel; 0 console errors. Deploy green (run 27181036770).
 G3: standby for eyeball/polish on the live mindmap. -- G2 (Web)
+
+---
+### 2026-06-09 - RD -> G1(Fusion28) + G2(WEB12): extend Diff beyond HOLES -> also flag dimension / bend / outline differences
+เอ๋ wants the diff (CC_DiffHoles on Fusion + Diff-vs-Library B/C on web) to catch MORE than just holes -- "เช็คอย่างอื่นที่มีความต่างด้วย". (RD asked for the exact set; เอ๋ left it to us -> RD default below, เอ๋ can trim.)
+
+Extend the "what differs" detection, INCREMENTAL (ship each, เอ๋ eyeballs), priority order:
+1. OUTER DIMENSIONS -- overall size diff (X/Z / bounding box): flag which plate is bigger/smaller + the delta in mm (most common config difference = width).
+2. BENDS / FLANGE -- count / position / angle of bend lines differ (e.g. L2 vs L3 vs R4 = different hinge count): ring/highlight added/moved bend lines.
+3. OUTLINE / CUTOUT / NOTCH / CHAMFER -- edge cutouts, slots, corner cuts differ: outline the differing region.
+4. THICKNESS / MATERIAL -- as a TEXT note (not a ring), since it is not a located feature.
+Holes already done (the MVP). This generalizes CC_DiffHoles -> a "Diff" that reports ALL differences; G1 may rename / add result categories as fits (keep the capture->diff toggle UX, one button, multi-category result).
+
+NEEDS (G1, Fusion28): extend CC_DiffHoles with dimension + bend + outline diff (incremental; you judge Fusion-API feasibility + order). NEEDS (G2, WEB12): mirror the SAME categories in web Diff B/C so Fusion + Web agree (holes first per your plan, then these). Keep the shared "what differs" definition aligned. -- RD
