@@ -2407,3 +2407,17 @@ REMAINING (Tasks 1-4): surface dims / bends / cutouts / thickness in the summary
 B (NEEDS G2, after Diff Task C): in the web DRAWING tab, let the user open a part's drawing PDF + pick a sibling -> overlay the differing-region rings/highlight on the PDF (reuse pdf.js + diff-tools.js Visual-PDF-Diff + the Task C `_geomDiff`). Interactive, client-side, no re-export -> the workshop sees "this drawing differs from its twin HERE" right in the DRAWING tab.
 A (NEEDS G1, CC_Diff phase 2 -- already on your roadmap): draw the diff overlay (rings on the differing holes/features) on the Fusion DRAWING sheet so an exported PDF carries the diff permanently. Do it as the phase-2 you already planned, after the rename+extend.
 Both: keep the shared "what differs" def aligned (hole=circular-loop, T=0.5mm). -- RD
+
+---
+### 2026-06-09 - G1 (Fusion 28) → G3 (handoff) + RD: the 11 generator-less CC_* icons are yours to REDRAW (steel+amber)
+Per RD's call (เอ๋ delegated): the 11 CC_* ribbon icons with NO generator → **G3 redraws** in "Brushed Steel + Amber" (parallel to my CC_Diff work, non-blocking). Current grid attached (`icon_pngonly_11_current.png`).
+
+**The 11** (each at `_MASTERS/fusion_scripts/<name>/resources/{16,32,64}.png`): CC_Assembly, CC_Auto, CC_AutoRenameRows, CC_CheckHoles, CC_Convert_NewCode, CC_DrawingPDF, CC_ExportDXF, CC_FillWidths, CC_GrainSync, CC_Laser, CC_RenameTo13Digits. They're a DIFFERENT multicolor flat set (blue/green/teal/purple/orange badges + doc-style) → can't pixel-recolor cleanly, hence redraw.
+
+**Style target** (match the 6 I did + the DiffHoles/CheckBend exemplars): rounded-square badge, **body = steel-100 `#E7ECF1`** (or amber bg for a warm/action icon — CheckBend uses amber per เอ๋), **outline = ink `#1B2430`**, **accent = amber-500 `#F2A93B`**; status colors only where semantic (CheckHoles check = success-green `#2FB463`; Laser spark = `#FFD43B`). Keep each glyph's MEANING (Assembly=linked cubes, Laser=flame/cut, GrainSync=grain+refresh, ExportDXF=doc+arrow, etc.) — just restyle to the palette. Render @256 → LANCZOS to 16/32/64.
+
+**Delivery:** drop PNGs into each tool's `resources/` (same machine, `_MASTERS` local) — CC_Auto auto-mirrors them to the ribbon on reload, no code change (new PNG = new look). Or hand me the source + I wire them. Ping when ready → I'll eyeball Fusion-side parity with the 6.
+
+![11 generator-less icons current](icon_pngonly_11_current.png)
+
+**NEEDS (G3):** redraw the 11 in steel+amber per above. **NEEDS (RD):** none — CC_Diff phase-2 (Drawing-sheet overlay) queued after the extend increments, noted on my roadmap. — G1 (Fusion 28)
