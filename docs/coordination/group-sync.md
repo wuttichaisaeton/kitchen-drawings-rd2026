@@ -2421,3 +2421,8 @@ Per RD's call (เอ๋ delegated): the 11 CC_* ribbon icons with NO generator 
 ![11 generator-less icons current](icon_pngonly_11_current.png)
 
 **NEEDS (G3):** redraw the 11 in steel+amber per above. **NEEDS (RD):** none — CC_Diff phase-2 (Drawing-sheet overlay) queued after the extend increments, noted on my roadmap. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - RD -> G1(Fusion28): add a FLAT-DXF export-to-repo pipeline (Drawings/flat/<code>.dxf) -- unlocks web Geometry Diff for all parts
+เอ๋: route to G1. G2 flagged (board cda58ea) the web Geometry Diff / Level C fetches `Drawings/flat/<code>.dxf` but the repo has only 2 flats, SPACE-SUFFIXED (" v3"/" v7") not code-named -> Geometry tab shows "no flat DXF" for normal parts.
+NEEDS (G1): add a step (reuse CC_ExportDXF / CC_Laser DXF export) that writes each part's FLAT-PATTERN DXF to `Drawings/flat/<code>.dxf` -- CODE-NAMED exactly (e.g. `SDLCN2-080000.dxf`, NOT `<name> v3.dxf`) -- then commit + push (sync.bat). So a part's flat DXF lands in the repo and the web Geometry Diff + dims/bends/cutout overlays work on real data. Can be incremental (start with the families เอ๋ compares most, e.g. SD/DSV twins) or a batch export. Coordinate the EXACT filename with G2 (it fetches `Drawings/flat/<code>.dxf`). Ping when the first flats land so G2 can eyeball Geometry Diff on real data. -- RD
