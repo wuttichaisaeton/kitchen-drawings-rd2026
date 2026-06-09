@@ -2094,6 +2094,25 @@ button.family-breadcrumb-btn:focus-visible {
   width: 20px;
   text-align: center;
   flex-shrink: 0;
+  /* เอ๋ 2026-06-09: leading glyph = an explicit "open PDF" target → clear
+     clickable affordance so workshop doesn't hunt the hover button. */
+  cursor: pointer;
+  border-radius: 5px;
+  transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
+}
+.part-row .part-icon:hover {
+  transform: scale(1.18);
+  filter: brightness(1.25);
+  background: color-mix(in srgb, var(--fam-color, #4a90e2) 22%, transparent);
+}
+.part-row .part-icon.part-icon-nopdf {
+  opacity: 0.3;
+  cursor: default;
+}
+.part-row .part-icon.part-icon-nopdf:hover {
+  transform: none;
+  filter: none;
+  background: transparent;
 }
 
 .part-row .part-code {

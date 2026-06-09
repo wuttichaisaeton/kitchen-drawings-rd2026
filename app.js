@@ -10302,7 +10302,7 @@ function renderFamily(fam, highlight) {
       : '';
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
-        <span class="part-icon">${familyIcon(fam)}</span>
+        <span class="part-icon${url ? '' : ' part-icon-nopdf'}" title="${url ? 'Open drawing PDF' : 'No PDF yet'}">${familyIcon(fam)}</span>
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${ver}
         ${bendChip}
@@ -10371,11 +10371,25 @@ function renderFamily(fam, highlight) {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons + the bend chip — each has its own handler.
       if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn, .part-compare-btn')) return;
+      if (!el.dataset.url) return;   // no PDF for this part → don't open a blank tab (เอ๋ 2026-06-09)
       // _openInNewTab handles the iPad PWA standalone case (same-window
       // navigation) vs browser (new tab). Plain window.open '_blank'
       // opens an invisible off-screen webview on standalone PWAs —
       // workshop sees "nothing happens" when tapping the row.
       _openInNewTab(el.dataset.url);
+    });
+  });
+
+  // เอ๋ 2026-06-09: the leading family glyph is an EXPLICIT "open PDF" target so
+  // workshop doesn't have to hunt the hover button — clicking it opens that
+  // part's drawing PDF (same path as the row). No-PDF rows have the dimmed
+  // .part-icon-nopdf glyph (no-op). stopPropagation so the row handler doesn't
+  // also fire (would open a second tab).
+  ROOT.querySelectorAll('.part-row .part-icon').forEach(icon => {
+    icon.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const url = icon.closest('.part-row')?.dataset.url;
+      if (url) _openInNewTab(url);
     });
   });
 
