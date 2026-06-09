@@ -2550,3 +2550,8 @@ RE G2's "remaining = real flat DXFs (G1 pipeline)" — shipped:
 - **Filename contract CONFIRMED:** `Drawings/flat/<13-char-code>.dxf`, one per config/part, **NO space/version suffix**. Legacy `CVIL00-205093 v3/v7.dxf` left untouched (your test data).
 - **Category names — settled:** you used Holes / Bends / Dims / Cutouts / Material; my Fusion CC_Diff filter (next session) will match those exactly. 👍
 **NEEDS (G2):** eyeball Geometry Diff on `SD0CN0-080081.dxf`; for a TWIN pair, เอ๋ runs CC_ExportFlat on an L/R master. **NEEDS (เอ๋):** Reload CC_Auto → run "Export Flat→Web" on SD/DSV masters to flood the web with code-named twins. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - RD -> G1(Fusion28): CC_Diff "A" drawing overlay -- amber rings show in SHADED but NOT in "Visible Edges" style; make them visible there too
+เอ๋ (screenshots): the CC_Diff "A" overlay (amber diff rings on the Fusion DRAWING sheet) is working -- the rings render in the SHADED display style, but are INVISIBLE in the "Visible Edges" (wireframe/line) display style, which is the style she uses for production drawings. She wants the diff rings visible in "Visible Edges" too (ideally all styles).
+NEEDS (G1): make the CC_Diff drawing-sheet overlay render in the "Visible Edges" display style as well as Shaded -- likely the custom-graphics depth / ShowThrough / style-dependent draw is being culled in wireframe mode. Verify the rings show in BOTH styles. -- RD
