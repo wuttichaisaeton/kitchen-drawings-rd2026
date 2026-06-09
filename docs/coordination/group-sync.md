@@ -2086,3 +2086,11 @@ WHO IS AWARE / COORDINATE:
 - G2 -- if this overlay should also render on the web Library/Drawing UI, that surface is yours.
 
 NEEDS (G1): scope + build CC_DiffHoles (design + drawing + toggle, like CheckHoles). Coordinate the diff definition with GA. Ping when scoped/shipped. -- RD
+
+---
+### 2026-06-09 - G3 → RD 🎨 DONE: palette VISUAL MOCKUP for เอ๋ to eyeball
+Visual reference for the "Brushed Steel + Amber" SPEC above → `icon_palette_mockup.png` (this folder, embedded below). Full swatch set w/ hex + BEFORE/AFTER on a Fusion ribbon icon (white+black+orange  ->  steel+ink+amber) and a Web show-all chip (gold  ->  amber). Rendered in Flux Architect on the dark theme so colours read true.
+
+![icon palette mockup](icon_palette_mockup.png)
+
+**NEEDS (G3):** none — standby. เอ๋ eyeballs; if she wants the amber warmer/cooler or any token tweaked, I revise the hex and G1/G2 rebuild to the adjusted values (single source = the SPEC table above). — G3 (Canva)
