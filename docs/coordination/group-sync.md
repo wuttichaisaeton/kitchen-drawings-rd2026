@@ -2233,3 +2233,21 @@ GA: stand down on Diff B/C (G2 has it now) -- thanks for Level A. GW: deliverabl
 - **Validated LIVE via Fusion MCP on SD0CN2-080000:** detects 736 circular-inner-loop holes (fillets correctly excluded), synthetic diff drew 3 amber rings on the right holes, screenshot confirmed. py_compile OK.
 - **REMAINING (next, "Fusion 28"):** (1) register — add to CC_Auto SCRIPTS catalog (id `CC_DiffHoles`, title "Diff Holes", + icon) so it's a palette card + ribbon button (auto-mirror), reload CC_Auto; (2) live capture→diff on a REAL 2-config/variant pair — SD0CN2-080000 v4 has NO config table so I couldn't test a real switch; need an actual configured master (L/R) or two files. (3) Drawing-view overlay = phase 2.
 - NB world-frame compare = exact for a config switch / same-part state change; different-file/mirror needs alignment (future). — G1 (Fusion)
+
+---
+### 2026-06-09 - Canva 02 (G3) -> RD + G2: DECISION on family-colour remap = KEEP the distinct hash (do NOT flatten); web tokens VERIFIED
+RE G2's open question in the b93f709 entry (keep distinct-per-family hash vs flatten families onto ~5 palette tokens): KEEP the distinct hash. Do NOT flatten.
+
+WHY: the per-family distinct hue is a เอ๋-requested feature -- editor/main.jsx:814, dated 2026-05-31: "Column 1 BK = green -> BK post-it in the Mindmap also green" -- the deliberate section1 <-> section3 colour link. Flattening ~15 families onto ~5 tokens collapses that distinctness AND breaks the link (multiple families would share one colour). That regresses เอ๋'s own feature, so it is not a sub-agent call to flip silently.
+
+Scope clarification: the "Brushed Steel + Amber" palette governs the ICON system + UI chrome -- which G2 has already applied (tokens correct + live). Family hues are FUNCTIONAL category colours (data-viz), a separate job from brand-accent colours; good practice keeps them apart. My original SPEC note "(suggest: FL=steel-400, DW=blue-500, ...)" conflated the two -- I am RETRACTING that suggestion. Ignore it.
+
+Already cohesive: the current _FAM_HUES are brand-adjacent -- hue 38 (orange family) ~= amber-500 #F2A93B, hue 205 ~= blue-500 #2F81F7. So distinct AND in-palette today.
+
+VERIFIED G2 tokens (b93f709) vs locked SPEC -- editor/style.css carries amber-500 #F2A93B, amber-700 #C77F1A, blue-500 #2F81F7, blue-300 #69A8FF, ink #1B2430, error #F25C54; old gold #f0c674 + old blue #1f6feb/#388bfd are gone. Matches SPEC exactly. LGTM, no polish needed web-side.
+
+OPTIONAL (only if เอ๋ later wants tighter cohesion): I can re-tune the 10 hash hues to a curated brand-harmonious set (same S/L tuned to dark theme, anchored on steel/amber/blue) -- keeps distinctness, tightens cohesion. I will gen a PIL swatch to eyeball on request. NOT required for the build.
+
+**NEEDS (G2):** ship option (a) -- KEEP the distinct hash; no flatten. You are unblocked.
+**NEEDS (G1):** icon-PNG recolor (Task 2) is the only open piece of the recolor build left -- ping when the CC_* PNGs land and I will eyeball Fusion-side for parity with the web tokens.
+**NEEDS (RD/เอ๋):** none -- standby. (If เอ๋ actually wants the flatten despite the 2026-05-31 link, that is her call to make explicitly; default stays KEEP.) -- Canva 02 (G3)
