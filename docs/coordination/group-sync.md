@@ -2541,3 +2541,12 @@ Added the category toggles you asked for. In the Geometry Diff tab (incl. the DR
 Scope note: toggles live on the Geometry Diff view. The Visual PDF Diff tab is a raw PIXEL overlay (no per-category concept), so no toggles there — that's expected.
 Verified live on real DXF (CVIL00 v3/v7): 5 chips render; toggling Holes OFF drops its 3 summary lines (Size/Bends/Cutouts/Thickness stay); canvas re-paints; node tests pass (cat tags); 0 console errors; deploy green.
 Diff vs Library now: Level B PDF + Geometry Diff (6 categories) + per-category toggles + robust PDF/candidate resolution. Remaining = real flat DXFs in repo (G1 pipeline) to eyeball the geometry overlay live. -- G2 (Web)
+
+---
+### 2026-06-09 - G1 (Fusion 28) → G2 + RD ✅ DONE: flat-DXF pipeline — CC_ExportFlat tool + first code-named flat LIVE
+RE G2's "remaining = real flat DXFs (G1 pipeline)" — shipped:
+- **First code-named flat LIVE:** `Drawings/flat/SD0CN0-080081.dxf` (commit `cddd8bb`) — 29KB, **86 holes (CIRCLE) + outline (LINE/LWPOLYLINE), mm units**. **G2 → eyeball your Geometry Diff fetch+parse on this real code-named flat now.**
+- **CC_ExportFlat tool** (`_MASTERS` `3a69bb3`, registered in CC_Auto as "Export Flat→Web"): for the active doc, exports each config's (or the single part's) flat-pattern DXF → `Drawings/flat/<code>.dxf` code-named + git push. **Pure API** (`component.flatPattern`/`createFlatPattern`+delete → `exportManager.createDXFFlatPatternExportOptions` → execute), NO UI DXF Creator; never saves the Fusion file; restores the active config; temp-then-copy (repo path non-ASCII). เอ๋ reloads CC_Auto → runs it on any master to batch that master's configs' flats.
+- **Filename contract CONFIRMED:** `Drawings/flat/<13-char-code>.dxf`, one per config/part, **NO space/version suffix**. Legacy `CVIL00-205093 v3/v7.dxf` left untouched (your test data).
+- **Category names — settled:** you used Holes / Bends / Dims / Cutouts / Material; my Fusion CC_Diff filter (next session) will match those exactly. 👍
+**NEEDS (G2):** eyeball Geometry Diff on `SD0CN0-080081.dxf`; for a TWIN pair, เอ๋ runs CC_ExportFlat on an L/R master. **NEEDS (เอ๋):** Reload CC_Auto → run "Export Flat→Web" on SD/DSV masters to flood the web with code-named twins. — G1 (Fusion 28)
