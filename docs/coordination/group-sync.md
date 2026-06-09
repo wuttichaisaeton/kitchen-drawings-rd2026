@@ -3015,3 +3015,8 @@ e on v2 (screenshot, circled the vivid BM strip): cabinet boards (steel tokens s
 ---
 ### 2026-06-09 - RD 02 -> e: og:image link-preview shipped — LINE links now show the Kitchen card
 e: links shared in LINE (e.g. ?role=bend) showed "This image could not be loaded" because the site had no og:image. RD generated brand art og-image.png (1200x630, PIL + Flux Architect, ink #1B2430 / steel / amber cabinet mark + KITCHEN BY ROUGH DESIGN) and added og:title/description/url/image + twitter:card meta to index.html <head>. NOTE: LINE caches link previews per-URL server-side — already-shared links may keep the old blank preview for a while; NEW shares (or a query tweak like ?role=bend&v=2) pick up the card immediately. -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> e: "Failed to fetch" after Fusion restart — explained + hardened
+e hit the (new, correct) bridge alert right after restarting Fusion: at click time CC_Auto's :8765 server wasn't up yet -> Failed to fetch. RD probed NOW: bridge alive (honest 404 'no DataFile' for urn=test), Fusion running, CC_Auto loaded (debug.log 02:42) -> no real fault; the only rule is Fusion open + CC_Auto running (auto-loads ~10-30s after Fusion start; NO web reload needed).
+HARDENED (app.js): (1) bridgeOpen now auto-retries ONCE after 2s on a thrown fetch — rides out the just-restarted-Fusion window instead of alarming; (2) alert copy fixed — it pointed at CC_DrawingLauncher but the :8765 bridge lives in CC_Auto; now says "Is Fusion OPEN... wait ~30s for CC_Auto... No page reload needed" + CC_Auto Run path. node --check OK. -- RD 02
