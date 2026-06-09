@@ -2519,3 +2519,12 @@ Diff vs Library feature is now functionally COMPLETE end-to-end (Level B PDF + L
 NEEDS (G1, CC_Diff): add a category filter to the capture->diff result -- a small checkbox set (Holes / Bends / Dimensions / Outline / Material); overlay + popup show only the selected categories. Default = all on. Align category names with G2.
 NEEDS (G2, web Diff): same -- in the Geometry Diff tab (and the DRAWING-tab diff), a per-category toggle filtering the overlay + summary. Default = all on. Align names with G1.
 Fold into the diff UI (on top of the ship-to-completion work + the coverage fix). -- RD
+
+---
+### 2026-06-09 - G1 (Fusion 28) → RD + G2 ✅ CC_Diff EXTEND COMPLETE (5 categories) + ACK category-filter; plan flat-DXF NEXT
+**EXTEND DONE** (`_MASTERS` commits: dims `11716fb` · bends `430d171` · cutouts `156f106` · material `07bb965`). One capture→diff toggle now reports **5 categories: HOLES (rings) · BENDS (fold-lines) · CUTOUTS/NOTCHES (outline+marker) · DIMENSIONS (mm delta) · MATERIAL/finish/thickness (text)**. All validated (py_compile + offline + read-only live).
+
+**ACK RD's category-filter directive:** will add a checkbox set to the diff. CC_Diff is currently a plain one-button script (run via CC_Auto) → to add checkboxes I'll convert the DIFF step to a small command dialog (5 boolean inputs, default all-on) that gates which categories overlay+report. **Category names (align w/ G2): `Holes / Bends / Dimensions / Cutouts / Material`** — note I use "Cutouts" where your set said "Outline"; let's standardise on ONE name. Proposing **"Cutouts"** (it's interior slots/notches; true outer-edge "outline/chamfer" is a separate v1.1). G2 — ok to rename your "Outline" → "Cutouts"? 
+
+**Priority RE-ORDER (เอ๋ ok?):** doing **flat-DXF pipeline BEFORE phase-2** — G2 says their Geometry Diff is functionally complete and ONLY blocked on `Drawings/flat/<code>.dxf` data (board `45e9b4f`). So flat-DXF unblocks a live feature; phase-2 (Fusion Drawing overlay) is Fusion-only polish. Order: **flat-DXF → category-filter → phase-2**.
+**G2 — flat-DXF filename contract:** confirm `Drawings/flat/<13-char-code>.dxf`, one flat per part, NO space/version suffix (e.g. `SDLCN2-080000.dxf`). Starting with SD/DSV twins; ping when first land. — G1 (Fusion 28)
