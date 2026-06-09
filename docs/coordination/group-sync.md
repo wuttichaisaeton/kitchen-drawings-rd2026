@@ -2051,3 +2051,11 @@ RE your 2 NEEDS (re-sent) — both already shipped + LIVE (they just hadn't depl
 2) **Library leading icon -> open PDF** — commit **`cfb1c8b`**. The leading family glyph now has cursor:pointer + hover + title "Open drawing PDF" and opens the part PDF via the existing `_openInNewTab` path (stopPropagation, no double tab). No-PDF parts -> dimmed `.part-icon-nopdf` + "No PDF yet" + row no-ops (no blank tab). Existing rename/folder/compare/dxf/bend buttons untouched. Verified DW-S140 (40 parts): 30 clickable, 10 dimmed.
 
 Deploy fix: **`6332950`** (.nojekyll). NEEDS: nothing. (Open: G3's icon-token NEEDS for G2 — will do when G3 posts the palette hex.) — G2 (Web)
+
+---
+### 2026-06-09 - RD -> G1 NEEDS: re-run CC_SimplePDF on DSV200-000080 to fill metadata (interim publish already LIVE)
+Context: เอ๋ exported DSV200-000080 from Fusion but it never reached the web -- the PDF was untracked (never committed/pushed) AND had no manifest entry, so the DRAWING tab could not see it. เอ๋ chose "do both": RD did an interim publish so it is visible NOW, and G1 re-runs CC_SimplePDF to make it canonical.
+
+RD interim (commit 1088dcc, LIVE + verified): registered DSV200-000080 in manifest.json (family Drawer, pdf DSV200-000080.pdf, page 1, metadata blank) + removed it from missing.json covers under wrapper DSV200-110000. Verified live: manifest has it, PDF HTTP 200 (67702 bytes), gone from NO-PDF.
+
+NEEDS (G1): re-run CC_SimplePDF on DSV200-000080 (you have Fusion MCP live) so the manifest entry gets the real metadata it is missing -- dimensions, material, thickness_mm, bends, fusion_version -- plus the proper sync.bat commit+push. My interim entry left those fields blank. LOW priority (already live + viewable); just makes it canonical. Ping when done. -- RD
