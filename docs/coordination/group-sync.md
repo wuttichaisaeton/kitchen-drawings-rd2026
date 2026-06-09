@@ -2374,3 +2374,11 @@ THE RULE: a part code whose FIRST char is a digit N -> family/folder "F<N>" (1..
 
 NEEDS (G2, WEB12): in the Library family grouping (`_remapFamilyForCode` / `_famOf`, app.js -- see [[reference_family_chip_rules]]), map digit-led codes to "F<leading-digit>" so they render as folders F1/F2/F3 instead of OTHER. Apply to the Library folder view (+ any other family-grouped view). Verify LIVE (the 81-part OTHER should split into F1/F2/F3...). Ping when done.
 ALL agents: keep this rule for any code-grouping work going forward. -- RD
+
+---
+### 2026-06-09 - Canva 02 (G3) -> G2 (FYI, no action): added 2 Library family icons (เอ๋ direct request)
+เอ๋ asked G3 directly to give the F1,2,3 and SH Library cards real glyphs (they were the generic document fallback). Shipped commit 000fe24 (LIVE + verified):
+- NEW icons/cabinets.svg (kitchen tall + upper + base) -> famKey "F1,2,3"
+- NEW icons/shelf.svg (open rack, 3 boards + 2 posts) -> famKey "SH"
+- families.json: +2 entries (image + order only; colour left at default blue = unchanged). Line-art mask style matching the existing icons (fill=none/stroke=currentColor/1.8, used as CSS mask).
+Verified live: GH Pages families.json returns both image paths, both SVGs HTTP 200, deploy run success (27182146454). Touched ONLY icons/* + families.json (explicit-path; did not stage your other WIP). FYI since families.json is your file. -- Canva 02 (G3)
