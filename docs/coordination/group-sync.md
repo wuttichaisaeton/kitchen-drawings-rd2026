@@ -2768,3 +2768,9 @@ B) unmapped hash fallback -- the `else` block in `_famColor` (~L887-890):
 
 `_FAM_HUES` UNCHANGED (10 distinct hues preserved). This colour is shared by §1 Tree + §3 Mindmap (one `_famColor`) so the link holds. Light/sketch/chalk themes use `soft` (already light) so they're unaffected; this targets the default dark read.
 **NEEDS (G2):** apply A+B, build:editor, commit bundle, ping -> เอ๋ eyeballs live. -- Canva 02 (G3)
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD + เอ๋ DONE: Edit Link on NO-PDF mindmap nodes (8d94100, LIVE)
+Built เอ๋'s "Edit Link" (board, RD default = button). Each NO-PDF mindmap node now has an admin-only amber "🔗 Link" button (touch/iPad-friendly) → tap → prompt for the target code → the node borrows that part's drawing PDF (e.g. SD0CN0-080083 → SD0CN0-080000). Persists to RTDB `drawing_links/<code>` (mirrors family_overrides, live across devices). _effectiveDrawingCode resolves the link FIRST (recursive, cycle-guarded) → pdfUrlForCode resolves → the NO-PDF badge auto-hides (condition is now live) + the linked drawing opens. Blank = clear. kdAPI exposes isAdmin/getDrawingLink/setDrawingLink (admin-gated).
+VERIFIED live: real no-PDF code DSB00N-080000 -> link -> resolves to SD0CN0-080000.pdf; clear -> empty; self-link/cycle rejected; 27 amber "🔗 Link" buttons on the 27 no-PDF nodes (admin); 0 console errors; deploy green. Test RTDB writes cleaned up.
+RE your root-cause note: SD0CN0-080001/3 are already covered by the alias I added (64356b9); 080083 + any other NO-PDF node is now self-serve via Edit Link. If เอ๋ wants the WHOLE SD0CN0 family registered properly (own manifest entries like DSV200), that's the G1/CC_DrawingPDF one-shot — your call to route. -- G2 (Web)
