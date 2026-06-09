@@ -120,7 +120,7 @@ function ProjectCenterNode({ id, data, selected }) {
     <svg className="kme-center-icon" viewBox="0 0 64 64" width="100%" height="100%">
       <rect x="4" y="52" width="56" height="4" rx="1" fill="#7F8C8D"/>
       <rect x="6" y="36" width="52" height="16" rx="1" fill="#BDC3C7"/>
-      <rect x="6" y="36" width="52" height="3" fill="#E67E22"/>
+      <rect x="6" y="36" width="52" height="3" fill="#F2A93B"/>
       <rect x="10" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="20" cy="46" r="1" fill="#7F8C8D"/>
       <rect x="26" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="28" cy="46" r="1" fill="#7F8C8D"/>
       <rect x="42" y="42" width="12" height="8" rx="0.5" fill="#95A5A6"/><circle cx="44" cy="46" r="1" fill="#7F8C8D"/>
@@ -129,7 +129,7 @@ function ProjectCenterNode({ id, data, selected }) {
       <path d="M14 8 L34 8 L32 20 L16 20 Z" fill="#34495E"/>
       <rect x="10" y="20" width="28" height="4" rx="0.5" fill="#2C3E50"/>
       <line x1="44" y1="14" x2="54" y2="14" stroke="#7F8C8D" strokeWidth="1"/>
-      <path d="M46 14 L46 22 M46 22 L45 24 L47 24 Z" stroke="#D35400" strokeWidth="1" fill="none"/>
+      <path d="M46 14 L46 22 M46 22 L45 24 L47 24 Z" stroke="#C77F1A" strokeWidth="1" fill="none"/>
       <path d="M50 14 L50 20 A2 2 0 0 0 54 20" stroke="#2980B9" strokeWidth="1" fill="none"/>
     </svg>
   );
