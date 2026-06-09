@@ -2851,3 +2851,16 @@ RE c2ff1d7 / TS1TR0-000000. The web routing already existed (onNodeClick + NO-PD
 2) VIBRANT family colours — applied your G3 SPEC exactly. _FAM_TOKENS steels bumped (steelLight s18->34/bL58->63, steelDark s17->30/bL45->50, steelTeal s17->36/bL46->53, steelNeutral s12->22/bL50->55; blue+amber kept) + unmapped hash fallback in _famColor (border 45/55->70/60, soft 50/84->66/85, dark 38/16->52/18, head 45/30->60/33). Rebuilt + committed editor.bundle.js. Verified live (§1 tree): SD rgb(89,128,166), TS rgb(92,152,178), FN rgb(129,159,193), BK amber kept, BM hash rgb(165,82,224) — match the SPEC HSL.
 3) SD prefix -> "Side Panel" — _remapFamilyForCode prefix-first rule (mirrors FN/FC->FL, BK->BK). Verified live: Side Panel now has SD00NA/SD0CN0/SD0CN2/SD0HG1…; ZERO SD codes left in Other.
 All 3 tasks done (1 NO-PDF->Fusion fcfba95, 2 vibrant 4a014df, 3 SD aae2e3e). 0 console errors; deploys green. RD verify live + report เอ๋. -- G2 (Web)
+
+---
+### 2026-06-09 - Canva 02 (G3) -> G2 + GA + RD: "compare มั่ว" — root-caused + quick fix (b13be33). Real fix = flat DXFs.
+เอ๋: "compare มั่ว". Investigated the Compare feature (your Diff vs Library). Findings:
+- **Candidate matching = FINE** (not the bug). Reproduced the suffix filter against the live manifest: most parts get 0 same-suffix candidates, and where they exist they're genuinely related variants (e.g. 1LLVB2-11AAAA -> its -11AAAA siblings). Not "มั่ว".
+- **Override active**: confirmed diff-tools.js `_openSimilarCompareModal` (arity 3) wins over app.js's (load order ok).
+- **The "มั่ว" = Visual PDF Diff** (`_runPdfVisualDiff`): it's a raw PIXEL overlay of two independently-laid-out engineering drawings — no alignment/scale registration, and `getImageData(0,0,maxW,maxH)` floods red on any size mismatch. On real drawings (different geometry + dim text + auto-scale) it splatters red = looks "มั่ว". AND the DRAWING-tab 🔍 opened STRAIGHT into it (app.js:4290 passed 'pdfdiff'); the Library 🔍 already opened Side-by-Side. Inconsistent.
+- **Geometry Diff = the clean diff** but data-starved (needs Drawings/flat/<code>.dxf; ~only 2 exist).
+
+QUICK FIX shipped (b13be33, app.js only): DRAWING-tab 🔍 now opens **Side-by-Side** (no 'pdfdiff'), matching the Library 🔍. Both diff tabs stay available in the modal. **Verified live** (preview :3030, real part DSB0BA-030050): modal opens with split-view (side-by-side) active, single/diff view hidden. node --check OK.
+
+REAL FIX (data, not code) for a clean auto-diff: populate `Drawings/flat/<code>.dxf` via the **Export Flat→Web** button (CC_ExportFlat) -> then the Geometry Diff tab gives accurate added/removed/resized rings (the proper "what differs"). G2/GA: if you'd rather the 🔍 default to Geometry-Diff-with-graceful-fallback (geom if a flat DXF exists, else side-by-side) instead of plain side-by-side, say so — happy to wire it. The Visual-PDF-Diff pixel path could also use a min-region (overlap-only) diff to stop the size-mismatch red flood, but it'll still be noisy vs the DXF diff.
+**NEEDS:** G2/GA FYI (touched app.js:4290, additive 1-liner). -- Canva 02 (G3)
