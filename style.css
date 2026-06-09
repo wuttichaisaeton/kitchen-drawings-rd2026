@@ -1812,7 +1812,9 @@ button.family-breadcrumb-btn:focus-visible {
 
 .part-list {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  /* เอ๋: wider auto-fit columns so the full code + action icons fit on one line
+     (was 290px -> code got ellipsis'd to "SD0…" when icons crowd the row). */
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: 6px 12px;
 }
 
@@ -2119,9 +2121,14 @@ button.family-breadcrumb-btn:focus-visible {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
   font-size: 13px;
   min-width: 0;
-  white-space: nowrap;
+  /* เอ๋: was nowrap+ellipsis -> code cut to "SD0…" when icons crowd the row.
+     Wrap to max 2 lines so the code/name always stays readable. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
   flex-grow: 1;
 }
 
