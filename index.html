@@ -201,14 +201,43 @@
   <script>
     (function() {
       var v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
-      ['nest.js', 'simbend-sim.js', 'simbend-3d.js', 'dxfFlat.js', 'simbend-3d-ai.js', 'tooling-catalog.js', 'tool-art.js', 'app.js', 'diff-geom.js', 'diff-tools.js', 'antigravity-inject.js'].forEach(function(name) {
-        var s = document.createElement('script');
-        s.src = name + '?v=' + v;
-        // async=false → execute in ARRAY ORDER (not load-completion order). Required so
-        // diff-tools.js runs AFTER app.js and its _openSimilarCompareModal override wins
-        // (small file else finishes first → app.js Level A clobbers GA's 3-tab version).
-        s.async = false;
-        document.body.appendChild(s);
+      var names = ['nest.js', 'simbend-sim.js', 'simbend-3d.js', 'dxfFlat.js', 'simbend-3d-ai.js', 'tooling-catalog.js', 'tool-art.js', 'app.js', 'diff-geom.js', 'diff-tools.js', 'antigravity-inject.js'];
+      // ROOT-CAUSE CACHE FIX (เอ๋ 2026-06-09): GitHub Pages serves the app shell with
+      // Cache-Control: max-age=600 (10 min), and its Fastly CDN does NOT reliably honor
+      // ?v= query cache-busting (a unique query was measured returning a cached HIT). So a
+      // browser-cached OLD app.js kept showing stale data until a HARD reload — even though
+      // the manifest fetch is already cache:'no-store'. FIX: fetch each app script with
+      // cache:'no-store' too (deterministically bypasses the browser cache; the CDN is
+      // purged on every Pages deploy → fresh) and inject in ARRAY ORDER. async=false-style
+      // ordering is preserved by injecting sequentially (so diff-tools.js still runs AFTER
+      // app.js, its _openSimilarCompareModal override winning). If a fetch fails, fall back
+      // to a classic ordered <script src> so a network hiccup never breaks boot.
+      function injectSrc(name) {
+        return new Promise(function(res) {
+          var s = document.createElement('script');
+          s.src = name + '?v=' + v; s.async = false;
+          s.onload = res; s.onerror = res;
+          document.body.appendChild(s);
+        });
+      }
+      Promise.all(names.map(function(name) {
+        return fetch(name + '?v=' + v, { cache: 'no-store' })
+          .then(function(r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+          .then(function(code) { return { name: name, code: code }; })
+          .catch(function() { return { name: name, code: null }; });   // null → use <script src> fallback
+      })).then(function(loaded) {
+        (function next(i) {
+          if (i >= loaded.length) return;
+          var it = loaded[i];
+          if (it.code != null) {
+            var s = document.createElement('script');
+            s.textContent = it.code + '\n//# sourceURL=' + it.name;   // keep filename in devtools
+            document.body.appendChild(s);   // inline script executes synchronously on append
+            next(i + 1);
+          } else {
+            injectSrc(it.name).then(function() { next(i + 1); });
+          }
+        })(0);
       });
     })();
   </script>
