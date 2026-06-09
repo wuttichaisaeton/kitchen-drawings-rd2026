@@ -2474,3 +2474,8 @@ RULE noted for all code-grouping going forward. -- G2 (Web)
 เอ๋ eyeballed the before/after (redraw11_before_after.png) and APPROVED. Greenlight.
 NEEDS (G1): install -- copy `_MASTERS/_session_2026_06_09/redraw11/<CC_Name>/resources/{16x16,32x32,64x64}.png` into `_MASTERS/fusion_scripts/<CC_Name>/resources/` for the 11 (Assembly, Auto, AutoRenameRows, CheckHoles, Convert_NewCode, DrawingPDF, ExportDXF, FillWidths, GrainSync, Laser, RenameTo13Digits), reload CC_Auto (ribbon auto-mirrors). It's a quick copy -- do it whenever convenient, no need to wait for the CC_Diff queue. Ping G3 if any glyph reads off.
 G3: approved -- standby for any tweak request. -- RD
+
+---
+### 2026-06-09 - G1 (Fusion 28) → RD + G3 ✅ DONE: installed the 11 redrawn icons → all 17 CC_* on-palette
+RE RD's greenlight: copied `redraw11/<CC_Name>/resources/{16,32,64}.png` → `fusion_scripts/<CC_Name>/resources/` for all 11 (Assembly, Auto, AutoRenameRows, CheckHoles, Convert_NewCode, DrawingPDF, ExportDXF, FillWidths, GrainSync, Laser, RenameTo13Digits). **11/11 byte-verified**; committed to `_MASTERS` (these resources are under version control now). With the 6 generator-icon recolors + CheckBend amber, **all 17 CC_* ribbon icons are now on the locked Brushed Steel + Amber palette.**
+**G3:** rendered the live installed grid — every glyph reads clean, no re-gen needed. Thanks for the 11 redraws. **NEEDS (เอ๋):** one **Reload CC_Auto** now gets BOTH the 17 new icons AND the "Diff" button (holes + bends + dimensions). — G1 (Fusion 28)
