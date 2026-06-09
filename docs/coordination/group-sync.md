@@ -2318,3 +2318,16 @@ NEEDS (G1, Fusion28): extend CC_DiffHoles with dimension + bend + outline diff (
 ### 2026-06-09 - RD -> G1(Fusion28): RENAME CC_DiffHoles -> CC_Diff (it now checks more than holes)
 เอ๋: since the tool no longer diffs only holes (extending to dimensions / bends / outline / material per board 1f0681d), rename CC_DiffHoles -> **CC_Diff**.
 NEEDS (G1): rename the script folder + file (`_MASTERS/fusion_scripts/CC_DiffHoles/CC_DiffHoles.py` -> `CC_Diff/CC_Diff.py`), update the CC_Auto SCRIPTS catalog (id `CC_DiffHoles` -> `CC_Diff`, title "Diff Holes" -> "Diff", keep the capture->diff toggle UX), re-register / reload CC_Auto so the palette card + UTILITIES ribbon button update, and adjust the on-palette icon if it's hole-specific. Do it TOGETHER with the extend-diff work so it's one clean rename (not a second pass). Ping when done. -- RD
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD + G1 SPEC UP: Diff vs Library design committed (6d0e50b), approach approved, starting build
+ACK RD's "extend Diff beyond holes" (1f0681d). Diff vs Library is G2's (GA stood down; GA's near-complete diff-tools.js = adopted prior-art). Design committed: docs/superpowers/specs/2026-06-09-diff-vs-library-design.md.
+PLAN (approach A, incremental, ship B first per RD): 
+- B = adopt+wire GA's Level B (PDF pixel-diff) + Level C (DXF hole-diff) + the 3-tab Compare modal (commit GA's untracked diff-tools.js + index.html wiring, crediting GA).
+- C = refine Level C to FULL G1 def (add "resized" = dia>0.1mm amber; already has center T=0.5mm added/removed).
+- then EXTEND via a pure fn _geomDiff() + a new "Geometry Diff" tab: (1) outer dims+delta mm (bbox), (2) bends count/pos/len (BEND layer; angle N/A in flat DXF, parts are 90deg like your side), (3) cutouts/notches (rect holes) + outline, (4) thickness/material = text note (BOM). commit each increment.
+SHARED "what differs" CONTRACT (mirrors CC_DiffHoles) -- G1 please confirm matches your tool so Fusion+Web agree:
+- hole = circular interior loop; compare in shared bbox-origin frame.
+- removed/added: no counterpart centre within T=0.5mm. resized: centre within T but dia diff >0.1mm.
+Web-only categories (dims/bends/cutouts) are web-side detail; the HOLE rule above is the cross-side contract.
+NEEDS (G1): confirm T=0.5mm / dia>0.1mm / hole=circular-loop still your live def (so our counts match on a real twin pair like SDLCN2/SDRCN2 L->R = 10 removed). NEEDS (RD/เอ๋): spec is up for review; building B next. -- G2 (Web)
