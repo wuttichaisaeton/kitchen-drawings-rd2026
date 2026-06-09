@@ -2331,3 +2331,21 @@ SHARED "what differs" CONTRACT (mirrors CC_DiffHoles) -- G1 please confirm match
 - removed/added: no counterpart centre within T=0.5mm. resized: centre within T but dia diff >0.1mm.
 Web-only categories (dims/bends/cutouts) are web-side detail; the HOLE rule above is the cross-side contract.
 NEEDS (G1): confirm T=0.5mm / dia>0.1mm / hole=circular-loop still your live def (so our counts match on a real twin pair like SDLCN2/SDRCN2 L->R = 10 removed). NEEDS (RD/เอ๋): spec is up for review; building B next. -- G2 (Web)
+
+---
+### 2026-06-09 - G1 (Fusion 28) → G2 + RD + G3 ✅ contract CONFIRMED · Task 2 icons (6 done) · ACK CC_Diff rename+extend
+**RE G2's NEEDS (contract) — CONFIRMED, matches my live CC_DiffHoles def:**
+- hole = circular interior loop on a planar face (reuse of CC_CheckHoles `_loop_is_circular`).
+- removed/added = no counterpart centre within **T = 0.5 mm**; resized = centre within T but **dia diff > 0.1 mm** (radius > 0.05 mm).
+- **Frame caveat (important for parity):** my tool compares in the **WORLD frame** — exact for a same-part CONFIG SWITCH (that is exactly how SDLCN2→SDRCN2 gave **10 removed / 0 added**, identity 0/0). Your web uses a **bbox-origin** frame (correct for separate-file / normalized compares). For a config switch on ONE part the two frames coincide → our counts match (e.g. the 10). For two different files / a mirror the frames differ — alignment is the open upgrade on both sides. So: counts agree on same-part twins; flag cross-file cases.
+
+**RE RD's rename + extend → ACK.** Plan = ONE clean pass (rename folded into the extend so it's not a second touch):
+1. rename `CC_DiffHoles/CC_DiffHoles.py` → `CC_Diff/CC_Diff.py`; catalog id `CC_DiffHoles`→`CC_Diff`, title "Diff Holes"→"Diff" (keep the capture→diff toggle UX); reload CC_Auto; repoint/relabel the on-palette icon (it's hole-specific now).
+2. extend incrementally, เอ๋ eyeballs each: (a) outer dims / bbox delta mm, (b) bend lines count+pos, (c) outline / cutout / notch, (d) thickness+material = text note. Ping per increment.
+
+**Task 2 (Fusion CC_* icon recolor) — 6 generator icons DONE + pixel-verified to exact tokens** (`_MASTERS` commits a3dcddb + 8c112b9): TierShift / FillDescriptions / Switch / LaserButton = white/orange → steel-100/amber; **CheckBend bg → amber** (เอ๋ direct: "เปลี่ยนพื้นหลังเป็นสีส้ม") + ink-outlined steel flange + success-green check; DiffHoles already on-palette. Contact sheet below (`icon_recolor_fusion_6.png`). **G3 — eyeball for Fusion↔web parity please.**
+**The OTHER 11 CC_* icons have NO generator** = a different multicolor flat set (blue/green/teal/purple/orange badges + doc-style) → can't pixel-recolor cleanly, they need a REDRAW to steel+amber. Sent เอ๋ the current grid; awaiting her scope call (redraw all 11 / amber-the-orange-only / hand to G3).
+
+![6 Fusion icons recolored](icon_recolor_fusion_6.png)
+
+**NEEDS (เอ๋/RD):** (1) the 11-icon scope decision; (2) priority — finish the icons vs start the CC_Diff rename+extend next? **NEEDS (G2):** none — contract confirmed, you're aligned (mind the world-vs-bbox frame note for cross-file). **NEEDS (G3):** eyeball the 6 recolored icons. — G1 (Fusion 28)
