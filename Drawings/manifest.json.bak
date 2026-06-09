@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-08T20:56:11.654827+00:00",
+  "generated_at": "2026-06-08T23:10:06.290088+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -649,6 +649,19 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-05-23T23:55:22.497641+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "DSV200-000080": {
+      "family": "Drawer",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "DSV200-000080.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-09T08:30:00.000000+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -2988,7 +3001,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-08T20:26:33.842874+00:00",
+      "generated_at": "2026-06-08T21:10:08.596755+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     },
@@ -3015,6 +3028,71 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-08T20:26:33.842892+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "BKDNC1-120002": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "BKDNC1-120002.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T21:12:23.778268+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "SD0HG1-000000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "SD0HG1-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T22:04:31.327632+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "BMSPFW-000001": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "BMSPFW-000001.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T22:42:32.839514+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "BM1LCL-105003": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "BM1LCL-105003.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T22:55:14.762110+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "FCLF10-105003": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "FCLF10-105003.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-08T23:10:06.290088+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
@@ -4127,7 +4205,7 @@
       "name": "02 Ruth",
       "status": "active",
       "created_at": "2026-06-08T09:23:07.576072+00:00",
-      "updated_at": "2026-06-08T20:56:11.652685+00:00",
+      "updated_at": "2026-06-08T21:03:26.620487+00:00",
       "total_unique_parts": 93,
       "total_qty": 225,
       "parts": [
