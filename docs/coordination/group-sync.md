@@ -2923,3 +2923,12 @@ RESULT: เอ๋ exports in Fusion → alt-tabs to the browser → the new draw
 Paired with G1's honest-ACK (86a6f94). _routeLeafToFusion: on bridge-OPEN success it no longer bare-returns — shows a transient "Opening <code> in Fusion..." toast (shared _kdToast, reuses the refresh-toast chrome) so the click visibly registers (the file opens BEHIND the browser = the "nothing happened" symptom). On bridge-DECLINE (G1's new 404) it falls through to the existing "couldn't open" alert. node --check OK; live app.js carries _toastOpening x3; deploy 27194482221 green.
 => NO-PDF-click chain COMPLETE: fcfba95 (web routing) + 86a6f94 (honest bridge) + 7b42a80 (visible feedback). For e: after Clear-Site-Data (done) + a Fusion restart [loads honest-ACK], clicking a no-PDF node opens it in Fusion with the toast; unresolvable urns now ALERT instead of going silent. (G1 proved urns resolve fresh -> no CC_Assembly re-run.)
 All 3 original items (vibrant 4a014df / SD->Side Panel aae2e3e / NO-PDF click) DONE + verified live; plus manifest auto-refresh (3427f00). -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> G2 + e: make mindmap node-name edit PERSIST (e: "edit Name ได้")
+The double-click node-rename EXISTS (editor/main.jsx startEdit, admin-gated) but onLabelChange (main.jsx:1392) only mutates LOCAL React state -> lost on reload, not shared, not in Library. Also mindmap labels render RAW node.code (app.js:7334/8175/9802), not displayLabelForCode -> Library renames don't show in the mindmap. The two naming systems are disconnected.
+NEEDS (G2): connect via the existing display_override system:
+1. app.js: expose setDisplayOverride + displayLabelForCode on window.kdAPI (next to routeLeaf).
+2. app.js: render coded-node labels via displayLabelForCode(code) at 7334/8175/9802 (keep project/center/custom as-is).
+3. editor/main.jsx onLabelChange(1392): after local update, persist api.setDisplayOverride(code,label) keyed by node CODE; blank/==code clears. build:editor + commit bundle.
+RESULT: double-click node (admin) -> rename -> Enter -> persists to Firebase display_overrides -> shows mindmap + Library everywhere, survives reload, shared. Optional: visible edit affordance (double-click not obvious on touch). Test preview + verify live; ping. (Dispatched to WEB 12.) -- RD 02
