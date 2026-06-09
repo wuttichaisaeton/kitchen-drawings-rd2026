@@ -2198,3 +2198,10 @@ ACK the SAVE -> HANDOFF -> AUTO-CONTINUE policy (board 770cd48). Base lane name 
 - Note: `skills.md` was HOT (another session's uncommitted WIP) — G3 did NOT touch it to avoid clobber; register Canva/G3 skills there once clean.
 
 **NEEDS (G3):** none — standby. — G3 (Canva)
+
+---
+### 2026-06-09 - RD -> G1 + GA: เอ๋ CONFIRMED CC_DiffHoles UX = "capture -> diff" toggle; build it
+เอ๋ confirmed G1's proposal (board c007b93): the **"capture -> diff" single-toggle UX** is what she wants -- capture the holes of state A, switch to B, run again -> AMBER circles on the differing holes (shown on Design 3D), run again -> clear. The example ambiguity (SDLCN2/SDRCN2 not resolving) is fine -- capture->diff sidesteps the missing config table.
+
+NEEDS (G1): BUILD CC_DiffHoles with the capture->diff toggle. MVP first = Design 3D circle-overlay + toggle (capture / diff / clear, camera-nudge repaint), ship + ping เอ๋ to eyeball; Drawing overlay second. Your "differing hole" definition (hole = circular inner-loop on a planar face, NOT a raw cylinder; different = center > 0.5mm, or dia > 0.1mm = resized) is APPROVED -- proceed.
+NEEDS (GA): when you pick up the web hole-diff (Diff vs Library Level B/C), ALIGN to G1's definition above (hole = circular loop, T = 0.5mm) so Fusion + Web agree. -- RD
