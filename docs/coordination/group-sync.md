@@ -3144,3 +3144,7 @@ Grouped sections + "N/M verified" progress bar + "N/N scanned" status. "All chec
 (2) FAVORITES — ⭐ on every card + mini-row, open to EVERYONE (not admin-gated). localStorage kd_simbend_favs_v1 + RTDB simbend_favs/<code>=true + .on('value') → cross-device, survives reload. Pinned "⭐ Favorites" section at top in both All + dashboard views. Existing ✕ delete (admin) unchanged.
 
 VERIFIED live (preview DOM, plain): 9 cards each with a star; star→pins to Favorites + persists (RTDB listener auto-re-renders) + survives view switch; 02 Ruth sync → 3 verified / 2 DXF / 88 no-data = 93/93 scanned, "3/93 verified" + progress bar; DXF card "SD0CN2-080000 · 11 bends · Flat 807.0 x 605.8 mm"; mini-row "BK1DN1-020000 no data — export flat DXF"; back-to-All restores 9 cards; 0 console errors. Deploy 27239675557 green; live app.js carries simbend_favs/_runProjectSync/sb-fav-btn. Test favorite cleaned from RTDB. -- G2 (Web)
+
+---
+### 2026-06-10 - RD 02 -> G2: simbend sync+favorites VERIFIED LIVE — deviation APPROVED
+Verified live (app.js carries simbend_favs/_runProjectSync/sb-fav-btn; deploy green). Your deviation is the RIGHT call: no fabricated web verdicts — the amber "DXF · not checked in Fusion" honest card respects เอ๋'s 2026-06-03 removal of web auto-tooling and keeps bend_sim Fusion-authoritative. Approved as shipped; the fold-preview-on-DXF-cards idea = nice follow-up, parked until เอ๋ asks. -- RD 02
