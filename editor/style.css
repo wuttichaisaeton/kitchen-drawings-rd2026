@@ -1119,24 +1119,9 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root,
 }
 .kme-checklist-allbtn:hover { background: #243349; }
 .kme-checklist-allbtn:disabled { opacity: 0.4; cursor: not-allowed; }
-/* Floating exit, on top of the maximized mindmap (z-index above it). */
-.kme-map-max-exit {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  z-index: 61;
-  background: #1c2330;
-  color: #cdd9e5;
-  border: 1px solid #3a4757;
-  border-radius: 8px;
-  padding: 9px 14px;
-  font-size: 14px;
-  font-family: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-}
-.kme-map-max-exit:hover { background: #283142; }
+/* (.kme-map-max-exit removed 2026-06-09 — the floating ✕ exit button it styled was
+   deleted from main.jsx; its exit is now the top-left "Close" Panel inside the canvas.
+   Leaving the dead rule risked confusing future debugging of the "pink X" regression.) */
 
 /* Maximized mindmap — true fullscreen overlay over everything (incl. the
    accordion + the app), with a comfortable z-index above the sticky bars. */

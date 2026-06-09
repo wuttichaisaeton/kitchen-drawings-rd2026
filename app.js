@@ -6952,18 +6952,43 @@ let _editorBundlePromise = null;
 function ensureEditorBundle() {
   if (window.KitchenMindmapEditor) return Promise.resolve();
   if (_editorBundlePromise) return _editorBundlePromise;
-  _editorBundlePromise = new Promise((resolve, reject) => {
+  // Load the editor bundle + CSS with cache:'no-store' (NOT a cache-subject
+  // <script src="...?v=">). GitHub Pages' CDN ignores ?v= query cache-busting, so a
+  // browser-cached OLD editor.bundle.js used to persist and bring BACK removed UI —
+  // the recurring "pink X" exit-button regression in the mindmap (เอ๋ 2026-06-09).
+  // no-store = always fresh, same lever as the index.html app-script bootstrap.
+  // Falls back to a classic <script src> if the fetch fails so the editor still loads.
+  _editorBundlePromise = (async () => {
     const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
-    const cssLink = document.createElement('link');
-    cssLink.rel = 'stylesheet';
-    cssLink.href = 'editor.bundle.css?v=' + v;
-    document.head.appendChild(cssLink);
-    const s = document.createElement('script');
-    s.src = 'editor.bundle.js?v=' + v;
-    s.onload = () => resolve();
-    s.onerror = (e) => { _editorBundlePromise = null; reject(e); };
-    document.body.appendChild(s);
-  });
+    try {
+      const [css, js] = await Promise.all([
+        fetch('editor.bundle.css?v=' + v, { cache: 'no-store' }).then(r => r.ok ? r.text() : Promise.reject(r.status)),
+        fetch('editor.bundle.js?v=' + v, { cache: 'no-store' }).then(r => r.ok ? r.text() : Promise.reject(r.status)),
+      ]);
+      const style = document.createElement('style');
+      style.setAttribute('data-kme-bundle', '1');
+      style.textContent = css;
+      document.head.appendChild(style);
+      const s = document.createElement('script');
+      s.textContent = js + '\n//# sourceURL=editor.bundle.js';
+      document.body.appendChild(s);   // IIFE runs synchronously → sets window.KitchenMindmapEditor
+      if (!window.KitchenMindmapEditor) throw new Error('editor bundle loaded but did not register');
+    } catch (e) {
+      // fallback: classic cache-subject load (a network hiccup shouldn't kill the editor)
+      await new Promise((resolve, reject) => {
+        const cssLink = document.createElement('link');
+        cssLink.rel = 'stylesheet';
+        cssLink.href = 'editor.bundle.css?v=' + v;
+        document.head.appendChild(cssLink);
+        const s = document.createElement('script');
+        s.src = 'editor.bundle.js?v=' + v;
+        s.onload = () => resolve();
+        s.onerror = (err) => reject(err);
+        document.body.appendChild(s);
+      });
+    }
+  })();
+  _editorBundlePromise.catch(() => { _editorBundlePromise = null; });   // allow retry after failure
   return _editorBundlePromise;
 }
 
