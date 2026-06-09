@@ -2744,3 +2744,27 @@ NEEDS (G2): apply -- raise _famColor saturation (the sat45 mute was too far) + t
 ### 2026-06-09 - G1 (Fusion 28) → RD ✅ DONE: SD0CN0 family auto-registered → SD0CN0-080000.pdf (LIVE + verified)
 RE auto-register SD0CN0 (Path A, like DSV200): SD0CN0-080000 master config table = **3 configs** — `SD0CN0-080000` / `SD0CN0-080081` / `SD0CN0-080083` (heights; no L/R variants). `-080081` + `-080083` were UNregistered (the "NO PDF" เอ๋ saw — `-080083` existed only in projects/BOM, not `auto_generated`). Registered all 3 → representative **`SD0CN0-080000.pdf` page 1** via race-safe `merge_save` (14 projects preserved; 269 `auto_generated` total). commit `2a8ae4c`.
 **Verified LIVE:** deploy success; `SD0CN0-080000.pdf` HTTP 200; live manifest (cache-busted) serves all 3 → `SD0CN0-080000.pdf` p1. NO-PDF drops → the 3 open the master drawing on the web. (FYI your cache entry above: the manifest KEYS + PDF are correct + live server-side — เอ๋'s "0 matching" is the client-cache issue you're root-causing, NOT the registration.) Master opened read-only, NOT saved (เอ๋ can switch back from it). — G1 (Fusion 28)
+
+---
+### 2026-06-09 - Canva 02 (G3) -> G2 + RD SPEC: default-theme family colours -> VIBRANT (fix เอ๋'s "ซีดเกินไป")
+เอ๋: default dark family/board colours look washed. Cause = Hybrid muted the hash ring to sat 45 + the steel tokens sit at sat 12-18 (dead gray on the dark bg). Fix = bump saturation + a touch of border lightness so each family POPS on dark, still distinct + anchored (DW blue / BK amber stay vivid, UNCHANGED). Before/after swatch: `family_colours_vibrant.png` (this folder; sending เอ๋).
+
+APPLY in `editor/main.jsx` (then `npm run build:editor` + commit bundle):
+
+A) `_FAM_TOKENS` -- bump s + bL only (h unchanged; blue & amber KEEP):
+   steelLight:   s 18 -> 34 ,  bL 58 -> 63
+   blue:         KEEP  { h:216, s:84, bL:58 }
+   amber:        KEEP  { h:37,  s:84, bL:56 }
+   steelDark:    s 17 -> 30 ,  bL 45 -> 50
+   steelTeal:    s 17 -> 36 ,  bL 46 -> 53
+   steelNeutral: s 12 -> 22 ,  bL 50 -> 55
+   (soft/dark/head derive from t.s via the existing formulas -> they auto-brighten; NO formula change needed.)
+
+B) unmapped hash fallback -- the `else` block in `_famColor` (~L887-890):
+   border: hsl(hue, 45%, 55%)  ->  hsl(hue, 70%, 60%)
+   soft:   hsl(hue, 50%, 84%)  ->  hsl(hue, 66%, 85%)
+   dark:   hsl(hue, 38%, 16%)  ->  hsl(hue, 52%, 18%)
+   head:   hsl(hue, 45%, 30%)  ->  hsl(hue, 60%, 33%)
+
+`_FAM_HUES` UNCHANGED (10 distinct hues preserved). This colour is shared by §1 Tree + §3 Mindmap (one `_famColor`) so the link holds. Light/sketch/chalk themes use `soft` (already light) so they're unaffected; this targets the default dark read.
+**NEEDS (G2):** apply A+B, build:editor, commit bundle, ping -> เอ๋ eyeballs live. -- Canva 02 (G3)
