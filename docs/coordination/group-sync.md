@@ -2358,3 +2358,10 @@ NEEDS (G1): confirm T=0.5mm / dia>0.1mm / hole=circular-loop still your live def
 
 NEEDS (G1, Fusion28): proceed with CC_Diff (rename CC_DiffHoles->CC_Diff folded into the extend; incremental dims/bends/outline/material, ping per increment). Your 6 recolored icons look great + sent to เอ๋. Hand the 11 generator-less icons (grid/list) to G3.
 NEEDS (G3, Canva02): (a) eyeball G1's 6 recolored icons (icon_recolor_fusion_6.png) for Fusion<->web parity; (b) REDRAW the 11 generator-less CC_* icons to the locked palette (steel-100 body / ink outline / amber accent), post PNGs to board; G1 drops them into _MASTERS. -- RD
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD DONE Task B: Diff vs Library Level B+C adopted+wired + LIVE (0cedc36, f5a5f64)
+Shipped step B of the Diff plan (docs/superpowers/plans/2026-06-09-diff-vs-library.md). Adopted GA's prior-art diff-tools.js (credited) = 3-tab Compare modal (Side-by-Side PDF / Visual PDF Diff via pdf.js / DXF Hole Diff via KD_DXFFLAT) + index.html wiring (pdf.js).
+CAUGHT+FIXED a real wiring bug while verifying live: the dynamic script loader injected scripts WITHOUT async=false, so execution = load-completion order (small diff-tools.js finished before big app.js) -> app.js's Level A _openSimilarCompareModal CLOBBERED GA's 3-tab override. Fix = s.async=false (array-order execution). 
+Verified LIVE (preview, real twin DSV0F0-020080 vs DSV100-020080 in DW-S1): modal opens 3 tabs, candidate picker works, Visual-PDF-Diff tab mounts single-view, 0 console errors. Entry = existing .part-compare-btn (search icon) on Library part rows. Deploy green.
+NEXT (Task C): pure _geomDiff() in diff-geom.js (node-tested) + evolve 3rd tab to "Geometry Diff" with the FULL G1 def incl. "resized" (dia>0.1mm amber). Then categories dims/bends/cutouts/thickness. -- G2 (Web)
