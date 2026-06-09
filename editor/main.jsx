@@ -888,10 +888,14 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
         for (const k of kids) walk(k, depth + 1);   // FULL subtree, always
       };
       walk(r.id, 0);
-      // Badge = DIRECT children count (matches เอ๋'s "08D0DN = its 9 children" +
-      // G1's verified per-cabinet list); the body still lists the full subtree.
-      const directCount = rowsOut.filter(rw => rw.depth === 1).length;
-      out.push({ id: r.id, node: r, rows: rowsOut, partCount: directCount, totalCount: rowsOut.length - 1 });
+      // Card body = REAL PARTS (leaf nodes) ONLY — drop the sub-assembly /
+      // wrapper CONTAINERS (FN0FL2…, is_wrapper) so the workshop sees just the
+      // parts to make (เอ๋ 2026-06-09 trim decision). Badge = leaf count so it
+      // matches the body. Sorted by code for a stable, scannable parts list.
+      const leafRows = rowsOut
+        .filter(rw => rw.depth > 0 && !rw.hasKids && !rw.node.data?.isWrapper)
+        .sort((a, b) => (a.node.data?.label || '').localeCompare(b.node.data?.label || ''));
+      out.push({ id: r.id, node: r, leafRows, leafCount: leafRows.length });
     }
     return out;
   }, [nodes, edges]);
@@ -908,66 +912,40 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
     const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s;
   }), []);
 
-  // Per-row expand inside a card body — a TREE drill-down (เอ๋ 2026-06-09:
-  // 'tree ลูกศรชี้ขวา/ลง capsule expand'). A row with children shows ▸ (collapsed)
-  // / ▾ (expanded); tap the capsule to toggle. Default = collapsed → only the
-  // cabinet's DIRECT children show; drill to reveal deeper parts. LOCAL state.
-  const [expandedRows, setExpandedRows] = useState(() => new Set());
-  const toggleRow = useCallback((id) => setExpandedRows(prev => {
-    const s = new Set(prev); if (s.has(id)) s.delete(id); else s.add(id); return s;
-  }), []);
   const markDone = (code, e) => {
     if (e) e.stopPropagation();
     api.markAssembled?.(projectKey, code, !isDone(code));
   };
 
-  // A part row inside a card body — depth 1 = a direct child of the cabinet
-  // (cabinet itself is the card header), deeper = indented. A row WITH children
-  // is a tree node: ▸ collapsed / ▾ expanded; the whole capsule toggles.
-  const renderRow = ({ id, node, depth, hasKids }) => {
+  // A part row inside a card body — a REAL part (leaf). Containers are trimmed
+  // out (เอ๋ 2026-06-09) so the body is a FLAT parts list: no chevron, no depth
+  // indent — just code + qty + 💬 + 📄 + done.
+  const renderRow = ({ id, node }) => {
     const code = node.data?.label || '';
     const qty = node.data?.qty;
     const done = isDone(code);
     const comments = api.getComments ? (api.getComments(code) || []) : [];
     const hasPdf = !!(api.pdfUrlForCode && api.pdfUrlForCode(code));
     const fc = _famColor(_famOf(code));
-    const expanded = expandedRows.has(id);
     return (
       <div
         key={id}
-        className={'kme-tree-row' + (done ? ' is-done' : '') + (hasKids ? ' has-kids' : '')}
-        style={{ paddingLeft: (6 + Math.max(0, depth - 1) * 16) + 'px', borderLeft: '3px solid ' + fc.border, cursor: hasKids ? 'pointer' : 'default' }}
-        onClick={hasKids ? () => toggleRow(id) : undefined}
-        title={hasKids ? (expanded ? 'Collapse' : 'Expand — show parts') : ''}
+        className={'kme-tree-row' + (done ? ' is-done' : '')}
+        style={{ paddingLeft: '8px', borderLeft: '3px solid ' + fc.border }}
       >
-        <span className={'kme-tree-chev' + (hasKids ? '' : ' is-leaf')}>{hasKids ? (expanded ? '▾' : '▸') : '·'}</span>
         <span className="kme-tree-label" title={code}>{code}</span>
         {qty != null && <span className="kme-tree-qty">×{qty}</span>}
         {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
         {hasPdf && (
-          <button className="kme-tree-pdf" onClick={(e) => { e.stopPropagation(); _openPdfForCode(code); }} title="Open PDF">📄</button>
+          <button className="kme-tree-pdf" onClick={() => _openPdfForCode(code)} title="Open PDF">📄</button>
         )}
         <button
           className={'kme-tree-done' + (done ? ' is-on' : '')}
-          onClick={(e) => { e.stopPropagation(); markDone(code); }}
+          onClick={() => markDone(code)}
           title={done ? 'Mark not assembled' : 'Mark assembled'}
         >🧩</button>
       </div>
     );
-  };
-
-  // Visible rows of a card = the cabinet's subtree drilled to the user's expand
-  // state: a row shows only if every ancestor up to the cabinet is expanded.
-  const visibleRows = (card) => {
-    const out = [];
-    let allowDepth = 1;            // depth-1 (direct children) always allowed
-    for (const r of card.rows) {
-      if (r.depth === 0) continue; // cabinet = the card header, not a body row
-      if (r.depth > allowDepth) continue;             // hidden under a collapsed ancestor
-      out.push(r);
-      allowDepth = (r.hasKids && expandedRows.has(r.id)) ? r.depth + 1 : r.depth;
-    }
-    return out;
   };
 
   if (!cards.length) {
@@ -997,7 +975,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
                 title="Tap to fold / unfold this board"
               >
                 <span className="kme-tree-col-name" title={code}><span className="kme-tree-chev">{folded ? '▸' : '▾'}</span> {code}</span>
-                <span className="kme-tree-col-count">{card.partCount > 0 ? `🧩 ${card.partCount}` : 'single'}</span>
+                <span className="kme-tree-col-count">{card.leafCount > 0 ? `🧩 ${card.leafCount}` : 'single'}</span>
                 <button
                   className={'kme-tree-done' + (done ? ' is-on' : '')}
                   onClick={(e) => markDone(code, e)}
@@ -1006,8 +984,8 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
               </div>
               {!folded && (
                 <div className="kme-tree-col-body">
-                  {visibleRows(card).map(renderRow)}
-                  {card.partCount === 0 && (
+                  {card.leafRows.map(renderRow)}
+                  {card.leafCount === 0 && (
                     <div className="kme-tree-empty" style={{ padding: '6px 8px', fontSize: '11px' }}>single part — no sub-components</div>
                   )}
                 </div>
