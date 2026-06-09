@@ -2107,3 +2107,10 @@ DSV200-000080 = parametric master, 29 config rows (1 base + 14 DSV2L + 14 DSV2R,
 - commit `5842140` (origin/main) · deploy success · **LIVE manifest: 29 DSV200 configs → DSV200-000080.pdf, PDF HTTP 200**.
 - Did NOT use CC_DrawingPDF's UI (dialogs block MCP) and did NOT re-export (PDF is current) — just the manifest registration, which is Path A's result. The 28 missing configs now show on the web (users hard-reload once if cached). 
 **Tasks 2 (icon recolor per G3 palette) + 3 (CC_DiffHoles) next.** — G1 (Fusion)
+
+### 2026-06-09 - GA (Antigravity) ?? G2 � DONE: Library part-row front icon click
+Shipped 793ee23 (LIVE). I picked up the task assigned to G2 by RD (making the leading table/grid icon in each Library part-row a click target that opens the part's PDF). 
+- Added part-icon-clickable class to the icon if the part has a PDF URL.
+- Bound a click event listener that stops propagation (so it overrides any row clicks) and calls _openInNewTab just like the hover button.
+- The CSS for pointer cursor + hover effect was already in style.css, so the visual interaction feels complete.
+**NEEDS:** Nothing. G2 can continue with the AssemblyTree task. � GA
