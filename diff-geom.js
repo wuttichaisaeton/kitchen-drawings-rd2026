@@ -84,6 +84,30 @@
     };
   }
 
-  root.KD_GEOMDIFF = { geomDiff: geomDiff, T: T, DIA_T: DIA_T };
+  // Pure summary builder — one line per diff category. Returns [{text,color}] so
+  // both the canvas panel (diff-tools.js) and the node test consume the same source.
+  // ASCII only (Flux web font can't render Thai/fancy glyphs in the rendered UI).
+  function _fmt(v) { return v === 0 ? 'same' : ((v > 0 ? '+' : '') + v + 'mm'); }
+  function geomDiffSummary(d) {
+    var m = d.material;
+    var matTxt = (m.baseTh == null && m.compTh == null)
+      ? 'Thickness: unknown'
+      : (m.sameTh ? ('Thickness: same (' + m.baseTh + 'mm)')
+                  : ('Thickness: ' + m.baseTh + 'mm -> ' + m.compTh + 'mm'));
+    return [
+      { color: '#c9d1d9', text: 'Size: W ' + _fmt(d.dims.dW) + ' . H ' + _fmt(d.dims.dH) +
+        '  (' + d.dims.baseW + 'x' + d.dims.baseH + ' -> ' + d.dims.compW + 'x' + d.dims.compH + ')' },
+      { color: '#3fb950', text: d.holes.added.length + ' holes added' },
+      { color: '#f85149', text: d.holes.removed.length + ' holes removed' },
+      { color: '#F2A93B', text: d.holes.resized.length + ' holes resized (dia >0.1mm)' },
+      { color: '#c9d1d9', text: 'Bends: ' + d.bends.added.length + ' added . ' + d.bends.removed.length +
+        ' removed  (' + d.bends.baseN + ' -> ' + d.bends.compN + ')' },
+      { color: '#c9d1d9', text: 'Cutouts: ' + d.cutouts.added.length + ' added . ' + d.cutouts.removed.length +
+        ' removed' + (d.outline.changed ? '  . outline size changed' : '') },
+      { color: (m.sameTh === false ? '#F2A93B' : '#8b949e'), text: matTxt }
+    ];
+  }
+
+  root.KD_GEOMDIFF = { geomDiff: geomDiff, geomDiffSummary: geomDiffSummary, T: T, DIA_T: DIA_T };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.KD_GEOMDIFF;
 })(typeof window !== 'undefined' ? window : globalThis);

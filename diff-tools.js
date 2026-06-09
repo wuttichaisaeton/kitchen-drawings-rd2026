@@ -108,8 +108,13 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
     const compDxf = window.KD_DXFFLAT.parseFlatDxf(await compResp.text());
     if (!baseDxf || !compDxf) throw new Error("Failed to parse DXF geometries.");
 
-    // recs (thickness) wired in the thickness task; null is fine for the hole/geometry diff.
-    const d = window.KD_GEOMDIFF.geomDiff(baseDxf, compDxf, null, null);
+    // thickness from the bend_sim record (flat DXF carries no thickness); null -> "unknown".
+    const recFor = c => {
+      const cache = (typeof _bendSimCache !== 'undefined') ? _bendSimCache : (window._bendSimCache || {});
+      const b = cache[c];
+      return (b && b.thickness != null) ? { thickness: +b.thickness } : null;
+    };
+    const d = window.KD_GEOMDIFF.geomDiff(baseDxf, compDxf, recFor(baseCode), recFor(compCode));
 
     // draw the COMPARE flat in its own bbox-origin frame (the shared compare frame)
     const canvas = document.createElement('canvas');
@@ -157,10 +162,36 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
       ctx.stroke();
     });
 
-    const lines = [];
-    lines.push(`<div style="color:#3fb950;">&#9679; ${d.holes.added.length} holes added</div>`);
-    lines.push(`<div style="color:#f85149;">&#10006; ${d.holes.removed.length} holes removed</div>`);
-    lines.push(`<div style="color:#F2A93B;">&#8635; ${d.holes.resized.length} holes resized (dia &gt;0.1mm)</div>`);
+    // bend lines that differ: added (from comp, green solid) / removed (from base, red dashed)
+    const drawBend = (bn, off, color, dashed) => {
+      if (!bn.a || !bn.b) return;
+      ctx.strokeStyle = color; ctx.lineWidth = 2.5 / scale;
+      ctx.setLineDash(dashed ? [6 / scale, 4 / scale] : []);
+      ctx.beginPath();
+      ctx.moveTo(bn.a[0] - off.minX, bn.a[1] - off.minY);
+      ctx.lineTo(bn.b[0] - off.minX, bn.b[1] - off.minY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    };
+    d.bends.added.forEach(bn => drawBend(bn, compDxf.bbox, '#3fb950', false));
+    d.bends.removed.forEach(bn => drawBend(bn, baseDxf.bbox, '#f85149', true));
+
+    // cutouts/notches that differ: box around each (centroid already in shared frame)
+    const cutBox = (cu, color) => {
+      let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
+      (cu.pts || []).forEach(p => { if (p[0] < mnx) mnx = p[0]; if (p[0] > mxx) mxx = p[0]; if (p[1] < mny) mny = p[1]; if (p[1] > mxy) mxy = p[1]; });
+      const hw = isFinite(mnx) ? (mxx - mnx) / 2 : 6, hh = isFinite(mny) ? (mxy - mny) / 2 : 6;
+      ctx.strokeStyle = color; ctx.lineWidth = 2 / scale; ctx.setLineDash([]);
+      ctx.strokeRect(cu.cx - hw, cu.cy - hh, hw * 2, hh * 2);
+    };
+    d.cutouts.added.forEach(cu => cutBox(cu, '#3fb950'));
+    d.cutouts.removed.forEach(cu => cutBox(cu, '#f85149'));
+
+    // summary panel — all categories (dims/holes/bends/cutouts/thickness) via the shared builder
+    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const lines = window.KD_GEOMDIFF.geomDiffSummary(d).map(
+      l => `<div style="color:${l.color};">${esc(l.text)}</div>`
+    );
 
     containerEl.innerHTML = `
       <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:10px 12px; border-radius:6px; pointer-events:none; z-index:10; font-size:13px; line-height:1.6;">
