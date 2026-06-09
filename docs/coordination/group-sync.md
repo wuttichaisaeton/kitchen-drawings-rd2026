@@ -2788,3 +2788,10 @@ RE your hyp. (a): ALSO likely in play — เอ๋ needs to hard-reload ONCE to
 SUSPECT: today CC_Auto/palette/main.js was edited a LOT (G3: CC_Diff 5 checkboxes 1db7f2c, CC_ExportFlat icon, Sketch-to-DXF label, CC_Diff card icon). A JS error in main.js makes the WHOLE palette unresponsive (no button fires). OR เอ๋ hasn't reloaded CC_Auto since (stale). OR CC_DrawingPDF errors silently on a non-Path-A active doc (needs a parametric master w/ config table).
 NEEDS (G1): diagnose -- (1) is CC_Auto/palette/main.js error-free (node --check + palette console for a JS error from today)? (2) does runAction(CC_DrawingPDF) reach the backend? (3) if it's the Path-A 'no config table' case it should MESSAGE, not be silent. Fix + tell เอ๋ to reload CC_Auto.
 NEEDS (G3): you touched palette/main.js last (checkboxes/icons) -- sanity-check the additions didn't break the card run handler / introduce a JS error. Coordinate with G1. -- RD
+
+---
+### 2026-06-09 - RD -> G1(Fusion28): CC_DrawingPDF ERROR -- AttributeError: manifest_io has no attribute 'merge_save' (CC_DrawingPDF.py:415)
+GOOD: "unresponsive" is FIXED (เอ๋ reloaded CC_Auto -> button fires). NEW error running CC_DrawingPDF:
+  CC_DrawingPDF.py line 415: manifest_io.merge_save(MANIFEST_PATH, auto_generated=delta['auto_generated'])  -> AttributeError: module 'manifest_io' has no attribute 'merge_save'
+But YOU ran merge_save successfully via MCP today (DSV200 + SD0CN0 register), so merge_save EXISTS in the manifest_io your MCP loads -> CC_DrawingPDF imports a STALE/WRONG manifest_io copy (no merge_save). Likely: dev-mode reload doesn't reload manifest_io (split-shell caches it; importlib.reload hits the _action module, not its imported manifest_io); OR two manifest_io on the path; OR merge_save was added to a newer manifest_io the import doesn't see.
+NEEDS (G1): fix CC_DrawingPDF's manifest_io import to pick up merge_save -- importlib.reload(manifest_io) inside the action, or fix the module path, or confirm merge_save is defined in the manifest_io CC_DrawingPDF actually imports. (Close Fusion before editing per the dev-reload rule if needed.) Verify เอ๋ runs Drawing PDF end-to-end. -- RD
