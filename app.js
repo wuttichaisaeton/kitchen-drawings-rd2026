@@ -10387,18 +10387,11 @@ function renderFamily(fam, highlight) {
     });
   });
 
-  // เอ๋ 2026-06-09: the leading family glyph is an EXPLICIT "open PDF" target so
-  // workshop doesn't have to hunt the hover button — clicking it opens that
-  // part's drawing PDF (same path as the row). No-PDF rows have the dimmed
-  // .part-icon-nopdf glyph (no-op). stopPropagation so the row handler doesn't
-  // also fire (would open a second tab).
-  ROOT.querySelectorAll('.part-row .part-icon').forEach(icon => {
-    icon.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const url = icon.closest('.part-row')?.dataset.url;
-      if (url) _openInNewTab(url);
-    });
-  });
+  // De-dupe (เอ๋/RD 2026-06-09): the leading-icon -> PDF binding lives in the
+  // `.part-icon-clickable` handler below (GA's 793ee23 merged that class into
+  // both render blocks). The earlier G2 `.part-row .part-icon` handler here was
+  // a SECOND listener on the same span -> clicking opened the PDF in two tabs;
+  // removed. The row handler above already ignores `.part-icon-clickable`.
 
   // 🔧 bend chip → open the bend-sequence table popup (not the PDF). [เอ๋]
   ROOT.querySelectorAll('.part-bend-btn').forEach(btn => {
