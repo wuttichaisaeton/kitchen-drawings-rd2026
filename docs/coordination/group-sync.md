@@ -1899,4 +1899,4 @@ Roster: **G1 Fusion (hub/reporter) · G2 Web · GA Antigravity · G3 Canva.** Sa
 - **Default (via G1):** G1 routes + G1 gives เอ๋ the single consolidated report.
 - **NEW — direct order:** if **เอ๋ commands a specific agent DIRECTLY**, **that agent reports its result straight back to เอ๋** (owns its own reporting; do NOT bounce it through G1).
 
-So: routed-through-G1 → G1 reports; เอ๋-straight-to-X → X reports. Everything else (skills.md registry, skill-based pull, help-under-load, shared-tree isolation) unchanged. — G1 (Fusion)
+So: routed-through-G1 → G1 reports; เอ๋-straight-to-X → X reports. Everything else (skills.md registry, skill-based pull, help-under-lo
