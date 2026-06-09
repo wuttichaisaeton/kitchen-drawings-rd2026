@@ -29,6 +29,7 @@ const LS_FAMILY_LABELS_KEY = 'kd_family_labels_v1';  // {familyKey: customLabel}
 const LS_DISPLAY_OVERRIDES_KEY = 'kd_display_overrides_v1';  // {originalCode: customLabel} — admin-edited part code display in Library (e.g. fix Fusion-side typos)
 const LS_FAMILY_OVERRIDES_KEY = 'kd_family_overrides_v1';    // {code: customFamilyName} — admin-moved parts to custom folders. Overrides Fusion-side family assignment per code.
 const LS_CUSTOM_FOLDERS_KEY = 'kd_custom_folders_v1';        // [folderName] — admin-created empty folders that should appear in Library home even with 0 parts.
+const LS_DRAWING_LINKS_KEY = 'kd_drawing_links_v1';          // {code: targetCode} — admin "Edit Link": a NO-PDF node borrows another code's drawing.
 const LS_FAMILY_ORDER_KEY = 'kd_family_order_v1';    // Array<familyKey> — admin-set chip order
 
 // ──────────────────────────────────────────────────────────────────────
@@ -423,7 +424,12 @@ function _patternAliasForDrawing(code) {
   return code;
 }
 
-function _effectiveDrawingCode(code) {
+function _effectiveDrawingCode(code, _depth) {
+  _depth = _depth || 0;
+  // Admin "Edit Link" override wins: borrow the linked code's drawing. Resolved
+  // recursively (target may itself be aliased) with a depth guard against cycles.
+  const linked = _drawingLinksCache[code];
+  if (linked && linked !== code && _depth < 8) return _effectiveDrawingCode(linked, _depth + 1);
   const auto = (manifest && manifest.auto_generated) || {};
   if (auto[code]) return code;  // self has the drawing — use as-is
   // 1. Explicit group — first sibling with a manifest entry wins.
@@ -2204,6 +2210,11 @@ let _displayOverridesCache = {};
 // renderLibraryHome groups by family, so any family with ≥1 part shows
 // as a chip in the home grid. RTDB-synced so workshop sees the same.
 let _familyOverridesCache = {};
+// drawing_links — admin "Edit Link" on a NO-PDF mindmap node: maps a code to a
+// TARGET code whose drawing it should borrow (e.g. SD0CN0-080083 -> SD0CN0-080000).
+// Resolved FIRST in _effectiveDrawingCode so the node's PDF/NO-PDF flag flips live.
+// RTDB-synced (drawing_links/<code> = targetCode) so every device shares the link.
+let _drawingLinksCache = {};
 // custom_folders — admin-created empty folders. Without this list, an
 // empty folder would disappear from the Library home grid as soon as
 // the last part is moved out. Admin can pre-create folder names so the
@@ -2230,6 +2241,10 @@ function initFamilyChipSync() {
   try {
     const r = localStorage.getItem(LS_CUSTOM_FOLDERS_KEY);
     if (r) { const a = JSON.parse(r); if (Array.isArray(a)) _customFoldersCache = a; }
+  } catch {}
+  try {
+    const r = localStorage.getItem(LS_DRAWING_LINKS_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _drawingLinksCache = o; }
   } catch {}
   if (!window.firebaseDB) return;
   try {
@@ -2261,6 +2276,12 @@ function initFamilyChipSync() {
       const raw = snap.val();
       _customFoldersCache = Array.isArray(raw) ? raw : [];
       try { localStorage.setItem(LS_CUSTOM_FOLDERS_KEY, JSON.stringify(_customFoldersCache)); } catch {}
+      try { render(); } catch {}
+    });
+    window.firebaseDB.ref('drawing_links').on('value', snap => {
+      const raw = snap.val();
+      _drawingLinksCache = (raw && typeof raw === 'object') ? raw : {};
+      try { localStorage.setItem(LS_DRAWING_LINKS_KEY, JSON.stringify(_drawingLinksCache)); } catch {}
       try { render(); } catch {}
     });
   } catch (e) {
@@ -2339,6 +2360,25 @@ function setFamilyOverride(code, family) {
     try {
       window.firebaseDB.ref('family_overrides/' + code).set(trimmed ? trimmed : null);
     } catch (e) { console.warn('Firebase family_override write failed:', e); }
+  }
+}
+
+// getDrawingLink / setDrawingLink — admin "Edit Link" on a NO-PDF mindmap node.
+// setDrawingLink(code, target) makes `code` borrow `target`'s drawing (resolved in
+// _effectiveDrawingCode → pdfUrlForCode), so the node's NO-PDF flag flips to a PDF
+// node live. Empty/equal/cyclic target clears the link. RTDB-synced (admin only).
+function getDrawingLink(code) { return (code && _drawingLinksCache[code]) || ''; }
+function setDrawingLink(code, target) {
+  if (!code) return;
+  const t = (target || '').trim().toUpperCase();
+  // guard: clearing, self-link, or a direct 2-cycle (a→b while b→a) is rejected
+  if (t && t !== code && _drawingLinksCache[t] !== code) _drawingLinksCache[code] = t;
+  else delete _drawingLinksCache[code];
+  try { localStorage.setItem(LS_DRAWING_LINKS_KEY, JSON.stringify(_drawingLinksCache)); } catch {}
+  if (window.firebaseDB) {
+    try {
+      window.firebaseDB.ref('drawing_links/' + code).set(_drawingLinksCache[code] || null);
+    } catch (e) { console.warn('Firebase drawing_link write failed:', e); }
   }
 }
 
@@ -7371,6 +7411,14 @@ function _exposeKdApi() {
     pdfUrlForCode,
     projectPdfUrl,   // direct match + scan auto_generated for <pk>.pdf
     routeLeaf: _routeLeafToFusion,
+    // Admin "Edit Link": point a NO-PDF node at another code's drawing (live).
+    isAdmin,
+    getDrawingLink,
+    setDrawingLink: (code, target) => {
+      if (!isAdmin()) return;
+      setDrawingLink(code, target);
+      try { render(); } catch {}
+    },
     uploadPdfFromDrop,
     // Open URL using PWA-standalone-aware logic (navigate same window
     // on standalone, open new tab in browser). Without this, taps on

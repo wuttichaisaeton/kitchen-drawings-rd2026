@@ -480,7 +480,7 @@ function MindmapNode({ id, data, selected }) {
         {isBom && qty != null && !isVariantRoot && !isWrapper && (
           <span className="kme-node-qty">x<span className="kme-node-qty-num">{qty}</span></span>
         )}
-        {missing && isBom && (
+        {missing && isBom && !(api.pdfUrlForCode && api.pdfUrlForCode(code)) && (
           <span
             className="kme-missing-badge nodrag nopan"
             title="No PDF yet — tap to open the 3D master in Fusion"
@@ -509,6 +509,30 @@ function MindmapNode({ id, data, selected }) {
           >
             ⚠ NO PDF 🔗
           </span>
+        )}
+        {/* Admin "Edit Link" (เอ๋ 2026-06-09): a NO-PDF node can borrow another
+            code's drawing PDF (e.g. SD0CN0-080083 → SD0CN0-080000). Touch/iPad-
+            friendly button → prompt for the target code → api.setDrawingLink
+            persists it (RTDB) → pdfUrlForCode resolves → the NO-PDF badge above
+            auto-hides + the linked drawing opens. */}
+        {missing && isBom && admin && !(api.pdfUrlForCode && api.pdfUrlForCode(code)) && (
+          <button
+            className="kme-link-edit nodrag nopan"
+            title="Edit Link — point this NO-PDF part at another part's drawing PDF"
+            onClick={(e) => {
+              e.stopPropagation();
+              const cur = api.getDrawingLink ? api.getDrawingLink(code) : '';
+              const target = window.prompt(
+                'Link "' + code + '" to which part\'s drawing PDF?\n(e.g. ' + (code.split('-')[0] || 'SD0CN0') + '-080000)\nLeave blank to clear the link.',
+                cur || ''
+              );
+              if (target === null) return;   // cancelled
+              if (api.setDrawingLink) api.setDrawingLink(code, target);
+              bump();
+              const url = api.pdfUrlForCode && api.pdfUrlForCode(code);
+              if (url && api.openInNewTab) api.openInNewTab(url);
+            }}
+          >🔗 Link</button>
         )}
         {uploading && (
           <span className="kme-missing-badge nodrag nopan" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
