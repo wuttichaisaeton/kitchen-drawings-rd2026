@@ -616,6 +616,21 @@ function pdfUrlForCode(code) {
   return '';
 }
 
+// Resolve a code's drawing-PDF URL the SAME way the gallery/Library row does:
+// the part's own url (manifest-entry url / admin upload) first, then pdfUrlForCode.
+// pdfUrlForCode alone returns '' for upload/url-only parts (e.g. DSV0F0-020080), so
+// the Diff tools use THIS instead — both the modal iframes and _runPdfVisualDiff —
+// so any part that shows in the gallery can be diffed. (เอ๋ coverage fix 2026-06-09)
+function resolvePartPdfUrl(code) {
+  if (!code) return '';
+  const by = partsByFamily();
+  for (const fam of Object.keys(by)) {
+    const p = by[fam].find(x => x.code === code);
+    if (p) return p.url || pdfUrlForCode(code) || '';
+  }
+  return pdfUrlForCode(code) || '';
+}
+
 // Return all uploaded DXFs whose master_code matches the given Library
 // row code. Returns an array (possibly empty) sorted by filename so the
 // popover ordering is stable across re-renders.

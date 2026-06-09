@@ -20,8 +20,8 @@ async function _renderPdfToCanvas(url) {
 async function _runPdfVisualDiff(baseCode, compareCode, containerEl) {
   containerEl.innerHTML = '<div style="color:#8b949e; padding: 20px;">Rendering PDFs for visual diff...</div>';
   try {
-    const baseUrl = pdfUrlForCode(baseCode);
-    const compUrl = pdfUrlForCode(compareCode);
+    const baseUrl = resolvePartPdfUrl(baseCode);
+    const compUrl = resolvePartPdfUrl(compareCode);
     if (!baseUrl || !compUrl) throw new Error("Missing PDF for one of the parts.");
     
     const [baseCanvas, compCanvas] = await Promise.all([
@@ -220,11 +220,15 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
   }
   const suffix = parts.pop();
 
+  // Only offer siblings that actually HAVE a drawing PDF (resolvePartPdfUrl covers
+  // manifest + uploads + p.url) — otherwise the diff would open onto a part with
+  // nothing to compare and just show "Missing PDF". (เอ๋ coverage fix 2026-06-09)
   const allInFam = partsByFamily()[fam] || [];
-  const candidates = allInFam.filter(p => p.code !== baseCode && p.code.endsWith('-' + suffix));
+  const candidates = allInFam.filter(p =>
+    p.code !== baseCode && p.code.endsWith('-' + suffix) && resolvePartPdfUrl(p.code));
 
   if (candidates.length === 0) {
-    alert(`No similar drawings found in family "${fam}" with suffix "-${suffix}".`);
+    alert(`No similar drawings (with a PDF) found in family "${fam}" with suffix "-${suffix}".`);
     return;
   }
 
@@ -232,7 +236,7 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
   ov.className = 'bt-overlay';
   ov.style.zIndex = '99999';
   
-  const basePdf = pdfUrlForCode(baseCode) || '';
+  const basePdf = resolvePartPdfUrl(baseCode) || '';
   let currentCompareCode = candidates[0].code;
   let currentMode = (defaultMode === 'pdfdiff' || defaultMode === 'dxfdiff') ? defaultMode : 'sidebyside';
   
@@ -269,7 +273,7 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
               ${candidateOptions}
             </select>
           </div>
-          <iframe id="compare-iframe" src="${escapeHtml(pdfUrlForCode(currentCompareCode) || '')}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
+          <iframe id="compare-iframe" src="${escapeHtml(resolvePartPdfUrl(currentCompareCode) || '')}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
         </div>
       </div>
       
@@ -315,7 +319,7 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
       btnSideBySide.style.color = '#fff';
       singleView.style.display = 'none';
       splitView.style.display = 'flex';
-      compareIframe.src = (pdfUrlForCode(currentCompareCode) || '') + '#toolbar=0&navpanes=0';
+      compareIframe.src = (resolvePartPdfUrl(currentCompareCode) || '') + '#toolbar=0&navpanes=0';
     } else {
       splitView.style.display = 'none';
       singleView.style.display = 'flex';
