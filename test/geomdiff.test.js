@@ -71,3 +71,19 @@ assert.ok(sum.some(l => /Thickness: same/.test(l.text)), 'thickness line present
 assert.deepStrictEqual([...new Set(sum.map(l => l.cat))].sort(),
   ['bends', 'cutouts', 'dims', 'holes', 'material'], 'lines tagged with the 5 categories');
 console.log('geomdiff summary OK');
+
+// pixelDiffRegions — 64x64 white base; comp identical except a 20x20 black block @ (10,10)
+const { pixelDiffRegions } = require('../diff-geom.js');
+const PW = 64, PH = 64;
+const pxBase = new Uint8ClampedArray(PW * PH * 4).fill(255);
+const pxComp = new Uint8ClampedArray(PW * PH * 4).fill(255);
+for (let y = 10; y < 30; y++) for (let x = 10; x < 30; x++) {
+  const i = (y * PW + x) * 4; pxComp[i] = 0; pxComp[i + 1] = 0; pxComp[i + 2] = 0; pxComp[i + 3] = 255;
+}
+const regions = pixelDiffRegions(pxBase, pxComp, PW, PH, { threshold: 50, cell: 8, minCells: 1 });
+assert.strictEqual(regions.length, 1, 'one differing region');
+assert.ok(regions[0].cx > 10 && regions[0].cx < 32, 'region centred over the block (x)');
+assert.ok(regions[0].cy > 10 && regions[0].cy < 32, 'region centred over the block (y)');
+// identical buffers → no regions
+assert.strictEqual(pixelDiffRegions(pxBase, pxBase, PW, PH, { cell: 8 }).length, 0, 'identical → 0 regions');
+console.log('geomdiff pixelDiffRegions OK');

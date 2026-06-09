@@ -110,6 +110,56 @@
     ];
   }
 
-  root.KD_GEOMDIFF = { geomDiff: geomDiff, geomDiffSummary: geomDiffSummary, T: T, DIA_T: DIA_T };
+  // Pixel-region diff (for the "Download PDF with diff" export). Pure: takes the two
+  // rendered-page RGBA buffers (Uint8 / Uint8ClampedArray) + dims, returns the regions
+  // where they differ — coarse grid cells flagged by grayscale-threshold, then flood-
+  // filled into clusters. No DXF→sheet coordinate mapping needed (robust path). Each
+  // region carries a bbox + a circle (cx,cy,r) for drawing a dashed marker on the PDF.
+  function pixelDiffRegions(baseData, compData, width, height, opts) {
+    opts = opts || {};
+    var TH = opts.threshold != null ? opts.threshold : 50;
+    var CELL = opts.cell != null ? opts.cell : 16;
+    var MINCELLS = opts.minCells != null ? opts.minCells : 2;
+    var cols = Math.ceil(width / CELL), rows = Math.ceil(height / CELL);
+    var cellDiff = new Uint8Array(cols * rows);
+    for (var y = 0; y < height; y++) {
+      for (var x = 0; x < width; x++) {
+        var i = (y * width + x) * 4;
+        var bg = (baseData[i] + baseData[i + 1] + baseData[i + 2]) / 3;
+        var cg = (compData[i] + compData[i + 1] + compData[i + 2]) / 3;
+        if (Math.abs(bg - cg) > TH) cellDiff[((y / CELL) | 0) * cols + ((x / CELL) | 0)] = 1;
+      }
+    }
+    var seen = new Uint8Array(cols * rows);
+    var regions = [];
+    for (var r = 0; r < rows; r++) {
+      for (var c = 0; c < cols; c++) {
+        var idx = r * cols + c;
+        if (!cellDiff[idx] || seen[idx]) continue;
+        var stack = [idx]; seen[idx] = 1;
+        var minc = c, maxc = c, minr = r, maxr = r, count = 0;
+        while (stack.length) {
+          var cur = stack.pop(); count++;
+          var cr = (cur / cols) | 0, cc = cur % cols;
+          if (cc < minc) minc = cc; if (cc > maxc) maxc = cc;
+          if (cr < minr) minr = cr; if (cr > maxr) maxr = cr;
+          if (cc > 0 && cellDiff[cur - 1] && !seen[cur - 1]) { seen[cur - 1] = 1; stack.push(cur - 1); }
+          if (cc < cols - 1 && cellDiff[cur + 1] && !seen[cur + 1]) { seen[cur + 1] = 1; stack.push(cur + 1); }
+          if (cr > 0 && cellDiff[cur - cols] && !seen[cur - cols]) { seen[cur - cols] = 1; stack.push(cur - cols); }
+          if (cr < rows - 1 && cellDiff[cur + cols] && !seen[cur + cols]) { seen[cur + cols] = 1; stack.push(cur + cols); }
+        }
+        if (count >= MINCELLS) {
+          var x0 = minc * CELL, y0 = minr * CELL, x1 = (maxc + 1) * CELL, y1 = (maxr + 1) * CELL;
+          regions.push({
+            x: x0, y: y0, w: x1 - x0, h: y1 - y0, cells: count,
+            cx: (x0 + x1) / 2, cy: (y0 + y1) / 2, r: Math.max(x1 - x0, y1 - y0) / 2 + CELL
+          });
+        }
+      }
+    }
+    return regions;
+  }
+
+  root.KD_GEOMDIFF = { geomDiff: geomDiff, geomDiffSummary: geomDiffSummary, pixelDiffRegions: pixelDiffRegions, T: T, DIA_T: DIA_T };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.KD_GEOMDIFF;
 })(typeof window !== 'undefined' ? window : globalThis);

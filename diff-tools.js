@@ -87,6 +87,64 @@ async function _runPdfVisualDiff(baseCode, compareCode, containerEl) {
   }
 }
 
+// "Download PDF with diff" — render the COMPARE drawing PDF to a canvas, overlay the
+// pixel-region differences (vs the base drawing) as DASHED red circles, export a new
+// single-page PDF (pdf-lib, already loaded). Robust pixel-region path — no DXF->sheet
+// coordinate mapping (the geometric-rings-on-PDF, which would honor the category
+// selector, is the harder follow-up). pdf.js render paints on the live site (it stalls
+// only in the headless preview, like the Visual PDF Diff).
+async function _exportDiffPdf(baseCode, compCode, btnEl) {
+  const orig = btnEl ? btnEl.innerHTML : '';
+  if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = 'Rendering...'; }
+  try {
+    if (!window.pdfjsLib) throw new Error('pdf.js not loaded');
+    if (!window.PDFLib) throw new Error('pdf-lib not loaded');
+    const baseUrl = resolvePartPdfUrl(baseCode), compUrl = resolvePartPdfUrl(compCode);
+    if (!baseUrl || !compUrl) throw new Error('Missing PDF for one of the parts');
+
+    const [baseCanvas, compCanvas] = await Promise.all([
+      _renderPdfToCanvas(baseUrl), _renderPdfToCanvas(compUrl)
+    ]);
+    const w = Math.max(baseCanvas.width, compCanvas.width);
+    const h = Math.max(baseCanvas.height, compCanvas.height);
+
+    // composite = the compare drawing + dashed diff markers
+    const out = document.createElement('canvas');
+    out.width = w; out.height = h;
+    const octx = out.getContext('2d');
+    octx.fillStyle = '#ffffff'; octx.fillRect(0, 0, w, h);
+    octx.drawImage(compCanvas, 0, 0);
+
+    const baseData = baseCanvas.getContext('2d').getImageData(0, 0, w, h).data;
+    const compData = compCanvas.getContext('2d').getImageData(0, 0, w, h).data;
+    const regions = window.KD_GEOMDIFF.pixelDiffRegions(baseData, compData, w, h, { threshold: 50, cell: 16, minCells: 2 });
+    octx.strokeStyle = '#d1242f'; octx.lineWidth = Math.max(2, w / 600);
+    octx.setLineDash([Math.max(8, w / 120), Math.max(5, w / 200)]);
+    regions.forEach(rg => { octx.beginPath(); octx.arc(rg.cx, rg.cy, rg.r, 0, Math.PI * 2); octx.stroke(); });
+    octx.setLineDash([]);
+
+    const { PDFDocument } = window.PDFLib;
+    const pdfDoc = await PDFDocument.create();
+    const png = await pdfDoc.embedPng(out.toDataURL('image/png'));
+    const page = pdfDoc.addPage([w, h]);
+    page.drawImage(png, { x: 0, y: 0, width: w, height: h });
+    const bytes = await pdfDoc.save();
+
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = compCode + '_diff.pdf';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    if (btnEl) btnEl.innerHTML = '&#10003; ' + regions.length + ' marked';
+  } catch (err) {
+    if (btnEl) btnEl.innerHTML = '&#10006; ' + (err.message || 'failed');
+    console.warn('export diff pdf failed:', err);
+  } finally {
+    if (btnEl) setTimeout(() => { btnEl.disabled = false; btnEl.innerHTML = orig; }, 2200);
+  }
+}
+
 // Geometry Diff (Level C + categories) — uses the shared pure engine
 // KD_GEOMDIFF.geomDiff (diff-geom.js) so Fusion (CC_DiffHoles) and Web agree on what
 // differs. Renders the COMPARE flat (outline + holes) with green=added / red=removed(X)
@@ -284,7 +342,10 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
             <button id="cmp-btn-dxfdiff" class="action-btn" style="padding: 4px 10px; font-size: 12px; background: transparent; color: #c9d1d9;">Geometry Diff</button>
           </div>
         </div>
-        <button class="bt-close" aria-label="Close" style="background: transparent; border: none; font-size: 24px; color: #8b949e; cursor: pointer;">&times;</button>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <button id="cmp-btn-export" class="action-btn" title="Render the drawing PDF with the differences drawn on as dashed markers, and download it" style="padding: 5px 12px; font-size: 12px; background: #1f6f3a; color: #fff; border: none; border-radius: 5px; cursor: pointer;">&#11015; PDF with diff</button>
+          <button class="bt-close" aria-label="Close" style="background: transparent; border: none; font-size: 24px; color: #8b949e; cursor: pointer;">&times;</button>
+        </div>
       </div>
       
       <!-- Split View Container -->
@@ -377,6 +438,9 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
   btnSideBySide.addEventListener('click', () => { currentMode = 'sidebyside'; updateView(); });
   btnPdfDiff.addEventListener('click', () => { currentMode = 'pdfdiff'; updateView(); });
   btnDxfDiff.addEventListener('click', () => { currentMode = 'dxfdiff'; updateView(); });
+
+  const btnExport = ov.querySelector('#cmp-btn-export');
+  if (btnExport) btnExport.addEventListener('click', () => _exportDiffPdf(baseCode, currentCompareCode, btnExport));
 
   // Open straight onto the requested diff tab (DRAWING-tab entry → Visual PDF Diff).
   // Side-by-Side is the default HTML state, so only switch when a diff mode was asked.
