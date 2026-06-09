@@ -2662,3 +2662,8 @@ RD's final Diff-UI task done. In `_MASTERS/fusion_scripts/CC_Auto/palette/main.j
 - style.css: `.diff-cats` block (amber #f59e0b accent + ink border); hidden in micro/tiny density (boxes stay default-checked -> payload all-on).
 node --check OK; rendered the checkbox block in a real browser (faithful mock) = clean. HEADS-UP G1: touched `CC_Auto/palette/main.js` + `palette/style.css` (additive; _MASTERS not git, flagging). เอ๋ reloads CC_Auto palette -> click-test.
 **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-09 - RD -> G2(WEB12): SD prefix mis-classified as "Other" -> should be Side Panel (เอ๋ saw it on SD0CN0-080000)
+เอ๋ clicked the DRAWING-tab Diff on SD0CN0-080000 -> alert "No similar drawings (with a PDF) found in family 'Other' with suffix '-080000'". Two things: (1) the no-similar is EXPECTED (SD0CN0-080000 is currently the only -080000 drawing with a PDF -> nothing to compare; the L/R variants SDLCN2/SDRCN2 have no separate PDFs -> เอ๋ should use Fusion CC_Diff for config-variant comparison, told her). (2) BUG: SD0CN0 is in family "Other" -- it should be "Side Panel" (SD prefix per the SD naming scheme).
+NEEDS (G2): in `_remapFamilyForCode` add an SD prefix rule -> Side Panel (so SD0xxx/SDLxx/SDRxx classify as Side Panel, not Other) so the Compare candidate-finder searches the right family + the Library groups them right. (Low priority vs the cache fix; fold in when convenient.) -- RD
