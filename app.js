@@ -4116,6 +4116,7 @@ function renderDrawingGallery() {
         <span class="part-code">${escapeHtml(display)}</span>
         ${dateLbl}
         ${bendChip}
+        <button class="part-compare-btn" data-compare-code="${escapeHtml(p.code)}" data-compare-fam="${escapeHtml(fam)}" aria-label="Compare / Diff" title="Compare with a similar drawing — visual diff overlay">🔍</button>
       </div>`;
   }).join('');
   ROOT.innerHTML = `
@@ -4133,8 +4134,17 @@ function renderDrawingGallery() {
     </div>`;
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.part-bend-btn, .part-icon-clickable')) return;
+      if (ev.target.closest('.part-bend-btn, .part-icon-clickable, .part-compare-btn')) return;
       _openInNewTab(el.dataset.url);
+    });
+  });
+
+  // DRAWING-tab Diff: 🔍 opens the Compare modal straight on Visual PDF Diff
+  // (overlays the pixel differences vs a sibling drawing; no flat DXF needed).
+  ROOT.querySelectorAll('.part-compare-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _openSimilarCompareModal(btn.dataset.compareCode, btn.dataset.compareFam, 'pdfdiff');
     });
   });
 

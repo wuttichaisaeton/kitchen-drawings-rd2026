@@ -179,7 +179,9 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
 }
 
 // Override Compare Similar Drawings Modal
-function _openSimilarCompareModal(baseCode, fam) {
+// defaultMode (optional): 'pdfdiff' | 'dxfdiff' opens the modal directly on that
+// tab (DRAWING-tab "Diff" entry opens on Visual PDF Diff). Omitted → Side-by-Side.
+function _openSimilarCompareModal(baseCode, fam, defaultMode) {
   const parts = baseCode.split('-');
   if (parts.length < 2) {
     alert(`Cannot determine WWWHHH size suffix for code "${baseCode}".`);
@@ -201,7 +203,7 @@ function _openSimilarCompareModal(baseCode, fam) {
   
   const basePdf = pdfUrlForCode(baseCode) || '';
   let currentCompareCode = candidates[0].code;
-  let currentMode = 'sidebyside';
+  let currentMode = (defaultMode === 'pdfdiff' || defaultMode === 'dxfdiff') ? defaultMode : 'sidebyside';
   
   const candidateOptions = candidates.map((c, i) => 
     `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(c.code)}</option>`
@@ -311,4 +313,8 @@ function _openSimilarCompareModal(baseCode, fam) {
   btnSideBySide.addEventListener('click', () => { currentMode = 'sidebyside'; updateView(); });
   btnPdfDiff.addEventListener('click', () => { currentMode = 'pdfdiff'; updateView(); });
   btnDxfDiff.addEventListener('click', () => { currentMode = 'dxfdiff'; updateView(); });
+
+  // Open straight onto the requested diff tab (DRAWING-tab entry → Visual PDF Diff).
+  // Side-by-Side is the default HTML state, so only switch when a diff mode was asked.
+  if (currentMode !== 'sidebyside') updateView();
 }
