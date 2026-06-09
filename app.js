@@ -47,7 +47,12 @@ async function _refreshManifest() {
     try { _buildDrawingAliasIndex(await fetchJson(_cacheBust(url.replace(/[^/]+$/, 'drawing_aliases.json')))); } catch {}
     applyFamilyRemap();
     try { updateMissingBadge(); } catch {}
-    try { render(); } catch {}
+    // _refreshAssemblyUI: when the mindmap editor is live it pulses kme:extsync
+    // (nodes re-render in place — NO-PDF badges flip via the live pdfUrlForCode
+    // check) instead of a full render() remount (canvas flash + viewport reset).
+    // On list views it falls back to render() itself. Note: a brand-NEW part
+    // (not yet a node) still needs the next full render to appear.
+    try { _refreshAssemblyUI(); } catch { try { render(); } catch {} }
     _manifestPulse();
   } catch (e) { /* network hiccup — next trigger retries */ }
 }
@@ -77,7 +82,10 @@ function _initManifestAutoRefresh() {
   window.addEventListener('focus', () => _scheduleManifestRefresh());
   setInterval(() => {
     if (document.hidden) return;
-    if (view === 'library' || view === 'drawing') _refreshManifest();
+    // Mindmap/editor keeps view==='projects' — include it via #kme-mount, else the
+    // poll never fires on เอ๋'s primary screen and a new export only shows after an
+    // alt-tab focus cycle (never, on a second monitor). (2026-06-09 latency audit)
+    if (view === 'library' || view === 'drawing' || document.getElementById('kme-mount')) _refreshManifest();
   }, 60000);
 }
 
@@ -613,14 +621,21 @@ async function _downloadFile(url, suggestedName) {
 }
 
 function pdfUrl(entry) {
+  // ?v=<manifest generated_at> busts the BROWSER http cache (max-age=600) so a
+  // just-exported/re-exported PDF opens fresh instead of a cached 404/old bytes
+  // for up to 10 min. (The Fastly EDGE ignores query strings, but every deploy
+  // purges the edge — the browser cache was the lingering stale layer.) เอ๋
+  // 2026-06-09 "ส่ง PDF เข้าเว็บช้ากว่าเมื่อก่อนมาก".
+  const ver = (typeof manifest === 'object' && manifest && manifest.generated_at)
+    ? ('?v=' + encodeURIComponent(manifest.generated_at)) : '';
   if (entry.isManual) {
-    return window.APP_CONFIG.MANUAL_BASE_URL + encodeURIComponent(entry.filename);
+    return window.APP_CONFIG.MANUAL_BASE_URL + encodeURIComponent(entry.filename) + ver;
   }
   const base = window.APP_CONFIG.PDF_BASE_URL;
   const filename = entry.pdf;
   if (!filename) return '';
   const page = entry.page_number || 1;
-  return base + encodeURIComponent(filename) + '#page=' + page;
+  return base + encodeURIComponent(filename) + ver + '#page=' + page;
 }
 
 // Project-master PDF lookup. The project KEY is the master file's
