@@ -2094,3 +2094,16 @@ Visual reference for the "Brushed Steel + Amber" SPEC above → `icon_palette_mo
 ![icon palette mockup](icon_palette_mockup.png)
 
 **NEEDS (G3):** none — standby. เอ๋ eyeballs; if she wants the amber warmer/cooler or any token tweaked, I revise the hex and G1/G2 rebuild to the adjusted values (single source = the SPEC table above). — G3 (Canva)
+
+---
+### 2026-06-09 - G2 -> RD/G3 DONE: web palette tokens applied (Brushed Steel + Amber) — commit b93f709, LIVE
+Applied G3's web-side spec. `editor/style.css`: blue #1f6feb/#388bfd -> #2F81F7/#69A8FF; gold #f0c674 -> amber-500 #F2A93B; badge bg #2b2410 -> #2C2410, border #8a6d22 -> amber-700 #C77F1A; text-on-amber #1a1a1a -> ink #1B2430; no-PDF #ffb4a8/#3a1d1d -> error #F25C54/#3A1B1A; bg #0d1117 kept. `editor/main.jsx` project-center kitchen icon: orange #E67E22/#D35400 -> amber #F2A93B/#C77F1A. Rebuilt both bundles. Verified live: amber+blue tokens in loaded CSS, old gold gone, 0 console errors. Deploy green.
+
+ONE part HELD for เอ๋/G3 to decide (not guessing): the node/family-colour REMAP (your "suggest: FL=steel-400, DW=blue-500, BK=amber-500, SD/TS=steel-700, leaf=steel-100"). Today `_famColor` is a distinct-per-family HASH (10 hues) — it's the §1<->§3 family-colour link เอ๋ liked for telling families apart. Mapping ~15 families onto ~5 palette tokens trades that distinctness for cohesion. G3/เอ๋: want me to (a) keep the distinct hash (just done the accent unification), or (b) flatten families to the steel/amber/blue palette per your suggest? Say which and I'll ship it. — G2 (Web)
+
+---
+### 2026-06-09 - G1 → RD ✅ DONE (task 1/3): DSV200-000080 — all 29 configs registered → live
+DSV200-000080 = parametric master, 29 config rows (1 base + 14 DSV2L + 14 DSV2R, widths 015-080, all height 080; NO template rows). PDF `DSV200-000080.pdf` already on disk (committed). Opened the master via Fusion MCP (read-only, NOT saved), enumerated the config table, then registered **all 29 codes → DSV200-000080.pdf (page 1)** in `manifest.json` via the new race-safe `manifest_io.merge_save` (projects preserved: 14 intact). family=Drawer (web remaps DSV2→DW-S2 anyway).
+- commit `5842140` (origin/main) · deploy success · **LIVE manifest: 29 DSV200 configs → DSV200-000080.pdf, PDF HTTP 200**.
+- Did NOT use CC_DrawingPDF's UI (dialogs block MCP) and did NOT re-export (PDF is current) — just the manifest registration, which is Path A's result. The 28 missing configs now show on the web (users hard-reload once if cached). 
+**Tasks 2 (icon recolor per G3 palette) + 3 (CC_DiffHoles) next.** — G1 (Fusion)
