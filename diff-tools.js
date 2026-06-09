@@ -92,6 +92,12 @@ async function _runPdfVisualDiff(baseCode, compareCode, containerEl) {
 // differs. Renders the COMPARE flat (outline + holes) with green=added / red=removed(X)
 // / amber=resized rings + a text summary panel. Later tasks extend the summary with
 // dims/bends/cutouts/thickness. Replaces the old _runDxfHoleDiff (added/removed only).
+// per-category visibility (Holes/Bends/Dims/Cutouts/Material — aligned w/ G1 CC_Diff),
+// default all on; persists across toggles within a session. _geomLast caches the last
+// computed diff + flats so toggling a category re-PAINTS without re-fetching the DXFs.
+let _geomCats = { holes: true, bends: true, dims: true, cutouts: true, material: true };
+let _geomLast = null;
+
 async function _renderGeomDiff(baseCode, compCode, containerEl) {
   containerEl.innerHTML = '<div style="color:#8b949e; padding: 20px;">Fetching flat DXFs and computing geometry diff...</div>';
   try {
@@ -115,38 +121,49 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
       return (b && b.thickness != null) ? { thickness: +b.thickness } : null;
     };
     const d = window.KD_GEOMDIFF.geomDiff(baseDxf, compDxf, recFor(baseCode), recFor(compCode));
+    _geomLast = { baseDxf, compDxf, d, containerEl };
+    _paintGeomDiff();
+  } catch (err) {
+    containerEl.innerHTML = `<div style="color:#f85149; padding:20px;">Error: ${err.message}</div>`;
+  }
+}
 
-    // draw the COMPARE flat in its own bbox-origin frame (the shared compare frame)
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const W = compDxf.bbox.w || (compDxf.bbox.maxX - compDxf.bbox.minX);
-    const H = compDxf.bbox.h || (compDxf.bbox.maxY - compDxf.bbox.minY);
-    const margin = 24;
-    const cWidth = containerEl.clientWidth || 800;
-    const cHeight = containerEl.clientHeight || 600;
-    canvas.width = cWidth; canvas.height = cHeight;
-    canvas.style.maxWidth = '100%'; canvas.style.maxHeight = '100%';
-    const scale = Math.min((cWidth - margin * 2) / W, (cHeight - margin * 2) / H);
-    ctx.clearRect(0, 0, cWidth, cHeight);
-    ctx.translate(margin, cHeight - margin);
-    ctx.scale(scale, -scale);
+// Re-draw the cached diff honoring _geomCats — runs on first render + on every toggle.
+function _paintGeomDiff() {
+  if (!_geomLast) return;
+  const baseDxf = _geomLast.baseDxf, compDxf = _geomLast.compDxf, d = _geomLast.d, containerEl = _geomLast.containerEl;
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  const W = compDxf.bbox.w || (compDxf.bbox.maxX - compDxf.bbox.minX);
+  const H = compDxf.bbox.h || (compDxf.bbox.maxY - compDxf.bbox.minY);
+  const margin = 24;
+  const cWidth = containerEl.clientWidth || 800;
+  const cHeight = containerEl.clientHeight || 600;
+  canvas.width = cWidth; canvas.height = cHeight;
+  canvas.style.maxWidth = '100%'; canvas.style.maxHeight = '100%';
+  const scale = Math.min((cWidth - margin * 2) / W, (cHeight - margin * 2) / H);
+  ctx.clearRect(0, 0, cWidth, cHeight);
+  ctx.translate(margin, cHeight - margin);
+  ctx.scale(scale, -scale);
 
-    ctx.lineWidth = 1 / scale;
-    ctx.strokeStyle = '#c9d1d9';
-    if (compDxf.outline && compDxf.outline.segments) {
-      compDxf.outline.segments.forEach(seg => {
-        ctx.beginPath();
-        ctx.moveTo(seg[0][0] - compDxf.bbox.minX, seg[0][1] - compDxf.bbox.minY);
-        ctx.lineTo(seg[1][0] - compDxf.bbox.minX, seg[1][1] - compDxf.bbox.minY);
-        ctx.stroke();
-      });
-    }
-    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
-    (compDxf.holes || []).filter(h => h.type === 'circle').forEach(h => {
+  // outline + faint holes = context, drawn regardless of category toggles
+  ctx.lineWidth = 1 / scale; ctx.strokeStyle = '#c9d1d9';
+  if (compDxf.outline && compDxf.outline.segments) {
+    compDxf.outline.segments.forEach(seg => {
       ctx.beginPath();
-      ctx.arc(h.c[0] - compDxf.bbox.minX, h.c[1] - compDxf.bbox.minY, h.r, 0, Math.PI * 2);
+      ctx.moveTo(seg[0][0] - compDxf.bbox.minX, seg[0][1] - compDxf.bbox.minY);
+      ctx.lineTo(seg[1][0] - compDxf.bbox.minX, seg[1][1] - compDxf.bbox.minY);
       ctx.stroke();
     });
+  }
+  ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+  (compDxf.holes || []).filter(h => h.type === 'circle').forEach(h => {
+    ctx.beginPath();
+    ctx.arc(h.c[0] - compDxf.bbox.minX, h.c[1] - compDxf.bbox.minY, h.r, 0, Math.PI * 2);
+    ctx.stroke();
+  });
+
+  if (_geomCats.holes) {
     const ring = (h, stroke, fill) => {
       ctx.strokeStyle = stroke; ctx.fillStyle = fill; ctx.lineWidth = 2 / scale;
       ctx.beginPath(); ctx.arc(h.cx, h.cy, (h.r || 3) + 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -161,8 +178,9 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
       ctx.moveTo(h.cx + r, h.cy - r); ctx.lineTo(h.cx - r, h.cy + r);
       ctx.stroke();
     });
+  }
 
-    // bend lines that differ: added (from comp, green solid) / removed (from base, red dashed)
+  if (_geomCats.bends) {
     const drawBend = (bn, off, color, dashed) => {
       if (!bn.a || !bn.b) return;
       ctx.strokeStyle = color; ctx.lineWidth = 2.5 / scale;
@@ -170,13 +188,13 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
       ctx.beginPath();
       ctx.moveTo(bn.a[0] - off.minX, bn.a[1] - off.minY);
       ctx.lineTo(bn.b[0] - off.minX, bn.b[1] - off.minY);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      ctx.stroke(); ctx.setLineDash([]);
     };
     d.bends.added.forEach(bn => drawBend(bn, compDxf.bbox, '#3fb950', false));
     d.bends.removed.forEach(bn => drawBend(bn, baseDxf.bbox, '#f85149', true));
+  }
 
-    // cutouts/notches that differ: box around each (centroid already in shared frame)
+  if (_geomCats.cutouts) {
     const cutBox = (cu, color) => {
       let mnx = Infinity, mny = Infinity, mxx = -Infinity, mxy = -Infinity;
       (cu.pts || []).forEach(p => { if (p[0] < mnx) mnx = p[0]; if (p[0] > mxx) mxx = p[0]; if (p[1] < mny) mny = p[1]; if (p[1] > mxy) mxy = p[1]; });
@@ -186,27 +204,38 @@ async function _renderGeomDiff(baseCode, compCode, containerEl) {
     };
     d.cutouts.added.forEach(cu => cutBox(cu, '#3fb950'));
     d.cutouts.removed.forEach(cu => cutBox(cu, '#f85149'));
-
-    // summary panel — all categories (dims/holes/bends/cutouts/thickness) via the shared builder
-    const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    const lines = window.KD_GEOMDIFF.geomDiffSummary(d).map(
-      l => `<div style="color:${l.color};">${esc(l.text)}</div>`
-    );
-
-    containerEl.innerHTML = `
-      <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:10px 12px; border-radius:6px; pointer-events:none; z-index:10; font-size:13px; line-height:1.6;">
-        <div style="color:#c9d1d9; font-weight:bold; margin-bottom:6px;">Geometry Diff</div>
-        ${lines.join('')}
-      </div>`;
-    containerEl.style.position = 'relative';
-    containerEl.style.display = 'flex';
-    containerEl.style.alignItems = 'center';
-    containerEl.style.justifyContent = 'center';
-    containerEl.style.background = '#0d1117';
-    containerEl.appendChild(canvas);
-  } catch (err) {
-    containerEl.innerHTML = `<div style="color:#f85149; padding:20px;">Error: ${err.message}</div>`;
   }
+
+  // per-category toggle chips + summary (filtered to the enabled categories)
+  const CATS = [['holes', 'Holes'], ['bends', 'Bends'], ['dims', 'Dims'], ['cutouts', 'Cutouts'], ['material', 'Material']];
+  const chips = CATS.map(([k, label]) => {
+    const on = _geomCats[k];
+    return `<button class="geomcat-chip" data-cat="${k}" title="Toggle ${label}" style="cursor:pointer;border:1px solid ${on ? '#2F81F7' : '#3a4757'};background:${on ? '#13315c' : 'transparent'};color:${on ? '#69A8FF' : '#6b7785'};border-radius:12px;padding:2px 10px;font-size:11px;margin:0 3px 3px 0;">${label}</button>`;
+  }).join('');
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const lines = window.KD_GEOMDIFF.geomDiffSummary(d)
+    .filter(l => _geomCats[l.cat])
+    .map(l => `<div style="color:${l.color};">${esc(l.text)}</div>`);
+
+  containerEl.innerHTML = `
+    <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.78); padding:10px 12px; border-radius:6px; z-index:10; font-size:13px; line-height:1.6; max-width:46%;">
+      <div style="color:#c9d1d9; font-weight:bold; margin-bottom:6px;">Geometry Diff</div>
+      <div style="margin-bottom:8px;">${chips}</div>
+      ${lines.join('') || '<div style="color:#6b7785;">No categories selected</div>'}
+    </div>`;
+  containerEl.style.position = 'relative';
+  containerEl.style.display = 'flex';
+  containerEl.style.alignItems = 'center';
+  containerEl.style.justifyContent = 'center';
+  containerEl.style.background = '#0d1117';
+  containerEl.appendChild(canvas);
+
+  containerEl.querySelectorAll('.geomcat-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      _geomCats[chip.dataset.cat] = !_geomCats[chip.dataset.cat];
+      _paintGeomDiff();
+    });
+  });
 }
 
 // Override Compare Similar Drawings Modal

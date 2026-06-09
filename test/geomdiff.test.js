@@ -68,4 +68,6 @@ assert.strictEqual(sum.length, 7, 'summary has 7 lines');
 assert.ok(sum[0].text.includes('W +50mm'), 'dims line shows W +50mm');
 assert.ok(sum[1].text.includes('1 holes added'), 'holes-added line');
 assert.ok(sum.some(l => /Thickness: same/.test(l.text)), 'thickness line present');
+assert.deepStrictEqual([...new Set(sum.map(l => l.cat))].sort(),
+  ['bends', 'cutouts', 'dims', 'holes', 'material'], 'lines tagged with the 5 categories');
 console.log('geomdiff summary OK');

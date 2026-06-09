@@ -94,17 +94,19 @@
       ? 'Thickness: unknown'
       : (m.sameTh ? ('Thickness: same (' + m.baseTh + 'mm)')
                   : ('Thickness: ' + m.baseTh + 'mm -> ' + m.compTh + 'mm'));
+    // cat tags (holes/bends/dims/cutouts/material) align with G1 CC_Diff's 5 categories
+    // and drive the per-category toggles in the Geometry Diff view.
     return [
-      { color: '#c9d1d9', text: 'Size: W ' + _fmt(d.dims.dW) + ' . H ' + _fmt(d.dims.dH) +
+      { cat: 'dims', color: '#c9d1d9', text: 'Size: W ' + _fmt(d.dims.dW) + ' . H ' + _fmt(d.dims.dH) +
         '  (' + d.dims.baseW + 'x' + d.dims.baseH + ' -> ' + d.dims.compW + 'x' + d.dims.compH + ')' },
-      { color: '#3fb950', text: d.holes.added.length + ' holes added' },
-      { color: '#f85149', text: d.holes.removed.length + ' holes removed' },
-      { color: '#F2A93B', text: d.holes.resized.length + ' holes resized (dia >0.1mm)' },
-      { color: '#c9d1d9', text: 'Bends: ' + d.bends.added.length + ' added . ' + d.bends.removed.length +
+      { cat: 'holes', color: '#3fb950', text: d.holes.added.length + ' holes added' },
+      { cat: 'holes', color: '#f85149', text: d.holes.removed.length + ' holes removed' },
+      { cat: 'holes', color: '#F2A93B', text: d.holes.resized.length + ' holes resized (dia >0.1mm)' },
+      { cat: 'bends', color: '#c9d1d9', text: 'Bends: ' + d.bends.added.length + ' added . ' + d.bends.removed.length +
         ' removed  (' + d.bends.baseN + ' -> ' + d.bends.compN + ')' },
-      { color: '#c9d1d9', text: 'Cutouts: ' + d.cutouts.added.length + ' added . ' + d.cutouts.removed.length +
+      { cat: 'cutouts', color: '#c9d1d9', text: 'Cutouts: ' + d.cutouts.added.length + ' added . ' + d.cutouts.removed.length +
         ' removed' + (d.outline.changed ? '  . outline size changed' : '') },
-      { color: (m.sameTh === false ? '#F2A93B' : '#8b949e'), text: matTxt }
+      { cat: 'material', color: (m.sameTh === false ? '#F2A93B' : '#8b949e'), text: matTxt }
     ];
   }
 
