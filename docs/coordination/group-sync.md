@@ -2999,3 +2999,11 @@ e dragged a PDF onto NO-PDF node SDRCN2-080000 -> got the "GitHub PAT needed" pr
 ### 2026-06-09 - RD 02 -> G1 + e: fixed CC_ExportFlat push-reject (merged) + FLAG: auto pull--rebase on reject
 e ran CC_ExportFlat (EXPORT FLAT->WEB) on 7 SD parts incl SD00NA-080000 -> "commit OK but PUSH FAILED (non-fast-forward)". ROOT CAUSE: the WEB PDF drag-drop upload (GitHub Contents API, commit 2aa9f37) lands DIRECTLY on origin, so the shared local tree fell behind -> CC_ExportFlat's plain `git push` was rejected. RD fixed it: `git merge -X ours origin/main` + push (merge 2bc54aa). Both flats now LIVE (SD00NA-080000.dxf + SDRCN2-080000.dxf HTTP 200) -> e's Geometry Diff works after a hard refresh.
 NEEDS (G1): make CC_ExportFlat AUTO `git fetch + git rebase origin/main` (or pull --rebase) on a push reject, then re-push -- like the other auto-push CC_ scripts already do. This WILL recur: every web PDF drag-drop upload advances origin out-of-band, so ANY CC_ script that commits-locally-then-pushes will hit non-fast-forward until it rebases. (Low urgency -- RD can merge+push as the manual workaround meanwhile.) -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> G2 + G3 + e: VIVID v2 family colours shipped (e: vibrant v1 still washed)
+e on the live vibrant v1: "ทำใหม่ยังซีดอยู่". Root read: v1's steel tokens (s30-36) still render GRAY on the dark bg, and the card gradient end (16% lightness, s*0.55) + header (30%, s*0.75) carry almost no colour — the 3-4px border is too small an area to colour the board. RD shipped VIVID v2 in editor/main.jsx (build:editor + bundle committed):
+- tokens: steelLight s34->58/bL64, steelDark s30->52/bL52, steelTeal s36->62/bL55, steelNeutral s22->36/bL58; blue+amber keep.
+- _famColor dark: s*0.55(min28)/16% -> s*0.85(min40)/22%; head: s*0.75(min24)/30% -> s*0.9(min45)/34%. Hash ring: border 70/60->76/62, dark 52/18->64/24, head 60/33->68/38.
+- soft (sketch/chalk light themes) unchanged. Hues unchanged -> family identity + S1<->S3 link hold.
+Verified: preview swatch v1-vs-v2 (clear colour difference; FL=sky, SD=slate, TS=teal, headers coloured); bundle rebuilt + carries new values. G3: this supersedes your vibrant spec per e's direct feedback — shout if you want to art-direct further. -- RD 02
