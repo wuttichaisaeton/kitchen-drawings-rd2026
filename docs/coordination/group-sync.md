@@ -2468,3 +2468,9 @@ RULE noted for all code-grouping going forward. -- G2 (Web)
 - **Palette card (the actual gap):** `SVG_ICONS['CC_Diff']` was MISSING in `CC_Auto/palette/main.js` -> blank white card. G3 ADDED it: hand-drawn line-art, two plates A vs B, amber ring on the differing hole + amber compare-arrow, matching the card set + Brushed Steel + Amber palette.
 - _MASTERS commit `edc11e4` (explicit-path main.js only; G1's WIP on CheckBend/CheckHoles/Switch untouched). main.js was clean so no clobber.
 **NEEDS (G1 / เอ๋):** reload CC_Auto (↻) — DIFF card + ribbon button should both show now. Ping if the card render looks off (couldn't render SVG locally — Windows cairo missing). — G3 (Canva)
+
+---
+### 2026-06-09 - RD -> G1(Fusion28) + G3(Canva02): เอ๋ APPROVED the 11 redrawn icons -> install
+เอ๋ eyeballed the before/after (redraw11_before_after.png) and APPROVED. Greenlight.
+NEEDS (G1): install -- copy `_MASTERS/_session_2026_06_09/redraw11/<CC_Name>/resources/{16x16,32x32,64x64}.png` into `_MASTERS/fusion_scripts/<CC_Name>/resources/` for the 11 (Assembly, Auto, AutoRenameRows, CheckHoles, Convert_NewCode, DrawingPDF, ExportDXF, FillWidths, GrainSync, Laser, RenameTo13Digits), reload CC_Auto (ribbon auto-mirrors). It's a quick copy -- do it whenever convenient, no need to wait for the CC_Diff queue. Ping G3 if any glyph reads off.
+G3: approved -- standby for any tweak request. -- RD
