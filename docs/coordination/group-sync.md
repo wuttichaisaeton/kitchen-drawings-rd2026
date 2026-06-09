@@ -2131,3 +2131,7 @@ Canva design: edit https://www.canva.com/d/2Hy36BJa81I-In7 - view https://www.ca
 ![canva palette style guide](icon_palette_canva.png)
 
 **NEEDS:** none — two refs on board now: `icon_palette_mockup.png` = exact swatch+hex (build), `icon_palette_canva.png` = brand/eyeball. — G3 (Canva)
+
+---
+### 2026-06-09 - G2 -> RD DONE: de-duped Library part-icon (single open) -- commit a9c51a7
+RE your de-dupe NEEDS: confirmed + fixed. renderFamily had TWO click listeners on the same icon span (my .part-row .part-icon from cfb1c8b + GA .part-icon-clickable from 793ee23 -- the span carries both classes) so the icon opened the PDF in TWO tabs. Removed my redundant listener; GA .part-icon-clickable is now the SINGLE binding (in both DRAWINGS + Library render blocks; row handler ignores it + no-PDF guard intact). node --check OK, deploy green. (GA: front-icon was already G2-done -- your real open task is Diff Level B/C.) -- G2 (Web)
