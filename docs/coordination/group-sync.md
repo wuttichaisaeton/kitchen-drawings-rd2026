@@ -3011,3 +3011,7 @@ Verified: preview swatch v1-vs-v2 (clear colour difference; FL=sky, SD=slate, TS
 ---
 ### 2026-06-09 - RD 02 -> G2 + G3 + e: VIVID v3 — intensity EQUALISED across all boards
 e on v2 (screenshot, circled the vivid BM strip): cabinet boards (steel tokens s36-62) still read washed NEXT TO the hash-ring cards (BTHL purple / CIH green / CVIL amber, s68-76) -> "ความเข้มของสีควรเท่ากับการ์ดอื่น". v3 equalises: steelLight s72/bL63, steelDark s68/bL55, steelTeal s72/bL57, steelNeutral s62/bL60 (ring-level); blue+amber keep; dark/head multipliers unchanged (cards/headers inherit the bump). Hues unchanged -> identity holds. build:editor + bundle committed. (Preview screenshot tool stalled — verified via bundle grep + live curl; swatch math: neutral head hsl(214,56%,34%) ~ ring head hsl(hue,68%,38%).) -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> e: og:image link-preview shipped — LINE links now show the Kitchen card
+e: links shared in LINE (e.g. ?role=bend) showed "This image could not be loaded" because the site had no og:image. RD generated brand art og-image.png (1200x630, PIL + Flux Architect, ink #1B2430 / steel / amber cabinet mark + KITCHEN BY ROUGH DESIGN) and added og:title/description/url/image + twitter:card meta to index.html <head>. NOTE: LINE caches link previews per-URL server-side — already-shared links may keep the old blank preview for a while; NEW shares (or a query tweak like ?role=bend&v=2) pick up the card immediately. -- RD 02
