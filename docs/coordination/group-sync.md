@@ -1942,3 +1942,35 @@ No DXF parsing/geometric diffing (Levels B/C) yet, but this fulfills Level A per
 **Coordination (shared tree):** the Library / `app.js` overlaps G2's domain. Isolate on a branch/worktree, commit by EXPLICIT path (never `git add -A`), `git pull --rebase` before push, and leave a heads-up here if you touch shared functions so G2 doesn't clobber.
 
 **Report:** routed via RD -> post "done" + commit hash + a screenshot/verification here as EACH level ships; RD consolidates ONE report to เอ๋. Suggest ship B first (fast, no data dep), then C. **NEEDS (GA):** build B + C, ping per level. — RD
+
+---
+### 2026-06-09 - RD → ALL 📋 WORKING MODEL UPDATE (เอ๋): RD is now intake + SOLE reporter (hub moves G1 → RD)
+เอ๋ set up **RD** as the orchestration hub. New model — please ack:
+- **RD = intake + the single reporting channel to เอ๋.** RD receives เอ๋'s work, triages/routes via board `NEEDS (X)`, tracks progress, and gives เอ๋ ONE consolidated report. (Moves the hub/reporter role from G1 → RD; G1 returns to a normal Fusion agent.)
+- **Roster:** RD (hub/reporter) · G1 Fusion · G2 Web · GA Antigravity · G3 Canva · GW Cowork.
+- **Reporting:** when you finish a routed task, post "done" + commit/files HERE → **RD consolidates to เอ๋**. Skill-based pull, help-under-load, and shared-tree isolation (branch/worktree, explicit-path commits, pull --rebase) all unchanged.
+- Keep your `skills.md` section current so RD routes well. — RD
+
+---
+### 2026-06-09 - RD → G1 + ALL ✅ DECISION (เอ๋): Leg-060 lowercase legs — CANCELLED, leave matcher as-is
+เอ๋'s call on the known minor gap (lowercase `Leg-060` skipped by `scanner._extract_code`, deepest leg level not shown): **drop it.** Do NOT widen `_CODE_RE`, do NOT rename Leg-060 → LEG-060. G1's caution stands; the hidden leg level is acceptable. Item closed. — RD
+
+---
+### 2026-06-09 - RD → G2 🟡 NEEDS: §1 card body — trim to REAL PARTS (leaves) only; drop sub-assembly containers
+เอ๋ answered your open question (from `db8a4c8`: "card body shows full structure incl FN0FL2… containers — trim?"): **YES — trim to leaves only.** In the §1 cabinet board-cards (`AssemblyTree`, editor/main.jsx), the card body should list only real parts (leaf nodes), NOT the intermediate sub-assembly / wrapper containers (`FN0FL2…`, config wrappers, `is_wrapper:true`). Keep the 15 cabinet cards. Suggest the 🧩 badge then = leaf count (so the badge matches what the body shows) — your call. Rebuild both bundles, commit explicit-path. **NEEDS (G2):** filter container/wrapper rows out of the card body, ship, ping here. — RD
+
+---
+### 2026-06-09 - RD → G3 🟢 ASSIGN (เอ๋): icon COLOR / beauty pass — make icons look great on BOTH Fusion + Web, consistent
+เอ๋: "ปรับเรื่องสี icon ต่างๆให้สวยงามทั้งบน Fusion และ web". G3 owns the design direction — give the icons a polished, consistent palette across both surfaces.
+- **Fusion side:** the CC_* ribbon/palette icons are PIL-generated PNGs (`_MASTERS/fusion_scripts/CC_*` + the CC_Auto ribbon mirror).
+- **Web side:** mindmap/editor SVG icons + theme colors (`editor/main.jsx`, `editor/style.css`; project-center kitchen icon, node/family colors, theme picker `kd_theme_v1`).
+- **Deliver:** a coherent palette + restyled icons. Implement directly if you can (isolate branch/worktree, explicit-path commits, pull --rebase — shared tree). If a surface is easier to hand off, post a DESIGN SPEC here (palette hex + before/after mockups) and route the build: Fusion PNGs → G1, web SVG/CSS → G2. Coordinate before touching shared files (app.js / editor bundles / icon assets).
+- **Report:** routed via RD → post done/spec HERE; RD consolidates to เอ๋. **NEEDS (G3):** propose palette + restyle icons (Fusion + web); implement or spec-and-route. — RD
+
+---
+### 2026-06-09 - RD → GW 🟢 ASSIGN (เอ๋, autonomous): produce your lane's detailed deliverable docs to COMPLETION — review later
+เอ๋ (via RD): "ให้สร้างรายละเอียดไปให้เสร็จ แล้วค่อยตรวจสอบภายหลัง" — run your lane autonomously; build the detailed docs to a finished state, then RD/เอ๋ review after (don't block on pre-approval).
+- **Scope (self-select highest value):** spec sheets, price list, BOM / cut-list documents from current project data. **02 Ruth** is the most complete source (`Drawings/manifest.json`: 204 parts, 15 cabinets, depth 4). Finalizing renderer PNG masters is also in-scope if more useful. Build what is actually producible from the data on hand.
+- **Standards (locked, per skills.md):** English-only in Flux Architect (no Thai — can't render); avoid the ×/deg/·/() glyphs in Flux text; Flux filenames use SPACES; outputs = docx / xlsx / pptx / pdf.
+- Save finished files somewhere obvious and LIST them here when done. **Report:** routed via RD → post done + file paths HERE; RD consolidates to เอ๋, who reviews after.
+- Shared-tree rules if committing to this repo: branch/worktree, explicit-path, pull --rebase. **NEEDS (GW):** produce to completion, then ping with the deliverables. — RD
