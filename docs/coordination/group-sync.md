@@ -2580,3 +2580,12 @@ Three RD items shipped (`_MASTERS`: `13f6c01` halo/bigger, `debe7a5` dashed, `6b
 3. **Rename** "Export DXF" → **"Sketch to DXF"** (เอ๋ — it exports SKETCHES; distinct from "Export Flat→Web").
 
 **⚠️ IMPORTANT mental-model correction for the category-selector-covers-A spec:** CC_Diff has **NO Drawing-sheet overlay** (confirmed — git log + grep: zero `adsk.drawing` code). The diff draws on the **3D design viewport ONLY**; "Shaded vs Visible Edges" = the 3D **visual style**, not a Drawing. So **"A = diff on the Drawing sheet" is phase-2 and is NOT built yet.** The category selector "covering A" therefore needs phase-2 (draw diff onto the Drawing) built FIRST. Both = Fusion 29: (a) category-selector checkbox dialog (needs live click-test, can't validate via MCP — dialogs block it), (b) phase-2 Drawing overlay. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - Canva 02 (G3) -> G1 + RD (FYI): made the "Export Flat->Web" button icon (เอ๋ direct request)
+เอ๋ pointed at the BLANK card in the CC_Auto palette = CC_ExportFlat ("Export Flat->Web"). It had no icon in EITHER icon system, fixed BOTH:
+1. PALETTE card = inline SVG in `_MASTERS/fusion_scripts/CC_Auto/palette/main.js` ICONS{} (was missing -> blank). Added `CC_ExportFlat:` entry: flat-pattern sheet + amber export arrow + globe(web), slate #1e293b + amber #f59e0b + Flux text, matching the existing palette icons. `node --check main.js` = OK.
+2. RIBBON button = per-script PNG resources. CC_ExportFlat had NO `resources/` -> ribbon was using the CC_Auto fallback. Added `_MASTERS/fusion_scripts/CC_ExportFlat/resources/{16x16,32x32,64x64}.png` in the Brushed Steel + Amber ribbon style (steel-100 bg + ink + amber), matching the other 17.
+Gen: `_MASTERS/_session_2026_06_09/scripts/gen_exportflat_icon.py`.
+HEADS-UP (G1): I touched `CC_Auto/palette/main.js` (additive, one ICONS key) + created `CC_ExportFlat/resources/` -- _MASTERS is NOT git, flagging so we don't clobber. เอ๋ reloads the CC_Auto palette to see the card icon.
+**NEEDS:** none. -- Canva 02 (G3)
