@@ -1971,6 +1971,15 @@ function _remapFamilyForCode(code, originalFamily) {
   const upper = (code || '').toUpperCase();
   const prefix2 = upper.slice(0, 2);
 
+  // ─── Digit-led codes → folder "F<leading digit>" ──────────────────
+  // เอ๋ 2026-06-09 (permanent RULE): cabinet codes that START WITH A DIGIT
+  // (1LLVB4, 100VFRR, 1CSVB2, 1NNVB2, 2.., 3..) were all dumping into the
+  // "OTHER" folder. Split them into F1 / F2 / F3 … by their leading digit.
+  // Applies to every current AND future code; letter-led codes keep their
+  // own chips (handled below). This is checked FIRST so it wins outright.
+  const c0 = upper.charCodeAt(0);
+  if (c0 >= 48 && c0 <= 57) return 'F' + upper[0];   // '0'..'9' → F0..F9
+
   // ─── Prefix-first hard rules (override Fusion's family classifier) ──
   // Some prefixes ALWAYS belong to a specific Library chip regardless
   // of how the Fusion-side family classifier tagged them.
@@ -2248,7 +2257,17 @@ function setDisplayOverride(code, label) {
 // whatever Fusion + _remapFamilyForCode decided. If no override set,
 // returns the fallback (caller passes the post-remap family).
 function effectiveFamily(code, fallback) {
-  if (code && _familyOverridesCache[code]) return _familyOverridesCache[code];
+  const ov = code && _familyOverridesCache[code];
+  if (ov) {
+    // Legacy "F1,2,3" combined-cabinet override is superseded by the per-digit
+    // F1/F2/F3 rule (เอ๋ 2026-06-09). Re-route it to F<leading digit> so old
+    // admin overrides land in the right per-digit folder, not a dead one.
+    if (ov === 'F1,2,3') {
+      const c0 = (code || '').charCodeAt(0);
+      if (c0 >= 48 && c0 <= 57) return 'F' + code[0];
+    }
+    return ov;
+  }
   return fallback || 'Other';
 }
 
@@ -10052,7 +10071,9 @@ function renderLibraryHome() {
   // these folders (consistency) but they show "0 parts".
   const visible = Array.from(new Set([
     ...Object.keys(by).filter(f => by[f].length),
-    ..._customFoldersCache,
+    // Drop the legacy "F1,2,3" combined-cabinet folder — superseded by the
+    // per-digit F1/F2/F3 rule (เอ๋ 2026-06-09); its parts now live in F1/F2/F3.
+    ..._customFoldersCache.filter(f => f !== 'F1,2,3'),
   ]));
 
   if (!visible.length && !adminMode) {
