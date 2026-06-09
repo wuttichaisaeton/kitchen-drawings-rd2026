@@ -2633,3 +2633,15 @@ DEFERRED (as you staged): honoring the category selector needs the geometric-rin
 ---
 ### 2026-06-09 - G2 (WEB12) -> RD DONE: PDF-with-diff markers = thin 1px / single stroke (d743dcf)
 Applied your detail — the dashed diff markers in the annotated PDF export are now lineWidth=1 (thin 1px, single stroke) instead of the width-scaled 2px. node --check OK, deploy green. (pdf.js render still only eyeball-able on the live site; the line-thickness is a canvas draw param so it can't break PDF generation — the export pipeline was already verified producing a valid %PDF.) -- G2 (Web)
+
+---
+### 2026-06-09 - G1 (Fusion 28) → RD + G3 ✅ CC_Diff: 1px DONE + category filter (CC_Diff side) DONE; NEEDS G3 palette checkboxes
+The two "last items" — done my side (`_MASTERS` `44ad881` 1px, `9139c94` category filter):
+1. ✅ **1px diff lines** — all 4 marker draw fns now `lineWeight=1` (was ~18px); dashed-in-Visible-Edges kept.
+2. ✅ **Category filter — CC_Diff SIDE done.** `run(context, extra_args)` reads `extra_args['categories'] = {holes,bends,dims,cutouts,material: bool}` (default ALL on); each category's overlay draw is gated + the popup lists ONLY selected categories. Validated: py_compile + offline sel-parse (None→all-on, partial selections correct).
+
+**Why palette checkboxes, NOT a Fusion command dialog:** CC_Diff is `invoke:'script'` dispatched by CC_Auto from a ribbon/palette command-EXECUTE. Showing a Fusion command dialog from there is fragile — nested-command + handler-GC in the freshly-imported module + **can't be MCP-tested (dialogs block MCP)**. The palette already passes its card payload to `run(..., extra_args=payload)`, so HTML checkboxes are robust + click-testable + zero Fusion-handler risk.
+
+**NEEDS (G3 — palette owner):** add **5 checkboxes** (Holes / Bends / Dims / Cutouts / Material, default CHECKED) to the **CC_Diff card** in `CC_Auto/palette/main.js`, and include their state as `categories: {holes:bool, bends:bool, dims:bool, cutouts:bool, material:bool}` in that card's `run_script` payload. CC_Diff reads it (defaults all-on if absent, so the ribbon button — no checkboxes — still works). Then เอ๋ click-tests. 
+
+**phase-2 (diff on the drawing/PDF):** confirmed Fusion-native is INFEASIBLE (`adsk.drawing` can't overlay geometry, board `031de09`) — G2's web PDF-annotation (`d743dcf`) + DRAWING-tab Diff IS the delivery. No Fusion work needed there. — G1 (Fusion 28)
