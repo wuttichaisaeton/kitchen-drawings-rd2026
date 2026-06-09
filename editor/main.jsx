@@ -889,15 +889,16 @@ function _famOf(code) {
 // (light) and steel-700 (dark) read apart while sharing the steel hue. soft/dark/
 // head reuse the same lightness ROLES (post-it / gradient / header) per theme.
 const _FAM_TOKENS = {
-  // VIVID v2 (เอ๋ 2026-06-09 "ทำใหม่ยังซีดอยู่" — vibrant v1's s30-36 steels still
-  // read GRAY on the dark bg): steels go decisively colourful. Hues kept distinct
-  // (sky / slate / teal) so family identity holds; blue + amber unchanged.
-  steelLight:   { h: 212, s: 58, bL: 64 }, // FL  ~ sky steel (vivid)
+  // VIVID v3 (เอ๋ 2026-06-09 "ความเข้มของสีควรเท่ากับการ์ดอื่น"): equalise — the
+  // steel tokens now carry the SAME intensity as the hash-ring families (BTHL
+  // purple / CIH green / CVIL amber read vivid while the 15 cabinet boards sat
+  // at s36-62 and looked washed next to them). Hues stay distinct.
+  steelLight:   { h: 212, s: 72, bL: 63 }, // FL  ~ sky (vivid, ring-level)
   blue:         { h: 216, s: 84, bL: 58 }, // DW  ~ blue-500  #2F81F7 (keep)
   amber:        { h: 37,  s: 84, bL: 56 }, // BK  ~ amber-500 #F2A93B (keep)
-  steelDark:    { h: 210, s: 52, bL: 52 }, // SD  ~ slate blue (vivid)
-  steelTeal:    { h: 198, s: 62, bL: 55 }, // TS  ~ teal (vivid)
-  steelNeutral: { h: 214, s: 36, bL: 58 }, // ?   digit-led cabinet wrappers
+  steelDark:    { h: 210, s: 68, bL: 55 }, // SD  ~ slate blue (vivid, ring-level)
+  steelTeal:    { h: 198, s: 72, bL: 57 }, // TS  ~ teal (vivid, ring-level)
+  steelNeutral: { h: 214, s: 62, bL: 60 }, // ?   digit-led cabinet wrappers (ring-level)
 };
 // Explicit PREFIX(2) -> token for ambiguous leading letters (BM/SH are NOT back/side,
 // so B-/S-led can't be a blanket rule). NOTE: match on the first TWO letters, because
