@@ -9930,6 +9930,77 @@ function renderRadialMindmap(roots) {
   });
 }
 
+// ─── Compare Similar Drawings Modal ───────────────────────────────
+function _openSimilarCompareModal(baseCode, fam) {
+  const parts = baseCode.split('-');
+  if (parts.length < 2) {
+    alert(`Cannot determine WWWHHH size suffix for code "${baseCode}".`);
+    return;
+  }
+  const suffix = parts.pop(); // The part after the last hyphen (e.g. '105003')
+
+  // Find candidates in the same family sharing the same suffix
+  const allInFam = partsByFamily()[fam] || [];
+  const candidates = allInFam.filter(p => p.code !== baseCode && p.code.endsWith('-' + suffix));
+
+  if (candidates.length === 0) {
+    alert(`No similar drawings found in family "${fam}" with suffix "-${suffix}".`);
+    return;
+  }
+
+  // Build the modal UI
+  const ov = document.createElement('div');
+  ov.className = 'bt-overlay';
+  ov.style.zIndex = '99999';
+  
+  const basePdf = pdfUrlForCode(baseCode) || '';
+  const initialComparePdf = pdfUrlForCode(candidates[0].code) || '';
+
+  const candidateOptions = candidates.map((c, i) => 
+    `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(c.code)}</option>`
+  ).join('');
+
+  ov.innerHTML = `
+    <div class="bt-modal" role="dialog" style="width: 95vw; height: 90vh; max-width: none; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2b3340; padding-bottom: 10px; margin-bottom: 10px;">
+        <h2 style="margin: 0; font-size: 18px; color: #58a6ff;">🔍 Compare Drawings</h2>
+        <button class="bt-close" aria-label="Close" style="background: transparent; border: none; font-size: 24px; color: #8b949e; cursor: pointer;">×</button>
+      </div>
+      <div style="display: flex; flex: 1; gap: 10px; overflow: hidden;">
+        <!-- Left Pane: Base Code -->
+        <div style="flex: 1; display: flex; flex-direction: column; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;">
+          <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; font-weight: bold; color: #c9d1d9;">
+            Base: ${escapeHtml(baseCode)}
+          </div>
+          <iframe src="${escapeHtml(basePdf)}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
+        </div>
+        <!-- Right Pane: Compare Code -->
+        <div style="flex: 1; display: flex; flex-direction: column; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;">
+          <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 10px; color: #c9d1d9;">
+            <strong style="white-space: nowrap;">Compare with:</strong>
+            <select id="compare-select" style="flex: 1; padding: 4px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px;">
+              ${candidateOptions}
+            </select>
+          </div>
+          <iframe id="compare-iframe" src="${escapeHtml(initialComparePdf)}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(ov);
+
+  ov.addEventListener('click', e => {
+    if (e.target === ov || e.target.closest('.bt-close')) ov.remove();
+  });
+
+  const selectEl = ov.querySelector('#compare-select');
+  const iframeEl = ov.querySelector('#compare-iframe');
+  selectEl.addEventListener('change', () => {
+    const selectedCode = selectEl.value;
+    iframeEl.src = (pdfUrlForCode(selectedCode) || '') + '#toolbar=0&navpanes=0';
+  });
+}
+
 // ─── Main tree-tab dispatcher ──────────────────────────────────────
 function renderTreeHome() {
   if (!manifest || (!manifest.auto_generated && !missingData)) {
@@ -10218,7 +10289,9 @@ function renderFamily(fam, highlight) {
         : '';
       adminBtns = `<div class="part-actions">
         <button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
-        <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>${dxfBtn}
+        <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>
+        <button class="part-compare-btn" data-compare-code="${escapeHtml(p.code)}" data-compare-fam="${escapeHtml(fam)}" aria-label="Compare" title="Compare with similar drawings">🔍</button>
+        ${dxfBtn}
       </div>`;
     }
     // 🔧 bend chip — only for parts that have a bend_sim record (เอ๋: show the
@@ -10297,7 +10370,7 @@ function renderFamily(fam, highlight) {
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons + the bend chip — each has its own handler.
-      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn')) return;
+      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn, .part-compare-btn')) return;
       // _openInNewTab handles the iPad PWA standalone case (same-window
       // navigation) vs browser (new tab). Plain window.open '_blank'
       // opens an invisible off-screen webview on standalone PWAs —
@@ -10371,6 +10444,15 @@ function renderFamily(fam, highlight) {
       });
     });
   }
+
+  ROOT.querySelectorAll('.part-compare-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.compareCode;
+      const fam = btn.dataset.compareFam;
+      _openSimilarCompareModal(code, fam);
+    });
+  });
 
   // Admin move-to-folder: prompt for target folder name. Typing a new name
   // creates the folder on the fly (renderLibraryHome groups by family, so
