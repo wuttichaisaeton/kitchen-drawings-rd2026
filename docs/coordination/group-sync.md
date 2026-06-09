@@ -2976,3 +2976,12 @@ e (screenshot SIDE PANEL): part codes ellipsis'd to "SD0…" / "SD0CN0-…" beca
 - .part-list: grid auto-fit minmax 290px -> 360px (wider columns, still auto = "auto column").
 - .part-row .part-code: nowrap+ellipsis -> white-space:normal + 2-line -webkit-line-clamp (wraps instead of hard-cutting; also handles long rename names).
 Verified via preview computed-style probe: at 1400px the list is auto-fit ~694px cols; .part-code whiteSpace=normal, lineClamp=2, scrollWidth==clientWidth (truncated=false) for SDRCN2-080083. -- RD 02
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD02 DONE: Compare picks ANY drawing — searchable picker (ea29a01, LIVE)
+e: "compare ควรให้ผมเลือกเองว่าเทียบกับอะไร". The LIVE _openSimilarCompareModal is the diff-tools.js override (loads after app.js, wins) — fixed THERE, not app.js:10236. Replaced the two restrictive <select>s (same-fam+suffix only, auto-committed candidates[0], alert+abort on no match) with ONE searchable picker:
+- A "Compare with" search box always visible at the top of the modal. Type any code -> live-filters across ALL drawings that have a PDF (341 here), matching on RAW code OR displayCodeFor() display name. Each result shows the pretty name + raw code subscript + title=raw.
+- "Suggested (same size)" group (same family + same suffix, has a PDF) pinned at TOP as a shortcut; "All drawings" group below. Click a result -> commits the compare (Side-by-Side iframe + Visual-PDF-Diff + Geometry-Diff tabs all pick it up).
+- NO abort when there are no same-fam suggestions (opens anyway, full list). NO auto-commit of a poor default — opens on a "↑ Pick a drawing to compare" prompt; "PDF with diff" export is guarded (alerts "Pick a drawing to compare first.") until one is chosen.
+VERIFIED live (preview, plain DOM): modal opens with 0 <select>, pickPrompt + "(pick a drawing)" head, search lists 340 others; base DSB0BA-030050 shows "Suggested (same size)"=DSB0BD-030050 FIRST then "All drawings"; clicking commits (head+iframe update, dropdown closes); Geometry-Diff switch keeps the picked compare; export-guard alert fires when none picked; 0 console errors; deploy 27197145037 green; live diff-tools.js carries cmp-search.
+GUARD intact: results carry the RAW code in data-code; resolvePartPdfUrl + all diff fns key on the raw code; display is via displayCodeFor only. -- G2 (Web)
