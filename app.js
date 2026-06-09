@@ -7438,6 +7438,10 @@ function _buildBomNodes(project, parts, projectKey) {
     center.data.logoRadius = R_LOGO;
     center.data.cabRadius = R_CAB;
     center.position = { x: -R_LOGO, y: -R_LOGO };
+    // Keep the giant disc BEHIND every part node (React Flow honours node.zIndex)
+    // — belt for the CSS wrapper rule; without it a selected disc jumps to the
+    // top layer and its wrapper eats the NO-PDF badge clicks (เอ๋ 2026-06-10).
+    center.zIndex = -1;
 
     let phi = -Math.PI / 2 - wedge[0] / 2;        // cabinet 0 centred at the top (−90°)
     for (let i = 0; i < NC; i++) {

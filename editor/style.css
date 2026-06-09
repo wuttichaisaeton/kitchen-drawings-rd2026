@@ -555,6 +555,16 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   box-shadow: none;
   pointer-events: none;
 }
+/* เอ๋ 2026-06-10 "วงกลมใหญ่อยู่ด้านหลัง กด NO PDF ไม่ได้": pointer-events:none on
+   the INNER div above isn't enough — React Flow's NODE WRAPPER still catches
+   clicks over the whole giant disc box (and jumps to the TOP layer when the disc
+   gets selected), eating the part-node badges underneath. Kill pointers + force
+   the wrapper BEHIND at the wrapper level; .kme-center-hub (pointer-events:auto)
+   re-enables itself and its clicks still bubble, so collapse/expand/drop work. */
+.react-flow__node:has(> .kme-center.kme-center-logo) {
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
 .kme-center-hub {
   pointer-events: auto;
   width: 176px;
