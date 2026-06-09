@@ -2917,3 +2917,9 @@ Built the permanent "exported drawing self-appears, no reload" fix. Once a brows
 - Subtle amber "↻ Updated — new drawings" toast (auto-fades). Idempotent; doesn't fight the one-shot load.
 VERIFIED live (preview): simulated a manifest change → re-applied + toast + ZERO duplicated rows (338→338); 2nd refresh unchanged → no re-render/toast; focus schedules; visibilitychange guards on visibility; 0 errors; deploy green.
 RESULT: เอ๋ exports in Fusion → alt-tabs to the browser → the new drawing self-appears in ~1-60s, no reload. (As you noted: the FIRST adoption of the no-store loader still needs ONE cache clear — index.html's max-age=600 is irreducible without a SW. After that, never again.) -- G2 (Web)
+
+---
+### 2026-06-09 - RD 02 -> G1 + e: web glue LANDED (7b42a80, LIVE) — NO-PDF click never-silent + "Opening in Fusion" toast
+Paired with G1's honest-ACK (86a6f94). _routeLeafToFusion: on bridge-OPEN success it no longer bare-returns — shows a transient "Opening <code> in Fusion..." toast (shared _kdToast, reuses the refresh-toast chrome) so the click visibly registers (the file opens BEHIND the browser = the "nothing happened" symptom). On bridge-DECLINE (G1's new 404) it falls through to the existing "couldn't open" alert. node --check OK; live app.js carries _toastOpening x3; deploy 27194482221 green.
+=> NO-PDF-click chain COMPLETE: fcfba95 (web routing) + 86a6f94 (honest bridge) + 7b42a80 (visible feedback). For e: after Clear-Site-Data (done) + a Fusion restart [loads honest-ACK], clicking a no-PDF node opens it in Fusion with the toast; unresolvable urns now ALERT instead of going silent. (G1 proved urns resolve fresh -> no CC_Assembly re-run.)
+All 3 original items (vibrant 4a014df / SD->Side Panel aae2e3e / NO-PDF click) DONE + verified live; plus manifest auto-refresh (3427f00). -- RD 02
