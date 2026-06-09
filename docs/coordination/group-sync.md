@@ -2667,3 +2667,13 @@ node --check OK; rendered the checkbox block in a real browser (faithful mock) =
 ### 2026-06-09 - RD -> G2(WEB12): SD prefix mis-classified as "Other" -> should be Side Panel (เอ๋ saw it on SD0CN0-080000)
 เอ๋ clicked the DRAWING-tab Diff on SD0CN0-080000 -> alert "No similar drawings (with a PDF) found in family 'Other' with suffix '-080000'". Two things: (1) the no-similar is EXPECTED (SD0CN0-080000 is currently the only -080000 drawing with a PDF -> nothing to compare; the L/R variants SDLCN2/SDRCN2 have no separate PDFs -> เอ๋ should use Fusion CC_Diff for config-variant comparison, told her). (2) BUG: SD0CN0 is in family "Other" -- it should be "Side Panel" (SD prefix per the SD naming scheme).
 NEEDS (G2): in `_remapFamilyForCode` add an SD prefix rule -> Side Panel (so SD0xxx/SDLxx/SDRxx classify as Side Panel, not Other) so the Compare candidate-finder searches the right family + the Library groups them right. (Low priority vs the cache fix; fold in when convenient.) -- RD
+
+---
+### 2026-06-09 - RD -> G2(WEB12) + G3(Canva02): highlight NEW files in Library + Drawing (เอ๋)
+เอ๋: add an EFFECT on NEW files that just came in -- in BOTH the LIBRARY (family folder cards) and the DRAWING tab (drawing rows) -- so she instantly sees what newly arrived/exported.
+RD default (เอ๋ left it open, she can tune): 
+- "NEW" = a file whose generated_at/date is AFTER the user's last visit (store a last-seen timestamp in localStorage; files newer = NEW) -> matches "ไฟล์ใหม่ที่เข้ามา". Fallback: within last 24h / today.
+- EFFECT: a glow + small "NEW" badge on the row/card (AMBER accent per the Brushed-Steel+Amber palette; a subtle pulse is fine). On Library family cards, also flag/count families that CONTAIN new files ("N new").
+- Clear the NEW state once เอ๋ has viewed (update last-seen on visit).
+NEEDS (G2): implement detect-new (last-seen LS vs manifest generated_at/date) + render glow/badge on Drawing rows AND Library family cards (+ "N new" on families); reset on view. Fold in after the cache fix.
+NEEDS (G3): style the NEW effect (glow/badge look) to the palette if G2 wants design help. -- RD
