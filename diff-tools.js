@@ -87,72 +87,45 @@ async function _runPdfVisualDiff(baseCode, compareCode, containerEl) {
   }
 }
 
-async function _runDxfHoleDiff(baseCode, compCode, containerEl) {
-  containerEl.innerHTML = '<div style="color:#8b949e; padding: 20px;">Fetching flat DXFs and computing holes...</div>';
+// Geometry Diff (Level C + categories) — uses the shared pure engine
+// KD_GEOMDIFF.geomDiff (diff-geom.js) so Fusion (CC_DiffHoles) and Web agree on what
+// differs. Renders the COMPARE flat (outline + holes) with green=added / red=removed(X)
+// / amber=resized rings + a text summary panel. Later tasks extend the summary with
+// dims/bends/cutouts/thickness. Replaces the old _runDxfHoleDiff (added/removed only).
+async function _renderGeomDiff(baseCode, compCode, containerEl) {
+  containerEl.innerHTML = '<div style="color:#8b949e; padding: 20px;">Fetching flat DXFs and computing geometry diff...</div>';
   try {
     if (!window.KD_DXFFLAT) throw new Error("KD_DXFFLAT parser not loaded");
-    
-    const baseResp = await fetch('Drawings/flat/' + encodeURIComponent(baseCode) + '.dxf');
-    const compResp = await fetch('Drawings/flat/' + encodeURIComponent(compCode) + '.dxf');
-    
-    if (!baseResp.ok || !compResp.ok) throw new Error("Could not load flat DXF for one or both parts.");
-    
-    const baseText = await baseResp.text();
-    const compText = await compResp.text();
-    
-    const baseDxf = window.KD_DXFFLAT.parseFlatDxf(baseText);
-    const compDxf = window.KD_DXFFLAT.parseFlatDxf(compText);
-    
+    if (!window.KD_GEOMDIFF) throw new Error("KD_GEOMDIFF engine not loaded");
+
+    const [baseResp, compResp] = await Promise.all([
+      fetch('Drawings/flat/' + encodeURIComponent(baseCode) + '.dxf'),
+      fetch('Drawings/flat/' + encodeURIComponent(compCode) + '.dxf')
+    ]);
+    if (!baseResp.ok || !compResp.ok) throw new Error("Could not load flat DXF for one or both parts (need Drawings/flat/<code>.dxf).");
+
+    const baseDxf = window.KD_DXFFLAT.parseFlatDxf(await baseResp.text());
+    const compDxf = window.KD_DXFFLAT.parseFlatDxf(await compResp.text());
     if (!baseDxf || !compDxf) throw new Error("Failed to parse DXF geometries.");
-    
-    const bHoles = (baseDxf.holes || []).filter(h => h.type === 'circle').map(h => ({
-      cx: h.c[0] - baseDxf.bbox.minX,
-      cy: h.c[1] - baseDxf.bbox.minY,
-      r: h.r
-    }));
-    
-    const cHoles = (compDxf.holes || []).filter(h => h.type === 'circle').map(h => ({
-      cx: h.c[0] - compDxf.bbox.minX,
-      cy: h.c[1] - compDxf.bbox.minY,
-      r: h.r
-    }));
-    
-    const T = 0.5;
-    const added = [];
-    const removed = [];
-    
-    bHoles.forEach(bh => {
-      const match = cHoles.find(ch => Math.hypot(ch.cx - bh.cx, ch.cy - bh.cy) <= T);
-      if (!match) removed.push(bh);
-    });
-    
-    cHoles.forEach(ch => {
-      const match = bHoles.find(bh => Math.hypot(bh.cx - ch.cx, bh.cy - ch.cy) <= T);
-      if (!match) added.push(ch);
-    });
-    
+
+    // recs (thickness) wired in the thickness task; null is fine for the hole/geometry diff.
+    const d = window.KD_GEOMDIFF.geomDiff(baseDxf, compDxf, null, null);
+
+    // draw the COMPARE flat in its own bbox-origin frame (the shared compare frame)
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-    
     const W = compDxf.bbox.w || (compDxf.bbox.maxX - compDxf.bbox.minX);
     const H = compDxf.bbox.h || (compDxf.bbox.maxY - compDxf.bbox.minY);
-    const margin = 20;
-    
+    const margin = 24;
     const cWidth = containerEl.clientWidth || 800;
     const cHeight = containerEl.clientHeight || 600;
-    canvas.width = cWidth;
-    canvas.height = cHeight;
-    canvas.style.maxWidth = '100%';
-    canvas.style.maxHeight = '100%';
-    
-    const scale = Math.min((cWidth - margin*2) / W, (cHeight - margin*2) / H);
-    
-    // Clear and translate
+    canvas.width = cWidth; canvas.height = cHeight;
+    canvas.style.maxWidth = '100%'; canvas.style.maxHeight = '100%';
+    const scale = Math.min((cWidth - margin * 2) / W, (cHeight - margin * 2) / H);
     ctx.clearRect(0, 0, cWidth, cHeight);
     ctx.translate(margin, cHeight - margin);
     ctx.scale(scale, -scale);
-    
-    // Draw outline
+
     ctx.lineWidth = 1 / scale;
     ctx.strokeStyle = '#c9d1d9';
     if (compDxf.outline && compDxf.outline.segments) {
@@ -163,60 +136,45 @@ async function _runDxfHoleDiff(baseCode, compCode, containerEl) {
         ctx.stroke();
       });
     }
-    
-    // Draw normal holes
-    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-    cHoles.forEach(h => {
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    (compDxf.holes || []).filter(h => h.type === 'circle').forEach(h => {
       ctx.beginPath();
-      ctx.arc(h.cx, h.cy, h.r, 0, Math.PI*2);
+      ctx.arc(h.c[0] - compDxf.bbox.minX, h.c[1] - compDxf.bbox.minY, h.r, 0, Math.PI * 2);
       ctx.stroke();
     });
-    
-    // Draw Added
-    ctx.strokeStyle = '#3fb950';
-    ctx.fillStyle = 'rgba(63, 185, 80, 0.2)';
-    ctx.lineWidth = 2 / scale;
-    added.forEach(h => {
+    const ring = (h, stroke, fill) => {
+      ctx.strokeStyle = stroke; ctx.fillStyle = fill; ctx.lineWidth = 2 / scale;
+      ctx.beginPath(); ctx.arc(h.cx, h.cy, (h.r || 3) + 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    };
+    d.holes.added.forEach(h => ring(h, '#3fb950', 'rgba(63,185,80,0.2)'));
+    d.holes.resized.forEach(h => ring(h, '#F2A93B', 'rgba(242,169,59,0.2)'));
+    d.holes.removed.forEach(h => {
+      ring(h, '#f85149', 'rgba(248,81,73,0.2)');
+      const r = (h.r || 3) + 5;
       ctx.beginPath();
-      ctx.arc(h.cx, h.cy, h.r + 5, 0, Math.PI*2);
-      ctx.fill();
+      ctx.moveTo(h.cx - r, h.cy - r); ctx.lineTo(h.cx + r, h.cy + r);
+      ctx.moveTo(h.cx + r, h.cy - r); ctx.lineTo(h.cx - r, h.cy + r);
       ctx.stroke();
     });
-    
-    // Draw Removed
-    ctx.strokeStyle = '#f85149';
-    ctx.fillStyle = 'rgba(248, 81, 73, 0.2)';
-    ctx.lineWidth = 2 / scale;
-    removed.forEach(h => {
-      ctx.beginPath();
-      ctx.arc(h.cx, h.cy, h.r + 5, 0, Math.PI*2);
-      ctx.fill();
-      ctx.stroke();
-      
-      ctx.beginPath();
-      ctx.moveTo(h.cx - h.r, h.cy - h.r);
-      ctx.lineTo(h.cx + h.r, h.cy + h.r);
-      ctx.moveTo(h.cx + h.r, h.cy - h.r);
-      ctx.lineTo(h.cx - h.r, h.cy + h.r);
-      ctx.stroke();
-    });
-    
+
+    const lines = [];
+    lines.push(`<div style="color:#3fb950;">&#9679; ${d.holes.added.length} holes added</div>`);
+    lines.push(`<div style="color:#f85149;">&#10006; ${d.holes.removed.length} holes removed</div>`);
+    lines.push(`<div style="color:#F2A93B;">&#8635; ${d.holes.resized.length} holes resized (dia &gt;0.1mm)</div>`);
+
     containerEl.innerHTML = `
-      <div style="position:absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 10px; border-radius: 6px; pointer-events: none; z-index: 10;">
-        <div style="color: #c9d1d9; font-weight: bold; margin-bottom: 8px;">DXF Geometric Hole-Diff</div>
-        <div style="color: #3fb950; margin-bottom: 4px;">&#9679; ${added.length} Holes Added</div>
-        <div style="color: #f85149;">&#10006; ${removed.length} Holes Removed</div>
-      </div>
-    `;
+      <div style="position:absolute; top:10px; left:10px; background:rgba(0,0,0,0.7); padding:10px 12px; border-radius:6px; pointer-events:none; z-index:10; font-size:13px; line-height:1.6;">
+        <div style="color:#c9d1d9; font-weight:bold; margin-bottom:6px;">Geometry Diff</div>
+        ${lines.join('')}
+      </div>`;
     containerEl.style.position = 'relative';
     containerEl.style.display = 'flex';
     containerEl.style.alignItems = 'center';
     containerEl.style.justifyContent = 'center';
     containerEl.style.background = '#0d1117';
     containerEl.appendChild(canvas);
-    
   } catch (err) {
-    containerEl.innerHTML = `<div style="color:#f85149; padding: 20px;">Error: ${err.message}</div>`;
+    containerEl.innerHTML = `<div style="color:#f85149; padding:20px;">Error: ${err.message}</div>`;
   }
 }
 
@@ -257,7 +215,7 @@ function _openSimilarCompareModal(baseCode, fam) {
           <div class="bt-modal-tabs" style="display: flex; gap: 5px; background: #0d1117; padding: 4px; border-radius: 6px; border: 1px solid #30363d;">
             <button id="cmp-btn-sidebyside" class="action-btn active" style="padding: 4px 10px; font-size: 12px; background: #238636; color: #fff;">Side-by-Side PDF</button>
             <button id="cmp-btn-pdfdiff" class="action-btn" style="padding: 4px 10px; font-size: 12px; background: transparent; color: #c9d1d9;">Visual PDF Diff</button>
-            <button id="cmp-btn-dxfdiff" class="action-btn" style="padding: 4px 10px; font-size: 12px; background: transparent; color: #c9d1d9;">DXF Hole Diff</button>
+            <button id="cmp-btn-dxfdiff" class="action-btn" style="padding: 4px 10px; font-size: 12px; background: transparent; color: #c9d1d9;">Geometry Diff</button>
           </div>
         </div>
         <button class="bt-close" aria-label="Close" style="background: transparent; border: none; font-size: 24px; color: #8b949e; cursor: pointer;">&times;</button>
@@ -335,7 +293,7 @@ function _openSimilarCompareModal(baseCode, fam) {
       } else if (currentMode === 'dxfdiff') {
         btnDxfDiff.style.background = '#238636';
         btnDxfDiff.style.color = '#fff';
-        _runDxfHoleDiff(baseCode, currentCompareCode, canvasContainer);
+        _renderGeomDiff(baseCode, currentCompareCode, canvasContainer);
       }
     }
   }
