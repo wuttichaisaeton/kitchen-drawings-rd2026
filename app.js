@@ -2062,6 +2062,10 @@ function _remapFamilyForCode(code, originalFamily) {
   //   all want their own Library chip instead of being lumped under DW-BK.
   if (prefix2 === 'BK') return 'BK';
 
+  // SD → "Side Panel" (เอ๋ 2026-06-09): SD0CN0 / SDLCN / SDRCN etc. are side
+  //   panels but Fusion often dumps them into "Other" — pin them to the chip.
+  if (prefix2 === 'SD') return 'Side Panel';
+
   // ─── Family-based rules ──────────────────────────────────────────
   if (originalFamily === 'Back-Down') return 'DW-BK';
   if (originalFamily === 'Floor')     return 'DW-FL';  // DSB0F-* etc.
