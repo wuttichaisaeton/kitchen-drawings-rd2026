@@ -1314,3 +1314,18 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
 }
 .kme-link-edit:hover { background: #F4B85A; }
 .kme-link-edit:active { transform: translateY(1px); }
+
+/* Rename ✏️ affordance on a mindmap node (admin) — RD 02 2026-06-09. Small + subtle;
+   double-tap to rename isn't discoverable on iPad, so this opens the same inline edit. */
+.kme-node-edit {
+  background: transparent;
+  border: none;
+  padding: 0 2px;
+  margin-left: 2px;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+  -webkit-tap-highlight-color: transparent;
+}
+.kme-node-edit:hover { opacity: 1; }

@@ -170,7 +170,7 @@ function MindmapNode({ id, data, selected }) {
           isVariantRoot, inChecklistMode, faded, ensureCollapsed, releaseNode, revealAll, nopdfDim } = data;
   const isBom = kind === 'bom';
   const linked = !!fusion_link;
-  const code = isBom ? label : null;
+  const code = isBom ? (data.code || label) : null;   // immutable code (label is now the display)
   const labelRef = useRef(null);
   // Guards against a single tap firing an action twice (e.g. onClick AND a
   // synthesized touch event both landing) — for the 🧩 toggle that would
@@ -477,6 +477,17 @@ function MindmapNode({ id, data, selected }) {
         >
           {label}
         </div>
+        {/* Visible rename affordance (RD 02 2026-06-09) — double-tap isn't obvious on
+            iPad, so admin gets a ✏️ that opens the same inline edit. Persists via
+            display_overrides (shows in Library too). */}
+        {admin && isBom && !editing && (
+          <button
+            className="kme-node-edit nodrag nopan"
+            title="Rename — edits the display name everywhere (mindmap + Library)"
+            onClick={(e) => { e.stopPropagation(); startEdit(e); }}
+            onPointerDown={(e) => e.stopPropagation()}
+          >✏️</button>
+        )}
         {isBom && qty != null && !isVariantRoot && !isWrapper && (
           <span className="kme-node-qty">x<span className="kme-node-qty-num">{qty}</span></span>
         )}
@@ -1016,7 +1027,8 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   // out (เอ๋ 2026-06-09) so the body is a FLAT parts list: no chevron, no depth
   // indent — just code + qty + 💬 + 📄 + done.
   const renderRow = ({ id, node }) => {
-    const code = node.data?.label || '';
+    const code = node.data?.code || node.data?.label || '';   // immutable code for logic
+    const display = node.data?.label || code;                 // display name (rename-aware)
     const qty = node.data?.qty;
     const done = isDone(code);
     const comments = api.getComments ? (api.getComments(code) || []) : [];
@@ -1028,7 +1040,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
         className={'kme-tree-row' + (done ? ' is-done' : '')}
         style={{ paddingLeft: '8px', borderLeft: '3px solid ' + fc.border }}
       >
-        <span className="kme-tree-label" title={code}>{code}</span>
+        <span className="kme-tree-label" title={code}>{display}</span>
         {qty != null && <span className="kme-tree-qty">×{qty}</span>}
         {comments.length > 0 && <span className="kme-tree-cmt" title={comments.length + ' comment(s)'}>💬{comments.length}</span>}
         {hasPdf && (
@@ -1053,7 +1065,8 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
       <div className="kme-tree-hint">{cards.length} cabinet boards · {doneCount}/{cards.length} assembled · tap a header to fold</div>
       <div className="kme-tree-board">
         {cards.map(card => {
-          const code = card.node.data?.label || '';
+          const code = card.node.data?.code || card.node.data?.label || '';   // logic
+          const display = card.node.data?.label || code;                      // display (rename-aware)
           const fc = _famColor(_famOf(code));
           const folded = foldedCards.has(card.id);
           const done = isDone(code);
@@ -1069,7 +1082,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
                 onClick={() => toggleCard(card.id)}
                 title="Tap to fold / unfold this board"
               >
-                <span className="kme-tree-col-name" title={code}><span className="kme-tree-chev">{folded ? '▸' : '▾'}</span> {code}</span>
+                <span className="kme-tree-col-name" title={code}><span className="kme-tree-chev">{folded ? '▸' : '▾'}</span> {display}</span>
                 <span className="kme-tree-col-count">{card.leafCount > 0 ? `🧩 ${card.leafCount}` : 'single'}</span>
                 <button
                   className={'kme-tree-done' + (done ? ' is-on' : '')}
@@ -1390,10 +1403,18 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, []);
 
   const onLabelChange = useCallback((id, label) => {
+    // local: show the new display name immediately
     setNodes((nds) => nds.map((n) => (
       n.id === id ? { ...n, data: { ...n.data, label } } : n
     )));
-  }, []);
+    // persist a CODED-node rename via the shared display_override system (Firebase) so it
+    // shows in the Library + survives reload + syncs across devices — identical to the
+    // Library rename. Keyed by the immutable CODE (data.code), not the React id. Custom
+    // (non-coded) nodes have no code → stay local-only as before. (RD 02 2026-06-09)
+    const node = nodes.find((n) => n.id === id);
+    const code = node?.data?.code;
+    if (code) (window.kdAPI || {}).setDisplayOverride?.(code, label);
+  }, [nodes]);
 
   // Assembly checklist mode is active when the tree carries variant-root
   // nodes (CC_Assembly emits them post-2026-05-28). In checklist mode:
@@ -1847,7 +1868,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     // drawn/stale/deleted → drawing .f2d, fallback to PDF.
     // window.kdAPI.routeLeaf encapsulates the rules.
     if (isBom && !hasChildren && !isWrapper) {
-      const code = data.label;
+      const code = data.code || data.label;
       const api = window.kdAPI || {};
       if (api.routeLeaf) {
         api.routeLeaf({ code, status: data.status, urn: data.urn, drawing_urn: data.drawing_urn, fusion_link: data.fusion_link });

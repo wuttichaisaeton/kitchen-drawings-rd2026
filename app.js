@@ -7331,7 +7331,11 @@ function _buildBomNodes(project, parts, projectKey) {
       type: 'mindmap',
       position: { x, y },
       data: {
-        label: node.code,
+        // label = DISPLAY name (admin display_override or the code); `code` keeps the
+        // immutable part code for all logic (routing/pdf/done/comments/rename key) so a
+        // mindmap rename and a Library rename share display_overrides. (RD 02 2026-06-09)
+        label: displayCodeFor(node.code),
+        code: node.code,
         kind: 'bom',
         qty: node.qty || 0,
         family: famKey,
@@ -7533,6 +7537,13 @@ function _exposeKdApi() {
     getDrawingLink,
     suggestDrawingTarget,
     pdfFileExists: _pdfFileExists,
+    // Shared display-rename: a mindmap node rename + a Library rename both write here.
+    displayLabelForCode: displayCodeFor,
+    setDisplayOverride: (code, label) => {
+      if (!isAdmin()) return;
+      setDisplayOverride(code, label);
+      try { render(); } catch {}
+    },
     setDrawingLink: (code, target) => {
       if (!isAdmin()) return;
       setDrawingLink(code, target);
@@ -8172,7 +8183,7 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     for (let i = 0; i < chain.length; i++) {
       breadcrumb.push({
         kind: i === chain.length - 1 ? 'current' : 'node',
-        label: chain[i].code,
+        label: displayCodeFor(chain[i].code),
         code: chain[i].code,
       });
     }
@@ -9799,7 +9810,7 @@ function _buildBreadcrumb(currentNode, currentFamily) {
     const node = chain[i];
     path.push({
       kind: i === chain.length - 1 ? 'current' : 'node',
-      label: node.code,
+      label: displayCodeFor(node.code),
       code: node.code,
     });
   }
