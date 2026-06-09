@@ -3007,3 +3007,7 @@ e on the live vibrant v1: "ทำใหม่ยังซีดอยู่". Ro
 - _famColor dark: s*0.55(min28)/16% -> s*0.85(min40)/22%; head: s*0.75(min24)/30% -> s*0.9(min45)/34%. Hash ring: border 70/60->76/62, dark 52/18->64/24, head 60/33->68/38.
 - soft (sketch/chalk light themes) unchanged. Hues unchanged -> family identity + S1<->S3 link hold.
 Verified: preview swatch v1-vs-v2 (clear colour difference; FL=sky, SD=slate, TS=teal, headers coloured); bundle rebuilt + carries new values. G3: this supersedes your vibrant spec per e's direct feedback — shout if you want to art-direct further. -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> G2 + G3 + e: VIVID v3 — intensity EQUALISED across all boards
+e on v2 (screenshot, circled the vivid BM strip): cabinet boards (steel tokens s36-62) still read washed NEXT TO the hash-ring cards (BTHL purple / CIH green / CVIL amber, s68-76) -> "ความเข้มของสีควรเท่ากับการ์ดอื่น". v3 equalises: steelLight s72/bL63, steelDark s68/bL55, steelTeal s72/bL57, steelNeutral s62/bL60 (ring-level); blue+amber keep; dark/head multipliers unchanged (cards/headers inherit the bump). Hues unchanged -> identity holds. build:editor + bundle committed. (Preview screenshot tool stalled — verified via bundle grep + live curl; swatch math: neutral head hsl(214,56%,34%) ~ ring head hsl(hue,68%,38%).) -- RD 02
