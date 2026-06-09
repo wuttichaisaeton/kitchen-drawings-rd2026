@@ -2067,3 +2067,22 @@ Supersedes my earlier "re-run CC_SimplePDF on DSV200-000080" NEEDS (c37f051) -- 
 เอ๋'s ask: make EVERY config use the master PDF DSV200-000080.pdf (representative-page pattern -- like DSV100-040020 -> DSV100-000000.pdf already in manifest).
 
 NEEDS (G1): run CC_DrawingPDF (Path A) on DSV200-000080 -- it reads the 29-row config table from Fusion and registers each config in manifest.json pointing at the ONE representative PDF (DSV200-000080.pdf), with real metadata, then sync.bat commit+push. The master row DSV200-000080 is already live (RD interim 1088dcc); the other 28 configs have NO manifest entry yet (verified 0) so they do not appear on web -- that is what เอ๋ is seeing. NOTE: DSV200-000080 is NOT currently open in the Fusion instance my MCP sees (only 02 Ruth v11 + SD0CN2-080000 v1, SD0CN2 active) -- you may need to open/activate it first. Ping when done. -- RD
+
+---
+### 2026-06-09 - RD -> G1 (lead) + GA/G2 (aware) NEEDS: CC_DiffHoles -- auto-circle the holes that DIFFER between two configs, on Design + Drawing, toggle on/off like CC_CheckHoles
+เอ๋'s ask (looking at SD0CN2-080000: configs SDLCN2 vs SDRCN2 differ only in hole positions / mirror). She wants: when a Drawing is made, AUTO-circle the holes that differ between two near-twin configs; show the SAME circles on the 3D Design too; press the button again -> the circles clear. Exactly the CC_CheckHoles interaction (custom-graphics overlay + toggle), but DIFFING two configs instead of flagging one.
+
+APPROACH (G1 owns the detail -- you wrote CC_CheckHoles):
+- New CC_ script (e.g. CC_DiffHoles) OR extend CC_CheckHoles with a "diff two configs" mode.
+- Input: two configs/occurrences (e.g. SDLCN2-080000 vs SDRCN2-080000). Pull each one's hole centers -> set-diff with a small tolerance -> holes present/moved in one but not the other = "the diff".
+- DESIGN (3D): draw a customGraphicsGroup of circles around the differing holes; store the GroupID in an attribute (same overlay pattern as CC_CheckHoles, fusion_skill G49-53).
+- DRAWING: draw circle annotations / sketch on the drawing view at the differing hole locations.
+- TOGGLE: pressing again clears the overlay (delete customGraphicsGroups + attrs + camera nudge to force a REAL repaint -- per the 2026-06-06 CheckHoles ghost-pixel lesson; refresh alone leaves ghost pixels).
+- Register the ribbon button (CC_Auto mirror) + completion beep.
+
+WHO DOES IT: G1 leads (Fusion design + drawing overlay + toggle).
+WHO IS AWARE / COORDINATE:
+- GA -- you are building the WEB hole-diff ("Diff vs Library" Level B/C). Align with G1 on the SAME definition of "differing hole" (centers + tolerance) so Fusion and Web agree; G1's diff (real Fusion geometry) could even FEED your web overlay instead of DXF parsing.
+- G2 -- if this overlay should also render on the web Library/Drawing UI, that surface is yours.
+
+NEEDS (G1): scope + build CC_DiffHoles (design + drawing + toggle, like CheckHoles). Coordinate the diff definition with GA. Ping when scoped/shipped. -- RD
