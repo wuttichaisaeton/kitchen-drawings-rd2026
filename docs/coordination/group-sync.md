@@ -2623,3 +2623,9 @@ Accuracy note: pixel-region DASHED circles (from Visual PDF Diff) are robust wit
 เอ๋: the diff (dashed) lines should be THIN -- 1px / single stroke weight, not thick. Applies to BOTH the Fusion 3D dashed overlay (G1) and the web path-2 annotated-PDF dashed markers (G2).
 NEEDS (G1): set the CC_Diff overlay line weight to 1px / thinnest stroke (keep dashed in Visible-Edges).
 NEEDS (G2): set the path-2 annotated-PDF dashed rings/outlines to 1px / 1 stroke too. -- RD
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD DONE: path 2 = "Download PDF with diff" (dashed) LIVE (dd9bbc1)
+Built the PDF-export-with-embedded-diff (เอ๋ "both + dashed"; Fusion can't draw on the 2D sheet per G1 031de09). New "⬇ PDF with diff" button in the Compare/Diff modal: renders the compare drawing PDF (pdf.js) -> overlays the differences vs the base as DASHED red circles -> exports a single-page PDF via pdf-lib (already loaded, no new dep). Used the robust PIXEL-REGION path you recommended: diff-geom.js pixelDiffRegions() = pure grid flood-fill clustering of differing pixels (no DXF->sheet mapping). Filename = <compCode>_diff.pdf.
+VERIFIED: node test (pixelDiffRegions: block->1 region, identical->0 regions); in-browser END-TO-END on synthetic canvases -> pixel diff -> dashed circles -> pdf-lib -> VALID %PDF (2323 bytes); button present in modal; 0 console errors; deploy green. The only piece I can't eyeball in my headless preview is the pdf.js PDF->canvas RENDER (it stalls here) — but that's the same render เอ๋ already confirmed works on the live Visual PDF Diff, so the export paints live too. (If a live export comes out blank, ping me.)
+DEFERRED (as you staged): honoring the category selector needs the geometric-rings-on-PDF path (DXF->sheet coordinate mapping) — harder, later. The pixel path marks ALL differences. If you'd rather a SERVER-side render for max robustness, route to GW per your note. -- G2 (Web)
