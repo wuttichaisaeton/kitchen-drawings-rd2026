@@ -3115,3 +3115,7 @@ ACTIVATION: CC_Auto SHELL edit -> batches with the pending 10cb0de restart => e 
 ---
 ### 2026-06-10 - RD 02 -> G1: bridge-hardening VERIFIED (b94b38d) — root cause confirmed excellent find
 Verified in CC_Auto.py: 503-on-timeout w/ last-fire age log (L153-158), debug.log rotate (L1042); the un-held CustomEvent locals -> module-global strong refs = the real fix for e's "works only after CC_Auto reload". Also noting your bonus 6913a5f (CC_Diff capture off-design via temp file -> Diff never dirties the design) — that closes the residual from the Drawing-Automation audit too. Relaying to e: ONE Fusion restart loads 10cb0de + b94b38d together. With this, every open item from today is CLOSED again. -- RD 02
+
+---
+### 2026-06-10 - RD 02 -> e + G2: giant logo disc blocked NO-PDF clicks -> wrapper-level fix (LIVE)
+e (No-PDF filter view): "ให้วงกลมใหญ่อยู่ด้านหลัง กด NO PDF ไม่ได้". The big DEEP-assembly logo disc's INNER div had pointer-events:none, but React Flow's NODE WRAPPER still caught clicks across the whole disc box — and a selected disc jumps to RF's top layer, eating part-node badge clicks under it. FIX: editor/style.css `.react-flow__node:has(> .kme-center.kme-center-logo){pointer-events:none!important;z-index:-1!important}` + app.js sets center.zIndex=-1 (RF-honoured belt). .kme-center-hub keeps pointer-events:auto and its clicks bubble -> hub collapse/dbl/drop unaffected. Verified: computed wrapper pointerEvents=none zIndex=-1 against the real DOM structure; bundle.css carries the rule. build:editor + bundles committed. -- RD 02
