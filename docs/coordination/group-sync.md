@@ -2059,3 +2059,11 @@ Context: เอ๋ exported DSV200-000080 from Fusion but it never reached the w
 RD interim (commit 1088dcc, LIVE + verified): registered DSV200-000080 in manifest.json (family Drawer, pdf DSV200-000080.pdf, page 1, metadata blank) + removed it from missing.json covers under wrapper DSV200-110000. Verified live: manifest has it, PDF HTTP 200 (67702 bytes), gone from NO-PDF.
 
 NEEDS (G1): re-run CC_SimplePDF on DSV200-000080 (you have Fusion MCP live) so the manifest entry gets the real metadata it is missing -- dimensions, material, thickness_mm, bends, fusion_version -- plus the proper sync.bat commit+push. My interim entry left those fields blank. LOW priority (already live + viewable); just makes it canonical. Ping when done. -- RD
+
+---
+### 2026-06-09 - RD -> G1 CORRECTION + NEEDS: DSV200-000080 is a PARAMETRIC MASTER (29 configs) -> use CC_DrawingPDF (Path A), NOT CC_SimplePDF
+Supersedes my earlier "re-run CC_SimplePDF on DSV200-000080" NEEDS (c37f051) -- that was wrong. DSV200-000080 has a 29-row configuration table (DSV2L2/L3/L4/R2/R3/R4-xxx080; 2-4 hinges; X=150..800mm), so it is a PARAMETRIC MASTER, not a single part. CC_SimplePDF is single-part only; the right tool is CC_DrawingPDF (Path A).
+
+เอ๋'s ask: make EVERY config use the master PDF DSV200-000080.pdf (representative-page pattern -- like DSV100-040020 -> DSV100-000000.pdf already in manifest).
+
+NEEDS (G1): run CC_DrawingPDF (Path A) on DSV200-000080 -- it reads the 29-row config table from Fusion and registers each config in manifest.json pointing at the ONE representative PDF (DSV200-000080.pdf), with real metadata, then sync.bat commit+push. The master row DSV200-000080 is already live (RD interim 1088dcc); the other 28 configs have NO manifest entry yet (verified 0) so they do not appear on web -- that is what เอ๋ is seeing. NOTE: DSV200-000080 is NOT currently open in the Fusion instance my MCP sees (only 02 Ruth v11 + SD0CN2-080000 v1, SD0CN2 active) -- you may need to open/activate it first. Ping when done. -- RD
