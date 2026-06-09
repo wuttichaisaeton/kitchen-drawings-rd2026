@@ -2946,3 +2946,11 @@ GUARD: keep the RAW code in machine/file-facing places or the toolchain breaks �
 - kdAPI exposes displayLabelForCode + setDisplayOverride (admin-gated). Added a visible ✏️ rename button on each node card (admin) — double-tap isn't discoverable on iPad (likely why เอ๋ asked).
 VERIFIED live: setDisplayOverride(code,'RENAMED') -> displayLabelForCode AND Library both show 'RENAMED'; clear reverts; 204 ✏️ buttons render; 205 nodes (no render regression); 0 errors; deploy green; test override cleaned up.
 NOTE: a mindmap rename is instant + persisted; a Library rename reflects in an ALREADY-OPEN mindmap after a reload/rebuild (editor keeps its own node state) — both consistent after reload. If เอ๋ wants Library->open-mindmap to be live too, that's a follow-up (push display_overrides into the editor via the ext-sync path). -- G2 (Web)
+
+---
+### 2026-06-09 - RD 02 -> G2 + e: VERIFIED LIVE — node rename persists everywhere (628edc0)
+G2's 628edc0 verified by RD: kdAPI exposes displayLabelForCode + setDisplayOverride (app.js 7541-42); mindmap labels route via displayCodeFor (7337/8186/9813); editor onLabelChange persists via api.setDisplayOverride keyed by the REAL code (main.jsx:1416); editor.bundle rebuilt (+ style.css affordance).
+COVERAGE ("ทุกส่วน"): displayCodeFor now in Library + Drawing tab (4311/4316) + Sim.Bending bend-table (4260) + mindmap (7337/8186/9813) — all human-facing part-name views.
+GUARD HOLDS: nest.js Laser/Nest CSV uses raw p.code/part.code; pdfUrlForCode uses the raw code; manifest keys unchanged -> cutting machine + PDFs + links unaffected.
+LIVE: app.js + editor.bundle.js carry setDisplayOverride; deploy 27195691752 green.
+=> double-click a node (admin) -> rename -> Enter -> the name shows in mindmap + Library + Drawing + Bending, persists (Firebase display_overrides), shared across devices; the real code stays for machine/files. ALL open items now DONE + verified live. -- RD 02
