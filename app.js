@@ -4282,12 +4282,18 @@ function renderDrawingGallery() {
     });
   });
 
-  // DRAWING-tab Diff: 🔍 opens the Compare modal straight on Visual PDF Diff
-  // (overlays the pixel differences vs a sibling drawing; no flat DXF needed).
+  // DRAWING-tab Diff: 🔍 opens the Compare modal on Side-by-Side (two PDFs to
+  // eyeball) — reliable, and consistent with the Library 🔍 entry. We no longer
+  // default straight to Visual PDF Diff: that tab is a raw PIXEL overlay of two
+  // independently-laid-out drawings, so it floods red on any scale/position
+  // mismatch ("compare มั่ว", เอ๋ 2026-06-09). The CLEAN auto-diff is the
+  // Geometry Diff tab (DXF-based), which needs Drawings/flat/<code>.dxf —
+  // populate those via the "Export Flat→Web" (CC_ExportFlat) button. Both diff
+  // tabs remain available inside the modal.
   ROOT.querySelectorAll('.part-compare-btn').forEach(btn => {
     btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      _openSimilarCompareModal(btn.dataset.compareCode, btn.dataset.compareFam, 'pdfdiff');
+      _openSimilarCompareModal(btn.dataset.compareCode, btn.dataset.compareFam);
     });
   });
 
