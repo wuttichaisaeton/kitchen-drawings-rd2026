@@ -4093,7 +4093,7 @@ function renderDrawingGallery() {
     // always render the date span (empty if none) so it right-aligns the chip
     const dateLbl = `<span class="dwg-date">${fmtDate(p.dateMs)}</span>`;
     return `<div class="part-row" data-url="${escapeHtml(p.url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
-        <span class="part-icon">${familyIcon(fam)}</span>
+        <span class="part-icon${p.url ? ' part-icon-clickable' : ' part-icon-nopdf'}" title="${p.url ? 'Open drawing PDF' : 'No PDF yet'}" ${p.url ? `data-url="${escapeHtml(p.url)}"` : ''}>${familyIcon(fam)}</span>
         <span class="part-code">${escapeHtml(display)}</span>
         ${dateLbl}
         ${bendChip}
@@ -4114,8 +4114,15 @@ function renderDrawingGallery() {
     </div>`;
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.part-bend-btn')) return;
+      if (ev.target.closest('.part-bend-btn, .part-icon-clickable')) return;
       _openInNewTab(el.dataset.url);
+    });
+  });
+
+  ROOT.querySelectorAll('.part-icon-clickable').forEach(icon => {
+    icon.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _openInNewTab(icon.dataset.url);
     });
   });
   ROOT.querySelectorAll('.part-bend-btn').forEach(btn => {
@@ -10302,7 +10309,7 @@ function renderFamily(fam, highlight) {
       : '';
     return `
       <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
-        <span class="part-icon${url ? '' : ' part-icon-nopdf'}" title="${url ? 'Open drawing PDF' : 'No PDF yet'}">${familyIcon(fam)}</span>
+        <span class="part-icon${url ? ' part-icon-clickable' : ' part-icon-nopdf'}" title="${url ? 'Open drawing PDF' : 'No PDF yet'}" ${url ? `data-url="${escapeHtml(url)}"` : ''}>${familyIcon(fam)}</span>
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${ver}
         ${bendChip}
@@ -10370,7 +10377,7 @@ function renderFamily(fam, highlight) {
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons + the bend chip — each has its own handler.
-      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn, .part-compare-btn')) return;
+      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn, .part-compare-btn, .part-icon-clickable')) return;
       if (!el.dataset.url) return;   // no PDF for this part → don't open a blank tab (เอ๋ 2026-06-09)
       // _openInNewTab handles the iPad PWA standalone case (same-window
       // navigation) vs browser (new tab). Plain window.open '_blank'
@@ -10465,6 +10472,13 @@ function renderFamily(fam, highlight) {
       const code = btn.dataset.compareCode;
       const fam = btn.dataset.compareFam;
       _openSimilarCompareModal(code, fam);
+    });
+  });
+
+  ROOT.querySelectorAll('.part-icon-clickable').forEach(icon => {
+    icon.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _openInNewTab(icon.dataset.url);
     });
   });
 
