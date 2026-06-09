@@ -2373,6 +2373,40 @@ function setFamilyOverride(code, family) {
 // _effectiveDrawingCode → pdfUrlForCode), so the node's NO-PDF flag flips to a PDF
 // node live. Empty/equal/cyclic target clears the link. RTDB-synced (admin only).
 function getDrawingLink(code) { return (code && _drawingLinksCache[code]) || ''; }
+// Suggest a sensible Edit-Link target: a part sharing this code's prefix whose drawing
+// PDF actually EXISTS (HEAD 200), so the example/default we show the admin is a real,
+// openable code. pdfUrlForCode alone is optimistic — it returns a URL for a manifest
+// key even when the file 404s — so we HEAD-check candidates. Async; '' if none. (เอ๋)
+async function suggestDrawingTarget(code) {
+  if (!code) return '';
+  const prefix = code.split('-')[0];
+  if (!prefix) return '';
+  const by = partsByFamily();
+  const seen = new Set();
+  const candidates = [];
+  for (const f of Object.keys(by)) {
+    for (const p of by[f]) {
+      if (p.code && p.code !== code && !seen.has(p.code) && p.code.split('-')[0] === prefix) {
+        seen.add(p.code);
+        const url = pdfUrlForCode(p.code);
+        if (url) candidates.push({ code: p.code, url });
+      }
+    }
+  }
+  for (const c of candidates.slice(0, 12)) {
+    if (await _pdfFileExists(c.url)) return c.code;
+  }
+  return candidates.length ? candidates[0].code : '';   // fallback: a URL even if unverified
+}
+// HEAD-check that a resolved drawing URL actually returns a file (200). Strips the
+// #page fragment + no-store so a stale CDN copy doesn't lie. Returns false on any error.
+async function _pdfFileExists(url) {
+  if (!url) return false;
+  try {
+    const r = await fetch(url.split('#')[0], { method: 'HEAD', cache: 'no-store' });
+    return r.ok;
+  } catch { return false; }
+}
 function setDrawingLink(code, target) {
   if (!code) return;
   const t = (target || '').trim().toUpperCase();
@@ -7419,6 +7453,8 @@ function _exposeKdApi() {
     // Admin "Edit Link": point a NO-PDF node at another code's drawing (live).
     isAdmin,
     getDrawingLink,
+    suggestDrawingTarget,
+    pdfFileExists: _pdfFileExists,
     setDrawingLink: (code, target) => {
       if (!isAdmin()) return;
       setDrawingLink(code, target);

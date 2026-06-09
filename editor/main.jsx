@@ -519,18 +519,37 @@ function MindmapNode({ id, data, selected }) {
           <button
             className="kme-link-edit nodrag nopan"
             title="Edit Link — point this NO-PDF part at another part's drawing PDF"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
               const cur = api.getDrawingLink ? api.getDrawingLink(code) : '';
+              // suggest a REAL same-family code whose drawing file actually exists (HEAD-verified)
+              const suggestion = api.suggestDrawingTarget ? await api.suggestDrawingTarget(code) : '';
               const target = window.prompt(
-                'Link "' + code + '" to which part\'s drawing PDF?\n(e.g. ' + (code.split('-')[0] || 'SD0CN0') + '-080000)\nLeave blank to clear the link.',
-                cur || ''
+                'Link "' + code + '" to which part\'s drawing PDF?\n' +
+                'That part MUST already have a drawing.' +
+                (suggestion ? '\n(e.g. ' + suggestion + ')' : '') +
+                '\nLeave blank to clear the link.',
+                cur || suggestion || ''
               );
               if (target === null) return;   // cancelled
-              if (api.setDrawingLink) api.setDrawingLink(code, target);
+              const t = (target || '').trim().toUpperCase();
+              if (t) {
+                // Validate the target's drawing FILE actually exists (a manifest key can
+                // resolve a URL that 404s) — else the node would silently stay NO-PDF
+                // (เอ๋ 2026-06-09). Tell the admin clearly + don't set the link.
+                const url = api.pdfUrlForCode && api.pdfUrlForCode(t);
+                let exists = false;
+                if (url) exists = api.pdfFileExists ? await api.pdfFileExists(url) : true;
+                if (!exists) {
+                  window.alert('"' + t + '" has no drawing PDF (the file is missing) — pick a part whose drawing actually opens.' +
+                    (suggestion ? '\nTry: ' + suggestion : '') + '\n(Link not changed.)');
+                  return;
+                }
+              }
+              if (api.setDrawingLink) api.setDrawingLink(code, t);
               bump();
-              const url = api.pdfUrlForCode && api.pdfUrlForCode(code);
-              if (url && api.openInNewTab) api.openInNewTab(url);
+              const url2 = api.pdfUrlForCode && api.pdfUrlForCode(code);
+              if (url2 && api.openInNewTab) api.openInNewTab(url2);
             }}
           >🔗 Link</button>
         )}
