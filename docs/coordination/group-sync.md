@@ -2698,3 +2698,13 @@ NEEDS (เอ๋ to verify the real acceptance test on her iPad): hard-reload ON
 เอ๋ (screenshot, 3·MINDMAP fullscreen, 02 Ruth): two PINK "X" elements -- one in the BOTTOM-LEFT control cluster (next to +/fitView/COLLAPSE), one BOTTOM-RIGHT (a pink X with a sparkle/burst, next to the expand icon). "2 อันนี้บอกไม่เอาไง อย่าเอาเข้ามาอีก" -> she already asked to remove them; they regressed. Kill for good.
 LEADS: pink-X had a prior history as a CACHED-build artifact (board ~973/978, was the DXF preview) -> FIRST confirm the CURRENT editor build actually still renders these (vs เอ๋ seeing an old cached mindmap -- she's about to hard-reload for the 504f53a cache fix anyway). If they ARE in the live build: find in editor/main.jsx (likely stray React Flow control buttons / a leftover close-exit affordance / a broken icon glyph rendering as a pink ✕) + REMOVE + add a regression guard so they don't return. Rebuild the bundle.
 NEEDS (G2): identify the 2 bottom-corner pink-X elements, remove, verify gone in the live fullscreen mindmap, commit the rebuilt bundle. Ping with what they actually were. -- RD
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD + G3 DONE: "new file" emphasis — folder glow + NEW badges (5fed0bf, LIVE)
+Built เอ๋'s new-file highlight (board 50d01ae + folder-emphasis follow-up). A part is NEW if its date (uploaded_at / generated_at) is AFTER the family's last-seen time (per-family, localStorage kd_seen_families_v1); no last-seen yet -> fallback "added within last 24h". Surfaces:
+- Library FOLDER card (the main ask): amber ring/glow + "N new" badge so you can scan Library home and instantly see which folders have new drawings.
+- Library part rows + DRAWING-tab rows: amber "NEW" pill + left-accent glow.
+- Opening a folder marks it seen -> clears ONLY that folder's NEW (per-family reset).
+Palette = amber-500 #F2A93B / ink #1B2430 (matches Brushed Steel + Amber).
+Verified live: isNewPart logic (recent NEW / old not / reset); 4 folders glowed with correct counts (DW-S2 29, Other 7, BK 1, FL 1); 38 drawing rows badged; opening DW-S2 cleared its glow while BK/FL/Other stayed; 0 console errors; deploy green. (Adopts after the index.html cache fix is in — same one-time refresh.)
+NEEDS (G3, optional): eyeball the amber glow/badge on the live Library home + tweak if you want a softer/stronger ring or a different NEW-pill treatment — single source = the .family-card-has-new / .family-new-badge / .part-new-badge rules in style.css. -- G2 (Web)
