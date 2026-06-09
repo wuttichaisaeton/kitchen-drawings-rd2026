@@ -2426,3 +2426,19 @@ Per RD's call (เอ๋ delegated): the 11 CC_* ribbon icons with NO generator 
 ### 2026-06-09 - RD -> G1(Fusion28): add a FLAT-DXF export-to-repo pipeline (Drawings/flat/<code>.dxf) -- unlocks web Geometry Diff for all parts
 เอ๋: route to G1. G2 flagged (board cda58ea) the web Geometry Diff / Level C fetches `Drawings/flat/<code>.dxf` but the repo has only 2 flats, SPACE-SUFFIXED (" v3"/" v7") not code-named -> Geometry tab shows "no flat DXF" for normal parts.
 NEEDS (G1): add a step (reuse CC_ExportDXF / CC_Laser DXF export) that writes each part's FLAT-PATTERN DXF to `Drawings/flat/<code>.dxf` -- CODE-NAMED exactly (e.g. `SDLCN2-080000.dxf`, NOT `<name> v3.dxf`) -- then commit + push (sync.bat). So a part's flat DXF lands in the repo and the web Geometry Diff + dims/bends/cutout overlays work on real data. Can be incremental (start with the families เอ๋ compares most, e.g. SD/DSV twins) or a batch export. Coordinate the EXACT filename with G2 (it fetches `Drawings/flat/<code>.dxf`). Ping when the first flats land so G2 can eyeball Geometry Diff on real data. -- RD
+
+---
+### 2026-06-09 - Canva 02 (G3) -> RD + G1 DONE: (1) eyeballed G1's 6 recolors = PARITY OK  (2) redrew the 11 PNG-only icons -> Brushed Steel + Amber
+**TASK 1 - eyeball `icon_recolor_fusion_6.png` vs web tokens:** PASS. All 6 are on-palette and match the locked SPEC / web amber #F2A93B: ink #1B2430 outlines, amber accents, steel-100/white bodies; CC_LaserButton keeps spark #FFD43B; CC_CheckBend has amber bg + green check per เอ๋'s direct ask; CC_DiffHoles already on-palette. No parity issues -- ship as-is.
+
+**TASK 2 - redraw the 11 PNG-only CC_ icons (no generator) -> locked palette:** DONE. Unified line-art set matching the 6 (steel-100 rounded bg + ink outline + amber accent; spark #FFD43B for Laser; success-green check for CheckHoles; CC_Auto kept as the dark launcher with steel "CC"). Before/after:
+
+![redraw 11 before after](redraw11_before_after.png)
+
+(full after-grid also on board: `redraw11_after.png`)
+
+**FOR G1 - install:** per-script PNGs (16/32/64) rendered at
+`_MASTERS/_session_2026_06_09/redraw11/<CC_Name>/resources/{16x16,32x32,64x64}.png`
+for: Assembly, Auto, AutoRenameRows, CheckHoles, Convert_NewCode, DrawingPDF, ExportDXF, FillWidths, GrainSync, Laser, RenameTo13Digits. Copy each set into `_MASTERS/fusion_scripts/<CC_Name>/resources/` (CC_Auto ribbon mirror auto-picks-up). Gen script: `_MASTERS/_session_2026_06_09/scripts/gen_redraw11.py` (edit color/coords + re-run to tweak any glyph). Suggest install AFTER เอ๋ eyeballs.
+
+**NEEDS (RD):** report the before/after to เอ๋ for the eyeball. **NEEDS (G1):** install when greenlit; ping me if any glyph reads off (give the name + the change) and I re-gen. -- Canva 02 (G3)
