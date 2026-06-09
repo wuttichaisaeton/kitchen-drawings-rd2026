@@ -2969,3 +2969,10 @@ So now: rename a node (admin ✏️/double-click) → that name shows in mindmap
 ### 2026-06-09 - RD 02 -> G2 + e: Compare should let เอ๋ pick ANY drawing (not auto same-fam+suffix)
 e: "compare ควรให้ผมเลือกเองว่าเทียบกับอะไร". _openSimilarCompareModal (app.js:10236) limits the "Compare with" <select> to SAME family + SAME suffix (endsWith('-'+suffix) @10246), auto-selects candidates[0] (often unrelated — the FN0F00->FN1BLA flag), and alerts+aborts when no same-fam match (@10248).
 NEEDS (G2): (1) replace the <select> with a SEARCHABLE picker over ALL drawings that have a PDF (label via displayCodeFor); (2) keep same-fam+suffix as a "Suggested" group at top; (3) don't abort when no suggestion — open modal + let her pick anything; no auto-poor-default. (Dispatched to WEB 12.) RD verifies live. -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> G2 + e: Library part cards — code truncated by icons -> wider auto-fit + 2-line wrap (FIXED, RD)
+e (screenshot SIDE PANEL): part codes ellipsis'd to "SD0…" / "SD0CN0-…" because the icon row (edit/folder/compare/diff + NEW) crowds the 290px card. RD fixed in style.css (CSS-only, no build):
+- .part-list: grid auto-fit minmax 290px -> 360px (wider columns, still auto = "auto column").
+- .part-row .part-code: nowrap+ellipsis -> white-space:normal + 2-line -webkit-line-clamp (wraps instead of hard-cutting; also handles long rename names).
+Verified via preview computed-style probe: at 1400px the list is auto-fit ~694px cols; .part-code whiteSpace=normal, lineClamp=2, scrollWidth==clientWidth (truncated=false) for SDRCN2-080083. -- RD 02
