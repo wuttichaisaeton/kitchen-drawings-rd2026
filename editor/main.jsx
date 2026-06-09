@@ -878,12 +878,14 @@ function _famOf(code) {
 // (light) and steel-700 (dark) read apart while sharing the steel hue. soft/dark/
 // head reuse the same lightness ROLES (post-it / gradient / header) per theme.
 const _FAM_TOKENS = {
-  steelLight:   { h: 212, s: 18, bL: 58 }, // FL  ~ steel-400 #8B98A8
-  blue:         { h: 216, s: 84, bL: 58 }, // DW  ~ blue-500  #2F81F7
-  amber:        { h: 37,  s: 84, bL: 56 }, // BK  ~ amber-500 #F2A93B
-  steelDark:    { h: 210, s: 17, bL: 45 }, // SD  ~ steel-700 #3A4757
-  steelTeal:    { h: 198, s: 17, bL: 46 }, // TS  ~ steel-700 (teal lean)
-  steelNeutral: { h: 214, s: 12, bL: 50 }, // ?   digit-led cabinet wrappers -> neutral steel
+  // G3 "vibrant" SPEC (RD verify 2026-06-09): steels bumped sat+lightness for punchier
+  // family colours; blue + amber kept (already saturated).
+  steelLight:   { h: 212, s: 34, bL: 63 }, // FL  ~ steel-400 (vibrant)
+  blue:         { h: 216, s: 84, bL: 58 }, // DW  ~ blue-500  #2F81F7 (keep)
+  amber:        { h: 37,  s: 84, bL: 56 }, // BK  ~ amber-500 #F2A93B (keep)
+  steelDark:    { h: 210, s: 30, bL: 50 }, // SD  ~ steel-700 (vibrant)
+  steelTeal:    { h: 198, s: 36, bL: 53 }, // TS  ~ steel-700 teal (vibrant)
+  steelNeutral: { h: 214, s: 22, bL: 55 }, // ?   digit-led cabinet wrappers (vibrant neutral)
 };
 // Explicit PREFIX(2) -> token for ambiguous leading letters (BM/SH are NOT back/side,
 // so B-/S-led can't be a blanket rule). NOTE: match on the first TWO letters, because
@@ -927,10 +929,10 @@ function _famColor(fam) {
   }
   const hue = _famHue(fam);
   return {
-    border: `hsl(${hue}, 45%, 55%)`,   // capsule/node border + edge (muted)
-    soft:   `hsl(${hue}, 50%, 84%)`,   // sketch/chalk post-it fill (light)
-    dark:   `hsl(${hue}, 38%, 16%)`,   // default-theme gradient tint endpoint
-    head:   `hsl(${hue}, 45%, 30%)`,   // column header bg
+    border: `hsl(${hue}, 70%, 60%)`,   // capsule/node border + edge (G3 vibrant)
+    soft:   `hsl(${hue}, 66%, 85%)`,   // sketch/chalk post-it fill (light)
+    dark:   `hsl(${hue}, 52%, 18%)`,   // default-theme gradient tint endpoint
+    head:   `hsl(${hue}, 60%, 33%)`,   // column header bg
   };
 }
 
