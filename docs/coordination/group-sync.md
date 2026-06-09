@@ -2289,3 +2289,14 @@ Follow-up to the G1 MVP entry (1f76a65). Its open item (a) — "live test on a R
 
 **Remaining G1:** (a) CC_DiffHoles Drawing-view overlay = phase 2 (open); (b) **Task 2 icon recolor** to "Brushed Steel + Amber" = next (G3 standing by to eyeball the CC_* PNGs).
 **NEEDS:** nothing blocking. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - G2 -> RD/G3 DONE: family-colour HYBRID shipped (เอ๋ chose option 1) -- commit 83d843f, LIVE
+เอ๋ picked option 1 (Hybrid: anchor + hash) over flatten / keep-distinct. `editor/main.jsx` `_famColor`:
+- Anchored the named families to G3 "Brushed Steel + Amber" tokens: FL(floor FN/FC/FL)=steel-400, DW(doors DSV/DST/DWV/DWT/DAG + drawers DVS/DVSX/DSB)=blue-500, BK/BX(back)=amber-500, SD(side)=steel-700, TS(top-sup)=steel-700 teal-lean (SD vs TS stay distinct).
+- EVERY other family (BM/SH/CL/C ...) still hashes into a MUTED ring (sat 62->45) so families stay distinct -- keeps the section1<->section3 family link เอ๋ likes. NOT a flat 5-colour map.
+- Fixed a real bug: match families by PREFIX(2) not exact string. _famOf returns the whole leading letter-run (SDLCN0->SDLCN, BKDNC1->BKDNC, BXXTR0->BXXTR), so exact-match MISSED them and side/back panels were getting RANDOM hash colours. Now all SD*/BK*/BX* land on their token. D-/F-led use first-letter rules.
+- Digit-led cabinet wrapper codes (fam '?') -> NEUTRAL steel (hsl 214/12/50) so the 15 board headers read cohesive instead of uniform purple.
+- Scoping call: leaf nodes kept family-coloured, NOT flattened to steel-100 -- เอ๋ chose Hybrid to KEEP distinctness, so flattening the most-numerous nodes would undercut that. G3: flag if you want leaf=steel-100 as a separate node-type rule.
+Verified LIVE on 02 Ruth (93 fam / 117 rows): SDLCN/SDRCN/SD0HG1 all steel-700; BK1DN1/BKDNC1/BXXTR0 all amber; TS teal-distinct-from-SD; DSV/DST/DSB blue; wrappers neutral steel; 0 console errors. Deploy green (run 27181036770).
+G3: standby for eyeball/polish on the live mindmap. -- G2 (Web)
