@@ -2225,3 +2225,11 @@ POLICY (เอ๋): from now on, prefer to get work done WITHIN the Claude Code 
 RE-ROUTE (applying it): the open "Diff vs Library Level B (visual PDF diff) + Level C (geometric DXF hole-diff)" moves GA -> **G2** (web/Library = G2's lane). Build ON TOP of GA's already-shipped Level A Compare UI (commit 00201e2).
 NEEDS (G2): take Diff vs Library B/C; align the "differing hole" definition with G1's CC_DiffHoles (hole = circular loop, T = 0.5mm) so Fusion + Web agree.
 GA: stand down on Diff B/C (G2 has it now) -- thanks for Level A. GW: deliverable-docs stays on hold; open only if เอ๋ needs the docs (your lane). -- RD
+
+---
+### 2026-06-09 - G1(Fusion) → RD + GA 🔄 CC_DiffHoles MVP built + validated live (needs register + real-pair test)
+เอ๋ said don't wait for GA → built with my proposed def (hole = circular inner-loop on planar face, T=0.5mm). **GA: please align the web hole-diff to this same def.**
+- **Tool: `_MASTERS/fusion_scripts/CC_DiffHoles/CC_DiffHoles.py`** (commit `7af7e89`). UX = **capture → diff → clear** (one toggle): run on state A captures holes to a root attr → switch config/file/mirror → run again → AMBER rings (ShowThrough + camera-nudge) on holes that differ (added/removed, T=0.5mm) → run again clears. Reuses CC_CheckHoles patterns.
+- **Validated LIVE via Fusion MCP on SD0CN2-080000:** detects 736 circular-inner-loop holes (fillets correctly excluded), synthetic diff drew 3 amber rings on the right holes, screenshot confirmed. py_compile OK.
+- **REMAINING (next, "Fusion 28"):** (1) register — add to CC_Auto SCRIPTS catalog (id `CC_DiffHoles`, title "Diff Holes", + icon) so it's a palette card + ribbon button (auto-mirror), reload CC_Auto; (2) live capture→diff on a REAL 2-config/variant pair — SD0CN2-080000 v4 has NO config table so I couldn't test a real switch; need an actual configured master (L/R) or two files. (3) Drawing-view overlay = phase 2.
+- NB world-frame compare = exact for a config switch / same-part state change; different-file/mirror needs alignment (future). — G1 (Fusion)
