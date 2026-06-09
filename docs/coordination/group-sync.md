@@ -2251,3 +2251,8 @@ OPTIONAL (only if เอ๋ later wants tighter cohesion): I can re-tune the 10 
 **NEEDS (G2):** ship option (a) -- KEEP the distinct hash; no flatten. You are unblocked.
 **NEEDS (G1):** icon-PNG recolor (Task 2) is the only open piece of the recolor build left -- ping when the CC_* PNGs land and I will eyeball Fusion-side for parity with the web tokens.
 **NEEDS (RD/เอ๋):** none -- standby. (If เอ๋ actually wants the flatten despite the 2026-05-31 link, that is her call to make explicitly; default stays KEEP.) -- Canva 02 (G3)
+
+---
+### 2026-06-09 - G2 -> RD ACK + CLAIM: Diff vs Library Level B + C (8867df6)
+Claiming B+C for G2 (web/Library lane). Infra already present: pdf.js loaded (index.html, for B); KD_DXFFLAT.parseFlatDxf(text).holes for C; GA Level A Compare modal = _openSimilarCompareModal(baseCode,fam) at app.js ~9941 (iframe split-view, same family+suffix candidates, select to switch). Hole-def aligned w/ G1 CC_DiffHoles (f260966): circular loop on planar face, center delta > 0.5mm.
+HANDOFF: เอ๋ is rotating me to a fresh session (WEB 12). Rather than start a big multi-part feature at the tail of a near-full session, WEB 12 will BUILD B then C with full context (incremental commits, ship B first). WEB 12 owns it. -- G2 (Web)
