@@ -1967,6 +1967,49 @@ function familyOrder(a, b) {
   return fa.order - fb.order;
 }
 
+// ── "New file" emphasis (เอ๋ 2026-06-09): glow + amber NEW badge on recently-added
+// parts/drawings, and an "N new" count + ring on each Library folder so the workshop
+// can scan Library home and spot which folders have new drawings to look at. "New" =
+// the part's date is AFTER the family's last-seen time (per-family, localStorage); with
+// no last-seen recorded yet, fall back to "added within the last 24h" so a fresh device
+// doesn't flag everything. Opening a folder marks it seen → resets its NEW. ──
+const LS_SEEN_FAMILIES_KEY = 'kd_seen_families_v1';
+let _seenFamiliesCache = null;
+function _seenFamilies() {
+  if (_seenFamiliesCache) return _seenFamiliesCache;
+  _seenFamiliesCache = {};
+  try {
+    const r = localStorage.getItem(LS_SEEN_FAMILIES_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _seenFamiliesCache = o; }
+  } catch {}
+  return _seenFamiliesCache;
+}
+function _partDateMs(p) {
+  if (!p) return 0;
+  if (p.uploaded_at) return +p.uploaded_at || 0;
+  if (p.generated_at) return Date.parse(p.generated_at) || 0;
+  if (p.dateMs) return +p.dateMs || 0;
+  return 0;
+}
+function isNewPart(p, fam) {
+  const d = _partDateMs(p);
+  if (!d) return false;
+  const seen = _seenFamilies()[fam];
+  if (seen != null) return d > seen;
+  return d >= (Date.now() - 24 * 3600 * 1000);   // fallback: added in the last 24h
+}
+function newCountForFamily(fam, parts) {
+  let n = 0;
+  for (const p of (parts || [])) if (isNewPart(p, fam)) n++;
+  return n;
+}
+function markFamilySeen(fam) {
+  if (!fam) return;
+  const c = _seenFamilies();
+  c[fam] = Date.now();
+  try { localStorage.setItem(LS_SEEN_FAMILIES_KEY, JSON.stringify(c)); } catch {}
+}
+
 // ──────────────────────────────────────────────────────────────────────
 // Family remap — Fusion side classifies parts into broad families
 // (Drawer, Back-Down, Floor, ...), but for UI display we want a finer
@@ -4126,9 +4169,11 @@ function renderDrawingGallery() {
       : '';
     // always render the date span (empty if none) so it right-aligns the chip
     const dateLbl = `<span class="dwg-date">${fmtDate(p.dateMs)}</span>`;
-    return `<div class="part-row" data-url="${escapeHtml(p.url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+    const isNew = isNewPart(p, fam);
+    return `<div class="part-row${isNew ? ' is-new' : ''}" data-url="${escapeHtml(p.url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon${p.url ? ' part-icon-clickable' : ' part-icon-nopdf'}" title="${p.url ? 'Open drawing PDF' : 'No PDF yet'}" ${p.url ? `data-url="${escapeHtml(p.url)}"` : ''}>${familyIcon(fam)}</span>
         <span class="part-code">${escapeHtml(display)}</span>
+        ${isNew ? '<span class="part-new-badge">NEW</span>' : ''}
         ${dateLbl}
         ${bendChip}
         <button class="part-compare-btn" data-compare-code="${escapeHtml(p.code)}" data-compare-fam="${escapeHtml(fam)}" aria-label="Compare / Diff" title="Compare with a similar drawing — visual diff overlay">🔍</button>
@@ -10122,6 +10167,7 @@ function renderLibraryHome() {
   const cards = visible.map(fam => {
     const label = familyDisplayLabel(fam);
     const partsInFam = (by[fam] || []).length;
+    const newCount = newCountForFamily(fam, by[fam] || []);   // folders with new drawings glow + show "N new"
     // Admin also gets a visible ✎ button so iPad users don't need to
     // discover the long-press shortcut. Double-click / long-press still
     // work as before for muscle-memory. A 🗑 button appears on empty
@@ -10133,9 +10179,10 @@ function renderLibraryHome() {
       ? `<button class="family-delete-btn" data-family-delete="${escapeHtml(fam)}" aria-label="Delete folder" title="Delete this empty folder">🗑</button>`
       : '';
     return `
-    <div class="family-card" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Tap ✎ to rename · 🗑 to delete (empty only) · long-press to rename · drag to reorder"' : ''}>
+    <div class="family-card${newCount > 0 ? ' family-card-has-new' : ''}" data-family="${escapeHtml(fam)}" style="${famVars(fam)}" ${adminMode ? 'title="Tap ✎ to rename · 🗑 to delete (empty only) · long-press to rename · drag to reorder"' : ''}>
       ${renameBtn}
       ${deleteBtn}
+      ${newCount > 0 ? `<div class="family-new-badge" title="${newCount} new drawing${newCount === 1 ? '' : 's'} since you last opened this folder">${newCount} new</div>` : ''}
       <div class="family-icon">${familyIcon(fam)}</div>
       <div class="family-name">${escapeHtml(label)}</div>
       <div class="family-count">${partsInFam} parts</div>
@@ -10187,6 +10234,7 @@ function renderLibraryHome() {
         ev.preventDefault(); ev.stopPropagation();
         return;
       }
+      markFamilySeen(el.dataset.family);   // opening the folder clears its NEW glow/badge
       navTo({ kind: 'family', name: el.dataset.family });
     });
     // Admin: 🗑 delete button (only rendered when folder is empty).
@@ -10353,10 +10401,12 @@ function renderFamily(fam, highlight) {
     const bendChip = (_bend && Array.isArray(_bend.per_bend) && _bend.per_bend.length)
       ? `<button class="part-bend-btn${_bend.bendable === false ? ' part-bend-bad' : ''}" data-bend-code="${escapeHtml(p.code)}" aria-label="Bend sequence" title="Bend sequence & tooling">🔧</button>`
       : '';
+    const isNew = isNewPart(p, fam);
     return `
-      <div class="part-row" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
+      <div class="part-row${isNew ? ' is-new' : ''}" data-url="${escapeHtml(url)}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="part-icon${url ? ' part-icon-clickable' : ' part-icon-nopdf'}" title="${url ? 'Open drawing PDF' : 'No PDF yet'}" ${url ? `data-url="${escapeHtml(url)}"` : ''}>${familyIcon(fam)}</span>
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
+        ${isNew ? '<span class="part-new-badge">NEW</span>' : ''}
         ${ver}
         ${bendChip}
         ${adminBtns}
