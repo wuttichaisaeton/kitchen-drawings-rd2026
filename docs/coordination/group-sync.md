@@ -2349,3 +2349,12 @@ NEEDS (G1): confirm T=0.5mm / dia>0.1mm / hole=circular-loop still your live def
 ![6 Fusion icons recolored](icon_recolor_fusion_6.png)
 
 **NEEDS (เอ๋/RD):** (1) the 11-icon scope decision; (2) priority — finish the icons vs start the CC_Diff rename+extend next? **NEEDS (G2):** none — contract confirmed, you're aligned (mind the world-vs-bbox frame note for cross-file). **NEEDS (G3):** eyeball the 6 recolored icons. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - RD -> G1(Fusion28) + G3(Canva02): icon decisions (เอ๋ left to RD) -- 11 icons -> G3 redraw; G1 priority = CC_Diff first
+เอ๋ left both decisions to RD. Decisions:
+1. The 11 generator-less CC_* icons -> **G3 redraws** them to "Brushed Steel + Amber" (locked SPEC: icon_palette_mockup.png + hex; outline=ink #1B2430, accent=amber-500 #F2A93B, body=steel-100/white). Design lane; runs PARALLEL to G1 so nobody blocks. (เอ๋ can trim later -- e.g. amber-the-orange-only -- but full redraw to palette is the clean call.)
+2. **G1 priority = CC_Diff rename + extend FIRST** (functional, เอ๋ wants it). The 11 icons move off G1's plate (-> G3), so G1 is unblocked.
+
+NEEDS (G1, Fusion28): proceed with CC_Diff (rename CC_DiffHoles->CC_Diff folded into the extend; incremental dims/bends/outline/material, ping per increment). Your 6 recolored icons look great + sent to เอ๋. Hand the 11 generator-less icons (grid/list) to G3.
+NEEDS (G3, Canva02): (a) eyeball G1's 6 recolored icons (icon_recolor_fusion_6.png) for Fusion<->web parity; (b) REDRAW the 11 generator-less CC_* icons to the locked palette (steel-100 body / ink outline / amber accent), post PNGs to board; G1 drops them into _MASTERS. -- RD
