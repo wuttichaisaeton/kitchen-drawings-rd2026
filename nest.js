@@ -2879,7 +2879,7 @@
       const lines = [...byCode.entries()].map(([code, e]) => {
         const noStock = !stockThick.has(tk(e.thickness));
         const suffix = noStock ? ` (t=${tk(e.thickness)}mm — no matching sheet stock)` : '';
-        return `<div class="kdnest-warn-line">${_esc(code)} ×${e.qty}${suffix}</div>`;
+        return `<div class="kdnest-warn-line" title="${_esc(code)}">${_esc(_disp(code))} ×${e.qty}${suffix}</div>`;
       }).join('');
       const total = S.unplaced.length;
       banners.push(
@@ -2915,7 +2915,7 @@
     }
     if (reviews.length) {
       const lines = reviews.map(r =>
-        `<div class="kdnest-warn-line">${_esc(r.code)} — ${_esc(r.reasons.join('; '))}</div>`
+        `<div class="kdnest-warn-line" title="${_esc(r.code)}">${_esc(_disp(r.code))} — ${_esc(r.reasons.join('; '))}</div>`
       ).join('');
       banners.push(
         `<div class="kdnest-warn kdnest-warn--review">
@@ -2983,7 +2983,7 @@
         <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${p.code === S.previewCode ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
-          <span class="kdnest-part-code">${p.manual ? '▭ ' : ''}${_esc(p.code)}</span>
+          <span class="kdnest-part-code" title="${_esc(p.code)}">${p.manual ? '▭ ' : ''}${_esc(_disp(p.code))}</span>
           <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="W"${whLock}>
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
@@ -3028,7 +3028,7 @@
       const pp = S.parts[i];
       if (!pp) return '';
       const dims = (pp.w && pp.h) ? ` (${pp.w}×${pp.h} mm)` : '';
-      return `Preview: #${i + 1} ${_esc(pp.code)}${dims} · ↑/↓ flip · ‹ › exits`;
+      return `Preview: #${i + 1} ${_esc(_disp(pp.code))}${dims} · ↑/↓ flip · ‹ › exits`;
     })();
     const curSheet = S.flatSheets[S.currentSheetIdx];
     const sheetSubLine = curSheet
@@ -3114,6 +3114,13 @@
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  // Human-facing DISPLAY name for a part code (admin display_override, shared with the
+  // rest of the app). The raw code stays the machine identity everywhere else in nest
+  // (byCode map, piece keys, data-code attrs, the BOM CSV the laser reads). (RD 02)
+  function _disp(code) {
+    try { return (typeof displayCodeFor === 'function') ? displayCodeFor(code) : code; }
+    catch (e) { return code; }
   }
 
   function _wireEvents() {

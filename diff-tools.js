@@ -296,6 +296,13 @@ function _paintGeomDiff() {
   });
 }
 
+// Human-facing display name for a code (admin display_override) — the raw code stays
+// the machine identity (option VALUE, pdfUrlForCode lookups). (RD 02 2026-06-09)
+function _disp(code) {
+  try { return (typeof displayCodeFor === 'function') ? displayCodeFor(code) : code; }
+  catch (e) { return code; }
+}
+
 // Override Compare Similar Drawings Modal
 // defaultMode (optional): 'pdfdiff' | 'dxfdiff' opens the modal directly on that
 // tab (DRAWING-tab "Diff" entry opens on Visual PDF Diff). Omitted → Side-by-Side.
@@ -328,7 +335,7 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
   let currentMode = (defaultMode === 'pdfdiff' || defaultMode === 'dxfdiff') ? defaultMode : 'sidebyside';
   
   const candidateOptions = candidates.map((c, i) => 
-    `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(c.code)}</option>`
+    `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(_disp(c.code))}</option>`
   ).join('');
 
   ov.innerHTML = `
@@ -352,7 +359,7 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
       <div id="cmp-split-view" style="display: flex; flex: 1; gap: 10px; overflow: hidden;">
         <div style="flex: 1; display: flex; flex-direction: column; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;">
           <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; font-weight: bold; color: #c9d1d9;">
-            Base: ${escapeHtml(baseCode)}
+            Base: ${escapeHtml(_disp(baseCode))}
           </div>
           <iframe src="${escapeHtml(basePdf)}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
         </div>
@@ -370,7 +377,7 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
       <!-- Single View Container (for diffs) -->
       <div id="cmp-single-view" style="display: none; flex: 1; flex-direction: column; border: 1px solid #30363d; border-radius: 6px; overflow: hidden;">
          <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 10px; color: #c9d1d9;">
-            <strong style="white-space: nowrap;">Base:</strong> ${escapeHtml(baseCode)}
+            <strong style="white-space: nowrap;">Base:</strong> ${escapeHtml(_disp(baseCode))}
             <strong style="white-space: nowrap; margin-left: 20px;">Compare with:</strong>
             <select id="compare-select-single" style="flex: 1; padding: 4px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px;">
               ${candidateOptions}

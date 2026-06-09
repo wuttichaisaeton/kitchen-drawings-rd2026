@@ -1053,7 +1053,7 @@ function _renderCutList(parts, projectKey) {
         return `
           <div class="cut-row ${ready ? '' : 'cut-row-missing'}" data-code="${escapeHtml(p.code)}" ${ready ? '' : 'aria-disabled="true"'}>
             <span class="cut-num">#${_nestNumberByCode.get(p.code)}</span>
-            <span class="cut-code">${escapeHtml(p.code)}</span>
+            <span class="cut-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
             <span class="cut-qty">× ${p.qty || 0}</span>
             ${grainCell}
             <button type="button" class="cut-sheet-btn" data-code="${escapeHtml(p.code)}" title="Show where this part sits on the nest sheet">📍</button>
@@ -1504,7 +1504,7 @@ function _renderBendList(parts, projectKey) {
     return `
       <div class="bend-row ${bent ? 'is-bent' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
         <span class="bend-icon">${familyIcon(fam)}</span>
-        <span class="bend-code">${escapeHtml(p.code)}</span>
+        <span class="bend-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
         ${viewBtn}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
@@ -1849,7 +1849,7 @@ function _renderProjectDxfModal(triggerBtn, projectKey, project, parts) {
       <button class="pdxf-row" role="menuitem"
               data-code="${escapeHtml(p.code)}"
               ${dxfs.length === 0 ? 'disabled' : ''}>
-        <span class="pdxf-code">${escapeHtml(p.code)}</span>
+        <span class="pdxf-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
         <span class="pdxf-qty">× ${p.qty || 0}</span>
         ${status}
       </button>`;
@@ -6166,7 +6166,7 @@ function renderSimBendHome() {
     return `
       <div class="sb-card ${v.cls}${(_simBendExpanded === code && rec.kind === 'box') ? ' sb-card-wide' : ''}" data-code="${escapeHtml(code)}" role="button" tabindex="0">
         <div class="sb-card-head">
-          <span class="sb-code">${escapeHtml(code)}</span>
+          <span class="sb-code" title="${escapeHtml(code)}">${escapeHtml(displayCodeFor(code))}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
           ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="margin-left:auto; background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
@@ -8099,7 +8099,7 @@ function renderBomRow(p, projectKey) {
     <div class="bom-row ${bent ? 'bent' : ''} ${assembled ? 'assembled' : ''} ${cOpen ? 'comments-open' : ''}" data-code="${escapeHtml(p.code)}" style="${famVars(fam)}">
       <div class="bom-row-main" data-url="${escapeHtml(url)}" data-has="${hasDrawing}">
         <span class="bom-icon">${familyIcon(fam)}</span>
-        <span class="bom-code">${escapeHtml(p.code)}${softDeleted ? '<span class="part-deleted-tag">DEL</span>' : ''}</span>
+        <span class="bom-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}${softDeleted ? '<span class="part-deleted-tag">DEL</span>' : ''}</span>
         <span class="bom-qty">×${p.qty}</span>
         ${timerHtml}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
@@ -8397,7 +8397,7 @@ function _renderProjectMindmapHtml(projectKey, project, parts, workflow) {
     return `
       <div class="mm-comment-panel" data-code="${escapeHtml(code)}">
         <div class="mm-comment-header">
-          <span class="mm-comment-title">💬 <strong>${escapeHtml(code)}</strong> · ${cList.length} comment${cList.length === 1 ? '' : 's'}</span>
+          <span class="mm-comment-title" title="${escapeHtml(code)}">💬 <strong>${escapeHtml(displayCodeFor(code))}</strong> · ${cList.length} comment${cList.length === 1 ? '' : 's'}</span>
           <button class="mm-comment-close" data-code="${escapeHtml(code)}" aria-label="Close">✕</button>
         </div>
         <ul class="comments-list">
@@ -8521,7 +8521,7 @@ function _renderProjectSpoke(p, projectKey, workflow, expandedSet) {
       ${warnFrame}
 
       <!-- Top-left: code + qty (×N) + drill hint -->
-      <text class="pm-code" x="${-halfW + 12}" y="${-halfH + 18}" font-size="12" font-weight="700" fill="#e4e4e4">${escapeHtml(code)}</text>
+      <text class="pm-code" x="${-halfW + 12}" y="${-halfH + 18}" font-size="12" font-weight="700" fill="#e4e4e4">${escapeHtml(displayCodeFor(code))}</text>
       <text class="pm-qty" x="${-halfW + 12}" y="${-halfH + 34}" font-size="14" font-weight="700" fill="#e4e4e4">×${n.qty}${drillHint ? `  ${drillHint} ${childCount}` : ''}</text>
 
       <!-- Top-right: comments button (visible outline even when empty so the
@@ -9863,7 +9863,7 @@ function renderFamilyOverview(roots, all) {
                     : '<span class="mfc-pp-st drawn">✓</span>';
       const cnt = childN > 0 ? `<span class="mfc-pp-cnt">[${childN}]</span>` : '';
       return `<div class="mfc-pp-row" data-code="${escapeHtml(p.code)}">
-        ${stBadge}<span class="mfc-pp-code">${escapeHtml(p.code)}</span>${cnt}
+        ${stBadge}<span class="mfc-pp-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>${cnt}
       </div>`;
     }).join('');
     const overflowHtml = overflow > 0
@@ -10259,7 +10259,7 @@ function _openSimilarCompareModal(baseCode, fam) {
   const initialComparePdf = pdfUrlForCode(candidates[0].code) || '';
 
   const candidateOptions = candidates.map((c, i) => 
-    `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(c.code)}</option>`
+    `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(displayCodeFor(c.code))}</option>`
   ).join('');
 
   ov.innerHTML = `
@@ -10898,7 +10898,7 @@ function renderSearch(q) {
       return `
         <div class="search-row" data-url="${escapeHtml(url)}">
           <div class="row-top">
-            <span class="part-code">${escapeHtml(m.code)}</span>
+            <span class="part-code" title="${escapeHtml(m.code)}">${escapeHtml(displayCodeFor(m.code))}</span>
             ${ver}
           </div>
           <div class="row-fam">${familyIcon(m._family)} ${escapeHtml(m._family)}</div>
@@ -10918,7 +10918,7 @@ function renderSearch(q) {
     return `
       <div class="search-row" data-url="${escapeHtml(url)}">
         <div class="row-top">
-          <span class="part-code">${escapeHtml(m.part.code)} ×${m.part.qty}</span>
+          <span class="part-code" title="${escapeHtml(m.part.code)}">${escapeHtml(displayCodeFor(m.part.code))} ×${m.part.qty}</span>
         </div>
         <div class="row-fam">📋 ${escapeHtml(m.project.name)} · ${familyIcon(m.part.family)} ${escapeHtml(m.part.family || '')}</div>
       </div>`;
