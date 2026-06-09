@@ -1588,20 +1588,32 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
   }, [fullscreen]);
 
   // No-PDF filter sets: the count for the button label + the ids kept
-  // VISIBLE when the filter is on (the project center + every node flagged
-  // data.missing). Edges use noPdfKeptIds to drop any spoke that would
-  // otherwise dangle to a faded node. Memoised off `nodes` only.
+  // VISIBLE when the filter is on (the project center + every node still
+  // missing a PDF). Edges use noPdfKeptIds to drop any spoke that would
+  // otherwise dangle to a faded node.
+  // LIVE check (เอ๋ 2026-06-09 "กด Drawing PDF แล้วตัวที่ส่งต้องหายจาก No PDF
+  // โดยไม่ต้อง refresh"): data.missing is a MOUNT-TIME snapshot — after the
+  // manifest auto-refresh lands (kme:extsync), re-ask pdfUrlForCode so a part
+  // that just gained its PDF drops out of the count + filter in place, same
+  // as the ⚠ badge already does. extSyncNonce in deps drives the recompute.
+  const _liveMissing = useCallback((n) => {
+    if (!n.data?.missing) return false;
+    try {
+      const api = window.kdAPI || {};
+      return !(api.pdfUrlForCode && n.data.code && api.pdfUrlForCode(n.data.code));
+    } catch (e) { return true; }
+  }, []);
   const noPdfCount = useMemo(
-    () => nodes.reduce((acc, n) => acc + (n.data?.missing ? 1 : 0), 0),
-    [nodes]
+    () => nodes.reduce((acc, n) => acc + (_liveMissing(n) ? 1 : 0), 0),
+    [nodes, extSyncNonce, _liveMissing]
   );
   const noPdfKeptIds = useMemo(() => {
     const s = new Set();
     for (const n of nodes) {
-      if (n.data?.kind === 'project' || n.data?.missing) s.add(n.id);
+      if (n.data?.kind === 'project' || _liveMissing(n)) s.add(n.id);
     }
     return s;
-  }, [nodes]);
+  }, [nodes, extSyncNonce, _liveMissing]);
 
   // Inject onLabelChange + admin flag into every node's data so the
   // node components can react. admin gating happens at the node level
@@ -1625,7 +1637,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     // SKIPPED when the node carries data.hasPosOverride (admin has
     // dragged it before) — preserves admin layout per user 2026-05-28:
     // 'ให้ แอดมิน ย้าย node ได้'.
-    const isMissing = !!n.data?.missing;
+    const isMissing = _liveMissing(n);   // live — a just-exported PDF drops out in place
     // No-PDF filter (เอ๋ 2026-06-09) owns visibility while active: every no-PDF
     // part shows at its REAL position (un-faded, skipping the compact stack);
     // every other node gets nopdfDim → a `.kme-nopdf-dim` class that fades it
@@ -1689,7 +1701,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       // 🧩/📄 button taps for workers).
       draggable: true,
     };
-  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll, extSyncNonce, noPdfOnly]);
+  }), [nodes, onLabelChange, admin, collapsed, toggleCollapsed, hiddenIds, collapsedNodes, descendantMap, inChecklistMode, compactByVariantId, hiddenAnchors, ensureCollapsed, releaseNode, revealAll, extSyncNonce, noPdfOnly, _liveMissing]);
 
   // Edges: in checklist mode keep them in the SVG but fade their stroke
   // when either endpoint is hidden (lets the line shrink with the node).
