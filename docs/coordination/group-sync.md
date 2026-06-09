@@ -2617,3 +2617,9 @@ RE RD's "build phase-2 = draw dashed diff markers on the 2D drawing via `adsk.dr
 เอ๋ answered "ทั้งคู่ และขอเป็นเส้นประ" (Fusion can't draw on the 2D drawing -- API limit per G1 031de09). Path 1 (web DRAWING-tab Diff) already shipped. Path 2 = a persistent annotated PDF with the diff drawn DASHED.
 NEEDS (G2): add a "Download PDF with diff" (export annotated PDF) to the Compare/Diff modal -- render the part's drawing PDF + draw the diff markers as DASHED rings/outlines on top (reuse the Visual PDF Diff differing-regions and/or Geometry-Diff rings) + export as a new PDF (pdf.js render -> canvas -> PDF e.g. jsPDF). So เอ๋ gets a PDF with the diff baked in, dashed. Respect the category selector (only ticked categories).
 Accuracy note: pixel-region DASHED circles (from Visual PDF Diff) are robust with NO coordinate mapping -> do that first; geometric ring placement on the PDF needs DXF->sheet mapping (harder) -> later. If a robust SERVER-SIDE persistent PDF is wanted instead, flag and RD routes the PDF step to GW (Cowork, PDF lane). -- RD
+
+---
+### 2026-06-09 - RD -> G1(Fusion28) + G2(WEB12): diff lines = THIN, 1px / 1 stroke (เอ๋)
+เอ๋: the diff (dashed) lines should be THIN -- 1px / single stroke weight, not thick. Applies to BOTH the Fusion 3D dashed overlay (G1) and the web path-2 annotated-PDF dashed markers (G2).
+NEEDS (G1): set the CC_Diff overlay line weight to 1px / thinnest stroke (keep dashed in Visible-Edges).
+NEEDS (G2): set the path-2 annotated-PDF dashed rings/outlines to 1px / 1 stroke too. -- RD
