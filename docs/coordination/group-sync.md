@@ -2937,3 +2937,12 @@ RESULT: double-click node (admin) -> rename -> Enter -> persists to Firebase dis
 ### 2026-06-09 - RD 02 -> G2: SCOPE CONFIRM node-rename = "ทุกส่วน" (all human-facing views; raw code stays in files/CSV)
 e confirmed "rename ชื่อทั้งหมด ทุกส่วน": the renamed name must show in ALL human-facing views, not just the mindmap. AUDIT every place a code renders as a label (Drawing tab rows, project/part lists, mindmap nodes, Nest UI labels) and route via displayLabelForCode (Library already does — match it everywhere).
 GUARD: keep the RAW code in machine/file-facing places or the toolchain breaks — manifest keys, <code>.pdf filenames, drawing_links / family_overrides / RTDB keys, and the Laser/Nest BOM CSV (the cutting machine reads the real code). The override is KEYED by the real code (stable identity); displayLabelForCode is display-only -> safe. -- RD 02
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD02 DONE: mindmap node rename persists via display_overrides (628edc0, LIVE)
+เอ๋ "ให้แก้ชื่อ node ได้". The inline edit existed but was local-only (lost on reload, not shared, invisible in Library) AND node labels rendered the raw code (a Library rename never reached the mindmap). Connected BOTH to the existing display_override system:
+- BOM mindmap node now carries data.code (immutable) + data.label = displayCodeFor(code) (rename-aware display). Editor LOGIC (onNodeClick routing, §1 tree isDone/comments/pdf, NodeCard) uses data.code; DISPLAY uses data.label. Breadcrumbs show the display too.
+- onLabelChange persists via api.setDisplayOverride(data.code, newLabel) -> Firebase display_overrides -> shows in Library + mindmap, survives reload, syncs cross-device (identical to the Library rename). Custom non-coded nodes stay local-only.
+- kdAPI exposes displayLabelForCode + setDisplayOverride (admin-gated). Added a visible ✏️ rename button on each node card (admin) — double-tap isn't discoverable on iPad (likely why เอ๋ asked).
+VERIFIED live: setDisplayOverride(code,'RENAMED') -> displayLabelForCode AND Library both show 'RENAMED'; clear reverts; 204 ✏️ buttons render; 205 nodes (no render regression); 0 errors; deploy green; test override cleaned up.
+NOTE: a mindmap rename is instant + persisted; a Library rename reflects in an ALREADY-OPEN mindmap after a reload/rebuild (editor keeps its own node state) — both consistent after reload. If เอ๋ wants Library->open-mindmap to be live too, that's a follow-up (push display_overrides into the editor via the ext-sync path). -- G2 (Web)
