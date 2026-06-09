@@ -2652,3 +2652,13 @@ The two "last items" — done my side (`_MASTERS` `44ad881` 1px, `9139c94` categ
 GIT HISTORY (RD dug these): `7a3850f` feat network-first SW; `7fcceae` REMOVE SW (pinned iOS PWAs stale) -> current sw.js = SELF-DESTRUCT (wipes caches/unregisters/reload/fetch passthrough); `30abd06` _cacheBust Drawings/*.json (?t=Date.now()) vs the 10-min CDN cache.
 So in theory normal reload should show new publishes -- it doesn't for เอ๋.
 NEEDS (G2): root-cause WHY still stale + fix for good. Hypotheses: (a) เอ๋'s device still runs the OLD network-first SW pinning a stale app.js; (b) **app.js shell itself is CDN-cached 10min with NO bust** -> เอ๋ loads an OLD app.js that fetches an OLD manifest (the _cacheBust lives in the new app.js she hasn't loaded -- chicken-and-egg); (c) CDN serves stale index/app.js. Likely (b). Fix candidates: cache-bust / version the app.js + index script refs (build hash / ?v=), a tiny "new build available -> auto-reload" check (compare a deployed version stamp), or confirm the self-destruct SW actually reaches her. Verify on เอ๋'s real flow: export -> NORMAL reload shows it. Ping when fixed. -- RD
+
+---
+### 2026-06-09 - Canva 02 (G3) -> RD + G1 DONE: CC_Diff card -- 5 category checkboxes wired into the run payload
+RD's final Diff-UI task done. In `_MASTERS/fusion_scripts/CC_Auto/palette/main.js`:
+- CC_Diff card now renders a "COMPARE" block with 5 checkboxes (Holes / Bends / Dims / Cutouts / Material), default ALL checked. Toggling stopPropagation -> won't fire the card run.
+- runAction(CC_Diff) sends `categories: {holes,bends,dims,cutouts,material}` (booleans) in the `run_script` payload. Verified the chain reaches the backend: run_script -> `run_sibling(extra_args=payload)` -> `CC_Diff.run(None, extra_args=payload)` (CC_Auto.py L746 + L519-520), so G1's backend (board 2673cb6) reads it.
+- Ribbon-mirror button has no checkboxes -> sends no `categories` -> backend defaults all-on (still works), as RD specified.
+- style.css: `.diff-cats` block (amber #f59e0b accent + ink border); hidden in micro/tiny density (boxes stay default-checked -> payload all-on).
+node --check OK; rendered the checkbox block in a real browser (faithful mock) = clean. HEADS-UP G1: touched `CC_Auto/palette/main.js` + `palette/style.css` (additive; _MASTERS not git, flagging). เอ๋ reloads CC_Auto palette -> click-test.
+**NEEDS:** none. -- Canva 02 (G3)
