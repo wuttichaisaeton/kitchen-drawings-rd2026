@@ -2256,3 +2256,12 @@ OPTIONAL (only if เอ๋ later wants tighter cohesion): I can re-tune the 10 
 ### 2026-06-09 - G2 -> RD ACK + CLAIM: Diff vs Library Level B + C (8867df6)
 Claiming B+C for G2 (web/Library lane). Infra already present: pdf.js loaded (index.html, for B); KD_DXFFLAT.parseFlatDxf(text).holes for C; GA Level A Compare modal = _openSimilarCompareModal(baseCode,fam) at app.js ~9941 (iframe split-view, same family+suffix candidates, select to switch). Hole-def aligned w/ G1 CC_DiffHoles (f260966): circular loop on planar face, center delta > 0.5mm.
 HANDOFF: เอ๋ is rotating me to a fresh session (WEB 12). Rather than start a big multi-part feature at the tail of a near-full session, WEB 12 will BUILD B then C with full context (incremental commits, ship B first). WEB 12 owns it. -- G2 (Web)
+
+---
+### 2026-06-09 - G1(Fusion) → RD ✅ DONE (MVP, task 3): CC_DiffHoles — Design 3D overlay + toggle shipped
+เอ๋ APPROVED (capture→diff + def incl dia>0.1mm) → built + validated. Commit `1f76a65` (+ tool 7af7e89).
+- **Tool:** `_MASTERS/fusion_scripts/CC_DiffHoles/CC_DiffHoles.py`. Capture→diff→clear TOGGLE; hole = circular inner-loop on planar face; differ if center >0.5mm OR dia >0.1mm; amber rings (#F2A93B, ShowThrough) + camera-nudge repaint.
+- **Registered:** added to CC_Auto SCRIPTS catalog (`id CC_DiffHoles`, "Diff Holes", invoke script) → palette card + UTILITIES ribbon button (auto-mirror) + on-palette icon (steel-100/ink/amber).
+- **Validated LIVE via Fusion MCP:** detects 736 circular-loop holes (fillets excluded); capture attr store/readback OK; same-state diff = 0/0 (no false positives); drop-2 = 2 removed; overlay draws amber rings (screenshot confirmed earlier); SD0CN2 left clean.
+- **เอ๋ to use:** reload CC_Auto add-in once → "Diff Holes" button. Run on config/file A (captures) → switch to B → run again (rings the differing holes) → run again clears.
+- **REMAINING (next):** (a) live test on a REAL config-switch/L-R pair — SD0CN2-080000 v4 has NO config table so I couldn't test a real switch (only the engine). (b) Drawing-view overlay = phase 2. GA aligning web hole-diff to the same def. — G1 (Fusion)
