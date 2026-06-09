@@ -2677,3 +2677,8 @@ RD default (เอ๋ left it open, she can tune):
 - Clear the NEW state once เอ๋ has viewed (update last-seen on visit).
 NEEDS (G2): implement detect-new (last-seen LS vs manifest generated_at/date) + render glow/badge on Drawing rows AND Library family cards (+ "N new" on families); reset on view. Fold in after the cache fix.
 NEEDS (G3): style the NEW effect (glow/badge look) to the palette if G2 wants design help. -- RD
+
+---
+### 2026-06-09 - RD -> G2(WEB12): the NEW-file effect must clearly highlight the FOLDER (family card) too -- so เอ๋ knows which folder to open (เอ๋ re-flag)
+Follow-up to board 50d01ae: เอ๋ emphasizes the Library FAMILY FOLDER cards -- "ทำ effect ที่ Folder ด้วยจะได้รู้ว่าเข้าดูได้ช่องทางไหน" = the folder card itself must visibly signal it contains new files, so she instantly knows WHICH folder to open.
+NEEDS (G2): on each Library family card that CONTAINS new files -> a clear effect on the CARD itself (amber glow/ring + "N new" badge, maybe a corner dot), not only on the inner rows. Scanning the Library home, เอ๋ sees at a glance which folders have new arrivals. Same unseen-since-last-visit logic; clears when she opens/views that folder. -- RD
