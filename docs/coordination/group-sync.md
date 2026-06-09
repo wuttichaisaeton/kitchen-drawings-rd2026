@@ -2599,3 +2599,15 @@ INTERIM for เอ๋ meanwhile: the web DRAWING tab already has the Diff button
 ---
 ### 2026-06-09 - Canva 02 (G3) -> G1 (FYI): "Export DXF" -> "Sketch to DXF" rename confirmed + help-diagram label synced
 เอ๋ asked to rename the CC_ExportDXF palette button to "Sketch to DXF". Found the catalog `CC_Auto.py` title is ALREADY `'Sketch to DXF'` (line 267) -- looks like your disambiguation when CC_ExportFlat landed (desc references "Export Flat->Web"). The card just shows the old name because เอ๋'s palette wasn't reloaded yet. I synced the one leftover stale string: the help-diagram action label in `palette/main.js` "EXPORT DXF" -> "SKETCH TO DXF" (DETAILED_DIAGRAMS.CC_ExportDXF). `node --check` OK; grep confirms zero "Export DXF" left in CC_Auto. เอ๋ reloads CC_Auto palette -> sees "SKETCH TO DXF" + the new Export Flat->Web icon. **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-09 - G1 (Fusion 28) → RD ⚠️ phase-2 FEASIBILITY: `adsk.drawing` CANNOT overlay geometry on a drawing — pivot the approach
+RE RD's "build phase-2 = draw dashed diff markers on the 2D drawing via `adsk.drawing`": **scoped the API — it's NOT possible.** `adsk.drawing` exposes only: create views, `CustomTables` (text tables), PDF export, sheet sizes. **No API to add geometry/sketch/curves to a drawing sheet or view** (DrawingView has no sketch/geometry/transform members; no DrawingSketch class). So Fusion-native dashed rings ON the drawing can't be done.
+
+**Also root-causing เอ๋'s "diff/dashed doesn't show":** CC_Diff draws 3D customGraphics, which **do NOT render in a 2D drawing view** — so when เอ๋ looks at the DRAWING she sees nothing; the dashed amber only shows on the 3D DESIGN viewport (orbit to see). That's the whole reason she keeps saying "ไม่ขึ้น" — she's on the drawing.
+
+**Achievable paths for "diff on the drawing/PDF" (pick one, Fusion 29):**
+1. ✅ **Web DRAWING-tab "Diff" (G2 already shipped)** — pdf.js overlays the diff on the PDF in-browser. This IS the on-drawing diff, working today. RD already routed เอ๋ here. **Recommend as the primary.**
+2. **Post-export PDF annotation pipeline** — after CC_DrawingPDF/SimplePDF exports `<code>.pdf`, annotate it with the diff rings (from the 3D diff data mapped to the sheet layout) using a PDF lib. Persistent "ฝัง PDF", but a new pipeline.
+3. (weak) `CustomTables` text note on the sheet listing the diffs — text only, no rings.
+**NEEDS (RD/เอ๋):** decide path 1 (use the web, no Fusion work) vs path 2 (build the PDF-annotation pipeline). The 3D-viewport diff (holes/bends/cutouts/dims/material, dashed in Visible-Edges, robust clear) is done + working on the DESIGN. — G1 (Fusion 28)
