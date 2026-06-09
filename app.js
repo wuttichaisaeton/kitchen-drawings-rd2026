@@ -4433,6 +4433,124 @@ function _simVerdict(rec) {
   return { cls: 'sb-bad', txt: '✗ NOT BENDABLE' };
 }
 
+// ── Sim.Bending Favorites (⭐) + Sync-from-Project ────────────────────────
+// RD 02 / เอ๋ 2026-06-09: a per-project bending dashboard + pinned favorites.
+// Favorites are shared state (localStorage + RTDB simbend_favs/<code>=true),
+// open to EVERYONE (not admin-gated) — same pattern as display_overrides.
+const LS_FAVS_KEY = 'kd_simbend_favs_v1';
+let _favsCache = {};
+let _favsSubscribed = false;
+let _simBendProject = null;        // null = "All checked parts"; else a project key → dashboard
+let _simBendSync = null;           // { key, total, done, byCode:{code:{status,...}}, running }
+let _syncRenderTimer = null;
+
+function isFav(code) { return !!(code && _favsCache[code]); }
+
+function toggleFav(code) {
+  if (!code) return;
+  if (_favsCache[code]) delete _favsCache[code];
+  else _favsCache[code] = true;
+  try { localStorage.setItem(LS_FAVS_KEY, JSON.stringify(_favsCache)); } catch {}
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref('simbend_favs/' + code).set(_favsCache[code] ? true : null); }
+    catch (e) { console.warn('Firebase fav write failed:', e); }
+  }
+}
+
+function _subscribeSimbendFavs() {
+  if (_favsSubscribed) return;
+  _favsSubscribed = true;
+  try {
+    const r = localStorage.getItem(LS_FAVS_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _favsCache = o; }
+  } catch {}
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('simbend_favs').on('value', snap => {
+      const raw = snap.val();
+      _favsCache = (raw && typeof raw === 'object') ? raw : {};
+      try { localStorage.setItem(LS_FAVS_KEY, JSON.stringify(_favsCache)); } catch {}
+      if (!document.getElementById('kme-mount') && view === 'simbend' && stack.length === 0) {
+        try { render(); } catch {}
+      }
+    });
+  } catch (e) { _favsCache = {}; }
+}
+
+// Load + parse a flat DXF by code (cache:'no-store' — re-exports must not serve
+// a stale CDN/browser copy). Returns the parsed flat object, or null if the file
+// doesn't exist / fails to parse. (No DXF index exists → we probe per-file.)
+async function _loadFlatDxf(code) {
+  const url = 'Drawings/flat/' + encodeURIComponent(code) + '.dxf';
+  try {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const text = await r.text();
+    if (!window.KD_DXFFLAT || !window.KD_DXFFLAT.parseFlatDxf) return null;
+    return window.KD_DXFFLAT.parseFlatDxf(text) || null;
+  } catch (e) { return null; }
+}
+
+function _scheduleSyncRender() {
+  if (_syncRenderTimer) return;
+  _syncRenderTimer = setTimeout(() => {
+    _syncRenderTimer = null;
+    if (view === 'simbend' && stack.length === 0 && !document.getElementById('kme-mount')) {
+      try { render(); } catch {}
+    }
+  }, 200);
+}
+
+// Sync from Project: for every NON-WRAPPER part in <key>, classify by bend status.
+//   verified → already has a Fusion CC_CheckBend record (bend_sim/<code>)
+//   dxf      → no record but Drawings/flat/<code>.dxf exists WITH bends (preview, NOT a verdict)
+//   flat     → flat DXF exists with 0 bends (flat panel)
+//   none     → no record + no flat DXF (export needed)
+// DXF cards are informational only — the web cannot decide feasibility (that's
+// Fusion's job; เอ๋ removed web auto-tooling 2026-06-03). We do NOT write a fake
+// verdict into bend_sim. Probes run with bounded concurrency; progress re-renders.
+async function _runProjectSync(key) {
+  _simBendProject = key || null;
+  if (!key) { _simBendSync = null; if (view === 'simbend') { try { render(); } catch {} } return; }
+  const proj = manifest && manifest.projects && manifest.projects[key];
+  const codes = proj ? _aggregatePartsByCode(proj.parts || []).map(p => p.code).filter(Boolean) : [];
+  _simBendSync = { key, total: codes.length, done: 0, byCode: {}, running: true };
+  const toProbe = [];
+  codes.forEach(c => {
+    if (_bendSimCache && _bendSimCache[c]) { _simBendSync.byCode[c] = { status: 'verified' }; _simBendSync.done++; }
+    else { _simBendSync.byCode[c] = { status: 'checking' }; toProbe.push(c); }
+  });
+  if (view === 'simbend' && stack.length === 0) { try { render(); } catch {} }
+  let idx = 0;
+  const CONC = Math.min(8, toProbe.length);
+  async function worker() {
+    while (idx < toProbe.length) {
+      const c = toProbe[idx++];
+      // a record may have arrived between scheduling and now (live CC_CheckBend)
+      if (_bendSimCache && _bendSimCache[c]) { _simBendSync.byCode[c] = { status: 'verified' }; _simBendSync.done++; _scheduleSyncRender(); continue; }
+      const flat = await _loadFlatDxf(c);
+      if (!flat) {
+        _simBendSync.byCode[c] = { status: 'none' };
+      } else {
+        const nb = (flat.bends || []).length;
+        const bb = flat.bbox || {};
+        const dims = (bb.w != null && bb.h != null) ? [+bb.w, +bb.h].sort((a, b) => b - a) : null;
+        _simBendSync.byCode[c] = {
+          status: nb > 0 ? 'dxf' : 'flat',
+          nBends: nb,
+          w: dims ? dims[0] : null,
+          h: dims ? dims[1] : null,
+        };
+      }
+      _simBendSync.done++;
+      _scheduleSyncRender();
+    }
+  }
+  if (toProbe.length) await Promise.all(Array.from({ length: CONC }, worker));
+  _simBendSync.running = false;
+  if (view === 'simbend' && stack.length === 0) { try { render(); } catch {} }
+}
+
 // ── Interactive leg what-if (เอ๋: ปรับขา → ขาอื่น+flat คำนวณใหม่) ──────────
 // Fusion sends legs[] (FLAT segment lengths, N+1) + flat_length. The blank is
 // fixed; moving a bend line trades length between adjacent sides. Convert flat
@@ -5922,6 +6040,7 @@ function renderSimBendHome() {
   _subscribeOwnedTools();
   _subscribeCustomTools();
   _subscribeDeletedDefaults();
+  _subscribeSimbendFavs();
   COUNT_EL.textContent = '';
   if (_bendSimCache === null) {
     ROOT.innerHTML = `<div class="empty-state"><h2>🔩 Sim.Bending</h2>
@@ -5960,9 +6079,10 @@ function renderSimBendHome() {
   
   const q = (SEARCH.value || '').trim().toLowerCase();
   const shown = (q ? codes.filter(c => c.toLowerCase().includes(q)) : codes).sort();
-  COUNT_EL.textContent = `${shown.length} part${shown.length === 1 ? '' : 's'} checked`;
 
-  const cards = shown.map(code => {
+  // Reusable card builder for any code that HAS a processed bend_sim record.
+  // Used by the all-parts grid, the ⭐ Favorites strip, and the project dashboard.
+  function buildSbCard(code) {
     const rec = processedCache[code] || {};
     const v = _simVerdict(rec);
     const order = Array.isArray(rec.order) && rec.order.length
@@ -6189,41 +6309,182 @@ function renderSimBendHome() {
       ? `<span class="project-badge missing" style="margin-left: 6px; font-size: 10px;">Needs Purchase</span>`
       : '';
 
+    const fav = isFav(code);
+    const favBtn = `<button class="sb-fav-btn${fav ? ' is-fav' : ''}" data-code="${escapeHtml(code)}" title="${fav ? 'Remove from favorites' : 'Add to favorites'}" aria-label="Favorite" style="margin-left:auto; background:transparent; border:none; font-size:15px; line-height:1; cursor:pointer; padding:2px 6px; flex-shrink:0; color:${fav ? '#f2a93b' : '#5a6675'};">${fav ? '★' : '☆'}</button>`;
+
     return `
       <div class="sb-card ${v.cls}${(_simBendExpanded === code && rec.kind === 'box') ? ' sb-card-wide' : ''}" data-code="${escapeHtml(code)}" role="button" tabindex="0">
         <div class="sb-card-head">
           <span class="sb-code" title="${escapeHtml(code)}">${escapeHtml(displayCodeFor(code))}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
-          ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="margin-left:auto; background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
+          ${favBtn}
+          ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
         </div>
         <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'}${np ? ` · ${np} problem${np === 1 ? '' : 's'}` : ''} · order: ${escapeHtml(order)}${flatStr}</div>
         ${detail}
       </div>`;
-  }).join('');
+  }
+
+  // Compact card for a part with a flat DXF but NO Fusion verdict yet — preview
+  // only (bend count + flat dims), NOT a feasibility claim. Non-expandable.
+  function buildDxfPreviewCard(code, info) {
+    const fav = isFav(code);
+    const favBtn = `<button class="sb-fav-btn${fav ? ' is-fav' : ''}" data-code="${escapeHtml(code)}" title="${fav ? 'Remove from favorites' : 'Add to favorites'}" aria-label="Favorite" style="margin-left:auto; background:transparent; border:none; font-size:15px; line-height:1; cursor:pointer; padding:2px 6px; flex-shrink:0; color:${fav ? '#f2a93b' : '#5a6675'};">${fav ? '★' : '☆'}</button>`;
+    const dims = (info.w != null && info.h != null) ? ` · <strong style="text-transform:uppercase;">Flat: ${(+info.w).toFixed(1)} x ${(+info.h).toFixed(1)} mm</strong>` : '';
+    const nb = info.nBends || 0;
+    return `
+      <div class="sb-card sb-warn sb-card-dxf" data-code="${escapeHtml(code)}">
+        <div class="sb-card-head">
+          <span class="sb-code" title="${escapeHtml(code)}">${escapeHtml(displayCodeFor(code))}</span>
+          <span class="sb-chip sb-warn" title="Geometry from flat DXF — not yet verified in Fusion (run CC_CheckBend)">◍ DXF · not checked</span>
+          ${favBtn}
+        </div>
+        <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'} (from flat DXF)${dims} · <span class="muted">export to Fusion to verify feasibility</span></div>
+      </div>`;
+  }
+
+  // Tiny one-line row (flat panels with 0 bends, or parts with no data at all).
+  function buildSbMiniRow(code, kind) {
+    const fav = isFav(code);
+    const favBtn = `<button class="sb-fav-btn${fav ? ' is-fav' : ''}" data-code="${escapeHtml(code)}" title="${fav ? 'Remove from favorites' : 'Add to favorites'}" aria-label="Favorite" style="background:transparent; border:none; font-size:13px; line-height:1; cursor:pointer; padding:0 4px; flex-shrink:0; color:${fav ? '#f2a93b' : '#5a6675'};">${fav ? '★' : '☆'}</button>`;
+    const label = kind === 'flat'
+      ? `<span class="muted">0 bends (flat panel)</span>`
+      : `<span class="muted">no data — export flat DXF</span>`;
+    return `
+      <div class="sb-mini-row" data-code="${escapeHtml(code)}" style="display:flex; align-items:center; gap:8px; padding:5px 10px; border-bottom:1px solid rgba(128,140,160,0.12); font-size:12px;">
+        ${favBtn}
+        <span class="sb-code" title="${escapeHtml(code)}" style="font-weight:600;">${escapeHtml(displayCodeFor(code))}</span>
+        ${label}
+      </div>`;
+  }
+
+  // ── Favorites strip (pinned, always on top) ───────────────────────────────
+  const favCodes = Object.keys(_favsCache).filter(c => c && _favsCache[c]).sort();
+  let favsHtml = '';
+  if (favCodes.length) {
+    const favCards = favCodes.map(c => {
+      if (processedCache[c]) return buildSbCard(c);
+      const probe = _simBendSync && _simBendSync.byCode && _simBendSync.byCode[c];
+      if (probe && probe.status === 'dxf') return buildDxfPreviewCard(c, probe);
+      if (probe && (probe.status === 'flat' || probe.status === 'none')) return buildSbMiniRow(c, probe.status === 'flat' ? 'flat' : 'none');
+      return buildSbMiniRow(c, 'none');
+    }).join('');
+    favsHtml = `
+      <div class="sb-fav-section">
+        <div class="sb-section-head">⭐ Favorites <span class="muted" style="font-weight:normal;">(${favCodes.length})</span></div>
+        <div class="sb-grid">${favCards}</div>
+      </div>`;
+  }
+
+  // ── Project sync bar ──────────────────────────────────────────────────────
+  const projOpts = (typeof projectList === 'function' ? projectList() : [])
+    .map(p => `<option value="${escapeHtml(p.key)}"${_simBendProject === p.key ? ' selected' : ''}>${escapeHtml(p.key)}</option>`)
+    .join('');
+  const syncBar = `
+    <div class="sb-sync-bar" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0;">
+      <strong style="font-size:12px;">Sync from project:</strong>
+      <select class="sb-proj-select" style="background:#16202c; color:#cad6e6; border:1px solid #2a3744; border-radius:6px; padding:5px 8px; font-size:12px; font-family:inherit; cursor:pointer; min-width:160px;">
+        <option value=""${!_simBendProject ? ' selected' : ''}>All checked parts</option>
+        ${projOpts}
+      </select>
+      <button class="sb-sync-btn" style="font-family:inherit; font-size:12px; font-weight:bold; background:#18c08c; color:#06281f; border:none; border-radius:6px; padding:6px 14px; cursor:pointer;">↻ Sync</button>
+      <span class="sb-sync-status muted" style="font-size:12px;"></span>
+    </div>`;
+
+  let mainHtml;
+  if (_simBendProject && _simBendSync && _simBendSync.key === _simBendProject) {
+    // ── Project dashboard ──
+    const by = _simBendSync.byCode || {};
+    let allCodes = Object.keys(by);
+    if (q) allCodes = allCodes.filter(c => c.toLowerCase().includes(q) || displayCodeFor(c).toLowerCase().includes(q));
+    allCodes.sort();
+    const verified = allCodes.filter(c => by[c].status === 'verified');
+    const dxf = allCodes.filter(c => by[c].status === 'dxf');
+    const flat = allCodes.filter(c => by[c].status === 'flat');
+    const none = allCodes.filter(c => by[c].status === 'none');
+    const checking = allCodes.filter(c => by[c].status === 'checking');
+    COUNT_EL.textContent = `${verified.length}/${_simBendSync.total} verified`;
+    const pct = _simBendSync.total ? Math.round(100 * _simBendSync.done / _simBendSync.total) : 100;
+    const progressHtml = `
+      <div style="margin:4px 0 12px;">
+        <div style="font-size:12px; margin-bottom:4px;">📁 <strong>${escapeHtml(_simBendProject)}</strong> — ${verified.length}/${_simBendSync.total} verified${_simBendSync.running ? ` · checking ${_simBendSync.done}/${_simBendSync.total}…` : ''}</div>
+        <div style="height:6px; background:rgba(128,140,160,0.2); border-radius:3px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:#18c08c; transition:width .2s;"></div></div>
+      </div>`;
+    const section = (title, body) => body ? `<div class="sb-dash-section"><div class="sb-section-head">${title}</div>${body}</div>` : '';
+    mainHtml = `
+      ${progressHtml}
+      ${section(`✓ Verified <span class="muted" style="font-weight:normal;">(${verified.length})</span>`, verified.length ? `<div class="sb-grid">${verified.map(buildSbCard).join('')}</div>` : '')}
+      ${section(`◍ From flat DXF — not checked in Fusion <span class="muted" style="font-weight:normal;">(${dxf.length})</span>`, dxf.length ? `<div class="sb-grid">${dxf.map(c => buildDxfPreviewCard(c, by[c])).join('')}</div>` : '')}
+      ${section(`▭ Flat panels — 0 bends <span class="muted" style="font-weight:normal;">(${flat.length})</span>`, flat.length ? `<div class="sb-mini-list">${flat.map(c => buildSbMiniRow(c, 'flat')).join('')}</div>` : '')}
+      ${section(`✕ No data — export flat DXF <span class="muted" style="font-weight:normal;">(${none.length})</span>`, none.length ? `<div class="sb-mini-list">${none.map(c => buildSbMiniRow(c, 'none')).join('')}</div>` : '')}
+      ${checking.length ? `<div class="muted" style="padding:8px; font-size:12px;">checking ${checking.length} more…</div>` : ''}`;
+  } else {
+    // ── All checked parts (default) ──
+    COUNT_EL.textContent = `${shown.length} part${shown.length === 1 ? '' : 's'} checked`;
+    mainHtml = `<div class="sb-grid">${shown.map(buildSbCard).join('')}</div>`;
+  }
 
   ROOT.innerHTML = `
     <div class="sb-home">
       ${picker}
+      ${syncBar}
+      ${favsHtml}
       <div class="sb-banner">🔩 Sim.Bending — press-brake feasibility per part</div>
-      <div class="sb-grid">${cards}</div>
+      ${mainHtml}
     </div>`;
 
   _wireToolingPicker();
-  ROOT.querySelectorAll('.sb-card').forEach(el => {
+  ROOT.querySelectorAll('.sb-card:not(.sb-card-dxf)').forEach(el => {
     const toggle = () => {
       const c = el.getAttribute('data-code');
       _simBendExpanded = (_simBendExpanded === c) ? null : c;
       render();
     };
     el.addEventListener('click', (e) => {
-      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container') || e.target.closest('.sb-del-btn'))) return;
+      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container') || e.target.closest('.sb-del-btn') || e.target.closest('.sb-fav-btn'))) return;
       toggle();
     });
     el.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
   });
+
+  // ⭐ Favorite toggle (every card + mini-row) — open to everyone, persists to
+  // RTDB simbend_favs/<code>. The .on('value') listener re-renders.
+  ROOT.querySelectorAll('.sb-fav-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = btn.getAttribute('data-code');
+      if (c) toggleFav(c);
+    });
+  });
+
+  // Project picker + Sync — turns the home into a per-project bending dashboard.
+  const projSel = ROOT.querySelector('.sb-proj-select');
+  const syncBtn = ROOT.querySelector('.sb-sync-btn');
+  const syncStatus = ROOT.querySelector('.sb-sync-status');
+  if (syncStatus && _simBendSync && _simBendSync.key === _simBendProject) {
+    syncStatus.textContent = _simBendSync.running
+      ? `checking ${_simBendSync.done}/${_simBendSync.total}…`
+      : `${_simBendSync.done}/${_simBendSync.total} parts scanned`;
+  }
+  if (projSel) {
+    projSel.addEventListener('change', () => {
+      const key = projSel.value || '';
+      _simBendExpanded = null;
+      if (key) { _runProjectSync(key); }   // async; renders progressively
+      else { _simBendProject = null; _simBendSync = null; render(); }
+    });
+  }
+  if (syncBtn) {
+    syncBtn.addEventListener('click', () => {
+      const key = (projSel && projSel.value) || _simBendProject || '';
+      _simBendExpanded = null;
+      if (key) _runProjectSync(key);
+      else { _simBendProject = null; _simBendSync = null; render(); }
+    });
+  }
 
   // Delete a bend record (admin only) — เอ๋ 'เพิ่มปุ่มให้ลบงานที่ไม่ต้องการทิ้งได้'.
   // Hard-removes bend_sim/<code>; the listener re-renders. (Re-running Check Bend

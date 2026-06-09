@@ -3642,6 +3642,15 @@ button.cut-status:focus-visible {
 .sb-chip.sb-bad  { background: rgba(224,87,74,0.16);  color: #e0574a; }
 .sb-chip.sb-warn { background: rgba(242,184,78,0.16); color: #f2b84e; }
 .sb-meta { font-size: 12px; opacity: 0.75; margin-top: 6px; }
+/* Sim.Bending: project dashboard + ⭐ favorites (RD 02 / เอ๋ 2026-06-09) */
+.sb-section-head { font-size: 13px; font-weight: 700; color: #cad6e6; margin: 14px 0 8px; }
+.sb-fav-section, .sb-dash-section { margin-bottom: 14px; }
+.sb-fav-section { border-bottom: 1px solid #1c2530; padding-bottom: 10px; }
+.sb-mini-list { border: 1px solid #1c2530; border-radius: 8px; overflow: hidden; }
+.sb-mini-row:last-child { border-bottom: none !important; }
+.sb-fav-btn:hover { filter: brightness(1.4); }
+.sb-fav-btn.is-fav { color: #f2a93b; }
+.sb-card-dxf { cursor: default; }
 .sb-detail { margin-top: 12px; border-top: 1px solid #1c2530; padding-top: 10px; }
 .sb-reason { font-size: 12px; color: #e0574a; margin-bottom: 8px; }
 /* Auto-fit the step/bend mapping table to the card width — no horizontal
