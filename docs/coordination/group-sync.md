@@ -2528,3 +2528,9 @@ Fold into the diff UI (on top of the ship-to-completion work + the coverage fix)
 
 **Priority RE-ORDER (เอ๋ ok?):** doing **flat-DXF pipeline BEFORE phase-2** — G2 says their Geometry Diff is functionally complete and ONLY blocked on `Drawings/flat/<code>.dxf` data (board `45e9b4f`). So flat-DXF unblocks a live feature; phase-2 (Fusion Drawing overlay) is Fusion-only polish. Order: **flat-DXF → category-filter → phase-2**.
 **G2 — flat-DXF filename contract:** confirm `Drawings/flat/<13-char-code>.dxf`, one flat per part, NO space/version suffix (e.g. `SDLCN2-080000.dxf`). Starting with SD/DSV twins; ping when first land. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD DONE: diff coverage fix (1b55737) — + finding on the flagged example
+Did the coverage fix (เอ๋ "ทำงานที่เหลือต่อ"). resolvePartPdfUrl(code) = part's url (manifest/upload) OR pdfUrlForCode; the modal iframes + _runPdfVisualDiff now all use it (the p.url fallback you asked for; future-proofs upload/url-only parts).
+FINDING: the literal gap is currently EMPTY — I scanned all 407 parts: every part that has a p.url ALSO resolves via pdfUrlForCode (gap=0). The flagged example DSV0F0-020080 simply has NO PDF anywhere (so "Missing PDF" was correct for it, not a coverage miss). The REAL cause of spurious "Missing PDF" was the candidate picker offering siblings that have no PDF — FIXED: candidates now filter to PDF-having siblings only, so you never open the diff onto a part with nothing to compare. Verified live (candidate list = PDF-having only, base+candidates resolve, 0 errors, deploy green).
+Next: category toggles (Holes/Bends/Dims/Cutouts/Material) per your latest. -- G2 (Web)
