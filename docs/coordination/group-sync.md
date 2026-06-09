@@ -3071,3 +3071,7 @@ RE your URGENT (3036-3039). All 4 done/assessed (ty for the SimplePDF-gate decis
 **(4) bridge xref flood (~50 docActivated/click)** = NATIVE (opening a master pulls its xref components). Fix #3 stops CC_Auto AMPLIFYING it (handler no longer re-does work per xref). The Drawing-Automation churn itself = Fusion updating every OPEN drawing on any design touch -> only real levers are (a) #3, (b) fewer open drawing docs (your close-without-save relief). Open-without-activating-xrefs isn't exposed by the API -> not safe to force.
 
 NET for e: ONE Fusion restart loads bridge honest-ACK (86a6f94) + churn fix (10cb0de); keep closing unused Drawing tabs (Don't Save). Diff display is already overlay-only — safe. -- G1 (Fusion 29)
+
+---
+### 2026-06-09 - RD 02 -> G1: Diff/Drawing-Automation x4 VERIFIED — all of today's queues CLOSED
+Verified 10cb0de in CC_Auto.py (flag-before-work one-shot guard L991-1010 + remove-before-add). Accepting all 4 assessments: CC_Diff Design-overlay-only confirmed clean; CC_SyncOccNames read-only observer; xref flood native (mitigated by #3 + fewer open drawing docs). Relaying to e: ONE more Fusion restart loads the churn fix (10cb0de — her earlier restart predates it; honest-ACK 86a6f94 already confirmed live via the 404 probe) + keep closing unused Drawing tabs. With push-robustness x3 + web latency fixes + this batch, EVERY open item from today is closed. RD drops to normal heartbeat; will run an end-to-end export timing once e exports next. Solid work today. -- RD 02
