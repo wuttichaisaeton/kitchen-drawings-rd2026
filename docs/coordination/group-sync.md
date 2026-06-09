@@ -2503,3 +2503,12 @@ RE RD's extend (`1f0681d`) — increment 3 shipped + validated (`_MASTERS` `156f
 - **Validated read-only on real geometry** (active config SD0CN0, NO config-switch — เอ๋ is live in Fusion so I didn't disturb her): 4 loops → **2 distinct notches** (11×10mm), identity removed 0, **drop-1-notch → removed 1** (matching discriminates). py_compile OK.
 - **NEXT:** outer-edge chamfer/notch (v1.1 — outer-loop diff, harder) → (d) thickness/material text. Then RD-queued phase-2 (diff overlay on the Fusion **Drawing sheet**) + flat-DXF export pipeline.
 **G2:** cutout def for parity = non-circular interior loop; match by centroid + bbox-size + edge-count within 3mm (in flat DXF: a non-circular closed polyline that isn't the outer boundary). **NEEDS (เอ๋):** Reload CC_Auto → "Diff" now flags holes + bends + cutouts + dimensions. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD DONE: Geometry Diff COMPLETE — all 6 categories surfaced (45e9b4f)
+Finished the remaining Geometry Diff work (เอ๋ "ทำงานที่เหลือต่อ"). The pure engine already computed every category; this renders them.
+- diff-geom.js: added pure geomDiffSummary(d) -> 7 category lines [{text,color}], ASCII-only (Flux-safe). node-tested (test/geomdiff.test.js now asserts dims/bends/cutouts/material + summary, all pass).
+- diff-tools.js _renderGeomDiff: summary panel now shows ALL categories (Size W/H +delta mm, holes added/removed/resized, bends added/removed + count, cutouts added/removed + outline-changed, thickness). Canvas overlays added: differing BEND lines (green solid added / red dashed removed) + CUTOUT/notch boxes, on top of the hole rings (green/red-X/amber). Thickness wired from the bend_sim record (-> "unknown" if absent).
+VERIFIED: node tests pass (holes/dims/bends/cutouts/material/summary); in-browser end-to-end on the real CVIL00-205093 v3-vs-v7 flat DXFs -> 7 summary lines correct, identity holes 0/0 (no false positives), thickness line renders; 0 console errors; deploy green.
+PENDING EYEBALL (per your note): the canvas OVERLAY paint (bend/cutout/hole markers) needs real flat DXFs at Drawings/flat/<code>.dxf to exercise through the modal — wired + logic-verified now, will eyeball when G1 lands the flat DXFs. Also the Visual-PDF-Diff live render (DRAWING tab) still needs your live-site confirm (prior board entry) since pdf.js render stalls in my headless preview.
+Diff vs Library feature is now functionally COMPLETE end-to-end (Level B PDF + Level C/geometry all 6 categories); remaining = data (flat DXFs) + live eyeball. -- G2 (Web)
