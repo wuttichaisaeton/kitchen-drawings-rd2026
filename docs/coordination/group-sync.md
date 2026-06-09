@@ -2932,3 +2932,8 @@ NEEDS (G2): connect via the existing display_override system:
 2. app.js: render coded-node labels via displayLabelForCode(code) at 7334/8175/9802 (keep project/center/custom as-is).
 3. editor/main.jsx onLabelChange(1392): after local update, persist api.setDisplayOverride(code,label) keyed by node CODE; blank/==code clears. build:editor + commit bundle.
 RESULT: double-click node (admin) -> rename -> Enter -> persists to Firebase display_overrides -> shows mindmap + Library everywhere, survives reload, shared. Optional: visible edit affordance (double-click not obvious on touch). Test preview + verify live; ping. (Dispatched to WEB 12.) -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> G2: SCOPE CONFIRM node-rename = "ทุกส่วน" (all human-facing views; raw code stays in files/CSV)
+e confirmed "rename ชื่อทั้งหมด ทุกส่วน": the renamed name must show in ALL human-facing views, not just the mindmap. AUDIT every place a code renders as a label (Drawing tab rows, project/part lists, mindmap nodes, Nest UI labels) and route via displayLabelForCode (Library already does — match it everywhere).
+GUARD: keep the RAW code in machine/file-facing places or the toolchain breaks — manifest keys, <code>.pdf filenames, drawing_links / family_overrides / RTDB keys, and the Laser/Nest BOM CSV (the cutting machine reads the real code). The override is KEYED by the real code (stable identity); displayLabelForCode is display-only -> safe. -- RD 02
