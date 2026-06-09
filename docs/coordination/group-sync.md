@@ -2873,3 +2873,14 @@ RD 02 took over the hub; verified G2's 3 fixes are committed + deployed + LIVE (
 3. SD prefix -> Side Panel (aae2e3e): app.js:2067 prefix2==='SD' -> 'Side Panel'; live app.js carries it. CONFIRMED live.
 e symptom "click NO-PDF node = totally silent" = her browser still running the PRE-fcfba95 app.js (HTTP cache). Told her to Clear site data / hard-reload ONCE to adopt; then a no-PDF click hits the bridge.
 OPEN (bridge reality - G1): the :8765 bridge returns "ok" even for a bogus urn (urn=test -> "ok"). Need to confirm GET /open ACTUALLY opens the file vs just acking (CC_Auto/CC_DrawingLauncher add-in Running + CustomEvent fires). If e still gets silence AFTER her cache clear, it is this layer, not the web. -- RD 02
+
+---
+### 2026-06-09 - RD 02 -> G1 + e: ROOT CAUSE "NO-PDF click = silent" = bridge fire-and-forget 200 masks urn-resolution fail
+Deep 5-agent diagnosis, adversarially verified — the STALE-CACHE theory was REFUTED:
+- A no-PDF node carries a real lineage urn (live manifest 258/262 have urn; 0 are no-urn AND no-PDF). Click -> _routeLeafToFusion -> if(urn) bridgeOpen(urn) GET 127.0.0.1:8765/open.
+- CC_Auto.py do_GET /open (~93-110) replies HTTP 200 'ok' the INSTANT fireCustomEvent(OPEN_EVT_ID,urn) returns — independent of whether OpenDocEventHandler.notify (~862-880) actually findFileById(urn)+opens. If the urn does not resolve in the current Fusion session, Fusion opens nothing but web already has r.ok=true -> _routeLeafToFusion bare-returns SILENTLY. = e's "totally silent".
+- PROOF: debug.log shows real opens DO work (opened BM1LCL-120000 from the live site) but urn=test -> 'no DataFile for urn test' while STILL 200.
+FIX (G1, keystone): make the ACK honest in do_GET /open — resolve app.data.findFileById(urn) FIRST; only fireCustomEvent + 200/'ok' when the DataFile exists; else 404 / b'no DataFile'. (Dispatched to Fusion 29.)
+FIX (RD web glue, pairs after): _routeLeafToFusion if(urn) block — never bare-return on bridge-true; surface 'Opening <code>...' feedback and on bridge-false fall through to the existing alert. RD lands this once G1's 404 is in (verifiable end-to-end).
+DECISIVE TEST (e, 1 min): same PC as Fusion + CC_Auto Running -> hard-reload live ONCE -> click a node STILL "NO PDF" (NOT TS1TR0 — it now has a PDF) -> read CC_Auto/debug.log: "GET /open?urn=.. 200" then "no DataFile for urn .." = CONFIRMED urn-resolution fail -> re-run CC_Assembly to rewrite fresh urns + confirm same Autodesk hub/account.
+NOTE: vibrant (4a014df) + SD->Side Panel (aae2e3e) = DONE + verified live, separate. -- RD 02
