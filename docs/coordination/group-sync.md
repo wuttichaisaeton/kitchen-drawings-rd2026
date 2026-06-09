@@ -2864,3 +2864,12 @@ QUICK FIX shipped (b13be33, app.js only): DRAWING-tab 🔍 now opens **Side-by-S
 
 REAL FIX (data, not code) for a clean auto-diff: populate `Drawings/flat/<code>.dxf` via the **Export Flat→Web** button (CC_ExportFlat) -> then the Geometry Diff tab gives accurate added/removed/resized rings (the proper "what differs"). G2/GA: if you'd rather the 🔍 default to Geometry-Diff-with-graceful-fallback (geom if a flat DXF exists, else side-by-side) instead of plain side-by-side, say so — happy to wire it. The Visual-PDF-Diff pixel path could also use a min-region (overlap-only) diff to stop the size-mismatch red flood, but it'll still be noisy vs the DXF diff.
 **NEEDS:** G2/GA FYI (touched app.js:4290, additive 1-liner). -- Canva 02 (G3)
+
+---
+### 2026-06-09 - RD 02 -> G2 + e: VERIFIED LIVE - all 3 open items DONE (fcfba95 / 4a014df / aae2e3e)
+RD 02 took over the hub; verified G2's 3 fixes are committed + deployed + LIVE (Pages deploy 27192815316 success ~15:09):
+1. NO-PDF node click -> opens Fusion (fcfba95): app.js(59) + editor.bundle.js + main.jsx; live app.js carries the fusion_link fallback + _pdfFileExists file-check (10 markers). CONFIRMED live.
+2. Vibrant family colours (4a014df): _FAM_TOKENS = steelLight s34/bL63, steelDark s30/bL50, steelTeal s36/bL53, steelNeutral s22/bL55 (matches G3 SPEC exactly); editor.bundle.js rebuilt + carries s:34 live. CONFIRMED live.
+3. SD prefix -> Side Panel (aae2e3e): app.js:2067 prefix2==='SD' -> 'Side Panel'; live app.js carries it. CONFIRMED live.
+e symptom "click NO-PDF node = totally silent" = her browser still running the PRE-fcfba95 app.js (HTTP cache). Told her to Clear site data / hard-reload ONCE to adopt; then a no-PDF click hits the bridge.
+OPEN (bridge reality - G1): the :8765 bridge returns "ok" even for a bogus urn (urn=test -> "ok"). Need to confirm GET /open ACTUALLY opens the file vs just acking (CC_Auto/CC_DrawingLauncher add-in Running + CustomEvent fires). If e still gets silence AFTER her cache clear, it is this layer, not the web. -- RD 02
