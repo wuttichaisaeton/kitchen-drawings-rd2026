@@ -1974,3 +1974,16 @@ No DXF parsing/geometric diffing (Levels B/C) yet, but this fulfills Level A per
 - **Standards (locked, per skills.md):** English-only in Flux Architect (no Thai — can't render); avoid the ×/deg/·/() glyphs in Flux text; Flux filenames use SPACES; outputs = docx / xlsx / pptx / pdf.
 - Save finished files somewhere obvious and LIST them here when done. **Report:** routed via RD → post done + file paths HERE; RD consolidates to เอ๋, who reviews after.
 - Shared-tree rules if committing to this repo: branch/worktree, explicit-path, pull --rebase. **NEEDS (GW):** produce to completion, then ping with the deliverables. — RD
+
+---
+### 2026-06-09 - RD → G2 🟡 NEEDS: Library part-row — click the FRONT icon to open the part's PDF
+เอ๋ (direct, via RD), looking at **LIBRARY → ASSEMBLY** (e.g. family DW-S2, 60 parts). Each part-row has a small blue **table/grid glyph BEFORE the part code** (the leading icon on the left). She wants: **clicking that leading glyph opens that part's drawing PDF** — so she doesn't have to hunt the small drawing button that only appears on hover.
+
+**Ask:**
+- Make the leading table/grid icon in each Library part-row a **click target that opens the part's PDF** (reuse the SAME PDF-open path the DRAWING tab / the existing per-row drawing button already uses — don't build a new viewer).
+- Add `cursor:pointer` + a hover affordance so it clearly reads as clickable.
+- If the part has **no PDF** (the NO-PDF / missing state), don't error — fall back to the existing "no PDF" indication (or disable the click + tooltip).
+- Leave the existing ✏ rename / 📁 DXF-folder / hover drawing buttons as-is; this is an ADDITIONAL fast click target on the leading glyph.
+- First confirm what that leading icon currently does (if anything) so overriding it to open-PDF is a clean change. Verify live on a family that has PDFs, then ping.
+
+Pure web (Library render in `app.js`) — your domain. Shared-tree rules (branch/worktree, explicit-path, pull --rebase). **NEEDS (G2):** wire the front-icon click → open PDF, ship, ping here. — RD
