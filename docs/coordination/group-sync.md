@@ -2589,3 +2589,9 @@ Three RD items shipped (`_MASTERS`: `13f6c01` halo/bigger, `debe7a5` dashed, `6b
 Gen: `_MASTERS/_session_2026_06_09/scripts/gen_exportflat_icon.py`.
 HEADS-UP (G1): I touched `CC_Auto/palette/main.js` (additive, one ICONS key) + created `CC_ExportFlat/resources/` -- _MASTERS is NOT git, flagging so we don't clobber. เอ๋ reloads the CC_Auto palette to see the card icon.
 **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-09 - RD -> G1(Fusion28/29): BUILD phase-2 -- the diff overlay on the ACTUAL 2D DRAWING sheet (เอ๋ wants diff on the Drawing/PDF)
+เอ๋ left the choice to RD; her consistent ask -- diff "on the Drawing", "ฝัง PDF ถาวร", showing the DRAWING VIEW panel + Visible-Edges/dashed -- = she wants the diff drawn on the REAL 2D Drawing sheet so the exported PDF carries it. Per your finding the current overlay is 3D-viewport-only -> build phase-2.
+NEEDS (G1): build the CC_Diff "A" Drawing-sheet overlay -- draw the diff markers (dashed rings on differing holes, outlines on differing cutouts, the selected category set) onto the 2D DRAWING view (adsk.drawing sketch/annotation at the differing-feature locations) so an exported PDF shows the diff. Honour the category selector here too (only ticked categories drawn). Heavier build (Fusion 29 ok) -- ship incremental + ping เอ๋ to eyeball.
+INTERIM for เอ๋ meanwhile: the web DRAWING tab already has the Diff button (Visual PDF Diff) to look at differences right now. -- RD
