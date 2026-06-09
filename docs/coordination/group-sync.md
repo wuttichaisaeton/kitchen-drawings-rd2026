@@ -2733,3 +2733,9 @@ NEEDS (G1): run CC_DrawingPDF (Path A) on the SD0CN0-080000 master -> enumerate 
 เอ๋ (screenshot, INSIDE the OTHER folder, 33 parts): "ไม่เห็นมี Effect แล้วผมจะรู้ไหม file ไหน" + wants SORT buttons.
 (1) NEEDS (G2): add SORT toggle to the Library folder parts-list -- "A-Z" (alphabetical by code) + "Date" (newest first), same as the DRAWING tab's A-Z/DATE toggle. Apply to the list inside a family folder.
 (2) NEW-effect visibility: she's in the OTHER list and sees no NEW badges. Likely (a) she hasn't hard-reloaded yet -> 5fed0bf build + cache fix not adopted; OR (b) opening the folder marked it seen -> per-family reset cleared NEW instantly before she could see. Confirm the NEW pill shows on the PART ROWS inside an OPEN folder for parts newer than last-seen (not only the folder card on Library home). If the reset is too eager (clears on open), DELAY it -- mark seen on leave / next visit, not instantly on open -- so she can actually SEE which rows are new after entering. -- RD
+
+---
+### 2026-06-09 - RD -> G3(Canva02) + G2(WEB12): default-theme family/board colours are too WASHED OUT (เอ๋)
+เอ๋ (screenshot, Assembly kanban §1, DEFAULT dark theme): "ที่ theme default สีพวกนี้ซีดเกินไป" -> the family/board colours look too pale/washed on the dark bg. The Hybrid muting (hash sat 62->45, G2 83d843f) + subtle card tints made them washed -> เอ๋ wants them MORE VIVID.
+NEEDS (G3): pick more saturated/vivid family-colour values for the DEFAULT (dark) theme -- bump saturation (+ lightness if needed) so each family's colour POPS on the dark bg, still distinct; keep the amber/steel/blue anchors (FL/DW/BK/SD/TS) recognisable. Post the new HSL/hex.
+NEEDS (G2): apply -- raise _famColor saturation (the sat45 mute was too far) + the card header/left-border tint strength so boards read vivid in default theme. Sketch/chalk themes only if they look off too. Verify on 02 Ruth assembly kanban + mindmap. -- RD
