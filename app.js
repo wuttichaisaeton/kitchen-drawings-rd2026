@@ -9657,10 +9657,20 @@ async function _routeLeafToFusion(node) {
   const urn = node.urn || (fl && fl.urn) || null;
   const drawingUrn = node.drawing_urn || (fl && fl.drawing_urn) || null;
   // Bridge GET with no-store so a stale localhost cache can't swallow the open.
+  // One auto-retry after 2s: the common transient is "Fusion just (re)started and
+  // CC_Auto's :8765 server isn't up yet" — a single retry rides out that window
+  // instead of alarming เอ๋ (2026-06-09 "Failed to fetch" right after a restart).
   const bridgeOpen = async (u) => {
-    const r = await fetch(`http://127.0.0.1:8765/open?urn=${encodeURIComponent(u)}&t=${Date.now()}`,
-      { method: 'GET', mode: 'cors', cache: 'no-store' });
-    return r.ok;
+    const hit = async () => {
+      const r = await fetch(`http://127.0.0.1:8765/open?urn=${encodeURIComponent(u)}&t=${Date.now()}`,
+        { method: 'GET', mode: 'cors', cache: 'no-store' });
+      return r.ok;
+    };
+    try { return await hit(); }
+    catch (e) {
+      await new Promise(res => setTimeout(res, 2000));
+      return hit();   // second throw propagates to the caller's catch
+    }
   };
   // Drawn + current → open the PDF, but ONLY if the file actually EXISTS. A manifest
   // key can resolve a URL that 404s (file not deployed) — in that case fall THROUGH to
@@ -9696,12 +9706,11 @@ async function _routeLeafToFusion(node) {
       `The local bridge at http://127.0.0.1:8765 didn't respond:\n` +
       `  ${bridgeError}\n\n` +
       `Checks:\n` +
-      `1. Are you on the same PC as Fusion?\n` +
+      `1. Is Fusion OPEN on this PC? If it just started, wait ~30s\n` +
+      `   for CC_Auto to load, then click again. (No page reload needed.)\n` +
+      `2. Are you on the same PC as Fusion?\n` +
       `   (the bridge only listens on localhost — iPad can't reach it)\n` +
-      `2. Is the CC_DrawingLauncher add-in Running in Fusion?\n` +
-      `   Design workspace → Utilities → Add-ins → look for CC_DrawingLauncher\n` +
-      `3. No PDF exists for this code yet either — export one via\n` +
-      `   CC_DrawingPDF in Fusion so workshop can read it.`
+      `3. Is the CC_Auto add-in Running? Utilities → Add-ins → CC_Auto → Run.`
     );
   } else if (!urn) {
     alert(
