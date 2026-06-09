@@ -493,7 +493,7 @@ function MindmapNode({ id, data, selected }) {
               // clear error from _routeLeafToFusion explaining the
               // bridge isn't reachable from there.
               if (api.routeLeaf) {
-                api.routeLeaf({ code, status, urn, drawing_urn });
+                api.routeLeaf({ code, status, urn, drawing_urn, fusion_link });
               }
             }}
             onPointerDown={(e) => {
@@ -502,7 +502,7 @@ function MindmapNode({ id, data, selected }) {
                 e.stopPropagation();
                 e.nativeEvent.stopImmediatePropagation();
                 if (api.routeLeaf) {
-                  api.routeLeaf({ code, status, urn, drawing_urn });
+                  api.routeLeaf({ code, status, urn, drawing_urn, fusion_link });
                 }
               }
             }}
@@ -1848,7 +1848,7 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
       const code = data.label;
       const api = window.kdAPI || {};
       if (api.routeLeaf) {
-        api.routeLeaf({ code, status: data.status, urn: data.urn, drawing_urn: data.drawing_urn });
+        api.routeLeaf({ code, status: data.status, urn: data.urn, drawing_urn: data.drawing_urn, fusion_link: data.fusion_link });
       } else if (code) {
         const url = api.pdfUrlForCode?.(code);
         if (url) (api.openInNewTab || ((u) => window.open(u, '_blank', 'noopener')))(url);

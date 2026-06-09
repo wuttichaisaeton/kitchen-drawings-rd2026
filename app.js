@@ -9550,42 +9550,44 @@ function _statusBadgeColor(status) {
 //
 // Bridge: http://127.0.0.1:8765/open?urn=<urn>. Fallback to PDF if any.
 async function _routeLeafToFusion(node) {
-  // Drawn + current → open PDF directly
+  // urn sources: the manifest/BOM urn first, then a CC_LinkNode pairing (fusion_link).
+  // A node paired via Edit-in-Fusion can have NO manifest urn but a fusion_link.urn —
+  // use it so the click still opens Fusion. (RD 2026-06-09)
+  const fl = node.fusion_link || null;
+  const urn = node.urn || (fl && fl.urn) || null;
+  const drawingUrn = node.drawing_urn || (fl && fl.drawing_urn) || null;
+  // Bridge GET with no-store so a stale localhost cache can't swallow the open.
+  const bridgeOpen = async (u) => {
+    const r = await fetch(`http://127.0.0.1:8765/open?urn=${encodeURIComponent(u)}&t=${Date.now()}`,
+      { method: 'GET', mode: 'cors', cache: 'no-store' });
+    return r.ok;
+  };
+  // Drawn + current → open the PDF, but ONLY if the file actually EXISTS. A manifest
+  // key can resolve a URL that 404s (file not deployed) — in that case fall THROUGH to
+  // Fusion instead of opening a broken/blank PDF tab. (RD 2026-06-09)
   if (node.status === 'drawn') {
     const url = pdfUrlForCode(node.code);
-    if (url) { _openInNewTab(url); return; }
+    if (url && await _pdfFileExists(url)) { _openInNewTab(url); return; }
   }
-  // Track bridge attempt outcome so we can surface a useful message
-  // when every path fails (the silent `catch {}` was hiding the most
-  // common failure mode: CC_DrawingLauncher add-in not running, or
-  // user on a device other than the admin PC).
   let bridgeAttempted = false;
   let bridgeError = null;
   // Stale (drawing exists but out of date) → open Fusion drawing
-  if (node.status === 'stale' && node.drawing_urn) {
+  if (node.status === 'stale' && drawingUrn) {
     bridgeAttempted = true;
-    try {
-      const r = await fetch(
-        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(node.drawing_urn)}`,
-        { method: 'GET', mode: 'cors' });
-      if (r.ok) return;
-      bridgeError = `HTTP ${r.status}`;
-    } catch (e) { bridgeError = e?.message || 'fetch failed'; }
+    try { if (await bridgeOpen(drawingUrn)) return; bridgeError = 'bridge declined'; }
+    catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
-  // Missing / deleted / fallback → open Fusion 3D master
-  if (node.urn) {
+  // Missing / deleted / drawn-but-404 / fallback → open Fusion 3D master
+  if (urn) {
     bridgeAttempted = true;
-    try {
-      const r = await fetch(
-        `http://127.0.0.1:8765/open?urn=${encodeURIComponent(node.urn)}`,
-        { method: 'GET', mode: 'cors' });
-      if (r.ok) return;
-      bridgeError = `HTTP ${r.status}`;
-    } catch (e) { bridgeError = e?.message || 'fetch failed'; }
+    try { if (await bridgeOpen(urn)) return; bridgeError = 'bridge declined'; }
+    catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
-  // Last-resort fallback — PDF if any (handles stale w/o drawing_urn etc.)
+  // Last-resort fallback — a PDF that actually exists (handles stale w/o drawing_urn etc.)
   const url = pdfUrlForCode(node.code);
-  if (url) { _openInNewTab(url); return; }
+  if (url && await _pdfFileExists(url)) { _openInNewTab(url); return; }
+  // Web fallback — a CC_LinkNode open_url (Fusion Teams link) if the local bridge isn't reachable
+  if (fl && fl.open_url) { _openInNewTab(fl.open_url); return; }
 
   // Nothing worked — tell the user WHY instead of failing silently.
   if (bridgeAttempted) {
@@ -9601,11 +9603,12 @@ async function _routeLeafToFusion(node) {
       `3. No PDF exists for this code yet either — export one via\n` +
       `   CC_DrawingPDF in Fusion so workshop can read it.`
     );
-  } else if (!node.urn) {
+  } else if (!urn) {
     alert(
-      `"${node.code || 'this part'}" has no Fusion URN saved.\n\n` +
+      `"${node.code || 'this part'}" has no Fusion URN saved (and no linked file).\n\n` +
       `Re-run CC_Assembly in Fusion for this project so the URN is\n` +
-      `written into the manifest, then refresh this page.`
+      `written into the manifest, then refresh this page — or use the\n` +
+      `🔗 Link / Edit-in-Fusion path to pair it.`
     );
   }
 }
