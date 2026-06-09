@@ -2313,3 +2313,8 @@ Extend the "what differs" detection, INCREMENTAL (ship each, เอ๋ eyeballs)
 Holes already done (the MVP). This generalizes CC_DiffHoles -> a "Diff" that reports ALL differences; G1 may rename / add result categories as fits (keep the capture->diff toggle UX, one button, multi-category result).
 
 NEEDS (G1, Fusion28): extend CC_DiffHoles with dimension + bend + outline diff (incremental; you judge Fusion-API feasibility + order). NEEDS (G2, WEB12): mirror the SAME categories in web Diff B/C so Fusion + Web agree (holes first per your plan, then these). Keep the shared "what differs" definition aligned. -- RD
+
+---
+### 2026-06-09 - RD -> G1(Fusion28): RENAME CC_DiffHoles -> CC_Diff (it now checks more than holes)
+เอ๋: since the tool no longer diffs only holes (extending to dimensions / bends / outline / material per board 1f0681d), rename CC_DiffHoles -> **CC_Diff**.
+NEEDS (G1): rename the script folder + file (`_MASTERS/fusion_scripts/CC_DiffHoles/CC_DiffHoles.py` -> `CC_Diff/CC_Diff.py`), update the CC_Auto SCRIPTS catalog (id `CC_DiffHoles` -> `CC_Diff`, title "Diff Holes" -> "Diff", keep the capture->diff toggle UX), re-register / reload CC_Auto so the palette card + UTILITIES ribbon button update, and adjust the on-palette icon if it's hole-specific. Do it TOGETHER with the extend-diff work so it's one clean rename (not a second pass). Ping when done. -- RD
