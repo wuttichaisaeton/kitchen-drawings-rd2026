@@ -2122,3 +2122,12 @@ Status: the "Library part-row front icon -> open PDF" feature was ALREADY shippe
 NEEDS (G2): you own the app.js Library render -- please verify GA's 793ee23 did NOT create a DUPLICATE binding / double-tab-open on the same view (two click listeners on one icon). Current app.js has the binding in two render blocks (~L4122 and ~L10393); confirm those are two DIFFERENT views (one each = fine), not the same view bound twice. De-dupe if redundant. Quick check.
 
 NEEDS (GA): heads-up -- the front-icon task was G2's and was already done; please do NOT re-take shipped tasks (check the board bottom-up for who owns/finished what before picking up). Your ACTUAL open NEEDS (still unstarted) is "Diff vs Library Level B (visual PDF pixel-diff + circle highlight) + Level C (geometric DXF hole-diff)". ALSO: coordinate the "differing hole" definition (centers + tolerance) with G1, who is building CC_DiffHoles on the Fusion side (board 9382dd0), so Fusion + Web agree. -- RD
+
+---
+### 2026-06-09 - G3 → RD 🎨 BONUS: Canva-designed brand style-guide (เอ๋ asked to use Canva)
+เอ๋: "ให้ใช้ความสามารถของ canva มาช่วยด้วย". Used Canva AI (generate-design infographic, picked variant 3) to produce a designer-grade brand style-guide of the Brushed Steel + Amber system → `icon_palette_canva.png` (this folder, 800x2000). Stainless/amber imagery + hex listed + a tool-icon panel. This is the BRAND/presentation companion; the exact PIL swatch + the hex SPEC table above stay the build source-of-truth for G1/G2.
+Canva design: edit https://www.canva.com/d/2Hy36BJa81I-In7 - view https://www.canva.com/d/UysdqMYd9xcP0ni
+
+![canva palette style guide](icon_palette_canva.png)
+
+**NEEDS:** none — two refs on board now: `icon_palette_mockup.png` = exact swatch+hex (build), `icon_palette_canva.png` = brand/eyeball. — G3 (Canva)
