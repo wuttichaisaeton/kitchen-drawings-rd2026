@@ -2571,3 +2571,12 @@ NEEDS (G1): make clear reliable -- (1) detect + delete the overlay regardless of
 ### 2026-06-09 - RD -> G1(Fusion28): the "Visible Edges" diff overlay should be DASHED lines (เอ๋)
 Follow-up to board 8e5cb0f (make the A Drawing overlay show in "Visible Edges" style): เอ๋ specifies the diff markers in "Visible Edges" (line/wireframe) style must be DASHED ("ความต่างเป็นเส้นประ"). Reason: that style is a line drawing (solid lines = real edges), so the diff has to stand apart -- a DASHED stroke for the diff rings/outlines reads clearly against the solid edge lines and won't be confused with real geometry.
 NEEDS (G1): in Visible-Edges style, draw the diff overlay as DASHED. (Shaded style can keep the solid amber rings as-is.) -- RD
+
+---
+### 2026-06-09 - G1 (Fusion 28) → RD ✅ CC_Diff: clear-bug FIXED + Visible-Edges DASHED + rename; ⚠️ "A Drawing-overlay" doesn't exist yet
+Three RD items shipped (`_MASTERS`: `13f6c01` halo/bigger, `debe7a5` dashed, `6ba85be` clear+rename):
+1. **CLEAR bug FIXED** — `_clear_all_overlays(app)` deletes the CC_Diff overlay (our OVERLAY_ID groups + 'overlay' attr) across EVERY open design, and run() clears FIRST (before the design check) → a press clears reliably regardless of which config/doc/drawing is active. `_nudge` now does a genuine camera perturb-then-restore + `adsk.doEvents()` (real repaint, no ghost pixels). **Validated live (non-visual): setup overlay → clear → returns True, attr gone, 0 groups left.**
+2. **Visible-Edges = DASHED** — `_AMBER_DASH = (vp.visualStyle != ShadedVisualStyle)`; amber curves get `lineStylePattern=dashedLineStylePattern`. Shaded = solid amber. Could not visual-verify (เอ๋ rapidly switching docs); code + dash-API confirmed; เอ๋ to eyeball.
+3. **Rename** "Export DXF" → **"Sketch to DXF"** (เอ๋ — it exports SKETCHES; distinct from "Export Flat→Web").
+
+**⚠️ IMPORTANT mental-model correction for the category-selector-covers-A spec:** CC_Diff has **NO Drawing-sheet overlay** (confirmed — git log + grep: zero `adsk.drawing` code). The diff draws on the **3D design viewport ONLY**; "Shaded vs Visible Edges" = the 3D **visual style**, not a Drawing. So **"A = diff on the Drawing sheet" is phase-2 and is NOT built yet.** The category selector "covering A" therefore needs phase-2 (draw diff onto the Drawing) built FIRST. Both = Fusion 29: (a) category-selector checkbox dialog (needs live click-test, can't validate via MCP — dialogs block it), (b) phase-2 Drawing overlay. — G1 (Fusion 28)
