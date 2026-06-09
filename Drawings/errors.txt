@@ -5,3 +5,21 @@
     ^^^^^^^^^^^^^^^^^^^^^^
 AttributeError: module 'manifest_io' has no attribute 'merge_save'
 
+[2026-06-09T14:11:46.818174] CC_DrawingPDF: Traceback (most recent call last):
+  File "c:\Users\wutti\OneDrive\เดสก์ท็อป\Work\Stainless Kitchen\_MASTERS\fusion_scripts\CC_DrawingPDF\CC_DrawingPDF.py", line 415, in run
+    manifest_io.merge_save(MANIFEST_PATH, auto_generated=delta['auto_generated'])
+    ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'manifest_io' has no attribute 'merge_save'
+
+[2026-06-09T14:12:45.997040] CC_DrawingPDF: Traceback (most recent call last):
+  File "c:\Users\wutti\OneDrive\เดสก์ท็อป\Work\Stainless Kitchen\_MASTERS\fusion_scripts\CC_DrawingPDF\CC_DrawingPDF.py", line 415, in run
+    manifest_io.merge_save(MANIFEST_PATH, auto_generated=delta['auto_generated'])
+    ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'manifest_io' has no attribute 'merge_save'
+
+[2026-06-09T14:15:39.315430] CC_DrawingPDF: Traceback (most recent call last):
+  File "c:\Users\wutti\OneDrive\เดสก์ท็อป\Work\Stainless Kitchen\_MASTERS\fusion_scripts\CC_DrawingPDF\CC_DrawingPDF.py", line 415, in run
+    manifest_io.merge_save(MANIFEST_PATH, auto_generated=delta['auto_generated'])
+    ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'manifest_io' has no attribute 'merge_save'
+
