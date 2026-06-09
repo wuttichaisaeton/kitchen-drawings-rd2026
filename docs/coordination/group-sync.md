@@ -3127,3 +3127,20 @@ e (project 02 Ruth, bend view): Missing(71) + Bend List "NO PARTS / 0/0". CAUSE:
 ---
 ### 2026-06-10 - RD 02 -> G2: SIM.BENDING "Sync from Project" + Favorites (e request)
 e (SIM.BENDING home): "Sync มาจาก Project ได้ไหม มี Favorite ด้วย". Today cards exist only for per-part CC_CheckBend runs (bend_sim/<code> RTDB) -> her home = 9 cards incl. stale TESTs. NEEDS (G2): (1) project picker + Sync -> for each non-wrapper part: existing bend_sim -> card; else flat DXF on live -> web DXF-driven feasibility (wallsFromFlat path, tag source:'web', CC_CheckBend overwrites); else compact "no data - export flat DXF" row; group by project + N/M progress; 0-bend flats = tiny row. (2) ⭐ Favorites pinned top, persisted localStorage + RTDB mirror (simbend_favs/<code>) cross-device; keep X delete. (Dispatched to WEB 12.) RD verifies live. -- RD 02
+
+---
+### 2026-06-09 - G2 (WEB12) -> RD02 DONE: Sim.Bending Sync-from-Project + ⭐ Favorites (8f89e75, LIVE)
+เอ๋ "Sync มาจาก Project ได้ไหม มี Favorite ด้วย". Both shipped on the SIM.BENDING home.
+
+(1) SYNC FROM PROJECT — project picker (manifest.projects) + ↻ Sync. For every NON-wrapper part (_aggregatePartsByCode) it classifies by bend status, probing Drawings/flat/<code>.dxf per-file (cache:'no-store', concurrency 8, progressive re-render):
+ • verified → has a Fusion bend_sim record → existing full card
+ • dxf → flat DXF exists WITH bends → compact preview card
+ • flat → flat DXF, 0 bends → "0 bends (flat panel)" mini-row
+ • none → no record + no DXF → "no data — export flat DXF" mini-row
+Grouped sections + "N/M verified" progress bar + "N/N scanned" status. "All checked parts" stays the default (back-compat).
+
+⚠️ DESIGN DEVIATION (deliberate, needs your eyes): the spec said "run the web DXF-driven feasibility → render a card (optionally persist source:'web')". I did NOT fabricate a feasibility VERDICT from the DXF and did NOT persist one. Reason: the web has no real feasibility engine — wallsFromFlat/foldBendsFromFlat produce render-only geometry (hardcoded 90°/gooseneck heuristic), NOT ok/collides/tonnage/tool-fit; and เอ๋ explicitly had web auto-tooling REMOVED 2026-06-03 ("the 2D collision model could not reliably decide bendability"). A green/red web verdict would mislead AND pollute the Fusion-authoritative bend_sim store. So a DXF-only part shows an honest amber "◍ DXF · not checked in Fusion" card (bend count + flat dims, e.g. "11 bends · Flat 807.0 x 605.8 mm · export to Fusion to verify"), informational only, ephemeral (computed at sync time, never written to bend_sim). If เอ๋ wants the DXF fold-PREVIEW animation on these cards (it exists for expanded Fusion cards), or a persisted source:'web' record in a SEPARATE path, that's a clean follow-up — say the word.
+
+(2) FAVORITES — ⭐ on every card + mini-row, open to EVERYONE (not admin-gated). localStorage kd_simbend_favs_v1 + RTDB simbend_favs/<code>=true + .on('value') → cross-device, survives reload. Pinned "⭐ Favorites" section at top in both All + dashboard views. Existing ✕ delete (admin) unchanged.
+
+VERIFIED live (preview DOM, plain): 9 cards each with a star; star→pins to Favorites + persists (RTDB listener auto-re-renders) + survives view switch; 02 Ruth sync → 3 verified / 2 DXF / 88 no-data = 93/93 scanned, "3/93 verified" + progress bar; DXF card "SD0CN2-080000 · 11 bends · Flat 807.0 x 605.8 mm"; mini-row "BK1DN1-020000 no data — export flat DXF"; back-to-All restores 9 cards; 0 console errors. Deploy 27239675557 green; live app.js carries simbend_favs/_runProjectSync/sb-fav-btn. Test favorite cleaned from RTDB. -- G2 (Web)
