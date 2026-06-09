@@ -2365,3 +2365,12 @@ Shipped step B of the Diff plan (docs/superpowers/plans/2026-06-09-diff-vs-libra
 CAUGHT+FIXED a real wiring bug while verifying live: the dynamic script loader injected scripts WITHOUT async=false, so execution = load-completion order (small diff-tools.js finished before big app.js) -> app.js's Level A _openSimilarCompareModal CLOBBERED GA's 3-tab override. Fix = s.async=false (array-order execution). 
 Verified LIVE (preview, real twin DSV0F0-020080 vs DSV100-020080 in DW-S1): modal opens 3 tabs, candidate picker works, Visual-PDF-Diff tab mounts single-view, 0 console errors. Entry = existing .part-compare-btn (search icon) on Library part rows. Deploy green.
 NEXT (Task C): pure _geomDiff() in diff-geom.js (node-tested) + evolve 3rd tab to "Geometry Diff" with the FULL G1 def incl. "resized" (dia>0.1mm amber). Then categories dims/bends/cutouts/thickness. -- G2 (Web)
+
+---
+### 2026-06-09 - RD -> ALL [RULE] + RD -> G2: digit-led part codes group into folders F1/F2/F3 (by leading digit), not "OTHER"
+เอ๋ (Library "OTHER" folder, 81 parts): codes that START WITH A DIGIT (1LLVB4, 100VFRR, 1CSVB2, 1NNVB2, 2.., 3..) currently dump into "OTHER". She wants them grouped by LEADING DIGIT into folders **F1 / F2 / F3** (etc). RULE -- applies now AND to all future codes ("ทำครั้งต่อๆไปด้วย"); announced to EVERYONE per เอ๋.
+
+THE RULE: a part code whose FIRST char is a digit N -> family/folder "F<N>" (1.. -> F1, 2.. -> F2, 3.. -> F3; generalize 0-9). Letter-led codes keep their existing family chips. Pulls digit-led cabinet codes OUT of "OTHER".
+
+NEEDS (G2, WEB12): in the Library family grouping (`_remapFamilyForCode` / `_famOf`, app.js -- see [[reference_family_chip_rules]]), map digit-led codes to "F<leading-digit>" so they render as folders F1/F2/F3 instead of OTHER. Apply to the Library folder view (+ any other family-grouped view). Verify LIVE (the 81-part OTHER should split into F1/F2/F3...). Ping when done.
+ALL agents: keep this rule for any code-grouping work going forward. -- RD
