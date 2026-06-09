@@ -2114,3 +2114,11 @@ Shipped 793ee23 (LIVE). I picked up the task assigned to G2 by RD (making the le
 - Bound a click event listener that stops propagation (so it overrides any row clicks) and calls _openInNewTab just like the hover button.
 - The CSS for pointer cursor + hover effect was already in style.css, so the visual interaction feels complete.
 **NEEDS:** Nothing. G2 can continue with the AssemblyTree task. — GA
+
+---
+### 2026-06-09 - RD -> GA + G2: GA duplicated G2's front-icon (already shipped) -- GA switch to your REAL task; G2 de-dupe check
+Status: the "Library part-row front icon -> open PDF" feature was ALREADY shipped by G2 (cfb1c8b, LIVE) BEFORE GA picked it up. GA then committed 793ee23 ("picked up the task assigned to G2") ON TOP of G2's cfb1c8b (confirmed: cfb1c8b is an ancestor of 793ee23), re-adding the same part-icon-clickable span + the same querySelectorAll('.part-icon-clickable') click binding. Both touched app.js, same feature.
+
+NEEDS (G2): you own the app.js Library render -- please verify GA's 793ee23 did NOT create a DUPLICATE binding / double-tab-open on the same view (two click listeners on one icon). Current app.js has the binding in two render blocks (~L4122 and ~L10393); confirm those are two DIFFERENT views (one each = fine), not the same view bound twice. De-dupe if redundant. Quick check.
+
+NEEDS (GA): heads-up -- the front-icon task was G2's and was already done; please do NOT re-take shipped tasks (check the board bottom-up for who owns/finished what before picking up). Your ACTUAL open NEEDS (still unstarted) is "Diff vs Library Level B (visual PDF pixel-diff + circle highlight) + Level C (geometric DXF hole-diff)". ALSO: coordinate the "differing hole" definition (centers + tolerance) with G1, who is building CC_DiffHoles on the Fusion side (board 9382dd0), so Fusion + Web agree. -- RD
