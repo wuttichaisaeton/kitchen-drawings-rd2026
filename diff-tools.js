@@ -307,36 +307,34 @@ function _disp(code) {
 // defaultMode (optional): 'pdfdiff' | 'dxfdiff' opens the modal directly on that
 // tab (DRAWING-tab "Diff" entry opens on Visual PDF Diff). Omitted → Side-by-Side.
 function _openSimilarCompareModal(baseCode, fam, defaultMode) {
+  // RD 02 2026-06-09: เอ๋ picks ANY drawing to compare — not just same-family+suffix.
+  // "Suggested" (same fam + same size, with a PDF) shows first as a shortcut; the full
+  // searchable list covers every drawing that has a PDF. No abort, no auto-commit.
   const parts = baseCode.split('-');
-  if (parts.length < 2) {
-    alert(`Cannot determine WWWHHH size suffix for code "${baseCode}".`);
-    return;
-  }
-  const suffix = parts.pop();
-
-  // Only offer siblings that actually HAVE a drawing PDF (resolvePartPdfUrl covers
-  // manifest + uploads + p.url) — otherwise the diff would open onto a part with
-  // nothing to compare and just show "Missing PDF". (เอ๋ coverage fix 2026-06-09)
+  const suffix = parts.length >= 2 ? parts[parts.length - 1] : '';
   const allInFam = partsByFamily()[fam] || [];
-  const candidates = allInFam.filter(p =>
-    p.code !== baseCode && p.code.endsWith('-' + suffix) && resolvePartPdfUrl(p.code));
-
-  if (candidates.length === 0) {
-    alert(`No similar drawings (with a PDF) found in family "${fam}" with suffix "-${suffix}".`);
-    return;
-  }
+  const suggested = allInFam
+    .filter(p => p.code !== baseCode && suffix && p.code.endsWith('-' + suffix) && resolvePartPdfUrl(p.code))
+    .map(p => p.code);
+  const suggestedSet = new Set(suggested);
+  const allCodes = (() => {
+    const seen = new Set(); const out = [];
+    const by = partsByFamily();
+    for (const f of Object.keys(by)) for (const p of (by[f] || [])) {
+      if (p.code && p.code !== baseCode && !seen.has(p.code) && resolvePartPdfUrl(p.code)) { seen.add(p.code); out.push(p.code); }
+    }
+    out.sort((a, b) => a.localeCompare(b));
+    return out;
+  })();
 
   const ov = document.createElement('div');
   ov.className = 'bt-overlay';
   ov.style.zIndex = '99999';
-  
+
   const basePdf = resolvePartPdfUrl(baseCode) || '';
-  let currentCompareCode = candidates[0].code;
+  let currentCompareCode = null;   // no auto-commit — เอ๋ picks
   let currentMode = (defaultMode === 'pdfdiff' || defaultMode === 'dxfdiff') ? defaultMode : 'sidebyside';
-  
-  const candidateOptions = candidates.map((c, i) => 
-    `<option value="${escapeHtml(c.code)}" ${i === 0 ? 'selected' : ''}>${escapeHtml(_disp(c.code))}</option>`
-  ).join('');
+  const pickPrompt = '<div style="margin:auto; color:#6b7785; font-size:14px; text-align:center; padding:30px;">&#8593; Pick a drawing to compare<br><span style="font-size:12px;">(type any code in the search box above)</span></div>';
 
   ov.innerHTML = `
     <div class="bt-modal" role="dialog" style="width: 95vw; height: 90vh; max-width: none; display: flex; flex-direction: column;">
@@ -354,7 +352,15 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
           <button class="bt-close" aria-label="Close" style="background: transparent; border: none; font-size: 24px; color: #8b949e; cursor: pointer;">&times;</button>
         </div>
       </div>
-      
+
+      <!-- Compare picker bar (always visible, searchable across ALL drawings) -->
+      <div style="position: relative; display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <strong style="white-space: nowrap; color: #c9d1d9;">Compare with:</strong>
+        <input id="cmp-search" type="text" autocomplete="off" placeholder="Type any drawing code…"
+          style="flex: 1; padding: 6px 10px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 5px; font-size: 13px;">
+        <div id="cmp-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 10; margin-top: 2px; max-height: 340px; overflow: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; box-shadow: 0 8px 28px rgba(0,0,0,.55);"></div>
+      </div>
+
       <!-- Split View Container -->
       <div id="cmp-split-view" style="display: flex; flex: 1; gap: 10px; overflow: hidden;">
         <div style="flex: 1; display: flex; flex-direction: column; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;">
@@ -364,24 +370,18 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
           <iframe src="${escapeHtml(basePdf)}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
         </div>
         <div style="flex: 1; display: flex; flex-direction: column; background: #0d1117; border: 1px solid #30363d; border-radius: 6px;">
-          <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 10px; color: #c9d1d9;">
-            <strong style="white-space: nowrap;">Compare with:</strong>
-            <select id="compare-select" style="flex: 1; padding: 4px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px;">
-              ${candidateOptions}
-            </select>
+          <div id="cmp-right-head" style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; font-weight: bold; color: #c9d1d9;">
+            Compare: (pick a drawing)
           </div>
-          <iframe id="compare-iframe" src="${escapeHtml(resolvePartPdfUrl(currentCompareCode) || '')}#toolbar=0&navpanes=0" style="flex: 1; border: none; width: 100%;"></iframe>
+          <div id="cmp-right-body" style="flex: 1; display: flex; overflow: hidden;"></div>
         </div>
       </div>
-      
+
       <!-- Single View Container (for diffs) -->
       <div id="cmp-single-view" style="display: none; flex: 1; flex-direction: column; border: 1px solid #30363d; border-radius: 6px; overflow: hidden;">
-         <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; display: flex; align-items: center; gap: 10px; color: #c9d1d9;">
+         <div style="padding: 8px 12px; background: #161b22; border-bottom: 1px solid #30363d; color: #c9d1d9;">
             <strong style="white-space: nowrap;">Base:</strong> ${escapeHtml(_disp(baseCode))}
-            <strong style="white-space: nowrap; margin-left: 20px;">Compare with:</strong>
-            <select id="compare-select-single" style="flex: 1; padding: 4px; background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; border-radius: 4px;">
-              ${candidateOptions}
-            </select>
+            <strong id="cmp-single-cmp" style="white-space: nowrap; margin-left: 20px;">&nbsp;</strong>
           </div>
           <div id="cmp-canvas-container" style="flex: 1; background: #0d1117; position: relative; overflow: auto; display: flex;"></div>
       </div>
@@ -396,60 +396,98 @@ function _openSimilarCompareModal(baseCode, fam, defaultMode) {
   const splitView = ov.querySelector('#cmp-split-view');
   const singleView = ov.querySelector('#cmp-single-view');
   const canvasContainer = ov.querySelector('#cmp-canvas-container');
-  const compareIframe = ov.querySelector('#compare-iframe');
-  
-  const selectSplit = ov.querySelector('#compare-select');
-  const selectSingle = ov.querySelector('#compare-select-single');
+  const rightHead = ov.querySelector('#cmp-right-head');
+  const rightBody = ov.querySelector('#cmp-right-body');
+  const singleCmpLbl = ov.querySelector('#cmp-single-cmp');
+  const searchInput = ov.querySelector('#cmp-search');
+  const resultsBox = ov.querySelector('#cmp-results');
 
   const btnSideBySide = ov.querySelector('#cmp-btn-sidebyside');
   const btnPdfDiff = ov.querySelector('#cmp-btn-pdfdiff');
   const btnDxfDiff = ov.querySelector('#cmp-btn-dxfdiff');
-  
+
   function updateView() {
     [btnSideBySide, btnPdfDiff, btnDxfDiff].forEach(b => {
       b.style.background = 'transparent';
       b.style.color = '#c9d1d9';
     });
-    
+
     if (currentMode === 'sidebyside') {
       btnSideBySide.style.background = '#238636';
       btnSideBySide.style.color = '#fff';
       singleView.style.display = 'none';
       splitView.style.display = 'flex';
-      compareIframe.src = (resolvePartPdfUrl(currentCompareCode) || '') + '#toolbar=0&navpanes=0';
-    } else {
-      splitView.style.display = 'none';
-      singleView.style.display = 'flex';
-      if (currentMode === 'pdfdiff') {
-        btnPdfDiff.style.background = '#238636';
-        btnPdfDiff.style.color = '#fff';
-        _runPdfVisualDiff(baseCode, currentCompareCode, canvasContainer);
-      } else if (currentMode === 'dxfdiff') {
-        btnDxfDiff.style.background = '#238636';
-        btnDxfDiff.style.color = '#fff';
-        _renderGeomDiff(baseCode, currentCompareCode, canvasContainer);
+      if (!currentCompareCode) {
+        rightHead.textContent = 'Compare: (pick a drawing)';
+        rightBody.innerHTML = pickPrompt;
+      } else {
+        rightHead.textContent = 'Compare: ' + _disp(currentCompareCode);
+        const url = resolvePartPdfUrl(currentCompareCode) || '';
+        rightBody.innerHTML = '<iframe src="' + escapeHtml(url) + '#toolbar=0&navpanes=0" style="flex:1; border:none; width:100%;"></iframe>';
       }
+      return;
     }
+
+    splitView.style.display = 'none';
+    singleView.style.display = 'flex';
+    if (currentMode === 'pdfdiff') { btnPdfDiff.style.background = '#238636'; btnPdfDiff.style.color = '#fff'; }
+    else if (currentMode === 'dxfdiff') { btnDxfDiff.style.background = '#238636'; btnDxfDiff.style.color = '#fff'; }
+    singleCmpLbl.innerHTML = currentCompareCode
+      ? 'Compare with: ' + escapeHtml(_disp(currentCompareCode))
+      : '&nbsp;';
+    if (!currentCompareCode) { canvasContainer.innerHTML = pickPrompt; return; }
+    if (currentMode === 'pdfdiff') _runPdfVisualDiff(baseCode, currentCompareCode, canvasContainer);
+    else if (currentMode === 'dxfdiff') _renderGeomDiff(baseCode, currentCompareCode, canvasContainer);
   }
-  
+
   function setCompareCode(code) {
     currentCompareCode = code;
-    selectSplit.value = code;
-    selectSingle.value = code;
+    searchInput.value = _disp(code);
+    resultsBox.style.display = 'none';
     updateView();
   }
 
-  selectSplit.addEventListener('change', () => setCompareCode(selectSplit.value));
-  selectSingle.addEventListener('change', () => setCompareCode(selectSingle.value));
+  // Searchable picker: "Suggested" (same family + same size, has a PDF) first as a
+  // shortcut, then EVERY drawing with a PDF. Matches on raw code OR display name.
+  function renderResults(query) {
+    const q = (query || '').trim().toLowerCase();
+    const match = c => !q || c.toLowerCase().includes(q) || _disp(c).toLowerCase().includes(q);
+    const sugg = suggested.filter(match);
+    const rest = allCodes.filter(c => !suggestedSet.has(c) && match(c));
+    const groupHead = t => '<div style="padding:6px 12px; font-size:11px; letter-spacing:.5px; text-transform:uppercase; color:#8b949e; background:#161b22; position:sticky; top:0;">' + t + '</div>';
+    const item = c => {
+      const disp = _disp(c);
+      const sub = (disp !== c) ? '<span style="color:#6b7785; font-size:11px; margin-left:8px;">' + escapeHtml(c) + '</span>' : '';
+      return '<div class="cmp-result-item" data-code="' + escapeHtml(c) + '" title="' + escapeHtml(c) + '" style="padding:7px 12px; cursor:pointer; color:#c9d1d9; font-size:13px; border-top:1px solid #1b2027;">' + escapeHtml(disp) + sub + '</div>';
+    };
+    let html = '';
+    if (sugg.length) html += groupHead('Suggested (same size)') + sugg.map(item).join('');
+    if (rest.length) html += groupHead('All drawings') + rest.map(item).join('');
+    if (!html) html = '<div style="padding:14px 12px; color:#6b7785; font-size:13px;">No drawings match.</div>';
+    resultsBox.innerHTML = html;
+    resultsBox.style.display = 'block';
+  }
+
+  searchInput.addEventListener('focus', () => renderResults(searchInput.value));
+  searchInput.addEventListener('input', () => renderResults(searchInput.value));
+  resultsBox.addEventListener('click', e => {
+    const it = e.target.closest('.cmp-result-item');
+    if (it && it.dataset.code) setCompareCode(it.dataset.code);
+  });
+  // Close the dropdown on clicks elsewhere inside the modal (overlay click closes the modal itself).
+  ov.addEventListener('mousedown', e => {
+    if (!e.target.closest('#cmp-search') && !e.target.closest('#cmp-results')) resultsBox.style.display = 'none';
+  });
 
   btnSideBySide.addEventListener('click', () => { currentMode = 'sidebyside'; updateView(); });
   btnPdfDiff.addEventListener('click', () => { currentMode = 'pdfdiff'; updateView(); });
   btnDxfDiff.addEventListener('click', () => { currentMode = 'dxfdiff'; updateView(); });
 
   const btnExport = ov.querySelector('#cmp-btn-export');
-  if (btnExport) btnExport.addEventListener('click', () => _exportDiffPdf(baseCode, currentCompareCode, btnExport));
+  if (btnExport) btnExport.addEventListener('click', () => {
+    if (!currentCompareCode) { alert('Pick a drawing to compare first.'); return; }
+    _exportDiffPdf(baseCode, currentCompareCode, btnExport);
+  });
 
-  // Open straight onto the requested diff tab (DRAWING-tab entry → Visual PDF Diff).
-  // Side-by-Side is the default HTML state, so only switch when a diff mode was asked.
-  if (currentMode !== 'sidebyside') updateView();
+  updateView();
 }
