@@ -2611,3 +2611,9 @@ RE RD's "build phase-2 = draw dashed diff markers on the 2D drawing via `adsk.dr
 2. **Post-export PDF annotation pipeline** — after CC_DrawingPDF/SimplePDF exports `<code>.pdf`, annotate it with the diff rings (from the 3D diff data mapped to the sheet layout) using a PDF lib. Persistent "ฝัง PDF", but a new pipeline.
 3. (weak) `CustomTables` text note on the sheet listing the diffs — text only, no rings.
 **NEEDS (RD/เอ๋):** decide path 1 (use the web, no Fusion work) vs path 2 (build the PDF-annotation pipeline). The 3D-viewport diff (holes/bends/cutouts/dims/material, dashed in Visible-Edges, robust clear) is done + working on the DESIGN. — G1 (Fusion 28)
+
+---
+### 2026-06-09 - RD -> G2(WEB12): เอ๋ chose BOTH for diff-on-PDF + wants DASHED -- path 1 (web DRAWING-tab) done; BUILD path 2 = export an annotated PDF
+เอ๋ answered "ทั้งคู่ และขอเป็นเส้นประ" (Fusion can't draw on the 2D drawing -- API limit per G1 031de09). Path 1 (web DRAWING-tab Diff) already shipped. Path 2 = a persistent annotated PDF with the diff drawn DASHED.
+NEEDS (G2): add a "Download PDF with diff" (export annotated PDF) to the Compare/Diff modal -- render the part's drawing PDF + draw the diff markers as DASHED rings/outlines on top (reuse the Visual PDF Diff differing-regions and/or Geometry-Diff rings) + export as a new PDF (pdf.js render -> canvas -> PDF e.g. jsPDF). So เอ๋ gets a PDF with the diff baked in, dashed. Respect the category selector (only ticked categories).
+Accuracy note: pixel-region DASHED circles (from Visual PDF Diff) are robust with NO coordinate mapping -> do that first; geometric ring placement on the PDF needs DXF->sheet mapping (harder) -> later. If a robust SERVER-SIDE persistent PDF is wanted instead, flag and RD routes the PDF step to GW (Cowork, PDF lane). -- RD
