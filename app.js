@@ -55,14 +55,21 @@ function _scheduleManifestRefresh() {
   if (_manifestRefreshTimer) clearTimeout(_manifestRefreshTimer);
   _manifestRefreshTimer = setTimeout(() => { _manifestRefreshTimer = null; _refreshManifest(); }, 2000);
 }
-// Subtle 'updated' toast — auto-fades (CSS). Confirms a live refresh landed.
-function _manifestPulse() {
+// Shared transient toast (auto-fades via CSS .show). Text is set EVERY call so
+// different callers (manifest refresh / Fusion-open) don't show each other's stale text.
+function _kdToast(msg) {
   try {
     let t = document.getElementById('kd-refresh-toast');
-    if (!t) { t = document.createElement('div'); t.id = 'kd-refresh-toast'; t.textContent = '↻ Updated — new drawings'; document.body.appendChild(t); }
+    if (!t) { t = document.createElement('div'); t.id = 'kd-refresh-toast'; document.body.appendChild(t); }
+    t.textContent = msg;
     t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
   } catch {}
 }
+// Subtle 'updated' toast — auto-fades (CSS). Confirms a live refresh landed.
+function _manifestPulse() { _kdToast('↻ Updated — new drawings'); }
+// Confirm a Fusion-open click REGISTERED — the file opens BEHIND the browser, so without
+// this the click looks like "nothing happened" (the exact symptom เอ๋ hit). (RD 02 2026-06-09)
+function _toastOpening(code) { _kdToast('⧉ Opening ' + (code || 'file') + ' in Fusion…'); }
 // Wire the triggers once: focus / tab-visible (debounced) + a light 60s poll while a
 // data tab is open (paused when hidden, to save quota/battery).
 function _initManifestAutoRefresh() {
@@ -9645,13 +9652,13 @@ async function _routeLeafToFusion(node) {
   // Stale (drawing exists but out of date) → open Fusion drawing
   if (node.status === 'stale' && drawingUrn) {
     bridgeAttempted = true;
-    try { if (await bridgeOpen(drawingUrn)) return; bridgeError = 'bridge declined'; }
+    try { if (await bridgeOpen(drawingUrn)) { _toastOpening(node.code); return; } bridgeError = 'bridge declined'; }
     catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
   // Missing / deleted / drawn-but-404 / fallback → open Fusion 3D master
   if (urn) {
     bridgeAttempted = true;
-    try { if (await bridgeOpen(urn)) return; bridgeError = 'bridge declined'; }
+    try { if (await bridgeOpen(urn)) { _toastOpening(node.code); return; } bridgeError = 'bridge declined'; }
     catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
   // Last-resort fallback — a PDF that actually exists (handles stale w/o drawing_urn etc.)
