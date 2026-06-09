@@ -13,6 +13,67 @@ let missingData = null;  // { scanned_at, project_name, count, missing: [{name,u
 let view = 'projects';   // 'projects' | 'library' | 'nest' | 'missing'
 let stack = [];          // navigation stack ('home' | {kind:'family', name} | {kind:'project', name})
 
+// ── Live manifest auto-refresh (RD 02 2026-06-09) — newly-exported drawings
+// self-appear without a reload. Cheap HEAD-diff first; only on change do a full
+// GET + re-render. Triggered on focus/visibility (debounced) + a light poll while a
+// data tab is open. (index.html itself is still max-age=600, so the FIRST adoption
+// of the no-store loader still needs one cache clear; after that this keeps it live.)
+let _manifestSig = null;     // last-seen HTTP signature (ETag / Content-Length)
+let _manifestGenAt = null;   // last-applied manifest.generated_at
+let _manifestRefreshTimer = null;
+
+// Cheap HEAD-diff, then full GET only if the manifest actually changed; on a real
+// content change (generated_at differs) re-apply + re-render the current tab + pulse.
+async function _refreshManifest() {
+  const url = window.APP_CONFIG && window.APP_CONFIG.MANIFEST_URL;
+  if (!url) return;
+  try {
+    // 1) cheap HEAD — ETag/Content-Length flags a change without pulling the whole file
+    let sig = null;
+    try {
+      const h = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now(), { method: 'HEAD', cache: 'no-store' });
+      if (h.ok) sig = h.headers.get('etag') || h.headers.get('content-length') || h.headers.get('last-modified');
+    } catch {}
+    if (sig && _manifestSig && sig === _manifestSig) return;   // unchanged → skip the GET
+    // 2) full GET (no-store) + guard on generated_at so a spurious ETag doesn't re-render
+    const m = await fetchJson(_cacheBust(url));
+    _manifestSig = sig || _manifestSig;
+    if (!m || !m.generated_at || m.generated_at === _manifestGenAt) return;
+    _manifestGenAt = m.generated_at;
+    manifest = m;
+    window.kdManifest = manifest;
+    try { UPDATED.textContent = fmtDate(manifest.generated_at); } catch {}
+    try { missingData = await fetchJson(_cacheBust(url.replace(/[^/]+$/, 'missing.json'))); } catch {}
+    try { _buildDrawingAliasIndex(await fetchJson(_cacheBust(url.replace(/[^/]+$/, 'drawing_aliases.json')))); } catch {}
+    applyFamilyRemap();
+    try { updateMissingBadge(); } catch {}
+    try { render(); } catch {}
+    _manifestPulse();
+  } catch (e) { /* network hiccup — next trigger retries */ }
+}
+function _scheduleManifestRefresh() {
+  if (_manifestRefreshTimer) clearTimeout(_manifestRefreshTimer);
+  _manifestRefreshTimer = setTimeout(() => { _manifestRefreshTimer = null; _refreshManifest(); }, 2000);
+}
+// Subtle 'updated' toast — auto-fades (CSS). Confirms a live refresh landed.
+function _manifestPulse() {
+  try {
+    let t = document.getElementById('kd-refresh-toast');
+    if (!t) { t = document.createElement('div'); t.id = 'kd-refresh-toast'; t.textContent = '↻ Updated — new drawings'; document.body.appendChild(t); }
+    t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+  } catch {}
+}
+// Wire the triggers once: focus / tab-visible (debounced) + a light 60s poll while a
+// data tab is open (paused when hidden, to save quota/battery).
+function _initManifestAutoRefresh() {
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) _scheduleManifestRefresh(); });
+  window.addEventListener('focus', () => _scheduleManifestRefresh());
+  setInterval(() => {
+    if (document.hidden) return;
+    if (view === 'library' || view === 'drawing') _refreshManifest();
+  }, 60000);
+}
+
 const LS_COMPLETED_KEY = 'kd_completed_projects_v1';
 const LS_BENT_KEY = 'kd_bent_parts_v1';            // bent / งานพับ (per project::code)
 const LS_ASSEMBLED_KEY = 'kd_assembled_parts_v1';  // assembled / งานประกอบ (per project::code)
@@ -11043,6 +11104,9 @@ async function init() {
     // so everything downstream sees only the new names.
     applyFamilyRemap();
     updateMissingBadge();
+    // Baseline for the live auto-refresh + wire the focus/visibility/poll triggers (once).
+    _manifestGenAt = manifest.generated_at;
+    _initManifestAutoRefresh();
 
     // If no projects yet AND user is admin, default to Library view so
     // they can manage parts. Workshop never lands on Library (the tab

@@ -6586,3 +6586,32 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
   margin-left: 4px;
   vertical-align: middle;
 }
+
+/* Live manifest auto-refresh toast (RD 02 2026-06-09) — a subtle amber pulse when
+   newly-exported drawings self-appear without a reload. Auto-fades via the animation. */
+#kd-refresh-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translateX(-50%) translateY(12px);
+  background: #F2A93B;
+  color: #1B2430;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 18px;
+  border: 1px solid #C77F1A;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.45);
+  z-index: 99998;
+  opacity: 0;
+  pointer-events: none;
+}
+#kd-refresh-toast.show {
+  animation: kd-refresh-pop 3.4s ease forwards;
+}
+@keyframes kd-refresh-pop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  10%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(12px); }
+}
