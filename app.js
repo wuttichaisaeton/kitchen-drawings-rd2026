@@ -2015,6 +2015,11 @@ function markFamilySeen(fam) {
   c[fam] = Date.now();
   try { localStorage.setItem(LS_SEEN_FAMILIES_KEY, JSON.stringify(c)); } catch {}
 }
+// Delayed NEW reset (เอ๋ 2026-06-09): the folder currently being viewed is NOT marked
+// seen on open — its NEW row badges must stay visible. We mark it seen only when the
+// user LEAVES it (opens another folder → renderFamily; or returns home →
+// renderLibraryHome). Holds the folder whose NEW is still pending a reset.
+let _pendingSeenFamily = null;
 
 // ──────────────────────────────────────────────────────────────────────
 // Family remap — Fusion side classifies parts into broad families
@@ -10207,6 +10212,10 @@ const renderMissingHome = renderTreeHome;
 // ──────────────────────────────────────────────────────────────────────
 
 function renderLibraryHome() {
+  // Returning to Library home = the user left whatever folder they were in →
+  // mark it seen now (delayed NEW reset), so its card stops glowing but the row
+  // badges were visible the whole time they were inside it.
+  if (_pendingSeenFamily) { markFamilySeen(_pendingSeenFamily); _pendingSeenFamily = null; }
   const by = partsByFamily();
   const adminMode = isAdmin();
   // Empty admin-created folders should still appear so the taxonomy is
@@ -10307,8 +10316,7 @@ function renderLibraryHome() {
         ev.preventDefault(); ev.stopPropagation();
         return;
       }
-      markFamilySeen(el.dataset.family);   // opening the folder clears its NEW glow/badge
-      navTo({ kind: 'family', name: el.dataset.family });
+      navTo({ kind: 'family', name: el.dataset.family });   // NEW is reset on LEAVE, not open (see _pendingSeenFamily)
     });
     // Admin: 🗑 delete button (only rendered when folder is empty).
     const deleteBtn = el.querySelector('.family-delete-btn');
@@ -10437,8 +10445,16 @@ function renderLibraryHome() {
 }
 
 function renderFamily(fam, highlight) {
-  const items = partsByFamily()[fam] || [];
+  const items = (partsByFamily()[fam] || []).slice();
   const adminMode = isAdmin();
+  // Sort toggle (A–Z by code / Date newest-first) — mirrors the DRAWING tab.
+  const famSort = localStorage.getItem('kd_fam_sort') === 'date' ? 'date' : 'az';
+  if (famSort === 'date') items.sort((a, b) => (_partDateMs(b) - _partDateMs(a)) || (a.code || '').localeCompare(b.code || ''));
+  else items.sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+  // Delayed NEW reset: mark the PREVIOUS folder seen when switching to a different
+  // one; the folder you're viewing stays unseen so its NEW row badges stay visible.
+  if (_pendingSeenFamily && _pendingSeenFamily !== fam) markFamilySeen(_pendingSeenFamily);
+  _pendingSeenFamily = fam;
   const list = items.map(p => {
     // pdfUrlForCode handles uploads (full URL) and aliases; pdfUrl is
     // only correct for manifest entries whose filename happens to live
@@ -10520,12 +10536,21 @@ function renderFamily(fam, highlight) {
         : `<div class="family-breadcrumb" title="The part you tapped — scroll for the highlighted row">↩ from <strong>${escapeHtml(highlight)}</strong></div>`)
     : '';
 
+  const sortBar = items.length > 1 ? `
+    <div class="dwg-sort fam-sort">
+      <button class="dwg-sort-btn${famSort === 'az' ? ' active' : ''}" data-fam-sort="az">A–Z</button>
+      <button class="dwg-sort-btn${famSort === 'date' ? ' active' : ''}" data-fam-sort="date">Date</button>
+    </div>` : '';
   ROOT.innerHTML = `
     <h2 class="section-title section-title-family" style="${famVars(fam)};color:var(--fam-color)">${familyIcon(fam)} ${escapeHtml(fam)}<span class="count">${items.length} parts</span></h2>
     ${breadcrumb}
+    ${sortBar}
     <div class="part-list">${list}</div>
     ${emptyHint}
   `;
+  ROOT.querySelectorAll('.fam-sort .dwg-sort-btn').forEach(b => {
+    b.addEventListener('click', () => { localStorage.setItem('kd_fam_sort', b.dataset.famSort); render(); });
+  });
 
   // Wire the breadcrumb back-button (only when source is present).
   // Restores the source view directly — same shape as openInLibrary's
