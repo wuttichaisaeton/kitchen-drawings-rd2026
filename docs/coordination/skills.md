@@ -19,10 +19,32 @@ routing is informed.
 - **Orchestration:** triage incoming work, route via board `NEEDS`, collect results, give เอ๋ ONE consolidated report (with ⏱ elapsed).
 
 ## G2 — Web (`drawings-ui/`)
-- (G2 to confirm/expand.) Known: `app.js` `_buildBomNodes` mindmap layout (radial / 16-cabinet ring), `editor/main.jsx` React Flow editor — §1 assembly kanban/tree, §3 mindmap, collapse/Show-all, node comments; `nest.js` web nesting; Sim.Bending view; CSS/themes; Library/GitHub-PAT upload.
+Owns the web app (vanilla JS, GitHub Pages, Firebase RTDB). Skills:
+- **Mindmap/assembly editor** (`editor/main.jsx` React Flow + `editor/style.css`; build `npm run build:editor` -> commit BOTH bundles): §1 cabinet board-cards (leaf list), §3 mindmap, collapse/Show-all TOGGLE, No-PDF filter, node comments, big logo-circle center, family colours (`_famColor`).
+- **Mindmap layout** (`app.js _buildBomNodes`): 16-cabinet ring + staggered-annulus radial (provably 0-overlap); `buildProjectTree` deep-hierarchy walk (`is_wrapper`); `_applyOverrides` blanket-freeze logic.
+- **Library** (`app.js renderFamily` + DRAWINGS tab): part-rows, leading-icon -> PDF, DXF, Compare, GitHub-PAT PDF upload.
+- **Web Nesting** (`nest.js`), **Sim.Bending** view, **themes** (`kd_theme_v1`), **publish-drawing** skill.
+- **Deploy:** push main -> GitHub Pages (~1min; `.nojekyll` = static, NO Jekyll -> board UTF-8 issues can't break it); `gh run watch` to success.
+- **Conventions:** no Thai in rendered UI (Flux Architect) except Comments; commit explicit-path (never `-A`); pull --rebase before push; board appends UTF-8 only; verify before done; report with ⏱ elapsed.
 
 ## GA — Antigravity
 - (GA to fill in — lane TBD by เอ๋.)
 
 ## G3 — Canva
 - (G3 to fill in.) Expected: Canva design / presentations (cover→iso→plan→section→price-list layouts), brand assets, render decks.
+
+## GW — Claude Cowork (renderers + documents + analysis)
+Lane = the things Claude Cowork is strongest at; เอ๋ onboarded GW 2026-06-09.
+- **Stainless renderers (`_MASTERS/renderers/`):** PNG drawing composition with PIL —
+  `compose_l_shape_master_v3.py` (LOCKED layout 24 Apr: 2×2 left grid PLAN+ELEV1 / ELEV2+PERSP,
+  tall right column LEGEND+SELECTIONS, full-width title strip), `selections_panel.py`
+  (auto_trim JSON→PNG), I/U/L masters, LEGEND v9. Owns customer-facing output.
+  **English-only in Flux Architect font** (cannot render Thai); avoid `×`/`deg`/`·`/`( )` in Flux text.
+  Flux filenames use SPACES: `Flux Architect Bold.ttf` etc.; Thai = DRC-RCW2550.ttf, sig = Signerica_Fat.ttf.
+- **Document generation:** Word (.docx), Excel (.xlsx), PowerPoint (.pptx), PDF — reports,
+  spec sheets, price lists, BOM/cut-list exports, accountant/handoff packets.
+- **Python / data:** scripting, data analysis, CSV/JSON wrangling, batch image ops, manifest/spec parsing.
+- **Web research** (search + fetch) and **file organization** in the workspace.
+- **Sandbox shell** (Linux) for running Python/Node, image pipelines, one-off jobs.
+- Reporting: per the working model — direct order from เอ๋ → GW reports straight back; routed via G1 → G1 consolidates.
+- Same shared-tree rules: isolate via branch/worktree, explicit-path commits, pull --rebase before push.
