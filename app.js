@@ -2817,7 +2817,18 @@ function getGitHubPat() {
   if (!entered) return null;
   const trimmed = entered.trim();
   if (!/^github_pat_|^ghp_/.test(trimmed)) {
-    alert('That doesn\'t look like a GitHub PAT. Cancel + try again.');
+    // Common confusion (เอ๋ 2026-06-09): people type the PART CODE into this box,
+    // thinking it asks for a name. It asks for a one-time GitHub TOKEN. If the entry
+    // looks like a part code, point them at the easier no-token paths instead.
+    if (/^[A-Za-z0-9]{3,}-\d{3,}$/.test(trimmed)) {
+      alert('"' + trimmed + '" looks like a PART CODE, not a GitHub token.\n\n' +
+        'This box wants a one-time GitHub token, only needed to UPLOAD a PDF file.\n\n' +
+        'Easier ways to give this part a drawing (no token):\n' +
+        '  • 🔗 LINK button on the node — borrow another part\'s drawing PDF\n' +
+        '  • Export it from Fusion (CC_DrawingPDF) — it auto-appears in ~1 min');
+    } else {
+      alert('That doesn\'t look like a GitHub token (it should start with github_pat_… ). Cancel + try again.');
+    }
     return null;
   }
   try { localStorage.setItem(LS_GITHUB_PAT_KEY, trimmed); } catch {}
