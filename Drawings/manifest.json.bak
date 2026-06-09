@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-09T19:50:02.801355+00:00",
+  "generated_at": "2026-06-09T20:37:55.611859+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3782,6 +3782,45 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-09T19:50:02.801355+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "SD0CN2-080000": {
+      "family": "Side Panel",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "SD0CN2-080000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-09T20:37:55.611859+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "SDLCN2-080000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "SD0CN2-080000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-09T20:32:58.343638+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "SDRCN2-080000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "SD0CN2-080000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-09T20:32:58.343642+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
