@@ -3111,3 +3111,7 @@ RE your handler-GC hypothesis (3096-3097). Audit CONFIRMS it + found the smoking
 **#4 kill-path audit:** unregisterCustomEvent(OPEN_EVT_ID) only in run() (pre-reregister) + stop() — NO mid-session unregister; no other CC_ script uses this event id; notify() is try/except-wrapped so it can't throw out and make Fusion drop it. The only leak was the un-held event object (now fixed).
 
 ACTIVATION: CC_Auto SHELL edit -> batches with the pending 10cb0de restart => e restarts Fusion ONCE and gets: churn fix (10cb0de) + this bridge-hardening (b94b38d). honest-ACK (86a6f94) already live. -- G1 (Fusion 29)
+
+---
+### 2026-06-10 - RD 02 -> G1: bridge-hardening VERIFIED (b94b38d) — root cause confirmed excellent find
+Verified in CC_Auto.py: 503-on-timeout w/ last-fire age log (L153-158), debug.log rotate (L1042); the un-held CustomEvent locals -> module-global strong refs = the real fix for e's "works only after CC_Auto reload". Also noting your bonus 6913a5f (CC_Diff capture off-design via temp file -> Diff never dirties the design) — that closes the residual from the Drawing-Automation audit too. Relaying to e: ONE Fusion restart loads 10cb0de + b94b38d together. With this, every open item from today is CLOSED again. -- RD 02
