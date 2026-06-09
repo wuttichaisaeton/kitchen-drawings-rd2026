@@ -889,14 +889,15 @@ function _famOf(code) {
 // (light) and steel-700 (dark) read apart while sharing the steel hue. soft/dark/
 // head reuse the same lightness ROLES (post-it / gradient / header) per theme.
 const _FAM_TOKENS = {
-  // G3 "vibrant" SPEC (RD verify 2026-06-09): steels bumped sat+lightness for punchier
-  // family colours; blue + amber kept (already saturated).
-  steelLight:   { h: 212, s: 34, bL: 63 }, // FL  ~ steel-400 (vibrant)
+  // VIVID v2 (เอ๋ 2026-06-09 "ทำใหม่ยังซีดอยู่" — vibrant v1's s30-36 steels still
+  // read GRAY on the dark bg): steels go decisively colourful. Hues kept distinct
+  // (sky / slate / teal) so family identity holds; blue + amber unchanged.
+  steelLight:   { h: 212, s: 58, bL: 64 }, // FL  ~ sky steel (vivid)
   blue:         { h: 216, s: 84, bL: 58 }, // DW  ~ blue-500  #2F81F7 (keep)
   amber:        { h: 37,  s: 84, bL: 56 }, // BK  ~ amber-500 #F2A93B (keep)
-  steelDark:    { h: 210, s: 30, bL: 50 }, // SD  ~ steel-700 (vibrant)
-  steelTeal:    { h: 198, s: 36, bL: 53 }, // TS  ~ steel-700 teal (vibrant)
-  steelNeutral: { h: 214, s: 22, bL: 55 }, // ?   digit-led cabinet wrappers (vibrant neutral)
+  steelDark:    { h: 210, s: 52, bL: 52 }, // SD  ~ slate blue (vivid)
+  steelTeal:    { h: 198, s: 62, bL: 55 }, // TS  ~ teal (vivid)
+  steelNeutral: { h: 214, s: 36, bL: 58 }, // ?   digit-led cabinet wrappers
 };
 // Explicit PREFIX(2) -> token for ambiguous leading letters (BM/SH are NOT back/side,
 // so B-/S-led can't be a blanket rule). NOTE: match on the first TWO letters, because
@@ -934,16 +935,19 @@ function _famColor(fam) {
     return {
       border: `hsl(${t.h}, ${t.s}%, ${t.bL}%)`,                              // node/capsule border
       soft:   `hsl(${t.h}, ${Math.min(t.s + 4, 82)}%, 86%)`,                 // sketch/chalk post-it fill
-      dark:   `hsl(${t.h}, ${Math.max(Math.round(t.s * 0.55), 28)}%, 16%)`,  // default-theme gradient end
-      head:   `hsl(${t.h}, ${Math.max(Math.round(t.s * 0.75), 24)}%, 30%)`,  // column header bg
+      // VIVID v2: card gradient + header carry REAL colour on the dark theme
+      // (16%-lightness near-black tint was the main "ซีด" read — the border alone
+      // is too thin an area to colour the board).
+      dark:   `hsl(${t.h}, ${Math.max(Math.round(t.s * 0.85), 40)}%, 22%)`,  // default-theme gradient end
+      head:   `hsl(${t.h}, ${Math.max(Math.round(t.s * 0.9), 45)}%, 34%)`,   // column header bg
     };
   }
   const hue = _famHue(fam);
   return {
-    border: `hsl(${hue}, 70%, 60%)`,   // capsule/node border + edge (G3 vibrant)
+    border: `hsl(${hue}, 76%, 62%)`,   // capsule/node border + edge (vivid v2)
     soft:   `hsl(${hue}, 66%, 85%)`,   // sketch/chalk post-it fill (light)
-    dark:   `hsl(${hue}, 52%, 18%)`,   // default-theme gradient tint endpoint
-    head:   `hsl(${hue}, 60%, 33%)`,   // column header bg
+    dark:   `hsl(${hue}, 64%, 24%)`,   // default-theme gradient tint endpoint
+    head:   `hsl(${hue}, 68%, 38%)`,   // column header bg
   };
 }
 
