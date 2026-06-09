@@ -2182,3 +2182,19 @@ ACK the SAVE→HANDOFF→AUTO-CONTINUE policy: on near-full I'll persist memory 
 - ⏸️ Task 2 icon recolor (G3 "Brushed Steel + Amber" palette): deferred by RD; ready to do (steel-100 bg + ink outline + amber accent; ~15 icons; my 7 regen + originals pixel-swap white→steel/black→ink/orange→amber).
 - 🔄 Task 3 CC_DiffHoles: scoped + reusable patterns ready (CC_CheckHoles `_is_loop_circular`/`_draw_cg_circle`/overlay-toggle-clear/camera-nudge). Proposed MVP = **capture→diff** (ambiguity-proof; example SDLCN2/SDRCN2 doesn't resolve — SD0CN2-080000 has NO config table, SDLCN2 no file). **BLOCKED on:** GA aligning the shared hole-diff definition (hole=circular inner-loop not raw-cylinder; T=0.5mm) + RD/เอ๋ confirming UX + the real 2 compared things. Will build the moment GA aligns (Fusion MCP live).
 - Recent _MASTERS commits: manifest_io projects-preserve `b65d99f` + race-safe merge_save `1390cb2`; icons; cache-bust `30abd06` (drawings-ui). — G1 (Fusion)
+
+---
+### 2026-06-09 - G3 → RD ✅ ACK auto-continue policy + STATE / HANDOFF (base="Canva", next="Canva 02")
+ACK the SAVE -> HANDOFF -> AUTO-CONTINUE policy (board 770cd48). Base lane name = Canva; continue as **Canva 02**, same role/lane.
+
+**STATE (Canva / G3):** icon-palette task DONE + เอ๋ APPROVED. On board: SPEC hex table, `icon_palette_mockup.png` (PIL exact swatch+before/after), `icon_palette_canva.png` (Canva AI brand style-guide), GREEN LIGHT `65d5a2b`. Open NEEDS for G3 = none (standby for G1/G2 post-build polish).
+
+**HANDOFF -> Canva 02:**
+- Lane: G3/Canva = design direction (palette/icons/brand assets), Canva MCP + PIL, posts spec/mockups to board, RD reports to เอ๋.
+- Just shipped: icon palette "Brushed Steel + Amber" (approved). Skill proven: Canva MCP generate-design -> create-from-candidate -> export PNG; PIL swatch/mockup gen w/ Flux Architect; Canva Code (built a kitchen price calculator POC live in เอ๋'s Canva, design title "เครื่องคิดราคาเครื่องครัว Rough Design").
+- Open NEEDS: STANDBY. When G1 (Fusion CC_ PNG) or G2 (web CSS/SVG) ping "done" on the recolor build, eyeball the live icons + polish if a surface reads off.
+- Key files: `drawings-ui/docs/coordination/{group-sync.md, icon_palette_mockup.png, icon_palette_canva.png}`; gen script `_MASTERS/_session_2026_06_09/scripts/gen_palette_mockup.py`; memory `reference_icon_palette.md`. Canva design id `DAHMCqMULaw`.
+- Commits (this repo): `cf26cd5` spec · `106f1a1` PIL mockup · `f634ac2` Canva guide · `65d5a2b` approval · this ACK.
+- Note: `skills.md` was HOT (another session's uncommitted WIP) — G3 did NOT touch it to avoid clobber; register Canva/G3 skills there once clean.
+
+**NEEDS (G3):** none — standby. — G3 (Canva)
