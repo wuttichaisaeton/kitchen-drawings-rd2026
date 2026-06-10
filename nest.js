@@ -40,6 +40,11 @@
     ],
     mode: 'Desktop',   // default — mirrors the desktop NestingTool (เอ๋: best layout, 2026-05-30)
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
+    rememberRemnants: true,  // per-RUN choice (เอ๋ 2026-06-10): ▶ Run Nesting asks
+                          // whether THIS run's leftover offcuts get saved to the
+                          // Remnants library on Save Nest. Default true = prior
+                          // behavior. OUTPUT saving — independent of skipRemnants
+                          // (which is INPUT reuse of stock).
     dontRemember: false,  // Phase 2 toggle — pre-wired UI, packer doesn't
                           // track remnants yet so both flags are no-ops
                           // until that lands. User 2026-05-28 wanted UI
@@ -1867,6 +1872,17 @@
       return;
     }
 
+    // เอ๋ 2026-06-10: ask per-run whether THIS run's leftover offcuts should be
+    // remembered in the Remnants library when the nest is saved. Fresh choice
+    // every Run. OUTPUT saving — unrelated to the Stock modal's "Use remnants in
+    // next run" (INPUT) toggle. Asked only after both validations pass (a no-op
+    // Run never prompts) and BEFORE the packing computation starts.
+    S.rememberRemnants = confirm(
+      'Remember remnants (offcuts) from this run?\n\n' +
+      'OK — when you Save Nest, leftover offcuts are saved to your Remnants library.\n' +
+      'Cancel — this run\'s offcuts are not saved.'
+    );
+
     // Group pieces by thickness so a 0.8mm BM part can't get nested
     // onto a 1mm stock sheet (and vice versa). User 2026-05-28 asked
     // for thickness per stock row precisely so the cut shop doesn't
@@ -2458,6 +2474,7 @@
       name: _jobLabel(),
       mode: S.mode, gap: S.gap,
       skipRemnants: !!S.skipRemnants, dontRemember: !!S.dontRemember,
+      rememberRemnants: S.rememberRemnants !== false,
       sheetStock: (S.sheetStock || []).map(s => ({
         w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
         thickness: s.thickness ?? 1, label: s.label || '',
@@ -2584,14 +2601,23 @@
 
     // Remember this nest's offcuts in the shared Remnants pool — happens at
     // SAVE, not at Run (เอ๋ 2026-06-10 'ถ้าจะ save ให้มา save ที่ save Project').
+    // Honors the per-run choice from ▶ Run Nesting (S.rememberRemnants): if เอ๋
+    // declined, the offcuts are skipped. Default (no Run yet, e.g. a loaded job)
+    // = remember, preserving prior behavior.
+    const _rememberRem = S.rememberRemnants !== false;
     let remSaved = 0;
-    try { remSaved = await _autoSaveRemnants() || 0; } catch (e) { /* reported below as 0 */ }
+    if (_rememberRem) {
+      try { remSaved = await _autoSaveRemnants() || 0; } catch (e) { /* reported below as 0 */ }
+    }
+    const _remLine = _rememberRem
+      ? `\nRemnants remembered: ${remSaved}`
+      : `\nRemnants: not saved (your choice)`;
 
     if (btn) { btn.disabled = false; btn.textContent = origText; }
     alert(`Save Nest — '${S.projectName}'\n\n` +
           `Cut sheets uploaded: ${ok}` + (fail ? `\nFailed: ${fail}` : '') +
           `\nNest job: ${jobSaved ? 'saved (' + job.name + ')' : 'FAILED — ' + jobErr}` +
-          `\nRemnants remembered: ${remSaved}` +
+          _remLine +
           (firstErr ? `\n\nFirst cut-sheet error: ${firstErr}` : ''));
   }
 
