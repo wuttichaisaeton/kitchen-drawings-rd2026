@@ -3967,16 +3967,31 @@ body.sb-fs-lock { overflow: hidden; }
   padding: 12px 16px;
   border-bottom: 1px solid #1c2530;
 }
+/* เอ๋ 2026-06-10 "ปุ่ม back ให้ใหญ่กว่านี้ และทำ Effect": 32px -> 52px touch
+   target + amber hover glow/lift + press squash, matching the icon palette. */
 .kdnest-back {
   background: #1c2735;
-  border: 1px solid #2a3a4f;
+  border: 2px solid #2a3a4f;
   color: #cad6e6;
-  width: 32px; height: 32px;
-  border-radius: 6px;
+  width: 52px; height: 52px;
+  border-radius: 12px;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 26px;
+  line-height: 1;
+  transition: transform 0.12s ease, box-shadow 0.18s ease,
+              background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
 }
-.kdnest-back:hover { background: #243349; }
+.kdnest-back:hover {
+  background: #243349;
+  border-color: #F2A93B;
+  color: #F2A93B;
+  transform: translateX(-3px) scale(1.06);
+  box-shadow: 0 0 0 3px rgba(242, 169, 59, 0.22), 0 6px 18px rgba(0, 0, 0, 0.45);
+}
+.kdnest-back:active {
+  transform: translateX(-1px) scale(0.94);
+  box-shadow: 0 0 0 2px rgba(242, 169, 59, 0.30);
+}
 .kdnest-title-main { font-weight: 700; color: #4ecca3; font-size: 16px; }
 .kdnest-title-sub  { font-size: 11px; color: #889bb3; margin-top: 2px; }
 
