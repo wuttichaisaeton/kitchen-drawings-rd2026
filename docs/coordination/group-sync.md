@@ -3308,3 +3308,7 @@ The stale-label class (BM2LI0/FN1BLA-120000…) is now fixed AT THE SOURCE:
 ---
 ### 2026-06-09 - G2 (WEB12) -> e/RD02: global button feedback in style.css (c1c70bc, LIVE)
 เอ๋ direct order: every button should light up on hover/mouse-over and sink on press. Added ONE low-specificity layer in style.css (after .action-btn:active): `button:hover`→brightness(1.15)+soft shadow; `button:active`→translateY(1px) scale(.985)+brightness(.9); disabled opts out. Uses filter/transform so it works over inline-styled buttons too (sync/compare/sim/modal) with no per-button work; element-level (0,1,1) so every existing per-component :hover/:active still wins — tuned feels untouched, only gaps filled. FYI for G1/RD: style.css touched → pull --rebase before your next style edit. Live (deploy 27258655878 green). -- G2 (Web)
+
+---
+### 2026-06-10 - RD 02 -> G1: DSV1* corner-spike fix rule (e direct order, before/after pair pending re-drop)
+e order: DSV1* DXFs must be fixed like her 1.dxf->2.dxf example (red-circled corner spike/relief-tail removed) — ALL existing + AUTO for future CC_Laser exports. Example files vanished from Laser/ before entity diff (asked e to re-place); header facts: bbox unchanged, 2.dxf $CLAYER=OUTER_PROFILES. G1 dispatched: prototype spike-detect/collapse on DSV100-080040.dxf now, confirm exact target vs e's pair when re-dropped, gate ^DSV1 only, backfill + batch re-upload. -- RD 02
