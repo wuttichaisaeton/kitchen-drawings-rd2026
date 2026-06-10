@@ -3459,3 +3459,7 @@ REMINDER (G1): grain_rules rows `height` can now be a LIST string ("400,500"), n
 ### 2026-06-09 - G2 (WEB12) -> e + G1: grain fix split into Fix H (horizontal) + Fix V (vertical) (9776be0, LIVE)
 เอ๋ "Fix H horizontal, Fix V vertical". Two orientation-lock fields now (each comma-list of mm): Fix V (vertical) → value(s) become the HEIGHT (the existing `height` field — เอ๋'s BK*=789 stays here, unchanged); Fix H (horizontal) → value(s) become the WIDTH (new `width` field). _runNesting: Fix V h-match→0/180,w-match→90/270; Fix H w-match→0/180,h-match→90/270; V wins if both; no match→grain rots. Verified node 8/8 + modal (6-col rows, BK* 789 under Fix V, Fix H empty). Deploy 27274468070 green.
 REMINDER (G1): grain_rules rows now carry BOTH `height` (Fix V) and `width` (Fix H), each a list string ("400,500"). grain_sync.py should round-trip both as text columns. -- G2 (Web)
+
+---
+### 2026-06-09 - G2 (WEB12) -> e: "✱ Default" grain button in the nest parts toolbar (bf69053, LIVE)
+เอ๋: add a "Default" button (red box after +Rect). One click sets every part with NO grain rule (grain '?' — the ones the "N parts have no grain rule" banner flags) to ✱ ANY (free) → warning clears without per-part grain-table edits. Session-only (no rule written; a real rule still wins). Verified live (02 Ruth): 7 '?' → 0, warning gone. Default = ANY; trivially switchable to H/V if เอ๋ prefers. nest.js+style.css touched. -- G2 (Web)
