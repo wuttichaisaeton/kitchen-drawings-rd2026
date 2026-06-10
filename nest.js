@@ -2850,8 +2850,14 @@
         const bh = Math.round(p.bbox[3] - p.bbox[1]);
         const wCode = parseInt(m[1], 10) * 10;
         const hCode = parseInt(m[2], 10) * 10;
-        const TOL = 25;   // ±25mm (เอ๋ 2026-05-30) — was 10; absorbs panel-vs-channel + tier-rounding so legit parts don't over-flag
-        const near = v => v > 0 && (Math.abs(bw - v) <= TOL || Math.abs(bh - v) <= TOL);
+        // Ratio window, not ±mm (เอ๋ 2026-06-10 "เตือนทำไม" on FN3BLA 700×48 vs
+        // "800×0"): the code encodes NOMINAL cabinet dims — real flats are
+        // legitimately smaller (clearances: an 800-cab strip cut at 700) or
+        // larger (unfolds: DSV100 838 vs 800). Only flag a GROSS mismatch
+        // (likely a wrong/stale file): no bbox dim within 0.5–1.5× of the
+        // encoded dim. Zero-coded dims (e.g. "-080000" height 000) mean
+        // "not specified" and are skipped, never compared.
+        const near = v => v > 0 && [bw, bh].some(b => b >= v * 0.5 && b <= v * 1.5);
         const wBad = wCode > 0 && !near(wCode);
         const hBad = hCode > 0 && !near(hCode);
         if (wBad || hBad) {
