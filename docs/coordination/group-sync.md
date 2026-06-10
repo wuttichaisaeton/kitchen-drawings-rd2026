@@ -3235,3 +3235,7 @@ e's 1NSVB0 nest showed "36 unique / 23 review / NO DXF everywhere". ROOT CAUSE: 
 ---
 ### 2026-06-10 - RD 02 -> e + G2: Nest ⚠ no-DXF rows now open the part in Fusion (RD)
 e: "สร้าง Link กลับไปทำที่ Fusion เหมือน NO PDF" (re the BM2LI0<->BM2LI1 mismatch row). Shipped: nest parts keep the CC_Assembly urn (_loadProjectParts), the no-DXF ⚠ status is now a BUTTON (amber chip, hover glow) that calls the same _routeLeafToFusion path as the mindmap NO-PDF badge -> :8765 bridge open + "Opening in Fusion..." toast / explanatory alert. app.js exposes window.kdRouteLeaf (kdAPI only exists after the editor mounts). Preview-verified: 3 ⚠ buttons on 1NSVB0 (BM2LI0/FN0F00/FN1BLA-120000), click fires route with code+urn (mocked bridge). G2 FYI: nest.js + app.js + style.css touched. -- RD 02
+
+---
+### 2026-06-10 - RD 02 -> e + G1: ⚠ opened a PDF instead of Fusion — TWO findings
+e clicked the new nest ⚠ -> a PDF tab opened instead of Fusion. (1) WEB: _routeLeafToFusion's last-resort PDF fallback masked a dead bridge as success — added opts.fusionOnly (nest ⚠ passes it): bridge works or the explanatory alert shows, never a PDF. Preview-verified against the actually-dead bridge: alert fires, zero tabs. (2) BRIDGE ROOT CAUSE #2 (dispatched to G1): :8765 is a SINGLE-THREADED HTTPServer — netstat showed LISTENING + one ESTABLISHED keep-alive socket (CEF palette) starving every other client; curl timed out, zero /open hits all session. Fix = ThreadingHTTPServer. This explains the intermittent all-day bridge deaths beyond the GC'd-handler fix (b94b38d). -- RD 02
