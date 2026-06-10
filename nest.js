@@ -531,8 +531,17 @@
     for (const p of partsRaw) {
       if (!p || !p.code || p.is_wrapper) continue;
       const ex = byCode.get(p.code);
-      if (ex) ex.qty += (p.qty || 0);
-      else byCode.set(p.code, _newPart(p.code, p.qty));
+      if (ex) {
+        ex.qty += (p.qty || 0);
+        if (!ex.urn && p.urn) ex.urn = p.urn;
+      } else {
+        const np = _newPart(p.code, p.qty);
+        // Fusion lineage urn (CC_Assembly) — lets a no-DXF row open the part
+        // in Fusion via the :8765 bridge, same as the mindmap NO-PDF badge
+        // (เอ๋ 2026-06-10 "สร้าง Link ให้ผมกลับไปทำที่ Fusion เหมือน NO PDF").
+        np.urn = p.urn || null;
+        byCode.set(p.code, np);
+      }
     }
 
     for (const part of byCode.values()) {
@@ -2985,7 +2994,10 @@
         : p.dxfLoaded
           ? `<span class="kdnest-part-ok" title="DXF loaded">✓</span>`
           : p.dxfError
-            ? `<span class="kdnest-part-err" title="${_esc(p.dxfError)}">⚠</span>`
+            // No usable DXF → the ⚠ is a BUTTON that opens this part in Fusion
+            // via the localhost bridge (same flow as the mindmap NO-PDF badge)
+            // so เอ๋ can jump straight in, fix/rename, and re-run Laser.
+            ? `<button class="kdnest-part-fusion" title="${_esc(p.dxfError)} — click to open this part in Fusion">⚠</button>`
             : `<span class="kdnest-part-load" title="loading…">⋯</span>`;
       const g = grainGlyph(p.grain);
       const onSheetIdx = findSheetIdx(p.code);
@@ -3252,6 +3264,16 @@
       // flips through parts; a sheet ‹/› or Run Nesting returns to the nest.
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
         _setPreview(part.code);
+      });
+      // ⚠ (no DXF) → open the part in Fusion via the :8765 bridge. Reuses
+      // app.js's _routeLeafToFusion (kdAPI.routeLeaf): bridge open + "Opening
+      // in Fusion…" toast on success, explanatory alert when it can't.
+      row.querySelector('.kdnest-part-fusion')?.addEventListener('click', () => {
+        // kdAPI.routeLeaf only exists once the mindmap editor has mounted —
+        // window.kdRouteLeaf is the always-available handle app.js exposes.
+        const route = (window.kdAPI && window.kdAPI.routeLeaf) || window.kdRouteLeaf;
+        if (typeof route !== 'function') { alert('Open-in-Fusion bridge not available.'); return; }
+        route({ code: part.code, status: 'missing', urn: part.urn || null, drawing_urn: null, fusion_link: null });
       });
       // ✕ remove a manual rectangular part
       row.querySelector('.kdnest-part-del')?.addEventListener('click', () => {

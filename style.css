@@ -4339,6 +4339,23 @@ body.sb-fs-lock { overflow: hidden; }
 .kdnest-part-ok    { color: #2ecc71; text-align: center; }
 .kdnest-part-err   { color: #f39c12; text-align: center; cursor: help; }
 .kdnest-part-load  { color: #5d7290; text-align: center; }
+/* ⚠ no-DXF = clickable "open in Fusion" (เอ๋ 2026-06-10, mirrors the NO-PDF badge) */
+.kdnest-part-fusion {
+  background: rgba(243, 156, 18, 0.12);
+  border: 1px solid rgba(243, 156, 18, 0.55);
+  color: #f39c12;
+  border-radius: 6px;
+  width: 26px; height: 26px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.kdnest-part-fusion:hover {
+  background: rgba(243, 156, 18, 0.28);
+  transform: scale(1.15);
+  box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.18);
+}
+.kdnest-part-fusion:active { transform: scale(0.92); }
 
 .kdnest-empty {
   padding: 24px 0;

@@ -10007,6 +10007,11 @@ async function _routeLeafToFusion(node) {
   }
 }
 
+// Global handle for non-editor surfaces (the Nest workspace's ⚠ no-DXF
+// button) — kdAPI only exists after the mindmap editor mounts, so expose
+// the router directly too. (เอ๋ 2026-06-10 "Link กลับไปทำที่ Fusion เหมือน NO PDF")
+window.kdRouteLeaf = _routeLeafToFusion;
+
 // Decide what to do when user clicks a leaf (no children) node:
 //   1. If has drawing → open PDF
 //   2. Else if has urn → try Fusion bridge → fallback web
