@@ -6705,3 +6705,12 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
   85%  { opacity: 1; transform: translateX(-50%) translateY(0); }
   100% { opacity: 0; transform: translateX(-50%) translateY(12px); }
 }
+
+/* Web Nesting action-button icons (G3 2026-06-10 — clear line-art, inherit btn text colour) */
+.kdnest-btn-ico {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.22em;
+  margin-right: 5px;
+  flex: none;
+}
