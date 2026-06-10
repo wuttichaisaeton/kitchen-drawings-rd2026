@@ -4195,12 +4195,15 @@ body.sb-fs-lock { overflow: hidden; }
 .kdng-modal {
   position: fixed; inset: 0; z-index: 1000;
   display: flex; align-items: center; justify-content: center;
+  /* No backdrop + click-through container (เอ๋ 2026-06-10 'ไม่ต้องทำให้อย่างอื่น
+     จางลงเพราะผมต้องดูตัวเลขด้วย'): the page behind stays bright AND usable while
+     the grain dialog is open; only the box catches input. nest.js no longer
+     renders .kdng-backdrop — the theme .kdng-backdrop rules below are moot. */
+  pointer-events: none;
 }
-/* Opaque backdrop so the part list behind is fully hidden (เอ๋ 2026-05-31
-   'dia box grain ควรทึบ'). */
-.kdng-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(2px); }
 .kdng-box {
   position: relative; z-index: 1;
+  pointer-events: auto;
   width: min(760px, 94vw); max-height: 86vh; display: flex; flex-direction: column;
   background: #161b22; border: 1px solid #2b3340; border-radius: 12px;
   padding: 16px 18px; box-shadow: 0 18px 50px rgba(0,0,0,0.7);
@@ -4227,6 +4230,16 @@ body.sb-fs-lock { overflow: hidden; }
 .kdng-th, .kdng-fix { text-align: center; }
 /* FIX input — amber tint + a touch wider, may hold a comma list (เอ๋ 2026-06-10) */
 .kdng-fix { border-color: #4a3a2a; color: #e0b870; }
+/* Save-affected part rows pulse amber (เอ๋ 2026-06-10 'เมื่อกด save แล้วมีผลกับ
+   อะไร ให้ effect Row นั้นๆด้วย') — class added by _flashGrainAffected for ~2.7s. */
+.kdnest-part.kdng-affected {
+  animation: kdng-affected-pulse 2.7s ease-out;
+}
+@keyframes kdng-affected-pulse {
+  0%   { box-shadow: 0 0 0 2px #F2A93B, 0 0 16px rgba(242,169,59,0.75); background-color: rgba(242,169,59,0.30); }
+  55%  { box-shadow: 0 0 0 2px rgba(242,169,59,0.7), 0 0 10px rgba(242,169,59,0.4); background-color: rgba(242,169,59,0.16); }
+  100% { box-shadow: 0 0 0 0 rgba(242,169,59,0); background-color: transparent; }
+}
 .kdng-fix:focus { border-color: #e0913b; }
 .kdng-fix::placeholder { color: #7a6a4a; }
 .kdng-grain {

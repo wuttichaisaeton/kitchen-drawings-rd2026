@@ -752,8 +752,11 @@
     const colB = rows.slice(half).map((r, i) => cell(r, i + half)).join('');
     const modal = document.createElement('div');
     modal.className = 'kdng-modal';
+    // No backdrop: เอ๋ 2026-06-10 "ไม่ต้องทำให้อย่างอื่นจางลงเพราะผมต้องดูตัวเลขด้วย" —
+    // the page behind stays bright AND interactive (.kdng-modal is pointer-events:none,
+    // only the box catches input), so she can scroll the part list while editing rules.
+    // Close = Cancel/Save only (no outside-click discard any more).
     modal.innerHTML = `
-      <div class="kdng-backdrop"></div>
       <div class="kdng-box">
         <div class="kdng-head">🧬 Grain rules
           <span class="kdng-sub">pattern · thickness · direction · FIX · ${rows.length} rules · shared</span>
@@ -772,7 +775,6 @@
     document.body.appendChild(modal);
     const q = sel => modal.querySelector(sel);
     const discard = () => { S.grainRows = null; modal.remove(); };
-    q('.kdng-backdrop').addEventListener('click', discard);
     q('#kdng-cancel').addEventListener('click', discard);
     modal.querySelectorAll('.kdng-pat').forEach(el => el.addEventListener('input', e => {
       const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].pattern = e.target.value;
@@ -798,7 +800,19 @@
     });
     q('#kdng-save').addEventListener('click', async () => {
       const btn = q('#kdng-save'); btn.disabled = true; btn.textContent = '💾 Saving…';
-      try { await _saveGrainRows(); modal.remove(); _refreshView(); }
+      // เอ๋ 2026-06-10 "เมื่อกด save แล้วมีผลกับอะไร ให้ effect Row นั้นๆด้วย":
+      // snapshot each part's effective grain state, save, then flash the rows
+      // whose grain/thickness/FIX actually changed.
+      const keyOf = p => [p.grain, p.thickness,
+        (p.fixHeights || []).join(','), (p.fixWidths || []).join(',')].join('|');
+      const before = new Map((S.parts || []).map(p => [p, keyOf(p)]));
+      try {
+        await _saveGrainRows();
+        const affected = new Set();
+        for (const p of (S.parts || [])) if (before.get(p) !== keyOf(p)) affected.add(p.code);
+        modal.remove(); _refreshView();
+        _flashGrainAffected(affected);
+      }
       catch (err) { alert('Save failed: ' + (err.message || err)); btn.disabled = false; btn.textContent = '💾 Save'; }
     });
     // Drag the dialog by its header (เอ๋ 2026-05-31 'ให้ผมขยับได้'). The box is
@@ -827,6 +841,17 @@
       handle.addEventListener('pointerup', end);
       handle.addEventListener('pointercancel', end);
     })();
+  }
+  // Amber pulse on the part rows a grain-rules Save actually changed, so เอ๋
+  // sees at a glance which parts the new rules touched. Runs AFTER _refreshView
+  // (rows are re-rendered there).
+  function _flashGrainAffected(codes) {
+    if (!codes || !codes.size || !S.rootEl) return;
+    S.rootEl.querySelectorAll('.kdnest-part').forEach(row => {
+      if (!codes.has(row.dataset.code)) return;
+      row.classList.add('kdng-affected');
+      setTimeout(() => row.classList.remove('kdng-affected'), 2700);
+    });
   }
 
   // ── grain.json → pattern map ──────────────────────────────────────
