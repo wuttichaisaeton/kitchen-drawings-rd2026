@@ -1735,44 +1735,82 @@
       if (isSmall(up)) queue.push(up); else stillUnplaced.push(up);
     }
     queue.sort((a, b) => (b.w * b.h) - (a.w * a.h));   // big smalls first
-    // Spot choice = Best AREA Fit + bottom-left, NOT BSSF. v1 used BSSF and
-    // เอ๋ got the SAME sheet back ("เหมือนเดิม"): for a 68mm-tall part the
-    // snuggest fit IS the ~70mm strip along the sheet's top edge — BSSF
-    // recreated the exact edge strips she circled. BAF instead picks the
-    // SMALLEST free pocket that fits → smalls drop into the leftover notches
-    // INSIDE the packed cluster, and the giant open region (the reusable
-    // remnant) is only ever touched when nothing else fits. Tie → lowest y
-    // then x (y-up: low = deep inside the cluster, away from the open top).
-    const pickSpot = (pk, rw, rh) => {
-      let best = null;
-      for (const fr of pk.free) {
-        if (fr.w < rw || fr.h < rh) continue;
-        const area = fr.w * fr.h;
-        if (!best || area < best.area
-            || (area === best.area && (fr.y < best.y || (fr.y === best.y && fr.x < best.x)))) {
-          best = { x: fr.x, y: fr.y, area };
+    // Spot choice v3 = REMNANT CONSOLIDATION (เอ๋ "ทำไมไม่เอาไปไว้ตรงนี้ จะได้มี
+    // ที่เหลือเยอะๆ" — v2's BAF + bottom-left split the open area; the cluster
+    // landed in the bottom-right corner instead of against the placed parts).
+    // History: v1 BSSF recreated the open-edge strips ("เหมือนเดิม"); v2 BAF
+    // fixed that but anchored low. v3 scores every candidate spot (each free
+    // rect × allowed rotation × its 4 corners) by the LARGEST FREE RECTANGLE
+    // REMAINING after a simulated split — the one-big-clean-remnant objective,
+    // stated directly. Ties → smaller source pocket (BAF: snug notches first),
+    // then higher y / higher x (y-up: against the packed cluster, away from
+    // the open corner).
+    const simMaxFree = (freeList, x, y, w, h) => {
+      let maxA = 0;
+      for (const r of freeList) {
+        if (x >= r.x + r.w || x + w <= r.x || y >= r.y + r.h || y + h <= r.y) {
+          const a = r.w * r.h;
+          if (a > maxA) maxA = a;
+          continue;
         }
+        if (x > r.x) { const a = (x - r.x) * r.h; if (a > maxA) maxA = a; }
+        if (x + w < r.x + r.w) { const a = (r.x + r.w - (x + w)) * r.h; if (a > maxA) maxA = a; }
+        if (y > r.y) { const a = r.w * (y - r.y); if (a > maxA) maxA = a; }
+        if (y + h < r.y + r.h) { const a = r.w * (r.y + r.h - (y + h)); if (a > maxA) maxA = a; }
       }
-      return best;
+      return maxA;
+    };
+    // ADJACENCY tier (เอ๋'s arrow = "against the placed parts"): a candidate that
+    // touches an existing placement (within gap+1mm) is always preferred over a
+    // free-floating one — kills the open-edge strips for good (a strip spot far
+    // from everything can only win when NOTHING adjacent fits, which keeps the
+    // never-lose-a-part guarantee). Smalls chain off each other, so the cluster
+    // grows from the packed mass outward.
+    const touches = (si, x, y, w, h) => {
+      const pad = gap + 1;
+      for (const pl of result.sheets[si].placements) {
+        const [pw, ph] = rotDims(pl, pl.rot);
+        if (x < pl.x + pw + pad && pl.x < x + w + pad &&
+            y < pl.y + ph + pad && pl.y < y + h + pad) return true;
+      }
+      return false;
     };
     const lost = [];
     for (const piece of queue) {
       let pick = null;
       for (let si = 0; si < result.sheets.length && !pick; si++) {
+        const free = packers[si].free;
+        let best = null;
         for (const rot of (piece.rots && piece.rots.length ? piece.rots : [0])) {
           const [rw, rh] = rotDims(piece, rot);
-          const spot = pickSpot(packers[si], rw, rh);
-          if (!spot) continue;
-          if (!pick || spot.area < pick.spot.area
-              || (spot.area === pick.spot.area
-                  && (spot.y < pick.spot.y || (spot.y === pick.spot.y && spot.x < pick.spot.x)))) {
-            pick = { si, rot, rw, rh, spot };
+          for (const fr of free) {
+            if (fr.w < rw || fr.h < rh) continue;
+            const pocket = fr.w * fr.h;
+            const corners = [
+              [fr.x, fr.y],
+              [fr.x + fr.w - rw, fr.y],
+              [fr.x, fr.y + fr.h - rh],
+              [fr.x + fr.w - rw, fr.y + fr.h - rh],
+            ];
+            for (const [cx, cy] of corners) {
+              const adj = touches(si, cx, cy, rw, rh) ? 1 : 0;
+              const rem = simMaxFree(free, cx, cy, rw, rh);
+              if (!best
+                  || adj > best.adj
+                  || (adj === best.adj && rem > best.rem)
+                  || (adj === best.adj && rem === best.rem && pocket < best.pocket)
+                  || (adj === best.adj && rem === best.rem && pocket === best.pocket
+                      && (cy > best.y || (cy === best.y && cx > best.x)))) {
+                best = { adj, rem, pocket, x: cx, y: cy, rot, rw, rh };
+              }
+            }
           }
         }
+        if (best) pick = { si, ...best };
       }
       if (pick) {
-        packers[pick.si].commit(pick.spot.x, pick.spot.y, pick.rw, pick.rh);
-        result.sheets[pick.si].placements.push({ ...piece, x: pick.spot.x, y: pick.spot.y, rot: pick.rot });
+        packers[pick.si].commit(pick.x, pick.y, pick.rw, pick.rh);
+        result.sheets[pick.si].placements.push({ ...piece, x: pick.x, y: pick.y, rot: pick.rot });
       } else {
         lost.push(piece);
       }
