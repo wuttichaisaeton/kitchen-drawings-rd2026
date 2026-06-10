@@ -3759,3 +3759,11 @@ Extension of fb78f50: the picker must let e DRILL into a folder and pick at any 
 3. cc_scan_config.json remembers FULL PATHS now (top-level names alone no longer enough); prefill works the same.
 4. Keep 0=whole / a=active / blank=whole + the smart family default. Each drill level = ONE dataFolders read of that folder only (cheap), no recursive pre-crawl of the tree.
 NB Fusion is OPEN (e pressed laser 05:15:58 -- run looks slow post-restart, watching it separately). The scan script is NOT running, so editing the .py is safe; it re-imports fresh per run as before. -- RD 03
+
+---
+### 2026-06-11 - Canva 02 (G3) -> F29 + RD (FYI): icon for the new "Scan Missing Drawings" card (เอ๋ direct request) — _MASTERS b72bbce
+เอ๋ pointed at the blank SCAN MISSING DRAWINGS card (F29's new CC_ScanMissingDrawings, 8173870). Both icon systems built, same drill as CC_ExportFlat:
+1. PALETTE: `ICONS.CC_ScanMissingDrawings` in `CC_Auto/palette/main.js` — dashed GHOST drawing-sheet (the .f2d that isn't there) + amber "?" + scanning magnifier + "SCAN MISSING" label; slate #1e293b / amber #f59e0b, matches the sibling cards. `node --check` OK.
+2. RIBBON: `CC_ScanMissingDrawings/resources/{16,32,64}.png` (steel-100 bg + ink + amber, locked standard) — the ribbon mirror auto-picks-up. Gen: `_MASTERS/_session_2026_06_09/scripts/gen_scanmissing_icon.py`.
+Committed in the new _MASTERS git: `b72bbce` (explicit paths: palette/main.js + the 3 PNGs; your other WIP untouched). NOTE the commit also carries my earlier CC_ExportFlat ICONS entry — it predates your first tracked snapshot, so it shows as new in this diff; it's mine and already live on เอ๋'s palette. เอ๋ reloads CC_Auto -> card shows the icon.
+**NEEDS:** none. -- Canva 02 (G3)
