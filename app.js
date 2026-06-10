@@ -2232,6 +2232,47 @@ function applyFamilyRemap() {
       }
     }
   }
+  _applyProjectNames();
+}
+
+// ── Project display names (เอ๋ 2026-06-10 'ชื่อ Project คือชื่อนี้', pointing at
+// the ACTIVE CONFIG ROW in Fusion — e.g. file 100VO0-050000 whose real cabinet
+// config is 1LLVO4-05000L): RTDB project_names/<key> = display name override.
+// Applied straight onto manifest.projects[].name (same once-at-load pattern as
+// the family remap) so EVERY consumer — Projects tab, Nest picker, nest.js
+// workspace title, breadcrumbs, Sim.Bending labels — sees the override with no
+// per-render work. The project KEY (manifest/RTDB paths) never changes. ──
+let _projectNamesCache = {};
+function _applyProjectNames() {
+  if (!manifest || !manifest.projects) return;
+  for (const [key, p] of Object.entries(manifest.projects)) {
+    if (p._origName == null) p._origName = p.name || key;   // keep Fusion's name
+    p.name = _projectNamesCache[key] || p._origName;
+  }
+}
+function initProjectNamesSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('project_names').on('value', snap => {
+      _projectNamesCache = snap.val() || {};
+      _applyProjectNames();
+      try { render(); } catch {}
+    }, err => console.warn('Firebase project_names listener error:', err));
+  } catch (e) {
+    console.warn('Failed to attach project_names listener:', e);
+  }
+}
+function renameProject(key) {
+  const p = manifest && manifest.projects && manifest.projects[key];
+  const cur = (_projectNamesCache[key] || '');
+  const v = prompt(
+    `Display name for project "${key}"\n(empty = back to the original "${(p && p._origName) || key}")`, cur);
+  if (v == null) return;   // cancelled
+  const name = v.trim();
+  try {
+    if (name) window.firebaseDB.ref('project_names/' + key).set(name);
+    else window.firebaseDB.ref('project_names/' + key).remove();
+  } catch (e) { alert('Rename failed: ' + (e.message || e)); }
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -6461,7 +6502,7 @@ function renderSimBendHome() {
   const sbProjs = (typeof projectList === 'function' ? projectList() : []);
   const sbNewKeys = sbProjs.filter(p => isNewProject('sim', p.key, p)).map(p => p.key);
   const projOpts = sbProjs
-    .map(p => `<option value="${escapeHtml(p.key)}"${_simBendProject === p.key ? ' selected' : ''}>${escapeHtml(p.key)}${sbNewKeys.includes(p.key) ? ' · NEW' : ''}</option>`)
+    .map(p => `<option value="${escapeHtml(p.key)}"${_simBendProject === p.key ? ' selected' : ''}>${escapeHtml(p.name || p.key)}${sbNewKeys.includes(p.key) ? ' · NEW' : ''}</option>`)
     .join('');
   const sbNewPill = sbNewKeys.length
     ? `<span class="part-new-badge" title="${escapeHtml(sbNewKeys.join(', '))}">${sbNewKeys.length} NEW</span>` : '';
@@ -6493,7 +6534,7 @@ function renderSimBendHome() {
     const pct = _simBendSync.total ? Math.round(100 * _simBendSync.done / _simBendSync.total) : 100;
     const progressHtml = `
       <div style="margin:4px 0 12px;">
-        <div style="font-size:12px; margin-bottom:4px;">📁 <strong>${escapeHtml(_simBendProject)}</strong> — ${verified.length}/${_simBendSync.total} verified${_simBendSync.running ? ` · checking ${_simBendSync.done}/${_simBendSync.total}…` : ''}</div>
+        <div style="font-size:12px; margin-bottom:4px;">📁 <strong>${escapeHtml((manifest.projects[_simBendProject] && manifest.projects[_simBendProject].name) || _simBendProject)}</strong> — ${verified.length}/${_simBendSync.total} verified${_simBendSync.running ? ` · checking ${_simBendSync.done}/${_simBendSync.total}…` : ''}</div>
         <div style="height:6px; background:rgba(128,140,160,0.2); border-radius:3px; overflow:hidden;"><div style="height:100%; width:${pct}%; background:#18c08c; transition:width .2s;"></div></div>
       </div>`;
     const section = (title, body) => body ? `<div class="sb-dash-section"><div class="sb-section-head">${title}</div>${body}</div>` : '';
@@ -7354,6 +7395,11 @@ function renderProjectsHome() {
     const deleteBtn = adminMode
       ? `<button class="project-delete-btn" data-delete-project="${escapeHtml(p.key)}" aria-label="Delete project" title="Hide this project from the list (parts stay in Library)">🗑</button>`
       : '';
+    // Admin rename — display-name override (RTDB project_names); shows the real
+    // cabinet/config name while the manifest key stays the file code.
+    const renameBtn = adminMode
+      ? `<button class="project-rename-btn" data-rename-project="${escapeHtml(p.key)}" aria-label="Rename project" title="Set the display name (e.g. the cabinet's config code)">✏</button>`
+      : '';
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -7364,18 +7410,27 @@ function renderProjectsHome() {
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
         </div>
         ${pinBtn}
+        ${renameBtn}
         ${deleteBtn}
       </div>`;
   }).join('');
 
   ROOT.innerHTML = `<div class="project-list">${html}</div>`;
 
-  // Card click → drill into project (but ignore clicks on pin, drag, or delete).
+  // Card click → drill into project (but ignore clicks on pin, drag, rename, or delete).
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn')) return;
+      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn')) return;
       markProjectSeen('proj', el.dataset.project);   // opening clears this surface's NEW badge
       navTo({ kind: 'project', name: el.dataset.project });
+    });
+  });
+
+  // ✏ rename (admin) — prompt → RTDB project_names override; listener re-renders.
+  ROOT.querySelectorAll('.project-rename-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      renameProject(btn.dataset.renameProject);
     });
   });
 
@@ -11511,6 +11566,7 @@ async function init() {
   initTimersSync();
   initDeletedDrawingsSync();
   initDeletedProjectsSync();
+  initProjectNamesSync();
   initPinnedSync();
   initFamilyChipSync();
   initUploadedPdfsSync();

@@ -475,6 +475,37 @@ h1 {
   color: #fff;
   border-color: #f85149;
 }
+/* ✏ rename (admin) — same chip as delete, amber accent (display-name override,
+   เอ๋ 2026-06-10 'ชื่อ Project คือชื่อนี้'). */
+.project-rename-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-size: 15px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.project-rename-btn:hover {
+  color: #F2A93B;
+  border-color: rgba(242, 169, 59, 0.4);
+  background: rgba(242, 169, 59, 0.08);
+}
+.project-rename-btn:active {
+  transform: scale(0.9);
+  background: #F2A93B;
+  color: #1B2430;
+  border-color: #F2A93B;
+}
 
 /* ── Sortable.js dragging visuals ── */
 .project-card-ghost {
