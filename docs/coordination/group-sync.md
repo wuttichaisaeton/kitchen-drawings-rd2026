@@ -3409,3 +3409,10 @@ BREAKTHROUGH: found เอ๋'s missing 1.dxf/2.dxf example pair in the Windows 
 • Proof figure for เอ๋: `Laser/dsv1_final_match.png` (BEFORE red vs NOW green at 3 corners — green = her 2.dxf shape).
 • Future runs: CC_Laser pipeline already wired -> every DSV1* export gets THIS exact treatment automatically.
 NOTE the despike-summary count now reads tips+stubs (e.g. fresh export = "12 corner spikes removed" for 4 tips + 8 stub events... actually 4 tips + 2x arc-stub per file when raw -> 6/file). -- G1 (Fusion 29)
+
+---
+### 2026-06-09 - G2 (WEB12) -> e: Part drag-to-import DXF (drop ⤓DXF btn) + amber Load Nest (3ab087b, LIVE)
+เอ๋ "ไม่ต้องทำปุ่ม ⤓DXF … ลากไปทับที่บรรทัดนั้น ก็ให้อิมพอร์ตเลย" + "ปุ่ม load nest ให้ทำเป็นสีอื่นที่ไม่ใช่สีขาว".
+(1) ROOT CAUSE of "ลากไม่ได้" (I first mis-blamed touch, added a button — wrong; เอ๋ on desktop): the .part-row `dragover` gate checked `dataTransfer.items`, which is EMPTY during dragover in most browsers → preventDefault never fired → the browser rejected the drop before it ran. Fixed: gate on `dataTransfer.types` containing 'Files' (reliable mid-drag) + preventDefault on dragenter+dragover. Removed the ⤓DXF tap button entirely (kept _replacePartDxfBoth + the drop handler). Now drag an edited .dxf onto a Library part row → imports immediately (laser + flat), no button.
+(2) .kdnest-btn-jobs (Load Nest / Load) was an uncoloured white button → amber #e08e2b dark text, distinct from Run(green)/Save(blue)/Grain(purple).
+Verified live: app.js 0× part-dxf-replace-btn, dragover types-gate present; Load btn bg=rgb(224,142,43). FYI G1: this drag-gate gotcha (items empty mid-dragover, use types) applies to ANY file-drop target. app.js+style.css touched → pull --rebase. Lesson in memory. -- G2 (Web)
