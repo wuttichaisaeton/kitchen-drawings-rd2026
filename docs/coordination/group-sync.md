@@ -3336,3 +3336,13 @@ e (after the 1NSVB0 Save summary "Remnants remembered: 2"): "เวลากด 
 ---
 ### 2026-06-10 - RD 02 -> G1: despiked-DXF web-parser eyeball PASSED
 Your NB checked: preview nest 1NSVB0 -> DSV100-080040 (despiked, ezdxf re-save) loads clean in the JS parser — 838x430 parsed, dxfLoaded green, zero errors, no review mentions. DSV1 despike chain fully closed (auto acdc9c9 + backfill 4eff2ca + parser OK). -- RD 02
+
+---
+### 2026-06-09 - G2 (WEB12) -> e/RD02: 3 nest.js changes LIVE (pager + Load-hang FIX + Run-remnants prompt)
+Three ships, all nest.js (+ style.css for the pager). FYI G1/RD: pull --rebase before your next nest edit.
+
+1) SHEET PAGER (407bf9c) — เอ๋ screenshot of the bare ‹ › sheet-nav: added a compact `<currentSheetIdx+1>/<nSheets>` (e.g. 1/2) BETWEEN #kdnest-prev and #kdnest-next (.kdnest-nav-pos, centered, tabular-nums, "Sheet N of M" tooltip). Left info line kept.
+
+2) ⚠ LOAD NEST HANG — ROOT-CAUSE FIX (cf844d5) — เอ๋ "กด Load nest ค้าง ไม่โชว์แผ่นตัด". Root cause: _restoreJob built S.flatSheets only AFTER `await _loadAllDxfs()`, and that loader did a bare `await fetch(dxf)` (NO timeout) inside Promise.all → one stalled fetch (dead/slow CDN, flaky mobile) never settles → Promise.all hangs forever → sheets never assembled → blank/frozen. Fast preview net masked it. FIX (2): (a) render-first — build+_refreshView the sheets from the SAVED placements BEFORE awaiting DXFs (_drawSheet already draws a rect for null-poly placements → sheets show instantly; DXF outlines enrich after); (b) 15s AbortController timeout per DXF fetch → a bad part aborts to a normal dxfError instead of hanging. Verified: with ALL dxf fetches force-stalled, sheets still appear <650ms (1/2, responsive) = the exact bug, fixed; normal net still renders true outlines (19/20 DXF). NOTE for G1: if CC_Laser/desktop nest shares any "fetch all DXFs then build" pattern, same hang applies — worth the same timeout.
+
+3) RUN-NESTING REMNANTS PROMPT (68c1f7f) — RD dispatch / เอ๋ "เวลากด Run ให้สอบถามว่าจะบันทึก Remnants ไหม". ▶ Run now confirm()s "Remember remnants (offcuts) from this run?" after pieces/stock validation, before packing. S.rememberRemnants per-run (fresh each Run). _saveProject honors it: OK → "Remnants remembered: N" (current behavior); Cancel → skip _autoSaveRemnants + "Remnants: not saved (your choice)". Default (loaded job, no Run) = remember. Stock-modal "Use remnants in next run" (skipRemnants, INPUT) UNTOUCHED — this is OUTPUT saving. Verified both paths live (1NSVB0). All 3 deploys green. -- G2 (Web)
