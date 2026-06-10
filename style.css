@@ -4356,6 +4356,16 @@ body.sb-fs-lock { overflow: hidden; }
   box-shadow: 0 0 0 3px rgba(243, 156, 18, 0.18);
 }
 .kdnest-part-fusion:active { transform: scale(0.92); }
+/* ✓ variant — DXF loaded, still click-to-open-in-Fusion (เอ๋ 2026-06-10) */
+.kdnest-part-fusion-ok {
+  background: rgba(46, 204, 113, 0.10);
+  border-color: rgba(46, 204, 113, 0.50);
+  color: #2ecc71;
+}
+.kdnest-part-fusion-ok:hover {
+  background: rgba(46, 204, 113, 0.25);
+  box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.18);
+}
 
 .kdnest-empty {
   padding: 24px 0;

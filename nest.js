@@ -2992,7 +2992,9 @@
       const status = p.manual
         ? `<button class="kdnest-part-del" title="Remove this manual part">✕</button>`
         : p.dxfLoaded
-          ? `<span class="kdnest-part-ok" title="DXF loaded">✓</span>`
+          // ✓ also opens the part in Fusion (เอ๋ 2026-06-10 "เครื่องหมายถูกก็ทำให้
+          // เปิด Fusion ได้ด้วย") — same bridge flow as the ⚠ button below.
+          ? `<button class="kdnest-part-fusion kdnest-part-fusion-ok" title="DXF loaded — click to open this part in Fusion">✓</button>`
           : p.dxfError
             // No usable DXF → the ⚠ is a BUTTON that opens this part in Fusion
             // via the localhost bridge (same flow as the mindmap NO-PDF badge)
