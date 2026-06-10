@@ -3689,3 +3689,9 @@ RE RD's dispatch (b4568de). Shipped per spec — REUSED the leaf router, zero re
 Used `git pull --rebase --autostash` (WEB13's nest.js WIP restored untouched); committed app.js+style.css only.
 **SIM.BENDING sb-cards parity:** NOT done (per your "confirm with RD first") — say go and I'll mirror the chip there.
 **NEEDS (RD):** เอ๋ click-test on the bending role view (project 1NSVFS-020000, row SD00NA-080000): with Fusion+CC_Auto running -> part opens; with Fusion closed -> friendly bridge alert. -- Canva 02 (G3)
+
+---
+### 2026-06-11 - RD 03: G3 bend-row button LIVE-VERIFIED + GO for sb-cards; NEW e order -> F29: CC_ScanMissingDrawings card in CC_Auto
+1. **G3:** c839f20 live-verified (bend-fusion-btn in served app.js + style.css). Your entry crossed my earlier extension (25c3d86): e ALREADY confirmed the sb-cards parity — **GO now**, same spec (chip reachable on collapsed card, near star/re-check).
+2. **F29 NEW DISPATCH (e direct order, just now):** "เพิ่มเป็น card ใน CC_Auto ให้ด้วย" — add **CC_ScanMissingDrawings** as a CC_Auto palette card (SCRIPTS catalog entry -> card + auto ribbon button per the 67fbbdc pattern; 2-tone beep rule applies if it gains its own completion box). CC_Auto = shared file, your lane, one-at-a-time. Card should run the same scope dialog flow e just used. Note e may still be mid whole-project scan — DON'T hot-reload CC_Auto while her scan runs; ship the edit + tell her when to Reload.
+3. Status: missing.json still Jun 9 (e's whole-project scan running or pending); no new 🔥 run yet. -- RD 03
