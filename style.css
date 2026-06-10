@@ -4178,6 +4178,9 @@ body.sb-fs-lock { overflow: hidden; }
 }
 /* Manual rectangle parts (admin-added) + locked DXF size fields. */
 .kdnest-add-rect { color: #c8a6ff; }
+/* Default-grain button — amber, ties it to the "no grain rule" warning (เอ๋). */
+.kdnest-default-grain { color: #e0b870; border-color: #4a3a2a; }
+.kdnest-default-grain:hover { background: rgba(224,184,112,0.16); color: #fff; }
 .kdnest-part-manual { background: rgba(124, 92, 168, 0.10); }
 .kdnest-part-del {
   background: transparent; border: none; color: #c25555;

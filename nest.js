@@ -3258,6 +3258,7 @@
               <button id="kdnest-parts-all" class="kdnest-mini">All</button>
               <button id="kdnest-parts-none" class="kdnest-mini">None</button>
               ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
+              <button id="kdnest-default-grain" class="kdnest-mini kdnest-default-grain" title="Set every part that has NO grain rule (?) to the default direction — ✱ ANY (free to rotate). Clears the warning; applies for this run only (not saved to the grain table).">✱ Default</button>
               <span class="kdnest-parts-count">${totalUnique} / ${S.parts.length} · ${totalPcs} pcs</span>
             </div>
             ${grainSummary}
@@ -3339,6 +3340,19 @@
       const rows = S.rootEl.querySelectorAll('.kdnest-part-manual .kdnest-part-w');
       const last = rows[rows.length - 1];
       if (last) last.focus();
+    });
+    // Default direction (เอ๋ 2026-06-10): one click sets every part with NO grain
+    // rule (grain '?') to the default ✱ ANY — free to rotate — so the "no grain
+    // rule" warning clears without opening the grain table per part. Session-only
+    // (doesn't write a rule); a real grain.xlsx/Grain-modal rule still wins.
+    $('#kdnest-default-grain')?.addEventListener('click', () => {
+      let n = 0;
+      for (const p of S.parts) {
+        if (p.manual) continue;
+        const g = String(p.grain || '').toUpperCase();
+        if (g !== 'H' && g !== 'V' && g !== 'ANY') { p.grain = 'ANY'; n++; }
+      }
+      _refreshView();
     });
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
