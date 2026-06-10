@@ -1919,6 +1919,7 @@ button.family-breadcrumb-btn:focus-visible {
 .part-rename-btn,
 .part-folder-btn,
 .part-compare-btn,
+.part-dxf-replace-btn,
 .part-dxf-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(110, 118, 129, 0.4);
@@ -1961,6 +1962,21 @@ button.family-breadcrumb-btn:focus-visible {
 }
 .part-dxf-btn:hover { background: #144e5e; color: #fff; }
 .part-dxf-btn:active { transform: scale(0.96); }
+
+/* --- Replace DXF button (admin Library row) --- amber = upload/overwrite. */
+.part-dxf-replace-btn {
+  background: rgba(242, 169, 59, 0.12);
+  color: #f2a93b;
+  border-color: rgba(242, 169, 59, 0.5);
+  width: auto;
+  padding: 0 8px;
+  gap: 2px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.part-dxf-replace-btn:hover { background: rgba(242, 169, 59, 0.24); color: #fff; }
+.part-dxf-replace-btn:active { transform: scale(0.96); }
+.part-dxf-replace-btn.part-row-uploading { opacity: 0.6; pointer-events: none; }
 
 /* --- DXF download popover (N > 1) --- */
 .part-dxf-popover {
