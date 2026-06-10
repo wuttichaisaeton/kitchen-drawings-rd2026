@@ -2975,7 +2975,7 @@ async function uploadPdfFromDrop(file, code, family) {
 // เอ๋ 2026-06-08: upload a part's FLAT-PATTERN DXF (for the DXF-driven Sim.Bending) via the
 // same GitHub-PAT Contents API as the PDF upload, to Drawings/flat/<code>.dxf. The sim fetches
 // it on open and renders the real folded geometry; absent → falls back to box_geom.
-async function uploadDxfFromDrop(file, code) {
+async function uploadDxfFromDrop(file, code, opts) {
   if (!file || !/\.dxf$/i.test(file.name)) { alert('Please drop a DXF file (.dxf).'); return false; }
   if (!code) return false;
   const path = `Drawings/flat/${code}.dxf`;
@@ -2999,7 +2999,9 @@ async function uploadDxfFromDrop(file, code) {
     }
     const json = await resp.json();
     const commitSha = json.commit && json.commit.sha;
-    alert(`Uploaded flat DXF ${code} (${Math.round(file.size / 1024)} KB)\nGitHub commit: ${commitSha ? commitSha.slice(0, 7) : 'OK'}\nSim.Bending uses it in ~1 min (Pages rebuild).`);
+    if (!(opts && opts.quiet)) {
+      alert(`Uploaded flat DXF ${code} (${Math.round(file.size / 1024)} KB)\nGitHub commit: ${commitSha ? commitSha.slice(0, 7) : 'OK'}\nSim.Bending uses it in ~1 min (Pages rebuild).`);
+    }
     return true;
   } catch (e) {
     console.error('[dxf-upload] FAILED:', e);
@@ -11097,9 +11099,34 @@ function renderFamily(fam, highlight) {
         }
         const code = rowEl.dataset.code;
         if (!code) return;
-        if (!confirm(`Upload "${file.name}" as the ${isDxf ? 'flat DXF (Sim.Bending)' : 'drawing'} for "${code}"?\n\n(Replaces any existing ${isDxf ? 'DXF' : 'PDF'} for this code.)`)) return;
+        // เอ๋ 2026-06-10 'วางทับที่ Part … ไม่ interactive ให้มีการทับเลย': the drop
+        // overwrites DIRECTLY, no confirm. A .dxf replaces BOTH of this part's
+        // files (เอ๋ chose 'ทั้งสองไฟล์') — the laser-cut DXF (Drawings/dxf/, what
+        // the cutter reads) AND the flat DXF (Drawings/flat/, what Sim.Bending
+        // reads). Both sha-overwrite in place; success is silent (a toast +
+        // re-render), only errors pop an alert.
+        // PDF drop keeps its confirm (เอ๋ only asked for the DXF to be direct).
+        if (!isDxf && !confirm(`Upload "${file.name}" as the drawing PDF for "${code}"?\n\n(Replaces any existing PDF for this code.)`)) return;
         rowEl.classList.add('part-row-uploading');
-        const ok = isDxf ? await uploadDxfFromDrop(file, code) : await uploadPdfFromDrop(file, code, fam);
+        let ok = false;
+        if (isDxf) {
+          // Preserve the laser DXF's project tag — dxfsForProject() filters
+          // uploaded_dxfs by .project, so blanking it would drop the part out of
+          // its project's cut list. Reuse the existing entry's project ('' if new).
+          let proj = '';
+          try {
+            const snap = await window.firebaseDB.ref('uploaded_dxfs/' + code).once('value');
+            proj = (snap.val() && snap.val().project) || '';
+          } catch (e) { /* no existing entry — treat as new */ }
+          const okFlat = await uploadDxfFromDrop(file, code, { quiet: true });
+          let okLaser = false;
+          try { await _uploadPartDxf(proj, code, file); okLaser = true; }
+          catch (e) { console.error('[part-drop laser dxf]', e); alert(`Laser DXF upload failed for ${code}: ${e.message || e}`); }
+          ok = okFlat || okLaser;
+          if (ok) { try { _kdToast(`✓ DXF replaced (laser + flat) — ${displayCodeFor(code)}`); } catch (e) {} }
+        } else {
+          ok = await uploadPdfFromDrop(file, code, fam);
+        }
         rowEl.classList.remove('part-row-uploading');
         if (ok) {
           // Firebase listener triggers render — force one in case of timing.
