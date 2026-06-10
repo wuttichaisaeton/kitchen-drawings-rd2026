@@ -1194,18 +1194,16 @@ function _wireCutList(parts, projectKey) {
     });
   }
 
-  // Admin drag-drop for "NO DXF" rows. When Fusion's DXF Creator
-  // exports under a leaf name (e.g. FN2BN0-000000.dxf) but the BOM
-  // walk promotes the part to the wrapper code (FN2BNX-120000), the
-  // wrapper row shows ⚠ NO DXF even though a DXF exists on disk. Admin
-  // can drag the file straight onto the row to fix it without going
-  // back into Fusion. Per user 2026-05-28: 'ให้ผมลากเข้ามาได้ไหม'.
-  // We DON'T call getGitHubPat() here — it would prompt on every page
-  // load. The prompt only fires when the user actually drops a file
-  // (deferred to _uploadPartDxf). The affordance is offered regardless
-  // of PAT state; first drop triggers the one-time setup prompt.
+  // Admin drag-drop on EVERY cut row (เอ๋ 2026-05-28 'ให้ผมลากเข้ามาได้ไหม' +
+  // 2026-06-10 'แก้ไข dxf … ลากมาวางทับของเดิมได้'):
+  //   • ⚠ NO DXF row → drop a .dxf to fill it (e.g. a wrapper code whose DXF
+  //     Fusion exported under a leaf name, so the row shows missing).
+  //   • 📐 ready row → drop an EDITED .dxf to REPLACE the existing one (confirm
+  //     first; _uploadPartDxf fetches the file's sha to overwrite in place).
+  // We DON'T call getGitHubPat() here — it would prompt on every page load. The
+  // prompt only fires on an actual drop (deferred to _uploadPartDxf).
   if (isAdmin()) {
-    ROOT.querySelectorAll('.cut-row.cut-row-missing').forEach(row => {
+    ROOT.querySelectorAll('.cut-row').forEach(row => {
       row.classList.add('cut-row-droppable');
       const code = row.dataset.code;
       row.addEventListener('dragenter', ev => {
@@ -1234,10 +1232,18 @@ function _wireCutList(parts, projectKey) {
           return;
         }
         const file = files[0];
+        // Replacing an existing DXF is destructive (overwrites the cut file the
+        // laser reads) — confirm first. A NO-DXF row just fills in, no confirm.
+        const isReplace = !row.classList.contains('cut-row-missing');
+        if (isReplace && !confirm(
+              `Replace the DXF for ${code} with "${file.name}"?\n\n` +
+              `This overwrites the current cut file. The old version stays in git history.`)) {
+          return;
+        }
         const status = row.querySelector('.cut-status');
         const prevHtml = status ? status.outerHTML : '';
         if (status) {
-          status.outerHTML = `<span class="cut-status cut-uploading">⏫ uploading…</span>`;
+          status.outerHTML = `<span class="cut-status cut-uploading">⏫ ${isReplace ? 'replacing' : 'uploading'}…</span>`;
         }
         try {
           await _uploadPartDxf(projectKey, code, file);
@@ -1248,7 +1254,7 @@ function _wireCutList(parts, projectKey) {
           // until the listener-driven repaint lands.
           const fresh = row.querySelector('.cut-status');
           if (fresh) {
-            fresh.outerHTML = `<button type="button" class="cut-status cut-ok" title="View DXF preview">📐 ready</button>`;
+            fresh.outerHTML = `<button type="button" class="cut-status cut-ok" title="View DXF preview">${isReplace ? '✓ replaced' : '📐 ready'}</button>`;
           }
           row.classList.remove('cut-row-missing', 'cut-row-droppable');
         } catch (e) {
@@ -1442,14 +1448,22 @@ async function _uploadPartDxf(projectKey, code, file) {
   const safeCode = encodeURIComponent(code);
   const repoPath = `Drawings/dxf/${safeCode}/${safeCode}.dxf`;
   const content = await fileToBase64(file);
+  // If a DXF already exists at this path, GitHub's Contents API requires its
+  // blob sha to overwrite it (PUT without sha → 422). Fetch it first; null =
+  // brand-new file. This lets an edited DXF be dragged straight OVER the old
+  // one to replace it (เอ๋ 2026-06-10 'แก้ไข dxf … ลากมาวางทับของเดิมได้').
+  let sha = null;
+  try { sha = await _ghGetFileSha(repoPath); } catch (e) { /* treat as a new file */ }
+  const body = {
+    message: `Admin drop: ${sha ? 'replace' : 'upload'} DXF for ${code}`,
+    content,
+    branch: 'main',
+  };
+  if (sha) body.sha = sha;
   const resp = await _ghContentsRequest(repoPath, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      message: `Admin drop: upload DXF for ${code}`,
-      content,
-      branch: 'main',
-    }),
+    body: JSON.stringify(body),
   });
   if (!resp.ok) {
     const errBody = await resp.text();
