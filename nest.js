@@ -478,7 +478,15 @@
         return;
       }
       try {
-        const fetchUrl = _toJsdelivrUrl(p.dxfUrl);
+        // Cache-bust by CONTENT VERSION: jsdelivr serves multi-hour max-age, so
+        // a plain (or force-) cached fetch kept showing the PRE-fix bytes after
+        // a re-export (เอ๋ 2026-06-10 'เหมือนเดิม' — DSV1 despike invisible).
+        // content_md5 (in uploaded_dxfs since today) keys the browser cache per
+        // content: unchanged file = cached, changed file = new URL = fresh
+        // fetch. Entries without md5 fall back to uploaded_at (re-fetch per
+        // upload), else a one-shot Date.now().
+        const ver = (p.dxfMeta && (p.dxfMeta.content_md5 || p.dxfMeta.uploaded_at)) || Date.now();
+        const fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
         // Abort a stalled fetch (dead/slow CDN, flaky mobile network) after 15s.
         // A bare `await fetch` with no timeout never resolves on a hung socket, so
         // ONE bad part used to hang the whole `Promise.all` → the Load froze and
