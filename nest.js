@@ -523,10 +523,13 @@
       }
     }
 
-    // Aggregate qty by code.
+    // Aggregate qty by code. Skip WRAPPER entries (container/occurrence codes,
+    // qty 0 — CC_Assembly emits them to carry the deep tree): without this they
+    // flooded the nest as phantom "unique parts" with no DXF — เอ๋'s 1NSVB0
+    // showed "36 unique / 16 no-DXF" when the real cut list is 24/37 (2026-06-10).
     const byCode = new Map();
     for (const p of partsRaw) {
-      if (!p || !p.code) continue;
+      if (!p || !p.code || p.is_wrapper) continue;
       const ex = byCode.get(p.code);
       if (ex) ex.qty += (p.qty || 0);
       else byCode.set(p.code, _newPart(p.code, p.qty));
