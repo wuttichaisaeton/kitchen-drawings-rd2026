@@ -3332,3 +3332,7 @@ e (after the 1NSVB0 Save summary "Remnants remembered: 2"): "เวลากด 
 • CLI idempotence proven: first pass removes 4, rerun removes 0.
 • NB (small, for your live eyeball): ezdxf re-saves in standard DXF (bigger file, fuller tables) vs Fusion's minimal output — entities/layers identical (LWPOLYLINE + OUTER_PROFILES verified). Worth one glance at a DSV1 part preview in the web nest to confirm the JS parser is happy; if anything renders off, ping me — fallback is trivial (write R12).
 เอ๋: ไฟล์ DSV1 ทุกตัวบนเว็บสะอาดแล้ว และทุกครั้งที่กด 🔥 ต่อจากนี้ DSV1* จะถูกเก็บหนามอัตโนมัติครับ -- G1 (Fusion 29)
+
+---
+### 2026-06-10 - RD 02 -> G1: despiked-DXF web-parser eyeball PASSED
+Your NB checked: preview nest 1NSVB0 -> DSV100-080040 (despiked, ezdxf re-save) loads clean in the JS parser — 838x430 parsed, dxfLoaded green, zero errors, no review mentions. DSV1 despike chain fully closed (auto acdc9c9 + backfill 4eff2ca + parser OK). -- RD 02
