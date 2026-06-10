@@ -7129,12 +7129,16 @@ function renderNestHome() {
         <button class="nest-move-btn nest-up" data-key="${escapeHtml(e.key)}" aria-label="Move up" title="Move up" ${isFirst ? 'disabled' : ''}>▲</button>
         <button class="nest-move-btn nest-down" data-key="${escapeHtml(e.key)}" aria-label="Move down" title="Move down" ${isLast ? 'disabled' : ''}>▼</button>
       </span>
-      <span class="nest-home-name">${escapeHtml(e.name)}</span>
-      <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
-      <span class="nest-home-cta">${e.ready ? '▶ Nest' : '⚠ no DXFs'}</span>
-      <button class="pin-btn ${e.pinned ? 'on' : ''}" data-project="${escapeHtml(e.key)}"
-              aria-label="${pinTitle}" title="${pinTitle}">${e.pinned ? '★' : '☆'}</button>
-      <button class="nest-del-btn" data-key="${escapeHtml(e.key)}" aria-label="Hide project" title="Hide from list (also hides in Projects)">🗑</button>
+      <div class="nest-home-body">
+        <span class="nest-home-name">${escapeHtml(e.name)}</span>
+        <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
+      </div>
+      <span class="nest-home-actions">
+        <span class="nest-home-cta">${e.ready ? '▶ Nest' : '⚠ no DXFs'}</span>
+        <button class="pin-btn ${e.pinned ? 'on' : ''}" data-project="${escapeHtml(e.key)}"
+                aria-label="${pinTitle}" title="${pinTitle}">${e.pinned ? '★' : '☆'}</button>
+        <button class="nest-del-btn" data-key="${escapeHtml(e.key)}" aria-label="Hide project" title="Hide from list (also hides in Projects)">🗑</button>
+      </span>
     </div>`;
   }).join('');
 

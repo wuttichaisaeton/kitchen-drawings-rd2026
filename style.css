@@ -3838,18 +3838,20 @@ body.sb-fs-lock { overflow: hidden; }
   color: #5d7290;
 }
 .nest-home-rows {
-  /* Auto-column grid like Library (เอ๋ 2026-06-01). Rows are denser than
-     project cards (move · name · stats · NEST · pin · trash), so use a wider
-     420px min track. min(420px,100%) → single column on phones. */
+  /* Same auto-column grid as the Projects tab (.project-list, 360px min) so the
+     two project lists line up — switching between them isn't disorienting
+     (เอ๋ 2026-06-10 'ทำขนาด card ให้เหมือนของ Project … สลับไปมาไม่งง'). */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(420px, 100%), 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr));
+  gap: 12px;
 }
 .nest-home-row {
   display: grid;
-  /* move · name (flex) · stats · cta · pin · trash */
-  grid-template-columns: auto 1fr auto auto auto auto;
-  gap: 16px;
+  /* Mirrors .project-card: [move] [body: name + stats stacked] [actions]. The
+     stacked body gives the name its own line (no more 2-line wrap on narrow
+     cards), matching the project card's name-over-meta shape. */
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
   align-items: center;
   background: #0f1620;
   border: 1px solid #1c2530;
@@ -3861,6 +3863,8 @@ body.sb-fs-lock { overflow: hidden; }
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s;
 }
+.nest-home-body { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.nest-home-actions { display: flex; align-items: center; gap: 10px; }
 /* Row is now a <div role="button">; gate hover on .no-dxf class
    instead of the :disabled pseudo (only valid on form elements). */
 .nest-home-row:not(.no-dxf):hover {
@@ -3940,7 +3944,7 @@ body.sb-fs-lock { overflow: hidden; }
   font-size: 12px;
   font-weight: 700;
   color: #2ecc71;
-  text-align: right;
+  white-space: nowrap;
 }
 .nest-home-row.no-dxf .nest-home-cta { color: #f39c12; }
 
