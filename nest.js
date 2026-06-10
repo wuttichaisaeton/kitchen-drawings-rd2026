@@ -3142,6 +3142,7 @@
             <span class="kdnest-canvas-info">${S.previewCode ? previewInfo : `Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}`}</span>
             <div class="kdnest-nav">
               <button id="kdnest-prev" class="kdnest-nav-btn" ${nSheets > 0 ? '' : 'disabled'}>‹</button>
+              <span class="kdnest-nav-pos" title="Sheet ${nSheets ? S.currentSheetIdx + 1 : 0} of ${nSheets}">${nSheets ? `${S.currentSheetIdx + 1}/${nSheets}` : '0/0'}</span>
               <button id="kdnest-next" class="kdnest-nav-btn" ${nSheets > 0 ? '' : 'disabled'}>›</button>
             </div>
           </div>

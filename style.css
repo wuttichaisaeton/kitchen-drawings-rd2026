@@ -4432,7 +4432,13 @@ body.sb-fs-lock { overflow: hidden; }
 .kdnest-canvas-info {
   flex: 1;
 }
-.kdnest-nav { display: flex; gap: 4px; }
+.kdnest-nav { display: flex; gap: 4px; align-items: center; }
+/* Sheet pager indicator between ‹ › (เอ๋ 2026-06-10: "<1/2>") */
+.kdnest-nav-pos {
+  min-width: 38px; text-align: center; font-size: 12px; font-weight: 600;
+  color: #cad6e6; font-variant-numeric: tabular-nums; padding: 0 2px;
+  font-family: "Segoe UI", sans-serif;
+}
 .kdnest-nav-btn {
   background: #1c2735;
   border: 1px solid #2a3a4f;
