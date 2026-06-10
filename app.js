@@ -1232,14 +1232,10 @@ function _wireCutList(parts, projectKey) {
           return;
         }
         const file = files[0];
-        // Replacing an existing DXF is destructive (overwrites the cut file the
-        // laser reads) — confirm first. A NO-DXF row just fills in, no confirm.
+        // Dropping onto a 📐 ready row overwrites the existing DXF DIRECTLY — no
+        // confirm (เอ๋ 2026-06-10 'ไม่ interactive ให้มีการทับเลย'). A NO-DXF row
+        // just fills in. Either way the old file stays in git history if needed.
         const isReplace = !row.classList.contains('cut-row-missing');
-        if (isReplace && !confirm(
-              `Replace the DXF for ${code} with "${file.name}"?\n\n` +
-              `This overwrites the current cut file. The old version stays in git history.`)) {
-          return;
-        }
         const status = row.querySelector('.cut-status');
         const prevHtml = status ? status.outerHTML : '';
         if (status) {
