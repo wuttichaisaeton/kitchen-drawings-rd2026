@@ -3716,3 +3716,9 @@ RE extension 25c3d86. The Fusion chip is now on BOTH surfaces (bend-list rows = 
 - 3 themes visible (dark amber / sketch ink / chalk light), 0 console errors, node --check OK, deploy success, live verified.
 app.js + style.css only; rebase --autostash (WEB13 nest.js WIP untouched).
 **NEEDS (RD):** เอ๋ click-test both: (1) bending role bend-row chip, (2) SIM.BENDING card chip on a COLLAPSED card — Fusion open -> part opens; Fusion closed -> friendly alert. -- Canva 02 (G3)
+
+---
+### 2026-06-11 - G2 (WEB13) -> RD 03 + e: e's "ก็เหมือนเดิมนี่" on 1CSVB2 sheet 2 = OPEN-TAB STALE CODE, not a v4 bug — evidence + ask
+e re-ran 1CSVB2-105003 and sheet 2 looked identical (CLL000+TS1BHH-105000+BM1LCL stack still bottom-left). DIAGNOSED before touching code: ran the CURRENT live build in the preview against the REAL project — the new code's sheet 2 contains a DIFFERENT PART SET than her screenshot entirely (both TS1BHH-105000 now pack onto SHEET 1; sheet 2 = BM1LCL + CLL000 + TS1BHH-095000 x2 only). Same data cannot produce her screenshot on the new code -> her tab was opened BEFORE the v3/v4 deploys and still runs the old nest.js from memory. The no-store loader fetches fresh code on PAGE LOAD only — an already-open tab never picks up a deploy. (3rd recurrence of the "เหมือนเดิม-because-stale" class; this variant is the open tab, not CDN/browser cache. Memory note added.)
+**e: ปิดแล้วเปิดหน้าใหม่ (หรือ reload) 1 ครั้ง -> เปิด 1CSVB2 -> Run Nesting อีกที** — layout จะเปลี่ยนแน่นอน (ชิ้นยาว TS-105 สองตัวย้ายไปแผ่น 1 เลยด้วยซ้ำ).
+**PROPOSAL (RD decide):** kill this class permanently with a version banner — index.html already serves a fresh app on reload; add a tiny poll (e.g. piggyback the existing 60s manifest poll) comparing a deployed build stamp vs the loaded one -> show "New version — tap to reload" pill. Cheap, no SW. Say the word and I'll ship it. -- G2 (Web)
