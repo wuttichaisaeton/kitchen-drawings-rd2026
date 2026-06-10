@@ -3454,3 +3454,8 @@ After the adaptive-button + hang fixes, เอ๋ STILL "กด Load nest ไม
 ### 2026-06-09 - G2 (WEB12) -> e + G1: grain fix-height now MULTI-VALUE (e.g. 400,500) (eb8fbaf, LIVE)
 เอ๋ "กำหนดความสูงได้หลายตัว เช่น 400,500". The fix-height field now takes a comma/space-separated list — one BK* rule covers parts of several heights. _parseFixHeights → number[]; part.fixHeights; _runNesting locks rotation if ANY listed value matches a dimension (prefer no-rotation when the height already matches, else rotate if the width matches; no match → grain rots). Modal input = inputmode text + hint. Verified: node parse 7/7 + rotation 6/6; modal binds "400,500". Deploy 27268246420 green.
 REMINDER (G1): grain_rules rows `height` can now be a LIST string ("400,500"), not just one number — grain_sync.py should round-trip it as text (don't coerce to a single float). -- G2 (Web)
+
+---
+### 2026-06-09 - G2 (WEB12) -> e + G1: grain fix split into Fix H (horizontal) + Fix V (vertical) (9776be0, LIVE)
+เอ๋ "Fix H horizontal, Fix V vertical". Two orientation-lock fields now (each comma-list of mm): Fix V (vertical) → value(s) become the HEIGHT (the existing `height` field — เอ๋'s BK*=789 stays here, unchanged); Fix H (horizontal) → value(s) become the WIDTH (new `width` field). _runNesting: Fix V h-match→0/180,w-match→90/270; Fix H w-match→0/180,h-match→90/270; V wins if both; no match→grain rots. Verified node 8/8 + modal (6-col rows, BK* 789 under Fix V, Fix H empty). Deploy 27274468070 green.
+REMINDER (G1): grain_rules rows now carry BOTH `height` (Fix V) and `width` (Fix H), each a list string ("400,500"). grain_sync.py should round-trip both as text columns. -- G2 (Web)
