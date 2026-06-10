@@ -907,13 +907,22 @@
       + '<span class="kdstock-sub">' + (S.remnants || []).length + ' offcuts \u00b7 shared</span></div>'
       + '<div class="kdstock-list">' + (list || '<div class="kdstock-empty">No remnants yet' + (admin ? ' \u2014 add one below' : '') + '</div>') + '</div>'
       + addForm
-      + '<div class="kdstock-foot"><span class="kdng-spacer"></span><button id="kdstock-close" class="kdnest-btn">Close</button></div>'
+      + '<div class="kdstock-foot">'
+      // Moved here from the sidebar (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่
+      // Remnants stock — คลิกคือใช้งาน'): ticked = the packer USES this pool
+      // in the next run (S.skipRemnants = !checked; default stays fresh-first).
+      + '<label class="kdstock-use-lab" title="Ticked = the next Run uses these saved offcuts before fresh sheets">'
+      + '<input id="kdstock-use" type="checkbox"' + (S.skipRemnants ? '' : ' checked') + '> Use remnants in next run</label>'
+      + '<span class="kdng-spacer"></span><button id="kdstock-close" class="kdnest-btn">Close</button></div>'
       + '</div>';
     document.body.appendChild(modal);
     const q = sel => modal.querySelector(sel);
     const close = () => modal.remove();
     q('.kdstock-backdrop').addEventListener('click', close);
     q('#kdstock-close').addEventListener('click', close);
+    q('#kdstock-use')?.addEventListener('change', function (e) {
+      S.skipRemnants = !e.target.checked;   // click = use (เอ๋ 2026-06-10)
+    });
     // Drag the modal by its header so it can be moved off the nest layout to
     // compare (เอ๋ 2026-05-31 'ให้จับย้ายได้'). First drag switches the box from
     // flex-centred to absolute-positioned; clamped to the viewport.
@@ -1742,14 +1751,15 @@
     }
     return '';
   }
-  // After a run, save the largest offcut of each sheet to the shared Remnants
-  // pool (เอ๋ 2026-05-31 'กด run nesting แล้ว...ทำไมไม่มีเศษวัสดุ'). Skipped when
-  // Don't remember is checked. Re-running REPLACES this project's prior auto
-  // offcuts (auto:true + sourceProject) so tuning doesn't pile up duplicates;
-  // manual remnants and other projects' offcuts are never touched.
+  // On 💾 Save Nest, save the largest offcut of each sheet to the shared
+  // Remnants pool (เอ๋ 2026-05-31 'กด run nesting แล้ว...ทำไมไม่มีเศษวัสดุ'; moved
+  // from end-of-run to Save Nest 2026-06-10 'ถ้าจะ save ให้มา save ที่ save
+  // Project' — test Runs no longer pollute the pool, the "Don't remember"
+  // checkbox is gone). Re-saving REPLACES this project's prior auto offcuts
+  // (auto:true + sourceProject) so tuning doesn't pile up duplicates; manual
+  // remnants and other projects' offcuts are never touched.
   const _REMNANT_MIN = 150;   // mm — ignore slivers smaller than this on a side
   async function _autoSaveRemnants() {
-    if (S.dontRemember) return;          // user opted out of remembering this run
     if (!window.firebaseDB) return;
     const pk = S.projectKey || '';
     try {
@@ -1795,7 +1805,8 @@
       }
       await _loadRemnants();   // refresh so an already-open modal repaints current
       if (saved) console.log('[kdNest] auto-saved ' + saved + ' offcut(s) to remnants');
-    } catch (e) { console.warn('[kdNest] auto-save remnants failed:', e); }
+      return saved;
+    } catch (e) { console.warn('[kdNest] auto-save remnants failed:', e); return 0; }
   }
 
   // ════════════════════════════════════════════════════════════════════
@@ -1936,9 +1947,9 @@
       console.warn('[kdNest] unplaced pieces:', S.unplaced);
     }
     _refreshView();
-    // Remember the offcuts (unless Don't remember). Fire-and-forget so the
-    // layout shows instantly; it refreshes the remnant pool in the background.
-    _autoSaveRemnants();
+    // Offcut remembering moved to 💾 Save Nest (เอ๋ 2026-06-10 'ถ้าจะ save ให้มา
+    // save ที่ save Project') — a test Run no longer touches the shared
+    // remnant pool; only an explicitly saved nest does.
   }
 
   // ── Grain-direction hatch ──────────────────────────────────────────
@@ -2456,7 +2467,7 @@
     const safeProject = projectKey.replace(/[^A-Za-z0-9._-]+/g, '_');
     const repoPrefix = `CutSheets/${encodeURIComponent(safeProject)}`;
 
-    const btn = document.querySelector('#kdnest-save-sheets');
+    const btn = document.querySelector('#kdnest-savenest');
     const origText = btn ? btn.textContent : '';
     if (btn) { btn.disabled = true; btn.textContent = '⏫ Uploading…'; }
 
@@ -2550,10 +2561,16 @@
       localStorage.setItem('kd_nest_job_' + projectKey, JSON.stringify({ jobId, ...job }));
     } catch (e) { /* quota / private mode — non-fatal */ }
 
+    // Remember this nest's offcuts in the shared Remnants pool — happens at
+    // SAVE, not at Run (เอ๋ 2026-06-10 'ถ้าจะ save ให้มา save ที่ save Project').
+    let remSaved = 0;
+    try { remSaved = await _autoSaveRemnants() || 0; } catch (e) { /* reported below as 0 */ }
+
     if (btn) { btn.disabled = false; btn.textContent = origText; }
-    alert(`Save Project — '${S.projectName}'\n\n` +
+    alert(`Save Nest — '${S.projectName}'\n\n` +
           `Cut sheets uploaded: ${ok}` + (fail ? `\nFailed: ${fail}` : '') +
           `\nNest job: ${jobSaved ? 'saved (' + job.name + ')' : 'FAILED — ' + jobErr}` +
+          `\nRemnants remembered: ${remSaved}` +
           (firstErr ? `\n\nFirst cut-sheet error: ${firstErr}` : ''));
   }
 
@@ -2642,7 +2659,7 @@
           <button class="kdjobs-load" data-id="${_esc(j.jobId)}">Load</button>
           ${isAdminUser ? `<button class="kdjobs-del" data-id="${_esc(j.jobId)}" title="Delete this saved job">✕</button>` : ''}
         </div>`;
-    }).join('') : '<div class="kdjobs-empty">No saved jobs yet. Click 💾 Save Project to create one.</div>';
+    }).join('') : '<div class="kdjobs-empty">No saved nests yet. Run Nesting, then click 💾 Save Nest.</div>';
 
     const modal = document.createElement('div');
     modal.className = 'kdstock-modal kdjobs-modal';
@@ -3064,23 +3081,20 @@
               <input id="kdnest-gap" type="number" value="${S.gap}" min="0" step="1">
               <span>mm</span>
             </label>
-            <label class="kdnest-skip-lab" title="Skip = packer won't USE saved remnants for this run">
-              <input id="kdnest-skip" type="checkbox" ${S.skipRemnants ? 'checked' : ''}>
-              Skip remnants
-            </label>
-            <label class="kdnest-skip-lab" title="Don't remember = this run won't ADD new remnants to the saved pool (testing-friendly)">
-              <input id="kdnest-dont-remember" type="checkbox" ${S.dontRemember ? 'checked' : ''}>
-              Don't remember
-            </label>
           </div>
+          <!-- Skip-remnants checkbox moved INTO the Remnants Stock modal as
+               "Use remnants" (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่ Remnants
+               stock — คลิกคือใช้งาน'). "Don't remember" removed — offcuts are
+               now remembered on 💾 Save Nest, not on every Run. -->
           <div class="kdnest-stock">
             <div class="kdnest-stock-title">Sheet stock</div>
             ${sheetStockRows}
           </div>
           <div class="kdnest-actions">
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run">▶ Run Nesting</button>
-            <button id="kdnest-save-sheets" class="kdnest-btn kdnest-btn-save" ${nSheets ? '' : 'disabled'} title="Upload cut sheets to Laser + save this nest job (layout, parts, stock)">💾 Save Project</button>
-            <button id="kdnest-jobs" class="kdnest-btn kdnest-btn-jobs" title="Open a nest you saved earlier with 💾 Save Project (load or delete)">📂 Load Saved Nest</button>
+            ${nSheets
+              ? '<button id="kdnest-savenest" class="kdnest-btn kdnest-btn-save" title="Save this nest (layout, parts, stock, cut sheets) + save into the Project + remember offcuts">💾 Save Nest</button>'
+              : '<button id="kdnest-savenest" class="kdnest-btn kdnest-btn-jobs" title="Load a nest you saved earlier to view it">📂 Load Nest</button>'}
             <button id="kdnest-grain" class="kdnest-btn kdnest-btn-grain" title="Edit grain / thickness rules (shared — no Excel needed)">🧬 Grain</button>
             <button id="kdnest-stock" class="kdnest-btn kdnest-btn-stock" title="Remnant offcut stock — view / add / delete">📦 Remnants Stock</button>
           </div>
@@ -3127,8 +3141,10 @@
     const $ = sel => S.rootEl.querySelector(sel);
     $('#kdnest-back')?.addEventListener('click', close);
     $('#kdnest-run')?.addEventListener('click', _runNesting);
-    $('#kdnest-save-sheets')?.addEventListener('click', _saveProject);
-    $('#kdnest-jobs')?.addEventListener('click', _openSavedJobsModal);
+    // ONE adaptive button (เอ๋ 2026-06-10): nest run/loaded → 💾 Save Nest
+    // (save + into Project + remember offcuts); nothing yet → 📂 Load Nest.
+    $('#kdnest-savenest')?.addEventListener('click', () =>
+      (S.flatSheets || []).length ? _saveProject() : _openSavedJobsModal());
     // Export JSON button removed (เอ๋ 2026-05-31 'i export json ทำงานอยู่หลังบ้าน
     // อยู่แล้ว ถ้าจริงก็ไม่ต้องโชว์') — Save Project already persists the full job
     // to Firebase (nest_jobs/), so the local-file export was redundant UI.
@@ -3147,8 +3163,8 @@
     });
     $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; });
     $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; });
-    $('#kdnest-skip')?.addEventListener('change', e => { S.skipRemnants = e.target.checked; });
-    $('#kdnest-dont-remember')?.addEventListener('change', e => { S.dontRemember = e.target.checked; });
+    // (skip/remember checkboxes removed from the sidebar — see Remnants Stock
+    // modal's "Use remnants" toggle + Save-Nest offcut remembering.)
     $('#kdnest-parts-all')?.addEventListener('click', () => {
       S.parts.forEach(p => { p.selected = true; }); _refreshView();
     });

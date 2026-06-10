@@ -4596,6 +4596,8 @@ html[data-theme="sketch"] .cs-modal,
 html[data-theme="sketch"] .cs-row,
 html[data-theme="sketch"] .kdstock-frame,
 html[data-theme="sketch"] .kdstock-card,
+html[data-theme="sketch"] .kdstock-box,
+html[data-theme="sketch"] .kdng-box,
 html[data-theme="sketch"] .kdjobs-row,
 html[data-theme="sketch"] .dxf-preview-frame,
 html[data-theme="sketch"] .mm-comment-panel,
@@ -4609,6 +4611,22 @@ html[data-theme="sketch"] .theme-menu {
   border-radius: var(--wob) !important;
   box-shadow: var(--pen-sh) !important;
   background-image: none !important;   /* hatch removed — เอ๋ 'เอาพื้นหลังขีดๆออก' 2026-05-31 */
+}
+
+/* Modal boxes + backdrops — DOUBLED class to out-rank the blanket reset (the
+   reset's :not() chain carries (b2,c5) specificity, so the single-class surface
+   list above never actually beats it for background-color; panels only LOOKED
+   right because the paper page showed through. Over page CONTENT the modals
+   were see-through — เอ๋ 2026-06-10 'theme pencil chalk ปรับให้ Dialog ทึบ
+   (มองไม่เห็น)'. b3 > b2 wins regardless of element count.) */
+html[data-theme="sketch"] .kdstock-box.kdstock-box,
+html[data-theme="sketch"] .kdng-box.kdng-box {
+  background-color: var(--paper2) !important;
+  border: 2px solid var(--pen) !important;
+}
+html[data-theme="sketch"] .kdng-backdrop.kdng-backdrop,
+html[data-theme="sketch"] .kdstock-backdrop.kdstock-backdrop {
+  background-color: rgba(43, 38, 31, 0.92) !important;
 }
 
 /* Buttons — inked paper chips with a hand-drawn outline + hard offset. */
@@ -5277,6 +5295,8 @@ html[data-theme="chalk"] .cs-modal,
 html[data-theme="chalk"] .cs-row,
 html[data-theme="chalk"] .kdstock-frame,
 html[data-theme="chalk"] .kdstock-card,
+html[data-theme="chalk"] .kdstock-box,
+html[data-theme="chalk"] .kdng-box,
 html[data-theme="chalk"] .kdjobs-row,
 html[data-theme="chalk"] .dxf-preview-frame,
 html[data-theme="chalk"] .mm-comment-panel,
@@ -5289,6 +5309,18 @@ html[data-theme="chalk"] .theme-menu {
   border: 2px solid var(--line) !important;
   border-radius: var(--wob) !important;
   box-shadow: var(--chalk-sh) !important;
+}
+
+/* Modal boxes + backdrops — same doubled-class reset-out-ranking fix as the
+   sketch theme (เอ๋ 2026-06-10 'theme pencil chalk ปรับให้ Dialog ทึบ'). */
+html[data-theme="chalk"] .kdstock-box.kdstock-box,
+html[data-theme="chalk"] .kdng-box.kdng-box {
+  background-color: var(--board2) !important;
+  border: 2px solid var(--line) !important;
+}
+html[data-theme="chalk"] .kdng-backdrop.kdng-backdrop,
+html[data-theme="chalk"] .kdstock-backdrop.kdstock-backdrop {
+  background-color: rgba(10, 14, 13, 0.92) !important;
 }
 
 /* Buttons — slate chips with a chalk outline. */
