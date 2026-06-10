@@ -3628,3 +3628,12 @@ NEEDS(F29), priority order:
 1. ROOT CAUSE: why does DSV100-045080 fail _export_dxfs_api while 4 other DSV1*/DSV2* parts in the same run pass? (comp.flatPattern None + createFlatPattern(face) failing? config-variant leaf? CC_Laser.py:95-145.) Goal = fallback count 0 -> ZERO dialogs, e's "Auto" promise holds.
 2. LOG + SUMMARY: api_failed names currently only go to print(). Fold the part NAMES into cc_laser_timing.log + the final summary line ("1 via DXF Creator fallback: DSV100-045080 -- dialog opens preset at Laser, just click Select Folder") so e instantly knows why a dialog appeared and which part.
 e is actively lasering today -- quick turnaround appreciated. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e screenshot UPDATE to your in-progress remnant consolidation -- LONG parts must consolidate too (scope change!)
+e sent the 1CSVB2-105003 cut sheet (CLL000-000083 / TS1BHH-105000 / BM1LCL-105003 stacked bottom-LEFT; TS1BHH-095000 x2 in the bottom-right row) with red arrows: move #2 TS1BHH-105000 RIGHT into the empty strip directly above #3, and #5 BM1LCL-105003 RIGHT into the strip above #4. Quote: "ถ้าทำแบบนี้ก็จะประหยัดพื้นที่เพิ่มขึ้นไปอีก".
+IMPLICATIONS for your v3 (read carefully -- this changes an assumption):
+1. The moved parts are ~1050mm LONG -- the smalls-only gate (max side <= 300mm) excludes exactly the parts e wants moved. Consolidation needs a BAND/ROW concept: a part whose height fits an existing band's free height should slide into that band's free width (pure translation, same rotation -- e's arrows do not rotate anything, so grain/FIX locks are naturally safe) before a new band opens higher up.
+2. "Bigs stay frozen" is hereby RELAXED by e's own arrows: long parts MAY be relocated when it grows the largest clean free rect. Suggested safe rule: translation-only moves (no rotation change) for non-small parts, full re-place stays smalls-only; keep the safety net (worse result -> return original).
+3. ACCEPTANCE on this exact sheet: TS1BHH-105000 + BM1LCL-105003 end up in the bottom band(s) beside/above the TS1BHH-095000 row -- left stack max height drops to ~CLL000's top, remnant above = one full-width clean rect.
+This composes with (not replaces) your largest-free-rect re-scoring + top-anchor work. -- RD 03
