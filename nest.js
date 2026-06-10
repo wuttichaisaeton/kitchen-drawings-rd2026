@@ -3191,6 +3191,7 @@
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg> Run Nesting</button>
             ${nSheets
               ? '<button id="kdnest-savenest" class="kdnest-btn kdnest-btn-save" title="Save this nest (layout, parts, stock, cut sheets) + save into the Project + remember offcuts"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3.7 h11 l3 3 V19.5 a0.8 0.8 0 0 1 -0.8 0.8 H5.8 a0.8 0.8 0 0 1 -0.8 -0.8 Z"/><path d="M8 3.7 v4.8 h6.5 v-4.8"/><rect x="8" y="12.5" width="8" height="6" rx="0.4"/></svg> Save Nest</button>'
+                + '<button id="kdnest-loadnest" class="kdnest-btn kdnest-btn-jobs" title="Load a DIFFERENT saved nest (switch to another saved layout)"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.7 a1 1 0 0 1 1 -1 h4.2 l1.6 2 H20 a1 1 0 0 1 1 1 V19 a1 1 0 0 1 -1 1 H4 a1 1 0 0 1 -1 -1 Z"/><rect x="7" y="11.5" width="10" height="6" rx="0.5"/><line x1="12" y1="11.5" x2="12" y2="17.5"/></svg> Load</button>'
               : '<button id="kdnest-savenest" class="kdnest-btn kdnest-btn-jobs" title="Load a nest you saved earlier to view it"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.7 a1 1 0 0 1 1 -1 h4.2 l1.6 2 H20 a1 1 0 0 1 1 1 V19 a1 1 0 0 1 -1 1 H4 a1 1 0 0 1 -1 -1 Z"/><rect x="7" y="11.5" width="10" height="6" rx="0.5"/><line x1="12" y1="11.5" x2="12" y2="17.5"/></svg> Load Nest</button>'}
             <button id="kdnest-grain" class="kdnest-btn kdnest-btn-grain" title="Edit grain / thickness rules (shared — no Excel needed)"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="1.5"/><line x1="6.5" y1="9" x2="17.5" y2="9"/><line x1="6.5" y1="12" x2="13.5" y2="12"/><line x1="6.5" y1="15" x2="17.5" y2="15"/><path d="M13.5 12 H18 M16.3 10.3 L18 12 L16.3 13.7"/></svg> Grain</button>
             <button id="kdnest-stock" class="kdnest-btn kdnest-btn-stock" title="Remnant offcut stock — view / add / delete"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 4.5 H20.5 V11 H11.5 V19.5 H3.5 Z"/><path d="M11.5 11 H20.5 V19.5 H11.5 Z" stroke-dasharray="2.2 2"/></svg> Remnants Stock</button>
@@ -3243,6 +3244,11 @@
     // (save + into Project + remember offcuts); nothing yet → 📂 Load Nest.
     $('#kdnest-savenest')?.addEventListener('click', () =>
       (S.flatSheets || []).length ? _saveProject() : _openSavedJobsModal());
+    // Secondary Load — present only when a nest is already showing, so the
+    // adaptive button (now 💾 Save Nest) doesn't strand the user with no way to
+    // load a DIFFERENT saved nest (เอ๋ 2026-06-10 'กด load nest ไม่ได้' — the
+    // Load button vanished once sheets were on screen).
+    $('#kdnest-loadnest')?.addEventListener('click', _openSavedJobsModal);
     // Export JSON button removed (เอ๋ 2026-05-31 'i export json ทำงานอยู่หลังบ้าน
     // อยู่แล้ว ถ้าจริงก็ไม่ต้องโชว์') — Save Project already persists the full job
     // to Firebase (nest_jobs/), so the local-file export was redundant UI.
