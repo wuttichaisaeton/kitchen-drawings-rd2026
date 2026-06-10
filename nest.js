@@ -615,12 +615,13 @@
           const t = parseFloat(looked.thickness.replace(/mm/i, ''));
           if (!isNaN(t)) part.thickness = t;
         }
-        // Fix V / Fix H (เอ๋ 2026-06-10): lock the part's orientation at nest time.
-        // Fix V (vertical) = the listed value(s) become the HEIGHT; Fix H
-        // (horizontal) = the value(s) become the WIDTH. Same-size parts face the
-        // same way → grain one direction. Cut size unchanged. Both comma-lists.
-        part.fixHeights = _parseFixHeights(looked && looked.height);   // Fix V
-        part.fixWidths  = _parseFixHeights(looked && looked.width);    // Fix H
+        // FIX (เอ๋ 2026-06-10): one value-list whose meaning follows the
+        // direction — │ V → the value(s) become the HEIGHT, ─ H → the WIDTH.
+        // Locks orientation at nest time (cut size unchanged). ✱ ANY → no fix.
+        const _fix = _parseFixHeights(looked && looked.fix);
+        const _g = looked ? String(looked.grain || '').toUpperCase() : '';
+        part.fixHeights = (_g === 'V') ? _fix : [];
+        part.fixWidths  = (_g === 'H') ? _fix : [];
       }
     }
 
@@ -683,13 +684,23 @@
         if (resp.ok) { const j = await resp.json(); rows = j.rows || []; }
       } catch (e) { console.warn('[kdNest] grain.json seed failed:', e); }
     }
-    S.grainRows = (rows || []).map(r => ({
-      pattern: String(r.pattern || ''),
-      grain: String(r.grain || 'ANY').toUpperCase(),
-      thickness: (r.thickness == null ? '' : String(r.thickness)),
-      height: (r.height == null ? '' : String(r.height)),   // Fix V (vertical) — value→height
-      width:  (r.width  == null ? '' : String(r.width)),    // Fix H (horizontal) — value→width
-    }));
+    // New unified model (เอ๋ 2026-06-10): ONE `fix` field whose meaning follows
+    // the direction (grain): │ V → the value(s) are the HEIGHT; ─ H → the WIDTH.
+    // Migrate the old split fields: Fix V (height) → grain V; Fix H (width) →
+    // grain H — so existing rules keep their intent.
+    S.grainRows = (rows || []).map(r => {
+      let grain = String(r.grain || 'ANY').toUpperCase();
+      let fix = '';
+      if (r.fix != null && String(r.fix).trim() !== '') fix = String(r.fix);
+      else if (r.height != null && String(r.height).trim() !== '') { fix = String(r.height); grain = 'V'; }
+      else if (r.width != null && String(r.width).trim() !== '') { fix = String(r.width); grain = 'H'; }
+      return {
+        pattern: String(r.pattern || ''),
+        grain,
+        thickness: (r.thickness == null ? '' : String(r.thickness)),
+        fix,
+      };
+    });
     return S.grainRows;
   }
   function _grainRowsToMap() {
@@ -704,8 +715,10 @@
         const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
         if (!isNaN(t)) part.thickness = t;
       }
-      part.fixHeights = _parseFixHeights(looked && looked.height);   // Fix V
-      part.fixWidths  = _parseFixHeights(looked && looked.width);    // Fix H
+      const _fix = _parseFixHeights(looked && looked.fix);
+      const _g = looked ? String(looked.grain || '').toUpperCase() : '';
+      part.fixHeights = (_g === 'V') ? _fix : [];
+      part.fixWidths  = (_g === 'H') ? _fix : [];
     }
   }
   async function _saveGrainRows() {
@@ -729,10 +742,9 @@
     const cell = (r, i) => `
       <div class="kdng-row" data-i="${i}">
         <input class="kdng-pat" data-i="${i}" value="${_esc(r.pattern)}" placeholder="BK*" spellcheck="false">
-        <button class="kdng-grain" data-i="${i}" title="grain — click to cycle H / V / ANY">${_grainCh(r.grain)}</button>
-        <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="th" inputmode="decimal" title="Thickness override (mm)">
-        <input class="kdng-w" data-i="${i}" value="${_esc(r.width)}" placeholder="fix H" inputmode="text" spellcheck="false" title="Fix H (horizontal) — value(s) that should be the WIDTH (run horizontal). The part rotates so that side is horizontal. Multiple comma-separated (e.g. 400,500). Cut size unchanged. Blank = free.">
-        <input class="kdng-h" data-i="${i}" value="${_esc(r.height)}" placeholder="fix V" inputmode="text" spellcheck="false" title="Fix V (vertical) — value(s) that should be the HEIGHT (run vertical). The part rotates so that side is vertical. Multiple comma-separated (e.g. 400,500). Cut size unchanged. Blank = free.">
+        <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="1.0" inputmode="decimal" title="Thickness (mm)">
+        <button class="kdng-grain" data-i="${i}" title="direction — click to cycle ─ H (horizontal) / │ V (vertical) / ✱ ANY">${_grainCh(r.grain)}</button>
+        <input class="kdng-fix" data-i="${i}" value="${_esc(r.fix)}" placeholder="FIX" inputmode="text" spellcheck="false" title="FIX — the dimension(s) to lock; meaning follows the direction: │ V = that value is the HEIGHT, ─ H = the WIDTH. Multiple comma-separated (e.g. 100,200). The part rotates so that side matches; cut size unchanged. ✱ ANY = free.">
         <button class="kdng-del" data-i="${i}" title="delete rule">✕</button>
       </div>`;
     const half = Math.ceil(rows.length / 2);
@@ -744,7 +756,7 @@
       <div class="kdng-backdrop"></div>
       <div class="kdng-box">
         <div class="kdng-head">🧬 Grain rules
-          <span class="kdng-sub">pattern · grain · th · fix H · fix V · ${rows.length} rules · shared</span>
+          <span class="kdng-sub">pattern · thickness · direction · FIX · ${rows.length} rules · shared</span>
         </div>
         <div class="kdng-grid">
           <div class="kdng-col">${colA || '<div class="kdng-empty">no rules — + Add</div>'}</div>
@@ -768,11 +780,8 @@
     modal.querySelectorAll('.kdng-th').forEach(el => el.addEventListener('input', e => {
       const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].thickness = e.target.value;
     }));
-    modal.querySelectorAll('.kdng-h').forEach(el => el.addEventListener('input', e => {
-      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].height = e.target.value;
-    }));
-    modal.querySelectorAll('.kdng-w').forEach(el => el.addEventListener('input', e => {
-      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].width = e.target.value;
+    modal.querySelectorAll('.kdng-fix').forEach(el => el.addEventListener('input', e => {
+      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].fix = e.target.value;
     }));
     modal.querySelectorAll('.kdng-grain').forEach(el => el.addEventListener('click', e => {
       const i = +e.currentTarget.dataset.i;
@@ -785,7 +794,7 @@
       const i = +e.currentTarget.dataset.i; S.grainRows.splice(i, 1); _renderGrainModal();
     }));
     q('#kdng-add').addEventListener('click', () => {
-      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '', height: '', width: '' }); _renderGrainModal();
+      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '1.0', fix: '' }); _renderGrainModal();
     });
     q('#kdng-save').addEventListener('click', async () => {
       const btn = q('#kdng-save'); btn.disabled = true; btn.textContent = '💾 Saving…';
@@ -1084,7 +1093,7 @@
     for (const row of rows) {
       const pattern = String(row.pattern || '').trim();
       if (!pattern) continue;
-      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', height: row.height || '', width: row.width || '' };
+      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', fix: row.fix || '' };
       const starts = pattern.startsWith('*');
       const ends = pattern.endsWith('*');
       if (starts && ends && pattern.length > 2) {
@@ -2142,9 +2151,21 @@
     }
     const [minX, minY, maxX, maxY] = bbox;
     const pw0 = (maxX - minX) || 1, ph0 = (maxY - minY) || 1;
-    // Rotate the preview to reflect grain: V = part runs vertically (placed
-    // at 90 deg), H / ANY = native. (user 2026-05-30 'กด grain แล้วภาพไม่หมุนตาม')
-    const grot = (part && part.grain === 'V') ? 90 : 0;
+    // Rotate the preview to reflect the PLACED orientation (เอ๋ 2026-06-10 'ให้
+    // preview ทำตามนั้น'). A FIX value locks which side is the height/width, so
+    // preview THAT — same rule the nester uses. Else fall back to the direction
+    // (V = runs vertical / 90°, H / ANY = native). (orig: 2026-05-30)
+    let grot = (part && part.grain === 'V') ? 90 : 0;
+    if (part) {
+      const pw = part.w || pw0, ph = part.h || ph0, tol = 3;
+      if (part.fixHeights && part.fixHeights.length) {           // a value → the HEIGHT
+        if (part.fixHeights.some(v => Math.abs(ph - v) <= tol)) grot = 0;
+        else if (part.fixHeights.some(v => Math.abs(pw - v) <= tol)) grot = 90;
+      } else if (part.fixWidths && part.fixWidths.length) {      // a value → the WIDTH
+        if (part.fixWidths.some(v => Math.abs(pw - v) <= tol)) grot = 0;
+        else if (part.fixWidths.some(v => Math.abs(ph - v) <= tol)) grot = 90;
+      }
+    }
     const mapPt = (x, y) => {
       const u = x - minX, v = y - minY;
       return (grot === 90) ? [-v + ph0, u] : [u, v];
