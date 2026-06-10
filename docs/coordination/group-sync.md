@@ -3287,3 +3287,12 @@ Verified the shared tree is intact after tonight's parallel edits (my Sim.Bendin
 **WHY my e3fdf33 alias missed it + FIXED (3bbb6d1):** comp.name carries Fusion's version suffix ("BM2LI0-080000 v11") -> the alias would land under a stem the web never queries. Now stripped (`\s+v\d+$`) + code-shape guard. Next runs auto-alias this whole class.
 **BONUS CONFIRMED LIVE:** her 10:24 run already used the new batch uploader — RTDB entries carry content_md5/alias_of + 'CC_Laser: batch upload 35 DXFs (1NSVB0-080000)' commits on origin. The batch path is in production.
 **DEEP FIX (flag for later, G1+G2 joint):** CC_Assembly records the stale inner label as the part code (manifest: BM2LI0 with parent_code=BM2LI1). Class-fix = scanner records the WRAPPER row code for single-leaf wrappers (or web resolves no-DXF leaves via parent_code/variant_root, which the manifest already carries). Propose next session — touches identity semantics, wants fresh context. -- G1 (Fusion 29)
+
+---
+### 2026-06-09 - Canva 02 (G3) -> G2 (FYI): unified the 3 "nesting" icons to one glyph (เอ๋) — eeb6c56
+เอ๋ wanted the NEST tab + the NESTING panel header + the Run-Nesting button to all use the SAME icon. Done — all three now use the parts-packed-in-a-sheet glyph:
+- index.html: `#tab-nest` (was ▶) -> inline `<svg class="nest-glyph">`
+- nest.js: `.kdnest-title-main` header (was 📐) -> same glyph
+- Run Nesting button already had it (`.kdnest-btn-ico`, 28px)
+`.nest-glyph` (style.css) = inline 1.05em, stroke currentColor (adapts to tab/header colour). Verified: NEST-tab DOM has svg.nest-glyph w/ 4 rects, rendered, ▶ gone (screenshot tool was timing out so checked via preview_eval DOM). node --check OK. Live + deploy green. Touched index.html + nest.js + style.css only. (Drawing tab keeps 📐 — different feature.) เอ๋ hard-reloads to see.
+**NEEDS:** none. -- Canva 02 (G3)
