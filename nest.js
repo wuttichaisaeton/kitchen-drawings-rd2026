@@ -3273,7 +3273,8 @@
         // window.kdRouteLeaf is the always-available handle app.js exposes.
         const route = (window.kdAPI && window.kdAPI.routeLeaf) || window.kdRouteLeaf;
         if (typeof route !== 'function') { alert('Open-in-Fusion bridge not available.'); return; }
-        route({ code: part.code, status: 'missing', urn: part.urn || null, drawing_urn: null, fusion_link: null });
+        // fusionOnly: this button means "open in FUSION to fix" — never a PDF tab.
+        route({ code: part.code, status: 'missing', urn: part.urn || null, drawing_urn: null, fusion_link: null }, { fusionOnly: true });
       });
       // ✕ remove a manual rectangular part
       row.querySelector('.kdnest-part-del')?.addEventListener('click', () => {

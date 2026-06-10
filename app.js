@@ -9934,7 +9934,12 @@ function _statusBadgeColor(status) {
 //   └────────────────┴──────────────────────────────────────────────────┘
 //
 // Bridge: http://127.0.0.1:8765/open?urn=<urn>. Fallback to PDF if any.
-async function _routeLeafToFusion(node) {
+// opts.fusionOnly (เอ๋ 2026-06-10): the nest ⚠ button means "take me to Fusion
+// to FIX this part" — falling back to a PDF there masks a dead bridge as
+// success ("กด ⚠ แล้วไม่เปิด Fusion เปิด pdf แทน"). With fusionOnly the PDF
+// branches are skipped: bridge works or the explanatory alert shows.
+async function _routeLeafToFusion(node, opts) {
+  const fusionOnly = !!(opts && opts.fusionOnly);
   // urn sources: the manifest/BOM urn first, then a CC_LinkNode pairing (fusion_link).
   // A node paired via Edit-in-Fusion can have NO manifest urn but a fusion_link.urn —
   // use it so the click still opens Fusion. (RD 2026-06-09)
@@ -9960,7 +9965,7 @@ async function _routeLeafToFusion(node) {
   // Drawn + current → open the PDF, but ONLY if the file actually EXISTS. A manifest
   // key can resolve a URL that 404s (file not deployed) — in that case fall THROUGH to
   // Fusion instead of opening a broken/blank PDF tab. (RD 2026-06-09)
-  if (node.status === 'drawn') {
+  if (node.status === 'drawn' && !fusionOnly) {
     const url = pdfUrlForCode(node.code);
     if (url && await _pdfFileExists(url)) { _openInNewTab(url); return; }
   }
@@ -9978,11 +9983,14 @@ async function _routeLeafToFusion(node) {
     try { if (await bridgeOpen(urn)) { _toastOpening(node.code); return; } bridgeError = 'bridge declined'; }
     catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
-  // Last-resort fallback — a PDF that actually exists (handles stale w/o drawing_urn etc.)
-  const url = pdfUrlForCode(node.code);
-  if (url && await _pdfFileExists(url)) { _openInNewTab(url); return; }
-  // Web fallback — a CC_LinkNode open_url (Fusion Teams link) if the local bridge isn't reachable
-  if (fl && fl.open_url) { _openInNewTab(fl.open_url); return; }
+  // Last-resort fallback — a PDF that actually exists (handles stale w/o drawing_urn
+  // etc.). Skipped under fusionOnly: a PDF tab there reads as "wrong thing opened".
+  if (!fusionOnly) {
+    const url = pdfUrlForCode(node.code);
+    if (url && await _pdfFileExists(url)) { _openInNewTab(url); return; }
+    // Web fallback — a CC_LinkNode open_url (Fusion Teams link) if the local bridge isn't reachable
+    if (fl && fl.open_url) { _openInNewTab(fl.open_url); return; }
+  }
 
   // Nothing worked — tell the user WHY instead of failing silently.
   if (bridgeAttempted) {
