@@ -3258,7 +3258,7 @@
               <button id="kdnest-parts-all" class="kdnest-mini">All</button>
               <button id="kdnest-parts-none" class="kdnest-mini">None</button>
               ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
-              <button id="kdnest-default-grain" class="kdnest-mini kdnest-default-grain" title="Set every part that has NO grain rule (?) to the default direction — ✱ ANY (free to rotate). Clears the warning; applies for this run only (not saved to the grain table).">✱ Default</button>
+              <button id="kdnest-default-grain" class="kdnest-mini kdnest-default-grain" title="Set every part that has NO grain rule (?) to its DEFAULT — the original incoming orientation (kept as drawn, not rotated 90°). Clears the warning; applies for this run only (not saved to the grain table).">Default</button>
               <span class="kdnest-parts-count">${totalUnique} / ${S.parts.length} · ${totalPcs} pcs</span>
             </div>
             ${grainSummary}
@@ -3341,16 +3341,18 @@
       const last = rows[rows.length - 1];
       if (last) last.focus();
     });
-    // Default direction (เอ๋ 2026-06-10): one click sets every part with NO grain
-    // rule (grain '?') to the default ✱ ANY — free to rotate — so the "no grain
-    // rule" warning clears without opening the grain table per part. Session-only
-    // (doesn't write a rule); a real grain.xlsx/Grain-modal rule still wins.
+    // Default direction (เอ๋ 2026-06-10 'default = ค่าในครั้งแรกที่ถูกส่งเข้ามา'):
+    // one click sets every part with NO grain rule (grain '?') to its ORIGINAL
+    // incoming orientation = grain H (rots [0,180]) — the part keeps the W×H it
+    // was drawn with, NOT rotated 90°. Clears the "no grain rule" warning without
+    // opening the grain table per part. Session-only (no rule written); a real
+    // grain.xlsx/Grain-modal rule still wins.
     $('#kdnest-default-grain')?.addEventListener('click', () => {
       let n = 0;
       for (const p of S.parts) {
         if (p.manual) continue;
         const g = String(p.grain || '').toUpperCase();
-        if (g !== 'H' && g !== 'V' && g !== 'ANY') { p.grain = 'ANY'; n++; }
+        if (g !== 'H' && g !== 'V' && g !== 'ANY') { p.grain = 'H'; n++; }
       }
       _refreshView();
     });
