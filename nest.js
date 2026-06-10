@@ -474,7 +474,16 @@
       }
       try {
         const fetchUrl = _toJsdelivrUrl(p.dxfUrl);
-        const resp = await fetch(fetchUrl, { cache: 'force-cache' });
+        // Abort a stalled fetch (dead/slow CDN, flaky mobile network) after 15s.
+        // A bare `await fetch` with no timeout never resolves on a hung socket, so
+        // ONE bad part used to hang the whole `Promise.all` → the Load froze and
+        // the sheets never appeared (เอ๋ 2026-06-10). The abort surfaces as a
+        // normal dxfError (drawn as a rectangle) and lets the load finish.
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 15000);
+        let resp;
+        try { resp = await fetch(fetchUrl, { cache: 'force-cache', signal: ctrl.signal }); }
+        finally { clearTimeout(timer); }
         if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
         const text = await resp.text();
         const parsed = window.dxf.parseString(text);
@@ -488,7 +497,7 @@
         }
         p.dxfLoaded = true;
       } catch (e) {
-        p.dxfError = String(e.message || e);
+        p.dxfError = (e && e.name === 'AbortError') ? 'DXF fetch timed out' : String(e.message || e);
       }
     });
     await Promise.all(tasks);
@@ -2620,15 +2629,15 @@
     });
     S.previewCode = null;
     S.highlightCode = null;
-    S.flatSheets = [];
-    S.currentSheetIdx = 0;
-    _refreshView();
-    // Re-parse DXFs (fills polys/bbox + may correct w/h from the real bbox).
-    await _loadAllDxfs();
-    if (S.closing) return;
-    // Rebuild flatSheets from the saved placements, re-attaching geometry from
-    // the freshly-loaded part of the same code.
-    S.flatSheets = (job.sheets || []).map(sh => ({
+
+    // Build the sheets from the SAVED placements (x/y/w/h are stored on the job)
+    // and show them IMMEDIATELY — _drawSheet renders each placement as a coloured
+    // rectangle even before its DXF outline loads. Without this, the sheets were
+    // assembled only AFTER `await _loadAllDxfs()`, so a slow/stalled DXF fetch
+    // left the canvas blank and the load looked frozen (เอ๋ 2026-06-10 'กด Load
+    // nest ค้าง ไม่โชว์แผ่นตัด'). The real DXF outlines then enrich the shapes
+    // in the background once the fetches resolve.
+    const buildSheets = () => (job.sheets || []).map(sh => ({
       thick: sh.thick, sw: sh.sw, sh: sh.sh, fromRemnant: sh.fromRemnant || null,
       placements: (sh.placements || []).map(pl => {
         const part = S.parts.find(p => p.code === pl.code);
@@ -2639,7 +2648,17 @@
         };
       }),
     }));
+    S.flatSheets = buildSheets();
     S.currentSheetIdx = 0;
+    _refreshView();                          // sheets visible now (rectangles)
+
+    // Re-parse DXFs (fills polys/bbox + may correct w/h from the real bbox), then
+    // re-attach the geometry and redraw with the true part outlines. This await
+    // can never strand the sheets now — they are already on screen.
+    await _loadAllDxfs();
+    if (S.closing) return;
+    S.flatSheets = buildSheets();
+    S.currentSheetIdx = Math.min(S.currentSheetIdx, Math.max(0, S.flatSheets.length - 1));
     _refreshView();
   }
 
