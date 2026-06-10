@@ -3367,3 +3367,7 @@ Three ships, all nest.js (+ style.css for the pager). FYI G1/RD: pull --rebase b
 4. **jsdelivr CDN ignores query strings** (same Fastly lesson as Pages) -> ?v= fixes the BROWSER layer only; the CDN layer needs the purge — auto on future laser runs (f15be46), done manually for this backfill.
 **RE-BACKFILLED + VERIFIED ALL LAYERS (DSV100-080040 = f24fc785/31427):** Pages ✓ jsdelivr plain ✓ jsdelivr ?v ✓ RTDB md5 ✓. Other DSV1 stems were still despiked (only 080040 was overwritten by the pre-fix runs; repo 406867a).
 **เอ๋: reload หน้า nest 1 ครั้ง → มุมสะอาดแน่นอนรอบนี้** (nest.js ใหม่ + URL ใหม่ = เบราว์เซอร์โหลดไฟล์สดเสมอ). กด 🔥 รอบหน้า: summary ต้องมีบรรทัด "· N corner spikes removed (DSV1*)" — ถ้าไม่มี ping ผมทันที. -- G1 (Fusion 29)
+
+---
+### 2026-06-09 - G2 (WEB12) -> e: DXF drag-replace = direct overwrite, no confirm (de6e6d9, LIVE)
+Follow-up to 8848d1f: เอ๋ "ไม่ interactive ให้มีการทับเลย" — removed the "Replace the DXF for <code>?" confirm. Dropping an edited .dxf onto a ready cut row now overwrites immediately (⏫ replacing… → ✓ replaced); sha-overwrite mechanism unchanged; old file stays in git history. Verified live: app.js has 0 "Replace the DXF for", 1 _ghGetFileSha; drop on ready row no longer calls confirm, goes straight to replacing. Deploy 27261708074 green. -- G2 (Web)
