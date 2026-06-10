@@ -2801,15 +2801,33 @@
         lines.push('10', x.toFixed(3), '20', y.toFixed(3));
       }
     }
+    // Single-line TEXT, centred (72=1 horiz, 73=2 middle) on (x,y). The part-name
+    // labels go on their own PART_LABELS layer so the cutter can switch it off /
+    // not cut it — it's reference only (เอ๋ 2026-06-10 'มี layer ชื่อ part').
+    function text(str, x, y, h, layer) {
+      if (str == null || str === '') return;
+      lines.push('0','TEXT','8', layer || '0',
+                 '10', x.toFixed(3), '20', y.toFixed(3), '30','0',
+                 '40', h.toFixed(3),
+                 '1', String(str),
+                 '72','1','73','2',
+                 '11', x.toFixed(3), '21', y.toFixed(3), '31','0');
+    }
     // Sheet outline
     lwpolyline([[0,0],[sheet.sw,0],[sheet.sw,sheet.sh],[0,sheet.sh],[0,0]], 'SHEET_BORDER');
-    // Each placement: outer profile (rotated, offset)
+    // Each placement: outer profile (rotated, offset) + a centred part-name label
     for (const pl of sheet.placements) {
+      // Footprint size on the sheet (W/H swap when rotated 90/270).
+      const fw = (pl.rot === 90 || pl.rot === 270) ? pl.h : pl.w;
+      const fh = (pl.rot === 90 || pl.rot === 270) ? pl.w : pl.h;
+      // RAW code (the production identity the BOM/laser reads), centred on the
+      // part, sized to the part but clamped readable.
+      const th = Math.max(15, Math.min(50, Math.min(fw, fh) * 0.25));
+      text(pl.code, pl.x + fw / 2, pl.y + fh / 2, th, 'PART_LABELS');
+
       if (!pl.polys || !pl.polys.outer || pl.polys.outer.length < 2) {
         // Fallback: just the bbox rect
-        const w = (pl.rot === 90 || pl.rot === 270) ? pl.h : pl.w;
-        const h = (pl.rot === 90 || pl.rot === 270) ? pl.w : pl.h;
-        lwpolyline([[pl.x, pl.y],[pl.x+w, pl.y],[pl.x+w, pl.y+h],[pl.x, pl.y+h],[pl.x, pl.y]],
+        lwpolyline([[pl.x, pl.y],[pl.x+fw, pl.y],[pl.x+fw, pl.y+fh],[pl.x, pl.y+fh],[pl.x, pl.y]],
                    'OUTER_PROFILES');
         continue;
       }
