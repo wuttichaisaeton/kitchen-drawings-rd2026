@@ -2108,6 +2108,49 @@ function markFamilySeen(fam) {
   c[fam] = Date.now();
   try { localStorage.setItem(LS_SEEN_FAMILIES_KEY, JSON.stringify(c)); } catch {}
 }
+
+// ── "NEW" on PROJECT lists (เอ๋ 2026-06-10 'ให้มีตัวอักษร NEW … ทั้งที่ Nest,
+// Sim.bending, project'): flag a project as NEW per SURFACE (Nest picker /
+// Sim.Bending picker / Projects tab) until เอ๋ opens it THERE — per-surface keys
+// so e.g. opening a project in Projects doesn't clear its NEW in Nest. "New" =
+// the project's freshest activity (manifest updated_at/created_at from
+// CC_Assembly, or the newest laser DXF uploaded under it) is AFTER that
+// surface's last-seen; never seen → fallback "active within the last 24h". ──
+const LS_SEEN_PROJECTS_KEY = 'kd_seen_projects_v1';
+let _seenProjectsCache = null;
+function _seenProjects() {
+  if (_seenProjectsCache) return _seenProjectsCache;
+  _seenProjectsCache = {};
+  try {
+    const r = localStorage.getItem(LS_SEEN_PROJECTS_KEY);
+    if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') _seenProjectsCache = o; }
+  } catch {}
+  return _seenProjectsCache;
+}
+function projectActivityMs(key, p) {
+  let ms = 0;
+  if (p) {
+    if (p.updated_at) ms = Math.max(ms, Date.parse(p.updated_at) || 0);
+    if (p.created_at) ms = Math.max(ms, Date.parse(p.created_at) || 0);
+  }
+  if (typeof dxfsForProject === 'function') {
+    for (const d of dxfsForProject(key)) ms = Math.max(ms, +d.uploaded_at || 0);
+  }
+  return ms;
+}
+function isNewProject(surface, key, p) {
+  const d = projectActivityMs(key, p);
+  if (!d) return false;
+  const seen = _seenProjects()[surface + ':' + key];
+  if (seen != null) return d > seen;
+  return d >= (Date.now() - 24 * 3600 * 1000);   // fallback: active in the last 24h
+}
+function markProjectSeen(surface, key) {
+  if (!surface || !key) return;
+  const c = _seenProjects();
+  c[surface + ':' + key] = Date.now();
+  try { localStorage.setItem(LS_SEEN_PROJECTS_KEY, JSON.stringify(c)); } catch {}
+}
 // Delayed NEW reset (เอ๋ 2026-06-09): the folder currently being viewed is NOT marked
 // seen on open — its NEW row badges must stay visible. We mark it seen only when the
 // user LEAVES it (opens another folder → renderFamily; or returns home →
@@ -6413,9 +6456,15 @@ function renderSimBendHome() {
   }
 
   // ── Project sync bar ──────────────────────────────────────────────────────
-  const projOpts = (typeof projectList === 'function' ? projectList() : [])
-    .map(p => `<option value="${escapeHtml(p.key)}"${_simBendProject === p.key ? ' selected' : ''}>${escapeHtml(p.key)}</option>`)
+  // NEW marking (เอ๋ 2026-06-10): options carry "· NEW"; since a closed <select>
+  // hides them, the bar ALSO shows an amber "N NEW" pill naming the projects.
+  const sbProjs = (typeof projectList === 'function' ? projectList() : []);
+  const sbNewKeys = sbProjs.filter(p => isNewProject('sim', p.key, p)).map(p => p.key);
+  const projOpts = sbProjs
+    .map(p => `<option value="${escapeHtml(p.key)}"${_simBendProject === p.key ? ' selected' : ''}>${escapeHtml(p.key)}${sbNewKeys.includes(p.key) ? ' · NEW' : ''}</option>`)
     .join('');
+  const sbNewPill = sbNewKeys.length
+    ? `<span class="part-new-badge" title="${escapeHtml(sbNewKeys.join(', '))}">${sbNewKeys.length} NEW</span>` : '';
   const syncBar = `
     <div class="sb-sync-bar" style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:10px 0;">
       <strong style="font-size:12px;">Sync from project:</strong>
@@ -6424,6 +6473,7 @@ function renderSimBendHome() {
         ${projOpts}
       </select>
       <button class="sb-sync-btn" style="font-family:inherit; font-size:12px; font-weight:bold; background:#18c08c; color:#06281f; border:none; border-radius:6px; padding:6px 14px; cursor:pointer;">↻ Sync</button>
+      ${sbNewPill}
       <span class="sb-sync-status muted" style="font-size:12px;"></span>
     </div>`;
 
@@ -6508,7 +6558,7 @@ function renderSimBendHome() {
     projSel.addEventListener('change', () => {
       const key = projSel.value || '';
       _simBendExpanded = null;
-      if (key) { _runProjectSync(key); }   // async; renders progressively
+      if (key) { markProjectSeen('sim', key); _runProjectSync(key); }   // async; renders progressively
       else { _simBendProject = null; _simBendSync = null; render(); }
     });
   }
@@ -6516,7 +6566,7 @@ function renderSimBendHome() {
     syncBtn.addEventListener('click', () => {
       const key = (projSel && projSel.value) || _simBendProject || '';
       _simBendExpanded = null;
-      if (key) _runProjectSync(key);
+      if (key) { markProjectSeen('sim', key); _runProjectSync(key); }
       else { _simBendProject = null; _simBendSync = null; render(); }
     });
   }
@@ -7075,6 +7125,7 @@ function renderNestHome() {
       dxfCount,
       ready: dxfCount > 0,
       pinned: isPinned(key),   // shared with Projects view (_pinnedCache)
+      isNew: isNewProject('nest', key, p),
     };
   });
   // Order mirrors the Projects tab so reordering syncs BOTH ways: pinned
@@ -7130,7 +7181,7 @@ function renderNestHome() {
         <button class="nest-move-btn nest-down" data-key="${escapeHtml(e.key)}" aria-label="Move down" title="Move down" ${isLast ? 'disabled' : ''}>▼</button>
       </span>
       <div class="nest-home-body">
-        <span class="nest-home-name">${escapeHtml(e.name)}</span>
+        <span class="nest-home-name">${escapeHtml(e.name)}${e.isNew ? ' <span class="part-new-badge" title="New activity since you last opened this project here">NEW</span>' : ''}</span>
         <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
       </div>
       <span class="nest-home-actions">
@@ -7159,6 +7210,7 @@ function renderNestHome() {
     if (row.getAttribute('aria-disabled') === 'true') return;
     const key = row.dataset.key;
     if (!key) return;
+    markProjectSeen('nest', key);   // opening clears this surface's NEW badge
     if (window.kdNest && typeof window.kdNest.openProject === 'function') {
       window.kdNest.openProject(key);
     } else {
@@ -7269,6 +7321,8 @@ function renderProjectsHome() {
     const statusBadge = p.completed
       ? '<span class="project-badge done">DONE</span>'
       : (isTop ? '<span class="project-badge">TODAY</span>' : '');
+    const newBadge = isNewProject('proj', p.key, p)
+      ? ' <span class="part-new-badge" title="New activity since you last opened this project here">NEW</span>' : '';
     const missing = p.missing_count;
     const drawingBadge = missing > 0
       ? `<span class="project-badge missing">⚠️ ${missing} no drawing</span>`
@@ -7304,7 +7358,7 @@ function renderProjectsHome() {
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
         <div class="project-body">
-          <div class="project-name">${escapeHtml(p.name || p.key)}${statusBadge}</div>
+          <div class="project-name">${escapeHtml(p.name || p.key)}${newBadge}${statusBadge}</div>
           <div class="project-meta">${escapeHtml(updated)} · ${uniq} unique · ${totalQty} pcs · ${p.drawn_count}/${uniq} drawn</div>
           ${progressBars}
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
@@ -7320,6 +7374,7 @@ function renderProjectsHome() {
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
       if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn')) return;
+      markProjectSeen('proj', el.dataset.project);   // opening clears this surface's NEW badge
       navTo({ kind: 'project', name: el.dataset.project });
     });
   });
