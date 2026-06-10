@@ -1677,13 +1677,85 @@
     }
     let best = null;
     for (const m of ['MaxRects', 'BL Corner', 'Left', 'Bottom']) {
-      const r = runFirstFit(m);
+      const r = _tuckSmallPieces(runFirstFit(m), gap);
       if (best === null || r.unplaced.length < best.unplaced.length
           || (r.unplaced.length === best.unplaced.length && r.sheets.length < best.sheets.length)) {
         best = r;
       }
     }
     return best || { sheets: [], unplaced: pieces.slice() };
+  }
+
+  // ── Desktop gap-tuck (เอ๋ 2026-06-10, cut-sheet screenshot with red boxes on
+  // BXXTR0/TS2TRX/SD0SUP): "เอาชิ้นเล็กๆ พวกนี้เข้าไปด้านในได้ หรือจะ Rotate
+  // ด้วยก็ได้เพื่อจัดให้เต็มพื้นที่". The desktop-mirror pass strands small parts
+  // on edge strips (skyline modes can't reach interior gaps; first-fit rotation
+  // wastes snug spots). This post-pass keeps every BIG placement exactly where
+  // the desktop layout put it, lifts the SMALL ones (max side ≤ SMALL_TUCK_MM),
+  // rebuilds each sheet's remaining free space (MaxRects split keeps ALL maximal
+  // empty rects, so a lifted part's own footprint stays available — placed parts
+  // can't be lost), then re-places each small with BSSF across its OWN allowed
+  // rotations (grain/FIX locks respected — piece.rots). Earlier sheets are tried
+  // first, so smalls migrate off late sheets (an emptied sheet is dropped) and
+  // previously-unplaced smalls get a second chance at the gaps. Safety: if the
+  // tucked result somehow places fewer pieces, the original layout is returned.
+  const SMALL_TUCK_MM = 300;
+  function _tuckSmallPieces(orig, gap) {
+    const origSheets = orig.sheets || [];
+    if (!origSheets.length) return orig;
+    const isSmall = p => Math.max(p.w || 0, p.h || 0) <= SMALL_TUCK_MM
+                      && (p.w || 0) > 0 && (p.h || 0) > 0;
+    const rotDims = (p, rot) => (rot === 90 || rot === 270)
+      ? [p.h + gap, p.w + gap] : [p.w + gap, p.h + gap];
+    const result = {
+      sheets: origSheets.map(s => ({ ...s, placements: s.placements.slice() })),
+      unplaced: (orig.unplaced || []).slice(),
+    };
+    const queue = [];
+    const packers = result.sheets.map(sh => {
+      const pk = new MaxRectsPacker(sh.sw, sh.sh);
+      const keep = [];
+      for (const pl of sh.placements) {
+        if (isSmall(pl)) { queue.push(pl); continue; }
+        const [rw, rh] = rotDims(pl, pl.rot);
+        pk._split(pl.x, pl.y, rw, rh);
+        keep.push(pl);
+      }
+      sh.placements = keep;
+      return pk;
+    });
+    if (!queue.length) return orig;
+    const stillUnplaced = [];
+    for (const up of result.unplaced) {
+      if (isSmall(up)) queue.push(up); else stillUnplaced.push(up);
+    }
+    queue.sort((a, b) => (b.w * b.h) - (a.w * a.h));   // big smalls first
+    const lost = [];
+    for (const piece of queue) {
+      let pick = null;
+      for (let si = 0; si < result.sheets.length && !pick; si++) {
+        for (const rot of (piece.rots && piece.rots.length ? piece.rots : [0])) {
+          const [rw, rh] = rotDims(piece, rot);
+          const fit = packers[si].bestFit(rw, rh);
+          if (!fit) continue;
+          if (!pick || fit.short < pick.fit.short
+              || (fit.short === pick.fit.short && fit.long < pick.fit.long)) {
+            pick = { si, rot, rw, rh, fit };
+          }
+        }
+      }
+      if (pick) {
+        packers[pick.si].commit(pick.fit.x, pick.fit.y, pick.rw, pick.rh);
+        result.sheets[pick.si].placements.push({ ...piece, x: pick.fit.x, y: pick.fit.y, rot: pick.rot });
+      } else {
+        lost.push(piece);
+      }
+    }
+    result.sheets = result.sheets.filter(sh => sh.placements.length);
+    result.unplaced = stillUnplaced.concat(lost);
+    // Never worse than the untucked desktop layout.
+    if (result.unplaced.length > (orig.unplaced || []).length) return orig;
+    return result;
   }
 
   function _nestMultiSheet(pieces, stock, gap, mode) {
