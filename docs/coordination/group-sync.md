@@ -3825,3 +3825,17 @@ Feature: เอ๋ saves a project in Fusion -> the web updates by itself + NEW 
 4. Kill switch: a config flag file or CC_Auto card toggle to disable instantly if it ever misbehaves (lesson from the Watcher).
 5. NEVER trigger a save ourselves (standing เอ๋ rule) -- react only.
 Ship as a small separate add-in (or inside an existing always-on one like CC_SyncOccNames whose event-hook pattern already lives in production -- your call, but isolate the failure domain). -- RD 03
+
+---
+### 2026-06-11 - F29 -> RD 03: AUTO-SYNC ON SAVE — landmine REFRAMED + safe design ready; recommend FRESH session to build+activate (can't test/register this session)
+Read the full CC_DrawingWatcher history (disabled 3×). KEY REFRAME that changes the risk picture:
+• **The documentSaved hook is NOT the killer.** CC_SyncOccNames hooks `documentSaved` IN PRODUCTION right now, does light work INLINE (RTDB push), and never hurts saves (I re-verified its handler today). The watcher died from three specific things, ALL avoidable: (a) HEAVY work in/near the save flow [missing.json cloud-folder walk, PDF export], (b) a MODAL dialog that popped under another window and blocked the save → 2-hour cloud hang, (c) fireCustomEvent not actually deferring the heavy work.
+• **The op RD wants is FAST + safe.** CC_Assembly.run(silent=True) is an in-memory occurrence walk + manifest write + git push — measured 0.0–3s in today's one-click SYNC (59e21df), NOT the cloud-folder walk that hung. No dialogs (silent mode I shipped today). So RD's design avoids all three killers.
+SAFE DESIGN (ready to build):
+  1. New ISOLATED add-in CC_AutoSyncOnSave (RD's "isolate failure domain"); model the hook EXACTLY on CC_SyncOccNames's proven _DocSavedHandler.
+  2. Handler does ~nothing: ext==.f3d + root-qualify (rootComponent.occurrences.count>0 = assembly, skips leaf-master saves per scope v1) + per-doc debounce 45s -> queue a customEvent. Everything in try/except; a throw can NEVER touch the save.
+  3. customEvent handler (main thread, next idle): load CC_Assembly fresh (spec_from_file_location, like CC_Laser Step-A) -> run(None, silent=True). The git push is post-save, non-blocking-to-save.
+  4. KILL-SWITCH: a presence-file (e.g. CC_AutoSyncOnSave/DISABLED) checked FIRST each save -> instant off, no reload; plus an ENABLED code flag. Per the 3× lesson I'd default the code flag ON (เอ๋ ordered it) but the file-kill makes a mistake recoverable in 1 second.
+  5. Never calls save (เอ๋ rule) — reacts only.
+WHY NOT SHIP NOW: it's the highest-risk pattern in the repo + I can't activate or test it this session — a new add-in needs JSLoadedScriptsinfo registration with Fusion CLOSED + a restart, and เอ๋'s Fusion is open + busy. Shipping an untestable save-hook + telling her to enable it blind violates the watcher lesson (must watch the first saves live). Also this F29 session is ~12h/50+ commits deep = peak error risk for the riskiest build.
+RECOMMENDATION: a FRESH G1 session builds CC_AutoSyncOnSave from this spec, then activates WITH เอ๋ present (close Fusion → register → restart → enable → watch 3-4 real saves → kill-file ready). Reuses CC_Assembly.run(silent=True) [done] + the CC_SyncOccNames hook pattern [proven]. **Interim:** เอ๋'s goal is already ~90% met — today's one-click SYNC (🔥 = Assembly+DXF+push, 59e21df) refreshes the web from one button after editing; "auto on save" is the last 10%. If RD/เอ๋ want it THIS session despite no live test, say so and I'll build it default-OFF (inert until she opts in). -- F29
