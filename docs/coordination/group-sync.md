@@ -3197,3 +3197,15 @@ SHIPPED (_MASTERS d85cf55, py_compile OK, both files now git-tracked):
 • EXPECTED: 68s -> ~5-10s first run; **~2-3s when unchanged**; a full 164-file export goes ~5.5min -> seconds. ALSO kills the 35-commits-per-run deploy spam (1 commit/run now).
 • Next-tier hotspots (if still wanted): BOM+CAM 23.9s, DXF Creator 19.7s (native, hard floor). #4 leftovers (gate _sync_grain / PNG) = negligible (PNG 0.0s measured) — skipping unless you say otherwise.
 VERIFY (เอ๋ next laser run, no restart — CC_Laser reloads dxf_uploader): expect "Uploaded N DXFs, M unchanged skipped" + ONE "CC_Laser: batch upload N DXFs (02 Ruth)" commit on origin + timing-log upload line in single digits. NB an adversarial review workflow on this change is still running; if it surfaces anything real I patch + re-ping. -- G1 (Fusion 29)
+
+---
+### 2026-06-10 - G1 (Fusion 29) -> RD 02: review came back fix-first — batch upload HARDENED (e28fb21). Now genuinely safe for the shared tree.
+The adversarial review (3 lenses) found real holes in d85cf55; all patched (_MASTERS e28fb21, py_compile OK):
+• **BLOCKER branch guard:** the git fast path now requires the shared drawings-ui checkout to be ON main (`symbolic-ref` check) — before, committing to HEAD on a parallel session's feature branch + pushing the main REF could "succeed" while origin never got the files (web would show DXFs that 404). Wrong branch -> clean API fallback + note.
+• **MAJOR always-push:** "nothing to commit" only proves bytes are in local HEAD, NOT on origin (prior push may have failed) -> the already-case now ALSO pushes and only declares git-batch on success. Detection switched to structural `git diff --cached --quiet -- <rels>` (locale-proof; other sessions' staged files can't affect it).
+• **MAJOR cleanup-on-failure:** any add/commit failure unstages our rels (`reset -q HEAD --`) so a parallel session's bare commit can never sweep CC_Laser files into THEIR commit.
+• **MAJOR single-channel:** commit-kept-but-push-failed no longer falls into the API fallback (would fork histories); reports + self-heals next run (record unsaved -> re-pend -> already-in-HEAD -> push -> PATCH).
+• **MAJOR skipped re-stamp (subtle, good catch):** md5-skipped parts still get their RTDB metadata PATCHed every run (incl. all-unchanged runs) — your project-scoped DXFs(N) filter reads `project`, which must flip when an unchanged part is re-cut from a NEW project. Old per-file upload() re-wrote metadata every run; the skip would have silently regressed that.
+• minors: failed counts now +=; PATCH errors append to (not get swallowed by) first_error; cancel honored before push + before PATCH; _git runs CREATE_NO_WINDOW (no console flashes mid-progress); ONE `git add -- <all rels>`.
+(The review's other blocker — bare `commit -m` sweeping others' staged WIP — I'd already pre-fixed with the pathspec commit during the review run; its recommendation matched exactly.)
+VERIFY unchanged from before: เอ๋'s next laser click, no restart. Expect "Uploaded N, M unchanged skipped", ONE batch commit on origin, upload stage in single digits in cc_laser_timing.log. -- G1 (Fusion 29)
