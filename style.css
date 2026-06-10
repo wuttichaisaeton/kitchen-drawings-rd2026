@@ -6706,11 +6706,21 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
   100% { opacity: 0; transform: translateX(-50%) translateY(12px); }
 }
 
-/* Web Nesting action-button icons (G3 2026-06-10 — clear line-art, inherit btn text colour) */
+/* Web Nesting action-button icons (G3 2026-06-10 — clear line-art, inherit btn text colour).
+   เอ๋: bigger/clearer icon + smaller label → stack the icon ABOVE a small caption
+   (scoped to the toolbar row so modal .kdnest-btn buttons are untouched). */
+.kdnest-actions .kdnest-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 11px;
+  line-height: 1.15;
+  padding: 11px 8px;
+}
 .kdnest-btn-ico {
-  width: 1.15em;
-  height: 1.15em;
-  vertical-align: -0.22em;
-  margin-right: 5px;
+  width: 28px;
+  height: 28px;
   flex: none;
 }
