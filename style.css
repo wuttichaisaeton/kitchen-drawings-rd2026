@@ -1448,6 +1448,20 @@ h1 {
 
 .action-btn:active { transform: scale(0.97); }
 
+/* ── Global button feedback (เอ๋ 2026-06-10: "mouse ผ่าน/วาง → ไฟสว่างขึ้น; กด → จมลงไป") ──
+   One low-specificity layer over EVERY <button> — including the many inline-styled
+   ones (sync, compare, sim controls…) that had no hover/press feel at all. Uses
+   filter+transform+box-shadow, which DON'T fight a button's inline background/color,
+   so it layers on without per-button work. Element-level specificity (0,1,1) means any
+   existing per-component :hover/:active (class-level, higher specificity) still wins —
+   so tuned feels (scale presses, themed hovers) are untouched; this only fills the gaps. */
+button { transition: filter .14s ease, transform .07s ease, box-shadow .14s ease; }
+button:hover { filter: brightness(1.15); box-shadow: 0 2px 9px rgba(0, 0, 0, 0.22); }
+button:active { transform: translateY(1px) scale(0.985); filter: brightness(0.9); }
+button:disabled, button[disabled] {
+  filter: none !important; transform: none !important; box-shadow: none !important; cursor: default;
+}
+
 /* Inline SVG icons inside action buttons (Expand all / Collapse all etc.)
    stroke=currentColor → inherits button text color, no theming needed. */
 .action-btn .btn-svg {
