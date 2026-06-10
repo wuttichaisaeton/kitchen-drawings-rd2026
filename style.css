@@ -5796,15 +5796,30 @@ html[data-theme="chalk"] .kdnest-grain-summary {
   position: relative;
   z-index: 2;
 }
+/* pencil(sketch)/chalk: NO frame lines on the active row (เอ๋ 2026-06-10
+   'ไม่ต้องมีเส้นนี้ดีกว่าเพราะไปบังเครื่องหมายถูก' — the border's right edge
+   covered the row's ✓). Stronger tint instead so the active row stays obvious. */
 html[data-theme="sketch"] .kdnest-part.kdnest-part-active {
-  background: rgba(194,90,58,0.12) !important;
-  border: 1.5px solid #c25a3a !important;
-  border-left: 4px solid #c25a3a !important;
+  background: rgba(194,90,58,0.18) !important;
+  border: none !important;
 }
 html[data-theme="chalk"] .kdnest-part.kdnest-part-active {
-  background: rgba(240,165,30,0.14) !important;
-  border: 1.5px solid #f0a51e !important;
-  border-left: 4px solid #f0a51e !important;
+  background: rgba(240,165,30,0.20) !important;
+  border: none !important;
+}
+/* Same no-line rule for the green preview outline + the grain-save flash ring
+   in these two themes (background pulse only — nothing drawn at the row edge). */
+html[data-theme="sketch"] .kdnest-part-previewing,
+html[data-theme="chalk"] .kdnest-part-previewing {
+  outline: none;
+}
+html[data-theme="sketch"] .kdnest-part.kdng-affected,
+html[data-theme="chalk"] .kdnest-part.kdng-affected {
+  animation: kdng-affected-pulse-noring 2.7s ease-out;
+}
+@keyframes kdng-affected-pulse-noring {
+  0%   { background-color: rgba(242,169,59,0.35); }
+  100% { background-color: transparent; }
 }
 
 /* ════════════════════════════════════════════════════════════════════
