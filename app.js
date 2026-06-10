@@ -4314,7 +4314,13 @@ function projectList() {
   const items = Object.entries(projects)
     .filter(([key]) => !isProjectSoftDeleted(key))
     .map(([key, p]) => {
-    const parts = p.parts || [];
+    // LEAF parts only — the same _aggregatePartsByCode chokepoint the cut list /
+    // bend list / nest / simbend sync all use. CC_Assembly emits container rows
+    // (is_wrapper, qty 0) to carry the deep tree; they are NOT drawable parts.
+    // Counting them here gave เอ๋'s contradiction: 100VFRR-075D60 card said
+    // "⚠ 3 NO DRAWING" (= exactly its 3 wrappers) while the card's own 5/5
+    // drawn and the inner MISSING(0) were correct. (RD 03 board f57b3ea)
+    const parts = _aggregatePartsByCode(p.parts || []);
     // A part is "drawn" if pdfUrlForCode resolves to a URL — covers
     // manifest entries (Fusion-exported), direct web uploads, and
     // prefix-share / group siblings of uploads. Returns '' if soft-
@@ -4327,6 +4333,7 @@ function projectList() {
       ...p,
       completed: isCompleted(key),
       pinned: pinnedSet.has(key),
+      leaf_unique: parts.length,
       drawn_count: drawnCount,
       missing_count: parts.length - drawnCount,
       bent_count: bentCount,
@@ -7487,7 +7494,9 @@ function renderProjectsHome() {
       : `<span class="project-badge complete">✓ all drawn</span>`;
     const updated = fmtDate(p.updated_at || p.created_at);
     const totalQty = p.total_qty != null ? p.total_qty : (p.parts || []).reduce((s, x) => s + (x.qty || 0), 0);
-    const uniq = p.total_unique_parts != null ? p.total_unique_parts : (p.parts || []).length;
+    // LEAF count fallback (not raw parts.length — raw includes is_wrapper rows)
+    const uniq = p.total_unique_parts != null ? p.total_unique_parts
+      : (p.leaf_unique != null ? p.leaf_unique : (p.parts || []).length);
     const bentBadge = p.bent_count > 0
       ? `<span class="project-badge bent"><span class="icon-bend"></span> ${p.bent_count}/${uniq} bent (${p.bent_pct}%)</span>`
       : '';
