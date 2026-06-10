@@ -1730,23 +1730,44 @@
       if (isSmall(up)) queue.push(up); else stillUnplaced.push(up);
     }
     queue.sort((a, b) => (b.w * b.h) - (a.w * a.h));   // big smalls first
+    // Spot choice = Best AREA Fit + bottom-left, NOT BSSF. v1 used BSSF and
+    // เอ๋ got the SAME sheet back ("เหมือนเดิม"): for a 68mm-tall part the
+    // snuggest fit IS the ~70mm strip along the sheet's top edge — BSSF
+    // recreated the exact edge strips she circled. BAF instead picks the
+    // SMALLEST free pocket that fits → smalls drop into the leftover notches
+    // INSIDE the packed cluster, and the giant open region (the reusable
+    // remnant) is only ever touched when nothing else fits. Tie → lowest y
+    // then x (y-up: low = deep inside the cluster, away from the open top).
+    const pickSpot = (pk, rw, rh) => {
+      let best = null;
+      for (const fr of pk.free) {
+        if (fr.w < rw || fr.h < rh) continue;
+        const area = fr.w * fr.h;
+        if (!best || area < best.area
+            || (area === best.area && (fr.y < best.y || (fr.y === best.y && fr.x < best.x)))) {
+          best = { x: fr.x, y: fr.y, area };
+        }
+      }
+      return best;
+    };
     const lost = [];
     for (const piece of queue) {
       let pick = null;
       for (let si = 0; si < result.sheets.length && !pick; si++) {
         for (const rot of (piece.rots && piece.rots.length ? piece.rots : [0])) {
           const [rw, rh] = rotDims(piece, rot);
-          const fit = packers[si].bestFit(rw, rh);
-          if (!fit) continue;
-          if (!pick || fit.short < pick.fit.short
-              || (fit.short === pick.fit.short && fit.long < pick.fit.long)) {
-            pick = { si, rot, rw, rh, fit };
+          const spot = pickSpot(packers[si], rw, rh);
+          if (!spot) continue;
+          if (!pick || spot.area < pick.spot.area
+              || (spot.area === pick.spot.area
+                  && (spot.y < pick.spot.y || (spot.y === pick.spot.y && spot.x < pick.spot.x)))) {
+            pick = { si, rot, rw, rh, spot };
           }
         }
       }
       if (pick) {
-        packers[pick.si].commit(pick.fit.x, pick.fit.y, pick.rw, pick.rh);
-        result.sheets[pick.si].placements.push({ ...piece, x: pick.fit.x, y: pick.fit.y, rot: pick.rot });
+        packers[pick.si].commit(pick.spot.x, pick.spot.y, pick.rw, pick.rh);
+        result.sheets[pick.si].placements.push({ ...piece, x: pick.spot.x, y: pick.spot.y, rot: pick.rot });
       } else {
         lost.push(piece);
       }
