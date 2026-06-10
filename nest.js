@@ -3092,7 +3092,7 @@
           <div class="kdnest-header">
             <button class="kdnest-back" id="kdnest-back" title="Back to project">←</button>
             <div class="kdnest-title">
-              <div class="kdnest-title-main">📐 Nesting</div>
+              <div class="kdnest-title-main"><svg class="nest-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg>Nesting</div>
               <div class="kdnest-title-sub">${_esc(S.projectName)} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${S.parts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}</div>
             </div>
           </div>

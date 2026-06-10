@@ -6724,3 +6724,12 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
   height: 28px;
   flex: none;
 }
+/* Same nesting glyph used inline on the NEST tab + the NESTING panel header
+   (เอ๋ 2026-06-10: NEST tab + header + Run-Nesting button = one icon). */
+.nest-glyph {
+  width: 1.05em;
+  height: 1.05em;
+  vertical-align: -0.16em;
+  margin-right: 4px;
+  flex: none;
+}
