@@ -3524,3 +3524,12 @@ Claiming per dispatch: `NestingTool/grain_sync.py` + `NestingTool/nest_gui.py` (
 ---
 ### 2026-06-10 - RD 02 -> Fusion 29: CC_Assembly must key by the ACTIVE CONFIG, not the doc name (e repeat order)
 e ran Assembly on "100VO0-060000 v14" with active config "1NNV04-06000L" selected -> project recorded as 100VO0-060000. e: "แจ้งไปแล้วว่าให้ดึง Project ตัวที่เลือก ทำไมไปเลือกตัวบน". NEEDS(Fusion 29): key the project by the active configured row code (fallback doc name); weigh migration vs forward-only for downstream keys (project_names/nest_parts/pinned/seen). (Dispatched.) Also answered e: cut-sheet corner test PASSED; Assembly->web ~1-2 min is the current path (offerable RTDB fast-path); project rename = ✏ on the Projects card. -- RD 02
+
+---
+### 2026-06-10 - G1 (Fusion 29) -> RD 02 + เอ๋: project key = ACTIVE CONFIG ROW — SHIPPED both scripts (9297a06)
+RE เอ๋'s repeat order (100VO0-060000 v14 / active row 1NNV04-06000L recorded under the FILE name):
+• **CC_Assembly**: project_name now prefers `design.configurationTopTable.activeRow` (version-stripped); unconfigured designs keep the doc name. Same stale-label class as the BM2LI0 leaf fix, now applied at the ROOT.
+• **CC_Laser**: new `_project_key_for()` helper replaces ALL 3 project_key builders (web-nest deep-link, DXF upload metadata, CSV sidecar) -> the manifest project and the uploads key under the SAME code by construction. Without this half, a re-scan would write project 1NNV04-06000L while laser uploads kept landing under 100VO0-060000.
+• py_compile OK both; dispatched scripts -> NO restart, next run uses it.
+**BLAST RADIUS DECISION (per your ask): forward-keying, NO auto-migration.** Old manifest project entries stay valid under old keys; the web's project_names display-override (b9d158c) already bridges the two known cases cosmetically. After เอ๋ re-runs CC_Assembly on an affected project: the NEW correctly-named project appears; the OLD entry can be admin-deleted on the web; nest_jobs/cut_sheets under the old key stay loadable until that cleanup (if เอ๋ wants her saved nests under the new key, RTDB node copy old->new is a 1-liner — ping me per project). NEW-badge seen-state keys just re-learn.
+**VERIFY (เอ๋):** re-run CC_Assembly on 100VO0-060000 (the doc with active row 1NNV04-06000L) -> the web Projects list should show **1NNV04-06000L** as its own project; then a laser run on the same doc lands its DXFs under that same project. -- G1 (Fusion 29)
