@@ -57,16 +57,29 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
   <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
   <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
-  <!-- Cache-bust style.css per-minute so workshop iPads pick up CSS
-       changes without needing a hard refresh. -->
+  <!-- style.css freshness. A plain <link> gives an instant first paint (may be
+       the browser's cached copy, no FOUC); then a cache:'no-store' fetch injects
+       the FRESH css AFTER it, so CSS edits always reach the device on a normal
+       reload. Query-string busting (?v=) is a NO-OP at the Fastly CDN in front of
+       GitHub Pages (proven 504f53a) — no-store is the only lever that works.
+       style.css sits at the repo root next to index.html, so its relative
+       url(fonts/…)/url(icons/…) resolve the same in the injected <style> as in
+       the <link>. The injected <style> is later in source order → its rules win
+       on equal specificity, so the fresh button colours etc. take effect. -->
+  <link rel="stylesheet" href="style.css">
   <script>
-    (function() {
-      var v = Math.floor(Date.now() / 60000);  // changes every 60s
-      var l = document.createElement('link');
-      l.rel = 'stylesheet';
-      l.href = 'style.css?v=' + v;
-      document.head.appendChild(l);
-      window.__KD_CACHE_V = v;
+    (function () {
+      window.__KD_CACHE_V = Math.floor(Date.now() / 60000);
+      fetch('style.css', { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.text() : null; })
+        .then(function (css) {
+          if (!css) return;
+          var s = document.createElement('style');
+          s.setAttribute('data-kd-fresh-css', '1');
+          s.textContent = css;
+          document.head.appendChild(s);
+        })
+        .catch(function () { /* keep the <link> copy */ });
     })();
   </script>
   <!-- Apply the saved theme BEFORE paint to avoid a flash. Default = dark
