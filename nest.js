@@ -1688,7 +1688,85 @@
         best = r;
       }
     }
+    // Winner only: band-consolidate the LONG parts, then RE-tuck the smalls so
+    // they chain onto the moved rows (a small left where its anchor used to be
+    // would float). Same sheets/unplaced — the vote above stays valid.
+    if (best) best = _tuckSmallPieces(_consolidateBands(best, gap), gap);
     return best || { sheets: [], unplaced: pieces.slice() };
+  }
+
+  // ── PHASE B: band consolidation for LONG parts (RD 03 board daeef18 — เอ๋
+  // 1CSVB2-105003 arrows: slide TS1BHH-105000 + BM1LCL-105003 right into the
+  // empty strip ABOVE the TS1BHH-095000 row; "ถ้าทำแบบนี้ก็จะประหยัดพื้นที่เพิ่มขึ้น
+  // ไปอีก"). เอ๋'s arrows RELAX the bigs-frozen rule: a non-small part may
+  // RELOCATE by pure TRANSLATION (rotation kept → grain/FIX locks untouched)
+  // DOWN into the free strip on top of an existing row, when the move makes the
+  // sheet's largest clean free rect strictly grow. Moves are evaluated as a
+  // BAND BATCH, not one-by-one — moving just ONE of เอ๋'s two strips makes the
+  // remnant temporarily WORSE (the band rect gets cut before the stack fully
+  // empties), so single-move greedy deadlocks; filling the band then comparing
+  // once matches her arrows. Worse batch → rolled back, so a sheet can never
+  // degrade. Runs once on the winning desktop layout.
+  function _consolidateBands(result, gap) {
+    const rotDims = (p, rot) => (rot === 90 || rot === 270)
+      ? [p.h + gap, p.w + gap] : [p.w + gap, p.h + gap];
+    const isSmall = p => Math.max(p.w || 0, p.h || 0) <= SMALL_TUCK_MM;
+    const freeListFor = (sheet) => {
+      const pk = new MaxRectsPacker(sheet.sw, sheet.sh);
+      for (const pl of sheet.placements) {
+        const [rw, rh] = rotDims(pl, pl.rot);
+        pk._split(pl.x, pl.y, rw, rh);
+      }
+      return pk.free;
+    };
+    const maxFreeArea = list => list.reduce((m, r) => Math.max(m, r.w * r.h), 0);
+    const EPS = 1000;            // mm² — a batch must beat float noise to stick
+    for (const sheet of (result.sheets || [])) {
+      if (!sheet.placements || sheet.placements.length < 2) continue;
+      let guard = 10;            // accepted-batch cap per sheet
+      let progressing = true;
+      while (progressing && guard-- > 0) {
+        progressing = false;
+        const free = freeListFor(sheet);
+        const before = maxFreeArea(free);
+        // Candidate bands: free rects sitting directly ON TOP of >= 1 placement
+        // (the strip above an existing row). rowH = tallest supporting part.
+        const bands = [];
+        for (const fr of free) {
+          if (fr.y <= 0) continue;
+          let rowH = 0;
+          for (const pl of sheet.placements) {
+            const [pw, ph] = rotDims(pl, pl.rot);
+            const overlapX = pl.x < fr.x + fr.w && fr.x < pl.x + pw;
+            if (overlapX && Math.abs((pl.y + ph) - fr.y) <= 1) rowH = Math.max(rowH, ph);
+          }
+          if (rowH > 0) bands.push({ fr, rowH });
+        }
+        bands.sort((a, b) => a.fr.y - b.fr.y);   // lowest band first
+        for (const { fr, rowH } of bands) {
+          // Fill the band with non-small parts from HIGHER up whose height fits
+          // the founding row (เอ๋: "ชิ้นที่สูงพอดี band เดิม"), tallest first.
+          const cands = sheet.placements
+            .map((pl, i) => ({ pl, i, d: rotDims(pl, pl.rot) }))
+            .filter(c => !isSmall(c.pl) && c.pl.y > fr.y + 1
+                      && c.d[1] <= rowH + 2 && c.d[1] <= fr.h)
+            .sort((a, b) => (b.d[1] - a.d[1]) || (b.d[0] - a.d[0]));
+          let cursor = fr.x;
+          const movedIdx = [], movedOld = [];
+          for (const c of cands) {
+            if (cursor + c.d[0] > fr.x + fr.w + 0.001) continue;
+            movedIdx.push(c.i); movedOld.push(sheet.placements[c.i]);
+            sheet.placements[c.i] = { ...c.pl, x: cursor, y: fr.y };
+            cursor += c.d[0];
+          }
+          if (!movedIdx.length) continue;
+          const after = maxFreeArea(freeListFor(sheet));
+          if (after > before + EPS) { progressing = true; break; }   // keep batch, rescan
+          for (let k = 0; k < movedIdx.length; k++) sheet.placements[movedIdx[k]] = movedOld[k];   // rollback
+        }
+      }
+    }
+    return result;
   }
 
   // ── Desktop gap-tuck (เอ๋ 2026-06-10, cut-sheet screenshot with red boxes on
