@@ -486,7 +486,15 @@
         // fetch. Entries without md5 fall back to uploaded_at (re-fetch per
         // upload), else a one-shot Date.now().
         const ver = (p.dxfMeta && (p.dxfMeta.content_md5 || p.dxfMeta.uploaded_at)) || Date.now();
-        const fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
+        let fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
+        // COMMIT-PINNED when the uploader stamped one: @<sha> jsdelivr URLs
+        // are immutable — zero CDN staleness, no purging needed. (@main
+        // objects cache for hours, the purge API rate-limits on repeat, and
+        // the CDN strips query strings so ?v= only busts the BROWSER cache —
+        // เอ๋'s DSV1 fix kept resurfacing stale until pinned. 2026-06-10)
+        if (p.dxfMeta && p.dxfMeta.commit) {
+          fetchUrl = fetchUrl.replace('@main/', '@' + p.dxfMeta.commit + '/');
+        }
         // Abort a stalled fetch (dead/slow CDN, flaky mobile network) after 15s.
         // A bare `await fetch` with no timeout never resolves on a hung socket, so
         // ONE bad part used to hang the whole `Promise.all` → the Load froze and
