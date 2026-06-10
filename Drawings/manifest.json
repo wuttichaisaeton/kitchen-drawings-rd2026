@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-10T21:27:14.184667+00:00",
+  "generated_at": "2026-06-10T21:45:52.467433+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4575,6 +4575,58 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-09T21:41:06.891343+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "BTHL00-140100": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "BTHL00-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-10T21:45:52.465446+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "BTHL00-170100": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "BTHL00-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-10T21:45:52.465446+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "TS0BV0-000000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "TS0BV0-053400.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-10T21:45:52.465446+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "TS0BVH-000000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "TS0BVH-0000UN.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-10T21:45:52.465446+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
