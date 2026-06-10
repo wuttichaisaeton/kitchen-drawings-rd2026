@@ -6538,6 +6538,7 @@ function renderSimBendHome() {
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
           ${_bendRecheckChip(code)}
+          ${_sbFusionBtnHtml(code)}
           ${favBtn}
           ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
         </div>
@@ -6558,6 +6559,7 @@ function renderSimBendHome() {
         <div class="sb-card-head">
           <span class="sb-code" title="${escapeHtml(code)}">${escapeHtml(displayCodeFor(code))}</span>
           <span class="sb-chip sb-warn" title="Geometry from flat DXF — not yet verified in Fusion (run CC_CheckBend)">◍ DXF · not checked</span>
+          ${_sbFusionBtnHtml(code)}
           ${favBtn}
         </div>
         <div class="sb-meta">${nb} bend${nb === 1 ? '' : 's'} (from flat DXF)${dims} · <span class="muted">export to Fusion to verify feasibility</span></div>
@@ -6576,6 +6578,7 @@ function renderSimBendHome() {
         ${favBtn}
         <span class="sb-code" title="${escapeHtml(code)}" style="font-weight:600;">${escapeHtml(displayCodeFor(code))}</span>
         ${label}
+        ${_sbFusionBtnHtml(code)}
       </div>`;
   }
 
@@ -6669,7 +6672,7 @@ function renderSimBendHome() {
       render();
     };
     el.addEventListener('click', (e) => {
-      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container') || e.target.closest('.sb-del-btn') || e.target.closest('.sb-fav-btn'))) return;
+      if (e.target.closest && (e.target.closest('.sb-sim-wrap') || e.target.closest('.sb-table') || e.target.closest('.sb-save-container') || e.target.closest('.sb-del-btn') || e.target.closest('.sb-fav-btn') || e.target.closest('.sb-fusion-btn'))) return;
       toggle();
     });
     el.addEventListener('keydown', e => {
@@ -6684,6 +6687,19 @@ function renderSimBendHome() {
       e.stopPropagation();
       const c = btn.getAttribute('data-code');
       if (c) toggleFav(c);
+    });
+  });
+
+  // Open-in-Fusion (every card + mini-row) — same shared leaf router as the
+  // bend-list button (bridge :8765, retry, friendly alerts). stopPropagation
+  // so the click never expands/collapses the card — works on a COLLAPSED card
+  // (เอ๋ 2026-06-11, RD extension 25c3d86). urn resolved across all manifest
+  // projects (_urnForCode); missing urn -> the router's instructive alert.
+  ROOT.querySelectorAll('.sb-fusion-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const c = btn.getAttribute('data-code');
+      if (c) _routeLeafToFusion({ code: c, urn: _urnForCode(c) }, { fusionOnly: true });
     });
   });
 
@@ -10188,6 +10204,26 @@ function _statusBadgeColor(status) {
 // to FIX this part" — falling back to a PDF there masks a dead bridge as
 // success ("กด ⚠ แล้วไม่เปิด Fusion เปิด pdf แทน"). With fusionOnly the PDF
 // branches are skipped: bridge works or the explanatory alert shows.
+// urn lookup by part code for surfaces with no project context (Sim.Bending
+// cards). urns live on manifest project parts[] (auto_generated has none) —
+// first project carrying the code wins. Cheap linear scan; called per click.
+function _urnForCode(code) {
+  const projects = (window.kdManifest && window.kdManifest.projects) || {};
+  for (const p of Object.values(projects)) {
+    for (const part of (p.parts || [])) {
+      if (part.code === code && part.urn) return part.urn;
+    }
+  }
+  return null;
+}
+
+// Shared open-in-Fusion chip for the Sim.Bending card surfaces (sb-card head /
+// DXF-preview card / mini row) — same cube glyph + router contract as the
+// bend-list button (เอ๋ 2026-06-11, RD extension 25c3d86).
+function _sbFusionBtnHtml(code) {
+  return `<button class="sb-fusion-btn" data-code="${escapeHtml(code)}" aria-label="Open in Fusion" title="Open this part in Fusion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.2 7.4 V16.6 L12 21.2 L3.8 16.6 V7.4 Z"/><path d="M3.8 7.4 L12 12 L20.2 7.4"/><line x1="12" y1="12" x2="12" y2="21.2"/></svg></button>`;
+}
+
 async function _routeLeafToFusion(node, opts) {
   const fusionOnly = !!(opts && opts.fusionOnly);
   // urn sources: the manifest/BOM urn first, then a CC_LinkNode pairing (fusion_link).

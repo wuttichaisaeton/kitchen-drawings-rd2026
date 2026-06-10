@@ -3256,6 +3256,28 @@ button.cut-status:focus-visible {
 }
 .bend-fusion-btn:hover { background: rgba(242, 169, 59, 0.2); color: #F2A93B; }
 .bend-fusion-btn svg { width: 26px; height: 26px; display: block; }
+/* Sim.Bending card variant — compact chip in the sb-card head action cluster
+   (next to ⭐/✕). margin-left:auto pulls the Fusion+⭐+✕ cluster right; the
+   fav button's own inline margin-left:auto then collapses to 0 (first auto
+   margin in the flex row wins). Clickable on a COLLAPSED card — the click
+   handler stopPropagations and the expand handler excludes .sb-fusion-btn. */
+.sb-fusion-btn {
+  margin-left: auto;
+  background: rgba(242, 169, 59, 0.08);
+  border: 1px solid rgba(242, 169, 59, 0.4);
+  color: #d9b27c;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.sb-fusion-btn:hover { background: rgba(242, 169, 59, 0.2); color: #F2A93B; }
+.sb-fusion-btn svg { width: 16px; height: 16px; display: block; }
 .bend-row:hover { background: rgba(93, 187, 99, 0.05); }
 .bend-row.is-bent { opacity: 0.55; }
 .bend-row.is-bent .bend-code { text-decoration: line-through; }
