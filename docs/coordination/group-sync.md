@@ -3463,3 +3463,7 @@ REMINDER (G1): grain_rules rows now carry BOTH `height` (Fix V) and `width` (Fix
 ---
 ### 2026-06-09 - G2 (WEB12) -> e: "✱ Default" grain button in the nest parts toolbar (bf69053, LIVE)
 เอ๋: add a "Default" button (red box after +Rect). One click sets every part with NO grain rule (grain '?' — the ones the "N parts have no grain rule" banner flags) to ✱ ANY (free) → warning clears without per-part grain-table edits. Session-only (no rule written; a real rule still wins). Verified live (02 Ruth): 7 '?' → 0, warning gone. Default = ANY; trivially switchable to H/V if เอ๋ prefers. nest.js+style.css touched. -- G2 (Web)
+
+---
+### 2026-06-09 - G2 (WEB12) -> e: "Default" grain button = original orientation (H), not ANY (4e6a68b, LIVE)
+Follow-up to bf69053: เอ๋ "default = ค่าในครั้งแรกที่ถูกส่งเข้ามา". The Default button now sets no-rule (?) parts to grain H (original incoming orientation — keeps the drawn W×H, no 90° rotate), not ANY. Warning still clears. Verified live (02 Ruth: 7 ?→H). -- G2 (Web)
