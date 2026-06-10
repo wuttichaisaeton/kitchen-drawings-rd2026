@@ -10958,17 +10958,14 @@ function renderFamily(fam, highlight) {
       const dxfBtn = dxfList.length > 0
         ? `<button class="part-dxf-btn" data-dxf-code="${escapeHtml(p.code)}" aria-label="${dxfList.length === 1 ? 'Download DXF' : 'Download DXFs'}" title="${dxfList.length === 1 ? 'Download laser-cut DXF' : `Download one of ${dxfList.length} DXFs`}">📐${dxfList.length > 1 ? ' ' + dxfList.length : ''}</button>`
         : '';
-      // Tap/click to pick an edited .dxf and overwrite this part's DXF (laser +
-      // flat) — works where drag-drop can't (iPad/touch: you can't drag a file
-      // from Files onto a web page) and is a visible affordance (เอ๋ 2026-06-10
-      // 'ทำไมยังลากไฟล์ มาทับที่ Part dxf ไม่ได้'). Drag-drop still works on desktop.
-      const dxfReplaceBtn = `<button class="part-dxf-replace-btn" data-dxf-code="${escapeHtml(p.code)}" aria-label="Replace DXF" title="Replace this part's DXF (laser + flat) — pick an edited .dxf">⤓DXF</button>`;
+      // To REPLACE a part's DXF, just drag an edited .dxf onto the row — it
+      // imports immediately (laser + flat), no button (เอ๋ 2026-06-10 'ไม่ต้อง
+      // ทำปุ่ม ⤓DXF … ลากไปทับที่บรรทัดนั้น ก็ให้อิมพอร์ตเลย').
       adminBtns = `<div class="part-actions">
         <button class="part-rename-btn" data-rename-code="${escapeHtml(p.code)}" aria-label="Rename display" title="Rename display (does not change the Fusion-side code)">✎</button>
         <button class="part-folder-btn" data-folder-code="${escapeHtml(p.code)}" aria-label="Move to folder" title="Move to a different folder / create new folder">📁</button>
         <button class="part-compare-btn" data-compare-code="${escapeHtml(p.code)}" data-compare-fam="${escapeHtml(fam)}" aria-label="Compare" title="Compare with similar drawings">🔍</button>
         ${dxfBtn}
-        ${dxfReplaceBtn}
       </div>`;
     }
     // 🔧 bend chip — only for parts that have a bend_sim record (เอ๋: show the
@@ -11058,7 +11055,7 @@ function renderFamily(fam, highlight) {
   ROOT.querySelectorAll('.part-row').forEach(el => {
     el.addEventListener('click', (ev) => {
       // Ignore clicks on admin buttons + the bend chip — each has its own handler.
-      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-dxf-replace-btn, .part-bend-btn, .part-compare-btn, .part-icon-clickable')) return;
+      if (ev.target.closest('.part-rename-btn, .part-folder-btn, .part-dxf-btn, .part-bend-btn, .part-compare-btn, .part-icon-clickable')) return;
       if (!el.dataset.url) return;   // no PDF for this part → don't open a blank tab (เอ๋ 2026-06-09)
       // _openInNewTab handles the iPad PWA standalone case (same-window
       // navigation) vs browser (new tab). Plain window.open '_blank'
@@ -11102,9 +11099,20 @@ function renderFamily(fam, highlight) {
   // prompt is needed. Workshop view doesn't render this handler.
   if (adminMode) {
     ROOT.querySelectorAll('.part-row').forEach(rowEl => {
+      // Allow a FILE drop. NB: dataTransfer.items is EMPTY during dragover in
+      // most browsers (security) — the old `items.some(kind==='file')` gate
+      // therefore failed and the browser rejected the drop before it could fire
+      // (เอ๋ 'ลากไม่ได้'). dataTransfer.types reliably contains 'Files' during a
+      // file drag, so gate on that and preventDefault on BOTH dragenter+dragover.
+      const _hasFiles = (ev) => {
+        const dt = ev.dataTransfer;
+        return !!(dt && dt.types && Array.prototype.indexOf.call(dt.types, 'Files') !== -1);
+      };
+      rowEl.addEventListener('dragenter', (ev) => { if (_hasFiles(ev)) ev.preventDefault(); });
       rowEl.addEventListener('dragover', (ev) => {
-        if (ev.dataTransfer && [...ev.dataTransfer.items || []].some(i => i.kind === 'file')) {
+        if (_hasFiles(ev)) {
           ev.preventDefault();
+          try { ev.dataTransfer.dropEffect = 'copy'; } catch (e) {}
           rowEl.classList.add('part-row-drag-over');
         }
       });
@@ -11211,33 +11219,6 @@ function renderFamily(fam, highlight) {
         return;
       }
       _renderDxfPopover(btn, list);
-    });
-  });
-
-  // ⤓DXF — tap/click to pick an edited .dxf and overwrite BOTH this part's DXFs
-  // (laser + flat). The touch-friendly path: iPad Safari can't drag a file from
-  // Files onto the page, but a file <input> opens the native picker. (เอ๋ 2026-06-10
-  // 'ทำไมยังลากไฟล์ มาทับที่ Part dxf ไม่ได้'.) Admin-only (rendered only for admin).
-  ROOT.querySelectorAll('.part-dxf-replace-btn').forEach(btn => {
-    btn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const code = btn.dataset.dxfCode;
-      if (!code) return;
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.dxf';
-      input.style.display = 'none';
-      input.addEventListener('change', async () => {
-        const file = input.files && input.files[0];
-        input.remove();
-        if (!file) return;
-        btn.classList.add('part-row-uploading');
-        const ok = await _replacePartDxfBoth(code, file);
-        btn.classList.remove('part-row-uploading');
-        if (ok) setTimeout(() => render(), 400);
-      });
-      document.body.appendChild(input);
-      input.click();
     });
   });
 
