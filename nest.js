@@ -2857,7 +2857,10 @@
         // (likely a wrong/stale file): no bbox dim within 0.5–1.5× of the
         // encoded dim. Zero-coded dims (e.g. "-080000" height 000) mean
         // "not specified" and are skipped, never compared.
-        const near = v => v > 0 && [bw, bh].some(b => b >= v * 0.5 && b <= v * 1.5);
+        // ±80mm explicit allowance (เอ๋ 2026-06-10 "กลุ่มนี้ผมให้ค่าบวกลบได้ 80")
+        // OR the 0.5–1.5× ratio window — whichever is looser passes.
+        const near = v => v > 0 && [bw, bh].some(b =>
+          Math.abs(b - v) <= 80 || (b >= v * 0.5 && b <= v * 1.5));
         const wBad = wCode > 0 && !near(wCode);
         const hBad = hCode > 0 && !near(hCode);
         if (wBad || hBad) {
