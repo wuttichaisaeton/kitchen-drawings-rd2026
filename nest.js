@@ -615,10 +615,12 @@
           const t = parseFloat(looked.thickness.replace(/mm/i, ''));
           if (!isNaN(t)) part.thickness = t;
         }
-        // Fix-height (เอ๋ 2026-06-10): locks the part's orientation at nest time so
-        // its placed height matches one of these values — same-height parts (BK*)
-        // all face the same way → grain runs one direction. Cut size unchanged.
-        part.fixHeights = _parseFixHeights(looked && looked.height);
+        // Fix V / Fix H (เอ๋ 2026-06-10): lock the part's orientation at nest time.
+        // Fix V (vertical) = the listed value(s) become the HEIGHT; Fix H
+        // (horizontal) = the value(s) become the WIDTH. Same-size parts face the
+        // same way → grain one direction. Cut size unchanged. Both comma-lists.
+        part.fixHeights = _parseFixHeights(looked && looked.height);   // Fix V
+        part.fixWidths  = _parseFixHeights(looked && looked.width);    // Fix H
       }
     }
 
@@ -685,7 +687,8 @@
       pattern: String(r.pattern || ''),
       grain: String(r.grain || 'ANY').toUpperCase(),
       thickness: (r.thickness == null ? '' : String(r.thickness)),
-      height: (r.height == null ? '' : String(r.height)),   // fix-height (orientation lock)
+      height: (r.height == null ? '' : String(r.height)),   // Fix V (vertical) — value→height
+      width:  (r.width  == null ? '' : String(r.width)),    // Fix H (horizontal) — value→width
     }));
     return S.grainRows;
   }
@@ -701,7 +704,8 @@
         const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
         if (!isNaN(t)) part.thickness = t;
       }
-      part.fixHeights = _parseFixHeights(looked && looked.height);
+      part.fixHeights = _parseFixHeights(looked && looked.height);   // Fix V
+      part.fixWidths  = _parseFixHeights(looked && looked.width);    // Fix H
     }
   }
   async function _saveGrainRows() {
@@ -727,7 +731,8 @@
         <input class="kdng-pat" data-i="${i}" value="${_esc(r.pattern)}" placeholder="BK*" spellcheck="false">
         <button class="kdng-grain" data-i="${i}" title="grain — click to cycle H / V / ANY">${_grainCh(r.grain)}</button>
         <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="th" inputmode="decimal" title="Thickness override (mm)">
-        <input class="kdng-h" data-i="${i}" value="${_esc(r.height)}" placeholder="fix H" inputmode="text" spellcheck="false" title="Fix height (mm) — lock orientation so the placed height matches one of these. Multiple allowed, comma-separated (e.g. 400,500). Same-height parts face the same way → grain one direction; cut size unchanged. Blank = free.">
+        <input class="kdng-w" data-i="${i}" value="${_esc(r.width)}" placeholder="fix H" inputmode="text" spellcheck="false" title="Fix H (horizontal) — value(s) that should be the WIDTH (run horizontal). The part rotates so that side is horizontal. Multiple comma-separated (e.g. 400,500). Cut size unchanged. Blank = free.">
+        <input class="kdng-h" data-i="${i}" value="${_esc(r.height)}" placeholder="fix V" inputmode="text" spellcheck="false" title="Fix V (vertical) — value(s) that should be the HEIGHT (run vertical). The part rotates so that side is vertical. Multiple comma-separated (e.g. 400,500). Cut size unchanged. Blank = free.">
         <button class="kdng-del" data-i="${i}" title="delete rule">✕</button>
       </div>`;
     const half = Math.ceil(rows.length / 2);
@@ -739,7 +744,7 @@
       <div class="kdng-backdrop"></div>
       <div class="kdng-box">
         <div class="kdng-head">🧬 Grain rules
-          <span class="kdng-sub">pattern → grain · thickness · fix-height · ${rows.length} rules · shared</span>
+          <span class="kdng-sub">pattern · grain · th · fix H · fix V · ${rows.length} rules · shared</span>
         </div>
         <div class="kdng-grid">
           <div class="kdng-col">${colA || '<div class="kdng-empty">no rules — + Add</div>'}</div>
@@ -766,6 +771,9 @@
     modal.querySelectorAll('.kdng-h').forEach(el => el.addEventListener('input', e => {
       const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].height = e.target.value;
     }));
+    modal.querySelectorAll('.kdng-w').forEach(el => el.addEventListener('input', e => {
+      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].width = e.target.value;
+    }));
     modal.querySelectorAll('.kdng-grain').forEach(el => el.addEventListener('click', e => {
       const i = +e.currentTarget.dataset.i;
       if (S.grainRows[i]) {
@@ -777,7 +785,7 @@
       const i = +e.currentTarget.dataset.i; S.grainRows.splice(i, 1); _renderGrainModal();
     }));
     q('#kdng-add').addEventListener('click', () => {
-      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '', height: '' }); _renderGrainModal();
+      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '', height: '', width: '' }); _renderGrainModal();
     });
     q('#kdng-save').addEventListener('click', async () => {
       const btn = q('#kdng-save'); btn.disabled = true; btn.textContent = '💾 Saving…';
@@ -1076,7 +1084,7 @@
     for (const row of rows) {
       const pattern = String(row.pattern || '').trim();
       if (!pattern) continue;
-      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', height: row.height || '' };
+      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', height: row.height || '', width: row.width || '' };
       const starts = pattern.startsWith('*');
       const ends = pattern.endsWith('*');
       if (starts && ends && pattern.length > 2) {
@@ -1895,16 +1903,19 @@
       let rots = (p.grain === 'H') ? [0, 180]
                : (p.grain === 'V') ? [90, 270]
                :                     [0, 90, 180, 270];
-      // Fix-height (เอ๋ 2026-06-10 'lock ทิศทาง' + 'หลายตัว เช่น 400,500'): if a
-      // grain rule pins height(s) for this part, lock the rotation so the PLACED
-      // height matches one of them — size unchanged, only orientation. At 0/180
-      // the vertical extent is p.h; at 90/270 it's p.w (±3mm slop). Prefer NO
-      // rotation when the height already matches; else rotate if the width does.
-      // No value matches either dimension → keep the grain rots.
-      if (p.fixHeights && p.fixHeights.length) {
-        const tol = 3;
-        if (p.fixHeights.some(Hf => Math.abs(p.h - Hf) <= tol))      rots = [0, 180];
-        else if (p.fixHeights.some(Hf => Math.abs(p.w - Hf) <= tol)) rots = [90, 270];
+      // Fix V / Fix H orientation lock (เอ๋ 2026-06-10). Each is a comma-list of
+      // mm values matched ±3mm against the part's two sides; size unchanged, only
+      // rotation. Fix V = those value(s) become the HEIGHT (vertical extent: p.h
+      // at 0/180, p.w at 90/270). Fix H = those value(s) become the WIDTH. Prefer
+      // NO rotation when the target side already matches. Fix V wins if both hit;
+      // no match on either → keep the grain rots.
+      const tol = 3;
+      if (p.fixHeights && p.fixHeights.length &&
+          (p.fixHeights.some(v => Math.abs(p.h - v) <= tol) || p.fixHeights.some(v => Math.abs(p.w - v) <= tol))) {
+        rots = p.fixHeights.some(v => Math.abs(p.h - v) <= tol) ? [0, 180] : [90, 270];
+      } else if (p.fixWidths && p.fixWidths.length) {
+        if (p.fixWidths.some(v => Math.abs(p.w - v) <= tol))      rots = [0, 180];   // width already horizontal
+        else if (p.fixWidths.some(v => Math.abs(p.h - v) <= tol)) rots = [90, 270];  // rotate so it's the width
       }
       for (let i = 0; i < p.qty; i++) {
         pieces.push({
