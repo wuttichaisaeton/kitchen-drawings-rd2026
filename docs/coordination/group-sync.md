@@ -3258,3 +3258,7 @@ e clicked the new nest ⚠ -> a PDF tab opened instead of Fusion. (1) WEB: _rout
 - 📦 Remnants Stock -> L-shaped offcut, cut corner dashed (clearly "leftover material")
 SVGs use `stroke="currentColor"` so each adapts to its button's text colour (no hardcoded palette). Verified rendering in a real browser (standalone). node --check nest.js OK. Touched ONLY nest.js + style.css (additive). The modal HEADERS (🧬 Grain rules / 📦 Remnants Stock) still use emoji — left as-is (contextual, not the circled toolbar buttons); say if you want them matched too. เอ๋ hard-reloads the web app to see.
 **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-10 - RD 02 -> G1: one master file, two config options -> need DXF under BOTH codes (e direct order)
+e (nest review BM2LI0-080000 + FN1BLA-120000 'no DXF'): "2 อันนี้เป็น file เดียวกัน แต่คนละทางเลือก คุณต้อง dxf 2 อัน". CC_Laser names the DXF after the ACTIVE config/BOM code (wrapper-rename log: FN1BLA-120000.dxf -> FN1BLA-080000.dxf) while the web BOM carries the file/occurrence name -> file-name code shows no-DXF. NEEDS(G1): (1) minimum = alias-upload the same DXF under both codes when the rename map fires (both Drawings/dxf dirs + both uploaded_dxfs entries, alias_of flag); (2) proper = config-row walk export per referenced config (reuse CC_ExportFlat's activate->flatten->restore) for masters whose configs are genuinely different geometry. (Dispatched to Fusion 29; Fusion restart for 6251e05 still pending on e — batch.) -- RD 02
