@@ -85,7 +85,13 @@ function _initManifestAutoRefresh() {
     // Mindmap/editor keeps view==='projects' — include it via #kme-mount, else the
     // poll never fires on เอ๋'s primary screen and a new export only shows after an
     // alt-tab focus cycle (never, on a second monitor). (2026-06-09 latency audit)
-    if (view === 'library' || view === 'drawing' || document.getElementById('kme-mount')) _refreshManifest();
+    // Projects HOME list included too (RD 02 2026-06-11 — เอ๋ ran Assembly and the
+    // new project card never appeared until manual reload). Home only: a drilled-in
+    // project view may have a comment box mid-typing; nest stays excluded (a poll
+    // render() would clobber an open nesting workspace).
+    if (view === 'library' || view === 'drawing'
+        || (view === 'projects' && !stack.length)
+        || document.getElementById('kme-mount')) _refreshManifest();
   }, 60000);
 }
 
@@ -4125,7 +4131,27 @@ function initDeletedProjectsSync() {
 }
 
 function isProjectSoftDeleted(pk) {
-  return !!(pk && deletedProjectsCache[pk] && deletedProjectsCache[pk].time);
+  const tomb = pk && deletedProjectsCache[pk];
+  if (!tomb || !tomb.time) return false;
+  // AUTO-UNDELETE on fresh data (RD 02 2026-06-11): a new CC_Assembly scan can
+  // reuse a soft-deleted key — เอ๋ deleted old junk cards, re-scanned
+  // 1LLV04-06000L, and the fresh project stayed invisible ("กด assembly หลายครั้ง
+  // ทำไมไม่ขึ้น"). If the manifest project is NEWER than the tombstone, the
+  // delete referred to a stale incarnation — drop it (RTDB too, so every device
+  // agrees) and let the card render. No render() here: callers ARE render paths.
+  const p = manifest && manifest.projects && manifest.projects[pk];
+  const fresh = p ? Math.max(Date.parse(p.updated_at || '') || 0, Date.parse(p.created_at || '') || 0) : 0;
+  if (fresh > tomb.time) {
+    delete deletedProjectsCache[pk];
+    _saveDeletedProjects(deletedProjectsCache);
+    if (window.firebaseDB) {
+      try { window.firebaseDB.ref('deleted_projects/' + pk).remove(); }
+      catch (e) { console.warn('auto-undelete RTDB clear failed:', e); }
+    }
+    console.info('[projects] auto-undeleted "' + pk + '" — a newer scan superseded the delete');
+    return false;
+  }
+  return true;
 }
 
 function softDeleteProject(pk) {
