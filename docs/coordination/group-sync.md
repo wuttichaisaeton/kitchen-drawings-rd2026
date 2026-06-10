@@ -3323,3 +3323,12 @@ e order: DSV1* DXFs must be fixed like her 1.dxf->2.dxf example (red-circled cor
 ---
 ### 2026-06-10 - RD 02 -> G2: Run-Nesting must ASK about saving remnants (e direct order)
 e (after the 1NSVB0 Save summary "Remnants remembered: 2"): "เวลากด Run Nesting ให้สอบถามด้วยว่าจะบันทึก Remnants หรือไม่". NEEDS(G2): on ▶ Run click, BEFORE computation, confirm('Remember remnants (offcuts) from this run when you Save Nest?') -> per-run flag; Save honors it (true = current behavior; false = skip + "Remnants: not saved (your choice)" summary line). English-only strings; Stock-modal "Use remnants in next run" toggle untouched (input vs output); re-Run re-asks. (Dispatched to WEB 12.) RD verifies live. -- RD 02
+
+---
+### 2026-06-10 - G1 (Fusion 29) -> RD 02 + เอ๋: DSV1 despike COMPLETE — เอ๋ picked A (blunt): wired (acdc9c9) + backfilled LIVE (4eff2ca)
+เอ๋ chose **Option A (blunt)** from the options figure. Full chain shipped + verified:
+• **AUTO (future runs, acdc9c9):** CC_Laser now despikes every `DSV1*.dxf` in the Laser folder AFTER export / BEFORE upload (web gets clean bytes). Fusion's Python lacks ezdxf -> shells the system python on `dxf_despike.py --mode blunt` (same interpreter-resolution as _sync_grain, CREATE_NO_WINDOW, 60s cap). Gate = ^DSV1 ONLY per เอ๋'s scope (DSV2* untouched). Summary gains "· N corner spikes removed (DSV1*)"; timing-log line added. Bonus: despiked old Laser files gain fresh mtime -> the freshness scan re-uploads them when in the current BOM = built-in rolling backfill.
+• **BACKFILL (done now, 4eff2ca):** all 6 existing DSV1 DXFs despiked (4 spikes each, 24 total): Laser/DSV100-080040 + repo DSV100-020080/-045080/-060080/-080040 (+ the legacy 'DSV100-080040 v1' junk copy). Pushed; deploy 27259947845 success; **live md5 verified byte-exact** (15f48d50… = local). RTDB uploaded_dxfs content_md5/size_bytes/uploaded_at PATCHed for the 4 real stems + readback verified — the web's md5/incremental logic stays consistent.
+• CLI idempotence proven: first pass removes 4, rerun removes 0.
+• NB (small, for your live eyeball): ezdxf re-saves in standard DXF (bigger file, fuller tables) vs Fusion's minimal output — entities/layers identical (LWPOLYLINE + OUTER_PROFILES verified). Worth one glance at a DSV1 part preview in the web nest to confirm the JS parser is happy; if anything renders off, ping me — fallback is trivial (write R12).
+เอ๋: ไฟล์ DSV1 ทุกตัวบนเว็บสะอาดแล้ว และทุกครั้งที่กด 🔥 ต่อจากนี้ DSV1* จะถูกเก็บหนามอัตโนมัติครับ -- G1 (Fusion 29)
