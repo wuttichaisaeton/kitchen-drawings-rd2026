@@ -246,9 +246,52 @@
           document.body.appendChild(s);
         });
       }
+      // NEW-BUILD WATCH (เอ๋ 2026-06-11 "ก็เหมือนเดิมนี่" x3): the no-store loader
+      // only helps on PAGE LOAD — a tab left open across a deploy keeps the OLD
+      // code in memory and every Run looks "เหมือนเดิม". Capture each script's
+      // ETag at load, then HEAD-poll (no-store) every 60s + on window focus;
+      // when the server's ETag changes, show an amber "tap to reload" pill.
+      // Exposed on window for debugging/tests. Fails silently (no headers → no
+      // banner, never a false block).
+      var sigs = {};
+      window.__KD_BUILD_SIGS = sigs;
+      function sigOf(r) { return r.headers.get('etag') || r.headers.get('last-modified') || ''; }
+      var bannerShown = false;
+      function showNewBuildBanner() {
+        if (bannerShown || document.getElementById('kd-new-build')) return;
+        bannerShown = true;
+        var b = document.createElement('button');
+        b.id = 'kd-new-build';
+        b.textContent = '⟳ New version — tap to reload';
+        b.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:99999;'
+          + 'background:#F2A93B;color:#1B2430;font-family:inherit;font-weight:700;'
+          + 'font-size:13px;border:none;border-radius:999px;padding:10px 16px;'
+          + 'box-shadow:0 6px 20px rgba(0,0,0,0.45);cursor:pointer;';
+        b.onclick = function() { location.reload(); };
+        document.body.appendChild(b);
+      }
+      function checkBuild() {
+        if (bannerShown || document.hidden) return;
+        ['app.js', 'nest.js'].forEach(function(name) {
+          if (!sigs[name]) return;
+          fetch(name, { method: 'HEAD', cache: 'no-store' }).then(function(r) {
+            if (!r.ok || bannerShown) return;
+            var s = sigOf(r);
+            if (s && s !== sigs[name]) showNewBuildBanner();
+          }).catch(function() {});
+        });
+      }
+      window.__KD_CHECK_BUILD = checkBuild;
+      setInterval(checkBuild, 60000);
+      window.addEventListener('focus', checkBuild);
+
       Promise.all(names.map(function(name) {
         return fetch(name + '?v=' + v, { cache: 'no-store' })
-          .then(function(r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+          .then(function(r) {
+            if (!r.ok) throw new Error(r.status);
+            sigs[name] = sigOf(r);   // build signature at load time
+            return r.text();
+          })
           .then(function(code) { return { name: name, code: code }; })
           .catch(function() { return { name: name, code: null }; });   // null → use <script src> fallback
       })).then(function(loaded) {
