@@ -616,9 +616,9 @@
           if (!isNaN(t)) part.thickness = t;
         }
         // Fix-height (เอ๋ 2026-06-10): locks the part's orientation at nest time so
-        // its placed height = this value — same-height parts (BK*) all face the
-        // same way → grain runs one direction. Does NOT change the cut size.
-        part.fixHeight = (looked && looked.height) ? (parseFloat(String(looked.height).replace(/mm/i, '')) || 0) : 0;
+        // its placed height matches one of these values — same-height parts (BK*)
+        // all face the same way → grain runs one direction. Cut size unchanged.
+        part.fixHeights = _parseFixHeights(looked && looked.height);
       }
     }
 
@@ -639,6 +639,18 @@
   function _grainNext(g) {
     g = String(g || '').toUpperCase();
     return g === 'H' ? 'V' : g === 'V' ? 'ANY' : 'H';
+  }
+  // Fix-height accepts MULTIPLE values, comma-separated (เอ๋ 2026-06-10 'หลายตัว
+  // เช่น 400,500') — one rule covers BK parts of different heights. Returns a
+  // sorted unique array of positive numbers. "789" → [789]; "400, 500mm" → [400,500].
+  function _parseFixHeights(v) {
+    if (v == null || v === '') return [];
+    const out = [];
+    String(v).split(/[,\s]+/).forEach(s => {
+      const n = parseFloat(String(s).replace(/mm/i, '').trim());
+      if (!isNaN(n) && n > 0 && out.indexOf(n) === -1) out.push(n);
+    });
+    return out;
   }
   // Sort rules A->Z by pattern (user 2026-05-29 'grain ให้เรียงตามตัวอักษร');
   // blank-pattern rows (freshly added, not yet typed) sink to the bottom.
@@ -689,7 +701,7 @@
         const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
         if (!isNaN(t)) part.thickness = t;
       }
-      part.fixHeight = (looked && looked.height) ? (parseFloat(String(looked.height).replace(/mm/i, '')) || 0) : 0;
+      part.fixHeights = _parseFixHeights(looked && looked.height);
     }
   }
   async function _saveGrainRows() {
@@ -715,7 +727,7 @@
         <input class="kdng-pat" data-i="${i}" value="${_esc(r.pattern)}" placeholder="BK*" spellcheck="false">
         <button class="kdng-grain" data-i="${i}" title="grain — click to cycle H / V / ANY">${_grainCh(r.grain)}</button>
         <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="th" inputmode="decimal" title="Thickness override (mm)">
-        <input class="kdng-h" data-i="${i}" value="${_esc(r.height)}" placeholder="fix H" inputmode="decimal" title="Fix height (mm) — lock orientation so placed height = this value (same-height parts face the same way, grain one direction; cut size unchanged). Blank = free.">
+        <input class="kdng-h" data-i="${i}" value="${_esc(r.height)}" placeholder="fix H" inputmode="text" spellcheck="false" title="Fix height (mm) — lock orientation so the placed height matches one of these. Multiple allowed, comma-separated (e.g. 400,500). Same-height parts face the same way → grain one direction; cut size unchanged. Blank = free.">
         <button class="kdng-del" data-i="${i}" title="delete rule">✕</button>
       </div>`;
     const half = Math.ceil(rows.length / 2);
@@ -1883,15 +1895,16 @@
       let rots = (p.grain === 'H') ? [0, 180]
                : (p.grain === 'V') ? [90, 270]
                :                     [0, 90, 180, 270];
-      // Fix-height (เอ๋ 2026-06-10 'lock ทิศทาง'): if a grain rule pins a height
-      // for this part, lock the rotation so the PLACED height = that value —
-      // the size is unchanged, only the orientation. At rot 0/180 the vertical
-      // extent is p.h; at 90/270 it's p.w. Pick the pair that matches the fixed
-      // height (±3mm for DXF-vs-nominal slop). No match → keep the grain rots.
-      if (p.fixHeight && p.fixHeight > 0) {
-        const Hf = p.fixHeight, tol = 3;
-        if (Math.abs(p.h - Hf) <= tol)      rots = [0, 180];
-        else if (Math.abs(p.w - Hf) <= tol) rots = [90, 270];
+      // Fix-height (เอ๋ 2026-06-10 'lock ทิศทาง' + 'หลายตัว เช่น 400,500'): if a
+      // grain rule pins height(s) for this part, lock the rotation so the PLACED
+      // height matches one of them — size unchanged, only orientation. At 0/180
+      // the vertical extent is p.h; at 90/270 it's p.w (±3mm slop). Prefer NO
+      // rotation when the height already matches; else rotate if the width does.
+      // No value matches either dimension → keep the grain rots.
+      if (p.fixHeights && p.fixHeights.length) {
+        const tol = 3;
+        if (p.fixHeights.some(Hf => Math.abs(p.h - Hf) <= tol))      rots = [0, 180];
+        else if (p.fixHeights.some(Hf => Math.abs(p.w - Hf) <= tol)) rots = [90, 270];
       }
       for (let i = 0; i < p.qty; i++) {
         pieces.push({
