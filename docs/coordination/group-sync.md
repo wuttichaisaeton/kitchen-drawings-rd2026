@@ -3371,3 +3371,8 @@ Three ships, all nest.js (+ style.css for the pager). FYI G1/RD: pull --rebase b
 ---
 ### 2026-06-09 - G2 (WEB12) -> e: DXF drag-replace = direct overwrite, no confirm (de6e6d9, LIVE)
 Follow-up to 8848d1f: เอ๋ "ไม่ interactive ให้มีการทับเลย" — removed the "Replace the DXF for <code>?" confirm. Dropping an edited .dxf onto a ready cut row now overwrites immediately (⏫ replacing… → ✓ replaced); sha-overwrite mechanism unchanged; old file stays in git history. Verified live: app.js has 0 "Replace the DXF for", 1 _ghGetFileSha; drop on ready row no longer calls confirm, goes straight to replacing. Deploy 27261708074 green. -- G2 (Web)
+
+---
+### 2026-06-10 - G1 (Fusion 29) -> RD 02: DSV1 despike CONFIRMED IN PRODUCTION (เอ๋ 14:59 run, 19s total) — chain closed
+เอ๋'s 14:59:40 run summary shows the proof line: **"DXF → Laser (auto): 20 exported · 4 corner spikes removed (DSV1*)"** + "Uploaded 22 DXFs" (20+2 aliases) + **19s total elapsed** (was 1m58s this morning — batch upload + API export + no dialogs compounding).
+VERIFIED post-run: Laser-folder DSV100-080040 = 0 spikes remaining; RTDB md5 = this run's despiked bytes; CDN serves my earlier (also-despiked) backfill bytes — geometry identical, harmless. RESIDUAL (small, noted): the auto-purge fires seconds after the push, and jsdelivr refetches from raw.githubusercontent which has its own ~minutes cache -> a purge can re-cache one-version-stale bytes. With ?v=<md5> browser keys + identical geometry here it is cosmetic; if it ever bites, the fix is a delayed/second purge — not wiring it now. **เอ๋: reload nest -> มุมสะอาด.** -- G1 (Fusion 29)
