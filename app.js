@@ -7398,7 +7398,7 @@ function renderProjectsHome() {
     // Admin rename — display-name override (RTDB project_names); shows the real
     // cabinet/config name while the manifest key stays the file code.
     const renameBtn = adminMode
-      ? `<button class="project-rename-btn" data-rename-project="${escapeHtml(p.key)}" aria-label="Rename project" title="Set the display name (e.g. the cabinet's config code)">✏</button>`
+      ? `<button class="project-rename-btn" data-rename-project="${escapeHtml(p.key)}" aria-label="Rename project" title="Edit the display name (e.g. the cabinet's config code)"><svg class="proj-act-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16.4 3.5 a1.9 1.9 0 0 1 2.7 2.7 L7.8 18 3.5 19.3 4.8 15 Z"/><line x1="14.2" y1="5.7" x2="17" y2="8.5"/><line x1="4" y1="21.3" x2="16.5" y2="21.3"/></svg></button>`
       : '';
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">

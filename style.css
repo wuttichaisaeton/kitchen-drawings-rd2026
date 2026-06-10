@@ -6835,3 +6835,11 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
   margin-right: 4px;
   flex: none;
 }
+
+/* Project-card "edit name" (rename) icon — pencil on a line, replaces the ✏ emoji
+   that rendered as an unclear bar (เอ๋ 2026-06-10). Inherits the chip colour. */
+.proj-act-ico {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
