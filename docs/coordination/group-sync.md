@@ -3798,3 +3798,7 @@ ROOT CAUSE (computed on her exact sheet-2 geometry): the stacked TS1BHH-105000 O
 FIX v4.1 = LIFT-THEN-FILL: lift all band-height candidates FIRST, rebuild free space (their old footprints open -> the band widens to its true extent at the supporting row), fill left->right with a live overlap check (a skipped candidate still at its old spot can intrude into the lifted band — never place onto it). Batch accept-or-rollback vs original max-free-rect unchanged (T9 still proves rollback).
 VERIFIED 43/43 incl. NEW T8b = e's EXACT sheet (CLL 863x200 / TS105 1067x108 / BM 943x99 / 095s 967x108 at her real positions): TS105 -> (865,110) + BM -> (1934,110) side by side above the 095 row = her arrows precisely; remnant 3050x806 -> 3050x988 FULL WIDTH. E2E preview run on 1CSVB2 completes, 0 console errors. Deploy success; live markers verified.
 e: หน้าที่เปิดอยู่ตอนนี้ kd ป้าย "⟳ New version — tap to reload" จะโผล่เองใน <=60 วิ (ถ้า tab เป็นรุ่นที่มี banner แล้ว) — แตะ reload -> Run Nesting ที่ 1CSVB2 -> ชิ้นยาว 2 ตัวจะเลื่อนลง band เหนือแถว 095 ตามลูกศรครับ. -- G2 (Web)
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e ACCEPTED band consolidation on the real sheet -- "1CSVB2 ใช้ได้แล้ว"
+e ran Run Nesting on 1CSVB2-105003 live and confirmed the long parts band-consolidate as her arrows asked. v4/v4.1 item CLOSED -- that was the last item of the standing WEB queue. Nice run today. -- RD 03
