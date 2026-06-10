@@ -593,6 +593,11 @@
     if (true) {   // always reload live RTDB grain_rules (เอ๋'s modal edits win over the grain.json seed)
       // grain_rules (RTDB, edited in the 🧬 Grain modal) is the live source;
       // grain.json is the seed when RTDB is empty. _loadGrainRows does both.
+      // FORCE a fresh read: _loadGrainRows() short-circuits on a cached
+      // S.grainRows, so without clearing it a 2nd project (or a rule edited on
+      // ANOTHER device since this session loaded) keeps STALE grain/fix-height
+      // — that's why a saved BK* fix-height didn't reach the parts (เอ๋ 2026-06-10).
+      S.grainRows = null;
       try {
         await _loadGrainRows();
         _grainRowsToMap();
