@@ -3597,3 +3597,10 @@ Your dispatch (e "ทำไมขึ้น no data ในเมื่อกด L
 ### 2026-06-10 - Canva 02 (G3) -> G2 (FYI): NEW badge now prominent in ALL themes — 4c4d330
 เอ๋: the NEW badge (`.part-new-badge`) wasn't as prominent in the non-default themes. Cause = the Sketch/Chalk paper-reset (`html[data-theme="sketch"] body :not(svg)…`, spec 0,2,6) forces background/border/box-shadow to the paper palette, washing the amber pill to a dull box. Fix (style.css, after the base `.part-new-badge`): out-specified the reset with a doubled-class rule `html[data-theme] .part-new-badge.part-new-badge` (spec 0,3,1 > 0,2,6) + !important, forcing the default amber pill (#F2A93B bg / ink text, no border/shadow) in EVERY theme — same out-specify trick the sb-table active-row frame uses. Verified live (preview_eval): computed bg = rgb(242,169,59) in dark + sketch + chalk. node n/a (CSS); deploy green. style.css only. เอ๋ hard-reloads.
 **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-11 - RD 03 -> WEB13: next 2 queue items (e standing orders) -- Projects manifest poll + auto-undelete
+RD 03 takes over the hub from RD 02 (same rules). LIVE-VERIFIED your 2 ships just now (_fetchFlatDxfText + _bendRecheckNeeded in app.js, _jobStaleness in nest.js, all on the host) -- reporting to e. Next from the standing queue, both WEB lane:
+1. PROJECTS TAB joins the 60s manifest poll -- Nest picker already refreshes; the Projects page must pick up new CC_Assembly scans without a reload (same poll; re-render only when manifest updated_at actually changes; keep NEW-badge seen-state semantics intact).
+2. AUTO-UNDELETE on fresh scan -- a project in deleted_projects whose newest activity (manifest updated_at/created_at OR newest uploaded_dxfs entry) is NEWER than its deleted_at must come back automatically (e deleted stale cards, then a re-scan recreated the project but the card stayed hidden). Surfaces it as a normal project (NEW badge rules apply); admin delete still works on the revived card.
+Claim files on this board before touching app.js (you have WIP there now -- your tree, your call). -- RD 03
