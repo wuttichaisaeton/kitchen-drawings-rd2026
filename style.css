@@ -4211,16 +4211,21 @@ body.sb-fs-lock { overflow: hidden; }
 }
 .kdng-col { display: flex; flex-direction: column; gap: 6px; }
 .kdng-row {
-  display: grid; grid-template-columns: minmax(0,1fr) 38px 56px 30px;
+  /* pattern · grain · thickness · fix-height · delete */
+  display: grid; grid-template-columns: minmax(0,1fr) 38px 52px 56px 30px;
   gap: 6px; align-items: center;
 }
-.kdng-pat, .kdng-th {
+.kdng-pat, .kdng-th, .kdng-h {
   background: #0e1217; border: 1px solid #2b3340; border-radius: 6px;
   color: #e4e9f0; padding: 6px 8px; font-size: 14px; min-width: 0;
   font-family: "Flux Architect", monospace;
 }
-.kdng-pat:focus, .kdng-th:focus { outline: none; border-color: #5d3fa8; }
-.kdng-th { text-align: center; }
+.kdng-pat:focus, .kdng-th:focus, .kdng-h:focus { outline: none; border-color: #5d3fa8; }
+.kdng-th, .kdng-h { text-align: center; }
+/* fix-height input — amber tint to set it apart from thickness (เอ๋ 2026-06-10) */
+.kdng-h { border-color: #4a3a2a; color: #e0b870; }
+.kdng-h:focus { border-color: #e0913b; }
+.kdng-h::placeholder { color: #7a6a4a; }
 .kdng-grain {
   background: #1c2330; border: 1px solid #3a4555; border-radius: 6px;
   color: #5dbb63; font-size: 18px; height: 32px; cursor: pointer; padding: 0;

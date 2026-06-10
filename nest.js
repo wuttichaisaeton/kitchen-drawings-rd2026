@@ -610,6 +610,10 @@
           const t = parseFloat(looked.thickness.replace(/mm/i, ''));
           if (!isNaN(t)) part.thickness = t;
         }
+        // Fix-height (เอ๋ 2026-06-10): locks the part's orientation at nest time so
+        // its placed height = this value — same-height parts (BK*) all face the
+        // same way → grain runs one direction. Does NOT change the cut size.
+        part.fixHeight = (looked && looked.height) ? (parseFloat(String(looked.height).replace(/mm/i, '')) || 0) : 0;
       }
     }
 
@@ -664,6 +668,7 @@
       pattern: String(r.pattern || ''),
       grain: String(r.grain || 'ANY').toUpperCase(),
       thickness: (r.thickness == null ? '' : String(r.thickness)),
+      height: (r.height == null ? '' : String(r.height)),   // fix-height (orientation lock)
     }));
     return S.grainRows;
   }
@@ -679,6 +684,7 @@
         const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
         if (!isNaN(t)) part.thickness = t;
       }
+      part.fixHeight = (looked && looked.height) ? (parseFloat(String(looked.height).replace(/mm/i, '')) || 0) : 0;
     }
   }
   async function _saveGrainRows() {
@@ -703,7 +709,8 @@
       <div class="kdng-row" data-i="${i}">
         <input class="kdng-pat" data-i="${i}" value="${_esc(r.pattern)}" placeholder="BK*" spellcheck="false">
         <button class="kdng-grain" data-i="${i}" title="grain — click to cycle H / V / ANY">${_grainCh(r.grain)}</button>
-        <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="mm" inputmode="decimal">
+        <input class="kdng-th" data-i="${i}" value="${_esc(r.thickness)}" placeholder="th" inputmode="decimal" title="Thickness override (mm)">
+        <input class="kdng-h" data-i="${i}" value="${_esc(r.height)}" placeholder="fix H" inputmode="decimal" title="Fix height (mm) — lock orientation so placed height = this value (same-height parts face the same way, grain one direction; cut size unchanged). Blank = free.">
         <button class="kdng-del" data-i="${i}" title="delete rule">✕</button>
       </div>`;
     const half = Math.ceil(rows.length / 2);
@@ -715,7 +722,7 @@
       <div class="kdng-backdrop"></div>
       <div class="kdng-box">
         <div class="kdng-head">🧬 Grain rules
-          <span class="kdng-sub">pattern → grain · thickness · ${rows.length} rules · shared</span>
+          <span class="kdng-sub">pattern → grain · thickness · fix-height · ${rows.length} rules · shared</span>
         </div>
         <div class="kdng-grid">
           <div class="kdng-col">${colA || '<div class="kdng-empty">no rules — + Add</div>'}</div>
@@ -739,6 +746,9 @@
     modal.querySelectorAll('.kdng-th').forEach(el => el.addEventListener('input', e => {
       const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].thickness = e.target.value;
     }));
+    modal.querySelectorAll('.kdng-h').forEach(el => el.addEventListener('input', e => {
+      const i = +e.target.dataset.i; if (S.grainRows[i]) S.grainRows[i].height = e.target.value;
+    }));
     modal.querySelectorAll('.kdng-grain').forEach(el => el.addEventListener('click', e => {
       const i = +e.currentTarget.dataset.i;
       if (S.grainRows[i]) {
@@ -750,7 +760,7 @@
       const i = +e.currentTarget.dataset.i; S.grainRows.splice(i, 1); _renderGrainModal();
     }));
     q('#kdng-add').addEventListener('click', () => {
-      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '' }); _renderGrainModal();
+      S.grainRows.push({ pattern: '', grain: 'ANY', thickness: '', height: '' }); _renderGrainModal();
     });
     q('#kdng-save').addEventListener('click', async () => {
       const btn = q('#kdng-save'); btn.disabled = true; btn.textContent = '💾 Saving…';
@@ -1049,7 +1059,7 @@
     for (const row of rows) {
       const pattern = String(row.pattern || '').trim();
       if (!pattern) continue;
-      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '' };
+      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', height: row.height || '' };
       const starts = pattern.startsWith('*');
       const ends = pattern.endsWith('*');
       if (starts && ends && pattern.length > 2) {
@@ -1865,9 +1875,19 @@
       if (p.w <= 0 || p.h <= 0) continue;
       if (!p.bbox && !p.manual) continue;   // DXF parts need a parsed bbox; manual synth one
       const bbox = p.bbox || [0, 0, p.w, p.h];
-      const rots = (p.grain === 'H') ? [0, 180]
-                 : (p.grain === 'V') ? [90, 270]
-                 :                     [0, 90, 180, 270];
+      let rots = (p.grain === 'H') ? [0, 180]
+               : (p.grain === 'V') ? [90, 270]
+               :                     [0, 90, 180, 270];
+      // Fix-height (เอ๋ 2026-06-10 'lock ทิศทาง'): if a grain rule pins a height
+      // for this part, lock the rotation so the PLACED height = that value —
+      // the size is unchanged, only the orientation. At rot 0/180 the vertical
+      // extent is p.h; at 90/270 it's p.w. Pick the pair that matches the fixed
+      // height (±3mm for DXF-vs-nominal slop). No match → keep the grain rots.
+      if (p.fixHeight && p.fixHeight > 0) {
+        const Hf = p.fixHeight, tol = 3;
+        if (Math.abs(p.h - Hf) <= tol)      rots = [0, 180];
+        else if (Math.abs(p.w - Hf) <= tol) rots = [90, 270];
+      }
       for (let i = 0; i < p.qty; i++) {
         pieces.push({
           code: p.code, w: p.w, h: p.h, rots: rots,
