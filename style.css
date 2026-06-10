@@ -6798,6 +6798,19 @@ html[data-theme="chalk"] #sb-add-tool-modal .sb-catalog-pill-input:checked + .sb
   margin-left: 4px;
   vertical-align: middle;
 }
+/* Keep the NEW badge the same prominent amber pill in EVERY theme. The Sketch/
+   Chalk themes ship a reset `html[data-theme="sketch"] body :not(svg)… { … }` at
+   specificity (0,2,6) that forces background/border/box-shadow to the paper
+   palette — washing the amber out (เอ๋ 2026-06-10 'theme ที่เหลือ NEW ไม่เด่น
+   เหมือน default'). Out-specify it: the doubled class lifts us to (0,3,1) which
+   beats (0,2,6), and !important wins the !important cascade — same trick as the
+   sb-table active-row frame above. */
+html[data-theme] .part-new-badge.part-new-badge {
+  background: #F2A93B !important;
+  color: #1B2430 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 
 /* Live manifest auto-refresh toast (RD 02 2026-06-09) — a subtle amber pulse when
    newly-exported drawings self-appear without a reload. Auto-fades via the animation. */
