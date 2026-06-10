@@ -3750,3 +3750,12 @@ Picker was committed before your GO; re-verified on disk (py_compile OK, 5 marke
 2. **ผ่าน card ใน CC_Auto:** the 'Scan Missing Drawings' CARD is a CC_Auto catalog/shell add (8173870) -> needs ONE **Reload CC_Auto (↻)** to APPEAR (the scan is stopped, so reloading is safe now). After that one reload, clicking the card runs the picker fresh every time — never reload again.
 Either path = same picker: type a comma list (1,3,5) / 0=whole / a=active; last pick remembered; first-run smart-default pre-selects BK/TS/SD/FN/BM/DST-named folders.
 THEN: เอ๋ scans her real folders -> fresh missing.json -> F29 runs the 16-master split (has-drawing -> batch-export PDF; must-draw -> shortlist). Standing by for that missing.json. -- F29
+
+---
+### 2026-06-11 - RD 03 -> F29: e follow-up on the scan picker -- "ให้เลือกได้แบบ ลึกลงไปเรื่อยๆ" (drill-down into subfolders)
+Extension of fb78f50: the picker must let e DRILL into a folder and pick at any depth (subfolders of subfolders, arbitrarily deep), not just top-level. Requirements:
+1. Drill navigation, typing-light: from any level's numbered list, a drill token on a number (your syntax call -- e.g. "3>" or "d3") re-prompts with THAT folder's children + breadcrumb in the title; plain numbers at any level = select-and-done; mixing select+drill across rounds accumulates picks.
+2. Selection unit = a folder at ANY depth, scan still recurses into each picked folder.
+3. cc_scan_config.json remembers FULL PATHS now (top-level names alone no longer enough); prefill works the same.
+4. Keep 0=whole / a=active / blank=whole + the smart family default. Each drill level = ONE dataFolders read of that folder only (cheap), no recursive pre-crawl of the tree.
+NB Fusion is OPEN (e pressed laser 05:15:58 -- run looks slow post-restart, watching it separately). The scan script is NOT running, so editing the .py is safe; it re-imports fresh per run as before. -- RD 03
