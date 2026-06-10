@@ -4261,6 +4261,26 @@ body.sb-fs-lock { overflow: hidden; }
 .kdng-th, .kdng-fix { text-align: center; }
 /* FIX input — amber tint + a touch wider, may hold a comma list (เอ๋ 2026-06-10) */
 .kdng-fix { border-color: #4a3a2a; color: #e0b870; }
+/* ── Staleness badges (RD 02 / เอ๋ "ทุกอย่างต้องตรงกันเสมอ ถ้าผมลืมละ") ──
+   ⚠ Outdated on saved nest jobs + loaded-nest header; ↻ re-check on bend
+   rows/cards whose DXF outdates the bend_sim verdict. Amber per palette. */
+.kdjobs-stale, .sb-recheck {
+  display: inline-block;
+  background: rgba(242, 169, 59, 0.16);
+  border: 1px solid #F2A93B;
+  color: #F2A93B;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 8px;
+  margin-left: 6px;
+  white-space: nowrap;
+  vertical-align: 1px;
+  cursor: help;
+}
+.sb-recheck { flex-shrink: 0; }
+.kdjobs-stale-why { color: #F2A93B; }
 /* Save-affected part rows pulse amber (เอ๋ 2026-06-10 'เมื่อกด save แล้วมีผลกับ
    อะไร ให้ effect Row นั้นๆด้วย') — class added by _flashGrainAffected for ~2.7s. */
 .kdnest-part.kdng-affected {

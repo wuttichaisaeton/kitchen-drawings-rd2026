@@ -1531,6 +1531,7 @@ function _renderBendList(parts, projectKey) {
         <span class="bend-icon">${familyIcon(fam)}</span>
         <span class="bend-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
+        ${_bendRecheckChip(p.code)}
         ${viewBtn}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
@@ -4552,6 +4553,34 @@ function _simVerdict(rec) {
   return { cls: 'sb-bad', txt: '✗ NOT BENDABLE' };
 }
 
+// ── Bend re-check staleness (RD 02 spec / เอ๋ "ทุกอย่างต้องตรงกันเสมอ") ──
+// The bend verdict was computed in Fusion at bend_sim.checked_at; if the
+// part's laser DXF was re-uploaded AFTER that, the geometry may have moved →
+// hint (non-blocking) to re-run CC_CheckBend. checked_at is a local-time
+// string ("2026-06-03 08:36" or ISO) → Date.parse after space→T = local ms.
+// DXF side = newest uploaded_dxfs entry for the code (live cache, no fetch).
+function _bendRecheckNeeded(code) {
+  const rec = _bendSimCache && _bendSimCache[code];
+  if (!rec || !rec.checked_at) return null;
+  const checked = Date.parse(String(rec.checked_at).trim().replace(' ', 'T')) || 0;
+  if (!checked) return null;
+  let newest = 0;
+  for (const d of dxfsForMasterCode(code)) {
+    if (+d.uploaded_at > newest) newest = +d.uploaded_at;
+  }
+  if (!newest || newest <= checked) return null;
+  return { dxfAt: newest, checkedAt: checked };
+}
+function _bendRecheckChip(code, extraStyle) {
+  const st = _bendRecheckNeeded(code);
+  if (!st) return '';
+  const t = ms => {   // local date, not UTC — เอ๋ is +07:00, toISOString shifts a day
+    const d = new Date(ms);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  return `<span class="sb-recheck" style="${extraStyle || ''}" title="DXF updated ${t(st.dxfAt)} — after this bend check (${t(st.checkedAt)}). Re-run CC_CheckBend in Fusion.">↻ re-check</span>`;
+}
+
 // ── Sim.Bending Favorites (⭐) + Sync-from-Project ────────────────────────
 // RD 02 / เอ๋ 2026-06-09: a per-project bending dashboard + pinned favorites.
 // Favorites are shared state (localStorage + RTDB simbend_favs/<code>=true),
@@ -6437,6 +6466,7 @@ function renderSimBendHome() {
           <span class="sb-code" title="${escapeHtml(code)}">${escapeHtml(displayCodeFor(code))}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
+          ${_bendRecheckChip(code)}
           ${favBtn}
           ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
         </div>

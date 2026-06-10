@@ -552,6 +552,11 @@
         console.warn('[kdNest] uploaded_dxfs fetch failed', e);
       }
     }
+    // Stash for the staleness checks (saved-job "Outdated" badges) — reuses
+    // this fetch, no extra RTDB reads (RD 02 staleness-badges spec, เอ๋
+    // "ทุกอย่างต้องตรงกันเสมอ ถ้าผมลืมละ").
+    S.dxfsAll = dxfsAll;
+    S.loadedJobStale = null;   // fresh project open = no loaded job
 
     // Aggregate qty by code. Skip WRAPPER entries (container/occurrence codes,
     // qty 0 — CC_Assembly emits them to carry the deep tree): without this they
@@ -2033,6 +2038,7 @@
   // ════════════════════════════════════════════════════════════════════
   function _runNesting() {
     S.previewCode = null;   // running shows the nest result, not a part preview
+    S.loadedJobStale = null;   // a fresh run supersedes any outdated loaded job
     // Expand parts into per-instance pieces (qty copies each) and
     // restrict rotations by grain (H = no 90/270, V = no 0/180,
     // ANY = all four).
@@ -2840,11 +2846,57 @@
           (firstErr ? `\n\nFirst cut-sheet error: ${firstErr}` : ''));
   }
 
+  // ── Staleness check (RD 02 spec / เอ๋ "ทุกอย่างต้องตรงกันเสมอ ถ้าผมลืมละ") ──
+  // A saved nest job is OUTDATED when the design moved after it was saved:
+  //  (a) the project's manifest part list (code → qty, same is_wrapper-skipping
+  //      aggregation as _loadProjectParts) no longer matches the job snapshot, or
+  //  (b) any snapshot part's laser DXF was re-uploaded after job.saved_at
+  //      (uploaded_dxfs/<code>.uploaded_at, from the S.dxfsAll stash).
+  // Pure client-side timestamp/set compares on data already fetched.
+  function _manifestPartCounts(projectKey) {
+    const m = window.kdManifest;
+    const project = m && m.projects && m.projects[projectKey];
+    if (!project || !Array.isArray(project.parts)) return null;
+    const counts = new Map();
+    for (const p of project.parts) {
+      if (!p || !p.code || p.is_wrapper) continue;
+      counts.set(p.code, (counts.get(p.code) || 0) + (p.qty || 0));
+    }
+    return counts;
+  }
+  function _jobStaleness(job, projectKey) {
+    const reasons = [];
+    if (!job) return reasons;
+    const cur = _manifestPartCounts(projectKey || S.projectKey);
+    if (cur) {
+      const snap = new Map();
+      for (const p of (job.parts || [])) {
+        if (!p || !p.code || p.manual) continue;   // manual rects aren't in the manifest
+        snap.set(p.code, (snap.get(p.code) || 0) + (p.qty || 0));
+      }
+      let diff = snap.size !== cur.size;
+      if (!diff) for (const [c, q] of cur) { if (snap.get(c) !== q) { diff = true; break; } }
+      if (diff) reasons.push('parts changed');
+    }
+    const at = +job.saved_at || 0;
+    if (at && S.dxfsAll) {
+      for (const p of (job.parts || [])) {
+        const meta = p && p.code ? S.dxfsAll[p.code] : null;
+        if (meta && (+meta.uploaded_at || 0) > at) { reasons.push('DXF updated'); break; }
+      }
+    }
+    return reasons;
+  }
+  const _STALE_TITLE = 'Outdated — design changed after this nest was saved. Run Nesting again.';
+
   // Restore a saved nest job into S: settings + parts + stock, then re-parse
   // DXFs and re-attach polys/bbox to the saved placements by code. No re-run —
   // the saved layout renders as-is. (user 2026-05-30 'โหลดงานเก่า')
   async function _restoreJob(job) {
     if (!job) return;
+    // Loaded-nest staleness badge in the workspace header; cleared by the
+    // next ▶ Run Nesting (a fresh run IS the fix).
+    S.loadedJobStale = _jobStaleness(job);
     S.mode = job.mode || S.mode;
     S.gap = (typeof job.gap === 'number') ? job.gap : S.gap;
     S.skipRemnants = !!job.skipRemnants;
@@ -2926,11 +2978,14 @@
     const rows = jobs.length ? jobs.map(j => {
       const nSheets = Array.isArray(j.sheets) ? j.sheets.length : 0;
       const nParts = Array.isArray(j.parts) ? j.parts.length : 0;
+      const stale = _jobStaleness(j);
+      const staleBadge = stale.length
+        ? ` <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + stale.join(', ') + ')')}">⚠ Outdated</span>` : '';
       return `
         <div class="kdjobs-row" data-id="${_esc(j.jobId)}">
           <div class="kdjobs-main">
-            <span class="kdjobs-name">${_esc(j.name || j.jobId)}</span>
-            <span class="kdjobs-meta">${nSheets} sheets · ${nParts} parts · ${_esc(j.mode || '')}</span>
+            <span class="kdjobs-name">${_esc(j.name || j.jobId)}${staleBadge}</span>
+            <span class="kdjobs-meta">${nSheets} sheets · ${nParts} parts · ${_esc(j.mode || '')}${stale.length ? ` · <span class="kdjobs-stale-why">${_esc(stale.join(' + '))} — Run Nesting again</span>` : ''}</span>
           </div>
           <button class="kdjobs-load" data-id="${_esc(j.jobId)}">Load</button>
           ${isAdminUser ? `<button class="kdjobs-del" data-id="${_esc(j.jobId)}" title="Delete this saved job">✕</button>` : ''}
@@ -3375,7 +3430,7 @@
             <button class="kdnest-back" id="kdnest-back" title="Back to project">←</button>
             <div class="kdnest-title">
               <div class="kdnest-title-main"><svg class="nest-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg>Nesting</div>
-              <div class="kdnest-title-sub">${_esc(S.projectName)} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${S.parts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}</div>
+              <div class="kdnest-title-sub">${_esc(S.projectName)} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${S.parts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
             </div>
           </div>
           <div class="kdnest-controls">
