@@ -4625,15 +4625,38 @@ function _subscribeSimbendFavs() {
   } catch (e) { _favsCache = {}; }
 }
 
-// Load + parse a flat DXF by code (cache:'no-store' — re-exports must not serve
-// a stale CDN/browser copy). Returns the parsed flat object, or null if the file
-// doesn't exist / fails to parse. (No DXF index exists → we probe per-file.)
+// Fetch the flat-pattern DXF TEXT for a code — fallback chain (RD 02 2026-06-11,
+// เอ๋ "ทำไมขึ้น no data ในเมื่อกด Laser ทุกครั้งเราก็ส่ง flat dxf มาด้วย"):
+//   1. Drawings/flat/<code>.dxf            (CC_ExportFlat — canonical)
+//   2. Drawings/dxf/<stem>/<stem>.dxf      (CC_Laser copy — SAME flat pattern:
+//      validated that the laser export carries the same OUTER_PROFILES/BEND
+//      layers; SD00NA-080000 parses IDENTICALLY from both files, and the
+//      despike ezdxf pass preserves layers)
+// The laser probe is gated by uploaded_dxfs (live cache) — an entry present
+// means the repo file exists, so we never 404-spam. cache:'no-store' on both
+// (re-exports must not serve a stale CDN/browser copy).
+async function _fetchFlatDxfText(code) {
+  const tryUrl = async (url) => {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      return r.ok ? await r.text() : null;
+    } catch (e) { return null; }
+  };
+  const t = await tryUrl('Drawings/flat/' + encodeURIComponent(code) + '.dxf');
+  if (t != null) return t;
+  for (const d of dxfsForMasterCode(code)) {
+    const stem = d.stem || code;
+    const t2 = await tryUrl('Drawings/dxf/' + encodeURIComponent(stem) + '/' + encodeURIComponent(stem) + '.dxf');
+    if (t2 != null) return t2;
+  }
+  return null;
+}
+// Load + parse a flat-pattern DXF by code (flat/ first, laser copy fallback).
+// Returns the parsed flat object, or null if nothing exists / fails to parse.
 async function _loadFlatDxf(code) {
-  const url = 'Drawings/flat/' + encodeURIComponent(code) + '.dxf';
   try {
-    const r = await fetch(url, { cache: 'no-store' });
-    if (!r.ok) return null;
-    const text = await r.text();
+    const text = await _fetchFlatDxfText(code);
+    if (text == null) return null;
     if (!window.KD_DXFFLAT || !window.KD_DXFFLAT.parseFlatDxf) return null;
     return window.KD_DXFFLAT.parseFlatDxf(text) || null;
   } catch (e) { return null; }
@@ -4651,9 +4674,11 @@ function _scheduleSyncRender() {
 
 // Sync from Project: for every NON-WRAPPER part in <key>, classify by bend status.
 //   verified → already has a Fusion CC_CheckBend record (bend_sim/<code>)
-//   dxf      → no record but Drawings/flat/<code>.dxf exists WITH bends (preview, NOT a verdict)
-//   flat     → flat DXF exists with 0 bends (flat panel)
-//   none     → no record + no flat DXF (export needed)
+//   dxf      → no record but a flat-pattern DXF exists WITH bends (preview, NOT a
+//              verdict) — Drawings/flat/<code>.dxf OR the CC_Laser copy
+//              Drawings/dxf/<stem>/ (same geometry; see _fetchFlatDxfText)
+//   flat     → flat-pattern DXF exists with 0 bends (flat panel)
+//   none     → no record + no flat-pattern DXF anywhere (export needed)
 // DXF cards are informational only — the web cannot decide feasibility (that's
 // Fusion's job; เอ๋ removed web auto-tooling 2026-06-03). We do NOT write a fake
 // verdict into bend_sim. Probes run with bounded concurrency; progress re-renders.
@@ -6688,8 +6713,8 @@ function renderSimBendHome() {
     if (rec.kind === 'box' && window.kdSimBend3D_AI && window.kdSimBend3D_AI.mountFromFlat &&
         window.KD_DXFFLAT && rec.box_geom) {
       const _code = _simBendExpanded;
-      const _url = 'Drawings/flat/' + encodeURIComponent(_code) + '.dxf';   // relative → works on Pages + local
-      fetch(_url).then(r => r.ok ? r.text() : null).then(text => {
+      // flat/ first, laser-copy fallback (same chain as the sync probe) + no-store
+      _fetchFlatDxfText(_code).then(text => {
         if (!text || _simBendExpanded !== _code) return;                    // expanded card changed/closed
         const flat = window.KD_DXFFLAT.parseFlatDxf(text); if (!flat || !flat.bends.length) return;
         // 3-D fold order from wallsFromFlat (เอ๋ 2026-06-08) — the SAME clean heuristic the 2-D press
