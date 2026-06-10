@@ -1744,20 +1744,52 @@
         }
         bands.sort((a, b) => a.fr.y - b.fr.y);   // lowest band first
         for (const { fr, rowH } of bands) {
-          // Fill the band with non-small parts from HIGHER up whose height fits
-          // the founding row (เอ๋: "ชิ้นที่สูงพอดี band เดิม"), tallest first.
+          // Candidates: non-small parts from HIGHER up whose height fits the
+          // founding row (เอ๋ "ชิ้นที่สูงพอดี band เดิม") — deliberately NOT
+          // limited by this band rect's CURRENT width: on เอ๋'s real 1CSVB2
+          // sheet the stacked TS1BHH-105000 OVERHANGS the neighbour below and
+          // truncates its own target band, so the as-is band only fits one
+          // strip and the batch never wins. LIFT-THEN-FILL instead: take the
+          // candidates out, rebuild the free space (their old spots open up →
+          // the band widens to its true extent), then fill left→right.
           const cands = sheet.placements
             .map((pl, i) => ({ pl, i, d: rotDims(pl, pl.rot) }))
-            .filter(c => !isSmall(c.pl) && c.pl.y > fr.y + 1
-                      && c.d[1] <= rowH + 2 && c.d[1] <= fr.h)
+            .filter(c => !isSmall(c.pl) && c.pl.y > fr.y + 1 && c.d[1] <= rowH + 2)
             .sort((a, b) => (b.d[1] - a.d[1]) || (b.d[0] - a.d[0]));
-          let cursor = fr.x;
+          if (!cands.length) continue;
+          // Free space WITHOUT the candidates → the band's true (widest) extent
+          // at this row.
+          const liftSet = new Set(cands.map(c => c.i));
+          const pkLift = new MaxRectsPacker(sheet.sw, sheet.sh);
+          sheet.placements.forEach((pl, i) => {
+            if (liftSet.has(i)) return;
+            const [rw, rh] = rotDims(pl, pl.rot);
+            pkLift._split(pl.x, pl.y, rw, rh);
+          });
+          let band2 = null;
+          for (const r2 of pkLift.free) {
+            if (Math.abs(r2.y - fr.y) <= 1 && (!band2 || r2.w > band2.w)) band2 = r2;
+          }
+          if (!band2) continue;
+          let cursor = band2.x;
           const movedIdx = [], movedOld = [];
           for (const c of cands) {
-            if (cursor + c.d[0] > fr.x + fr.w + 0.001) continue;
+            if (c.d[1] > band2.h + 0.001) continue;
+            if (cursor + c.d[0] > band2.x + band2.w + 0.001) continue;
+            // live overlap check: a SKIPPED candidate still sits at its old
+            // spot, which can intrude into the lifted band — never place onto it.
+            const nx = cursor, ny = band2.y, nw = c.d[0], nh = c.d[1];
+            let clash = false;
+            for (let i = 0; i < sheet.placements.length && !clash; i++) {
+              if (i === c.i) continue;
+              const pl = sheet.placements[i];
+              const [pw, ph] = rotDims(pl, pl.rot);
+              if (nx < pl.x + pw && pl.x < nx + nw && ny < pl.y + ph && pl.y < ny + nh) clash = true;
+            }
+            if (clash) continue;
             movedIdx.push(c.i); movedOld.push(sheet.placements[c.i]);
-            sheet.placements[c.i] = { ...c.pl, x: cursor, y: fr.y };
-            cursor += c.d[0];
+            sheet.placements[c.i] = { ...c.pl, x: nx, y: ny };
+            cursor += nw;
           }
           if (!movedIdx.length) continue;
           const after = maxFreeArea(freeListFor(sheet));
