@@ -1508,6 +1508,13 @@ function _renderBendList(parts, projectKey) {
     const viewBtn = pdfHref
       ? `<button class="bend-view-btn" data-url="${escapeHtml(pdfHref)}" title="View bending drawing PDF">👁</button>`
       : `<button class="bend-view-btn" disabled title="No drawing PDF for this part yet">👁</button>`;
+    // Open-in-Fusion — เอ๋ 2026-06-11 'เพิ่มปุ่มให้ผมกลับไปดูที่ฟิวชั่น': jump from
+    // a bend row back to the part's 3D master in Fusion. Reuses the mindmap
+    // leaf-click router (_routeLeafToFusion → bridge :8765 with retry + the
+    // friendly bridge-down / no-URN alerts) — NOT reimplemented. fusionOnly
+    // because the 👁 button next door is already the PDF affordance; a dead
+    // bridge must say so, not silently open a PDF (same rule as the nest ⚠).
+    const fusionBtn = `<button class="bend-fusion-btn" data-code="${escapeHtml(p.code)}" aria-label="Open in Fusion" title="Open this part in Fusion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.2 7.4 V16.6 L12 21.2 L3.8 16.6 V7.4 Z"/><path d="M3.8 7.4 L12 12 L20.2 7.4"/><line x1="12" y1="12" x2="12" y2="21.2"/></svg></button>`;
     // 💬 comments — reuse the shared per-part comment system (same as the
     // BOM row). Comments are global per part code (comments/<code>), so a
     // note left in bending is the same thread the assembler/admin sees.
@@ -1539,6 +1546,7 @@ function _renderBendList(parts, projectKey) {
         <span class="bend-qty">× ${p.qty || 0}</span>
         ${_bendRecheckChip(p.code)}
         ${viewBtn}
+        ${fusionBtn}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
           <span class="icon-bend"></span>
@@ -1576,6 +1584,18 @@ function _wireBendList(parts, projectKey) {
       ev.stopPropagation();
       const url = btn.dataset.url;
       if (url) _openInNewTab(url);
+    });
+  });
+  // Open-in-Fusion — delegate to the shared leaf router (bridge :8765, retry,
+  // friendly alerts). urn comes from the aggregated manifest part; a missing
+  // urn falls through to the router's instructive no-URN alert (re-run
+  // CC_Assembly / pair via 🔗), which is the designed UX — keep the button live.
+  const _bendPartByCode = new Map(_aggregatePartsByCode(parts).map(p => [p.code, p]));
+  ROOT.querySelectorAll('.bend-fusion-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const p = _bendPartByCode.get(btn.dataset.code) || { code: btn.dataset.code };
+      _routeLeafToFusion({ code: p.code, urn: p.urn || null }, { fusionOnly: true });
     });
   });
   // 💬 Comment handlers — the bend path returns before renderProject's

@@ -3194,12 +3194,13 @@ button.cut-status:focus-visible {
 .bend-rows { padding-top: 6px; }
 .bend-row {
   display: grid;
-  /* icon · code · qty · 👁 view PDF · 💬 comments · ▶ bend toggle.
-     6 columns — the 💬 column was added 2026-05-29; without it the
+  /* icon · code · qty · 👁 view PDF · Fusion · 💬 comments · ▶ bend toggle.
+     7 columns — 💬 added 2026-05-29, open-in-Fusion added 2026-06-11
+     (เอ๋ 'เพิ่มปุ่มให้ผมกลับไปดูที่ฟิวชั่น'); without explicit columns the
      toggle wrapped to a 2nd implicit grid row on iPhone. gap tightened
-     8px so all six fit one row on a ~390px viewport (code cell
+     8px so all seven fit one row on a ~390px viewport (code cell
      minmax(0,1fr) absorbs the remainder, wraps if needed). */
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 12px 10px;
@@ -3237,6 +3238,24 @@ button.cut-status:focus-visible {
 }
 .bend-view-btn:hover:not(:disabled) { background: rgba(93, 187, 99, 0.22); }
 .bend-view-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+/* Open-in-Fusion chip — same 52px square as its siblings, amber accent
+   (Brushed Steel + Amber) so "jump to Fusion" reads apart from the green
+   PDF/bend affordances. SVG cube inherits currentColor. */
+.bend-fusion-btn {
+  background: rgba(242, 169, 59, 0.08);
+  border: 1px solid rgba(242, 169, 59, 0.4);
+  color: #d9b27c;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.bend-fusion-btn:hover { background: rgba(242, 169, 59, 0.2); color: #F2A93B; }
+.bend-fusion-btn svg { width: 26px; height: 26px; display: block; }
 .bend-row:hover { background: rgba(93, 187, 99, 0.05); }
 .bend-row.is-bent { opacity: 0.55; }
 .bend-row.is-bent .bend-code { text-decoration: line-through; }
@@ -3310,12 +3329,14 @@ button.cut-status:focus-visible {
 @media (max-width: 480px) {
   .bend-row { gap: 6px; padding: 12px 8px; }
   .bend-row .bend-view-btn,
+  .bend-row .bend-fusion-btn,
   .bend-row .bend-toggle,
   .bend-row .comment-btn {
     width: 46px;
     height: 46px;
     font-size: 20px;
   }
+  .bend-row .bend-fusion-btn svg { width: 23px; height: 23px; }
   .bend-qty { min-width: 32px; font-size: 18px; padding: 0 2px; }
   .bend-code { font-size: 15px; }
 }
