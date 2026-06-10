@@ -1114,49 +1114,64 @@
   }
 
   function _buildPatternMap(rows) {
-    const m = { exact: {}, prefix: [], xx: [], substring: [], suffix: [] };
+    // Unified rule list. Every pattern compiles to a test fn + a SPECIFICITY
+    // (count of literal chars): the most-specific matching rule wins, so
+    // เอ๋'s DSV___-___80 (6 literals: DSV + - + 80) beats DSV2* (4) on
+    // DSV2L3-050080. Among prefix rules this equals the old longest-prefix-
+    // wins. Kind rank breaks literal-count ties (anchored > prefix > suffix
+    // > substring).
+    // Pattern language (เอ๋ 2026-06-10 'ขึ้นต้นด้วย DSV และลงท้ายด้วย 80'):
+    //   X*       prefix        *X  suffix        *X*  substring
+    //   XX       exactly-two-chars placeholder (legacy grain.xlsx)
+    //   _ runs   "anything here" (same as *), anchored both ends —
+    //            DSV___-___80 = starts with DSV AND ends with 80.
+    const m = { exact: {}, rules: [] };
+    const KIND_RANK = { glob: 0, xx: 0, prefix: 1, suffix: 2, substring: 3 };
     for (const row of rows) {
       const pattern = String(row.pattern || '').trim();
       if (!pattern) continue;
       const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', fix: row.fix || '' };
       const starts = pattern.startsWith('*');
       const ends = pattern.endsWith('*');
-      if (starts && ends && pattern.length > 2) {
-        const sub = pattern.replace(/^\*+|\*+$/g, '').replace(/[-_]+$/, '').toLowerCase();
-        if (sub) m.substring.push([sub, value]);
+      const inner = pattern.slice(starts ? 1 : 0, ends ? -1 : undefined);
+      if (pattern.includes('_') || inner.includes('*')) {
+        // Glob — `_` runs and inner `*` mean "anything"; anchored both ends.
+        const lit = pattern.replace(/[*_]/g, '');
+        const re = new RegExp(
+          '^' + pattern.split(/[*_]+/).map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$',
+          'i'
+        );
+        m.rules.push({ kind: 'glob', lit: lit.length, test: n => re.test(n), value });
+      } else if (starts && ends && pattern.length > 2) {
+        const sub = pattern.replace(/^\*+|\*+$/g, '').replace(/-+$/, '').toLowerCase();
+        if (sub) m.rules.push({ kind: 'substring', lit: sub.length, test: n => n.toLowerCase().indexOf(sub) >= 0, value });
       } else if (starts) {
-        const suf = pattern.replace(/^\*+/, '').replace(/[-_]+$/, '').toLowerCase();
-        if (suf) m.suffix.push([suf, value]);
+        const suf = pattern.replace(/^\*+/, '').replace(/-+$/, '').toLowerCase();
+        if (suf) m.rules.push({ kind: 'suffix', lit: suf.length, test: n => n.toLowerCase().endsWith(suf), value });
       } else if (ends) {
-        const pre = pattern.replace(/\*+$/, '').replace(/[-_]+$/, '').toLowerCase();
-        if (pre) m.prefix.push([pre, value]);
+        const pre = pattern.replace(/\*+$/, '').replace(/-+$/, '').toLowerCase();
+        if (pre) m.rules.push({ kind: 'prefix', lit: pre.length, test: n => n.toLowerCase().startsWith(pre), value });
       } else if (/XX/.test(pattern)) {
         const re = new RegExp(
           '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/XX/g, '..') + '(\\s|$|-|_)',
           'i'
         );
-        m.xx.push([re, value]);
+        m.rules.push({ kind: 'xx', lit: pattern.replace(/XX/g, '').length, test: n => re.test(n), value });
       } else {
         m.exact[pattern] = value;
         const clean = pattern.replace(/\s+v\d+$/, '');
         if (clean !== pattern) m.exact[clean] = value;
       }
     }
-    // Sort longer patterns first — more-specific match wins.
-    m.prefix.sort((a, b) => b[0].length - a[0].length);
-    m.suffix.sort((a, b) => b[0].length - a[0].length);
-    m.substring.sort((a, b) => b[0].length - a[0].length);
+    // Most literal chars first; kind rank breaks ties.
+    m.rules.sort((a, b) => (b.lit - a.lit) || (KIND_RANK[a.kind] - KIND_RANK[b.kind]));
     return m;
   }
 
   function _lookupPattern(name, m) {
     if (!m || !name) return null;
     if (m.exact[name]) return m.exact[name];
-    const lower = name.toLowerCase();
-    for (const [re, val] of m.xx) if (re.test(name)) return val;
-    for (const [pre, val] of m.prefix) if (lower.startsWith(pre)) return val;
-    for (const [suf, val] of m.suffix) if (lower.endsWith(suf)) return val;
-    for (const [sub, val] of m.substring) if (lower.indexOf(sub) >= 0) return val;
+    for (const r of m.rules) if (r.test(name)) return r.value;
     return null;
   }
 
