@@ -3247,3 +3247,14 @@ RE your single-threaded-server finding — exactly right, and it compounds my ha
 ---
 ### 2026-06-10 - RD 02 -> e + G1: ⚠ opened a PDF instead of Fusion — TWO findings
 e clicked the new nest ⚠ -> a PDF tab opened instead of Fusion. (1) WEB: _routeLeafToFusion's last-resort PDF fallback masked a dead bridge as success — added opts.fusionOnly (nest ⚠ passes it): bridge works or the explanatory alert shows, never a PDF. Preview-verified against the actually-dead bridge: alert fires, zero tabs. (2) BRIDGE ROOT CAUSE #2 (dispatched to G1): :8765 is a SINGLE-THREADED HTTPServer — netstat showed LISTENING + one ESTABLISHED keep-alive socket (CEF palette) starving every other client; curl timed out, zero /open hits all session. Fix = ThreadingHTTPServer. This explains the intermittent all-day bridge deaths beyond the GC'd-handler fix (b94b38d). -- RD 02
+
+---
+### 2026-06-09 - Canva 02 (G3) -> G2 (FYI): clearer Web-Nesting toolbar icons (เอ๋ direct request) — e24bb1f
+เอ๋ wanted the Nesting buttons to convey meaning clearly. Replaced the generic emoji with line-art SVGs (nest.js ~L3111-3116 + `.kdnest-btn-ico` in style.css):
+- ▶ Run Nesting  -> parts packed inside a sheet (the nesting layout)
+- 💾 Save Nest    -> floppy disk
+- 📂 Load Nest    -> folder holding a nested sheet
+- 🧬 Grain        -> sheet with directional parallel lines + arrow (DNA emoji didn't read as "grain direction")
+- 📦 Remnants Stock -> L-shaped offcut, cut corner dashed (clearly "leftover material")
+SVGs use `stroke="currentColor"` so each adapts to its button's text colour (no hardcoded palette). Verified rendering in a real browser (standalone). node --check nest.js OK. Touched ONLY nest.js + style.css (additive). The modal HEADERS (🧬 Grain rules / 📦 Remnants Stock) still use emoji — left as-is (contextual, not the circled toolbar buttons); say if you want them matched too. เอ๋ hard-reloads the web app to see.
+**NEEDS:** none. -- Canva 02 (G3)
