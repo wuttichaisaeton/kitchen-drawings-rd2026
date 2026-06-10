@@ -1,0 +1,30 @@
+CC_Assembly walk debug — 2026-06-11T06:24:39.480420
+Project: 100VFRR-075D60
+Total occurrences visited: 20
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     | Steel            | Blum-Insert 4 Hinge v1:1 (Blum-Insert 4 Hinge v1)
+    1 |     |     | Steel            | Cup:1 (Cup)
+    1 |     |     | Steel            | Component14:1 (Component14)
+    1 |     |     | Steel            | Component15:1 (Component15)
+    1 |     |     | Steel            | DRW:1 (DRW)
+    0 |     |     |                  | TS004H-075000 v8:1 (TS004H-075000 v8)
+    1 |     |     |                  | TS004H-075000 v9:1 (TS004H-075000 v9)
+    2 |     |     |                  | TS2TR2-075000 v1:1 (TS2TR2-075000 v1)
+    3 | SM  |     | ALPF             | TS2TRX-000000:1 (TS2TRX-000000)
+    3 | SM  |     | ALPF             | TS2TRX-000000:2 (TS2TRX-000000)
+    3 | SM  |     | ALPF             | TS2TRX-000000:3 (TS2TRX-000000)
+    3 | SM  |     | ALPF             | TS2TRX-000000:4 (TS2TRX-000000)
+    2 | SM  |     | ALPF             | TS1BHH-075000 v9:4 (TS1BHH-075000 v9)
+    2 | SM  |     | ALPF             | TS1BHH-075000 v9:3 (TS1BHH-075000 v9)
+    2 | SM  |     | ALPF             | TS1BHH-075000 v9:1 (TS1BHH-075000 v9)
+    2 | SM  |     | ALPF             | TS1BHH-075000 v9:2 (TS1BHH-075000 v9)
+    0 |     |     |                  | DSV0R4-060080 v14:1 (DSV0R4-060080 v14)
+    1 | SM  |     | ALPF             | DSV2R4-060080 v6:1 (DSV2R4-060080 v6)
+    1 | SM  |     | ALPF             | DSV100-060080 v6:1 (DSV100-060080 v6)
+    0 | SM  |     | ALPF             | SD0HG1-000000:1 (SD0HG1-000000)

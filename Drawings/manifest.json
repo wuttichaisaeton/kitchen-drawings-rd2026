@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-10T21:45:52.467433+00:00",
+  "generated_at": "2026-06-10T23:24:39.483173+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -8918,6 +8918,76 @@
           "is_wrapper": true,
           "parent_code": "TS004H-020000",
           "variant_root": "TS004H-020000"
+        }
+      ]
+    },
+    "100VFRR-075D60": {
+      "name": "100VFRR-075D60",
+      "status": "active",
+      "created_at": "2026-06-10T23:24:39.480805+00:00",
+      "updated_at": "2026-06-10T23:24:39.480805+00:00",
+      "total_unique_parts": 5,
+      "total_qty": 11,
+      "parts": [
+        {
+          "code": "DSV100-060080",
+          "qty": 1,
+          "family": "Drawer",
+          "parent_code": "DSV0R4-060080",
+          "variant_root": "DSV0R4-060080",
+          "urn": "urn:adsk.wipprod:dm.lineage:e72CRjUgS32PBL6p0KsxFg"
+        },
+        {
+          "code": "DSV2R4-060080",
+          "qty": 1,
+          "family": "Drawer",
+          "parent_code": "DSV0R4-060080",
+          "variant_root": "DSV0R4-060080",
+          "urn": "urn:adsk.wipprod:dm.lineage:k76v0m_ERTq1nahl7iyIcw"
+        },
+        {
+          "code": "SD0HG1-000000",
+          "qty": 1,
+          "family": "Side Panel",
+          "urn": "urn:adsk.wipprod:dm.lineage:9nz0imgpQd613_7PFBjS0A"
+        },
+        {
+          "code": "TS1BHH-075000",
+          "qty": 4,
+          "family": "Top Sup",
+          "parent_code": "TS004H-075000",
+          "variant_root": "TS004H-075000",
+          "urn": "urn:adsk.wipprod:dm.lineage:ztlgLuqMTFm8DQyV4kfsXw"
+        },
+        {
+          "code": "TS2TRX-000000",
+          "qty": 4,
+          "family": "Top Sup",
+          "parent_code": "TS2TR2-075000",
+          "variant_root": "TS004H-075000",
+          "urn": "urn:adsk.wipprod:dm.lineage:mFm1uggaQC2iy1skkKQJ_g"
+        },
+        {
+          "code": "DSV0R4-060080",
+          "qty": 0,
+          "family": "Drawer",
+          "is_wrapper": true,
+          "variant_root": "DSV0R4-060080"
+        },
+        {
+          "code": "TS004H-075000",
+          "qty": 0,
+          "family": "Top Sup",
+          "is_wrapper": true,
+          "variant_root": "TS004H-075000"
+        },
+        {
+          "code": "TS2TR2-075000",
+          "qty": 0,
+          "family": "Top Sup",
+          "is_wrapper": true,
+          "parent_code": "TS004H-075000",
+          "variant_root": "TS004H-075000"
         }
       ]
     }
