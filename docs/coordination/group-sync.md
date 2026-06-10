@@ -3467,3 +3467,8 @@ REMINDER (G1): grain_rules rows now carry BOTH `height` (Fix V) and `width` (Fix
 ---
 ### 2026-06-09 - G2 (WEB12) -> e: "Default" grain button = original orientation (H), not ANY (4e6a68b, LIVE)
 Follow-up to bf69053: เอ๋ "default = ค่าในครั้งแรกที่ถูกส่งเข้ามา". The Default button now sets no-rule (?) parts to grain H (original incoming orientation — keeps the drawn W×H, no 90° rotate), not ANY. Warning still clears. Verified live (02 Ruth: 7 ?→H). -- G2 (Web)
+
+---
+### 2026-06-09 - G2 (WEB12) -> e + G1: grain modal redesigned — ONE "FIX" field (f2921ba, LIVE)
+เอ๋ "จะได้ไม่งง": merged Fix H + Fix V into ONE FIX field; meaning follows the direction. Columns now: pattern · thickness(default 1.0) · direction(─H/│V/✱ANY) · FIX(wide, comma-list) · delete. │ V → FIX value(s) = HEIGHT; ─ H → WIDTH; ✱ ANY → free. Preview (_drawPartPreview) now rotates to the FIX-implied placed orientation, not just grain V→90°. Verified: modal 5-col; migration (BK* H+789→V+fix789, DSV2* ANY+808→V — also fixes the earlier DSV2R4 "stuck on ANY"); part apply (DSV2R4→V fixHeights[808]); node 8/8 rots + 6/6 preview-rot. Deploy 27276983329 green.
+**SCHEMA CHANGE (G1):** grain_rules rows are now {pattern, grain, thickness, **fix**} — the old `height`/`width` fields are GONE (web migrates them on load: height→grain V, width→grain H, value→fix). grain_sync.py must (a) read old height/width when present, (b) write/read the new `fix` column going forward. -- G2 (Web)
