@@ -567,14 +567,18 @@
     // flooded the nest as phantom "unique parts" with no DXF — เอ๋'s 1NSVB0
     // showed "36 unique / 16 no-DXF" when the real cut list is 24/37 (2026-06-10).
     const byCode = new Map();
+    // Raw index (INCLUDES wrappers) so _resolveCabinet can climb parent_code.
+    const _byCodeRaw = new Map();
+    for (const p of partsRaw) if (p && p.code) _byCodeRaw.set(p.code, p);
     for (const p of partsRaw) {
       if (!p || !p.code || p.is_wrapper) continue;
-      // Cabinet capsules (เอ๋ 2026-06-11): variant_root = the TOP cabinet this
-      // occurrence lives under (CC_Assembly). '' = no cabinet. Tracked per part
-      // as contrib [{pk, cab, qty}] — the per-CABINET mirror of part.sources —
-      // because aggregation-by-code can merge occurrences from 2+ cabinets and
-      // a capsule toggle must subtract only that cabinet's share.
-      const cab = String(p.variant_root || '').trim();
+      // Cabinet capsules (เอ๋ 2026-06-11): the TOP cabinet this occurrence lives
+      // under. Resolved via app.js _resolveCabinet — robust to the 17:06 manifest
+      // re-scan that moved variant_root off leaves onto top wrappers (climb
+      // parent_code). '' = no cabinet. Tracked per part as contrib [{pk,cab,qty}]
+      // (the per-CABINET mirror of part.sources) because aggregation-by-code can
+      // merge occurrences from 2+ cabinets and a toggle subtracts only that share.
+      const cab = (typeof _resolveCabinet === 'function') ? _resolveCabinet(p, _byCodeRaw) : String(p.variant_root || '').trim();
       const ex = byCode.get(p.code);
       if (ex) {
         ex.qty += (p.qty || 0);
@@ -668,9 +672,12 @@
     if (!project) { alert(`Project '${projectKey}' not in manifest`); return; }
     if ((S.mergedProjects || []).includes(projectKey)) return;
     const byCode = new Map();
-    for (const p of (Array.isArray(project.parts) ? project.parts : [])) {
+    const _rawParts = Array.isArray(project.parts) ? project.parts : [];
+    const _byCodeRaw = new Map();
+    for (const p of _rawParts) if (p && p.code) _byCodeRaw.set(p.code, p);
+    for (const p of _rawParts) {
       if (!p || !p.code || p.is_wrapper) continue;
-      const cab = String(p.variant_root || '').trim();
+      const cab = (typeof _resolveCabinet === 'function') ? _resolveCabinet(p, _byCodeRaw) : String(p.variant_root || '').trim();
       const ex = byCode.get(p.code);
       if (ex) {
         ex.qty += (p.qty || 0); if (!ex.urn && p.urn) ex.urn = p.urn;
@@ -821,9 +828,11 @@
     for (const pk of (S.mergedProjects || [S.projectKey])) {
       const project = m.projects[pk];
       if (!project || !Array.isArray(project.parts)) continue;
+      const _byCodeRaw = new Map();
+      for (const p of project.parts) if (p && p.code) _byCodeRaw.set(p.code, p);
       for (const p of project.parts) {
         if (!p || !p.code || p.is_wrapper) continue;
-        const cab = String(p.variant_root || '').trim();
+        const cab = (typeof _resolveCabinet === 'function') ? _resolveCabinet(p, _byCodeRaw) : String(p.variant_root || '').trim();
         const list = byCode.get(p.code) || [];
         const e = list.find(c => c.pk === pk && c.cab === cab);
         if (e) e.qty += (p.qty || 0); else list.push({ pk, cab, qty: p.qty || 0 });
@@ -3269,12 +3278,15 @@
     const project = m && m.projects && m.projects[projectKey];
     if (!project || !Array.isArray(project.parts)) return null;
     const counts = new Map();
+    const _byCodeRaw = new Map();
+    if (cabsOff && cabsOff.size) for (const p of project.parts) if (p && p.code) _byCodeRaw.set(p.code, p);
     for (const p of project.parts) {
       if (!p || !p.code || p.is_wrapper) continue;
       // cabinet capsules: a job saved with cabinets excluded is compared
       // against the ON subset only — otherwise every selective save would
-      // flag "parts changed" forever.
-      if (cabsOff && cabsOff.size && cabsOff.has(String(p.variant_root || '').trim())) continue;
+      // flag "parts changed" forever. Cabinet resolved via the tree-climb.
+      if (cabsOff && cabsOff.size && cabsOff.has(
+            (typeof _resolveCabinet === 'function') ? _resolveCabinet(p, _byCodeRaw) : String(p.variant_root || '').trim())) continue;
       counts.set(p.code, (counts.get(p.code) || 0) + (p.qty || 0));
     }
     return counts;

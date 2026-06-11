@@ -268,6 +268,19 @@ html.kme-fs-on .kme-root { height: 100% !important; }
   box-shadow: 0 0 0 2px rgba(31, 111, 235, 0.4);
 }
 
+/* Cabinet freshness (assemble role, เอ๋ 2026-06-11) — amber frame + badge on a
+   variant-root cabinet node that just arrived (NEW) or was re-exported (CHANGED).
+   Border + box-shadow only (no transform/opacity) so RF expand stays smooth. */
+.kme-node.kme-cab-new,
+.kme-node.kme-cab-changed { position: relative; border-color: #F2A93B; }
+.kme-node.kme-cab-new { box-shadow: 0 0 0 2px #F2A93B inset; }
+.kme-node.kme-cab-changed { border-style: dashed; }
+.kme-cab-fresh-badge {
+  position: absolute; top: -10px; left: -8px; z-index: 5;
+  background: #F2A93B; color: #1B2430; font-size: 9px; font-weight: 700;
+  padding: 1px 6px; border-radius: 8px; letter-spacing: 0.03em; pointer-events: none;
+}
+
 /* Completed / assembled node — clear green ✓ badge + struck label so it's
    obvious on the canvas which parts are done. Lives in the bundle so it works
    in EVERY theme: the badge is a ::after pseudo-element (Sketch/Chalk's

@@ -3821,16 +3821,39 @@ let _cabSeenCache = {};   // { "role|pk|cab": { fp, seen_at } }
 
 function cabSeenKey(role, pk, cab) { return `${role}|${pk}|${cab || NO_CAB}`; }
 
-// Per-cabinet { code -> summed qty } for a project, straight from the manifest.
-// Skips wrappers (qty-0 containers). '' variant_root is the shared/no-cabinet
-// bucket. Returns Map<cab, Map<code, qty>>.
+// Resolve a leaf part's owning cabinet (the top variant_root). Robust to BOTH
+// manifest schemas: (a) pre-2026-06-11-17:06 leaves carried variant_root
+// directly; (b) the 17:06 re-scan moved it — leaves carry NONE and instead link
+// to a top wrapper via parent_code that carries variant_root=its-own-code.
+// Climbs parent_code to that top wrapper. A standalone leaf (no parent, no vr) =
+// '' (the shared/no-cabinet bucket). byCode must include wrappers so the climb
+// resolves. (เอ๋ cabinet capsules + freshness both depend on this.)
+function _resolveCabinet(part, byCode) {
+  if (!part) return '';
+  if (part.variant_root) return String(part.variant_root).trim();
+  if (!part.parent_code) return '';
+  let cur = part; const seen = new Set();
+  while (cur && cur.parent_code && !seen.has(cur.code)) {
+    seen.add(cur.code);
+    const par = byCode.get(cur.parent_code);
+    if (!par) break;
+    cur = par;
+  }
+  return String((cur && (cur.variant_root || (cur !== part ? cur.code : ''))) || '').trim();
+}
+
+// Per-cabinet { code -> summed qty } for a project, from the manifest. Skips
+// wrappers (qty-0 containers). Cabinet derived via _resolveCabinet (tree climb).
+// '' = the shared/no-cabinet bucket. Returns Map<cab, Map<code, qty>>.
 function _cabinetCodeQty(projectKey) {
   const out = new Map();
   const proj = manifest && manifest.projects && manifest.projects[projectKey];
   if (!proj || !Array.isArray(proj.parts)) return out;
+  const byCode = new Map();
+  for (const p of proj.parts) if (p && p.code) byCode.set(p.code, p);
   for (const p of proj.parts) {
     if (!p || !p.code || p.is_wrapper) continue;
-    const cab = String(p.variant_root || '').trim();
+    const cab = _resolveCabinet(p, byCode);
     let codes = out.get(cab);
     if (!codes) { codes = new Map(); out.set(cab, codes); }
     codes.set(p.code, (codes.get(p.code) || 0) + (p.qty || 0));
@@ -8496,6 +8519,19 @@ function _exposeKdApi() {
     pdfUrlForCode,
     projectPdfUrl,   // direct match + scan auto_generated for <pk>.pdf
     routeLeaf: _routeLeafToFusion,
+    // Cabinet freshness (assemble role) — NEW/CHANGED status for a cabinet
+    // (variant_root). The mindmap variant-root nodes call this to draw an amber
+    // frame/badge; markAll acknowledges every cabinet for the assemble role
+    // (เอ๋ 2026-06-11 "คนประกอบต้องรู้ว่าอะไรใหม่อะไรเก่า").
+    cabinetFreshness: (pk, cab) => {
+      try { const f = cabinetFreshnessAll('assemble', pk).get(cab); return f ? f.status : null; }
+      catch (e) { return null; }
+    },
+    cabinetFreshCount: (pk) => {
+      try { return [...cabinetFreshnessAll('assemble', pk).values()].filter(i => i.status === 'new' || i.status === 'changed').length; }
+      catch (e) { return 0; }
+    },
+    markAllCabinetsSeen: (pk) => { try { markAllCabinetsSeen('assemble', pk); render(); } catch (e) {} },
     // Admin "Edit Link": point a NO-PDF node at another code's drawing (live).
     isAdmin,
     getDrawingLink,
@@ -9893,6 +9929,10 @@ function renderProject(key) {
         <button class="filter-btn all-pdf-btn" id="all-pdf-btn" title="Merge every part drawing into one PDF (each page links back to that part)">📑 All PDF</button>` : ''}
         ${_showDxfsBtn ? `
         <button class="filter-btn project-cut-sheets-btn" id="project-cut-sheets-btn" data-project-key="${escapeHtml(key)}" title="Nested cut sheets uploaded for this project — from NestingTool's Save sheets to Laser or admin drag-drop"><span class="cs-btn-ico" aria-hidden="true">📐</span> Cut Sheets (${cutSheetsForProject(key).length})</button>` : ''}
+        ${(_adminAll || _isAsm) ? (() => {
+          let n = 0; try { n = [...cabinetFreshnessAll('assemble', key).values()].filter(i => i.status === 'new' || i.status === 'changed').length; } catch (e) {}
+          return n ? `<button class="filter-btn cab-seen-btn" id="cab-seen-btn" data-key="${escapeHtml(key)}" title="Mark every cabinet seen for the assemble role — clears the amber NEW/CHANGED frames">🆕 ${n} new/changed · Mark all seen</button>` : '';
+        })() : ''}
         ${'' /* ▶ Nest button moved to its own admin-only tab next to
               Library (user 2026-05-28: 'nest ให้ย้ายไปต่อ library admin
               ใช้ได้คนเดียว'). Tab handler in renderNestHome shows a
@@ -9962,6 +10002,13 @@ function renderProject(key) {
   ROOT.querySelector('#project-cut-sheets-btn')?.addEventListener('click', (ev) => {
     ev.stopPropagation();
     _renderCutSheetsModal(ev.currentTarget, key, project);
+  });
+  // Cabinet freshness — acknowledge every cabinet for the ASSEMBLE role; clears
+  // the amber NEW/CHANGED frames on the mindmap variant-root nodes (เอ๋ 2026-06-11).
+  ROOT.querySelector('#cab-seen-btn')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    const pk = ev.currentTarget.dataset.key;
+    if (typeof markAllCabinetsSeen === 'function' && pk) { markAllCabinetsSeen('assemble', pk); render(); }
   });
   // ▶ Nest moved to its own admin-only tab (renderNestHome). No
   // per-project button handler needed here anymore.

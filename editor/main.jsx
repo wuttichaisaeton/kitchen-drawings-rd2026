@@ -199,6 +199,10 @@ function MindmapNode({ id, data, selected }) {
   const timerRunning = code ? api.isTimerRunning?.(projectKey, code) : false;
   const timerSec = code ? api.getTimerTotalSeconds?.(projectKey, code) : 0;
   const comments = code ? (api.getComments?.(code) || []) : [];
+  // Cabinet freshness (assemble role) — a variant-root node IS a cabinet; its
+  // raw code is the variant_root string the engine keys off (เอ๋ 2026-06-11).
+  const cabKey = isVariantRoot ? (data.code || code || label) : null;
+  const cabFresh = cabKey ? api.cabinetFreshness?.(projectKey, cabKey) : null;
 
   // Live tick for running timers so elapsed text updates without parent re-render
   useEffect(() => {
@@ -396,6 +400,9 @@ function MindmapNode({ id, data, selected }) {
   if (hasChildren && isBom) cls.push('kme-parent');
   if (isCollapsedParent) cls.push('kme-parent-collapsed');
   if (isVariantRoot) cls.push('kme-variant-root');
+  // Cabinet freshness frame (assemble role): NEW = solid amber, CHANGED = dashed.
+  if (cabFresh === 'new') cls.push('kme-cab-new');
+  else if (cabFresh === 'changed') cls.push('kme-cab-changed');
   if (isFadedNode) cls.push('kme-faded');
   // No-PDF filter dim — a dedicated class (NOT kme-faded) with !important so it
   // beats the wrapper/layer opacity rules that kme-faded loses to on container
@@ -452,6 +459,12 @@ function MindmapNode({ id, data, selected }) {
       onDrop={onDrop}
     >
       <Handle type="target" position={Position.Left} />
+      {(cabFresh === 'new' || cabFresh === 'changed') && (
+        <div className={`kme-cab-fresh-badge kme-cab-fresh-${cabFresh}`}
+             title={cabFresh === 'new' ? 'New cabinet — just arrived' : 'Changed cabinet — re-exported'}>
+          {cabFresh === 'new' ? 'NEW' : '↻ CHG'}
+        </div>
+      )}
       <div className="kme-row kme-row-head">
         <div
           ref={labelRef}
