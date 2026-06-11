@@ -2227,23 +2227,43 @@ function _remapFamilyForCode(code, originalFamily) {
   //   catches these; FN/FC→FL stays untouched.)
   if (prefix2 === 'FT') return 'FT';
 
+  // เอ๋'s 2026-06-11 prefix sweep (boards 59a1edc → 5bbff2a): "OTHER ต้องเหลือ
+  // เฉพาะของที่ระบบไม่รู้จักจริงๆ". Routes land on the SAME family names the
+  // custom folders / built-in chips already use, so cards merge — no dupes.
+  if (prefix2 === 'BT') return 'BT';
+  if (prefix2 === 'TS') return 'TS';   // TS1BHH/TS2TRX/TS0BV0/TS0000… (absorbs the old "Top Sup" family)
+  if (prefix2 === 'CV') return 'CV';
+  if (prefix2 === 'C1') return 'CV';   // C10002/C1H101 → same CV folder (letter-led; digit-led rule can't catch)
+  if (prefix2 === 'SH') return 'SH';
+  if (prefix2 === 'BM') return 'BM';   // BMSPFW/BM01LI/BM1LCL strays join the BM chip
+
   // BK → standalone "BK" chip (mirrors the FN/FC → FL precedent)
   //   Per user 2026-05-25: BK1DN1, BK2TR1, BK0DN0, BK-XXXX legacy etc.
   //   all want their own Library chip instead of being lumped under DW-BK.
   if (prefix2 === 'BK') return 'BK';
+  if (upper.startsWith('BXX')) return 'BK';   // BXXTR0 → BK too (เอ๋ 5bbff2a)
+  if (upper.startsWith('CLL')) return 'CL';   // CLL000 → "CL" folder
 
   // SD → "Side Panel" (เอ๋ 2026-06-09): SD0CN0 / SDLCN / SDRCN etc. are side
   //   panels but Fusion often dumps them into "Other" — pin them to the chip.
   if (prefix2 === 'SD') return 'Side Panel';
 
+  // Drawer prefixes — PREFIX-first (not gated on the Fusion family tag: that
+  // gate is exactly why DSV2F0-020080 leaked into OTHER — its family wasn't
+  // 'Drawer'). Order: most specific first (DSVF before DSV1/DSV2; DST1 before
+  // the broad DST catch-all).
+  if (upper.startsWith('DSVF')) return 'DW-S2';   // เอ๋ ef0cde8
+  if (upper.startsWith('DSV1')) return 'DW-S1';
+  if (upper.startsWith('DSV2')) return 'DW-S2';
+  if (upper.startsWith('DSV'))  return 'DW-S1';   // DSVBD1/DSVBD3… — same DW-S1 bucket the Drawer family always defaulted to
+  if (upper.startsWith('DST1')) return 'DW-S1';   // เอ๋ 5bbff2a
+  if (upper.startsWith('DST'))  return 'DW-S2';   // DST2* + every other DST*
+
   // ─── Family-based rules ──────────────────────────────────────────
   if (originalFamily === 'Back-Down') return 'DW-BK';
   if (originalFamily === 'Floor')     return 'DW-FL';  // DSB0F-* etc.
   if (originalFamily === 'Drawer') {
-    const prefix4 = upper.slice(0, 4);
-    if (prefix4 === 'DSV1') return 'DW-S1';
-    if (prefix4 === 'DSV2') return 'DW-S2';
-    return 'DW-S1';  // default bucket for any other Drawer-family code
+    return 'DW-S1';  // default bucket for non-DSV/DST Drawer-family codes
   }
   return originalFamily;
 }
@@ -4249,7 +4269,10 @@ function partsByFamily() {
   // family the upload was tagged to (or 'Custom' if unknown).
   for (const [code, up] of Object.entries(_uploadedPdfsCache || {})) {
     if (seen.has(code)) continue;
-    const fam = effectiveFamily(code, up.family || 'Custom');
+    // Run the prefix remap on web-uploaded PDFs too — they carry the family
+    // tag picked at upload time, which bypassed applyFamilyRemap and left
+    // BM*/TS* uploads stranded in Beam/Top Sup (เอ๋'s OTHER sweep 2026-06-11).
+    const fam = effectiveFamily(code, _remapFamilyForCode(code, up.family || 'Custom'));
     if (!out[fam]) out[fam] = [];
     out[fam].push({
       code,
@@ -11032,6 +11055,20 @@ function renderLibraryHome() {
     return familyOrder(a, b);
   });
 
+  // Sort modes (เอ๋ 2026-06-11, board 64052e5): Default (manual drag order,
+  // above) · A-Z (display label) · Latest (folder freshness = newest part
+  // date, the SAME _partDateMs source the NEW badge uses). Persisted per
+  // device in localStorage.
+  let libSort = 'default';
+  try { libSort = localStorage.getItem('kd_lib_sort_v1') || 'default'; } catch {}
+  if (libSort === 'az') {
+    visible.sort((a, b) => familyDisplayLabel(a).localeCompare(familyDisplayLabel(b)));
+  } else if (libSort === 'latest') {
+    const latest = fam => (by[fam] || []).reduce((m, p) => Math.max(m, _partDateMs(p)), 0);
+    const cache = new Map(visible.map(f => [f, latest(f)]));
+    visible.sort((a, b) => (cache.get(b) - cache.get(a)) || familyOrder(a, b));
+  }
+
   const cards = visible.map(fam => {
     const label = familyDisplayLabel(fam);
     const partsInFam = (by[fam] || []).length;
@@ -11067,7 +11104,20 @@ function renderLibraryHome() {
       <div class="family-count">create folder</div>
     </div>` : '';
 
-  ROOT.innerHTML = `<div class="family-grid">${cards}${newFamilyCard}</div>`;
+  const sortRow = `
+    <div class="lib-sort-row">
+      <span class="lib-sort-label">Sort</span>
+      ${[['default', 'Default'], ['az', 'A-Z'], ['latest', 'Latest']].map(([k, lbl]) =>
+        `<button class="lib-sort-btn${libSort === k ? ' on' : ''}" data-lib-sort="${k}">${lbl}</button>`).join('')}
+    </div>`;
+  ROOT.innerHTML = `${sortRow}<div class="family-grid">${cards}${newFamilyCard}</div>`;
+
+  ROOT.querySelectorAll('.lib-sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      try { localStorage.setItem('kd_lib_sort_v1', btn.dataset.libSort); } catch {}
+      render();
+    });
+  });
 
   // Admin "+ New Family" card — separate handler since it doesn't have a
   // data-family attribute and shouldn't trigger the drill-into-family

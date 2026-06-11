@@ -1560,6 +1560,41 @@ main.transit-back {
 
 /* --- Family grid (index page) --- */
 
+/* Library-home sort row (เอ๋ 2026-06-11): Default / A-Z / Latest. Theme-safe —
+   currentColor borders + transparent fills so dark/sketch/chalk all read; the
+   active chip goes amber per the Brushed Steel + Amber palette. */
+.lib-sort-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.lib-sort-label {
+  font-size: 11px;
+  opacity: 0.65;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.lib-sort-btn {
+  background: transparent;
+  border: 1px solid currentColor;
+  color: inherit;
+  opacity: 0.65;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.lib-sort-btn.on {
+  background: #F2A93B;
+  border-color: #F2A93B;
+  color: #1B2430;
+  opacity: 1;
+}
+
 .family-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
