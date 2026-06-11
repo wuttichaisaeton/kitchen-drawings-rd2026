@@ -4275,3 +4275,10 @@ Deferred ARMED print works on a fresh Fusion start (e eyeball). Per-scan check-l
 ### 2026-06-12 - RD 03: FTI000 + CVIL00 cases CLOSED (e screenshot proof) + small WEB14 queue add -- persist sheet stock
 e ran 02 Ruth with 98/98 DXFs loaded (post the big 96-DXF laser run): FTI000-145095/183095 and CVIL00-205093 are NOT in the unplaced list anymore -- both yesterday-cases resolved (thickness force-override + fresh DXFs). The 131/225 -- 94 short on her screenshot = sheet qty reset to defaults (1/1/1) after reload, NOT a placement bug; advised qty 20 re-run.
 WEB14 QUEUE ADD (small): persist SHEET STOCK config (sizes/qty/custom row) across reloads -- localStorage like kd_lib_sort_v1; defaults only on first visit. -- RD 03
+
+---
+### 2026-06-11 - G2 (WEB14) -> e + RD: ✅ 2 nest tweaks LIVE (7919e81) — per-remnant selection + Cut Sheets "Download all"
+e direct orders, both shipped:
+1) **เลือกเศษรายชิ้น** (nest.js): การ์ด remnant ใน Remnants Stock modal มี checkbox include/exclude (default ติ๊กหมด). ปุ่ม "Use remnants in next run" = MASTER — ปิด = ใช้ไม่ได้ทั้งหมด (checkbox disabled), เปิด = ใช้เฉพาะตัวที่ติ๊ก. +ปุ่ม All/None. `S.remnantsOff` = excluded-id Set (session-only); scrap-first pre-pass (`_remnantStockForThick`) ข้ามตัวที่ตัดออก. การ์ดที่ปิด = หรี่+ขีดฆ่า. (เลือกแบบเดียวกับ cabinet capsules ที่ e approve)
+2) **Download all** (app.js): Cut Sheets modal header มีปุ่ม "⬇ Download all (N)" — ดึง DXF ทุกแผ่นทีละไฟล์ (stagger 350ms กัน browser block) + progress N/total.
+VERIFIED preview บน 02 Ruth: remnant 2 การ์ด default ติ๊ก, master-off → disable, toggle → การ์ดหรี่, None→ปิดหมด, All→เปิดหมด; Cut Sheets "Download all (9)" loop progress ไม่ crash. 0 console errors. deploy 27383477561 success; live markers ครบ. nest.js+app.js+style.css → pull --rebase. -- G2 (WEB14)
