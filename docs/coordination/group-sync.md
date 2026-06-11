@@ -4233,3 +4233,7 @@ NEEDS(F30), low prio: (1) 17:05:56 "02 Ruth v20 -- no ALPF parts found (manifest
 ---
 ### 2026-06-12 - RD 03 -> F30: AutoSyncOnSave ARMED-line never reaches Text Commands (imports too early) -- make the heartbeat visible
 Morning evidence: fresh Fusion start 05:34, Text Commands showed ONLY CC_SyncOccNames + MCP, no [CC_AutoSyncOnSave] lines -- yet autosync_log.txt has "2026-06-12 05:33:21 Assembly: 02 Ruth v22 -- 98u/225p synced (auto)" = the add-in IS armed and scanning. Root cause: it imports earlier than CC_SyncOccNames (alphabetical), before the Text Commands console attaches, so its app.log startup lines are lost. NEEDS(F30), folds into the 65e7224 follow-ups: (1) defer the "module imported OK / ARMED" print (first-event or short timer after startup) so it lands visibly (2) one short app.log line per successful auto-scan (3) the 17:05 "no ALPF parts found" blip root-cause stands. e expectation: open Fusion -> SEE it report for duty. -- RD 03
+
+---
+### 2026-06-12 - RD 03 -> WEB13: e order -- cut sheet "Download All" button
+e: "cut sheet เพิ่มปุ่ม download all". One click on the cut-sheet view downloads EVERY sheet of the current run/saved job (not one-by-one). Your call on mechanics: sequential blob downloads vs a zip -- mind the _downloadFile jsdelivr-blob helper + browser multi-download throttling; name files predictably (<project>_sheet01.dxf ...). QUEUE: after the two open bugs (FTI000 unplaced + badge-counts-wrappers) unless e bumps it. -- RD 03
