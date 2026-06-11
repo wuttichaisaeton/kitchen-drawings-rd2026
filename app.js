@@ -3804,6 +3804,160 @@ function initAssembledSync() {
   }
 }
 
+// ──────────────────────────────────────────────────────────────────────
+// Cabinet Freshness (เอ๋ 2026-06-11: "คนประกอบ คนพับ คนตัด Laser ก็ต้องรู้ว่า
+// อะไรใหม่เข้ามา อะไรเก่า ... ต้อง Sync กัน"). Per-ROLE NEW/CHANGED markers per
+// cabinet (variant_root). Standalone — computes per-cabinet code→qty straight
+// from the manifest so Nest, Sim.Bending and the mindmap all get the SAME
+// fingerprint without any of them needing the nest session's `contrib`.
+// Mirrors the bent_status sync verbatim, +1 role level. Spec:
+// docs/superpowers/specs/2026-06-11-cabinet-freshness-design.md
+// ──────────────────────────────────────────────────────────────────────
+const LS_CAB_SEEN_KEY = 'kd_cabinet_seen_v1';
+const NO_CAB = '__NO_CAB__';                       // RTDB-safe key for variant_root ''
+const CAB_NEW_WINDOW_MS = 24 * 3600 * 1000;        // first-render baseline, mirrors isNewProject
+
+let _cabSeenCache = {};   // { "role|pk|cab": { fp, seen_at } }
+
+function cabSeenKey(role, pk, cab) { return `${role}|${pk}|${cab || NO_CAB}`; }
+
+// Per-cabinet { code -> summed qty } for a project, straight from the manifest.
+// Skips wrappers (qty-0 containers). '' variant_root is the shared/no-cabinet
+// bucket. Returns Map<cab, Map<code, qty>>.
+function _cabinetCodeQty(projectKey) {
+  const out = new Map();
+  const proj = manifest && manifest.projects && manifest.projects[projectKey];
+  if (!proj || !Array.isArray(proj.parts)) return out;
+  for (const p of proj.parts) {
+    if (!p || !p.code || p.is_wrapper) continue;
+    const cab = String(p.variant_root || '').trim();
+    let codes = out.get(cab);
+    if (!codes) { codes = new Map(); out.set(cab, codes); }
+    codes.set(p.code, (codes.get(p.code) || 0) + (p.qty || 0));
+  }
+  return out;
+}
+
+// Cheap stable string hash (djb2) → base36. Order-independent inputs are
+// sorted by the caller before hashing.
+function _fnvHash(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) + h + str.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+// Freshest signal (ms) for a cabinet = newest uploaded_at over its codes.
+// Used both in the fingerprint and in the 24h baseline. _uploadedDxfsCache is
+// the module-level map populated by initUploadedDxfsSync (declared ~app.js:2789).
+function _cabinetFreshestMs(codeQty) {
+  let ms = 0;
+  const dxfs = (typeof _uploadedDxfsCache === 'object' && _uploadedDxfsCache) ? _uploadedDxfsCache : {};
+  for (const code of codeQty.keys()) {
+    const meta = dxfs[code];
+    if (meta && +meta.uploaded_at) ms = Math.max(ms, +meta.uploaded_at);
+  }
+  return ms;
+}
+
+// Fingerprint of ONE cabinet. codeQty = Map<code, qty> for that cabinet.
+// fp = hash( sorted "code:qty" (qty>0)  +  '|' + maxUploadedAt ). Version
+// component intentionally omitted in phase 1 (last_drawn_version 0/0 dormant
+// until Fusion F29). Returns '' for an empty cabinet (no qty>0 codes).
+function _cabinetFingerprint(codeQty) {
+  const parts = [];
+  for (const [code, qty] of codeQty) if (qty > 0) parts.push(`${code}:${qty}`);
+  if (!parts.length) return '';
+  parts.sort();
+  return _fnvHash(parts.join(',') + '|' + String(_cabinetFreshestMs(codeQty)));
+}
+
+// Status for one cabinet for one role: 'new' | 'changed' | 'old'.
+function cabinetFreshness(role, projectKey, cab, codeQty) {
+  const fp = _cabinetFingerprint(codeQty);
+  const snap = _cabSeenCache[cabSeenKey(role, projectKey, cab)];
+  if (!snap) {
+    return (_cabinetFreshestMs(codeQty) >= Date.now() - CAB_NEW_WINDOW_MS) ? 'new' : 'old';
+  }
+  return (snap.fp !== fp) ? 'changed' : 'old';
+}
+
+// Status for every cabinet of a project, for one role. Returns
+// Map<cab, {status, fp, codeQty}>. Orphan snapshot keys (cabinets no longer in
+// the manifest, e.g. after a rename) are simply not produced here.
+function cabinetFreshnessAll(role, projectKey) {
+  const res = new Map();
+  for (const [cab, codeQty] of _cabinetCodeQty(projectKey)) {
+    res.set(cab, { status: cabinetFreshness(role, projectKey, cab, codeQty),
+                   fp: _cabinetFingerprint(codeQty), codeQty });
+  }
+  return res;
+}
+
+function _mirrorCabSeenToLocal() {
+  // Nest { role: { pk: { cab: {fp,seen_at} } } } for compactness + offline seed.
+  const nested = {};
+  for (const [k, v] of Object.entries(_cabSeenCache)) {
+    const [role, pk, cab] = k.split('|');
+    (((nested[role] = nested[role] || {})[pk] = nested[role][pk] || {}))[cab] = v;
+  }
+  try { localStorage.setItem(LS_CAB_SEEN_KEY, JSON.stringify(nested)); } catch {}
+}
+function _seedCabSeenFromLocal() {
+  try {
+    const o = JSON.parse(localStorage.getItem(LS_CAB_SEEN_KEY) || '{}');
+    _cabSeenCache = {};
+    for (const [role, pks] of Object.entries(o || {}))
+      for (const [pk, cabs] of Object.entries(pks || {}))
+        for (const [cab, v] of Object.entries(cabs || {}))
+          _cabSeenCache[cabSeenKey(role, pk, cab)] = v;
+  } catch {}
+}
+_seedCabSeenFromLocal();
+
+// Mark ONE cabinet seen for a role = store its CURRENT fingerprint.
+function markCabinetSeen(role, projectKey, cab, fp) {
+  const k = cabSeenKey(role, projectKey, cab);
+  const payload = { fp: fp || '', seen_at: Date.now() };
+  _cabSeenCache[k] = payload;
+  if (window.firebaseDB) {
+    try { window.firebaseDB.ref(`cabinet_seen/${role}/${projectKey}/${cab || NO_CAB}`).set(payload); }
+    catch (e) { console.warn('Firebase cabinet_seen write failed:', e); }
+  }
+  _mirrorCabSeenToLocal();
+}
+
+// Mark ALL of a project's cabinets seen for ONE role (the "เห็นทั้งหมด" button).
+function markAllCabinetsSeen(role, projectKey) {
+  const all = cabinetFreshnessAll(role, projectKey);
+  const updates = {};
+  for (const [cab, info] of all) {
+    const payload = { fp: info.fp, seen_at: Date.now() };
+    _cabSeenCache[cabSeenKey(role, projectKey, cab)] = payload;
+    updates[`cabinet_seen/${role}/${projectKey}/${cab || NO_CAB}`] = payload;
+  }
+  if (window.firebaseDB && Object.keys(updates).length) {
+    try { window.firebaseDB.ref().update(updates); }
+    catch (e) { console.warn('Firebase cabinet_seen bulk failed:', e); }
+  }
+  _mirrorCabSeenToLocal();
+}
+
+function initCabinetSeenSync() {
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('cabinet_seen').on('value', snap => {
+      const data = snap.val() || {};
+      _cabSeenCache = {};
+      for (const [role, pks] of Object.entries(data))
+        for (const [pk, cabs] of Object.entries(pks || {}))
+          for (const [cab, payload] of Object.entries(cabs || {}))
+            _cabSeenCache[`${role}|${pk}|${cab}`] = payload;
+      _mirrorCabSeenToLocal();
+      if (typeof render === 'function') { try { render(); } catch {} }
+    }, err => console.warn('Firebase cabinet_seen listener error:', err));
+  } catch (e) { console.warn('Failed to attach cabinet_seen listener:', e); }
+}
+
 // One-shot push of any localStorage entries that don't yet exist in
 // RTDB. Runs after both listeners have fired at least once so we have
 // a baseline. Marks each migrated entry with { migrated: true } so it's
@@ -11956,6 +12110,7 @@ async function init() {
   initActiveRowsSync();
   initBentSync();
   initAssembledSync();
+  initCabinetSeenSync();
   // One-shot push of any pre-existing localStorage bent/assembled
   // entries to RTDB so old per-device state surfaces on every device.
   _migrateLocalToFirebase();
