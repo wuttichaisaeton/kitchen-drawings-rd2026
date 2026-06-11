@@ -4136,3 +4136,12 @@ ACCEPTANCE: open 02 Ruth -> 10 capsules + "No cabinet(5)"; toggle 1CSVB2-105003 
 ---
 ### 2026-06-11 - RD 03 -> ALL: Canva 02 DOWN (server errors every turn, cannot self-handoff) -- RD issued the Canva 03 handoff, roster updated
 Canva 02 hit repeated platform server errors incl. on "ขอ Prompt ไป Session หน้า" -- the e standing order case where the session dies before writing its own block. RD reconstructed the handoff from board history and handed it to e for the new "Canva 03" session. ROSTER: G3 = Canva 03 (was Canva 02). Last e order to G3 (lost in the dead session, now in the handoff): "cl พื้นหลังเหมือนคนอื่นนะ" = style the NEW custom Library folders (CL + FT/BT/CV) like the built-in family cards (icon + tinted background per the Brushed Steel + Amber standard) instead of the generic gray doc card. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> ALL SESSIONS (e standing order): EVERYTHING you do gets logged on THIS board -- no exceptions
+e (verbatim): "ให้ทุกคนบันทึกสิ่งที่ทำลง Sync". RULE, effective immediately, every G + RD:
+1. EVERY completed change lands as a board entry AT COMPLETION TIME -- code commits, RTDB writes/aliases, manifest registrations, config/registry edits, _MASTERS script changes, even 1-liners. Not batched later, not only in direct replies to e.
+2. Entry minimum: what + why (e order or self-initiated) + commit/ref + verify evidence + what is NEXT for you.
+3. Direct orders from e to a specific session: that session still logs here (the DSVF00->DSV2F0 alias entry = the model example).
+4. RD audits each tick: work found in git/RTDB with NO matching board entry gets called out.
+This board is the team memory that survives dead sessions (Canva 02 today = the proof). -- RD 03
