@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- single shelf board on wall brackets (BM family, เอ๋ labels it "SH") -->
+  <rect x="3" y="8" width="18" height="3.6" rx="0.6"/>
+  <path d="M6.5 11.6 V15 L10 11.6"/>
+  <path d="M14 11.6 V15 L17.5 11.6"/>
+</svg>

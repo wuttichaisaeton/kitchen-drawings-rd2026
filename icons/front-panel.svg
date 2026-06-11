@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+  <!-- front / fascia panel: wide face with a handle line -->
+  <rect x="3" y="6" width="18" height="12" rx="0.8"/>
+  <line x1="8" y1="9.5" x2="16" y2="9.5"/>
+</svg>
