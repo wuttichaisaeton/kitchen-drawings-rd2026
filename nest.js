@@ -58,6 +58,10 @@
                           // the user can spot WHERE on the sheet that
                           // part ended up (user 2026-05-28: 'view@sheet
                           // ให้ทำ Hilight ด้วย').
+    cabinetsOff: null,    // Set of EXCLUDED cabinet keys (variant_root strings;
+                          // '' = parts under no cabinet). Cabinet capsules
+                          // (เอ๋ 2026-06-11) — persisted per project in
+                          // localStorage kd_nest_cabsel_<pk>.
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     unplaced: [],     // pieces the packer couldn't place (set by _runNesting; for the warning banner)
     grainSkippedRemnants: 0,  // saved offcuts a grain clash kept out of the last run (review banner)
@@ -565,16 +569,24 @@
     const byCode = new Map();
     for (const p of partsRaw) {
       if (!p || !p.code || p.is_wrapper) continue;
+      // Cabinet capsules (เอ๋ 2026-06-11): variant_root = the TOP cabinet this
+      // occurrence lives under (CC_Assembly). '' = no cabinet. Tracked per part
+      // as contrib [{pk, cab, qty}] — the per-CABINET mirror of part.sources —
+      // because aggregation-by-code can merge occurrences from 2+ cabinets and
+      // a capsule toggle must subtract only that cabinet's share.
+      const cab = String(p.variant_root || '').trim();
       const ex = byCode.get(p.code);
       if (ex) {
         ex.qty += (p.qty || 0);
         if (!ex.urn && p.urn) ex.urn = p.urn;
+        _addContrib(ex, projectKey, cab, p.qty || 0);
       } else {
         const np = _newPart(p.code, p.qty);
         // Fusion lineage urn (CC_Assembly) — lets a no-DXF row open the part
         // in Fusion via the :8765 bridge, same as the mindmap NO-PDF badge
         // (เอ๋ 2026-06-10 "สร้าง Link ให้ผมกลับไปทำที่ Fusion เหมือน NO PDF").
         np.urn = p.urn || null;
+        _addContrib(np, projectKey, cab, p.qty || 0);
         byCode.set(p.code, np);
       }
     }
@@ -637,6 +649,11 @@
     // project wants how many of this code. Fresh open = single source.
     S.mergedProjects = [projectKey];
     for (const p of S.parts) p.sources = { [projectKey]: p.qty || 0 };
+    // Cabinet capsules: restore this project's persisted OFF-set; recompute
+    // qty from the ON subset only when something is actually excluded (the
+    // full-sum qty above is already correct when every cabinet is ON).
+    S.cabinetsOff = _loadCabSel(projectKey);
+    if (S.cabinetsOff.size) _recomputeCabinetQtys();
   }
 
   // ── "+ Project" merge (เอ๋ board 76ebca5: multi-project nesting) ──────────
@@ -653,11 +670,15 @@
     const byCode = new Map();
     for (const p of (Array.isArray(project.parts) ? project.parts : [])) {
       if (!p || !p.code || p.is_wrapper) continue;
+      const cab = String(p.variant_root || '').trim();
       const ex = byCode.get(p.code);
-      if (ex) { ex.qty += (p.qty || 0); if (!ex.urn && p.urn) ex.urn = p.urn; }
-      else {
+      if (ex) {
+        ex.qty += (p.qty || 0); if (!ex.urn && p.urn) ex.urn = p.urn;
+        _addContrib(ex, projectKey, cab, p.qty || 0);
+      } else {
         const np = _newPart(p.code, p.qty);
         np.urn = p.urn || null;
+        _addContrib(np, projectKey, cab, p.qty || 0);
         byCode.set(p.code, np);
       }
     }
@@ -690,6 +711,7 @@
         ex.qty = (ex.qty || 0) + (np.qty || 0);
         ex.sources = ex.sources || { [S.projectKey]: ex.qty - (np.qty || 0) };
         ex.sources[projectKey] = (ex.sources[projectKey] || 0) + (np.qty || 0);
+        for (const c of (np.contrib || [])) _addContrib(ex, c.pk, c.cab, c.qty);
       } else {
         np.sources = { [projectKey]: np.qty || 0 };
         S.parts.push(np);
@@ -697,10 +719,122 @@
     }
     S.parts.sort((a, b) => a.code.localeCompare(b.code));
     (S.mergedProjects = S.mergedProjects || [S.projectKey]).push(projectKey);
+    // If cabinets are excluded, the merged contributions must respect that too
+    // (a merged cabinet sharing a key with an OFF one keeps only the ON share).
+    if (S.cabinetsOff && S.cabinetsOff.size) _recomputeCabinetQtys();
     S.loadedJobStale = null;   // the list changed — any loaded-job badge is moot
     _refreshView();
     await _loadAllDxfs();
     if (!S.closing) _refreshView();
+  }
+
+  // ── Cabinet capsules (เอ๋ 2026-06-11: "เลือกว่าเอาหรือไม่เอา เป็นรายตู้") ──
+  // manifest leaf parts carry variant_root = the top cabinet; aggregation by
+  // code can merge 2+ cabinets into one row, so every row keeps contrib
+  // [{pk, cab, qty}] and a capsule toggle recomputes qty from the ON subset.
+  // OFF-set persists per project (localStorage) + rides saved jobs (cabinets_off).
+  const _cabSelKey = pk => 'kd_nest_cabsel_' + pk;
+  function _loadCabSel(pk) {
+    try {
+      const v = JSON.parse(localStorage.getItem(_cabSelKey(pk)) || '[]');
+      return new Set(Array.isArray(v) ? v.map(x => String(x)) : []);
+    } catch (e) { return new Set(); }
+  }
+  function _saveCabSel() {
+    try {
+      localStorage.setItem(_cabSelKey(S.projectKey),
+        JSON.stringify([...(S.cabinetsOff || new Set())]));
+    } catch (e) { /* quota / private mode — non-fatal */ }
+  }
+  function _addContrib(part, pk, cab, qty) {
+    part.contrib = part.contrib || [];
+    const e = part.contrib.find(c => c.pk === pk && c.cab === cab);
+    if (e) e.qty += qty; else part.contrib.push({ pk, cab, qty });
+  }
+  // True when EVERY cabinet this part belongs to is excluded → the row is
+  // hidden from the list and contributes nothing to Run/Save. Manual rects and
+  // rows without cabinet data (old manifests, loaded-job-only codes) never hide.
+  function _cabAllOff(p) {
+    if (!p || p.manual) return false;
+    const off = S.cabinetsOff;
+    if (!off || !off.size) return false;
+    const c = p.contrib;
+    if (!Array.isArray(c) || !c.length) return false;
+    return c.every(x => off.has(x.cab));
+  }
+  // Recompute qty + sources for every contrib-bearing row from the ON-cabinet
+  // subset only (a code shared by an ON and an OFF cabinet keeps the ON share).
+  function _recomputeCabinetQtys() {
+    const off = S.cabinetsOff || new Set();
+    for (const p of S.parts) {
+      if (p.manual || !Array.isArray(p.contrib) || !p.contrib.length) continue;
+      let qty = 0; const src = {};
+      for (const c of p.contrib) {
+        if (off.has(c.cab)) continue;
+        qty += c.qty || 0;
+        src[c.pk] = (src[c.pk] || 0) + (c.qty || 0);
+      }
+      p.qty = qty;
+      p.sources = src;
+    }
+  }
+  // Distinct cabinets across the current list: [{cab, pcs, nParts}] — named
+  // cabinets alphabetical, the no-cabinet bucket ('') last. pcs = FULL design
+  // count (what the cabinet contains), independent of the toggle state.
+  function _cabinetGroups() {
+    const map = new Map();
+    for (const p of S.parts) {
+      for (const c of (p.contrib || [])) {
+        const g = map.get(c.cab) || { cab: c.cab, pcs: 0, nParts: 0 };
+        g.pcs += c.qty || 0;
+        g.nParts += 1;
+        map.set(c.cab, g);
+      }
+    }
+    return [...map.values()].sort((a, b) =>
+      (a.cab === '') - (b.cab === '') || a.cab.localeCompare(b.cab));
+  }
+  function _toggleCabinet(cab) {
+    cab = String(cab == null ? '' : cab);
+    S.cabinetsOff = S.cabinetsOff || new Set();
+    if (S.cabinetsOff.has(cab)) S.cabinetsOff.delete(cab);
+    else S.cabinetsOff.add(cab);
+    _saveCabSel();
+    _recomputeCabinetQtys();
+    S.loadedJobStale = null;   // the list changed deliberately — badge is moot
+    _refreshView();
+  }
+  function _setAllCabinets(on) {
+    S.cabinetsOff = on ? new Set() : new Set(_cabinetGroups().map(g => g.cab));
+    _saveCabSel();
+    _recomputeCabinetQtys();
+    S.loadedJobStale = null;
+    _refreshView();
+  }
+  // Rebuild contrib from the CURRENT manifest for every non-manual row (used
+  // after a saved-job load, whose snapshot doesn't carry cabinet data). Codes
+  // no longer in the manifest keep no contrib → capsules can't touch them.
+  function _attachCabinetsFromManifest() {
+    const m = window.kdManifest;
+    if (!m || !m.projects) return;
+    const byCode = new Map();
+    for (const pk of (S.mergedProjects || [S.projectKey])) {
+      const project = m.projects[pk];
+      if (!project || !Array.isArray(project.parts)) continue;
+      for (const p of project.parts) {
+        if (!p || !p.code || p.is_wrapper) continue;
+        const cab = String(p.variant_root || '').trim();
+        const list = byCode.get(p.code) || [];
+        const e = list.find(c => c.pk === pk && c.cab === cab);
+        if (e) e.qty += (p.qty || 0); else list.push({ pk, cab, qty: p.qty || 0 });
+        byCode.set(p.code, list);
+      }
+    }
+    for (const part of S.parts) {
+      if (part.manual) continue;
+      const list = byCode.get(part.code);
+      if (list) part.contrib = list.map(c => ({ pk: c.pk, cab: c.cab, qty: c.qty }));
+    }
   }
 
   function _openAddProjectModal() {
@@ -2979,6 +3113,10 @@
       sheets: (S.flatSheets || []).map(_serializeSheet),
       // multi-project nesting: every source project in this nest (primary first)
       merged_projects: (S.mergedProjects && S.mergedProjects.length) ? S.mergedProjects.slice() : [S.projectKey],
+      // cabinet capsules: which cabinets were deliberately excluded ('' = the
+      // no-cabinet bucket). Load restores the selection; staleness compares
+      // against the ON subset only. null (stripped by RTDB) when all ON.
+      cabinets_off: (S.cabinetsOff && S.cabinetsOff.size) ? [...S.cabinetsOff] : null,
     };
   }
 
@@ -3126,13 +3264,17 @@
   //  (b) any snapshot part's laser DXF was re-uploaded after job.saved_at
   //      (uploaded_dxfs/<code>.uploaded_at, from the S.dxfsAll stash).
   // Pure client-side timestamp/set compares on data already fetched.
-  function _manifestPartCounts(projectKey) {
+  function _manifestPartCounts(projectKey, cabsOff) {
     const m = window.kdManifest;
     const project = m && m.projects && m.projects[projectKey];
     if (!project || !Array.isArray(project.parts)) return null;
     const counts = new Map();
     for (const p of project.parts) {
       if (!p || !p.code || p.is_wrapper) continue;
+      // cabinet capsules: a job saved with cabinets excluded is compared
+      // against the ON subset only — otherwise every selective save would
+      // flag "parts changed" forever.
+      if (cabsOff && cabsOff.size && cabsOff.has(String(p.variant_root || '').trim())) continue;
       counts.set(p.code, (counts.get(p.code) || 0) + (p.qty || 0));
     }
     return counts;
@@ -3145,9 +3287,14 @@
     // fall back to the one key as before.
     const srcKeys = (Array.isArray(job.merged_projects) && job.merged_projects.length)
       ? job.merged_projects : [projectKey || S.projectKey];
+    // cabinet capsules: jobs saved with excluded cabinets compare against the
+    // ON subset of the manifest; their snapshot rows for fully-excluded codes
+    // carry qty 0 and are skipped below (both sides drop the same codes).
+    const cabsOff = new Set(Array.isArray(job.cabinets_off)
+      ? job.cabinets_off.map(x => String(x)) : []);
     let cur = null;
     for (const k of srcKeys) {
-      const c = _manifestPartCounts(k);
+      const c = _manifestPartCounts(k, cabsOff);
       if (!c) continue;
       if (!cur) cur = new Map();
       for (const [code, q] of c) cur.set(code, (cur.get(code) || 0) + q);
@@ -3156,6 +3303,7 @@
       const snap = new Map();
       for (const p of (job.parts || [])) {
         if (!p || !p.code || p.manual) continue;   // manual rects aren't in the manifest
+        if (!(p.qty > 0)) continue;   // qty 0 = excluded/zeroed — not part of the cut
         snap.set(p.code, (snap.get(p.code) || 0) + (p.qty || 0));
       }
       let diff = snap.size !== cur.size;
@@ -3165,7 +3313,8 @@
     const at = +job.saved_at || 0;
     if (at && S.dxfsAll) {
       for (const p of (job.parts || [])) {
-        const meta = p && p.code ? S.dxfsAll[p.code] : null;
+        if (!p || !(p.qty > 0)) continue;   // excluded rows can't outdate the nest
+        const meta = p.code ? S.dxfsAll[p.code] : null;
         if (meta && (+meta.uploaded_at || 0) > at) { reasons.push('DXF updated'); break; }
       }
     }
@@ -3211,6 +3360,14 @@
     });
     S.mergedProjects = (Array.isArray(job.merged_projects) && job.merged_projects.length)
       ? job.merged_projects.slice() : [S.projectKey];
+    // Cabinet capsules: the loaded job's selection becomes the live selection
+    // (and persists). Snapshot rows don't carry cabinet data — rebuild contrib
+    // from the CURRENT manifest so the capsules stay toggleable after a load.
+    // Snapshot qtys are kept as saved; a toggle recomputes from manifest truth.
+    S.cabinetsOff = new Set(Array.isArray(job.cabinets_off)
+      ? job.cabinets_off.map(x => String(x)) : []);
+    _saveCabSel();
+    _attachCabinetsFromManifest();
     S.previewCode = null;
     S.highlightCode = null;
 
@@ -3437,7 +3594,7 @@
   // cutting. ANY rotates freely (no orientation risk → no flag).
   // (เอ๋ 2026-05-30 'บีเค grain ไปทางแนวนอน ... อันนี้ที่ต้องเตือน')
   function _isGrainDirectional(p) {
-    if (!p || !p.selected || p.manual) return false;
+    if (!p || !p.selected || p.manual || _cabAllOff(p)) return false;
     const g = String(p.grain || '').toUpperCase();
     return g !== 'H' && g !== 'V' && g !== 'ANY';   // warn ONLY '?'/unmatched (เอ๋ 2026-05-31 'เตือนเฉพาะค่าที่ไม่แน่ใจ' = desktop's "Grain unspecified"); H/V/ANY = decided -> no warn
   }
@@ -3457,7 +3614,7 @@
   // (user 2026-05-30 'ชิ้นนี้ดูแปลกๆ ให้เข้าไปดูหน่อย / ชิ้นนี้ไม่มี DXF')
   function _reviewReasons(p) {
     const out = [];
-    if (!p || !p.selected || p.manual) return out;
+    if (!p || !p.selected || p.manual || _cabAllOff(p)) return out;
     if (!p.dxfUrl) { out.push('no DXF'); return out; }   // can't cut → nothing else to check
     if (p.dxfError) { out.push('DXF error: ' + p.dxfError); return out; }
     if (p.dxfLoaded) {
@@ -3592,10 +3749,13 @@
 
   function _viewHtml() {
     const nSheets = S.flatSheets.length;
-    const totalPcs = S.parts.reduce((s, p) => s + (p.selected ? (p.qty || 0) : 0), 0);
-    const totalUnique = S.parts.filter(p => p.selected).length;
-    const loadedDxfs = S.parts.filter(p => p.dxfLoaded).length;
-    const errorDxfs = S.parts.filter(p => p.dxfError).length;
+    // Cabinet capsules: rows whose every cabinet is OFF disappear from the
+    // list and all counts (เอ๋: "เอา/ไม่เอา เป็นรายตู้ ... จะได้ไม่ปนกัน").
+    const visParts = S.parts.filter(p => !_cabAllOff(p));
+    const totalPcs = visParts.reduce((s, p) => s + (p.selected ? (p.qty || 0) : 0), 0);
+    const totalUnique = visParts.filter(p => p.selected).length;
+    const loadedDxfs = visParts.filter(p => p.dxfLoaded).length;
+    const errorDxfs = visParts.filter(p => p.dxfError).length;
 
     // Grain symbols match the Python Nesting Tool + grain.xlsx legend
     // so a worker glancing at either tool sees the same mark per row:
@@ -3621,7 +3781,7 @@
       return -1;
     }
 
-    const partsRows = S.parts.map((p, i) => {
+    const partsRows = visParts.map((p, i) => {
       const status = p.manual
         ? `<button class="kdnest-part-del" title="Remove this manual part">✕</button>`
         : p.dxfLoaded
@@ -3670,6 +3830,28 @@
       ? `<div class="kdnest-grain-summary">⚠ ${_dirParts.length} part${_dirParts.length === 1 ? '' : 's'} have no grain rule — check the grain table (set ─ H / │ V / ✱ ANY)</div>`
       : '';
 
+    // Cabinet capsules row — one pill per cabinet (variant_root), tap = toggle
+    // include/exclude, + All/None for the group. Shown only when the manifest
+    // actually carries cabinet data (at least one NAMED cabinet) so legacy
+    // projects don't get a useless row. Badge = full design pcs of that cabinet.
+    const cabGroups = _cabinetGroups();
+    const showCabs = cabGroups.some(g => g.cab);
+    const offCabsN = showCabs
+      ? cabGroups.filter(g => S.cabinetsOff && S.cabinetsOff.has(g.cab)).length : 0;
+    const cabsRow = showCabs ? `
+            <div class="kdnest-cabs">
+              <span class="kdnest-cabs-lab" title="Pick which cabinets join this nest — tap a capsule to exclude/include it">Cabinets</span>
+              <button id="kdnest-cabs-all" class="kdnest-mini" title="Include every cabinet">All</button>
+              <button id="kdnest-cabs-none" class="kdnest-mini" title="Exclude every cabinet">None</button>
+              ${cabGroups.map(g => {
+                const off = !!(S.cabinetsOff && S.cabinetsOff.has(g.cab));
+                const label = g.cab ? _disp(g.cab) : 'No cabinet';
+                const full = (g.cab || 'parts not under any cabinet')
+                  + ` — ${g.nParts} part${g.nParts === 1 ? '' : 's'} · ${g.pcs} pcs · click to ${off ? 'include' : 'exclude'}`;
+                return `<button class="kdnest-cab${off ? ' kdnest-cab-off' : ''}" data-cab="${_esc(g.cab)}" title="${_esc(full)}">${_esc(label)}<sup>${g.pcs}</sup></button>`;
+              }).join('')}
+            </div>` : '';
+
     const sheetStockRows = S.sheetStock.map((s, i) => {
       const upDisabled = i === 0 ? 'disabled' : '';
       const downDisabled = i === S.sheetStock.length - 1 ? 'disabled' : '';
@@ -3717,7 +3899,7 @@
             <button class="kdnest-back" id="kdnest-back" title="Back to project">←</button>
             <div class="kdnest-title">
               <div class="kdnest-title-main"><svg class="nest-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg>Nesting</div>
-              <div class="kdnest-title-sub">${_esc(S.projectName)}${(S.mergedProjects && S.mergedProjects.length > 1) ? ` <span class="kdjobs-stale" title="${_esc('Merged projects: ' + S.mergedProjects.join(' + '))}">+${S.mergedProjects.length - 1} project${S.mergedProjects.length > 2 ? 's' : ''}</span>` : ''} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${S.parts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
+              <div class="kdnest-title-sub">${_esc(S.projectName)}${(S.mergedProjects && S.mergedProjects.length > 1) ? ` <span class="kdjobs-stale" title="${_esc('Merged projects: ' + S.mergedProjects.join(' + '))}">+${S.mergedProjects.length - 1} project${S.mergedProjects.length > 2 ? 's' : ''}</span>` : ''} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${visParts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}${offCabsN ? ` · <span class="kdjobs-stale" title="${_esc(cabGroups.filter(g => S.cabinetsOff.has(g.cab)).map(g => g.cab || 'No cabinet').join(' + ') + ' excluded from this nest')}">−${offCabsN} cab</span>` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
             </div>
           </div>
           <div class="kdnest-controls">
@@ -3756,8 +3938,9 @@
               ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
               <button id="kdnest-default-grain" class="kdnest-mini kdnest-default-grain" title="Set every part that has NO grain rule (?) to its DEFAULT — the original incoming orientation (kept as drawn, not rotated 90°). Clears the warning; applies for this run only (not saved to the grain table).">Default</button>
               <button id="kdnest-addproj" class="kdnest-mini" title="Merge another project's parts into this nest (multi-project nesting) — per-project counts are kept on every part">+ Project</button>
-              <span class="kdnest-parts-count">${totalUnique} / ${S.parts.length} · ${totalPcs} pcs</span>
+              <span class="kdnest-parts-count">${totalUnique} / ${visParts.length} · ${totalPcs} pcs</span>
             </div>
+            ${cabsRow}
             ${grainSummary}
             ${partsRows || '<div class="kdnest-empty">No parts in this project</div>'}
           </div>
@@ -3855,6 +4038,11 @@
     });
     // ＋ Project — merge another project's parts into this nest (เอ๋ 76ebca5).
     $('#kdnest-addproj')?.addEventListener('click', _openAddProjectModal);
+    // Cabinet capsules — tap toggles one cabinet; All/None act on the group.
+    $('#kdnest-cabs-all')?.addEventListener('click', () => _setAllCabinets(true));
+    $('#kdnest-cabs-none')?.addEventListener('click', () => _setAllCabinets(false));
+    S.rootEl.querySelectorAll('.kdnest-cab').forEach(btn =>
+      btn.addEventListener('click', () => _toggleCabinet(btn.dataset.cab)));
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
     S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty, .kdnest-stock-thick').forEach(el => {

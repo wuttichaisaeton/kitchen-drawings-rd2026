@@ -4484,6 +4484,49 @@ body.sb-fs-lock { overflow: hidden; }
   font-size: 11px;
   color: #889bb3;
 }
+/* Cabinet capsules (เอ๋ 2026-06-11): include/exclude whole cabinets before
+   Run/Save — one pill per variant_root, tap = toggle, All/None for the group. */
+.kdnest-cabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0 8px;
+  border-bottom: 1px solid #1c2530;
+  margin-bottom: 6px;
+}
+.kdnest-cabs-lab {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #889bb3;
+  margin-right: 2px;
+  cursor: help;
+}
+.kdnest-cab {
+  background: #14202e;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  cursor: pointer;
+  font-family: inherit;
+}
+.kdnest-cab:hover { background: #243349; }
+.kdnest-cab sup {
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #F2A93B;
+  margin-left: 3px;
+}
+.kdnest-cab-off {
+  opacity: 0.45;
+  border-style: dashed;
+  text-decoration: line-through;
+}
+.kdnest-cab-off sup { text-decoration: none; }
 .kdnest-part {
   display: grid;
   /* sel · #N · code · w · × · h · qty · grain · 👁 · 📍 · status
