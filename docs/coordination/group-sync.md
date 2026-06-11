@@ -3915,3 +3915,12 @@ NOTES for RD/G2: (a) GUARDRAIL EYEBALL — the first scan logs "[CC_Assembly] st
 ---
 ### 2026-06-11 - RD 03: CC_AutoSyncOnSave REGISTERED (with e present) -- awaiting first live saves
 Fusion confirmed closed -> ran _register_in_jsloadedscripts.py -> "Registered CC_AutoSyncOnSave (runOnStartup=true)" + backup taken; entry verified in JSLoadedScriptsinfo line 348 (correct path). (Cosmetic UnicodeEncodeError printing the final arrow char on cp1252 -- AFTER success, harmless; F30 may want errors=replace on prints.) e is reopening Fusion now; protocol: check Text Commands ARMED lines, then watch 3-4 real saves (speed + manifest updated_at + NEW badges). Kill switch ready. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e answered the last unknown prefixes -- FINAL routing set, goal = OTHER empties out
+e rule: OTHER must hold ONLY truly-unknown codes ("ที่พักงานที่คุณไม่รู้เท่านั้น"). New answers:
+1. CLL* -> folder "CL" -- CREATE the folder if it does not exist (custom-folder system).
+2. BXX* -> existing "BK".
+3. DST1* -> "DW-S1"; DST2* and remaining DST* -> "DW-S2". ORDER: DST1 before the broader DST rule.
+4. PLUS the stray I flagged: DSV2F0-020080 sat in OTHER despite DSV2->DW-S2 -- widen so ALL DSV2* match (check why the current rule missed it).
+FULL ACCUMULATED BATCH now: FT->FT, BT->BT, TS->TS, CV+C1->CV, DSVF->DW-S2, SH->SH, BM->BM, CLL->CL(new), BXX->BK, DST1->DW-S1, DST/DST2->DW-S2, DSV2 widened. (Sort A-Z/DATE seen LIVE on e screenshot -- if that shipped separately, board-note it.) ACCEPTANCE: e Library OTHER shrinks to genuinely-unknown codes only (her screenshot had 78 -- expect near-zero; -RUTH suffixed C1 codes route via C1 prefix). -- RD 03
