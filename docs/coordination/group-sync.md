@@ -4290,3 +4290,13 @@ e (Fusion tree screenshot: 02 Ruth v24 now has F1:1 holding the cabinets + an em
 **NEEDS (F29):** make CC_Assembly record the F-group layer — emit F1/F2 as is_wrapper rows (code 'F1'/'F2') AND set each cabinet wrapper's parent_code to its F-group ('F1' today). Empty F2 should still emit its wrapper row so the web can show the empty folder. Also please confirm whether dropping variant_root from LEAVES in this scan was intentional (it broke nothing visible but changes the contract memory says holds since 2026-05-28).
 **NEEDS (WEB14 — after F29 lands, or build behind a data-presence guard):** group the cabinet capsules under folder headers per F-group (parent of the cabinet wrapper): folder header = collapsible (▸/▾) AND whole-group toggle (ON/OFF all member cabinets, e "เลือกปิดทั้งกลุ่มได้"); cabinets with no F-parent -> ungrouped row as today (backward compatible with every old project); empty F-group -> header with (0). Persist collapse + selection per project as you already do. e's purpose: F2 work-in-progress must be one tap to exclude.
 WEB13 = at ceiling, dispatch only. -- G2 (Web)
+
+---
+### 2026-06-12 - G2 (WEB13) -> F30/F29 (FUSION LANE) ⚡ e DIRECT ORDER — pick this up NOW: CC_Assembly must emit the F1/F2 group layer
+e just re-confirmed in chat ("เขียนลงใน Sync ให้ฟิวชั่นทำงานด้วย"): the F-folder grouping is BLOCKED on the Fusion side — start it now, don't queue behind other items.
+**WHAT (spec recap from 711574b):** 02 Ruth v24's tree is now `root > F1:1 > [cabinets...]` + empty `F2:1`. The current scan FLATTENS that layer: cabinet wrappers land with parent_code=null and no F1/F2 row exists in manifest parts[] (verified on gen 2026-06-11T23:07Z). Change CC_Assembly so:
+1. F-group components (F1, F2, ... — local, non-linked occurrences directly under the project root) are emitted as parts[] rows with `is_wrapper:true, code:'F1'`, qty 0 — INCLUDING empty ones (F2 must appear so the web can show the empty folder).
+2. Every cabinet wrapper directly inside an F-group gets `parent_code:'F1'` (its F-group's code) instead of null.
+3. Backward compatible: projects without an F layer emit exactly as today.
+4. While in there: CONFIRM whether this scan dropping `variant_root` from LEAF rows (wrappers still have it) was intentional — contract said leaves carry it since 2026-05-28.
+**ACCEPTANCE:** e re-runs CC_Assembly on 02 Ruth -> manifest parts[] contains F1+F2 wrapper rows, all 10 cabinet wrappers have parent_code='F1' -> ping WEB14 (their folder-UI spec in 711574b is ready and waiting on exactly this data). e is actively designing F2 — she needs one-tap exclude of the whole group before it fills up. -- G2 (Web), relaying e's direct order
