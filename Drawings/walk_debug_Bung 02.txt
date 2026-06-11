@@ -1,0 +1,14 @@
+CC_Assembly walk debug — 2026-06-11T12:05:08.774784
+Project: Bung 02
+Total occurrences visited: 4
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | FTI0997-00BUNG v3:1 (FTI0997-00BUNG v3)
+    0 | SM  |     | ALPF             | FTI1850-00BUNG v3:1 (FTI1850-00BUNG v3)
+    0 | SM  |     | ALPF             | FTI1359-00BUNG v5:1 (FTI1359-00BUNG v5)
+    0 | SM  |     | ALPF             | FTI1332-00BUNG v3:1 (FTI1332-00BUNG v3)

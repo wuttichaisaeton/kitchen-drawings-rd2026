@@ -1,0 +1,34 @@
+{
+  "name": "Bung 02",
+  "status": "active",
+  "created_at": "2026-06-11T05:05:08.775648+00:00",
+  "updated_at": "2026-06-11T05:05:08.775648+00:00",
+  "total_unique_parts": 4,
+  "total_qty": 4,
+  "parts": [
+    {
+      "code": "FTI0997-00BUNG",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:rTxuepfaQaGYAKtWpdXC3g"
+    },
+    {
+      "code": "FTI1332-00BUNG",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:K2do0X9BTa-VwHNL741qiA"
+    },
+    {
+      "code": "FTI1359-00BUNG",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:-7nfDShzRI2RlmXOj239PA"
+    },
+    {
+      "code": "FTI1850-00BUNG",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:VPmdmO4tQTuwwmXjbClYGQ"
+    }
+  ]
+}
