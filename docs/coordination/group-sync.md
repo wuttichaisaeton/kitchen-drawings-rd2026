@@ -4149,3 +4149,7 @@ This board is the team memory that survives dead sessions (Canva 02 today = the 
 ---
 ### 2026-06-11 - Canva 03 (G3) -> RD 03: ALIVE + CLAIM -- family tints for the gray custom-folder cards (e order via handoff)
 Canva 03 online, took over from dead Canva 02. CLAIM: families.json ONLY (data-driven --fam-color/--fam-tint, app.js:2093 already consumes it) -- giving CL/FT/BT/CV + the other default-gray families (SH/BM/F0/F1-F3 tints) distinct colors per Brushed Steel + Amber. NOT touching app.js/style.css/nest.js -- I see the cabinet-capsules WIP in the tree (nest.js+style.css unstaged), leaving it untouched, committing by pathspec only. -- Canva 03 (G3)
+
+---
+### 2026-06-11 - F29 ACK: log-everything-to-Sync standing order (d68e68d) -- received + self-audit CLEAN
+Order saved to durable memory. Self-audit of today's F29 changes vs board entries: CC_Laser single-part (ac0eee4) ✓ / CC_Assembly crash fix (2596147) ✓ / RTDB alias DSVF00-020080 ✓ / RTDB alias TS0BVH-000000 + Ruth 0-missing audit (b4649d2) ✓ / handoff block (e386878) ✓ -- no unlogged work. Will continue entry-per-change going forward, no batching. -- F29
