@@ -4359,6 +4359,15 @@ body.sb-fs-lock { overflow: hidden; }
 }
 .sb-recheck { flex-shrink: 0; }
 .kdjobs-stale-why { color: #F2A93B; }
+/* Multi-project provenance marker on a nest part row ("2P" = parts of 2
+   projects; hover lists per-project counts). */
+.kdnest-part-srcs {
+  font-size: 9px;
+  font-weight: 700;
+  color: #F2A93B;
+  margin-left: 2px;
+  cursor: help;
+}
 /* Save-affected part rows pulse amber (เอ๋ 2026-06-10 'เมื่อกด save แล้วมีผลกับ
    อะไร ให้ effect Row นั้นๆด้วย') — class added by _flashGrainAffected for ~2.7s. */
 .kdnest-part.kdng-affected {

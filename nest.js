@@ -633,6 +633,116 @@
     S.projectKey = projectKey;
     S.projectName = project.name || projectKey;
     S.parts = [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
+    // Multi-project nesting (เอ๋ board 76ebca5): provenance per part — which
+    // project wants how many of this code. Fresh open = single source.
+    S.mergedProjects = [projectKey];
+    for (const p of S.parts) p.sources = { [projectKey]: p.qty || 0 };
+  }
+
+  // ── "+ Project" merge (เอ๋ board 76ebca5: multi-project nesting) ──────────
+  // Pulls another project's LEAF parts into the current list. Same code across
+  // projects = the same master part (same DXF) → qty merges into one row, with
+  // per-project counts kept in part.sources so cut sheets / saved jobs can say
+  // "ตู้ไหนกี่ชิ้น". DXF meta + grain rules applied exactly like the primary
+  // load (S.dxfsAll + S.grainMap reused — no extra fetches).
+  async function _mergeProjectParts(projectKey) {
+    const m = window.kdManifest;
+    const project = m && m.projects && m.projects[projectKey];
+    if (!project) { alert(`Project '${projectKey}' not in manifest`); return; }
+    if ((S.mergedProjects || []).includes(projectKey)) return;
+    const byCode = new Map();
+    for (const p of (Array.isArray(project.parts) ? project.parts : [])) {
+      if (!p || !p.code || p.is_wrapper) continue;
+      const ex = byCode.get(p.code);
+      if (ex) { ex.qty += (p.qty || 0); if (!ex.urn && p.urn) ex.urn = p.urn; }
+      else {
+        const np = _newPart(p.code, p.qty);
+        np.urn = p.urn || null;
+        byCode.set(p.code, np);
+      }
+    }
+    for (const part of byCode.values()) {
+      const meta = (S.dxfsAll || {})[part.code];
+      if (meta) {
+        part.dxfUrl = meta.url || '';
+        part.dxfMeta = meta;
+        part.thickness = meta.thickness_mm || 0;
+        part.grain = (meta.grain || part.grain || 'ANY').toUpperCase();
+        if (meta.grain) part.grainExplicit = true;
+      }
+      if (S.grainMap) {
+        const looked = _lookupPattern(part.code, S.grainMap);
+        part.grain = (looked && looked.grain) ? looked.grain : '?';
+        if (looked && looked.thickness && !part.thickness) {
+          const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
+          if (!isNaN(t)) part.thickness = t;
+        }
+        const _fix = _parseFixHeights(looked && looked.fix);
+        const _g = looked ? String(looked.grain || '').toUpperCase() : '';
+        part.fixHeights = (_g === 'V') ? _fix : [];
+        part.fixWidths  = (_g === 'H') ? _fix : [];
+      }
+    }
+    // Merge into the live list: same code → one row, qty summed, source recorded.
+    for (const np of byCode.values()) {
+      const ex = S.parts.find(p => p.code === np.code && !p.manual);
+      if (ex) {
+        ex.qty = (ex.qty || 0) + (np.qty || 0);
+        ex.sources = ex.sources || { [S.projectKey]: ex.qty - (np.qty || 0) };
+        ex.sources[projectKey] = (ex.sources[projectKey] || 0) + (np.qty || 0);
+      } else {
+        np.sources = { [projectKey]: np.qty || 0 };
+        S.parts.push(np);
+      }
+    }
+    S.parts.sort((a, b) => a.code.localeCompare(b.code));
+    (S.mergedProjects = S.mergedProjects || [S.projectKey]).push(projectKey);
+    S.loadedJobStale = null;   // the list changed — any loaded-job badge is moot
+    _refreshView();
+    await _loadAllDxfs();
+    if (!S.closing) _refreshView();
+  }
+
+  function _openAddProjectModal() {
+    document.querySelectorAll('.kdaddproj-modal').forEach(x => x.remove());
+    const m = window.kdManifest || {};
+    const merged = S.mergedProjects || [S.projectKey];
+    const cands = Object.entries(m.projects || {})
+      .filter(([key]) => !merged.includes(key))
+      .filter(([key]) => !(typeof window.isProjectSoftDeleted === 'function' && window.isProjectSoftDeleted(key)))
+      .map(([key, p]) => ({
+        key,
+        name: p.name || key,
+        n: (Array.isArray(p.parts) ? p.parts : []).filter(x => x && x.code && !x.is_wrapper).length,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const rows = cands.length ? cands.map(c => `
+      <div class="kdjobs-row kdaddproj-row" data-key="${_esc(c.key)}">
+        <div class="kdjobs-main">
+          <span class="kdjobs-name">${_esc(c.name)}</span>
+          <span class="kdjobs-meta">${c.n} unique parts</span>
+        </div>
+        <button class="kdjobs-load kdaddproj-add" data-key="${_esc(c.key)}">Add</button>
+      </div>`).join('') : '<div class="kdjobs-empty">No other projects to add.</div>';
+    const modal = document.createElement('div');
+    modal.className = 'kdstock-modal kdjobs-modal kdaddproj-modal';
+    modal.innerHTML = '<div class="kdstock-backdrop"></div>'
+      + `<div class="kdstock-frame" role="dialog" aria-label="Add Project">
+           <div class="kdstock-head">＋ Add Project
+             <span class="kdstock-sub">merge another project's parts into this nest</span>
+             <button class="kdstock-close" aria-label="Close">✕</button>
+           </div>
+           <div class="kdjobs-body">${rows}</div>
+         </div>`;
+    document.body.appendChild(modal);
+    const closeModal = () => modal.remove();
+    modal.querySelector('.kdstock-backdrop').addEventListener('click', closeModal);
+    modal.querySelector('.kdstock-close').addEventListener('click', closeModal);
+    modal.querySelectorAll('.kdaddproj-add').forEach(btn => btn.addEventListener('click', async () => {
+      const key = btn.dataset.key;
+      closeModal();
+      await _mergeProjectParts(key);
+    }));
   }
 
   // ── Grain rules editor (RTDB grain_rules, seeded from grain.json) ─────
@@ -2812,6 +2922,8 @@
       code: p.code, qty: p.qty || 0, selected: !!p.selected,
       grain: p.grain || 'ANY', thickness: p.thickness || 0,
       w: p.w || 0, h: p.h || 0, manual: !!p.manual, dxfUrl: p.dxfUrl || '',
+      // provenance (multi-project nesting): which project wants how many
+      sources: p.sources || null,
     };
   }
   // Strip a flatSheet to thick/size + placements without polys/bbox.
@@ -2854,6 +2966,8 @@
       })),
       parts: (S.parts || []).map(_serializePart),
       sheets: (S.flatSheets || []).map(_serializeSheet),
+      // multi-project nesting: every source project in this nest (primary first)
+      merged_projects: (S.mergedProjects && S.mergedProjects.length) ? S.mergedProjects.slice() : [S.projectKey],
     };
   }
 
@@ -3015,7 +3129,18 @@
   function _jobStaleness(job, projectKey) {
     const reasons = [];
     if (!job) return reasons;
-    const cur = _manifestPartCounts(projectKey || S.projectKey);
+    // Multi-project jobs: compare against the SUM of every source project's
+    // manifest counts (merged_projects, primary-first); single-project jobs
+    // fall back to the one key as before.
+    const srcKeys = (Array.isArray(job.merged_projects) && job.merged_projects.length)
+      ? job.merged_projects : [projectKey || S.projectKey];
+    let cur = null;
+    for (const k of srcKeys) {
+      const c = _manifestPartCounts(k);
+      if (!c) continue;
+      if (!cur) cur = new Map();
+      for (const [code, q] of c) cur.set(code, (cur.get(code) || 0) + q);
+    }
     if (cur) {
       const snap = new Map();
       for (const p of (job.parts || [])) {
@@ -3070,8 +3195,11 @@
       base.dxfLoaded = !!sp.manual;   // manual rects need no fetch
       base.dxfError = null;
       base.polys = null; base.bbox = null;
+      base.sources = sp.sources || null;   // multi-project provenance survives a load
       return base;
     });
+    S.mergedProjects = (Array.isArray(job.merged_projects) && job.merged_projects.length)
+      ? job.merged_projects.slice() : [S.projectKey];
     S.previewCode = null;
     S.highlightCode = null;
 
@@ -3133,7 +3261,7 @@
         <div class="kdjobs-row" data-id="${_esc(j.jobId)}">
           <div class="kdjobs-main">
             <span class="kdjobs-name">${_esc(j.name || j.jobId)}${staleBadge}</span>
-            <span class="kdjobs-meta">${nSheets} sheets · ${nParts} parts · ${_esc(j.mode || '')}${stale.length ? ` · <span class="kdjobs-stale-why">${_esc(stale.join(' + '))} — Run Nesting again</span>` : ''}</span>
+            <span class="kdjobs-meta">${nSheets} sheets · ${nParts} parts · ${_esc(j.mode || '')}${(Array.isArray(j.merged_projects) && j.merged_projects.length > 1) ? ` · <span title="${_esc(j.merged_projects.join(' + '))}">${j.merged_projects.length} projects</span>` : ''}${stale.length ? ` · <span class="kdjobs-stale-why">${_esc(stale.join(' + '))} — Run Nesting again</span>` : ''}</span>
           </div>
           <button class="kdjobs-load" data-id="${_esc(j.jobId)}">Load</button>
           ${isAdminUser ? `<button class="kdjobs-del" data-id="${_esc(j.jobId)}" title="Delete this saved job">✕</button>` : ''}
@@ -3511,7 +3639,7 @@
         <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${p.code === S.previewCode ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
-          <span class="kdnest-part-code" title="${_esc(p.code)}">${p.manual ? '▭ ' : ''}${_esc(_disp(p.code))}</span>
+          <span class="kdnest-part-code" title="${_esc(p.code)}${p.sources && Object.keys(p.sources).length > 1 ? _esc(' — ' + Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + ')) : ''}">${p.manual ? '▭ ' : ''}${_esc(_disp(p.code))}${p.sources && Object.keys(p.sources).length > 1 ? `<sup class="kdnest-part-srcs" title="${_esc(Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + '))}">${Object.keys(p.sources).length}P</sup>` : ''}</span>
           <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="W"${whLock}>
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
@@ -3578,7 +3706,7 @@
             <button class="kdnest-back" id="kdnest-back" title="Back to project">←</button>
             <div class="kdnest-title">
               <div class="kdnest-title-main"><svg class="nest-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg>Nesting</div>
-              <div class="kdnest-title-sub">${_esc(S.projectName)} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${S.parts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
+              <div class="kdnest-title-sub">${_esc(S.projectName)}${(S.mergedProjects && S.mergedProjects.length > 1) ? ` <span class="kdjobs-stale" title="${_esc('Merged projects: ' + S.mergedProjects.join(' + '))}">+${S.mergedProjects.length - 1} project${S.mergedProjects.length > 2 ? 's' : ''}</span>` : ''} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${S.parts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
             </div>
           </div>
           <div class="kdnest-controls">
@@ -3616,6 +3744,7 @@
               <button id="kdnest-parts-none" class="kdnest-mini">None</button>
               ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
               <button id="kdnest-default-grain" class="kdnest-mini kdnest-default-grain" title="Set every part that has NO grain rule (?) to its DEFAULT — the original incoming orientation (kept as drawn, not rotated 90°). Clears the warning; applies for this run only (not saved to the grain table).">Default</button>
+              <button id="kdnest-addproj" class="kdnest-mini" title="Merge another project's parts into this nest (multi-project nesting) — per-project counts are kept on every part">+ Project</button>
               <span class="kdnest-parts-count">${totalUnique} / ${S.parts.length} · ${totalPcs} pcs</span>
             </div>
             ${grainSummary}
@@ -3713,6 +3842,8 @@
       }
       _refreshView();
     });
+    // ＋ Project — merge another project's parts into this nest (เอ๋ 76ebca5).
+    $('#kdnest-addproj')?.addEventListener('click', _openAddProjectModal);
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
     S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty, .kdnest-stock-thick').forEach(el => {
