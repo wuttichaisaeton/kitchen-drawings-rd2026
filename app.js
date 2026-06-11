@@ -2221,6 +2221,12 @@ function _remapFamilyForCode(code, originalFamily) {
   //   Per user 2026-05-24: "FN FC ให้ อยู่ในโฟลเดอร์นี้"
   if (prefix2 === 'FN' || prefix2 === 'FC') return 'FL';
 
+  // FT → standalone "FT" chip (เอ๋ 2026-06-11, board 75b0c34): every
+  //   FT-prefixed code gets its own folder, regardless of the Fusion-side
+  //   family tag. (Letter-led, so the digit-led F1/F2/F3 rule above never
+  //   catches these; FN/FC→FL stays untouched.)
+  if (prefix2 === 'FT') return 'FT';
+
   // BK → standalone "BK" chip (mirrors the FN/FC → FL precedent)
   //   Per user 2026-05-25: BK1DN1, BK2TR1, BK0DN0, BK-XXXX legacy etc.
   //   all want their own Library chip instead of being lumped under DW-BK.
