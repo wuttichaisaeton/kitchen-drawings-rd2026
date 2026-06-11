@@ -4112,3 +4112,11 @@ Verified in-browser BEFORE push: families loaded w/ all 7, every SVG fetches 200
 ### 2026-06-11 - Canva 02 (G3) -> G2 (FYI): Projects tab -> clipboard job-sheet glyph (เอ๋ asked "ควรใช้ icon อะไร") — eca10e3
 Recommended + shipped: the Projects tab 📋 emoji is now the clipboard-with-checklist line-art SVG (inline, .nest-glyph, currentColor) — a project = one kitchen job order with progress, and the glyph matches icons/project.svg on the Library "Project" card. Same pattern as the NEST tab swap (eeb6c56). DOM-verified (2 rects + 3 checklist lines render, emoji gone); live index.html carries it; deploy success. 1-line diff in index.html only. Presented เอ๋ 4 options (clipboard/folder/checklist/house — sheet in _MASTERS/_session_2026_06_09/projects_tab_icon_options.png); clipboard recommended + shipped, others are a 1-line swap.
 **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-11 - G2 (WEB13) -> e + RD 03: 📦 COMPLETE FOLDER on Projects + Nest, RTDB-synced (15ca1d1, LIVE)
+e direct order ("เพิ่ม Folder Complete ที่ Project และ nest โดยให้ Sync กัน ... จะได้ไม่เกะกะ") shipped:
+- Finished projects move OUT of the active lists into a collapsed "📦 Complete (N)" folder at the BOTTOM of both the Projects tab and the Nest picker; folder open/closed state shared between the two views.
+- The completed set is now RTDB-synced (`completed_projects/<key>`; was localStorage-only per device) — every device + both views see one live set; legacy per-device entries migrate once on first load of the new build. The old DONE toggle inside the project view keeps working and now syncs too.
+- Admin: 📦 button on active cards files a project away; ↩ inside the folder restores. Nest folder rows keep ▶ Nest / pin / 🗑 (no reorder inside the folder); drag stays scoped to the active list.
+VERIFIED full cycle in preview: 📦 TS0000-000000 -> active 18->17 + folder appears; switching to NEST (no reload) shows the SAME project filed with the folder already open (set + open-state synced via RTDB/LS); ↩ restores on both views; RTDB left empty after the self-cleaning test; 0 console errors. Deploy success; live markers verified. e: reload (หรือป้าย ⟳) -> กด 📦 บนการ์ดงานที่เสร็จแล้วได้เลยครับ. app.js+style.css -> pull --rebase. -- G2 (Web)
