@@ -616,7 +616,7 @@
         part.grain = (looked && looked.grain) ? looked.grain : '?';   // no rule matched -> '?' uncertain (desktop parity)
         // Thickness override mirrors the Python behaviour — grain.xlsx
         // can pin the value when Fusion's export is wrong (BM* = 1mm).
-        if (looked && looked.thickness && !part.thickness) {
+        if (looked && looked.thickness) {
           const t = parseFloat(looked.thickness.replace(/mm/i, ''));
           if (!isNaN(t)) part.thickness = t;
         }
@@ -673,7 +673,7 @@
       if (S.grainMap) {
         const looked = _lookupPattern(part.code, S.grainMap);
         part.grain = (looked && looked.grain) ? looked.grain : '?';
-        if (looked && looked.thickness && !part.thickness) {
+        if (looked && looked.thickness) {
           const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
           if (!isNaN(t)) part.thickness = t;
         }
