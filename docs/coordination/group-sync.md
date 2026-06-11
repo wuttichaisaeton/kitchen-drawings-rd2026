@@ -4194,3 +4194,15 @@ Correcting the record: WEB14 was NOT dead — my preview server restarted mid-ve
 - All/None group buttons work; 0 console errors; node --check OK.
 **ACCEPTANCE met:** F2 group arriving later = new variant_root in manifest = new capsule automatically, OFF-able in one tap.
 **NB for GA:** commit 9376a84 lacks the Co-Authored-By footer + is authored GW (Cowork) — pushed as-is rather than rewriting a hash your entry already references. nest.js + style.css touched → pull --rebase. -- G2 (WEB14) ⏱ 01:05
+
+---
+### 2026-06-11 - G2 (WEB14) -> RD + e: DESIGN SPEC ready for review — "Cabinet Freshness" (per-role NEW/CHANGED markers) — NO code yet
+Following e's direct order ("คนประกอบ คนพับ คนตัด Laser ก็ต้องรู้ว่าอะไรใหม่อะไรเก่า ... ต้อง Sync กัน") — the cross-role awareness layer on top of today's cabinet capsules. Ran a 6-reader codebase map + a 4-lens adversarial design review (2 workflows) before writing anything. e locked all forks via 8 multiple-choice answers.
+**APPROACH B (web-only, NO Fusion/manifest change).** Spec committed: `docs/superpowers/specs/2026-06-11-cabinet-freshness-design.md`.
+- UNIT = cabinet (variant_root, 1 badge/cabinet) · RELATIVE-TO = per-role/department ("new since THIS dept last acked") · RE-EXPORT = shows CHANGED · PHASE-1 = per-role only (no cross-role lifecycle; bent/assembled untouched).
+- FINGERPRINT computed in nest.js from the `contrib` array shipped TODAY in capsules (9376a84) = sorted code:qty (qty>0) + max uploaded_dxfs[code].uploaded_at SCOPED to the cabinet's own codes (NOT manifest.generated_at — that bumps whole-project). Version component OMITTED phase-1 (last_drawn_version 0/0 dormant until F29; forward-compat guard).
+- SYNC = `cabinet_seen/<role>/<pk>/<cab>` mirroring bent_status verbatim +1 role level; LS fallback kd_cabinet_seen_v1; role HARD-CODED per surface (laser/bend/assemble) not getRole() so admins write the right dept. 24h baseline (reuses isNewProject) kills first-render NEW spike.
+- ACK = explicit ✓ per cabinet + "mark all seen" (e chose explicit, not open-counts-as-seen). 'No cabinet' bucket = 1 card "__NO_CAB__". OFF capsules show badge DIMMED. Completed projects compute freshness as normal (e chose, no freeze). CHANGED ⟳ outranks the existing Outdated/recheck hints (demote to dimmed) so no 2 amber signals fight.
+- Reuses: .part-new-badge CSS (theme-safe), warning-frame infra (mindmap), _aggregatePartsByCode (+includeVariant flag for Sim.Bending grouping).
+**FYI F29 (no action needed now):** phase-2 wants per-cabinet `last_drawn_version` — when you stamp real versions (board a02d958 spec), the fingerprint picks them up behind an 'any nonzero' guard. No coordination needed for phase-1.
+NEXT: awaiting e's spec review → then writing-plans → implement. NO working-tree code touched (spec doc only; pathspec commit). -- G2 (WEB14)
