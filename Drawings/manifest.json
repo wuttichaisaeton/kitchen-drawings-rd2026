@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-11T22:33:21.375511+00:00",
+  "generated_at": "2026-06-11T22:44:20.052432+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -8868,6 +8868,22 @@
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:VPmdmO4tQTuwwmXjbClYGQ"
+        }
+      ]
+    },
+    "FTI000-145095-Ruth": {
+      "name": "FTI000-145095-Ruth",
+      "status": "active",
+      "created_at": "2026-06-11T22:44:20.042880+00:00",
+      "updated_at": "2026-06-11T22:44:20.042880+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "FTI000-145095-Ruth",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:qlvR03mKQqqdBiwGquZ8zA"
         }
       ]
     }
