@@ -2353,12 +2353,67 @@ function saveCompletedSet(set) {
   try { localStorage.setItem(LS_COMPLETED_KEY, JSON.stringify([...set])); } catch {}
 }
 
-function isCompleted(name) { return loadCompletedSet().has(name); }
+// Completed projects — RTDB-synced (เอ๋ 2026-06-11 'เพิ่ม Folder Complete ที่
+// Project และ nest โดยให้ Sync กัน'): completed_projects/<key> = {time}. Was
+// localStorage-only (per device, no cross-view push); now every device + the
+// Projects tab AND the Nest picker share one live set. localStorage stays as
+// the instant-paint seed / offline fallback; legacy local entries migrate to
+// RTDB once on init.
+let completedProjectsCache = null;   // null = sync not started → fall back to LS
+
+function initCompletedSync() {
+  completedProjectsCache = {};
+  for (const k of loadCompletedSet()) completedProjectsCache[k] = { time: 0 };
+  if (!window.firebaseDB) return;
+  try {
+    window.firebaseDB.ref('completed_projects').on('value', snap => {
+      completedProjectsCache = snap.val() || {};
+      saveCompletedSet(new Set(Object.keys(completedProjectsCache)));
+      try { render(); } catch {}
+    }, err => console.warn('Firebase completed_projects listener error:', err));
+    // one-shot migration of pre-sync local entries
+    window.firebaseDB.ref('completed_projects').once('value').then(s => {
+      const cur = s.val() || {};
+      for (const k of loadCompletedSet()) {
+        if (!cur[k]) {
+          try { window.firebaseDB.ref('completed_projects/' + k).set({ time: Date.now() }); } catch {}
+        }
+      }
+    });
+  } catch (e) {
+    console.warn('Failed to attach completed_projects listener:', e);
+  }
+}
+
+function isCompleted(name) {
+  if (completedProjectsCache) return !!completedProjectsCache[name];
+  return loadCompletedSet().has(name);
+}
 
 function markCompleted(name, done) {
+  if (!name) return;
+  if (completedProjectsCache) {
+    if (done) completedProjectsCache[name] = { time: Date.now() };
+    else delete completedProjectsCache[name];
+  }
   const s = loadCompletedSet();
   if (done) s.add(name); else s.delete(name);
   saveCompletedSet(s);
+  if (window.firebaseDB) {
+    try {
+      if (done) window.firebaseDB.ref('completed_projects/' + name).set({ time: Date.now() });
+      else window.firebaseDB.ref('completed_projects/' + name).remove();
+    } catch (e) { console.warn('completed_projects write failed:', e); }
+  }
+}
+
+// Shared open/closed state of the 📦 Complete folder (both views use it).
+function _completeFolderOpen() {
+  try { return localStorage.getItem('kd_complete_open_v1') === '1'; } catch { return false; }
+}
+function _toggleCompleteFolder() {
+  try { localStorage.setItem('kd_complete_open_v1', _completeFolderOpen() ? '0' : '1'); } catch {}
+  render();
 }
 
 // ── Pinned projects + manual order (Firebase-synced) ───────────────
@@ -7365,6 +7420,7 @@ function renderNestHome() {
       ready: dxfCount > 0,
       pinned: isPinned(key),   // shared with Projects view (_pinnedCache)
       isNew: isNewProject('nest', key, p),
+      completed: isCompleted(key),   // 📦 Complete folder — same RTDB set as Projects
     };
   });
   // Order mirrors the Projects tab so reordering syncs BOTH ways: pinned
@@ -7397,8 +7453,13 @@ function renderNestHome() {
     return;
   }
 
-  const orderedKeys = filtered.map(e => e.key);   // visual order for ▲/▼
-  const rows = filtered.map((e, i) => {
+  // 📦 Complete folder — same RTDB-synced set as the Projects tab; finished
+  // projects collapse out of the picker (เอ๋ 2026-06-11 'จะได้ไม่เกะกะ').
+  const activeEntries = filtered.filter(e => !e.completed);
+  const doneEntries = filtered.filter(e => e.completed);
+
+  const orderedKeys = activeEntries.map(e => e.key);   // visual order for ▲/▼
+  const rows = activeEntries.map((e, i) => {
     // Row is a <div role="button"> instead of a real <button> so we can
     // nest a clickable .pin-btn inside it (button-in-button is invalid
     // HTML). Click + keydown handlers wire it up below; aria-disabled
@@ -7411,7 +7472,7 @@ function renderNestHome() {
       e.pinned ? 'pinned' : '',
     ].filter(Boolean).join(' ');
     const pinTitle = e.pinned ? 'Unpin from top' : 'Pin to top';
-    const isFirst = i === 0, isLast = i === filtered.length - 1;
+    const isFirst = i === 0, isLast = i === activeEntries.length - 1;
     return `
     <div class="${cls}" data-key="${escapeHtml(e.key)}" role="button" tabindex="0"
          ${e.ready ? '' : 'aria-disabled="true"'}>
@@ -7432,6 +7493,31 @@ function renderNestHome() {
     </div>`;
   }).join('');
 
+  // 📦 Complete section — same collapsible folder + shared open-state as the
+  // Projects tab. Rows keep ▶ Nest / pin / 🗑 (handlers below pick them up by
+  // class) but no ▲▼ reordering inside the folder.
+  const doneRows = doneEntries.map(e => `
+    <div class="nest-home-row completed${e.ready ? '' : ' no-dxf'}" data-key="${escapeHtml(e.key)}" role="button" tabindex="0"
+         ${e.ready ? '' : 'aria-disabled="true"'}>
+      <div class="nest-home-body">
+        <span class="nest-home-name">${escapeHtml(e.name)}</span>
+        <span class="nest-home-stats">${e.uniqueParts} unique · ${e.totalQty} pcs · 📐 ${e.dxfCount}/${e.uniqueParts} DXFs</span>
+      </div>
+      <span class="nest-home-actions">
+        <span class="nest-home-cta">${e.ready ? '▶ Nest' : '⚠ no DXFs'}</span>
+        <button class="pin-btn ${e.pinned ? 'on' : ''}" data-project="${escapeHtml(e.key)}" aria-label="Pin" title="Pin to top">${e.pinned ? '★' : '☆'}</button>
+        <button class="nest-del-btn" data-key="${escapeHtml(e.key)}" aria-label="Hide project" title="Hide from list (also hides in Projects)">🗑</button>
+      </span>
+    </div>`).join('');
+  const doneOpen = _completeFolderOpen();
+  const completeSection = doneEntries.length ? `
+    <div class="complete-folder${doneOpen ? ' open' : ''}">
+      <button class="complete-folder-head" id="kd-complete-toggle" title="Finished projects — synced with the Projects tab">
+        ${doneOpen ? '▾' : '▸'} 📦 Complete <span class="complete-folder-count">(${doneEntries.length})</span>
+      </button>
+      ${doneOpen ? `<div class="nest-home-rows">${doneRows}</div>` : ''}
+    </div>` : '';
+
   ROOT.innerHTML = `
     <div class="nest-home">
       <div class="nest-home-banner">
@@ -7439,8 +7525,11 @@ function renderNestHome() {
         <span class="nest-home-sub">Pick a project — workspace opens in-browser. Admin only.</span>
       </div>
       <div class="nest-home-rows">${rows}</div>
+      ${completeSection}
     </div>`;
-  COUNT_EL.textContent = `${filtered.length} project${filtered.length === 1 ? '' : 's'}`;
+  COUNT_EL.textContent = `${filtered.length} project${filtered.length === 1 ? '' : 's'}${doneEntries.length ? ` · ${doneEntries.length} complete` : ''}`;
+
+  ROOT.querySelector('#kd-complete-toggle')?.addEventListener('click', _toggleCompleteFolder);
 
   // Row open — skip if the click was on the pin button (pin has its own
   // handler below). aria-disabled rows (no DXFs) don't open. Keyboard
@@ -7539,9 +7628,9 @@ function navBack() {
 // ──────────────────────────────────────────────────────────────────────
 
 function renderProjectsHome() {
-  const items = projectList();
+  const allItems = projectList();
 
-  if (!items.length) {
+  if (!allItems.length) {
     ROOT.innerHTML = `
       <p class="loading">No projects yet<br><br>
       Open a project assembly in Fusion and run <code>CC_Assembly</code></p>`;
@@ -7549,7 +7638,12 @@ function renderProjectsHome() {
     return;
   }
 
-  const html = items.map((p, idx) => {
+  // 📦 Complete folder (เอ๋ 2026-06-11): finished projects file away into a
+  // collapsed section below the active list — same set the Nest picker shows.
+  const items = allItems.filter(p => !p.completed);
+  const doneItems = allItems.filter(p => p.completed);
+
+  const cardHtml = (p, idx) => {
     const isTop = idx === 0 && !p.completed && !p.pinned;
     const cls = [
       'project-card',
@@ -7600,6 +7694,13 @@ function renderProjectsHome() {
     const renameBtn = adminMode
       ? `<button class="project-rename-btn" data-rename-project="${escapeHtml(p.key)}" aria-label="Rename project" title="Edit the display name (e.g. the cabinet's config code)"><svg class="proj-act-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16.4 3.5 a1.9 1.9 0 0 1 2.7 2.7 L7.8 18 3.5 19.3 4.8 15 Z"/><line x1="14.2" y1="5.7" x2="17" y2="8.5"/><line x1="4" y1="21.3" x2="16.5" y2="21.3"/></svg></button>`
       : '';
+    // 📦 file away / ↩ bring back (เอ๋ 2026-06-11 'เอางานที่ทำแล้วไปเก็บ
+    // จะได้ไม่เกะกะ') — writes the RTDB-synced completed set.
+    const completeBtn = adminMode
+      ? (p.completed
+        ? `<button class="project-complete-btn on" data-uncomplete-project="${escapeHtml(p.key)}" aria-label="Restore project" title="Move back to the active list">↩</button>`
+        : `<button class="project-complete-btn" data-complete-project="${escapeHtml(p.key)}" aria-label="Mark complete" title="Move to the Complete folder">📦</button>`)
+      : '';
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -7610,17 +7711,46 @@ function renderProjectsHome() {
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
         </div>
         ${pinBtn}
+        ${completeBtn}
         ${renameBtn}
         ${deleteBtn}
       </div>`;
-  }).join('');
+  };
+  const html = items.map(cardHtml).join('');
+  const doneHtml = doneItems.map((p) => cardHtml(p, -1)).join('');
+  const doneOpen = _completeFolderOpen();
+  const completeSection = doneItems.length ? `
+    <div class="complete-folder${doneOpen ? ' open' : ''}">
+      <button class="complete-folder-head" id="kd-complete-toggle" title="Finished projects — kept out of the active list (synced with the Nest picker)">
+        ${doneOpen ? '▾' : '▸'} 📦 Complete <span class="complete-folder-count">(${doneItems.length})</span>
+      </button>
+      ${doneOpen ? `<div class="project-list project-list-complete">${doneHtml}</div>` : ''}
+    </div>` : '';
 
-  ROOT.innerHTML = `<div class="project-list">${html}</div>`;
+  ROOT.innerHTML = `<div class="project-list">${html}</div>${completeSection}`;
+
+  // 📦 folder open/close — shared state with the Nest picker.
+  ROOT.querySelector('#kd-complete-toggle')?.addEventListener('click', _toggleCompleteFolder);
+  // 📦 / ↩ — move projects in and out of the Complete folder (RTDB-synced).
+  ROOT.querySelectorAll('[data-complete-project]').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      markCompleted(btn.dataset.completeProject, true);
+      render();
+    });
+  });
+  ROOT.querySelectorAll('[data-uncomplete-project]').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      markCompleted(btn.dataset.uncompleteProject, false);
+      render();
+    });
+  });
 
   // Card click → drill into project (but ignore clicks on pin, drag, rename, or delete).
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn')) return;
+      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn')) return;
       markProjectSeen('proj', el.dataset.project);   // opening clears this surface's NEW badge
       navTo({ kind: 'project', name: el.dataset.project });
     });
@@ -7679,7 +7809,7 @@ function renderProjectsHome() {
     });
   }
 
-  COUNT_EL.textContent = `${items.length} projects · ${items.filter(p => !p.completed).length} active`;
+  COUNT_EL.textContent = `${allItems.length} projects · ${items.length} active${doneItems.length ? ` · ${doneItems.length} complete` : ''}`;
 }
 
 function masterForCode(code, auto) {
@@ -11816,6 +11946,7 @@ async function init() {
   initDeletedDrawingsSync();
   initDeletedProjectsSync();
   initProjectNamesSync();
+  initCompletedSync();
   initPinnedSync();
   initFamilyChipSync();
   initUploadedPdfsSync();

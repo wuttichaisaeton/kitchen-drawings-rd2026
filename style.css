@@ -1601,6 +1601,56 @@ main.transit-back {
   gap: 10px;
 }
 
+/* 📦 Complete folder (เอ๋ 2026-06-11 'เอางานที่ทำแล้วไปเก็บ จะได้ไม่เกะกะ') —
+   collapsed section under the active list on BOTH the Projects tab and the
+   Nest picker; same RTDB completed_projects set + shared open-state. Theme-
+   safe: currentColor chrome, no hard fills. */
+.complete-folder { margin-top: 14px; }
+.complete-folder-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  background: transparent;
+  border: 1px dashed currentColor;
+  color: inherit;
+  opacity: 0.7;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+}
+.complete-folder.open .complete-folder-head { opacity: 0.9; margin-bottom: 10px; }
+.complete-folder-count { font-weight: 400; opacity: 0.8; }
+.complete-folder .project-card,
+.complete-folder .nest-home-row { opacity: 0.75; }
+.project-complete-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-size: 15px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.project-complete-btn:hover {
+  color: #4ecca3;
+  border-color: rgba(78, 204, 163, 0.4);
+  background: rgba(78, 204, 163, 0.08);
+}
+
 .family-card {
   background: var(--fam-tint, #1a1f24);
   padding: 18px 12px;
