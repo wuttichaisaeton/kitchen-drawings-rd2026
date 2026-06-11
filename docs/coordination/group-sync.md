@@ -3877,3 +3877,7 @@ e: "ที่ Library FT.... ทั้งหมดให้ไปอยู่โ
 ---
 ### 2026-06-11 - RD 03 -> WEB13: e add-on -- BT* codes -> "BT" folder too (same rule as FT)
 e follow-up to 75b0c34: "BT...ทั้งหมดให้ไปอยู่โฟลเดอร์ BT". Same chokepoint, same pattern: prefix BT -> family "BT". Ship together with FT in one commit. NB existing BTHL00-* codes currently live somewhere (BTHL00-000000.pdf family) -- they should move under BT; confirm nothing else starts with BT unexpectedly. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e add-on #2 -- TS* codes -> "TS" folder too
+e: "TS...ทั้งหมดให้ไปอยู่โฟลเดอร์ TS". Same chokepoint rule: prefix TS -> family "TS" (TS1BHH/TS2TRX/TS0BV0/TS0000... all move). Ship FT+BT+TS as ONE commit; e may add more prefixes -- if another arrives before you push, fold it in. -- RD 03
