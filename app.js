@@ -1545,6 +1545,7 @@ function _renderBendList(parts, projectKey) {
         <span class="bend-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
         ${_bendRecheckChip(p.code)}
+        ${_outdatedChips(p.code)}
         ${viewBtn}
         ${fusionBtn}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
@@ -4624,6 +4625,42 @@ function _bendRecheckNeeded(code) {
   if (!newest || newest <= checked) return null;
   return { dxfAt: newest, checkedAt: checked };
 }
+// ── "เอ๋ต้องทำอะไร" outdated chips (RD 03 board d2e7877) ───────────────────
+// The model moved past a downstream artifact → amber HINT (English-only, no
+// writes, self-clears when fresh data lands). Same stale rule the mindmap
+// already uses (fusion_version vs last_drawn_version in buildProjectTree).
+// NB 2026-06-11: Fusion currently stamps 0/0 for every entry, so these chips
+// stay DORMANT until F29 writes real versions (board NEEDS posted):
+//   drawing chip needs auto_generated.<code>.fusion_version / last_drawn_version
+//   DXF chip additionally needs uploaded_dxfs.<stem>.model_version (at export)
+function _drawingOutdated(code) {
+  const eff = (typeof _effectiveDrawingCode === 'function') ? _effectiveDrawingCode(code) : code;
+  const entry = manifest && manifest.auto_generated && manifest.auto_generated[eff];
+  if (!entry) return null;
+  const fv = +entry.fusion_version || 0;
+  const lv = +entry.last_drawn_version || 0;
+  return (fv > 0 && fv > lv) ? { fv, lv } : null;
+}
+function _dxfOutdated(code) {
+  const entry = manifest && manifest.auto_generated && manifest.auto_generated[code];
+  const fv = entry ? (+entry.fusion_version || 0) : 0;
+  if (!fv) return null;
+  let newestMv = -1;
+  for (const d of dxfsForMasterCode(code)) {
+    if (d.model_version != null) newestMv = Math.max(newestMv, +d.model_version || 0);
+  }
+  if (newestMv < 0) return null;   // no version-stamped DXFs yet → dormant
+  return fv > newestMv ? { fv, mv: newestMv } : null;
+}
+function _outdatedChips(code) {
+  let out = '';
+  const d = _drawingOutdated(code);
+  if (d) out += `<span class="sb-recheck" title="Model is v${d.fv} but the drawing was exported at v${d.lv} — update the drawing in Fusion">⚠ drawing outdated</span>`;
+  const x = _dxfOutdated(code);
+  if (x) out += `<span class="sb-recheck" title="Model is v${x.fv} but the laser DXF came from v${x.mv} — run 🔥 (CC_Laser) again">⚠ DXF outdated — run 🔥</span>`;
+  return out;
+}
+
 function _bendRecheckChip(code, extraStyle) {
   const st = _bendRecheckNeeded(code);
   if (!st) return '';
@@ -6545,6 +6582,7 @@ function renderSimBendHome() {
           <span class="sb-chip ${v.cls}">${v.txt}</span>
           ${warningBadge}
           ${_bendRecheckChip(code)}
+          ${_outdatedChips(code)}
           ${_sbFusionBtnHtml(code)}
           ${favBtn}
           ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
@@ -8667,6 +8705,7 @@ function renderBomRow(p, projectKey) {
         <span class="bom-icon">${familyIcon(fam)}</span>
         <span class="bom-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}${softDeleted ? '<span class="part-deleted-tag">DEL</span>' : ''}</span>
         <span class="bom-qty">×${p.qty}</span>
+        ${_outdatedChips(p.code)}
         ${timerHtml}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         ${deleteBtnHtml}
@@ -11241,6 +11280,7 @@ function renderFamily(fam, highlight) {
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${isNew ? '<span class="part-new-badge">NEW</span>' : ''}
         ${ver}
+        ${_outdatedChips(p.code)}
         ${bendChip}
         ${adminBtns}
       </div>`;
