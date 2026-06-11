@@ -2407,36 +2407,47 @@
     const allUnplaced = [];
     let _grainSkippedRemnants = 0;   // count offcuts a grain clash kept out of a group
     for (const [tk, group] of byThick) {
-      let stockForThick = activeStock.filter(s => thickKey(s.thickness ?? 1) === tk);
-      // Use saved offcuts FIRST (prepended → packer walks stock in priority
-      // order), unless "Skip remnants" is ticked. This is what finally makes
-      // the SKIP REMNANTS toggle do something + the remnant pool consumable.
-      let remStock = [];
+      const stockForThick = activeStock.filter(s => thickKey(s.thickness ?? 1) === tk);
+      // ── SCRAP-FIRST pre-pass (เอ๋ 2026-06-11 "ผมให้ใช้เศษด้วย ทำไมไม่เห็นใช้
+      // เลย"). The old gate kept an offcut only when EVERY directional piece in
+      // the whole thickness group matched its grain — one V part in the BOM
+      // banned an H offcut outright, so remnants were never used on real mixed
+      // jobs. Now each offcut gets its own mini-nest of ONLY the compatible
+      // pieces (grain fits — a V part can never land on an H offcut); whatever
+      // fits is committed to the offcut and removed from the main pool, the
+      // rest continue onto fresh stock. Offcut with NO compatible piece →
+      // counted for the review banner as before.
+      let pool = group;
       if (!S.skipRemnants) {
-        const allRem = _remnantStockForThick(tk);
-        // A thickness group can still hold a mix of grains; keep an offcut only
-        // if EVERY directional piece in the group can be cut from it (so we
-        // never lay an H part on a V/MIXED offcut). Offcuts that clash are
-        // dropped from stock and counted for the review banner.
-        remStock = allRem.filter(rm => group.every(pc => _grainFits(pc.grain, rm.grain)));
-        _grainSkippedRemnants += (allRem.length - remStock.length);
-        stockForThick = remStock.concat(stockForThick);
+        for (const rm of _remnantStockForThick(tk)) {
+          const compat = pool.filter(pc => _grainFits(pc.grain, rm.grain));
+          if (!compat.length) { _grainSkippedRemnants++; continue; }
+          const rr = _nestMultiSheet(compat, [{ ...rm, qty: 1 }], S.gap, S.mode);
+          const sheet = (rr.sheets || [])[0];
+          if (!sheet || !sheet.placements.length) continue;   // nothing fit this offcut
+          // Original remnant stays in the pool (not auto-deleted — the worker
+          // removes it after cutting); auto-save skips fromRemnant sheets (no
+          // offcut-of-an-offcut).
+          allSheets.push({ ...sheet, thick: tk, fromRemnant: rm._remnantId });
+          // Remove the placed instances from the main pool (count per code —
+          // same-code instances are interchangeable).
+          const used = new Map();
+          for (const pl of sheet.placements) used.set(pl.code, (used.get(pl.code) || 0) + 1);
+          pool = pool.filter(pc => {
+            const left = used.get(pc.code) || 0;
+            if (left > 0) { used.set(pc.code, left - 1); return false; }
+            return true;
+          });
+        }
       }
+      if (!pool.length) continue;
       if (stockForThick.length === 0) {
-        allUnplaced.push(...group);
+        allUnplaced.push(...pool);
         continue;
       }
-      const r = _nestMultiSheet(group, stockForThick, S.gap, S.mode);
-      // Tag each produced sheet that landed on a remnant (exact size match,
-      // consumed 1:1) so the view labels it + auto-save skips it (no
-      // offcut-of-an-offcut). Original remnant stays in the pool (not auto-
-      // deleted — the worker removes it after cutting).
-      const remMatch = remStock.slice();
+      const r = _nestMultiSheet(pool, stockForThick, S.gap, S.mode);
       for (const s of r.sheets) {
-        let fromRemnant = null;
-        const mi = remMatch.findIndex(rm => rm.w === Math.round(s.sw) && rm.h === Math.round(s.sh));
-        if (mi >= 0) { fromRemnant = remMatch[mi]._remnantId; remMatch.splice(mi, 1); }
-        allSheets.push({ ...s, thick: tk, fromRemnant: fromRemnant });
+        allSheets.push({ ...s, thick: tk, fromRemnant: null });
       }
       allUnplaced.push(...r.unplaced);
     }
