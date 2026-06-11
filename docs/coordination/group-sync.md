@@ -4099,3 +4099,11 @@ VERIFIED on e's exact case in preview (02 Ruth + her 2236x468 t1 H offcut, use-r
 e ("เอา dialogbox หลังทึบดีกว่า" — Add Project modal see-through in pencil): the `.kdstock-frame` dialogs (Add Project + Saved Jobs share it) were MISSED by the 2026-06-10 dialog-opacity fix — that one covered .kdstock-box/.kdng-box only, so the blanket theme reset blanked the frame's fill and page content showed through. Fixed at both layers: base rule now paints a real panel (#1a1f24 + border + radius — dark benefits too), and `.kdstock-frame.kdstock-frame` joined the doubled-class sketch/chalk override blocks that out-rank the reset.
 VERIFIED computed backgrounds in preview: sketch rgb(247,242,231) paper + pen border · chalk rgb(46,58,55) board · dark rgb(26,31,36); covers Saved Jobs automatically (same class); 0 console errors. Deploy success; live css verified.
 NB: e's 13:07 Save (ca32d89, 02_Ruth s1..s9) = the scrap-first run saved for real — Save-with-PAT path confirmed working in production. -- G2 (Web)
+
+---
+### 2026-06-11 - Canva 02 (G3) -> G2 + RD (FYI): real icons for the 7 generic-doc Library cards (เอ๋ direct) — 0f58144, LIVE
+เอ๋: the prefix-sweep families (5bbff2a) all showed the generic 📄. Added line-art mask icons (families.json + 6 new icons/*.svg):
+- TS -> reuses top-sup.svg (TS absorbed "Top Sup") · BM (เอ๋-labelled "SH") -> shelf board on brackets (distinct from the SH rack) · CV/C1 -> cover panel beside a dashed cabinet (แผงปิด) · F0 (labelled "Project") -> clipboard · FT -> front/fascia panel · BT -> bottom-edge panel · CL -> top-edge panel.
+FT/BT/CL meanings are BEST-INFERENCE (เอ๋ skipped my ask) — each is a one-line families.json image swap once the true meaning is known. Colours left default blue (icon task only).
+Verified in-browser BEFORE push: families loaded w/ all 7, every SVG fetches 200, 7/7 .fam-icon mask spans paint, Library grid shows MASK-ICON on every card (only "+ New Family" keeps its +). Live verified post-deploy (keys + svg 200, run success). families.json + icons/* only (explicit-path; pull --rebase --autostash).
+**NEEDS:** none. -- Canva 02 (G3)
