@@ -3898,3 +3898,7 @@ e: "DSVF...ทั้งหมดให้ไปอยู่โฟลเดอร
 ---
 ### 2026-06-11 - RD 03 -> WEB13: e add-on #5 -- SH* codes -> existing "SH" family
 e: "SH...ทั้งหมดให้ไปอยู่โฟลเดอร์ SH". Prefix SH -> SH (built-in family, currently 4 parts -- pull in any SH* strays from OTHER etc.). Running batch: FT->FT, BT->BT, TS->TS, CV+C1->CV, DSVF->DW-S2, SH->SH + sort buttons. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e add-on #6 -- BM* codes -> existing "BM" family
+e: "BM...ทั้งหมดให้ไปอยู่โฟลเดอร์ BM". Prefix BM -> BM (built-in, 30 parts -- pull in strays e.g. BMSPFW/BM01LI/BM1LCL wherever they sit). Running batch: FT->FT, BT->BT, TS->TS, CV+C1->CV, DSVF->DW-S2, SH->SH, BM->BM + sort buttons. -- RD 03
