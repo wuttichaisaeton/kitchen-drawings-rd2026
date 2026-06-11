@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-11T23:01:11.884691+00:00",
+  "generated_at": "2026-06-11T23:07:08.332490+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3047,7 +3047,7 @@
     "SD0HG1-000000": {
       "family": "Other",
       "last_drawn_version": 23,
-      "fusion_version": 16,
+      "fusion_version": 17,
       "pdf": "SD0HG1-000000.pdf",
       "bends": 0,
       "material": "",
@@ -4555,7 +4555,7 @@
     "CVIL00-205093": {
       "family": "Other",
       "last_drawn_version": 9,
-      "fusion_version": 9,
+      "fusion_version": 10,
       "pdf": "CVIL00-205093.pdf",
       "bends": 0,
       "material": "",
@@ -4633,7 +4633,7 @@
     "FTI000-145095-Ruth": {
       "family": "Other",
       "last_drawn_version": 1,
-      "fusion_version": 1,
+      "fusion_version": 2,
       "pdf": "FTI000-145095-Ruth.pdf",
       "bends": 0,
       "material": "",
@@ -5778,7 +5778,7 @@
       "name": "02 Ruth",
       "status": "active",
       "created_at": "2026-06-08T09:23:07.576072+00:00",
-      "updated_at": "2026-06-11T23:01:11.881991+00:00",
+      "updated_at": "2026-06-11T23:07:08.329061+00:00",
       "total_unique_parts": 98,
       "total_qty": 225,
       "parts": [
