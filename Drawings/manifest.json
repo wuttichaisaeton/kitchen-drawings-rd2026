@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-11T05:38:51.482438+00:00",
+  "generated_at": "2026-06-11T05:41:38.779493+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4658,8 +4658,8 @@
     },
     "FTI0997-00BUNG": {
       "family": "Other",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 3,
+      "fusion_version": 3,
       "pdf": "FTI0997-00BUNG.pdf",
       "bends": 0,
       "material": "",
@@ -9111,7 +9111,7 @@
       "name": "Bung 02",
       "status": "active",
       "created_at": "2026-06-11T05:05:08.775648+00:00",
-      "updated_at": "2026-06-11T05:14:28.407085+00:00",
+      "updated_at": "2026-06-11T05:41:38.764790+00:00",
       "total_unique_parts": 4,
       "total_qty": 4,
       "parts": [
