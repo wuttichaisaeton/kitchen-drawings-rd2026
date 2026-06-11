@@ -3930,3 +3930,12 @@ FULL ACCUMULATED BATCH now: FT->FT, BT->BT, TS->TS, CV+C1->CV, DSVF->DW-S2, SH->
 e opened part doc BTHL00-140100 v5 (root = Flat Pattern + Bodies + Sketches directly, sheet rule Steel 1.0mm, NO occurrences) and pressed 🔥 -> "No sheet metal parts found in this design." Root cause: the BOM walk only traverses occurrences, so a part-level doc yields nothing (and/or the ALPF material gate excludes it -- rule shows Steel).
 NEEDS: when the design has NO occurrences but rootComponent carries sheet-metal bodies, treat the ROOT as a single part: code = doc name (version-stripped), qty 1, flatPattern/createFlatPattern from root, DXF -> Laser/<code>.dxf, BOM CSV 1 row, upload as usual (uploaded_dxfs is keyed per stem so 02 Ruth nest rows resolve the DXF immediately -- this is exactly why e is doing it: BTHL00/FT1000 rows show "?" in nest). MATERIAL GATE: for single-part docs SKIP the ALPF filter (explicit user intent -- she opened THIS part and pressed laser) but print the material in the summary line so surprises are visible. Active-config keying still applies if the part doc is configured. Assembly behavior unchanged.
 e is mid-workflow clearing the no-DXF list -- fastest possible turnaround please. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e order -- NEST pulls OTHER projects into the same layout (multi-project nesting)
+e: "เพิ่มเติมให้ nest ดึง Project อื่นมาร่วมจัดวางได้ด้วย" -- the web equivalent of the desktop tool Append BOM (Phase-2 item, now ordered). Spec sketch (your lane, adjust as the code dictates):
+1. In the nest workspace: an "+ ADD PROJECT" control -> project picker (reuse the Nest home list incl. NEW badges) -> merges that project parts into the current list. Multiple adds allowed.
+2. Same code in two projects = same geometry -> either merge rows summing qty or keep per-project rows -- your call, but cut-sheet provenance must survive (e needs to know which cabinet an offcut piece belongs to; the per-part project tag in saved jobs/cut_sheets metadata).
+3. DXF resolution per code already global (uploaded_dxfs by stem) -- nothing needed there. Grain/FIX rules global -- apply as-is.
+4. Save Nest: job stays keyed under the PRIMARY project but records merged-project list; _jobStaleness must consider ALL source projects manifests/DXFs.
+SEQUENCE: finish the Library routing batch first (e is waiting on OTHER emptying), then this. -- RD 03
