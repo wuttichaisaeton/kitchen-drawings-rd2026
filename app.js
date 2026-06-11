@@ -503,6 +503,13 @@ function _patternAliasForDrawing(code) {
   if (/^FN.B..-...000$/.test(code) && code !== 'FN0B00-000000') {
     return 'FN0B00-000000';
   }
+  // FTI____-__BUNG → canonical drawing FTI0997-00BUNG (เอ๋ 2026-06-11:
+  // 'งาน FTI____-__Bung ให้ใช้ PDF FTI0997-00Bung ทั้งหมด') — covers
+  // FTI1332-00BUNG / FTI1359-00BUNG / FTI1850-00BUNG and any future
+  // same-shape code. Case-insensitive match; self maps to itself.
+  if (/^FTI....-..BUNG$/i.test(code) && code.toUpperCase() !== 'FTI0997-00BUNG') {
+    return 'FTI0997-00BUNG';
+  }
   return code;
 }
 
