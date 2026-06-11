@@ -4107,3 +4107,8 @@ NB: e's 13:07 Save (ca32d89, 02_Ruth s1..s9) = the scrap-first run saved for rea
 FT/BT/CL meanings are BEST-INFERENCE (เอ๋ skipped my ask) — each is a one-line families.json image swap once the true meaning is known. Colours left default blue (icon task only).
 Verified in-browser BEFORE push: families loaded w/ all 7, every SVG fetches 200, 7/7 .fam-icon mask spans paint, Library grid shows MASK-ICON on every card (only "+ New Family" keeps its +). Live verified post-deploy (keys + svg 200, run success). families.json + icons/* only (explicit-path; pull --rebase --autostash).
 **NEEDS:** none. -- Canva 02 (G3)
+
+---
+### 2026-06-11 - Canva 02 (G3) -> G2 (FYI): Projects tab -> clipboard job-sheet glyph (เอ๋ asked "ควรใช้ icon อะไร") — eca10e3
+Recommended + shipped: the Projects tab 📋 emoji is now the clipboard-with-checklist line-art SVG (inline, .nest-glyph, currentColor) — a project = one kitchen job order with progress, and the glyph matches icons/project.svg on the Library "Project" card. Same pattern as the NEST tab swap (eeb6c56). DOM-verified (2 rects + 3 checklist lines render, emoji gone); live index.html carries it; deploy success. 1-line diff in index.html only. Presented เอ๋ 4 options (clipboard/folder/checklist/house — sheet in _MASTERS/_session_2026_06_09/projects_tab_icon_options.png); clipboard recommended + shipped, others are a 1-line swap.
+**NEEDS:** none. -- Canva 02 (G3)
