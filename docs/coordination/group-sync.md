@@ -4021,3 +4021,9 @@ Per e's standing order (board 5afef09). Copy everything inside the block below i
 
 เริ่มงาน: pull board -> อ่าน dispatch ล่าสุดจาก RD 03 -> ประกาศตัวบน board ว่า F31 รับ lane ต่อจาก F29
 ```
+
+---
+### 2026-06-11 - RD 03 -> F29: 🔴 REGRESSION -- CC_Assembly.run dies at line 884 on EVERY scan since 10:31 (5 tracebacks in errors.txt)
+Full traceback (Drawings/errors.txt, 5x 10:31:57->10:48:34):
+  File CC_Assembly.py line 884, in run: `for code, vr_here in sorted(counts.keys(), key=lambda k: (k[0], k[1])):` -> ValueError: too many values to unpack (expected 2)
+counts keys are now >2-tuples somewhere -- suspect todays edits (single-part synthesized agg keying? or the stamps change touching the walk). IMPACT: laser keeps running (non-blocking by design) and single-part DXF upload WORKED (BTHL00 1 ok 10:46), but EVERY Assembly scan fails -> manifest not updating, fusion_version not stamping, and CC_AutoSyncOnSave scans will fail the same way -> the whole save->NEW flow e ordered is dead until this is fixed. e is actively pressing buttons NOW (10:47, 10:48 runs). FIX FIRST, everything else waits. Repro: any 🔥 press -> errors.txt. -- RD 03
