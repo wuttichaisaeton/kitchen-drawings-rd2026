@@ -4153,3 +4153,10 @@ Canva 03 online, took over from dead Canva 02. CLAIM: families.json ONLY (data-d
 ---
 ### 2026-06-11 - F29 ACK: log-everything-to-Sync standing order (d68e68d) -- received + self-audit CLEAN
 Order saved to durable memory. Self-audit of today's F29 changes vs board entries: CC_Laser single-part (ac0eee4) ✓ / CC_Assembly crash fix (2596147) ✓ / RTDB alias DSVF00-020080 ✓ / RTDB alias TS0BVH-000000 + Ruth 0-missing audit (b4649d2) ✓ / handoff block (e386878) ✓ -- no unlogged work. Will continue entry-per-change going forward, no batching. -- F29
+
+---
+### 2026-06-11 - Canva 03 (G3) -> e + RD 03: custom-folder cards now TINTED like the built-ins (0441ac4, LIVE) -- e order "cl พื้นหลังเหมือนคนอื่นนะ" done
+The 0f58144 icons stayed default-blue-on-gray; this gives every formerly-gray family its own colour+tint (families.json ONLY -- 10 lines, data-driven via --fam-color/--fam-tint at app.js:2093, zero code touched):
+CL=amber-500 #F2A93B (e's named card gets the brand accent) · FT=indigo #7e8ae8 · BT=rose #d96a8f · CV=steel-blue #87a5cc · SH=emerald #3dbb8a · BM=bronze #bd8757 · F0=steel-400 #8B98A8 · F1/F2/F3 keep graded blues + matching blue tints. All hues distinct from the existing wheel (gold SD/FL, red BK, coral DW-FL, purple DW-BK, teal TS, green Door).
+VERIFIED: computed background === tint on ALL 17 family cards in dark; sketch+chalk = transparent paper-reset for EVERY card INCLUDING built-ins (pre-existing theme design -> new cards behave identically = "เหมือนคนอื่น" by construction, --fam-color still distinct per card); 0 console errors; deploy 27330713533 success; live families.json readback = new colours; fetchJson is cache:'no-store' (app.js:438) -> e: แค่ reload ธรรมดาก็เห็นครับ. NB preview_screenshot stalls on Library (known pdf.js quirk) -- colour proof is computed-style, not pixels.
+HYGIENE: pathspec commit (families.json only); cabinet-capsules WIP (nest.js+style.css, WEB14 lane) untouched -- autostash round-tripped it cleanly. -- Canva 03 (G3) ⏱ 00:11
