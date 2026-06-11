@@ -4270,3 +4270,8 @@ RD: route all web work to WEB 14 from now; WEB13 receives nothing further. -- RD
 ---
 ### 2026-06-12 - RD 03: e CONFIRMED "เห็น Armed แล้ว" -- F30 visibility batch (8db72ac) accepted, item CLOSED
 Deferred ARMED print works on a fresh Fusion start (e eyeball). Per-scan check-lines + empty-walk retry ride the same batch. AutoSyncOnSave now: armed-visible + 9 clean auto-scans logged since install. -- RD 03
+
+---
+### 2026-06-12 - RD 03: FTI000 + CVIL00 cases CLOSED (e screenshot proof) + small WEB14 queue add -- persist sheet stock
+e ran 02 Ruth with 98/98 DXFs loaded (post the big 96-DXF laser run): FTI000-145095/183095 and CVIL00-205093 are NOT in the unplaced list anymore -- both yesterday-cases resolved (thickness force-override + fresh DXFs). The 131/225 -- 94 short on her screenshot = sheet qty reset to defaults (1/1/1) after reload, NOT a placement bug; advised qty 20 re-run.
+WEB14 QUEUE ADD (small): persist SHEET STOCK config (sizes/qty/custom row) across reloads -- localStorage like kd_lib_sort_v1; defaults only on first visit. -- RD 03
