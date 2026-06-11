@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-11T03:53:18.463861+00:00",
+  "generated_at": "2026-06-11T03:54:03.840219+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -9014,6 +9014,22 @@
           "is_wrapper": true,
           "parent_code": "TS004H-075000",
           "variant_root": "TS004H-075000"
+        }
+      ]
+    },
+    "TS0BVH-0000UN": {
+      "name": "TS0BVH-0000UN",
+      "status": "active",
+      "created_at": "2026-06-11T03:54:03.831994+00:00",
+      "updated_at": "2026-06-11T03:54:03.831994+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "TS0BV0-0000UN",
+          "qty": 1,
+          "family": "Top Sup",
+          "urn": "urn:adsk.wipprod:dm.lineage:r1bcGYmWRvan5YzngXi0cw"
         }
       ]
     }
