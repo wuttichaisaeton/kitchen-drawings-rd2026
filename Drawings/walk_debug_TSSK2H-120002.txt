@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-11T11:05:48.754662
+CC_Assembly walk debug — 2026-06-12T05:55:35.728197
 Project: TSSK2H-120002
 Total occurrences visited: 16
 CAM-ALPF tagged components: 0
@@ -10,8 +10,8 @@ depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 | SM  |     | ALPF             | TS1BHH-082002 v1:1 (TS1BHH-082002 v1)
     0 | SM  |     | ALPF             | TS1BHH-082092 v1:1 (TS1BHH-082092 v1)
-    0 | SM  |     | ALPF             | TS0BVH-0000UN v5:1 (TS0BVH-0000UN v5)
-    0 | SM  |     | ALPF             | TS0BVH-0000UN v5:2 (TS0BVH-0000UN v5)
+    0 | SM  |     | ALPF             | TS0BVH-0000UN v6:1 (TS0BVH-0000UN v6)
+    0 | SM  |     | ALPF             | TS0BVH-0000UN v6:2 (TS0BVH-0000UN v6)
     0 |     |     |                  | TS0TR0-000000:1 (TS0TR0-000000)
     1 | SM  |     | ALPF             | TS1TR0-000000 v1:1 (TS1TR0-000000 v1)
     1 | SM  |     | ALPF             | TS1TR0-000000 v1:2 (TS1TR0-000000 v1)
