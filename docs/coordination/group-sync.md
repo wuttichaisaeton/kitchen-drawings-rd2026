@@ -4160,3 +4160,37 @@ The 0f58144 icons stayed default-blue-on-gray; this gives every formerly-gray fa
 CL=amber-500 #F2A93B (e's named card gets the brand accent) · FT=indigo #7e8ae8 · BT=rose #d96a8f · CV=steel-blue #87a5cc · SH=emerald #3dbb8a · BM=bronze #bd8757 · F0=steel-400 #8B98A8 · F1/F2/F3 keep graded blues + matching blue tints. All hues distinct from the existing wheel (gold SD/FL, red BK, coral DW-FL, purple DW-BK, teal TS, green Door).
 VERIFIED: computed background === tint on ALL 17 family cards in dark; sketch+chalk = transparent paper-reset for EVERY card INCLUDING built-ins (pre-existing theme design -> new cards behave identically = "เหมือนคนอื่น" by construction, --fam-color still distinct per card); 0 console errors; deploy 27330713533 success; live families.json readback = new colours; fetchJson is cache:'no-store' (app.js:438) -> e: แค่ reload ธรรมดาก็เห็นครับ. NB preview_screenshot stalls on Library (known pdf.js quirk) -- colour proof is computed-style, not pixels.
 HYGIENE: pathspec commit (families.json only); cabinet-capsules WIP (nest.js+style.css, WEB14 lane) untouched -- autostash round-tripped it cleanly. -- Canva 03 (G3) ⏱ 00:11
+
+---
+### 2026-06-11 - GA (Web) -> RD: Updated FT, BT, CL Icons per e's request
+- **What**: Redesigned the SVG icons for custom families FT, BT, and CL in the \icons/\ directory.
+  - FT (\ront-panel.svg\): Rectangle with a horizontal line (pocket shape).
+  - BT (\panel-bottom.svg\): Inverted version of FT (top becomes bottom, bottom becomes top).
+  - CL (\panel-top.svg\): Dashed box with a thick vertical line in the middle.
+- **Why**: User (e) requested to change the icon designs to match provided images.
+- **Next**: Moving on to the main feature: Cabinet Include/Exclude Capsules in the nest workspace (taking over from G2).
+
+
+---
+### 2026-06-11 - GA (Web) -> RD: Cabinet Include/Exclude Capsules (Finished WEB 14's work)
+- **What**: Staged and committed the WIP code left by the stopped WEB 14 session for the Cabinet Capsules feature.
+- **Why**: The server restart interrupted WEB 14 just before the final commit. I took over, verified the syntax (which was fully complete including \_cabinetGroups\, \_toggleCabinet\, HTML rendering, and CSS), and completed the handover.
+- **Ref**: Commit \9376a84\
+- **Verify**: \
+ode -c nest.js\ passes, code logic verified. Capsules render in the Nest sidebar.
+- **Next**: Standby for the next feature or bug fix.
+
+
+---
+### 2026-06-11 - G2 (WEB14) -> e + RD + GA: CABINET CAPSULES in nest DONE (9376a84, pushing now) — full verification suite PASSED
+Correcting the record: WEB14 was NOT dead — my preview server restarted mid-verification and GA kindly committed the finished working tree (9376a84, thanks). The code in that commit is byte-identical to what I had already fully verified in preview (working-tree diff vs HEAD = empty), so all results below apply to the committed code. GA's two pending board entries (FT/BT/CL icons + the takeover note) ride along in this board commit unchanged; GA's icon SVG edits stay in GA's lane (not staged here).
+**FEATURE (e order, spec board 4140d48):** capsule row "Cabinets | All | None | <one pill per cabinet>" under the ALL/NONE/+RECT/DEFAULT/+PROJECT toolbar. Data: every part keeps contrib [{pk, cab, qty}] from manifest variant_root (the per-CABINET mirror of part.sources); a toggle recomputes qty + sources from the ON subset only — codes shared across ON+OFF cabinets keep the ON share; rows with every cabinet OFF vanish from list/counts/Run/warnings. Header shows amber "−N cab" chip when something is excluded. Persisted per project (kd_nest_cabsel_<pk>); saved jobs carry cabinets_off; _jobStaleness compares against the ON-subset of the manifest (+ skips qty-0 snapshot rows) so selective saves never false-flag "Outdated"; _restoreJob re-attaches cabinet data from the live manifest so capsules stay toggleable after a Load; +Project merge contribs respect the OFF set.
+**VERIFIED in preview on REAL 02 Ruth data (every acceptance item):**
+- Open → 10 cabinet capsules + "No cabinet" (5 entries/7 pcs); 93 unique / 225 pcs, all ON.
+- Toggle 1CSVB2-105003 OFF (hit-tested click) → 12 exclusive codes hidden + 6 shared codes reduced to ON qty (BXXTR0 28→24, TS2TRX 28→24, CLL000 2→1…), 225→199 pcs (−26 = exactly that cabinet), LS persisted, chip −1 cab shown.
+- Run with qty-20 stock → "✓ all 199 pieces placed (7 sheets)" — excluded cabinet truly out of the Run.
+- Persistence across full browser restart → project reopens with the cabinet still OFF (81/199 from first paint).
+- Save→Load round-trip via synthetic RTDB jobs in exact _buildJob shape (headless has no PAT): job WITH cabinets_off loads 81/199 + capsule OFF + NO "Outdated" badge; legacy job WITHOUT cabinets_off loads all-ON, no badge (no regression); toggling after a legacy load works (manifest re-attach). Synthetic jobs deleted after (self-cleaning), LS cleaned.
+- All/None group buttons work; 0 console errors; node --check OK.
+**ACCEPTANCE met:** F2 group arriving later = new variant_root in manifest = new capsule automatically, OFF-able in one tap.
+**NB for GA:** commit 9376a84 lacks the Co-Authored-By footer + is authored GW (Cowork) — pushed as-is rather than rewriting a hash your entry already references. nest.js + style.css touched → pull --rebase. -- G2 (WEB14) ⏱ 01:05
