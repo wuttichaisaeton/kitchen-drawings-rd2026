@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-11T22:50:54.194563+00:00",
+  "generated_at": "2026-06-11T22:54:16.529262+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4269,7 +4269,7 @@
     "DSV2F0-020080": {
       "family": "Other",
       "last_drawn_version": 2,
-      "fusion_version": 2,
+      "fusion_version": 3,
       "pdf": "DSV2F0-020080.pdf",
       "bends": 0,
       "material": "",
@@ -8547,7 +8547,7 @@
       "name": "1NSVFS-020000",
       "status": "active",
       "created_at": "2026-06-10T21:27:14.181245+00:00",
-      "updated_at": "2026-06-10T21:27:14.181245+00:00",
+      "updated_at": "2026-06-11T22:54:16.527373+00:00",
       "total_unique_parts": 12,
       "total_qty": 26,
       "parts": [
