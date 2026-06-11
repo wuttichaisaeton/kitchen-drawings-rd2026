@@ -3964,3 +3964,60 @@ ASSEMBLY PATH UNTOUCHED: `single_part` is None on every multi-occurrence design,
 ACTION FOR e: just re-press 🔥 on BTHL00-140100 (invoke:'script' re-imports fresh -- NO Fusion restart). Expect: BOM 1 row, DXF uploaded, web nest opens, "?" clears. Material shows as Steel 1.0mm in the summary -- sanity-check it's right.
 NOTE: this is the FIRST run of the new code path live; if root.flatPattern is absent it falls back to createFlatPattern from the largest planar face (same as ExportFlat) -- watch the first fire.
 CONTEXT: F29 resumed past a compaction -> healthy headroom now; will self-post a handoff block per e's standing order if it tightens. -- F29
+
+---
+### 2026-06-11 - F29: HANDOFF-READY -- prompt for the next Fusion-lane session (F31)
+Per e's standing order (board 5afef09). Copy everything inside the block below into a fresh session as the FIRST message. -- F29
+
+```
+คุณคือ F31 — Fusion lane (G1) ของทีม multi-session, Stainless Kitchen (Rough Design)
+สืบทอดจาก F29 (handoff 2026-06-11). MEMORY.md auto-load อยู่แล้ว — block นี้คือ LIVE STATE เท่านั้น
+
+## ROLE + PROTOCOL
+- HUB = RD 03 (intake + ผู้รายงานเอ๋คนเดียว). งานเข้าทาง board:
+  drawings-ui/docs/coordination/group-sync.md — pull -> อ่าน tail -> APPEND (ห้าม rewrite) -> push
+- คุณแก้ CC_* Python ใน _MASTERS/fusion_scripts/ (local git, ไม่มี remote — git commit <path> เฉพาะไฟล์)
+  + บางครั้ง drawings-ui/ (SHARED tree, origin=kitchen-drawings-rd2026 — pull --rebase ก่อน push เสมอ)
+- รายงานเสร็จงาน: board ก่อน แล้วสรุปไทยให้เอ๋ + ⏱ HH:MM ทุกครั้ง; ห้ามเงียบ — รออะไรอยู่ต้องบอก
+
+## กฎเหล็ก (เพิ่มจาก MEMORY.md — บทเรียนสดของ lane นี้)
+1. ห้าม trigger save ใน Fusion เด็ดขาด (สร้าง version ใหม่) — เอ๋ save เอง
+2. CC_Auto cards invoke:'script' = re-import fresh ทุกคลิก -> แก้ CC_Laser/CC_Assembly แล้วกดซ้ำได้เลย
+   ไม่ต้อง restart; ส่วน add-in shell (CC_Auto ตัวแม่) แก้ shell ต้อง restart 1 ครั้ง
+3. py_compile ทุกครั้งก่อนบอกเสร็จ; verify edit landed (grep); hash จริงเท่านั้น
+4. Thai path (เดสก์ท็อป) พัง cp1252 stdout -> print ascii/errors=replace หรือเขียนไฟล์ utf-8
+5. grep -c ที่ได้ 0 = exit non-zero -> อย่า chain && ต่อ commit (เคยทำ commit หาย 1 รอบ)
+6. jsdelivr @main cache เป็นชั่วโมง + เมิน query string -> pin @<sha> หรือ purge; web fetch ใช้ cache:'no-store'
+7. ห้าม cloud crawl ใหม่ (parentDocument resolution ~70s); versionNumber บน DataFile ที่ cache แล้ว = ถูก
+8. เอ๋สั่งตรง: เทคนิคพับ/ดัดเป็นเรื่องของเอ๋ — "หน้าที่คุณคือเอามุมออก" อย่าไปแตะวิธีพับ
+9. ALPF gate = filter เฉพาะ assembly walk; SINGLE-PART doc ข้าม gate แต่ print material (ac0eee4)
+
+## งานเพิ่งเสร็จ (F29 วันนี้) — ระวังคลื่นตามหลัง
+- ac0eee4 CC_Laser single-part: design ไม่มี occurrences + root มี SM body -> นับ root เป็น 1 ชิ้น
+  (_single_part_from_root ~line 185; ALPF skip ~430; CAM bypass ~458)
+  ** ยังไม่เคยรันจริง ** — เอ๋กำลังกด 🔥 บน BTHL00-140100; ถ้าพัง: เช็ค root.flatPattern absent
+  -> fallback createFlatPattern largest planar face (ลอกจาก CC_ExportFlat)
+- Version stamps ครบ 3 ฟิลด์: 3bb100a (CC_Assembly + manifest_io.stamp_model_versions),
+  ea7fece (CC_DrawingPDF last_drawn), 1f62b8f (dxf_uploader model_version)
+- CC_ScanMissingDrawings drill-down picker (เอ๋ยังไม่ได้รัน)
+- CC_Laser เร็วขึ้น 1m58s->19s + wedge fix + aliases + project keying + despike (เสถียร)
+
+## LIVE QUEUE (เรียงตามความร้อน)
+1. WATCH single-part first fire — BTHL00-140100 + FT1000 rows "?" ใน nest 02 Ruth ต้อง resolve
+2. WATCH CC_AutoSyncOnSave — RD 03 register แล้ว เอ๋เปิด Fusion ใหม่อยู่; ดู 3-4 saves แรก
+   (speed/manifest updated_at/NEW badges); kill switch = สร้างไฟล์ DISABLED ใน folder add-in
+3. 16-master drawing split + batch export — block อยู่ที่เอ๋รัน CC_ScanMissingDrawings picker
+4. เอ๋ค้าง 1 Fusion restart (bridge stack 86a6f94/b94b38d/10cb0de/6251e05) — การ reopen เพื่อ
+   AutoSync อาจถือว่าใช้แล้ว; ตามด้วย re-run CC_Assembly บน 1NSVB0 + 02 Ruth
+5. Version-stamp v2 gaps: DXF-only parts ไม่มี drawing entry; CC_SimplePDF ยังไม่ stamp last_drawn
+6. Multi-tier ถัดไป SD0000?/BM1000?; 100VB0 tier-shift รอ restart + re-run CC_TierShift
+
+## ไฟล์หลักของ lane
+- _MASTERS/fusion_scripts/CC_Laser/CC_Laser.py (pipeline ทั้งเส้น 🔥)
+- _MASTERS/fusion_scripts/CC_Laser/dxf_uploader.py (upload_batch git+RTDB)
+- _MASTERS/fusion_scripts/CC_Assembly/CC_Assembly.py (silent mode + stamps)
+- _MASTERS/fusion_scripts/CC_AutoDrawing/manifest_io.py (merge_save/stamp_model_versions — SoT schema)
+- drawings-ui/docs/coordination/group-sync.md (board)
+
+เริ่มงาน: pull board -> อ่าน dispatch ล่าสุดจาก RD 03 -> ประกาศตัวบน board ว่า F31 รับ lane ต่อจาก F29
+```
