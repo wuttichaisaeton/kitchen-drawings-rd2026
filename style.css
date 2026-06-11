@@ -4537,6 +4537,18 @@ body.sb-fs-lock { overflow: hidden; }
   display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
   padding: 0 0 8px; margin-bottom: 6px; font-size: 10.5px; color: #F2A93B;
 }
+/* Sim.Bending cabinet-freshness banner (bend role) — same amber accent. */
+.sb-fresh-banner { border: 1px solid #F2A93B; border-radius: 8px; padding: 6px 10px; margin-bottom: 10px; }
+.sb-fresh-banner .sb-cabs-seen {
+  margin-left: 8px; font: inherit; font-size: 11px; background: #F2A93B; color: #1B2430;
+  border: none; border-radius: 6px; padding: 3px 10px; cursor: pointer;
+}
+.sb-fresh-cabs { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.sb-fresh-cab {
+  font-size: 11px; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid #F2A93B; color: #F2A93B; cursor: pointer;
+}
+.sb-fresh-cab.changed { border-style: dashed; }
 .kdnest-part {
   display: grid;
   /* sel · #N · code · w · × · h · qty · grain · 👁 · 📍 · status

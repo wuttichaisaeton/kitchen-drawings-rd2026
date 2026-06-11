@@ -3958,6 +3958,11 @@ function initCabinetSeenSync() {
   } catch (e) { console.warn('Failed to attach cabinet_seen listener:', e); }
 }
 
+// Per-render bridge so buildSbCard (a nested fn in the Sim.Bending render) can
+// see the dashboard's cabinet freshness. Set in the project-dashboard branch,
+// emptied otherwise. cabFresh: Map<cab,{status,...}>, codeCab: Map<code,[cab]>.
+let _sbFreshCtx = { cabFresh: new Map(), codeCab: new Map() };
+
 // One-shot push of any localStorage entries that don't yet exist in
 // RTDB. Runs after both listeners have fired at least once so we have
 // a baseline. Marks each migrated entry with { migrated: true } so it's
@@ -6825,6 +6830,7 @@ function renderSimBendHome() {
         <div class="sb-card-head">
           <span class="sb-code" title="${escapeHtml(code)}">${escapeHtml(displayCodeFor(code))}</span>
           <span class="sb-chip ${v.cls}">${v.txt}</span>
+          ${(() => { const cabs = _sbFreshCtx.codeCab.get(code) || []; const fresh = cabs.some(c => { const f = _sbFreshCtx.cabFresh.get(c); return f && (f.status === 'new' || f.status === 'changed'); }); return fresh ? '<span class="part-new-badge" title="belongs to a new/changed cabinet">●</span>' : ''; })()}
           ${warningBadge}
           ${_bendRecheckChip(code)}
           ${_outdatedChips(code)}
@@ -6924,6 +6930,26 @@ function renderSimBendHome() {
     const flat = allCodes.filter(c => by[c].status === 'flat');
     const none = allCodes.filter(c => by[c].status === 'none');
     const checking = allCodes.filter(c => by[c].status === 'checking');
+    // Cabinet freshness (bend role) — banner of new/changed cabinets + per-card
+    // dot for codes that belong to one (เอ๋ 2026-06-11). Engine is global.
+    const _cabFresh = (typeof cabinetFreshnessAll === 'function') ? cabinetFreshnessAll('bend', _simBendProject) : new Map();
+    const _codeCab = new Map();
+    if (typeof _cabinetCodeQty === 'function') {
+      for (const [cab, codes] of _cabinetCodeQty(_simBendProject)) for (const code of codes.keys()) {
+        if (!_codeCab.has(code)) _codeCab.set(code, []);
+        _codeCab.get(code).push(cab);
+      }
+    }
+    _sbFreshCtx = { cabFresh: _cabFresh, codeCab: _codeCab };
+    const _freshCabs = [..._cabFresh].filter(([, i]) => i.status === 'new' || i.status === 'changed');
+    const _freshBanner = _freshCabs.length ? `
+      <div class="sb-dash-section sb-fresh-banner">
+        <div class="sb-section-head">New / changed cabinets to bend (${_freshCabs.length})
+          <button class="sb-cabs-seen" title="Mark every cabinet seen for the bend role">Mark all seen</button></div>
+        <div class="sb-fresh-cabs">${_freshCabs.map(([cab, i]) =>
+          `<span class="sb-fresh-cab ${i.status}" data-cab="${escapeHtml(cab || NO_CAB)}" title="double-click = seen">${escapeHtml(cab ? displayCodeFor(cab) : 'No cabinet / shared')} ${i.status === 'new' ? 'NEW' : '↻'}</span>`
+        ).join('')}</div>
+      </div>` : '';
     COUNT_EL.textContent = `${verified.length}/${_simBendSync.total} verified`;
     const pct = _simBendSync.total ? Math.round(100 * _simBendSync.done / _simBendSync.total) : 100;
     const progressHtml = `
@@ -6933,6 +6959,7 @@ function renderSimBendHome() {
       </div>`;
     const section = (title, body) => body ? `<div class="sb-dash-section"><div class="sb-section-head">${title}</div>${body}</div>` : '';
     mainHtml = `
+      ${_freshBanner}
       ${progressHtml}
       ${section(`✓ Verified <span class="muted" style="font-weight:normal;">(${verified.length})</span>`, verified.length ? `<div class="sb-grid">${verified.map(buildSbCard).join('')}</div>` : '')}
       ${section(`◍ From flat DXF — not checked in Fusion <span class="muted" style="font-weight:normal;">(${dxf.length})</span>`, dxf.length ? `<div class="sb-grid">${dxf.map(c => buildDxfPreviewCard(c, by[c])).join('')}</div>` : '')}
@@ -6940,7 +6967,8 @@ function renderSimBendHome() {
       ${section(`✕ No data — export flat DXF <span class="muted" style="font-weight:normal;">(${none.length})</span>`, none.length ? `<div class="sb-mini-list">${none.map(c => buildSbMiniRow(c, 'none')).join('')}</div>` : '')}
       ${checking.length ? `<div class="muted" style="padding:8px; font-size:12px;">checking ${checking.length} more…</div>` : ''}`;
   } else {
-    // ── All checked parts (default) ──
+    // ── All checked parts (default) ── no project context → no cabinet freshness
+    _sbFreshCtx = { cabFresh: new Map(), codeCab: new Map() };
     COUNT_EL.textContent = `${shown.length} part${shown.length === 1 ? '' : 's'} checked`;
     mainHtml = `<div class="sb-grid">${shown.map(buildSbCard).join('')}</div>`;
   }
@@ -6955,6 +6983,18 @@ function renderSimBendHome() {
     </div>`;
 
   _wireToolingPicker();
+  // Cabinet freshness controls (bend role): banner "Mark all seen" + per-chip
+  // double-click acknowledge.
+  ROOT.querySelector('.sb-cabs-seen')?.addEventListener('click', () => {
+    if (typeof markAllCabinetsSeen === 'function' && _simBendProject) { markAllCabinetsSeen('bend', _simBendProject); render(); }
+  });
+  ROOT.querySelectorAll('.sb-fresh-cab').forEach(el => el.addEventListener('dblclick', () => {
+    if (typeof markCabinetSeen !== 'function' || !_simBendProject) return;
+    const cab = el.dataset.cab === NO_CAB ? '' : el.dataset.cab;
+    const cq = _cabinetCodeQty(_simBendProject).get(cab) || new Map();
+    markCabinetSeen('bend', _simBendProject, cab, _cabinetFingerprint(cq));
+    render();
+  }));
   ROOT.querySelectorAll('.sb-card:not(.sb-card-dxf)').forEach(el => {
     const toggle = () => {
       const c = el.getAttribute('data-code');
