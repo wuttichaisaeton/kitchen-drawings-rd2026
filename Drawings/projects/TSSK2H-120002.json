@@ -1,0 +1,61 @@
+{
+  "name": "TSSK2H-120002",
+  "status": "active",
+  "created_at": "2026-06-11T04:05:35.384465+00:00",
+  "updated_at": "2026-06-11T04:05:35.384465+00:00",
+  "total_unique_parts": 7,
+  "total_qty": 15,
+  "parts": [
+    {
+      "code": "TS0BV0-053400",
+      "qty": 1,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:XSFkvqhSRBe-xvx7zbkC5w"
+    },
+    {
+      "code": "TS0BVH-0000UN",
+      "qty": 2,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:j6Hle87fSPqB1Zrz3-bkBQ"
+    },
+    {
+      "code": "TS1BHH-036202",
+      "qty": 3,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:2OzdFS1gQTiXyRkKyMIvMQ"
+    },
+    {
+      "code": "TS1BHH-082002",
+      "qty": 1,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:rQPekNbiQ8yYU-4VrT64jg"
+    },
+    {
+      "code": "TS1BHH-082092",
+      "qty": 1,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:Lk-He_SaTYSgrYHGh9JQCQ"
+    },
+    {
+      "code": "TS1BHH-120092",
+      "qty": 1,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:6dG7Bg6nR_yqW72Zcqscsg"
+    },
+    {
+      "code": "TS1TR0-000000",
+      "qty": 6,
+      "family": "Top Sup",
+      "parent_code": "TS0TR0-000000",
+      "variant_root": "TS0TR0-000000",
+      "urn": "urn:adsk.wipprod:dm.lineage:TH5BkbvAR4CY4q19cgkUJQ"
+    },
+    {
+      "code": "TS0TR0-000000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS0TR0-000000"
+    }
+  ]
+}

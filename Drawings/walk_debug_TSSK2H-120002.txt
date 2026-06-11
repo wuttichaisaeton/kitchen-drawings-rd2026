@@ -1,0 +1,26 @@
+CC_Assembly walk debug — 2026-06-11T11:05:35.384026
+Project: TSSK2H-120002
+Total occurrences visited: 16
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | TS1BHH-082002 v1:1 (TS1BHH-082002 v1)
+    0 | SM  |     | ALPF             | TS1BHH-082092 v1:1 (TS1BHH-082092 v1)
+    0 | SM  |     | ALPF             | TS0BVH-0000UN v5:1 (TS0BVH-0000UN v5)
+    0 | SM  |     | ALPF             | TS0BVH-0000UN v5:2 (TS0BVH-0000UN v5)
+    0 |     |     |                  | TS0TR0-000000:1 (TS0TR0-000000)
+    1 | SM  |     | ALPF             | TS1TR0-000000 v1:1 (TS1TR0-000000 v1)
+    1 | SM  |     | ALPF             | TS1TR0-000000 v1:2 (TS1TR0-000000 v1)
+    1 | SM  |     | ALPF             | TS1TR0-000000 v1:3 (TS1TR0-000000 v1)
+    1 | SM  |     | ALPF             | TS1TR0-000000 v1:4 (TS1TR0-000000 v1)
+    1 | SM  |     | ALPF             | TS1TR0-000000 v1:5 (TS1TR0-000000 v1)
+    1 | SM  |     | ALPF             | TS1TR0-000000 v1:6 (TS1TR0-000000 v1)
+    0 | SM  |     | ALPF             | TS0BV0-053400 v8:1 (TS0BV0-053400 v8)
+    0 | SM  |     | ALPF             | TS1BHH-036202 v1:1 (TS1BHH-036202 v1)
+    0 | SM  |     | ALPF             | TS1BHH-036202 v3:1 (TS1BHH-036202 v3)
+    0 | SM  |     | ALPF             | TS1BHH-036202 v3:2 (TS1BHH-036202 v3)
+    0 | SM  |     | ALPF             | TS1BHH-120092 v7:1 (TS1BHH-120092 v7)
