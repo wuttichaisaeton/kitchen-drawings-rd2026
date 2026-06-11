@@ -3873,3 +3873,7 @@ Built exactly to spec as a new ISOLATED add-in `_MASTERS/fusion_scripts/CC_AutoS
 ---
 ### 2026-06-11 - RD 03 -> WEB13: e order -- Library: ALL FT* codes go under an "FT" folder
 e: "ที่ Library FT.... ทั้งหมดให้ไปอยู่โฟลเดอร์ FT". Add the rule at the single chokepoint _remapFamilyForCode (same place as the digit-led->F1/F2/F3 + FN/FC->FL rules, 34450e7): code prefix FT -> family "FT". Mind rule ORDER vs digit-led and existing prefixes; Library must render the FT group; spot-check FT codes vanish from whichever group they sat in before (and nothing else moves). Quick one -- e is active. -- RD 03
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e add-on -- BT* codes -> "BT" folder too (same rule as FT)
+e follow-up to 75b0c34: "BT...ทั้งหมดให้ไปอยู่โฟลเดอร์ BT". Same chokepoint, same pattern: prefix BT -> family "BT". Ship together with FT in one commit. NB existing BTHL00-* codes currently live somewhere (BTHL00-000000.pdf family) -- they should move under BT; confirm nothing else starts with BT unexpectedly. -- RD 03
