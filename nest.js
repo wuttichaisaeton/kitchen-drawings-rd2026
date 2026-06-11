@@ -1219,6 +1219,12 @@
     document.querySelectorAll('.kdstock-modal').forEach(m => m.remove());
     const admin = (typeof window.isAdmin === 'function' && window.isAdmin());
     const canEditActual = _canEditActual();
+    // Per-remnant include/exclude (เอ๋ 2026-06-11 "ให้เลือกได้ด้วยว่าจะใช้เศษตัวไหน
+    // บ้าง"). S.remnantsOff = Set of EXCLUDED remnant ids; default = all included.
+    // The "Use remnants in next run" checkbox is the MASTER — when OFF, the
+    // per-remnant boxes are moot (disabled). Session-only (chosen before a Run).
+    const _remOff = (S.remnantsOff = S.remnantsOff || new Set());
+    const _masterOff = !!S.skipRemnants;
     const list = (S.remnants || []).map(function (r) {
       // The size we USE = actual (measured after cutting) when present, else
       // the calculated leftover. Both shown so the worker sees what was
@@ -1247,7 +1253,11 @@
           + (hasActual ? '<button class="kdstock-actual-clear" data-id="' + _esc(r.id) + '" title="Clear actual \u2014 revert to calculated">\u21ba</button>' : '')
           + '</div>'
         : '';
-      return '<div class="kdstock-card" data-id="' + _esc(r.id) + '">'
+      const _off = _remOff.has(r.id);
+      return '<div class="kdstock-card' + (_off ? ' kdstock-card-off' : '') + '" data-id="' + _esc(r.id) + '">'
+        + '<input type="checkbox" class="kdstock-use-cb" data-id="' + _esc(r.id) + '"'
+          + (_off ? '' : ' checked') + (_masterOff ? ' disabled' : '')
+          + ' title="' + (_masterOff ? 'Enable “Use remnants” below first' : (_off ? 'Excluded from the next run — click to include' : 'Included in the next run — click to exclude')) + '">'
         + _remnantPreview(r)
         + '<div class="kdstock-info">'
         + '<div class="kdstock-dims">' + dims + '</div>'
@@ -1280,7 +1290,10 @@
       // Moved here from the sidebar (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่
       // Remnants stock — คลิกคือใช้งาน'): ticked = the packer USES this pool
       // in the next run (S.skipRemnants = !checked; default stays fresh-first).
-      + '<label class="kdstock-use-lab" title="Ticked = the next Run uses these saved offcuts before fresh sheets">'
+      + (((S.remnants || []).length && !S.skipRemnants)
+          ? '<button id="kdstock-all" class="kdnest-mini" title="Include every remnant">All</button>'
+            + '<button id="kdstock-none" class="kdnest-mini" title="Exclude every remnant">None</button>' : '')
+      + '<label class="kdstock-use-lab" title="Ticked = the next Run uses the TICKED saved offcuts before fresh sheets">'
       + '<input id="kdstock-use" type="checkbox"' + (S.skipRemnants ? '' : ' checked') + '> Use remnants in next run</label>'
       + '<span class="kdng-spacer"></span><button id="kdstock-close" class="kdnest-btn">Close</button></div>'
       + '</div>';
@@ -1291,6 +1304,26 @@
     q('#kdstock-close').addEventListener('click', close);
     q('#kdstock-use')?.addEventListener('change', function (e) {
       S.skipRemnants = !e.target.checked;   // click = use (เอ๋ 2026-06-10)
+      _renderStockModal();   // master toggled → re-render so per-remnant boxes + All/None enable/disable
+    });
+    // Per-remnant include/exclude — tick = include, untick = exclude from the
+    // next run (เอ๋ 2026-06-11). Adjusts S.remnantsOff; re-renders to repaint the
+    // dimmed/struck card.
+    modal.querySelectorAll('.kdstock-use-cb').forEach(function (el) {
+      el.addEventListener('change', function () {
+        const id = el.dataset.id;
+        S.remnantsOff = S.remnantsOff || new Set();
+        if (el.checked) S.remnantsOff.delete(id); else S.remnantsOff.add(id);
+        _renderStockModal();
+      });
+    });
+    q('#kdstock-all')?.addEventListener('click', function () {
+      S.remnantsOff = new Set();   // include all
+      _renderStockModal();
+    });
+    q('#kdstock-none')?.addEventListener('click', function () {
+      S.remnantsOff = new Set((S.remnants || []).map(function (r) { return r.id; }));   // exclude all
+      _renderStockModal();
     });
     // Drag the modal by its header so it can be moved off the nest layout to
     // compare (เอ๋ 2026-05-31 'ให้จับย้ายได้'). First drag switches the box from
@@ -2523,6 +2556,7 @@
       const out = [];
       for (const r of (S.remnants || [])) {
         if (thickKey(r.thickness ?? 1) !== tk) continue;
+        if (S.remnantsOff && S.remnantsOff.has(r.id)) continue;   // per-remnant exclude (เอ๋ 2026-06-11)
         const w = (r.actualW != null) ? +r.actualW : +r.w;
         const h = (r.actualH != null) ? +r.actualH : +r.h;
         if (!(w > 0 && h > 0)) continue;

@@ -1698,6 +1698,7 @@ function _renderCutSheetsModal(triggerBtn, projectKey, project) {
     <div class="pdxf-header">
       <div class="pdxf-title">📐 Cut Sheets — ${escapeHtml(projectName)}</div>
       <div class="pdxf-sub">${sheets.length} sheet${sheets.length === 1 ? '' : 's'} uploaded</div>
+      ${sheets.length ? `<button class="cs-download-all-btn" id="cs-download-all" title="Download every cut-sheet DXF (one file at a time)">⬇ Download all (${sheets.length})</button>` : ''}
     </div>
     <div class="cs-body">${rowsHtml}</div>
     ${adminMode ? `
@@ -1765,6 +1766,26 @@ function _renderCutSheetsModal(triggerBtn, projectKey, project) {
       const row = btn.closest('.cs-row');
       if (row) _downloadFile(row.dataset.url, row.dataset.filename);
     });
+  });
+
+  // ⬇ Download all (เอ๋ 2026-06-11) — fetch every sheet's DXF one at a time, with
+  // a short stagger so the browser doesn't block the multi-file download.
+  pop.querySelector('#cs-download-all')?.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    const btn = ev.currentTarget;
+    const orig = btn.textContent;
+    btn.disabled = true;
+    let ok = 0;
+    for (const s of sheets) {
+      if (!s.url) continue;
+      btn.textContent = `⬇ ${ok + 1}/${sheets.length}…`;
+      try { await _downloadFile(s.url, s.filename || `${s.id}.dxf`); ok++; }
+      catch (e) { /* keep going — one bad file shouldn't stop the rest */ }
+      await new Promise(r => setTimeout(r, 350));
+    }
+    btn.disabled = false;
+    btn.textContent = `✓ ${ok}/${sheets.length}`;
+    setTimeout(() => { btn.textContent = orig; }, 2500);
   });
 
   // Admin: delete handler
