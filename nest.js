@@ -3838,19 +3838,34 @@
     const showCabs = cabGroups.some(g => g.cab);
     const offCabsN = showCabs
       ? cabGroups.filter(g => S.cabinetsOff && S.cabinetsOff.has(g.cab)).length : 0;
+    // Cabinet freshness (laser role) — NEW/CHANGED markers per cabinet, synced
+    // per department (เอ๋ 2026-06-11). Engine is a global in app.js; single
+    // project only in phase 1 (merged projects' cabinets just get no badge).
+    const _cabFresh = (typeof cabinetFreshnessAll === 'function' && S.projectKey)
+      ? cabinetFreshnessAll('laser', S.projectKey) : new Map();
+    let _frNew = 0, _frChg = 0;
+    for (const [, i] of _cabFresh) { if (i.status === 'new') _frNew++; else if (i.status === 'changed') _frChg++; }
     const cabsRow = showCabs ? `
             <div class="kdnest-cabs">
-              <span class="kdnest-cabs-lab" title="Pick which cabinets join this nest — tap a capsule to exclude/include it">Cabinets</span>
+              <span class="kdnest-cabs-lab" title="Pick which cabinets join this nest — tap to exclude/include, double-tap to mark it seen">Cabinets</span>
               <button id="kdnest-cabs-all" class="kdnest-mini" title="Include every cabinet">All</button>
               <button id="kdnest-cabs-none" class="kdnest-mini" title="Exclude every cabinet">None</button>
               ${cabGroups.map(g => {
                 const off = !!(S.cabinetsOff && S.cabinetsOff.has(g.cab));
                 const label = g.cab ? _disp(g.cab) : 'No cabinet';
+                const fr = _cabFresh.get(g.cab);
+                const frCls = fr && fr.status === 'new' ? ' kdnest-cab-new'
+                            : fr && fr.status === 'changed' ? ' kdnest-cab-changed' : '';
+                const frTag = fr && fr.status === 'new' ? '<sup class="kdnest-cab-fr">NEW</sup>'
+                            : fr && fr.status === 'changed' ? '<sup class="kdnest-cab-fr">↻</sup>' : '';
+                const frWord = fr && fr.status === 'new' ? ' · NEW (just arrived)'
+                             : fr && fr.status === 'changed' ? ' · CHANGED (re-exported)' : '';
                 const full = (g.cab || 'parts not under any cabinet')
-                  + ` — ${g.nParts} part${g.nParts === 1 ? '' : 's'} · ${g.pcs} pcs · click to ${off ? 'include' : 'exclude'}`;
-                return `<button class="kdnest-cab${off ? ' kdnest-cab-off' : ''}" data-cab="${_esc(g.cab)}" title="${_esc(full)}">${_esc(label)}<sup>${g.pcs}</sup></button>`;
+                  + ` — ${g.nParts} part${g.nParts === 1 ? '' : 's'} · ${g.pcs} pcs${frWord} · click to ${off ? 'include' : 'exclude'}, double-click = seen`;
+                return `<button class="kdnest-cab${off ? ' kdnest-cab-off' : ''}${frCls}" data-cab="${_esc(g.cab)}" title="${_esc(full)}">${_esc(label)}<sup>${g.pcs}</sup>${frTag}</button>`;
               }).join('')}
-            </div>` : '';
+            </div>${(_frNew || _frChg) ? `
+            <div class="kdnest-cabs-fresh">${_frNew ? `<span class="kdnest-cab-fr">${_frNew} new</span>` : ''}${_frChg ? `<span class="kdnest-cab-fr">↻ ${_frChg} changed</span>` : ''}<button id="kdnest-cabs-seen" class="kdnest-mini" title="Mark every cabinet seen for the laser role">Mark all seen</button></div>` : ''}` : '';
 
     const sheetStockRows = S.sheetStock.map((s, i) => {
       const upDisabled = i === 0 ? 'disabled' : '';
@@ -4041,8 +4056,24 @@
     // Cabinet capsules — tap toggles one cabinet; All/None act on the group.
     $('#kdnest-cabs-all')?.addEventListener('click', () => _setAllCabinets(true));
     $('#kdnest-cabs-none')?.addEventListener('click', () => _setAllCabinets(false));
-    S.rootEl.querySelectorAll('.kdnest-cab').forEach(btn =>
-      btn.addEventListener('click', () => _toggleCabinet(btn.dataset.cab)));
+    S.rootEl.querySelectorAll('.kdnest-cab').forEach(btn => {
+      // single click = include/exclude (capsule); double click = acknowledge
+      // the cabinet's freshness for the LASER role (badge clears).
+      btn.addEventListener('click', () => _toggleCabinet(btn.dataset.cab));
+      btn.addEventListener('dblclick', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        if (typeof markCabinetSeen !== 'function') return;
+        const cab = btn.dataset.cab;
+        const cq = _cabinetCodeQty(S.projectKey).get(cab) || new Map();
+        markCabinetSeen('laser', S.projectKey, cab, _cabinetFingerprint(cq));
+        _refreshView();
+      });
+    });
+    $('#kdnest-cabs-seen')?.addEventListener('click', () => {
+      if (typeof markAllCabinetsSeen === 'function' && S.projectKey) {
+        markAllCabinetsSeen('laser', S.projectKey); _refreshView();
+      }
+    });
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
     S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty, .kdnest-stock-thick').forEach(el => {
