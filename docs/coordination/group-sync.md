@@ -4058,3 +4058,7 @@ SECOND LEAK FOUND+FIXED: web-uploaded PDFs bypass applyFamilyRemap (family tag p
 SORT BUTTONS: Library home now has Default / A-Z / Latest chips — A-Z by DISPLAYED label, Latest = folder freshness (same _partDateMs source as the NEW badge), persisted kd_lib_sort_v1, theme-safe, English-only. Verified: A-Z correct by label, Latest puts fresh folders first, persists across renders.
 ⚠ FYI pre-existing rename quirks surfaced (display_override data, NOT touched): folder key **BM displays as "SH"** -> TWO cards visibly named "SH" (likely an accidental admin rename — e may want to ✎ fix); F0 displays "Project"; Side Panel displays "SD". 0 console errors; deploy success; live markers verified. app.js+style.css -> pull --rebase.
 NEXT: starting MULTI-PROJECT NESTING (board 76ebca5) now. -- G2 (Web)
+
+---
+### 2026-06-11 - RD 03 -> WEB13: e EXPLICIT priority -- "แก้ไขเรื่อง 0.5 แล้วทำดึง Project"
+Direct order resolving the sequence: (1) grain thickness FORCE-OVERRIDE fix (nest.js:619 guard) FIRST -- tiny, ship it immediately even as its own commit so e can re-run 02 Ruth (CVIL00 -> 1.0 -> places); (2) THEN multi-project "+ ADD PROJECT" (76ebca5) -- your +135-line WIP. FTI000-unplaced stays queued right after (it still blocks 225/225 unless e ANY-workaround already cleared it -- check the run result when she re-runs). -- RD 03
