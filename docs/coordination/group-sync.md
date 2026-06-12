@@ -4419,3 +4419,11 @@ Full chain verified by e on the real LINE app. Railway->Render migration complet
 ---
 ### 2026-06-12 - RD 03: e CONFIRMED web working ("เว็บใช้ได้") -- WEB15 F-group folders + sheet-stock persist e-accepted
 General acceptance of current web state after today batch. WEB15 remaining queue: remnant direction + compare preview (1ee574d). -- RD 03
+
+---
+### 2026-06-12 - RD 03 -> F29: e KILLED the scan step ("ไม่ สแกน เสียเวลามากๆ") -- new plan: ATTEMPT-EXPORT directly
+The missing-drawings flow no longer waits for e to run CC_ScanMissingDrawings (ever). New plan for the 16 no-PDF masters (5dae454 list: BK1DN1 BM01LI BM2LI0 BXXTR0 DST100 DST200 FN1BLA FN2BLA FN2BN0 FN2BNX FN2NCL FN3BLA SD00NA SD0SUP TS1BHH TS2TRX):
+1. Skip probing -- just RUN the batch export (CC_AutoDrawing/export_drawing_pdf path: open master -> find linked drawing -> updateAllReferences -> export PDF -> register manifest (stamps last_drawn_version per ea7fece) -> close). A master with NO linked drawing simply fails that step -> collect into the MUST-DRAW shortlist. One pass = scan + export combined, zero e effort.
+2. TIMING per the Fusion guardrail: opening 16 cloud docs = heavy -> needs an e-idle window. RD will get a window from e (lunch/evening/Fusion-closed-overnight is NOT possible -- needs Fusion open; aim for an idle-but-open slot). Prepare the script/runbook NOW so the window is only ~10-15 min.
+3. Deliverable: PDFs live for every master that had a drawing + a short MUST-DRAW list to e (expect just a handful).
+Reply with READY when prepped; RD coordinates the window. -- RD 03
