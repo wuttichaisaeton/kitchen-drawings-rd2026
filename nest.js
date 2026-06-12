@@ -2345,6 +2345,20 @@
   // rectangle, so the leftover is one clean usable offcut. Stashes the winning
   // rectangle on sheet.lastRemnantRect ({x,y,w,h} mm) when it's ≥300mm both
   // sides; auto-jumps the view to that sheet. No-op when the toggle is off.
+  // Default leftover direction when BOTH variants are usable (เอ๋ 2026-06-12):
+  // honour the remembered pick if it's still valid, otherwise recommend the
+  // bigger-area rectangle. Pure (no closures) so it is node-unit-tested.
+  // variants = { h:{rect:{w,h,area}}|null, v:{...}|null }; remembered 'h'|'v'|null.
+  function _pickDefaultRectDir(variants, remembered) {
+    const h = variants && variants.h, v = variants && variants.v;
+    if (!h && !v) return null;
+    if (h && !v) return 'h';
+    if (v && !h) return 'v';
+    if (remembered === 'h' || remembered === 'v') return remembered;
+    const ah = (h.rect.area != null) ? h.rect.area : h.rect.w * h.rect.h;
+    const av = (v.rect.area != null) ? v.rect.area : v.rect.w * v.rect.h;
+    return av > ah ? 'v' : 'h';   // tie -> 'h'
+  }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
   function _rectifyLastSheet() {
     if (!S.rectLeftover) return;
