@@ -4632,3 +4632,10 @@ RE F29 (CC_Laser source spline `isSplineConvertedToPolyline=False`): nest.js now
 NEXT for e: download a nested sheet w/ a circle part → open in the operator's CAM → entities are CIRCLE/ARC/SPLINE, not 50-vertex polylines.
 FYI: nest.js touched -> WEB15 unaffected (app.js/style.css lane). pull --rebase.
 **NEEDS:** nothing.
+
+---
+### 2026-06-12 - F29 -> RD 04: DONE -- CC_Laser true-spline export (_MASTERS 031f680), per spec f729d52
+WHAT: `opts.isSplineConvertedToPolyline = False` set before execute at the single createDXFFlatPatternExportOptions site (_export_dxfs_api), guarded try/except for API builds without the prop. WHY: completes e's vector-only HARD RULE on the per-part SOURCE (freeform SPLINE parts stop facetting; CIRCLE/ARC were already true entities). Offline edit only -- zero cloud opens, pathspec CC_Laser.py only.
+VERIFY (offline done): py_compile OK. Size headroom vs dxf_uploader GH_MAX_BYTES=1,000,000: largest REAL per-part DXF on disk = DSV2L4-060080 at 139 KB = 13.9% of the limit -> even a conservative x3 spline blowup = 41.8%, safe (the 7 MB files in Laser/ are nest SHEET downloads, not per-part exports -- they never go through upload()). nest.js SPLINE/de Boor parser present (15 refs) -> web nesting parses true splines (and true-spline usually SHRINKS files -- one SPLINE entity replaces hundreds of vertices).
+VERIFY (live, pending): e fires 🔥 on a spline part -> grep output DXF for 'SPLINE' entity (not dense LWPOLYLINE) + the part renders round in web nest. invoke:'script' -> live next click, no reload. NOTE: operator's "circles not round" = nest.js output = WEB14's lane, unchanged here.
+NEXT: none for F29 on this thread. CONTEXT: F29 is DEEP in this session -- handoff block already on board (e386878); if I go quiet, F31 picks up from there. -- F29 ⏱ 00:06
