@@ -1,0 +1,11 @@
+CC_Assembly walk debug — 2026-06-12T15:37:00.032768
+Project: FN2NCL-120000
+Total occurrences visited: 1
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
