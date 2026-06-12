@@ -1661,7 +1661,7 @@ function _renderBendList(parts, projectKey) {
         <span class="bend-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
         ${_bendRecheckChip(p.code)}
-        ${_outdatedChips(p.code)}
+        ${_outdatedChips(p.code, { clickable: true })}
         ${viewBtn}
         ${fusionBtn}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
@@ -1721,6 +1721,33 @@ function _wireBendList(parts, projectKey) {
       ev.stopPropagation();
       const p = _bendPartByCode.get(btn.dataset.code) || { code: btn.dataset.code };
       _routeLeafToFusion({ code: p.code, urn: p.urn || null }, { fusionOnly: true });
+    });
+  });
+  // Clickable outdated chips (เอ๋ 2026-06-12): "drawing outdated" → open the .f2d
+  // (router stale-path = status:'stale' + drawing_urn from the effective code's
+  // manifest entry); "DXF outdated — run 🔥" → open the 3D master (fusionOnly,
+  // same as the cube). Bridge down → the router's existing alert. Same router,
+  // no rewrite.
+  ROOT.querySelectorAll('.bend-row .sb-recheck-act').forEach(chip => {
+    chip.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = chip.dataset.code;
+      const p = _bendPartByCode.get(code) || { code };
+      const urn = p.urn || _urnForCode(code) || null;
+      if (chip.dataset.act === 'dxf') {
+        _routeLeafToFusion({ code, urn }, { fusionOnly: true });   // 3D master
+      } else {
+        // Prefer the part's .f2d drawing (router stale-path = status:'stale' +
+        // drawing_urn); fusionOnly so it falls back to the 3D master, never the
+        // OLD pdf. NB drawing_urn is currently empty in the manifest (Fusion-side
+        // gap) → opens the 3D master today; opens the .f2d automatically once
+        // CC_DrawingPDF emits drawing_urn (or the part is 🔗-paired).
+        const eff = _effectiveDrawingCode(code);
+        const entry = (manifest.auto_generated || {})[eff] || null;
+        _routeLeafToFusion(
+          { code, urn, drawing_urn: entry ? (entry.drawing_urn || null) : null, status: 'stale' },
+          { fusionOnly: true });
+      }
     });
   });
   // 💬 Comment handlers — the bend path returns before renderProject's
@@ -5063,12 +5090,20 @@ function _dxfOutdated(code) {
   if (newestMv < 0) return null;   // no version-stamped DXFs yet → dormant
   return fv > newestMv ? { fv, mv: newestMv } : null;
 }
-function _outdatedChips(code) {
+// opts.clickable (เอ๋ 2026-06-12, bend list): make each chip a one-tap Fusion
+// jump — "drawing outdated" opens the part's .f2d drawing, "DXF outdated" opens
+// the 3D master (fusionOnly). Routed through _routeLeafToFusion (the bend
+// row/cube precedent). เอ๋ updates in Fusion → the version stamp moves → the
+// chip clears itself. Default (other surfaces) stays a plain non-clickable tag.
+function _outdatedChips(code, opts) {
+  const act = !!(opts && opts.clickable);
+  const cls = act ? 'sb-recheck sb-recheck-act' : 'sb-recheck';
+  const data = act ? ` data-code="${escapeHtml(code)}"` : '';
   let out = '';
   const d = _drawingOutdated(code);
-  if (d) out += `<span class="sb-recheck" title="Model is v${d.fv} but the drawing was exported at v${d.lv} — update the drawing in Fusion">⚠ drawing outdated</span>`;
+  if (d) out += `<span class="${cls}"${data}${act ? ' data-act="drawing"' : ''} title="Model is v${d.fv} but the drawing was exported at v${d.lv}${act ? ' — click to open this part in Fusion and fix the drawing; Update + Save and this clears itself' : ' — update the drawing in Fusion'}">⚠ drawing outdated</span>`;
   const x = _dxfOutdated(code);
-  if (x) out += `<span class="sb-recheck" title="Model is v${x.fv} but the laser DXF came from v${x.mv} — run 🔥 (CC_Laser) again">⚠ DXF outdated — run 🔥</span>`;
+  if (x) out += `<span class="${cls}"${data}${act ? ' data-act="dxf"' : ''} title="Model is v${x.fv} but the laser DXF came from v${x.mv}${act ? ' — click to open the 3D master in Fusion, then run 🔥 (CC_Laser); this clears itself' : ' — run 🔥 (CC_Laser) again'}">⚠ DXF outdated — run 🔥</span>`;
   return out;
 }
 

@@ -4469,6 +4469,10 @@ body.sb-fs-lock { overflow: hidden; }
   cursor: help;
 }
 .sb-recheck { flex-shrink: 0; }
+/* Clickable outdated chip (เอ๋ 2026-06-12, bend list) — same amber tag, but a
+   tap jumps to Fusion (.f2d / 3D master). Pointer + a hover lift signal it. */
+.sb-recheck-act { cursor: pointer; transition: background .12s, box-shadow .12s; }
+.sb-recheck-act:hover { background: rgba(242,169,59,0.3); box-shadow: 0 0 0 1px #F2A93B inset; }
 .kdjobs-stale-why { color: #F2A93B; }
 /* Multi-project provenance marker on a nest part row ("2P" = parts of 2
    projects; hover lists per-project counts). */
