@@ -52,7 +52,7 @@ async function _refreshManifest() {
     // check) instead of a full render() remount (canvas flash + viewport reset).
     // On list views it falls back to render() itself. Note: a brand-NEW part
     // (not yet a node) still needs the next full render to appear.
-    try { _refreshAssemblyUI(); } catch { try { render(); } catch {} }
+    try { _refreshAssemblyUI(); } catch { _backgroundRender(); }
     _manifestPulse();
   } catch (e) { /* network hiccup — next trigger retries */ }
 }
@@ -2482,7 +2482,7 @@ function initProjectNamesSync() {
     window.firebaseDB.ref('project_names').on('value', snap => {
       _projectNamesCache = snap.val() || {};
       _applyProjectNames();
-      try { render(); } catch {}
+      _backgroundRender();
     }, err => console.warn('Firebase project_names listener error:', err));
   } catch (e) {
     console.warn('Failed to attach project_names listener:', e);
@@ -2534,7 +2534,7 @@ function initCompletedSync() {
     window.firebaseDB.ref('completed_projects').on('value', snap => {
       completedProjectsCache = snap.val() || {};
       saveCompletedSet(new Set(Object.keys(completedProjectsCache)));
-      try { render(); } catch {}
+      _backgroundRender();
     }, err => console.warn('Firebase completed_projects listener error:', err));
     // one-shot migration of pre-sync local entries
     window.firebaseDB.ref('completed_projects').once('value').then(s => {
@@ -2619,13 +2619,13 @@ function initPinnedSync() {
       const raw = snap.val() || {};
       _pinnedCache = new Set(Object.keys(raw).filter(k => !!raw[k]));
       try { localStorage.setItem(LS_PINNED_KEY, JSON.stringify([..._pinnedCache])); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
     window.firebaseDB.ref('project_order').on('value', snap => {
       const arr = snap.val();
       _projectOrderCache = Array.isArray(arr) ? arr : [];
       try { localStorage.setItem(LS_PROJECT_ORDER_KEY, JSON.stringify(_projectOrderCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
   } catch (e) {
     console.warn('Firebase pinned/order listener failed:', e);
@@ -2719,37 +2719,37 @@ function initFamilyChipSync() {
       const raw = snap.val();
       _familyLabelsCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_FAMILY_LABELS_KEY, JSON.stringify(_familyLabelsCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
     window.firebaseDB.ref('family_order').on('value', snap => {
       const arr = snap.val();
       _familyOrderCache = Array.isArray(arr) ? arr : [];
       try { localStorage.setItem(LS_FAMILY_ORDER_KEY, JSON.stringify(_familyOrderCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
     window.firebaseDB.ref('display_overrides').on('value', snap => {
       const raw = snap.val();
       _displayOverridesCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_DISPLAY_OVERRIDES_KEY, JSON.stringify(_displayOverridesCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
     window.firebaseDB.ref('family_overrides').on('value', snap => {
       const raw = snap.val();
       _familyOverridesCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_FAMILY_OVERRIDES_KEY, JSON.stringify(_familyOverridesCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
     window.firebaseDB.ref('custom_folders').on('value', snap => {
       const raw = snap.val();
       _customFoldersCache = Array.isArray(raw) ? raw : [];
       try { localStorage.setItem(LS_CUSTOM_FOLDERS_KEY, JSON.stringify(_customFoldersCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
     window.firebaseDB.ref('drawing_links').on('value', snap => {
       const raw = snap.val();
       _drawingLinksCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_DRAWING_LINKS_KEY, JSON.stringify(_drawingLinksCache)); } catch {}
-      try { render(); } catch {}
+      _backgroundRender();
     });
   } catch (e) {
     console.warn('Firebase family-chip listener failed:', e);
@@ -3106,7 +3106,7 @@ function initUploadedPdfsSync() {
   try {
     window.firebaseDB.ref('uploaded_pdfs').on('value', snap => {
       _uploadedPdfsCache = snap.val() || {};
-      try { render(); } catch {}
+      _backgroundRender();
     });
   } catch (e) {
     console.warn('Firebase uploaded_pdfs listener failed:', e);
@@ -3132,7 +3132,7 @@ function initCutSheetsSync() {
   try {
     window.firebaseDB.ref('cut_sheets').on('value', snap => {
       _cutSheetsCache = snap.val() || {};
-      try { render(); } catch {}
+      _backgroundRender();
     });
   } catch (e) {
     console.warn('Firebase cut_sheets listener failed:', e);
@@ -3162,7 +3162,7 @@ function initNestPartsSync() {
   try {
     window.firebaseDB.ref('nest_parts').on('value', snap => {
       _nestPartsCache = snap.val() || {};
-      if (typeof render === 'function') render();
+      if (typeof render === 'function') _backgroundRender();
     });
   } catch (e) {
     console.warn('Firebase nest_parts listener failed:', e);
@@ -3182,7 +3182,7 @@ function initUploadedDxfsSync() {
       // Workshop never sees the 📐 button — skip the full render so a
       // burst of uploads doesn't repaint the workshop iPad needlessly.
       if (isAdmin()) {
-        try { render(); } catch {}
+        _backgroundRender();
       }
     });
   } catch (e) {
@@ -3929,7 +3929,7 @@ function _refreshAssemblyUI() {
     try { window.dispatchEvent(new Event('kme:extsync')); } catch {}
     return;
   }
-  try { render(); } catch {}
+  _backgroundRender();   // scroll-preserving + defers while เอ๋ types / a dialog is open
 }
 
 function initBentSync() {
@@ -4141,7 +4141,7 @@ function initCabinetSeenSync() {
           for (const [cab, payload] of Object.entries(cabs || {}))
             _cabSeenCache[`${role}|${pk}|${cab}`] = payload;
       _mirrorCabSeenToLocal();
-      if (typeof render === 'function') { try { render(); } catch {} }
+      if (typeof render === 'function') { _backgroundRender(); }
     }, err => console.warn('Firebase cabinet_seen listener error:', err));
   } catch (e) { console.warn('Failed to attach cabinet_seen listener:', e); }
 }
@@ -4506,7 +4506,7 @@ function initDeletedDrawingsSync() {
     window.firebaseDB.ref('deleted_drawings').on('value', snap => {
       deletedDrawingsCache = snap.val() || {};
       saveCachedDeleted(deletedDrawingsCache);
-      try { render(); } catch {}
+      _backgroundRender();
     }, err => console.warn('Firebase deleted_drawings listener error:', err));
   } catch (e) {
     console.warn('Failed to attach deleted_drawings listener:', e);
@@ -4579,7 +4579,7 @@ function initDeletedProjectsSync() {
     window.firebaseDB.ref('deleted_projects').on('value', snap => {
       deletedProjectsCache = snap.val() || {};
       _saveDeletedProjects(deletedProjectsCache);
-      try { render(); } catch {}
+      _backgroundRender();
     }, err => console.warn('Firebase deleted_projects listener error:', err));
   } catch (e) {
     console.warn('Failed to attach deleted_projects listener:', e);
@@ -4842,6 +4842,52 @@ function render() {
   const top = stack[stack.length - 1];
   if (top.kind === 'family') return renderFamily(top.name, top.highlight);
   if (top.kind === 'project') return renderProject(top.name);
+}
+
+// ── Background re-render guard (เอ๋ 2026-06-12) ───────────────────────────────
+// A manifest auto-refresh or an RTDB push must NEVER yank เอ๋'s place: she sits
+// in a project (e.g. the bend list) and saves in Fusion over and over, and a
+// full render() rebuilds ROOT.innerHTML — which throws away a focused input +
+// its unsaved text and can shift the scroll. So every BACKGROUND trigger routes
+// through here instead of calling render() directly:
+//   (1) if เอ๋ is mid-interaction — a focused text field OR an open modal — DEFER
+//       (set a pending flag; it flushes the moment she's done), so typing / a
+//       dialog is never interrupted;
+//   (2) otherwise preserve the window scroll across the render (restored on the
+//       same tick + next frame + a short timeout, to survive async content fill).
+// Navigation (navTo / tab clicks) still calls render() directly, so opening a
+// view still resets scroll as intended. The mindmap editor has its own in-place
+// path (_refreshAssemblyUI → kme:extsync) and never reaches here.
+let _bgRenderPending = false;
+function _userIsInteracting() {
+  const a = document.activeElement;
+  if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA' || a.tagName === 'SELECT' || a.isContentEditable)) return true;
+  // any open modal / overlay (bend PDF picker, stock, saved jobs, bend table,
+  // add-project, cut sheets, dxf preview, similar-compare, generic dialog)
+  if (document.querySelector(
+      '.kdstock-modal, .bendpdf-modal, .bt-overlay, .cs-modal, .kdng-modal, .pdxf-project-modal, .dxf-preview-modal, .sb-modal-backdrop, [role="dialog"]'))
+    return true;
+  return false;
+}
+function _backgroundRender() {
+  if (_userIsInteracting()) { _bgRenderPending = true; return; }
+  _bgRenderPending = false;
+  const se = document.scrollingElement || document.documentElement;
+  const y = window.scrollY || (se && se.scrollTop) || 0;
+  try { render(); } catch {}
+  const restore = () => { try { window.scrollTo(0, y); } catch {} };
+  restore();
+  try { requestAnimationFrame(restore); } catch {}
+  setTimeout(restore, 60);
+}
+// Flush a deferred background render once เอ๋ stops interacting (blur a field /
+// close a dialog). Capture phase + a tick so focus moving between two inputs
+// doesn't trigger a mid-edit flush.
+function _flushPendingBgRender() {
+  if (_bgRenderPending && !_userIsInteracting()) _backgroundRender();
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('focusout', () => setTimeout(_flushPendingBgRender, 0), true);
 }
 
 // Sim.Bending — press-brake bend feasibility per PART, published by
@@ -5155,7 +5201,7 @@ function _subscribeSimbendFavs() {
       _favsCache = (raw && typeof raw === 'object') ? raw : {};
       try { localStorage.setItem(LS_FAVS_KEY, JSON.stringify(_favsCache)); } catch {}
       if (!document.getElementById('kme-mount') && view === 'simbend' && stack.length === 0) {
-        try { render(); } catch {}
+        _backgroundRender();
       }
     });
   } catch (e) { _favsCache = {}; }
@@ -5203,7 +5249,7 @@ function _scheduleSyncRender() {
   _syncRenderTimer = setTimeout(() => {
     _syncRenderTimer = null;
     if (view === 'simbend' && stack.length === 0 && !document.getElementById('kme-mount')) {
-      try { render(); } catch {}
+      _backgroundRender();
     }
   }, 200);
 }
@@ -5220,7 +5266,7 @@ function _scheduleSyncRender() {
 // verdict into bend_sim. Probes run with bounded concurrency; progress re-renders.
 async function _runProjectSync(key) {
   _simBendProject = key || null;
-  if (!key) { _simBendSync = null; if (view === 'simbend') { try { render(); } catch {} } return; }
+  if (!key) { _simBendSync = null; if (view === 'simbend') { _backgroundRender(); } return; }
   const proj = manifest && manifest.projects && manifest.projects[key];
   const codes = proj ? _aggregatePartsByCode(proj.parts || []).map(p => p.code).filter(Boolean) : [];
   _simBendSync = { key, total: codes.length, done: 0, byCode: {}, running: true };
