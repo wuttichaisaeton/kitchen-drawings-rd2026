@@ -1,0 +1,11 @@
+CC_Assembly walk debug — 2026-06-12T16:03:47.446719
+Project: BKDNC1-120002
+Total occurrences visited: 1
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | BKDNC1-120002:1 (BKDNC1-120002)
