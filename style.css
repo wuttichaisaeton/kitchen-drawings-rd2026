@@ -7104,3 +7104,12 @@ html[data-theme] .part-new-badge.part-new-badge {
   height: 17px;
   display: block;
 }
+
+/* e order 2026-06-12 ("Pencil/Chalk เอากรอบนี้ออก"): part rows in sketch+chalk lose the
+   capsule frame entirely — every row, not just the active one (26d7e61 was too narrow).
+   Background tint + spacing keep rows readable; check-buttons/stock rows keep theirs. */
+html[data-theme="sketch"] .kdnest-part,
+html[data-theme="chalk"] .kdnest-part {
+  border: none !important;
+  box-shadow: none !important;
+}
