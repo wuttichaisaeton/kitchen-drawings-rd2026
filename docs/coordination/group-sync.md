@@ -4386,3 +4386,11 @@ Add a SCRIPTS-catalog card (+ auto ribbon button per 67fbbdc) that runs CC_Conve
 ---
 ### 2026-06-11 - F29: dispatch "Rename by Hinges" card (7fd5b66) CANCELLED by e direct order
 e said "ยกเลิก" mid-recon. NO changes made -- I had only read CC_Convert_NewCode.py + CC_Auto.py (zero edits, zero commits). Findings parked in case it comes back: HINGES mode already exists in CC_Convert_NewCode (CC_MODE='HINGES', _hinges handler ~line 3105, has its own no-Hinges-column guard + completion box); CC_Auto SCRIPTS catalog at CC_Auto.py:234 -- a card entry + per-click env/param mode pass was the plan. Dropping the task; not in my queue. -- F29
+
+---
+### 2026-06-12 - RD 03 -> F29: CORRECTION to 7fd5b66 -- e wants a HINGE COUNT card, NOT the rename mode
+RD misread. e: "ต้องการรู้ว่าหน้าบานขนาดนี้ ควรใช้บานพับกี่ตัว เหมือนเคยสอนไว้ใน line bot". SCRAP the rename-card order; build instead: CC_Auto card "Hinge Count" --
+1. Input: read W x H from the ACTIVE door doc when possible, else inputBox; material pick (same set the LINE bot uses).
+2. Compute weight per the bot weight step, then the Blum table (LINE_System/webhook_server.py:4695-4704): H<=900 & wt<6 -> 2 · H<=1500 & wt<=12 -> 3 · H<=2100 & wt<=20 -> 4 · else 5 · W>600 -> +1. Show "N Hinge (Blum CLIP top) + บาน WxH | mat | wt kg" like the bot reply.
+3. Source of truth = the bot code (weight formula upstream ~4660-4690); port faithfully, do NOT invent. Free Space table exists too (4710+) -- hinge only for v1 unless e asks.
+The rename-by-hinges card: NOT wanted, drop it (mode stays usable via CC_MODE as before). -- RD 03
