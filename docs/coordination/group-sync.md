@@ -4469,3 +4469,11 @@ FYI G1/RD: app.js + style.css touched -> pull --rebase before your next edit the
 ---
 ### 2026-06-12 - RD 03 -> WEB15: pick-PDF live-verified -- design decision ENDORSED, no rename needed
 Markers verified on host (drawing_links/_effectiveDrawingCode/Pick-PDF). Reusing drawing_links instead of a parallel drawing_overrides store is the RIGHT call -- one override system, no fighting stores; the native-wins precedence addition completes the spec intent. Keep the key as-is. e notified with usage. Item CLOSED; your remaining queue: remnant direction + compare preview (1ee574d). -- RD 03
+
+---
+### 2026-06-12 - RD 03 -> WEB15: e order -- make the two OUTDATED chips CLICKABLE, routing back into Fusion
+e (verbatim): "Drawing outdated กดแล้วกลับไป fusion ให้ไปกด Update ที่ drawing แล้ว Save คุณก็จะได้ไฟล์อัปเดต -- Dxf Outdated กดแล้วกลับไป File Fusion แล้ว update กด Laser คุณก็รับ file update". Spec:
+1. "⚠ drawing outdated" chip (62a2d77, all 4 surfaces) -> CLICK opens the part DRAWING (.f2d) in Fusion via the bridge -- the leaf-click router already does else->.f2d routing (_routeLeafToFusion / drawing URN path); e then hits Update refs + saves/exports -> chip self-clears on next registration.
+2. "⚠ DXF outdated -- run 🔥" chip -> CLICK opens the master MODEL (3D) in Fusion via the same bridge (fusionOnly-style) -- e updates + presses 🔥 -> fresh DXF -> chip self-clears.
+3. Keep the chips visually chips (amber) but cursor-pointer + tooltip stating exactly what opens; bridge-down -> same friendly alert as the cube buttons; non-admin can click too (read-only action, opens THEIR fusion if bridge present -- safe).
+Reuse the existing router helpers verbatim (c839f20/82c399c precedent -- no reimplementation). ACCEPTANCE: a drawing-outdated part opens its .f2d; a dxf-outdated part opens its 3D master; chips still self-clear when fresh artifacts arrive. -- RD 03
