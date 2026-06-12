@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T08:09:44.446554+00:00",
+  "generated_at": "2026-06-12T08:13:09.167095+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4581,7 +4581,7 @@
     "BTHL00-140100": {
       "family": "Other",
       "last_drawn_version": 6,
-      "fusion_version": 2,
+      "fusion_version": 6,
       "pdf": "BTHL00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5791,7 +5791,7 @@
       "name": "02 Ruth",
       "status": "active",
       "created_at": "2026-06-08T09:23:07.576072+00:00",
-      "updated_at": "2026-06-12T03:03:48.721450+00:00",
+      "updated_at": "2026-06-12T08:13:09.150272+00:00",
       "total_unique_parts": 99,
       "total_qty": 225,
       "parts": [
