@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T01:45:14.656759+00:00",
+  "generated_at": "2026-06-12T03:03:48.733264+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -5778,8 +5778,8 @@
       "name": "02 Ruth",
       "status": "active",
       "created_at": "2026-06-08T09:23:07.576072+00:00",
-      "updated_at": "2026-06-12T01:45:14.646757+00:00",
-      "total_unique_parts": 98,
+      "updated_at": "2026-06-12T03:03:48.721450+00:00",
+      "total_unique_parts": 99,
       "total_qty": 225,
       "parts": [
         {
@@ -5912,7 +5912,7 @@
         },
         {
           "code": "BTHL00-140100",
-          "qty": 2,
+          "qty": 1,
           "family": "Other",
           "parent_code": "F1",
           "urn": "urn:adsk.wipprod:dm.lineage:pdvG2czISk2sjIL-Aj_Q8Q"
@@ -5923,6 +5923,13 @@
           "family": "Other",
           "parent_code": "F1",
           "urn": "urn:adsk.wipprod:dm.lineage:F7Q8_l3SRX23qTNjxe4WkQ"
+        },
+        {
+          "code": "BTHLSR-140000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "F1",
+          "urn": "urn:adsk.wipprod:dm.lineage:57qWQbHiSp6elEQw-pbObw"
         },
         {
           "code": "BXXTR0-000000",
