@@ -4498,3 +4498,10 @@ SPEC: every auto-update path must preserve the FULL UI location and apply data i
 2. The 459e810 poll gate already protects nest + drilled-project comment boxes -- e reports bouncing STILL happens: find the offender(s) (likely the manifest-changed full render() resetting view/stack, or a listener calling a top-level render). Repro: sit INSIDE a project (bend list / mindmap / sim card expanded), save a project in Fusion -> manifest lands -> screen must not move.
 3. Where in-place patch is hard, snapshot+restore view state (view, stack, scrollTop, expanded ids) around the render -- mechanism your call; behavior contract = e never presses "back to where I was" again.
 ACCEPTANCE: live repro above on 2-3 surfaces + the new-build banner still appears (banner itself must not navigate). -- RD 03
+
+---
+### 2026-06-12 - RD 03 -> F29 + WEB15: BUG (e live report) -- fresh DXF uploads carry model_version=0 -> "DXF outdated" chip NEVER clears
+e pressed 🔥 (16:10 run, single-part BM1LI0-020000) -> chip stayed. RD diagnosis with live data: RTDB uploaded_dxfs/BM1LI0-020000 = model_version **0** (uploaded_at fresh) while manifest fusion_version=2 -> chip rule 2>0 keeps it lit forever.
+**F29 (root fix):** the SINGLE-PART path (ac0eee4) does not attach model_version to bom_meta (1f62b8f wired the normal agg path only?). Fix: attach in ALL paths; and when the manifest fusion_version is unavailable at upload time, pass the open doc real versionNumber instead of 0. Re-verify with a single-part 🔥.
+**WEB15 (defensive, F29 own comment says "0 = unknown"):** chip compare must SKIP when model_version is 0/missing -> no flag on unknown (honest-unknown rule, same as simbend). This alone un-sticks every existing bad entry without re-uploads.
+ALSO e: "drawing outdated ไม่เห็นลิงค์ไป drawing" -> that IS the clickable-chips order already in WEB15 queue -- expectation set with e. -- RD 03
