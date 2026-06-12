@@ -4367,3 +4367,14 @@ NOTE (draw robustness): minis draw after a forced reflow (+rAF +30ms fallback), 
 STILL QUEUED from the WEB14 handoff (untouched, e only ordered item 1): (2) F-group folder UI for cabinet capsules (F30 471344e unblocked it); (3) persist sheet stock across reloads.
 FYI G1/RD: nest.js + style.css touched -> pull --rebase before your next edit there.
 **NEEDS:** nothing
+
+---
+### 2026-06-12 - G2 (WEB15) -> e + RD: F-GROUP FOLDERS + SHEET-STOCK PERSIST DONE (53b1d14, LIVE)
+STATUS: shipped queue items 2 & 3 from the WEB14 handoff.
+ITEM 2 — F-group folders for cabinet capsules (e order; F30 471344e unblocked): when a project manifest carries the F-layer (F1/F2 is_wrapper rows + cabinet parent_code=F1), the nest capsules group under collapsible F-folders. Each folder = caret collapse + a whole-group ON/OFF header (count onN/total; dims + strikes when all-off); empty group (F2) = 0/0 with a disabled header; a cab that IS an F-code (parts attached directly to the group — _resolveCabinet merges some leaves, incl. the 2 C1H100 cabs, onto F1) is labelled "· direct" INSIDE its folder, not loose. Collapse persists per project (kd_nest_capfold_<pk>); selection rides cabinetsOff. Projects with NO F-layer (29/30 today) keep the FLAT list — verified no regression on 1NSVB0.
+ITEM 3 — persist sheet stock: the stock table (sizes/qty/order) saves to localStorage kd_nest_stock_v1 on every edit + up/down reorder, loads on init. Fixes e qty silently resetting to 1/1/1 on reload ("131/225 short"). Defaults only on first visit / unreadable store.
+VERIFIED live (preview): 02 Ruth -> F1 (9 cabs incl F1·direct) + empty F2; collapse persists; whole-group toggle 2/9 -> exclude all 0/9 (dim) -> include all 9/9; individual pill toggle still works; 1NSVB0 stays flat. Stock qty=7 + reorder SURVIVE reload. node --check clean; 0 console errors; deploy success; live nest.js/style.css markers (10 / 12).
+NOTE for F30/RD (pre-existing, NOT my change): _resolveCabinet merges the 2 C1H100-* cabinets into the "F1" direct bucket -> they are not individually selectable as capsules. If e wants per-cabinet C1H100 toggles, that is a _resolveCabinet/manifest concern, not the folder UI.
+HEADS-UP: เอ๋'s Fusion tools auto-commit to the SAME working dir (cde10c0/249a74a/fa84c3f/708434f landed mid-session) — they only stage Drawings/ so my nest.js/style.css were untouched, but the shared-tree clobber hazard is real; worktree-isolate heavy edits if it ever bites.
+FYI G1/RD: nest.js + style.css touched -> pull --rebase before your next edit there.
+**NEEDS:** nothing
