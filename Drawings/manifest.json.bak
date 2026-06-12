@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T06:51:27.867196+00:00",
+  "generated_at": "2026-06-12T07:18:30.796476+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -9406,6 +9406,22 @@
           "qty": 2,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:rvyvxKc6RheKTitalQO8lg"
+        }
+      ]
+    },
+    "2BK400-040060": {
+      "name": "2BK400-040060",
+      "status": "active",
+      "created_at": "2026-06-12T07:18:30.794401+00:00",
+      "updated_at": "2026-06-12T07:18:30.794401+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 4,
+      "parts": [
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:0QayKPb-RlW6Tp9feHyQOA"
         }
       ]
     }
