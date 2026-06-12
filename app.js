@@ -1723,34 +1723,9 @@ function _wireBendList(parts, projectKey) {
       _routeLeafToFusion({ code: p.code, urn: p.urn || null }, { fusionOnly: true });
     });
   });
-  // Clickable outdated chips (เอ๋ 2026-06-12): "drawing outdated" → open the .f2d
-  // (router stale-path = status:'stale' + drawing_urn from the effective code's
-  // manifest entry); "DXF outdated — run 🔥" → open the 3D master (fusionOnly,
-  // same as the cube). Bridge down → the router's existing alert. Same router,
-  // no rewrite.
-  ROOT.querySelectorAll('.bend-row .sb-recheck-act').forEach(chip => {
-    chip.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const code = chip.dataset.code;
-      const p = _bendPartByCode.get(code) || { code };
-      const urn = p.urn || _urnForCode(code) || null;
-      if (chip.dataset.act === 'dxf' || chip.dataset.act === 'recheck') {
-        // DXF-outdated + ↻ re-check are both model→bend actions → 3D master.
-        _routeLeafToFusion({ code, urn }, { fusionOnly: true });   // 3D master
-      } else {
-        // Prefer the part's .f2d drawing (router stale-path = status:'stale' +
-        // drawing_urn); fusionOnly so it falls back to the 3D master, never the
-        // OLD pdf. NB drawing_urn is currently empty in the manifest (Fusion-side
-        // gap) → opens the 3D master today; opens the .f2d automatically once
-        // CC_DrawingPDF emits drawing_urn (or the part is 🔗-paired).
-        const eff = _effectiveDrawingCode(code);
-        const entry = (manifest.auto_generated || {})[eff] || null;
-        _routeLeafToFusion(
-          { code, urn, drawing_urn: entry ? (entry.drawing_urn || null) : null, status: 'stale' },
-          { fusionOnly: true });
-      }
-    });
-  });
+  // Outdated / re-check chips are wired GLOBALLY via _wireOutdatedChipDelegation
+  // (one capture-phase document listener handling every surface — bend list,
+  // sb-cards, BOM, Library — keyed on data-act). Nothing per-render here.
   // 💬 Comment handlers — the bend path returns before renderProject's
   // shared comment wiring (~L5861), so wire the same 3 actions here.
   // Reuses the global comment helpers; render() re-renders the bend list.
@@ -7092,7 +7067,7 @@ function renderSimBendHome() {
           ${(() => { const cabs = _sbFreshCtx.codeCab.get(code) || []; const fresh = cabs.some(c => { const f = _sbFreshCtx.cabFresh.get(c); return f && (f.status === 'new' || f.status === 'changed'); }); return fresh ? '<span class="part-new-badge" title="belongs to a new/changed cabinet">●</span>' : ''; })()}
           ${warningBadge}
           ${_bendRecheckChip(code)}
-          ${_outdatedChips(code)}
+          ${_outdatedChips(code, { clickable: true })}
           ${_sbFusionBtnHtml(code)}
           ${favBtn}
           ${isAdmin() ? `<button class="sb-del-btn" data-code="${escapeHtml(code)}" title="Delete this bend record" aria-label="Delete" style="background:transparent; border:none; color:#e0574a; font-size:15px; line-height:1; cursor:pointer; padding:2px 8px; flex-shrink:0;">✕</button>` : ''}
@@ -9337,7 +9312,7 @@ function renderBomRow(p, projectKey) {
         <span class="bom-icon">${familyIcon(fam)}</span>
         <span class="bom-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}${softDeleted ? '<span class="part-deleted-tag">DEL</span>' : ''}</span>
         <span class="bom-qty">×${p.qty}</span>
-        ${_outdatedChips(p.code)}
+        ${_outdatedChips(p.code, { clickable: true })}
         ${timerHtml}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         ${deleteBtnHtml}
@@ -10927,9 +10902,10 @@ async function _routeLeafToFusion(node, opts) {
   // One auto-retry after 2s: the common transient is "Fusion just (re)started and
   // CC_Auto's :8765 server isn't up yet" — a single retry rides out that window
   // instead of alarming เอ๋ (2026-06-09 "Failed to fetch" right after a restart).
-  const bridgeOpen = async (u) => {
+  const bridgeOpen = async (u, kind) => {
     const hit = async () => {
-      const r = await fetch(`http://127.0.0.1:8765/open?urn=${encodeURIComponent(u)}&t=${Date.now()}`,
+      const kindParam = kind ? `&kind=${encodeURIComponent(kind)}` : '';
+      const r = await fetch(`http://127.0.0.1:8765/open?urn=${encodeURIComponent(u)}${kindParam}&t=${Date.now()}`,
         { method: 'GET', mode: 'cors', cache: 'no-store' });
       return r.ok;
     };
@@ -10948,10 +10924,18 @@ async function _routeLeafToFusion(node, opts) {
   }
   let bridgeAttempted = false;
   let bridgeError = null;
-  // Stale (drawing exists but out of date) → open Fusion drawing
-  if (node.status === 'stale' && drawingUrn) {
+  // Stale (drawing exists but out of date) → open the Fusion .f2d drawing.
+  // Fast path: a literal .f2d lineage urn (drawing_urn from F30's stamp) → open
+  // it directly. No drawing_urn yet (master not re-exported since the stamp) →
+  // hand the MASTER urn to the bridge with kind=drawing so CC_Auto resolves the
+  // linked .f2d itself (/open?urn=<master>&kind=drawing). Bridge can't find one →
+  // it opens the 3D master, an acceptable "got เอ๋ to Fusion" fallback.
+  // (RD 04 2026-06-12 e67c8b0 — on-demand resolve, NO manifest backfill.)
+  if (node.status === 'stale' && (drawingUrn || urn)) {
     bridgeAttempted = true;
-    try { if (await bridgeOpen(drawingUrn)) { _toastOpening(node.code); return; } bridgeError = 'bridge declined'; }
+    const target = drawingUrn || urn;
+    const kind = drawingUrn ? null : 'drawing';
+    try { if (await bridgeOpen(target, kind)) { _toastOpening(node.code); return; } bridgeError = 'bridge declined'; }
     catch (e) { bridgeError = e?.message || 'fetch failed'; }
   }
   // Missing / deleted / drawn-but-404 / fallback → open Fusion 3D master
@@ -10996,6 +10980,45 @@ async function _routeLeafToFusion(node, opts) {
 // button) — kdAPI only exists after the mindmap editor mounts, so expose
 // the router directly too. (เอ๋ 2026-06-10 "Link กลับไปทำที่ Fusion เหมือน NO PDF")
 window.kdRouteLeaf = _routeLeafToFusion;
+
+// Clickable outdated / re-check chips on EVERY surface (bend list, sb-cards,
+// project BOM, Library). ONE delegated listener in the CAPTURE phase so it fires
+// BEFORE the container handlers (sb-card expand, bom-row PDF open, part-row PDF
+// open) and stopPropagation suppresses them — no per-surface ignore-list edits.
+// (RD 04 2026-06-12 e67c8b0 "clickable on ALL surfaces".)
+//   data-act='drawing' → the part's .f2d (router stale-path; drawing_urn fast
+//                        path, else master urn + kind=drawing so Fusion finds it)
+//   data-act='dxf'     → 3D master (run 🔥 / CC_Laser)
+//   data-act='recheck' → 3D master (re-run CC_CheckBend)
+// Chips are opt-in (data-act present only when {clickable}); passive chips never match.
+let _outdatedChipDelegated = false;
+function _wireOutdatedChipDelegation() {
+  if (_outdatedChipDelegated) return;
+  _outdatedChipDelegated = true;
+  document.addEventListener('click', (ev) => {
+    const chip = ev.target.closest && ev.target.closest('.sb-recheck-act[data-act]');
+    if (!chip) return;
+    ev.stopPropagation();   // capture phase → beats the container's own click
+    const code = chip.dataset.code;
+    if (!code) return;
+    const act = chip.dataset.act;
+    const urn = _urnForCode(code) || null;
+    if (act === 'dxf' || act === 'recheck') {
+      // DXF-outdated + ↻ re-check are model→bend actions → open the 3D master.
+      _routeLeafToFusion({ code, urn }, { fusionOnly: true });
+    } else {
+      // drawing-outdated → the part's .f2d. drawing_urn (when stamped) is the fast
+      // path; otherwise the router asks the bridge to resolve the master's linked
+      // .f2d via kind=drawing. fusionOnly so it never opens the OLD pdf.
+      const eff = _effectiveDrawingCode(code);
+      const entry = ((manifest && manifest.auto_generated) || {})[eff] || null;
+      _routeLeafToFusion(
+        { code, urn, drawing_urn: entry ? (entry.drawing_urn || null) : null, status: 'stale' },
+        { fusionOnly: true });
+    }
+  }, true);   // ← capture phase
+}
+_wireOutdatedChipDelegation();
 
 // Decide what to do when user clicks a leaf (no children) node:
 //   1. If has drawing → open PDF
@@ -11950,7 +11973,7 @@ function renderFamily(fam, highlight) {
         <span class="part-code"${codeTitle}>${escapeHtml(display)}</span>
         ${isNew ? '<span class="part-new-badge">NEW</span>' : ''}
         ${ver}
-        ${_outdatedChips(p.code)}
+        ${_outdatedChips(p.code, { clickable: true })}
         ${bendChip}
         ${adminBtns}
       </div>`;
@@ -12497,25 +12520,70 @@ async function init() {
     const headerBack = document.getElementById('header-back-btn');
     if (headerBack) headerBack.addEventListener('click', navBack);
 
+    // Tap-to-reload ("NEW VERSION" pill) / F5 must keep เอ๋ where she was — a hard
+    // reload otherwise boots to the projects home and she has to navigate back in
+    // (เอ๋ 2026-06-13 "กดอัพเดท หน้าต้องอยู่ที่เดิม"). __kdBeforeReload stashed the
+    // live view+stack+scroll just before the reload; restore it BEFORE the first
+    // render so there's no projects-home flash. Guarded to a fresh reload (< 30s)
+    // so reopening the tab much later still starts clean; a now-hidden tab or a
+    // deleted project is dropped.
+    let _navRestored = false, _restoreScrollY = 0;
+    try {
+      const rawR = sessionStorage.getItem('kd_nav_restore');
+      if (rawR) {
+        sessionStorage.removeItem('kd_nav_restore');
+        const s = JSON.parse(rawR);
+        if (s && s.view && (Date.now() - (s.t || 0)) < 30000
+            && (!_TAB_IDS[s.view] || _visibleTabsForRole()[s.view])) {
+          view = s.view;
+          document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+          stack = Array.isArray(s.stack)
+            ? s.stack.filter(n => n && (n.kind !== 'project' || (manifest.projects && manifest.projects[n.name])))
+            : [];
+          _restoreScrollY = +s.scrollY || 0;
+          _navRestored = true;
+        }
+      }
+    } catch (e) {}
+
     render();
 
-    // Deep-link from a merged-PDF link annotation or shared URL.
-    // Manifest is loaded so the project lookup will succeed.
-    _applyDeepLinkFromHash();
-    window.addEventListener('hashchange', _applyDeepLinkFromHash);
-
-    // ?p=<projectKey> auto-navigate (see applyUrlFlags above for the
-    // parse step). Lets admin send each cabinet team a single deep
-    // link straight into their project — `?role=assemble&p=Bung+01`.
-    const initialProject = window.__kdInitialProject;
-    if (initialProject && manifest.projects && manifest.projects[initialProject]) {
-      stack.push({ kind: 'project', name: initialProject });
-      window.__kdInitialProject = null;
-      render();
+    if (_navRestored) {
+      // Land back at the same scroll, surviving async content fill.
+      if (_restoreScrollY) {
+        const r = () => { try { window.scrollTo(0, _restoreScrollY); } catch (e) {} };
+        r(); requestAnimationFrame(r); setTimeout(r, 80);
+      }
+    } else {
+      // Deep-link from a merged-PDF link / shared URL — only when NOT restoring a
+      // reload, so a stale #code hash can't override the saved view.
+      _applyDeepLinkFromHash();
+      // ?p=<projectKey> auto-navigate (admin shares a link straight into a project).
+      const initialProject = window.__kdInitialProject;
+      if (initialProject && manifest.projects && manifest.projects[initialProject]) {
+        stack.push({ kind: 'project', name: initialProject });
+        window.__kdInitialProject = null;
+        render();
+      }
     }
+    window.addEventListener('hashchange', _applyDeepLinkFromHash);
   } catch (e) {
     ROOT.innerHTML = `<div class="error">Failed to load data: ${escapeHtml(e.message)}<br><br>Check MANIFEST_URL in config.js</div>`;
   }
 }
+
+// Stash the live view + stack + scroll just before a reload so init() can put เอ๋
+// back where she was. The "NEW VERSION" pill (index.html) calls this explicitly;
+// the pagehide listener also covers F5 / a tab reopened within the 30s window.
+function __kdBeforeReload() {
+  try {
+    const se = document.scrollingElement || document.documentElement;
+    sessionStorage.setItem('kd_nav_restore', JSON.stringify({
+      view, stack, scrollY: window.scrollY || (se && se.scrollTop) || 0, t: Date.now(),
+    }));
+  } catch (e) {}
+}
+window.__kdBeforeReload = __kdBeforeReload;
+window.addEventListener('pagehide', __kdBeforeReload);
 
 init();

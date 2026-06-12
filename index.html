@@ -267,7 +267,7 @@
           + 'background:#F2A93B;color:#1B2430;font-family:inherit;font-weight:700;'
           + 'font-size:13px;border:none;border-radius:999px;padding:10px 16px;'
           + 'box-shadow:0 6px 20px rgba(0,0,0,0.45);cursor:pointer;';
-        b.onclick = function() { location.reload(); };
+        b.onclick = function() { try { window.__kdBeforeReload && window.__kdBeforeReload(); } catch (e) {} location.reload(); };
         document.body.appendChild(b);
       }
       function checkBuild() {
