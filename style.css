@@ -5104,6 +5104,8 @@ html[data-theme="sketch"] .theme-menu {
    right because the paper page showed through. Over page CONTENT the modals
    were see-through — เอ๋ 2026-06-10 'theme pencil chalk ปรับให้ Dialog ทึบ
    (มองไม่เห็น)'. b3 > b2 wins regardless of element count.) */
+html[data-theme="sketch"] .cs-modal.cs-modal,
+html[data-theme="sketch"] .part-dxf-popover.part-dxf-popover,
 html[data-theme="sketch"] .kdstock-box.kdstock-box,
 html[data-theme="sketch"] .kdstock-frame.kdstock-frame,
 html[data-theme="sketch"] .kdng-box.kdng-box {
@@ -5799,6 +5801,8 @@ html[data-theme="chalk"] .theme-menu {
 
 /* Modal boxes + backdrops — same doubled-class reset-out-ranking fix as the
    sketch theme (เอ๋ 2026-06-10 'theme pencil chalk ปรับให้ Dialog ทึบ'). */
+html[data-theme="chalk"] .cs-modal.cs-modal,
+html[data-theme="chalk"] .part-dxf-popover.part-dxf-popover,
 html[data-theme="chalk"] .kdstock-box.kdstock-box,
 html[data-theme="chalk"] .kdstock-frame.kdstock-frame,
 html[data-theme="chalk"] .kdng-box.kdng-box {
