@@ -44,6 +44,12 @@
       try { return localStorage.getItem('kd_nest_rectleft_v1') !== '0'; }  // leftover is one rectangle. Default ON.
       catch (e) { return true; }
     })(),
+    rectDir: (function () {            // เอ๋ 2026-06-12: remembered leftover direction
+      try {                            // 'h' = wide band on top, 'v' = tall column right.
+        const v = localStorage.getItem('kd_nest_rectdir');   // null until first pick
+        return (v === 'h' || v === 'v') ? v : null;
+      } catch (e) { return null; }
+    })(),
     rememberRemnants: true,  // per-RUN choice (เอ๋ 2026-06-10): ▶ Run Nesting asks
                           // whether THIS run's leftover offcuts get saved to the
                           // Remnants library on Save Nest. Default true = prior
