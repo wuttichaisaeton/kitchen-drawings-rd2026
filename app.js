@@ -1660,7 +1660,7 @@ function _renderBendList(parts, projectKey) {
         <span class="bend-icon">${familyIcon(fam)}</span>
         <span class="bend-code" title="${escapeHtml(p.code)}">${escapeHtml(displayCodeFor(p.code))}</span>
         <span class="bend-qty">× ${p.qty || 0}</span>
-        ${_bendRecheckChip(p.code)}
+        ${_bendRecheckChip(p.code, null, { clickable: true })}
         ${_outdatedChips(p.code, { clickable: true })}
         ${viewBtn}
         ${fusionBtn}
@@ -1734,7 +1734,8 @@ function _wireBendList(parts, projectKey) {
       const code = chip.dataset.code;
       const p = _bendPartByCode.get(code) || { code };
       const urn = p.urn || _urnForCode(code) || null;
-      if (chip.dataset.act === 'dxf') {
+      if (chip.dataset.act === 'dxf' || chip.dataset.act === 'recheck') {
+        // DXF-outdated + ↻ re-check are both model→bend actions → 3D master.
         _routeLeafToFusion({ code, urn }, { fusionOnly: true });   // 3D master
       } else {
         // Prefer the part's .f2d drawing (router stale-path = status:'stale' +
@@ -5159,14 +5160,24 @@ function _outdatedChips(code, opts) {
   return out;
 }
 
-function _bendRecheckChip(code, extraStyle) {
+function _bendRecheckChip(code, extraStyle, opts) {
   const st = _bendRecheckNeeded(code);
   if (!st) return '';
   const t = ms => {   // local date, not UTC — เอ๋ is +07:00, toISOString shifts a day
     const d = new Date(ms);
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
   };
-  return `<span class="sb-recheck" style="${extraStyle || ''}" title="DXF updated ${t(st.dxfAt)} — after this bend check (${t(st.checkedAt)}). Re-run CC_CheckBend in Fusion.">↻ re-check</span>`;
+  // opts.clickable (เอ๋ 2026-06-12, bend list only): a 🔥 DXF update raised the
+  // re-check flag but the chip was a dead label — make it a one-tap jump to the
+  // part's 3D MASTER (re-check is a model→bend action, NOT the drawing) so เอ๋
+  // re-runs CC_CheckBend; _bendRecheckNeeded clears it once the new check lands.
+  const act = !!(opts && opts.clickable);
+  const cls = act ? 'sb-recheck sb-recheck-act' : 'sb-recheck';
+  const data = act ? ` data-code="${escapeHtml(code)}" data-act="recheck"` : '';
+  const tip = `DXF updated ${t(st.dxfAt)} — after this bend check (${t(st.checkedAt)}).`
+    + (act ? ' Click to open the 3D master in Fusion, then re-run CC_CheckBend; this clears itself.'
+           : ' Re-run CC_CheckBend in Fusion.');
+  return `<span class="${cls}" style="${extraStyle || ''}"${data} title="${tip}">↻ re-check</span>`;
 }
 
 // ── Sim.Bending Favorites (⭐) + Sync-from-Project ────────────────────────
