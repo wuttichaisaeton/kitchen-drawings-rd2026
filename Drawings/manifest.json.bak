@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T03:08:37.084833+00:00",
+  "generated_at": "2026-06-12T06:51:27.867196+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4581,7 +4581,7 @@
     "BTHL00-140100": {
       "family": "Other",
       "last_drawn_version": 6,
-      "fusion_version": 6,
+      "fusion_version": 2,
       "pdf": "BTHL00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -4666,6 +4666,19 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-11T05:38:51.482438+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "BTHL00-140000": {
+      "family": "Other",
+      "last_drawn_version": 0,
+      "fusion_version": 0,
+      "pdf": "BTHL00-140000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-12T03:16:42.656784+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
@@ -9377,6 +9390,22 @@
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:yu9TS55rR-u0ZOKNsd4SRw"
+        }
+      ]
+    },
+    "2BK000-000000": {
+      "name": "2BK000-000000",
+      "status": "active",
+      "created_at": "2026-06-12T06:51:27.864397+00:00",
+      "updated_at": "2026-06-12T06:51:27.864397+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 2,
+      "parts": [
+        {
+          "code": "2BK400-000000",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:rvyvxKc6RheKTitalQO8lg"
         }
       ]
     }
