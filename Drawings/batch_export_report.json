@@ -1,0 +1,185 @@
+{
+  "BXXTR0": {
+    "family": "BXXTR0",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "BXXTR0-000000",
+    "master_file": "BK2TR1-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "SD00NA": {
+    "family": "SD00NA",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "SD00NA-080000",
+    "master_file": "SD00NA-080000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "SD0SUP": {
+    "family": "SD0SUP",
+    "status": "EXPORTED",
+    "detail": "matched 'SD0SUP-000000 Drawing' (score 100)",
+    "rows": 1,
+    "pdf": "SD0SUP-000000.pdf",
+    "master_code": "SD0SUP-000000",
+    "master_file": "SD0SUP-000000",
+    "log": [
+      "matched 'SD0SUP-000000 Drawing' (score 100)",
+      "updateAllReferences failed: 3 : Design xref is not out of date",
+      "config path: master has no configuration table -> single-code fallback",
+      "updateAllReferences failed: 3 : Design xref is not out of date"
+    ]
+  },
+  "TS2TRX": {
+    "family": "TS2TRX",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "TS2TRX-000000",
+    "master_file": "TS2TR4-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "TS1BHH": {
+    "family": "TS1BHH",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "TS1BHH-110000",
+    "master_file": "TS1BHH-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "BK1DN1": {
+    "family": "BK1DN1",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "BK1DN1-110000",
+    "master_file": "BK1DN1-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "FN3BLA": {
+    "family": "FN3BLA",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "FN3BLA-110000",
+    "master_file": "FN3BLA-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "FN2BNX": {
+    "family": "FN2BNX",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "FN2BNX-110000",
+    "master_file": "FN2BNX-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "FN1BLA": {
+    "family": "FN1BLA",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "FN1BLA-110000",
+    "master_file": "FN1BLA-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "FN2BLA": {
+    "family": "FN2BLA",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "FN2BLA-040000",
+    "master_file": "FN2BLA-060000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "FN2BN0": {
+    "family": "FN2BN0",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "FN2BN0-000000",
+    "master_file": "FN2BNX-120000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "FN2NCL": {
+    "family": "FN2NCL",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "FN2NCL-120000",
+    "master_file": "FN2NCL-120000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "BM2LI0": {
+    "family": "BM2LI0",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "BM2LI0-110000",
+    "master_file": "BM2LI0-110000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "BM01LI": {
+    "family": "BM01LI",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "BM01LI-080000",
+    "master_file": "BM1LI0-080000",
+    "log": [
+      "no f2d in folder"
+    ]
+  },
+  "DST100": {
+    "family": "DST100",
+    "status": "MUST-DRAW",
+    "detail": "no f2d in folder",
+    "rows": 0,
+    "pdf": "",
+    "master_code": "DST100-000010",
+    "master_file": "DST00N-080010",
+    "log": [
+      "no f2d in folder"
+    ]
+  }
+}

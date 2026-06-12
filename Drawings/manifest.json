@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T08:13:09.167095+00:00",
+  "generated_at": "2026-06-12T08:23:04.034628+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4679,6 +4679,19 @@
       "thickness_mm": 0.0,
       "dimensions": "",
       "generated_at": "2026-06-12T03:16:42.656784+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1
+    },
+    "SD0SUP-000000": {
+      "family": "Side Panel",
+      "last_drawn_version": 6,
+      "fusion_version": 6,
+      "pdf": "SD0SUP-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-12T08:23:04.033506+00:00",
       "fusion_teams_url": null,
       "page_number": 1
     }
