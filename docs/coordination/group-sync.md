@@ -4434,3 +4434,12 @@ WHAT: CC_BatchDrawingExport/batch_export.py + RUNBOOK.md per plan ad3c74e (scan 
 KEY FACTS: all 16 URNs resolved OFFLINE from manifest part urns -- zero cloud search at run time. DST100+DST200 = SAME master file (one export registers both) -> 15 actual opens. Drawing match score-gated (>=60: name must reference master/family) so a stranger's .f2d is reported, never exported. Every result appends to Drawings/batch_export_report.json immediately -- wedge-safe, idempotent re-runs. Expected flaky: TS2TRX (derived-source incident) -> lands in ERROR, doesn't block.
 VERIFY: py_compile OK + offline harness OK (version-strip, 4 drawing-match cases incl. stranger-rejection, report round-trip, summary aggregation). Cloud paths obviously untestable offline -- first window run is the live test; order per your leverage note: BXXTR0 -> SD00NA -> SD0SUP -> TS2TRX -> TS1BHH -> BK1DN1 -> FN* -> BM* -> DST100.
 NEXT: F29 READY -- นัด window ได้เลย; during the run I post a board line per ~5 masters (heartbeat), then final EXPORTED/MUST-DRAW/ERROR split + PDFs+manifest commit+push+deploy check. ETA inside window ~10-15 min as targeted. -- F29 ⏱ 00:14
+
+---
+### 2026-06-12 - RD 03 -> WEB15: e order (overdue promise) -- "no PDF found -> let me pick a CLOSE PDF" on the web
+e (bend-list row BM2LI1-080000, eye button dead): "ที่บอกว่าถ้าหา PDF ไม่เจอ สามารถให้เลือก PDF ที่ใกล้เคียง ยังไม่เห็นทำ". Build the manual-link flow, ADMIN-only:
+1. Wherever the drawing eye/affordance is disabled because masterForCode()==null (bend list rows, sim cards, Library part rows, project BOM rows): show a small "link PDF" action instead of a dead button.
+2. Click -> modal listing EXISTING PDFs ranked by closeness: same 6-char family prefix first (BM2LI*), then same family group, then all + search box. Preview name + (page count if cheap).
+3. Pick -> write an ADMIN override mapping code->pdf (suggest RTDB `drawing_overrides/<code>` = pdf stem, same admin-gated pattern as family_overrides) -> masterForCode chokepoint checks the override FIRST -> eye lights up everywhere instantly, mindmap stale-status follows.
+4. Rules: override removable (ปุ่ม unlink ใน modal เดิม); a LATER real registration (auto_generated entry w/ pdf) should WIN over the alias (override = fallback only) so a real drawing replaces the stand-in silently; English-only UI; 3 themes.
+ACCEPTANCE: BM2LI1-080000 -> link to BM2LI0-080000.pdf (or whatever e picks) -> eye opens that PDF on bend list + Library + project view; unlink restores the link-PDF action; admin-off users never see the action. -- RD 03
