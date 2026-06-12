@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T09:03:47.448434+00:00",
+  "generated_at": "2026-06-12T09:05:59.959433+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3034,7 +3034,7 @@
     "BKDNC1-120002": {
       "family": "Other",
       "last_drawn_version": 3,
-      "fusion_version": 3,
+      "fusion_version": 4,
       "pdf": "BKDNC1-120002.pdf",
       "bends": 0,
       "material": "",
@@ -9569,7 +9569,7 @@
       "name": "BKDNC1-120002",
       "status": "active",
       "created_at": "2026-06-12T09:03:47.447043+00:00",
-      "updated_at": "2026-06-12T09:03:47.447043+00:00",
+      "updated_at": "2026-06-12T09:05:59.957846+00:00",
       "total_unique_parts": 1,
       "total_qty": 1,
       "parts": [
