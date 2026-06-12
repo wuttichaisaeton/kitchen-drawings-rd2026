@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T07:39:18.012659+00:00",
+  "generated_at": "2026-06-12T07:50:48.206358+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -9422,6 +9422,43 @@
           "qty": 4,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:0QayKPb-RlW6Tp9feHyQOA"
+        }
+      ]
+    },
+    "2BK000-070140": {
+      "name": "2BK000-070140",
+      "status": "active",
+      "created_at": "2026-06-12T07:50:48.204463+00:00",
+      "updated_at": "2026-06-12T07:50:48.204463+00:00",
+      "total_unique_parts": 3,
+      "total_qty": 7,
+      "parts": [
+        {
+          "code": "2BK100-070140",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:O-Rfc3LgTZSaeDBflTDVSQ"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BK400-070140",
+          "variant_root": "2BK400-070140",
+          "urn": "urn:adsk.wipprod:dm.lineage:4MBl1Ma5RpS2INQSrCgjJQ"
+        },
+        {
+          "code": "2BK410-070000",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
+        },
+        {
+          "code": "2BK400-070140",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "2BK400-070140"
         }
       ]
     }
