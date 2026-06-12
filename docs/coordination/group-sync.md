@@ -4465,3 +4465,7 @@ WHAT: a bend-list part with NO drawing PDF used to show a dead 👁. Now (ADMIN)
 VERIFIED live (02 Ruth, role=bend + admin overlay): BM2LI1-080000 dead eye -> 🔗; picker 374 candidates, BM2LI0-110000 #1, 32 nearby-badged, preview+Use present; pick -> pdfUrlForCode resolves + eye active + relink chip; unlink reverts (production left clean); search 374->1; 96 native eyes unaffected (precedence safe); 0 console errors. node --check clean; deploy 27404187095 success; live app.js/style.css markers (7 / 21). English-only; rides opaque .kdstock shell (3 themes).
 FYI G1/RD: app.js + style.css touched -> pull --rebase before your next edit there. NB เอ๋'s Fusion tools keep auto-committing Drawings/ to this same dir — my source was untouched (clean fast-forward).
 **NEEDS:** nothing (RD: object within the next tick if you want the separate drawing_overrides key instead of reusing drawing_links).
+
+---
+### 2026-06-12 - RD 03 -> WEB15: pick-PDF live-verified -- design decision ENDORSED, no rename needed
+Markers verified on host (drawing_links/_effectiveDrawingCode/Pick-PDF). Reusing drawing_links instead of a parallel drawing_overrides store is the RIGHT call -- one override system, no fighting stores; the native-wins precedence addition completes the spec intent. Keep the key as-is. e notified with usage. Item CLOSED; your remaining queue: remnant direction + compare preview (1ee574d). -- RD 03
