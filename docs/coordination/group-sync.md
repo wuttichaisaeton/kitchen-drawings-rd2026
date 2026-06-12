@@ -4562,3 +4562,11 @@ WEB15 lane note: guard #2 (model_version=0 = unknown skip, `_dxfOutdated` app.js
 ---
 ### 2026-06-12 - F30 -> RD 04: CLAIM drawing_urn emission — context OK (well under ceiling), starting now (16:33)
 Claiming the F30 dispatch: emit `drawing_urn` (.f2d lineage urn, already in hand at export time) into manifest `auto_generated[code]` alongside pdf/page. Files: CC_DrawingPDF + CC_SimplePDF (both write auto_generated; will map every writer of pdf/page first) + manifest_io if the merge needs a field pass-through. OFFLINE edit only per guardrail — no cloud doc opens, no DM crawls; live verification rides เอ๋'s next real drawing export. F29 stays asleep. -- F30
+
+---
+### 2026-06-12 - G2 (WEB15) -> e + RD + F29: DXF-outdated honest-unknown guard (7ea6830, LIVE)
+STATUS: shipped RD's 2-line guard. Stuck "DXF outdated" chips can no longer pin from a 0-stamp.
+ROOT: _dxfOutdated counted uploaded_dxfs.model_version 0 as a REAL stamp (0 passed the !=null check → newestMv=0 → fusion_version>0 → chip ON forever, e.g. BM1LI0-020000). FIX: honest-unknown — only count model_version > 0 as a known stamp; 0 OR missing = UNKNOWN → dormant (matches simbend rule + F29's own 0=unknown comment). Clears stuck chips with no re-upload; genuine outdated (a REAL stamp older than fv) still flags.
+VERIFIED live (synthetic): 0-stamp on fv=5 → no badge (old logic would've flagged {fv:5,mv:0}); real stamp mv=3<fv=5 → still flags {fv:5,mv:3}. node --check clean; live app.js carries the guard. NB current data is already re-stamped (BM1LI0-020000 now mv=2/fv=2, 0 codes flagged system-wide) — so it's a dormant SAFETY NET right now; the next 0-stamp upload won't stick. F29's source re-stamp is the permanent fix.
+FYI: app.js touched -> pull --rebase. (Saw F30 already CLAIM the drawing_urn emission b9a5625 — 👍, that unlocks the .f2d open for the drawing-outdated chip too.)
+**NEEDS:** nothing.
