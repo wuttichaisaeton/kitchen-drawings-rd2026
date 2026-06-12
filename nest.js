@@ -2361,6 +2361,7 @@
   }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
   function _rectifyLastSheet() {
+    S._rectPendingIdx = -1;            // reset each run (chooser hook reads this)
     if (!S.rectLeftover) return;
     const sheets = S.flatSheets || [];
     // last FRESH-stock sheet (offcut-derived sheets aren't re-rectified)
@@ -2369,6 +2370,7 @@
     if (li < 0) return;
     const sheet = sheets[li];
     if (!sheet.placements || !sheet.placements.length) return;
+    const origPlacements = sheet.placements;   // floor — never make the result worse
 
     // Reconstruct pieces from the placements (strip x/y/rot; keep rots so grain
     // gating is preserved through the re-pack).
@@ -2379,31 +2381,61 @@
     }));
     const stock = [{ w: sheet.sw, h: sheet.sh, qty: 1, thickness: sheet.thick }];
 
-    // Original layout is the floor — never make it worse. Candidates: the
-    // edge-biased packers (compact toward an edge → leftover collapses to one
-    // side) + MaxRects (denser fallback when a sheet is busy). The largest
-    // resulting rectangle wins; an edge packer that can't fit all pieces on the
-    // single sheet is rejected, so a busy last sheet simply keeps its original.
-    let best = { placements: sheet.placements, rect: _largestOffcut(sheet) };
-    for (const mode of ['Bottom', 'Left', 'BL Corner', 'MaxRects']) {
-      let r;
-      try { r = _nestMultiSheet(pieces.map(p => ({ ...p })), stock, S.gap, mode); }
-      catch (e) { continue; }
-      const out = r && r.sheets && r.sheets[0];
-      // accept only if it fit on ONE sheet with ALL pieces placed
-      if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
-      if (out.placements.length !== sheet.placements.length) continue;
-      const rect = _largestOffcut({ sw: out.sw, sh: out.sh, placements: out.placements });
-      if (rect.area > best.rect.area) best = { placements: out.placements, rect };
-    }
+    // Re-pack the single last sheet with one edge-biased mode; the primary mode
+    // collapses the leftover toward one edge, 'MaxRects' is the denser fallback
+    // when the primary can't fit every piece on one sheet. Returns the packed
+    // placements (all pieces on ONE sheet) or null.
+    const _repack = (modes) => {
+      for (const mode of modes) {
+        let r;
+        try { r = _nestMultiSheet(pieces.map(p => ({ ...p })), stock, S.gap, mode); }
+        catch (e) { continue; }
+        const out = r && r.sheets && r.sheets[0];
+        if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
+        if (out.placements.length !== sheet.placements.length) continue;
+        return out.placements;
+      }
+      return null;
+    };
+    // Build one direction's variant: re-pack, measure the largest rect, accept
+    // only when ≥300mm both sides. rect/placements live in mm/sheet space.
+    const _variant = (modes) => {
+      const placements = _repack(modes);
+      if (!placements) return null;
+      const rect = _largestOffcut({ sw: sheet.sw, sh: sheet.sh, placements });
+      if (!(rect.w >= _REMNANT_MIN_LAST && rect.h >= _REMNANT_MIN_LAST)) return null;
+      return { placements, rect: { x: rect.x, y: rect.y, w: rect.w, h: rect.h, area: rect.area } };
+    };
 
-    // Apply the winner (if a re-pack won, swap in its placements).
-    if (best.placements !== sheet.placements) sheet.placements = best.placements;
-    // Stash the rectangle only when it's genuinely usable.
-    sheet.lastRemnantRect = (best.rect.w >= _REMNANT_MIN_LAST && best.rect.h >= _REMNANT_MIN_LAST)
-      ? { x: best.rect.x, y: best.rect.y, w: best.rect.w, h: best.rect.h } : null;
-    // Land the user on the sheet that now carries the rectangle.
-    if (sheet.lastRemnantRect) S.currentSheetIdx = li;
+    // h (─ wide): parts toward the BOTTOM -> leftover = wide band on top.
+    // v (│ long): parts toward the LEFT  -> leftover = tall column on right.
+    const variants = {
+      h: _variant(['Bottom', 'MaxRects']),
+      v: _variant(['Left', 'MaxRects']),
+    };
+    sheet._rectVariants = variants;
+
+    const dir = _pickDefaultRectDir(variants, S.rectDir);
+    if (!dir) {
+      // Neither direction yields a usable rectangle — behave as the no-remnant
+      // baseline: keep the original layout, no green box.
+      sheet.placements = origPlacements;
+      sheet.lastRemnantRect = null;
+      return;
+    }
+    _applyRectVariant(sheet, li, dir);
+    // Both valid -> ask เอ๋ to SEE both (modal); one valid -> applied silently.
+    if (variants.h && variants.v) S._rectPendingIdx = li;
+  }
+
+  // Apply one computed variant to the live sheet (swap placements + rect) and
+  // land the view on it. Shared by the default-apply and the chooser click.
+  function _applyRectVariant(sheet, idx, dir) {
+    const variant = sheet._rectVariants && sheet._rectVariants[dir];
+    if (!variant) return;
+    sheet.placements = variant.placements;
+    sheet.lastRemnantRect = { x: variant.rect.x, y: variant.rect.y, w: variant.rect.w, h: variant.rect.h };
+    S.currentSheetIdx = idx;
   }
 
   // ── Auto-remember offcuts ──────────────────────────────────────────
