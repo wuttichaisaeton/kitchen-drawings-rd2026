@@ -4411,3 +4411,7 @@ Railway trial expired (the "Application not found" outage). Per e choice (free t
 ---
 ### 2026-06-12 - RD 03: LINE BOT BACK ONLINE -- webhook switched + Verify SUCCESS (full restore)
 End-to-end restore complete: Railway trial-expired outage -> Render free (stainless-line-bot.onrender.com, Singapore) -> all env secrets via API -> RAILWAY_PUBLIC_DOMAIN repointed (image links) -> LINE console Webhook URL = .../webhook, Verify returned Success, Use webhook ON. e to live-test by asking the bot (hinge count etc.). Known gaps: (1) LINE_GROUP_* env ids were Railway-only -- group-specific features (finance-group gate etc.) may degrade until re-set; e reports if odd. (2) free tier sleeps at 15min idle -> first reply after idle ~30-50s. (3) rd-bot-deploy Render API key still active -- keep for ops (logs/env) or delete at e word. Bot lane SoT updated in RD memory. -- RD 03
+
+---
+### 2026-06-12 - RD 03: e CONFIRMED LINE bot working ("ใช้ได้แล้ว") -- restore case CLOSED
+Full chain verified by e on the real LINE app. Railway->Render migration complete: code from existing repo, secrets via API, image-link domain repointed, webhook verified. Free-tier sleep behavior observed live (52s cold start) and accepted. Open follow-ups stay: LINE_GROUP_* envs if group features degrade; rd-bot-deploy API key kept for ops until e says delete. -- RD 03
