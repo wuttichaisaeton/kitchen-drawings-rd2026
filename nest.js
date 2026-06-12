@@ -23,21 +23,33 @@
     projectKey: null,
     projectName: '',
     parts: [],        // see _newPart()
-    sheetStock: [
-      // Defaults requested 2026-05-28:
-      //   3050 × 1525  qty 1  thickness 1  label '10x5'  (10ft × 5ft)
-      //   3050 × 1220  qty 1  thickness 1  label '10x4'  (10ft × 4ft)
-      //   2440 × 1220  qty 1  thickness 1  label '8x4'   (8ft × 4ft)
-      //   custom (W,H,qty,thickness all editable)
-      // Row order = priority; ↑/↓ buttons reorder. Rows with w=0
-      // or h=0 are skipped by the packer. Thickness gates which
-      // parts each row can hold — a 0.8mm sheet only takes 0.8mm
-      // parts even if a row above it has a 1mm sheet that fits.
-      { w: 3050, h: 1525, qty: 1, thickness: 1, label: '10x5' },
-      { w: 3050, h: 1220, qty: 1, thickness: 1, label: '10x4' },
-      { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4'  },
-      { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)' },
-    ],
+    // Defaults requested 2026-05-28: 3050×1525 '10x5' / 3050×1220 '10x4' /
+    // 2440×1220 '8x4' / custom. Row order = priority; ↑/↓ reorder. w=0 or h=0
+    // rows are skipped by the packer. Thickness gates which parts a row holds.
+    // เอ๋ 2026-06-12: the whole table (sizes/qty/order) persists to localStorage
+    // (kd_nest_stock_v1) so a reload doesn't silently reset qty to 1/1/1
+    // ('131/225 short'). Defaults apply only on first visit / unreadable store.
+    sheetStock: (function () {
+      const _def = [
+        { w: 3050, h: 1525, qty: 1, thickness: 1, label: '10x5' },
+        { w: 3050, h: 1220, qty: 1, thickness: 1, label: '10x4' },
+        { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4'  },
+        { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)' },
+      ];
+      try {
+        const j = JSON.parse(localStorage.getItem('kd_nest_stock_v1'));
+        if (Array.isArray(j) && j.length && j.every(r => r && typeof r === 'object'
+            && 'w' in r && 'h' in r && 'qty' in r)) {
+          return j.map(r => ({
+            w: +r.w || 0, h: +r.h || 0,
+            qty: (r.qty === -1 ? -1 : (+r.qty || 0)),
+            thickness: (r.thickness == null ? 1 : +r.thickness),
+            label: String(r.label || ''),
+          }));
+        }
+      } catch (e) {}
+      return _def;
+    })(),
     mode: 'Desktop',   // default — mirrors the desktop NestingTool (เอ๋: best layout, 2026-05-30)
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
     rectLeftover: (function () {       // เอ๋ 2026-06-11: re-pack the LAST sheet so its
@@ -72,6 +84,9 @@
                           // '' = parts under no cabinet). Cabinet capsules
                           // (เอ๋ 2026-06-11) — persisted per project in
                           // localStorage kd_nest_cabsel_<pk>.
+    capFold: null,        // Set of COLLAPSED F-group codes (F1/F2…); persisted
+                          // per project in localStorage kd_nest_capfold_<pk>
+                          // (เอ๋ 2026-06-12 — group capsules into F-folders).
     flatSheets: [],   // [{thick, sw, sh, placements:[{code, x, y, w, h, rot, polys, bbox}]}]
     unplaced: [],     // pieces the packer couldn't place (set by _runNesting; for the warning banner)
     grainSkippedRemnants: 0,  // saved offcuts a grain clash kept out of the last run (review banner)
@@ -667,6 +682,7 @@
     // qty from the ON subset only when something is actually excluded (the
     // full-sum qty above is already correct when every cabinet is ON).
     S.cabinetsOff = _loadCabSel(projectKey);
+    S.capFold = _loadCapFold(projectKey);   // F-folder collapse state
     if (S.cabinetsOff.size) _recomputeCabinetQtys();
   }
 
@@ -854,6 +870,82 @@
       const list = byCode.get(part.code);
       if (list) part.contrib = list.map(c => ({ pk: c.pk, cab: c.cab, qty: c.qty }));
     }
+  }
+
+  // ── F-group folders for the capsules (เอ๋ 2026-06-12: "group capsules เป็น
+  // Folder F1/F2 เปิดปิดได้") ──────────────────────────────────────────────
+  // CC_Assembly emits a top wrapper layer (F1/F2…) above the cabinets: each
+  // cabinet's wrapper row carries parent_code = its F-group, and the F-rows
+  // themselves are is_wrapper with a code like 'F<digit>' (471344e). We group
+  // the capsules under collapsible F-folders, each with a whole-group ON/OFF
+  // toggle. Projects with NO F-layer (29/30 today) fall back to the flat list.
+  // Returns { folders:[{fg, cabs:[group]}], ungrouped:[group], hasF }.
+  function _cabinetFolders() {
+    const groups = _cabinetGroups();                 // [{cab,pcs,nParts}] (incl '' bucket)
+    const m = window.kdManifest;
+    const cabFG = new Map();                          // cab code -> F-group code
+    const fOrder = [];                               // ordered distinct F-row codes (incl empty)
+    const fSeen = new Set();
+    if (m && m.projects) {
+      for (const pk of (S.mergedProjects || [S.projectKey])) {
+        const proj = m.projects[pk];
+        if (!proj || !Array.isArray(proj.parts)) continue;
+        const byCode = new Map();
+        for (const p of proj.parts) if (p && p.code) byCode.set(p.code, p);
+        // F-rows = top wrapper rows whose code is F<digit> (F1/F2…). A cabinet
+        // code starting with F but not a digit (FCLL…, FN…, FT…) is NOT a group.
+        for (const p of proj.parts) {
+          if (p && p.is_wrapper && /^F\d/.test(p.code || '') && !fSeen.has(p.code)) {
+            fSeen.add(p.code); fOrder.push(p.code);
+          }
+        }
+        for (const g of groups) {
+          if (!g.cab || cabFG.has(g.cab)) continue;
+          // A cab that IS an F-row code = parts attached directly to that group
+          // (no sub-cabinet) → keep it inside its own folder, not loose.
+          if (fSeen.has(g.cab)) { cabFG.set(g.cab, g.cab); continue; }
+          const row = byCode.get(g.cab);
+          const pc = row && row.parent_code;
+          const par = pc && byCode.get(pc);
+          if (par && par.is_wrapper && /^F\d/.test(pc)) cabFG.set(g.cab, pc);
+        }
+      }
+    }
+    const folders = fOrder.map(fg => ({ fg, cabs: groups.filter(g => cabFG.get(g.cab) === fg) }));
+    const ungrouped = groups.filter(g => !cabFG.get(g.cab));   // '' bucket + any non-F cabinet
+    return { folders, ungrouped, hasF: folders.length > 0 };
+  }
+  // Collapse state per project (selection already persists via cabinetsOff).
+  const _capFoldKey = pk => 'kd_nest_capfold_' + pk;
+  function _loadCapFold(pk) {
+    try {
+      const v = JSON.parse(localStorage.getItem(_capFoldKey(pk)) || '[]');
+      return new Set(Array.isArray(v) ? v.map(x => String(x)) : []);
+    } catch (e) { return new Set(); }
+  }
+  function _saveCapFold() {
+    try { localStorage.setItem(_capFoldKey(S.projectKey), JSON.stringify([...(S.capFold || new Set())])); }
+    catch (e) { /* quota / private mode — non-fatal */ }
+  }
+  function _toggleCapFold(fg) {
+    S.capFold = S.capFold || new Set();
+    if (S.capFold.has(fg)) S.capFold.delete(fg); else S.capFold.add(fg);
+    _saveCapFold();
+    _refreshView();
+  }
+  // Whole-group include/exclude: any cabinet ON in the group → exclude them all;
+  // all already OFF → include them all (เอ๋ "เลือกปิดทั้งกลุ่มได้").
+  function _toggleCabinetGroup(fg) {
+    const folder = _cabinetFolders().folders.find(f => f.fg === fg);
+    if (!folder || !folder.cabs.length) return;
+    S.cabinetsOff = S.cabinetsOff || new Set();
+    const off = S.cabinetsOff;
+    const anyOn = folder.cabs.some(g => !off.has(g.cab));
+    for (const g of folder.cabs) { if (anyOn) off.add(g.cab); else off.delete(g.cab); }
+    _saveCabSel();
+    _recomputeCabinetQtys();
+    S.loadedJobStale = null;
+    _refreshView();
   }
 
   function _openAddProjectModal() {
@@ -2358,6 +2450,11 @@
     const ah = (h.rect.area != null) ? h.rect.area : h.rect.w * h.rect.h;
     const av = (v.rect.area != null) ? v.rect.area : v.rect.w * v.rect.h;
     return av > ah ? 'v' : 'h';   // tie -> 'h'
+  }
+  // Persist the sheet-stock table so a reload keeps เอ๋'s sizes/qty/order
+  // (เอ๋ 2026-06-12 — qty was silently resetting to the 1/1/1 defaults).
+  function _persistStock() {
+    try { localStorage.setItem('kd_nest_stock_v1', JSON.stringify(S.sheetStock)); } catch (e) {}
   }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
   function _rectifyLastSheet() {
@@ -4140,25 +4237,51 @@
       ? cabinetFreshnessAll('laser', S.projectKey) : new Map();
     let _frNew = 0, _frChg = 0;
     for (const [, i] of _cabFresh) { if (i.status === 'new') _frNew++; else if (i.status === 'changed') _frChg++; }
+    // F-group folders when the manifest carries an F-layer (471344e); otherwise
+    // the flat list. Each folder = ▸/▾ collapse + a whole-group on/off header.
+    const _cf = _cabinetFolders();
+    const _fCodes = new Set(_cf.folders.map(f => f.fg));   // F1/F2… — for the 'direct' relabel
+    // One capsule pill (off-state + freshness markers) — shared by the flat
+    // list and the F-folder bodies.
+    const _capsuleBtn = (g) => {
+      const off = !!(S.cabinetsOff && S.cabinetsOff.has(g.cab));
+      // A pill whose cab IS an F-group code = that group's direct parts; label
+      // it 'direct' so it doesn't read like a duplicate of the folder header.
+      const label = g.cab ? (_fCodes.has(g.cab) ? _disp(g.cab) + ' · direct' : _disp(g.cab)) : 'No cabinet';
+      const fr = _cabFresh.get(g.cab);
+      const frCls = fr && fr.status === 'new' ? ' kdnest-cab-new'
+                  : fr && fr.status === 'changed' ? ' kdnest-cab-changed' : '';
+      const frTag = fr && fr.status === 'new' ? '<sup class="kdnest-cab-fr">NEW</sup>'
+                  : fr && fr.status === 'changed' ? '<sup class="kdnest-cab-fr">↻</sup>' : '';
+      const frWord = fr && fr.status === 'new' ? ' · NEW (just arrived)'
+                   : fr && fr.status === 'changed' ? ' · CHANGED (re-exported)' : '';
+      const full = (g.cab || 'parts not under any cabinet')
+        + ` — ${g.nParts} part${g.nParts === 1 ? '' : 's'} · ${g.pcs} pcs${frWord} · click to ${off ? 'include' : 'exclude'}, double-click = seen`;
+      return `<button class="kdnest-cab${off ? ' kdnest-cab-off' : ''}${frCls}" data-cab="${_esc(g.cab)}" title="${_esc(full)}">${_esc(label)}<sup>${g.pcs}</sup>${frTag}</button>`;
+    };
+    const _capsuleArea = _cf.hasF ? (
+        _cf.folders.map(fld => {
+          const collapsed = !!(S.capFold && S.capFold.has(fld.fg));
+          const total = fld.cabs.length;
+          const onN = fld.cabs.filter(g => !(S.cabinetsOff && S.cabinetsOff.has(g.cab))).length;
+          const allOff = total > 0 && onN === 0;
+          return `<div class="kdnest-cabfolder${allOff ? ' kdnest-cabfolder-off' : ''}" data-fg="${_esc(fld.fg)}">`
+            + `<button class="kdnest-cabfold-caret" data-fg="${_esc(fld.fg)}" title="${collapsed ? 'Expand' : 'Collapse'} ${_esc(fld.fg)}">${collapsed ? '▸' : '▾'}</button>`
+            + `<button class="kdnest-cabfold-head" data-fg="${_esc(fld.fg)}"${total ? '' : ' disabled'} title="${total ? 'Click to ' + (allOff ? 'include' : 'exclude') + ' the whole ' + _esc(fld.fg) + ' group' : 'Empty group'}">`
+            + `<span class="kdnest-cabfold-name">${_esc(fld.fg)}</span><span class="kdnest-cabfold-count">${onN}/${total}</span></button>`
+            + `</div>`
+            + (collapsed ? '' : `<div class="kdnest-cabfold-body" data-fg="${_esc(fld.fg)}">${
+                total ? fld.cabs.map(_capsuleBtn).join('') : '<span class="kdnest-cabfold-empty">(empty)</span>'
+              }</div>`);
+        }).join('')
+        + (_cf.ungrouped.length ? `<div class="kdnest-cabfold-body kdnest-cabfold-loose">${_cf.ungrouped.map(_capsuleBtn).join('')}</div>` : '')
+      ) : cabGroups.map(_capsuleBtn).join('');
     const cabsRow = showCabs ? `
-            <div class="kdnest-cabs">
+            <div class="kdnest-cabs${_cf.hasF ? ' kdnest-cabs-foldered' : ''}">
               <span class="kdnest-cabs-lab" title="Pick which cabinets join this nest — tap to exclude/include, double-tap to mark it seen">Cabinets</span>
               <button id="kdnest-cabs-all" class="kdnest-mini" title="Include every cabinet">All</button>
               <button id="kdnest-cabs-none" class="kdnest-mini" title="Exclude every cabinet">None</button>
-              ${cabGroups.map(g => {
-                const off = !!(S.cabinetsOff && S.cabinetsOff.has(g.cab));
-                const label = g.cab ? _disp(g.cab) : 'No cabinet';
-                const fr = _cabFresh.get(g.cab);
-                const frCls = fr && fr.status === 'new' ? ' kdnest-cab-new'
-                            : fr && fr.status === 'changed' ? ' kdnest-cab-changed' : '';
-                const frTag = fr && fr.status === 'new' ? '<sup class="kdnest-cab-fr">NEW</sup>'
-                            : fr && fr.status === 'changed' ? '<sup class="kdnest-cab-fr">↻</sup>' : '';
-                const frWord = fr && fr.status === 'new' ? ' · NEW (just arrived)'
-                             : fr && fr.status === 'changed' ? ' · CHANGED (re-exported)' : '';
-                const full = (g.cab || 'parts not under any cabinet')
-                  + ` — ${g.nParts} part${g.nParts === 1 ? '' : 's'} · ${g.pcs} pcs${frWord} · click to ${off ? 'include' : 'exclude'}, double-click = seen`;
-                return `<button class="kdnest-cab${off ? ' kdnest-cab-off' : ''}${frCls}" data-cab="${_esc(g.cab)}" title="${_esc(full)}">${_esc(label)}<sup>${g.pcs}</sup>${frTag}</button>`;
-              }).join('')}
+              ${_capsuleArea}
             </div>${(_frNew || _frChg) ? `
             <div class="kdnest-cabs-fresh">${_frNew ? `<span class="kdnest-cab-fr">${_frNew} new</span>` : ''}${_frChg ? `<span class="kdnest-cab-fr">↻ ${_frChg} changed</span>` : ''}<button id="kdnest-cabs-seen" class="kdnest-mini" title="Mark every cabinet seen for the laser role">Mark all seen</button></div>` : ''}` : '';
 
@@ -4371,6 +4494,13 @@
         _refreshView();
       });
     });
+    // F-folder controls: caret = collapse/expand, header = whole-group on/off.
+    S.rootEl.querySelectorAll('.kdnest-cabfold-caret').forEach(btn => {
+      btn.addEventListener('click', () => _toggleCapFold(btn.dataset.fg));
+    });
+    S.rootEl.querySelectorAll('.kdnest-cabfold-head').forEach(btn => {
+      btn.addEventListener('click', () => { if (!btn.disabled) _toggleCabinetGroup(btn.dataset.fg); });
+    });
     $('#kdnest-cabs-seen')?.addEventListener('click', () => {
       if (typeof markAllCabinetsSeen === 'function' && S.projectKey) {
         markAllCabinetsSeen('laser', S.projectKey); _refreshView();
@@ -4390,6 +4520,7 @@
               && S.sheetStock[i].h > 0 && S.sheetStock[i].label === '(custom)') {
             S.sheetStock[i].label = '';
           }
+          _persistStock();
         }
       });
     });
@@ -4399,6 +4530,7 @@
         if (i > 0) {
           const arr = S.sheetStock;
           [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+          _persistStock();
           _refreshView();
         }
       });
@@ -4409,6 +4541,7 @@
         if (i < S.sheetStock.length - 1) {
           const arr = S.sheetStock;
           [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
+          _persistStock();
           _refreshView();
         }
       });
