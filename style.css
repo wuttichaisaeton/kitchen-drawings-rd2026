@@ -4206,6 +4206,9 @@ body.sb-fs-lock { overflow: hidden; }
 }
 .kdnest-gap-lab input { width: 50px; }
 .kdnest-skip-lab { cursor: pointer; }
+/* Last-sheet rectangular-remnant toggle (เอ๋ 2026-06-11). */
+.kdnest-rectleft-lab { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #cad6e6; cursor: pointer; }
+.kdnest-rectleft-lab input { cursor: pointer; accent-color: #4ecca3; }
 
 .kdnest-stock {
   padding: 10px 16px;

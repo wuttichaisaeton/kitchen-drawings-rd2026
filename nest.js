@@ -40,6 +40,10 @@
     ],
     mode: 'Desktop',   // default — mirrors the desktop NestingTool (เอ๋: best layout, 2026-05-30)
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
+    rectLeftover: (function () {       // เอ๋ 2026-06-11: re-pack the LAST sheet so its
+      try { return localStorage.getItem('kd_nest_rectleft_v1') !== '0'; }  // leftover is one rectangle. Default ON.
+      catch (e) { return true; }
+    })(),
     rememberRemnants: true,  // per-RUN choice (เอ๋ 2026-06-10): ▶ Run Nesting asks
                           // whether THIS run's leftover offcuts get saved to the
                           // Remnants library on Save Nest. Default true = prior
@@ -2329,6 +2333,59 @@
     return runOne(mode);
   }
 
+  // ── Last-sheet rectangular remnant (เอ๋ 2026-06-11) ───────────────────────
+  // Re-pack ONLY the last fresh-stock sheet through the edge-biased packers and
+  // keep whichever layout (incl. the original) leaves the largest empty
+  // rectangle, so the leftover is one clean usable offcut. Stashes the winning
+  // rectangle on sheet.lastRemnantRect ({x,y,w,h} mm) when it's ≥300mm both
+  // sides; auto-jumps the view to that sheet. No-op when the toggle is off.
+  const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
+  function _rectifyLastSheet() {
+    if (!S.rectLeftover) return;
+    const sheets = S.flatSheets || [];
+    // last FRESH-stock sheet (offcut-derived sheets aren't re-rectified)
+    let li = -1;
+    for (let i = sheets.length - 1; i >= 0; i--) { if (!sheets[i].fromRemnant) { li = i; break; } }
+    if (li < 0) return;
+    const sheet = sheets[li];
+    if (!sheet.placements || !sheet.placements.length) return;
+
+    // Reconstruct pieces from the placements (strip x/y/rot; keep rots so grain
+    // gating is preserved through the re-pack).
+    const pieces = sheet.placements.map(pl => ({
+      code: pl.code, w: pl.w, h: pl.h,
+      rots: Array.isArray(pl.rots) ? pl.rots.slice() : [0, 90, 180, 270],
+      polys: pl.polys, bbox: pl.bbox, thickness: pl.thickness, grain: pl.grain,
+    }));
+    const stock = [{ w: sheet.sw, h: sheet.sh, qty: 1, thickness: sheet.thick }];
+
+    // Original layout is the floor — never make it worse. Candidates: the
+    // edge-biased packers (compact toward an edge → leftover collapses to one
+    // side) + MaxRects (denser fallback when a sheet is busy). The largest
+    // resulting rectangle wins; an edge packer that can't fit all pieces on the
+    // single sheet is rejected, so a busy last sheet simply keeps its original.
+    let best = { placements: sheet.placements, rect: _largestOffcut(sheet) };
+    for (const mode of ['Bottom', 'Left', 'BL Corner', 'MaxRects']) {
+      let r;
+      try { r = _nestMultiSheet(pieces.map(p => ({ ...p })), stock, S.gap, mode); }
+      catch (e) { continue; }
+      const out = r && r.sheets && r.sheets[0];
+      // accept only if it fit on ONE sheet with ALL pieces placed
+      if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
+      if (out.placements.length !== sheet.placements.length) continue;
+      const rect = _largestOffcut({ sw: out.sw, sh: out.sh, placements: out.placements });
+      if (rect.area > best.rect.area) best = { placements: out.placements, rect };
+    }
+
+    // Apply the winner (if a re-pack won, swap in its placements).
+    if (best.placements !== sheet.placements) sheet.placements = best.placements;
+    // Stash the rectangle only when it's genuinely usable.
+    sheet.lastRemnantRect = (best.rect.w >= _REMNANT_MIN_LAST && best.rect.h >= _REMNANT_MIN_LAST)
+      ? { x: best.rect.x, y: best.rect.y, w: best.rect.w, h: best.rect.h } : null;
+    // Land the user on the sheet that now carries the rectangle.
+    if (sheet.lastRemnantRect) S.currentSheetIdx = li;
+  }
+
   // ── Auto-remember offcuts ──────────────────────────────────────────
   // Largest reusable offcut on a packed sheet — coarse raster + histogram
   // largest-empty-rectangle (standalone twin of the one inside Max Remnant
@@ -2431,8 +2488,14 @@
       for (let i = 0; i < (S.flatSheets || []).length; i++) {
         const sheet = S.flatSheets[i];
         if (sheet.fromRemnant) continue;   // don't save an offcut-of-an-offcut
-        const off = _largestOffcut(sheet);
-        if (!(off.w >= _REMNANT_MIN && off.h >= _REMNANT_MIN)) continue;
+        // Last-sheet rectangular remnant (เอ๋ 2026-06-11): if _rectifyLastSheet
+        // stashed a rectangle, save THAT (≥300mm) instead of re-measuring; other
+        // sheets keep the 150mm offcut behaviour.
+        const off = sheet.lastRemnantRect
+          ? { x: sheet.lastRemnantRect.x, y: sheet.lastRemnantRect.y, w: sheet.lastRemnantRect.w, h: sheet.lastRemnantRect.h }
+          : _largestOffcut(sheet);
+        const _min = sheet.lastRemnantRect ? _REMNANT_MIN_LAST : _REMNANT_MIN;
+        if (!(off.w >= _min && off.h >= _min)) continue;
         // Footprint rects of every piece on this sheet (W/H swapped for
         // rotated parts) so the preview can draw the actual layout + show
         // WHERE on the sheet the leftover sits (เอ๋ 2026-05-31 'ดูรูปได้ว่า
@@ -2449,7 +2512,7 @@
           material: _sheetMaterial(sheet),
           finish: _sheetFinish(sheet),
           project: S.projectName || '',
-          note: 'Auto · sheet ' + (i + 1),
+          note: 'Auto · sheet ' + (i + 1) + (sheet.lastRemnantRect ? ' (last · rect)' : ''),
           date: new Date().toISOString().slice(0, 10),
           createdAt: Date.now(),
           auto: true,
@@ -2636,6 +2699,7 @@
     }));
     S.currentSheetIdx = 0;
     S.unplaced = result.unplaced || [];
+    _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
     S.grainSkippedRemnants = _grainSkippedRemnants;
@@ -3037,6 +3101,30 @@
         fits: drawW > 60 * dpr && drawH > 14 * dpr,
       });
     });
+
+    // Last-sheet rectangular remnant overlay (เอ๋ 2026-06-11): a green dashed box
+    // over the leftover rectangle, only on the sheet that carries it. Uses the
+    // same offX/offY/scale + y-flip as the sheet outline (top-left corner = the
+    // rect's top edge → sheet.sh - (y+h)).
+    if (sheet.lastRemnantRect && sheet.lastRemnantRect.w > 0) {
+      const rr = sheet.lastRemnantRect;
+      const rx = offX + rr.x * scale;
+      const ry = offY + (sheet.sh - (rr.y + rr.h)) * scale;
+      const rw = rr.w * scale, rh = rr.h * scale;
+      ctx.save();
+      ctx.strokeStyle = '#4ecca3';
+      ctx.lineWidth = 2 * (window.devicePixelRatio || 1);
+      ctx.setLineDash([8 * (window.devicePixelRatio || 1), 6 * (window.devicePixelRatio || 1)]);
+      ctx.strokeRect(rx, ry, rw, rh);
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(78,204,163,0.10)';
+      ctx.fillRect(rx, ry, rw, rh);
+      ctx.fillStyle = '#4ecca3';
+      ctx.font = (12 * (window.devicePixelRatio || 1)) + 'px "Flux Architect", monospace';
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('REMNANT ' + Math.round(rr.w) + '×' + Math.round(rr.h), rx + 6, ry + 6);
+      ctx.restore();
+    }
 
     // -- Label pass: merge same-code SMALL parts sitting close together
     // (user 2026-05-30 'รวม Label ... อยู่ใกล้กัน เฉพาะชิ้นเล็กๆ') so a row
@@ -3974,6 +4062,9 @@
               <input id="kdnest-gap" type="number" value="${S.gap}" min="0" step="1">
               <span>mm</span>
             </label>
+            <label class="kdnest-rectleft-lab" title="Re-pack the LAST sheet so the leftover becomes one usable rectangle (saved as a remnant ≥300mm)">
+              <input id="kdnest-rectleft" type="checkbox"${S.rectLeftover ? ' checked' : ''}> Rect leftover (last)
+            </label>
           </div>
           <!-- Skip-remnants checkbox moved INTO the Remnants Stock modal as
                "Use remnants" (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่ Remnants
@@ -4065,6 +4156,10 @@
       else if (wasPreview) _refreshView();
     });
     $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; });
+    $('#kdnest-rectleft')?.addEventListener('change', e => {
+      S.rectLeftover = !!e.target.checked;
+      try { localStorage.setItem('kd_nest_rectleft_v1', S.rectLeftover ? '1' : '0'); } catch (err) {}
+    });
     $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; });
     // (skip/remember checkboxes removed from the sidebar — see Remnants Stock
     // modal's "Use remnants" toggle + Save-Nest offcut remembering.)
