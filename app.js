@@ -5131,9 +5131,15 @@ function _dxfOutdated(code) {
   if (!fv) return null;
   let newestMv = -1;
   for (const d of dxfsForMasterCode(code)) {
-    if (d.model_version != null) newestMv = Math.max(newestMv, +d.model_version || 0);
+    // model_version 0 OR missing = UNKNOWN (a DXF can upload with a 0 stamp) —
+    // honest-unknown rule: don't treat it as "very old", only count real (>0)
+    // stamps. Otherwise a 0-stamped upload pins the chip ON forever (เอ๋ 2026-06-12,
+    // BM1LI0-020000). F29 is fixing the 0-stamp at the source; this clears the
+    // stuck chips now without a re-upload.
+    const mv = +d.model_version || 0;
+    if (mv > 0) newestMv = Math.max(newestMv, mv);
   }
-  if (newestMv < 0) return null;   // no version-stamped DXFs yet → dormant
+  if (newestMv < 0) return null;   // no KNOWN model_version (all 0/missing) → dormant
   return fv > newestMv ? { fv, mv: newestMv } : null;
 }
 // opts.clickable (เอ๋ 2026-06-12, bend list): make each chip a one-tap Fusion
