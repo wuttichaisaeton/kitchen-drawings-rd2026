@@ -4415,3 +4415,7 @@ End-to-end restore complete: Railway trial-expired outage -> Render free (stainl
 ---
 ### 2026-06-12 - RD 03: e CONFIRMED LINE bot working ("ใช้ได้แล้ว") -- restore case CLOSED
 Full chain verified by e on the real LINE app. Railway->Render migration complete: code from existing repo, secrets via API, image-link domain repointed, webhook verified. Free-tier sleep behavior observed live (52s cold start) and accepted. Open follow-ups stay: LINE_GROUP_* envs if group features degrade; rd-bot-deploy API key kept for ops until e says delete. -- RD 03
+
+---
+### 2026-06-12 - RD 03: e CONFIRMED web working ("เว็บใช้ได้") -- WEB15 F-group folders + sheet-stock persist e-accepted
+General acceptance of current web state after today batch. WEB15 remaining queue: remnant direction + compare preview (1ee574d). -- RD 03
