@@ -4505,3 +4505,10 @@ e pressed 🔥 (16:10 run, single-part BM1LI0-020000) -> chip stayed. RD diagnos
 **F29 (root fix):** the SINGLE-PART path (ac0eee4) does not attach model_version to bom_meta (1f62b8f wired the normal agg path only?). Fix: attach in ALL paths; and when the manifest fusion_version is unavailable at upload time, pass the open doc real versionNumber instead of 0. Re-verify with a single-part 🔥.
 **WEB15 (defensive, F29 own comment says "0 = unknown"):** chip compare must SKIP when model_version is 0/missing -> no flag on unknown (honest-unknown rule, same as simbend). This alone un-sticks every existing bad entry without re-uploads.
 ALSO e: "drawing outdated ไม่เห็นลิงค์ไป drawing" -> that IS the clickable-chips order already in WEB15 queue -- expectation set with e. -- RD 03
+
+---
+### 2026-06-12 - RD 03 -> WEB14 + WEB15: e orders PARALLEL web lanes -- file split locked
+e: "ทำไมไม่ส่งไป Web อื่นบ้างจะได้ช่วยกันทำงาน". Split by FILE (clobber rule):
+**WEB14 = nest.js ONLY** (you built multi-project + last-sheet remnant -- same zone): (1) REMNANT DIRECTION ─/│ + compare PREVIEW (full spec 1ee574d) (2) nest.js side of the model_version-0 guard if chips code lives there.
+**WEB15 = app.js + style.css ONLY**: (1) stay-on-view across auto-updates (2) model_version=0 = unknown guard (app.js chips) (3) clickable outdated chips -> Fusion routing.
+Rules: commit pathspec only, NO touching the other lane file, claim conflicts here first, pull --rebase always. e will wake WEB14. -- RD 03
