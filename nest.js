@@ -2397,10 +2397,39 @@
       }
       return null;
     };
-    // Build one direction's variant: re-pack, measure the largest rect, accept
-    // only when ≥300mm both sides. rect/placements live in mm/sheet space.
-    const _variant = (modes) => {
-      const placements = _repack(modes);
+    // Pack parts toward the LEFT edge so the leftover is a tall column on the
+    // RIGHT. The skyline packer only packs bottom-up (mode 'Left' is identical
+    // to 'Bottom'), so we pack in a FRAME rotated 90° CW — real-left becomes
+    // frame-bottom — then map placements back to real sheet space. This is a
+    // proper rotation (NOT a transpose), so parts aren't mirrored; each real
+    // rotation comes from the piece's own allowed set, so grain stays legal.
+    const _repackLeft = () => {
+      const W = sheet.sw, H = sheet.sh;
+      const framePieces = pieces.map(p => ({
+        ...p,                                    // frame-rot = real-rot − 90
+        rots: (Array.isArray(p.rots) ? p.rots : [0, 90, 180, 270])
+          .map(r => (((r - 90) % 360) + 360) % 360),
+      }));
+      const frameStock = [{ w: H, h: W, qty: 1, thickness: sheet.thick }];   // sheet rotated
+      for (const mode of ['Bottom', 'MaxRects']) {
+        let r;
+        try { r = _nestMultiSheet(framePieces.map(p => ({ ...p })), frameStock, S.gap, mode); }
+        catch (e) { continue; }
+        const out = r && r.sheets && r.sheets[0];
+        if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
+        if (out.placements.length !== pieces.length) continue;
+        return out.placements.map(pl => {
+          const fr = (((pl.rot || 0) % 360) + 360) % 360;
+          const fu = (fr === 90 || fr === 270) ? pl.h : pl.w;   // frame u-extent (along frame width H)
+          // real_x = frame packer-y (v0); real_y flips the frame u-axis.
+          return { ...pl, x: pl.y, y: H - pl.x - fu, rot: (fr + 90) % 360 };
+        });
+      }
+      return null;
+    };
+    // Measure a packed layout's largest empty rect; keep only when ≥300mm both
+    // sides. rect/placements live in mm/sheet space.
+    const _measure = (placements) => {
       if (!placements) return null;
       const rect = _largestOffcut({ sw: sheet.sw, sh: sheet.sh, placements });
       if (!(rect.w >= _REMNANT_MIN_LAST && rect.h >= _REMNANT_MIN_LAST)) return null;
@@ -2410,8 +2439,8 @@
     // h (─ wide): parts toward the BOTTOM -> leftover = wide band on top.
     // v (│ long): parts toward the LEFT  -> leftover = tall column on right.
     const variants = {
-      h: _variant(['Bottom', 'MaxRects']),
-      v: _variant(['Left', 'MaxRects']),
+      h: _measure(_repack(['Bottom', 'MaxRects'])),
+      v: _measure(_repackLeft()),
     };
     sheet._rectVariants = variants;
 
@@ -2491,7 +2520,15 @@
         _drawSheet(cv, vSheet);
       });
     };
-    requestAnimationFrame(() => { drawAll(); requestAnimationFrame(drawAll); });
+    // Force layout so the canvases get their CSS size, then draw immediately.
+    // Don't depend solely on rAF — it can be throttled when the page isn't
+    // actively painting (e.g. a backgrounded tab), which would leave the minis
+    // blank. The sync reflow makes clientWidth/Height final; the rAF + timeout
+    // passes cover late font metrics / HiDPI without being the only path.
+    void modal.querySelector('.kdrectdir-body').offsetHeight;   // sync reflow
+    drawAll();
+    requestAnimationFrame(drawAll);
+    setTimeout(drawAll, 30);
 
     const close = () => modal.remove();
     const pick = (dir) => {
