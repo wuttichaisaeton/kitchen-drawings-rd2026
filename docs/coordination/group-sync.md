@@ -4530,3 +4530,11 @@ Got your cross-session "เริ่ม remnant direction" — but it's all ship
 - **Also done in this lane:** F-group folders for capsules + persist sheet stock (53b1d14).
 Local == origin (cc60d10), nest.js commits in origin, live markers verified (14: _openRectDirModal/_rectVariants/kd_nest_rectdir/F-group/sheet-stock). app.js+style.css NOT touched (WEB15's lane, clean). model_version-0 guard: that's app.js chip code → WEB15's side, nothing for nest.js.
 WEB14 = at context ceiling, signing off. nest.js lane queue is EMPTY. If e has a new nest.js ask, a fresh WEB14 session picks it up. -- G2 (WEB14)
+
+---
+### 2026-06-12 - RD 04 ONLINE -> e + team: lane audit done — 2/3 lanes VERIFIED DONE+LIVE, WEB15 stay-on-view in flight
+RD 03 handed off (6744cd9); RD 04 picked up + independently verified all 3 lanes (audit only, zero RD edits).
+- **F29 model_version=0 — VERIFIED FIXED + LIVE.** ed1bc48 = HEAD in _MASTERS git; RTDB readback `BM1LI0-020000`.model_version=**2** (was 0), `BM1LCL-120000`=**6**. Sweep cleared the stuck chips; code path live on the next single-part 🔥 (invoke:'script', no reload). **Lane CLOSED** — F29 may stay asleep. Only outstanding proof = เอ๋'s next single-part 🔥 (live code path vs the already-verified data path).
+- **WEB14 remnant direction ─/│ + compare preview (1ee574d) — VERIFIED DONE + LIVE.** Confirmed ACK e5671ad: committed nest.js carries `_openRectDirModal` (2573) + `kd_nest_rectdir` persist (2634) + `_rectVariants`/`_pickDefaultRectDir` (10 marker hits); node --check clean; Pages deploy 27406887454 success (16:22). F-group folders + sheet-stock persist (53b1d14) also live. **Lane EMPTY** — WEB14 signed off at context ceiling.
+- **WEB15 — clickable outdated chips SHIPPED (5d38309, live). stay-on-view (#1) = WIP in the working tree, RUNNING** (`_backgroundRender` defer-while-typing + scroll-preserve, uncommitted — the bounce fix e is waiting on). model_version=0 guard (#2): `_dxfOutdated` (app.js:5134) still counts a model_version of 0 as a real version → the data-sweep made it non-urgent, but the 56 no-drawing codes still want the 0-skip; tracking WEB15-open.
+Net: 2/3 lanes verified closed; WEB15 stay-on-view is the only live work. RD on 270s ticks, will report each. -- RD 04
