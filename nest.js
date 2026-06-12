@@ -184,6 +184,73 @@
     return /(bend|fold|flex)/i.test(String(name || ''));
   }
 
+  // ── True-entity normaliser (for vector DXF export) ──────────────────
+  // Convert ONE parsed DXF entity into a normalised WCS true-entity
+  // descriptor — same geometry the renderer/packer tessellates, but kept
+  // as a CIRCLE / ARC / LINE / LWPOLYLINE(+bulge) / SPLINE / ELLIPSE so
+  // _buildSheetDxf can re-emit a real curve instead of a faceted polyline
+  // (เอ๋ HARD RULE 'vector ทุกส่วน'; laser operator's circles were
+  // straight-segment polygons). The OCS mirror (extrusionZ < 0 → x→-x,
+  // see _extractPolygons.ocsFlipX) is BAKED IN here so the result is pure
+  // WCS — the placement transform (rotation + offset, NO reflection) then
+  // applies uniformly. Reads the EXACT same fields as entityPoints so the
+  // two stay in lock-step. Returns null for bend / unsupported entities.
+  function _entityToWcs(e) {
+    if (!e) return null;
+    const flip = (typeof e.extrusionZ === 'number' && e.extrusionZ < 0);
+    const fx = flip ? (x => -x) : (x => x);
+    const T = e.type;
+    if (T === 'CIRCLE') {
+      if (!(e.r > 0)) return null;
+      return { kind: 'CIRCLE', cx: fx(e.x), cy: e.y, r: e.r };
+    }
+    if (T === 'ARC') {
+      if (!(e.r > 0)) return null;
+      const a0 = e.startAngle || 0, a1 = e.endAngle || 0;     // radians (this lib)
+      let span = a1 - a0;
+      while (span < 0) span += 2 * Math.PI;
+      while (span > 2 * Math.PI) span -= 2 * Math.PI;
+      if (span < 1e-9) span = 2 * Math.PI;
+      // No flip: CCW a0→a0+span. Flip (mirror X): a point at angle a maps to
+      // angle (π−a) on the mirrored circle, and the sweep reverses → represent
+      // as CCW from (π−a1) to (π−a0).
+      if (!flip) return { kind: 'ARC', cx: e.x, cy: e.y, r: e.r, a0: a0, a1: a0 + span };
+      return { kind: 'ARC', cx: -e.x, cy: e.y, r: e.r, a0: Math.PI - (a0 + span), a1: Math.PI - a0 };
+    }
+    if (T === 'LINE') {
+      if (!e.start || !e.end) return null;
+      return { kind: 'LINE', x0: fx(e.start.x), y0: e.start.y, x1: fx(e.end.x), y1: e.end.y };
+    }
+    if (T === 'LWPOLYLINE' || T === 'POLYLINE') {
+      const vs = e.vertices || [];
+      if (vs.length < 2) return null;
+      // Mirror reverses arc handedness → negate every bulge when flipped.
+      const verts = vs.map(v => ({ x: fx(v.x), y: v.y, bulge: flip ? -(v.bulge || 0) : (v.bulge || 0) }));
+      return { kind: 'LWPOLYLINE', verts: verts, closed: !!e.closed };
+    }
+    if (T === 'ELLIPSE') {
+      const A = Math.hypot(e.majorX || 0, e.majorY || 0);
+      if (A < 1e-9) return null;
+      const ratio = (e.axisRatio != null ? e.axisRatio : 1);
+      let s = e.startAngle || 0;
+      let en = (e.endAngle == null) ? 2 * Math.PI : e.endAngle;
+      if (en <= s + 1e-9) en += 2 * Math.PI;
+      // Flip mirrors centre.x + the major-axis X component; the parameter
+      // sweep reverses (start↔end, negated).
+      if (!flip) return { kind: 'ELLIPSE', cx: e.x, cy: e.y, mx: e.majorX || 0, my: e.majorY || 0, ratio: ratio, a0: s, a1: en };
+      return { kind: 'ELLIPSE', cx: -e.x, cy: e.y, mx: -(e.majorX || 0), my: e.majorY || 0, ratio: ratio, a0: -en, a1: -s };
+    }
+    if (T === 'SPLINE') {
+      // de Boor is an affine combination of control points, so mirroring the
+      // control polygon (x→−x) mirrors the curve exactly; knots/degree stay.
+      const ctrl = (Array.isArray(e.controlPoints) ? e.controlPoints : []).map(p => ({ x: fx(p.x), y: p.y }));
+      const fit = (Array.isArray(e.fitPoints) ? e.fitPoints : []).map(p => ({ x: fx(p.x), y: p.y }));
+      if (ctrl.length < 2 && fit.length < 2) return null;
+      return { kind: 'SPLINE', ctrl: ctrl, fit: fit, knots: e.knots, degree: e.degree || 3, closed: !!e.closed };
+    }
+    return null;
+  }
+
   function _extractPolygons(parsed) {
     if (!parsed || !Array.isArray(parsed.entities)) {
       return { outer: [], holes: [], bbox: null };
@@ -388,6 +455,11 @@
     let minX = +Infinity, minY = +Infinity, maxX = -Infinity, maxY = -Infinity;
     const outerStrokes = [];   // every OUTER-layer polyline / line / arc
     const interior = [];       // every INTERIOR-layer entity
+    // True-entity descriptors (CIRCLE/ARC/LINE/…) parallel to the tessellated
+    // strokes — kept so the DXF exporter can emit real curves (vector-only).
+    // Each carries cls ('OUTER'|'INTERIOR') for the right output layer.
+    const trueEnts = [];
+    let nPts = 0;              // entities that yielded a point chain
     for (const e of parsed.entities) {
       const pts = entityPoints(e);
       if (!pts || pts.length < 2) continue;
@@ -400,15 +472,21 @@
           if (y > maxY) maxY = y;
         }
       }
-      if (/OUTER/i.test(layer)) {
-        outerStrokes.push(pts);
-      } else if (/INTERIOR/i.test(layer)) {
+      const cls = /INTERIOR/i.test(layer) ? 'INTERIOR' : 'OUTER';
+      if (/INTERIOR/i.test(layer)) {
         interior.push(pts);
       } else {
-        // Untagged cut content — assume outer.
+        // OUTER or untagged cut content — assume outer.
         outerStrokes.push(pts);
       }
+      nPts++;
+      const d = _entityToWcs(e);
+      if (d) { d.cls = cls; trueEnts.push(d); }
     }
+    // Only hand the exporter true entities when they cover EVERY cut entity —
+    // a partial set would drop geometry. Otherwise the exporter falls back to
+    // the tessellated polyline (older cached parts, or an unsupported type).
+    const entities = (trueEnts.length === nPts && nPts > 0) ? trueEnts : [];
 
     const bbox = isFinite(minX) ? [minX, minY, maxX, maxY] : null;
 
@@ -492,7 +570,7 @@
         strokes = outerStrokes;
       }
     }
-    return { outer, strokes, holes: interior, bbox };
+    return { outer, strokes, holes: interior, bbox, entities };
   }
 
   // ── Fetch + parse DXFs in parallel ─────────────────────────────────
@@ -538,7 +616,7 @@
         const text = await resp.text();
         const parsed = window.dxf.parseString(text);
         const ex = _extractPolygons(parsed);
-        p.polys = { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes };
+        p.polys = { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes, entities: ex.entities || [] };
         p.bbox = ex.bbox;
         if (ex.bbox) {
           // Default W/H to the bbox dimensions; user can override.
@@ -3892,7 +3970,13 @@
   // can round-trip it). Outer sheet border + each placement's outer
   // polygon, all on layer "0" for now (sufficient for laser cut).
   function _buildSheetDxf(sheet) {
-    const lines = ['0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
+    // $ACADVER AC1015 (R2000) makes SPLINE / ELLIPSE / LWPOLYLINE-with-bulge
+    // formally valid in this minimal file — the true-entity path below emits
+    // those so curves stay vector (เอ๋ HARD RULE 'vector ทุกส่วน' 2026-06-12;
+    // laser operator: nested-sheet circles were faceted). Plain readers
+    // already tolerated the old header, but declaring the version is correct.
+    const lines = ['0','SECTION','2','HEADER','9','$ACADVER','1','AC1015',
+                   '9','$INSUNITS','70','4','0','ENDSEC',
                    '0','SECTION','2','ENTITIES'];
 
     function lwpolyline(pts, layer) {
@@ -3915,6 +3999,103 @@
                  '72','1','73','2',
                  '11', x.toFixed(3), '21', y.toFixed(3), '31','0');
     }
+    // ── True-entity writers (vector output — เอ๋ 'vector ทุกส่วน') ──────
+    // Real DXF entities so a circle stays a CIRCLE, an arc an ARC, etc. —
+    // never a faceted polyline. The placement transform (rotation + offset,
+    // no mirror) is applied to each entity's defining geometry, NOT to a
+    // sampled point chain.
+    function deg(rad) { let d = rad * 180 / Math.PI; d %= 360; if (d < 0) d += 360; return d; }
+    function circle(cx, cy, r, layer) {
+      lines.push('0','CIRCLE','8', layer || '0',
+                 '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0', '40', r.toFixed(3));
+    }
+    function arc(cx, cy, r, sDeg, eDeg, layer) {
+      lines.push('0','ARC','8', layer || '0',
+                 '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0', '40', r.toFixed(3),
+                 '50', sDeg.toFixed(4), '51', eDeg.toFixed(4));
+    }
+    function line(x0, y0, x1, y1, layer) {
+      lines.push('0','LINE','8', layer || '0',
+                 '10', x0.toFixed(3), '20', y0.toFixed(3), '30','0',
+                 '11', x1.toFixed(3), '21', y1.toFixed(3), '31','0');
+    }
+    function polyBulge(verts, closed, layer) {
+      if (!verts || verts.length < 2) return;
+      lines.push('0','LWPOLYLINE','8', layer || '0',
+                 '90', String(verts.length), '70', closed ? '1' : '0');
+      for (const v of verts) {
+        lines.push('10', v.x.toFixed(3), '20', v.y.toFixed(3));
+        if (Math.abs(v.bulge || 0) > 1e-9) lines.push('42', v.bulge.toFixed(6));
+      }
+    }
+    // Clamped-uniform knot vector — fallback when the source knots are
+    // missing/malformed so the emitted SPLINE is always spec-valid
+    // (length must be nCtrl + degree + 1).
+    function clampedKnots(nCtrl, deg2) {
+      const kn = [];
+      for (let i = 0; i <= deg2; i++) kn.push(0);
+      const internal = nCtrl - deg2 - 1;
+      for (let i = 1; i <= internal; i++) kn.push(i);
+      const end = internal + 1;
+      for (let i = 0; i <= deg2; i++) kn.push(end);
+      return kn;
+    }
+    function spline(ctrl, knots, degree, closed, layer) {
+      if (!ctrl || ctrl.length < 2) return;
+      const nCtrl = ctrl.length, deg2 = degree || 3;
+      const kn = (Array.isArray(knots) && knots.length === nCtrl + deg2 + 1)
+        ? knots : clampedKnots(nCtrl, deg2);
+      const flag = 8 | (closed ? 1 : 0);   // 8 = planar
+      lines.push('0','SPLINE','8', layer || '0',
+                 '70', String(flag), '71', String(deg2),
+                 '72', String(kn.length), '73', String(nCtrl), '74','0');
+      for (const k of kn) lines.push('40', Number(k).toFixed(6));
+      for (const p of ctrl) lines.push('10', p.x.toFixed(3), '20', p.y.toFixed(3), '30','0');
+    }
+    function ellipse(cx, cy, mx, my, ratio, sp, ep, layer) {
+      lines.push('0','ELLIPSE','8', layer || '0',
+                 '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0',
+                 '11', mx.toFixed(3), '21', my.toFixed(3), '31','0',
+                 '40', (ratio || 1).toFixed(6), '41', sp.toFixed(6), '42', ep.toFixed(6));
+    }
+    // Place one normalised WCS descriptor onto the sheet: positions go
+    // through ``xf`` (the placement transform); direction vectors / sweep
+    // angles rotate by ``rotRad``. Pure rotation → bulge signs + arc/ellipse
+    // sweep sense are preserved (the transform never mirrors).
+    function placeEntity(d, xf, rotRad, layer) {
+      if (!d) return;
+      if (d.kind === 'CIRCLE') {
+        const c = xf(d.cx, d.cy); circle(c[0], c[1], d.r, layer); return;
+      }
+      if (d.kind === 'ARC') {
+        let span = d.a1 - d.a0;
+        while (span < 0) span += 2 * Math.PI;
+        while (span > 2 * Math.PI) span -= 2 * Math.PI;
+        const c = xf(d.cx, d.cy);
+        if (span >= 2 * Math.PI - 1e-4 || span < 1e-6) { circle(c[0], c[1], d.r, layer); return; }
+        arc(c[0], c[1], d.r, deg(d.a0 + rotRad), deg(d.a0 + span + rotRad), layer); return;
+      }
+      if (d.kind === 'LINE') {
+        const a = xf(d.x0, d.y0), b = xf(d.x1, d.y1); line(a[0], a[1], b[0], b[1], layer); return;
+      }
+      if (d.kind === 'LWPOLYLINE') {
+        const vs = d.verts.map(v => { const p = xf(v.x, v.y); return { x: p[0], y: p[1], bulge: v.bulge || 0 }; });
+        polyBulge(vs, d.closed, layer); return;
+      }
+      if (d.kind === 'SPLINE') {
+        const useCtrl = (d.ctrl && d.ctrl.length >= 2);
+        const src = useCtrl ? d.ctrl : d.fit;
+        const c2 = src.map(p => { const t = xf(p.x, p.y); return { x: t[0], y: t[1] }; });
+        spline(c2, useCtrl ? d.knots : null, d.degree, d.closed, layer); return;
+      }
+      if (d.kind === 'ELLIPSE') {
+        const c = xf(d.cx, d.cy);
+        const cs = Math.cos(rotRad), sn = Math.sin(rotRad);
+        const mx2 = d.mx * cs - d.my * sn;
+        const my2 = d.mx * sn + d.my * cs;
+        ellipse(c[0], c[1], mx2, my2, d.ratio, d.a0, d.a1, layer); return;
+      }
+    }
     // Sheet outline
     lwpolyline([[0,0],[sheet.sw,0],[sheet.sw,sheet.sh],[0,sheet.sh],[0,0]], 'SHEET_BORDER');
     // Each placement: outer profile (rotated, offset) + a centred part-name label
@@ -3927,8 +4108,10 @@
       const th = Math.max(15, Math.min(50, Math.min(fw, fh) * 0.25));
       text(pl.code, pl.x + fw / 2, pl.y + fh / 2, th, 'PART_LABELS');
 
-      if (!pl.polys || !pl.polys.outer || pl.polys.outer.length < 2) {
-        // Fallback: just the bbox rect
+      const ents = pl.polys && pl.polys.entities;
+      const haveOuter = pl.polys && pl.polys.outer && pl.polys.outer.length >= 2;
+      if (!pl.polys || (!haveOuter && !(ents && ents.length))) {
+        // Fallback: just the bbox rect (no usable geometry at all)
         lwpolyline([[pl.x, pl.y],[pl.x+fw, pl.y],[pl.x+fw, pl.y+fh],[pl.x, pl.y+fh],[pl.x, pl.y]],
                    'OUTER_PROFILES');
         continue;
@@ -3941,10 +4124,22 @@
         if (pl.rot === 270) { const t = lx; lx = ly;          ly = pl.w - t; }
         return [pl.x + lx, pl.y + ly];
       }
-      lwpolyline(pl.polys.outer.map(([x,y]) => transform(x,y)), 'OUTER_PROFILES');
-      if (pl.polys.holes) {
-        for (const hole of pl.polys.holes) {
-          lwpolyline(hole.map(([x,y]) => transform(x,y)), 'INTERIOR_PROFILES');
+      if (ents && ents.length) {
+        // TRUE-VECTOR path — emit real CIRCLE/ARC/LINE/LWPOLYLINE(+bulge)/
+        // SPLINE/ELLIPSE, rigid-transformed to the placement. rotRad matches
+        // transform()'s linear part: rot=90 → (x,y)→(−y,x) = +90° CCW, etc.
+        const rotRad = ((pl.rot || 0)) * Math.PI / 180;
+        for (const d of ents) {
+          placeEntity(d, transform, rotRad, d.cls === 'INTERIOR' ? 'INTERIOR_PROFILES' : 'OUTER_PROFILES');
+        }
+      } else {
+        // FALLBACK — older cached part with no retained entities: keep the
+        // tessellated polyline so nothing regresses (faceted, but rare).
+        lwpolyline(pl.polys.outer.map(([x,y]) => transform(x,y)), 'OUTER_PROFILES');
+        if (pl.polys.holes) {
+          for (const hole of pl.polys.holes) {
+            lwpolyline(hole.map(([x,y]) => transform(x,y)), 'INTERIOR_PROFILES');
+          }
         }
       }
     }
@@ -4793,7 +4988,7 @@
     const parsed = window.dxf.parseString(await resp.text());
     const ex = _extractPolygons(parsed);
     return {
-      polys: { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes },
+      polys: { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes, entities: ex.entities || [] },
       bbox: ex.bbox,
     };
   }
