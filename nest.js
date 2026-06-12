@@ -2438,6 +2438,76 @@
     S.currentSheetIdx = idx;
   }
 
+  // Side-by-side chooser shown when the last sheet's leftover can run either way
+  // (เอ๋ 2026-06-12 'เพิ่ม Preview ให้ดู และเลือกได้ว่า อยากให้เหลือเศษ ตามแนวยาว
+  // หรือแนวขวาง'). Two mini _drawSheet canvases; the bigger-area one is ringed +
+  // chipped (recommended); a remembered dir pre-selects its card. Click = apply +
+  // remember; backdrop/✕ = keep the already-applied default (never trap with no
+  // result). Opens only when BOTH variants exist (gated by the caller).
+  function _openRectDirModal(idx) {
+    const sheet = (S.flatSheets || [])[idx];
+    if (!sheet || !sheet._rectVariants || !sheet._rectVariants.h || !sheet._rectVariants.v) return;
+    document.querySelectorAll('.kdrectdir-modal').forEach(m => m.remove());
+    const V = sheet._rectVariants;
+    const areaH = V.h.rect.area != null ? V.h.rect.area : V.h.rect.w * V.h.rect.h;
+    const areaV = V.v.rect.area != null ? V.v.rect.area : V.v.rect.w * V.v.rect.h;
+    const biggerDir = areaV > areaH ? 'v' : 'h';
+    const preDir = (S.rectDir === 'h' || S.rectDir === 'v') ? S.rectDir : biggerDir;
+    const dim = (r) => Math.round(r.w) + '×' + Math.round(r.h) + 'mm';
+
+    const card = (dir, glyph, name, rect) => `
+      <div class="kdrectdir-card${dir === preDir ? ' kdrectdir-pre' : ''}${dir === biggerDir ? ' kdrectdir-big' : ''}" data-dir="${dir}">
+        <canvas class="kdrectdir-canvas" data-dir="${dir}"></canvas>
+        <div class="kdrectdir-cap">${glyph} ${name} · ${dim(rect)}${dir === biggerDir ? ' <span class="kdrectdir-chip">bigger</span>' : ''}</div>
+      </div>`;
+
+    const modal = document.createElement('div');
+    modal.className = 'kdstock-modal kdrectdir-modal';
+    modal.innerHTML = '<div class="kdstock-backdrop"></div>'
+      + `<div class="kdstock-frame" role="dialog" aria-label="Remnant direction">
+           <div class="kdstock-head">Remnant direction
+             <span class="kdstock-sub">pick how the leftover runs — click a layout</span>
+             <button class="kdstock-close" aria-label="Close">✕</button>
+           </div>
+           <div class="kdrectdir-body">
+             ${card('h', '─', 'Wide', V.h.rect)}
+             ${card('v', '│', 'Long', V.v.rect)}
+           </div>
+         </div>`;
+    document.body.appendChild(modal);
+
+    // Draw each variant into its mini canvas. Canvas must be laid out (in DOM
+    // with a CSS size) before _drawSheet reads clientWidth — double-rAF like
+    // _refreshView. Standalone variantSheet is safe (verified: _drawSheet reads
+    // only S.flatSheets[colour] + S.highlightCode, draws the sheet arg).
+    const drawAll = () => {
+      modal.querySelectorAll('.kdrectdir-canvas').forEach(cv => {
+        const d = cv.dataset.dir;
+        const vSheet = {
+          thick: sheet.thick, sw: sheet.sw, sh: sheet.sh,
+          placements: V[d].placements,
+          lastRemnantRect: { x: V[d].rect.x, y: V[d].rect.y, w: V[d].rect.w, h: V[d].rect.h },
+        };
+        _drawSheet(cv, vSheet);
+      });
+    };
+    requestAnimationFrame(() => { drawAll(); requestAnimationFrame(drawAll); });
+
+    const close = () => modal.remove();
+    const pick = (dir) => {
+      _applyRectVariant(sheet, idx, dir);
+      S.rectDir = dir;
+      try { localStorage.setItem('kd_nest_rectdir', dir); } catch (e) {}
+      close();
+      _refreshView();           // re-render on the chosen sheet (green box = chosen rect)
+    };
+    // Backdrop / ✕ = keep the already-applied default pick (no trap, one result).
+    modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
+    modal.querySelector('.kdstock-close').addEventListener('click', close);
+    modal.querySelectorAll('.kdrectdir-card').forEach(c =>
+      c.addEventListener('click', () => pick(c.dataset.dir)));
+  }
+
   // ── Auto-remember offcuts ──────────────────────────────────────────
   // Largest reusable offcut on a packed sheet — coarse raster + histogram
   // largest-empty-rectangle (standalone twin of the one inside Max Remnant
@@ -2759,6 +2829,8 @@
       console.warn('[kdNest] unplaced pieces:', S.unplaced);
     }
     _refreshView();
+    // Last-sheet leftover can run either way → let เอ๋ see both and pick.
+    if (S.rectLeftover && S._rectPendingIdx >= 0) _openRectDirModal(S._rectPendingIdx);
     // Offcut remembering moved to 💾 Save Nest (เอ๋ 2026-06-10 'ถ้าจะ save ให้มา
     // save ที่ save Project') — a test Run no longer touches the shared
     // remnant pool; only an explicitly saved nest does.
