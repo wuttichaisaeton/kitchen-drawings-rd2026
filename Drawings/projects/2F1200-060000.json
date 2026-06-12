@@ -2,9 +2,9 @@
   "name": "2F1200-060000",
   "status": "active",
   "created_at": "2026-06-12T08:09:44.433273+00:00",
-  "updated_at": "2026-06-12T11:24:57.576804+00:00",
-  "total_unique_parts": 6,
-  "total_qty": 11,
+  "updated_at": "2026-06-12T21:47:46.943290+00:00",
+  "total_unique_parts": 7,
+  "total_qty": 12,
   "parts": [
     {
       "code": "2BK100-060120",
@@ -31,6 +31,12 @@
       "urn": "urn:adsk.wipprod:dm.lineage:le3lMDvYQYCB4y01mq7e3A"
     },
     {
+      "code": "2CF000-060000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:uL7xjdHeQNisM-WpBz5WTw"
+    },
+    {
       "code": "2DN060-000000",
       "qty": 1,
       "family": "Other",
@@ -43,10 +49,10 @@
       "urn": "urn:adsk.wipprod:dm.lineage:JlWX2roeQJSStHgH0knvfA"
     },
     {
-      "code": "2UP000-000000",
+      "code": "2UP000-0600L0",
       "qty": 1,
       "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:rFQK0-tdTyyud8Nux_NlCg"
+      "urn": "urn:adsk.wipprod:dm.lineage:okYxaVPkTfa2Mo1qi2ZZBg"
     },
     {
       "code": "2BK000-060120",
