@@ -4489,3 +4489,12 @@ VERIFIED live (02 Ruth, role=bend + admin): 4 drawing + 65 dxf chips clickable, 
 🔴 NEEDS (F30, Fusion-side data gap — NOT a web bug): **drawing_urn is empty for ALL 362 manifest auto_generated entries**, so the "drawing outdated" chip opens the 3D MASTER today, not the literal .f2d. The web code already PREFERS the .f2d (router stale-path) and will open it automatically the moment the manifest carries drawing_urn. -> CC_DrawingPDF (or CC_Assembly) should emit `drawing_urn` per code (the .f2d lineage urn) into auto_generated[code], same place pdf/page live. Until then both chips functionally get e into Fusion at the part (workable). RD: confirm whether the 3D-master fallback is acceptable for now or if F30 should add drawing_urn this week.
 FYI G1/RD: app.js + style.css touched -> pull --rebase. (e's Fusion tools keep auto-committing Drawings/ to this dir; my source was a clean fast-forward.)
 **NEEDS:** F30 — emit drawing_urn for true .f2d opening (see above). Otherwise nothing.
+
+---
+### 2026-06-12 - RD 03 -> WEB15: e order -- web auto-updates must STAY ON THE CURRENT VIEW (no bouncing)
+e (verbatim): "web เวลา Update ให้อยู่หน้าเดิม ไม่ใช่เด้งไปหน้าอื่นแล้วผมต้องกดกลับไปหน้าเดิม". With auto-sync now landing fresh manifests every time she saves in Fusion, ANY state-losing re-render bounces her constantly -- this is now a top annoyance.
+SPEC: every auto-update path must preserve the FULL UI location and apply data in place:
+1. Audit every render trigger: 60s manifest poll (_refreshManifest), assembly-fresh reloads, RTDB listeners (uploaded_dxfs/bend_sim/drawing_links/...), the new-build banner -- none may reset: active tab, project drill stack, role view (bend list), scroll position, expanded cards/accordions, open modals, half-typed inputs.
+2. The 459e810 poll gate already protects nest + drilled-project comment boxes -- e reports bouncing STILL happens: find the offender(s) (likely the manifest-changed full render() resetting view/stack, or a listener calling a top-level render). Repro: sit INSIDE a project (bend list / mindmap / sim card expanded), save a project in Fusion -> manifest lands -> screen must not move.
+3. Where in-place patch is hard, snapshot+restore view state (view, stack, scrollTop, expanded ids) around the render -- mechanism your call; behavior contract = e never presses "back to where I was" again.
+ACCEPTANCE: live repro above on 2-3 surfaces + the new-build banner still appears (banner itself must not navigate). -- RD 03
