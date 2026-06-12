@@ -515,12 +515,16 @@ function _patternAliasForDrawing(code) {
 
 function _effectiveDrawingCode(code, _depth) {
   _depth = _depth || 0;
-  // Admin "Edit Link" override wins: borrow the linked code's drawing. Resolved
-  // recursively (target may itself be aliased) with a depth guard against cycles.
+  const auto = (manifest && manifest.auto_generated) || {};
+  // A code's OWN real drawing wins over any admin link/override (เอ๋ 2026-06-12:
+  // "real registration ทีหลังชนะ override") — once Fusion exports the part's own
+  // PDF, it takes over from a borrowed one. The link is only a fallback for a
+  // code that has no native drawing yet.
+  if (auto[code]) return code;  // self has the drawing — use as-is
+  // Admin "Edit Link" / pick-PDF override: borrow the linked code's drawing.
+  // Resolved recursively (target may itself be aliased) with a cycle depth guard.
   const linked = _drawingLinksCache[code];
   if (linked && linked !== code && _depth < 8) return _effectiveDrawingCode(linked, _depth + 1);
-  const auto = (manifest && manifest.auto_generated) || {};
-  if (auto[code]) return code;  // self has the drawing — use as-is
   // 1. Explicit group — first sibling with a manifest entry wins.
   const group = _drawingAliasIndex.get(code);
   if (group) {
@@ -1496,6 +1500,100 @@ async function _uploadPartDxf(projectKey, code, file) {
   return { code, url, metadata };
 }
 
+// Every code in the system that has a viewable drawing PDF (manifest
+// auto_generated + admin uploads), each scored by how "near" its code is to
+// `forCode` (longest shared code-prefix — so BM2LI1 surfaces BM2LI0/BM1000…
+// first). Self is excluded. Used by the bend Pick-PDF picker. (เอ๋ 2026-06-12)
+function _bendPdfCandidates(forCode) {
+  const auto = (manifest && manifest.auto_generated) || {};
+  const seen = new Set();
+  const out = [];
+  const add = (code) => {
+    if (!code || code === forCode || seen.has(code)) return;
+    const url = pdfUrlForCode(code);
+    if (!url) return;
+    seen.add(code);
+    out.push({ code, url });
+  };
+  for (const c of Object.keys(auto)) add(c);
+  for (const c of Object.keys(_uploadedPdfsCache || {})) add(c);
+  const myPrefix = String(forCode || '').split('-')[0];
+  const score = (code) => {
+    const p = String(code).split('-')[0];
+    let n = 0; const L = Math.min(p.length, myPrefix.length);
+    while (n < L && p[n] === myPrefix[n]) n++;
+    return n;
+  };
+  out.forEach(o => { o.score = score(o.code); });
+  out.sort((a, b) => b.score - a.score || a.code.localeCompare(b.code));
+  return out;
+}
+
+// Admin "Pick a drawing PDF" modal for a NO-PDF (or relinking) bend part. Lists
+// every code that has a PDF, nearest first, each previewable; choosing one sets
+// drawing_links/<code> (RTDB-synced) so the part borrows that drawing on EVERY
+// surface. Unlink restores NO-PDF. English-only; reuses the opaque .kdstock
+// modal shell (works across all 3 themes). (เอ๋ 2026-06-12)
+function _openBendPdfPicker(code) {
+  if (!isAdmin() || !code) return;
+  document.querySelectorAll('.bendpdf-modal').forEach(m => m.remove());
+  const cands = _bendPdfCandidates(code);
+  const curLink = getDrawingLink(code);
+  // "nearby" = same family letters (the alpha prefix, e.g. BM2LI1 → every BM*),
+  // which is what RD/เอ๋ asked to surface first. The candidate sort already puts
+  // the longest shared prefix on top (BM2LI0 above BM1000), so the badge just
+  // marks the whole family.
+  const myFam = (String(code).match(/^[A-Za-z]+/) || [''])[0];
+  const rowHtml = (c) => {
+    const near = !!myFam && String(c.code).toUpperCase().startsWith(myFam.toUpperCase());
+    return `<div class="bendpdf-row${c.code === curLink ? ' is-current' : ''}" data-code="${escapeHtml(c.code)}">
+        <span class="bendpdf-code" title="${escapeHtml(c.code)}">${escapeHtml(displayCodeFor(c.code))}${near ? ' <span class="bendpdf-near">nearby</span>' : ''}${c.code === curLink ? ' <span class="bendpdf-cur">current</span>' : ''}</span>
+        <span class="bendpdf-acts">
+          <button class="bendpdf-preview" data-url="${escapeHtml(c.url)}" title="Preview this PDF">👁</button>
+          <button class="bendpdf-use" data-code="${escapeHtml(c.code)}" title="Use this drawing for ${escapeHtml(code)}">Use</button>
+        </span>
+      </div>`;
+  };
+  const modal = document.createElement('div');
+  modal.className = 'kdstock-modal bendpdf-modal';
+  modal.innerHTML = '<div class="kdstock-backdrop"></div>'
+    + `<div class="kdstock-frame" role="dialog" aria-label="Pick a drawing PDF">
+         <div class="kdstock-head">Pick a drawing PDF
+           <span class="kdstock-sub">for ${escapeHtml(displayCodeFor(code))}${curLink ? ' · linked to ' + escapeHtml(curLink) : ''}</span>
+           <button class="kdstock-close" aria-label="Close">✕</button>
+         </div>
+         <div class="bendpdf-tools">
+           <input class="bendpdf-search" type="text" placeholder="Search code…" autocomplete="off">
+           ${curLink ? '<button class="bendpdf-clear" title="Remove the link — this part goes back to NO PDF">✕ Unlink</button>' : ''}
+         </div>
+         <div class="bendpdf-list">${cands.length ? cands.map(rowHtml).join('') : '<div class="bendpdf-empty">No drawing PDFs exist in the system yet.</div>'}</div>
+       </div>`;
+  document.body.appendChild(modal);
+
+  const close = () => modal.remove();
+  modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
+  modal.querySelector('.kdstock-close').addEventListener('click', close);
+  const search = modal.querySelector('.bendpdf-search');
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toUpperCase();
+    modal.querySelectorAll('.bendpdf-row').forEach(r => {
+      r.style.display = (!q || r.dataset.code.toUpperCase().includes(q)) ? '' : 'none';
+    });
+  });
+  try { search.focus(); } catch (e) {}
+  modal.querySelectorAll('.bendpdf-preview').forEach(b => b.addEventListener('click', (ev) => {
+    ev.stopPropagation(); if (b.dataset.url) _openInNewTab(b.dataset.url);
+  }));
+  modal.querySelectorAll('.bendpdf-use').forEach(b => b.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    setDrawingLink(code, b.dataset.code);   // RTDB drawing_links/<code> — syncs everywhere
+    close();
+    render();
+  }));
+  const clearBtn = modal.querySelector('.bendpdf-clear');
+  if (clearBtn) clearBtn.addEventListener('click', () => { setDrawingLink(code, ''); close(); render(); });
+}
+
 function _renderBendList(parts, projectKey) {
   const aggregated = _aggregatePartsByCode(parts);
   aggregated.sort((a, b) => a.code.localeCompare(b.code));
@@ -1512,9 +1610,20 @@ function _renderBendList(parts, projectKey) {
     // uploaded_pdfs cache + alias-prefix fallback). User 2026-05-28:
     // 'bending กดดู view pdf แต่ละ Part ได้'.
     const pdfHref = pdfUrlForCode(p.code) || '';
-    const viewBtn = pdfHref
-      ? `<button class="bend-view-btn" data-url="${escapeHtml(pdfHref)}" title="View bending drawing PDF">👁</button>`
-      : `<button class="bend-view-btn" disabled title="No drawing PDF for this part yet">👁</button>`;
+    // When a part has NO drawing PDF, the dead 👁 becomes a 🔗 "Pick PDF" button
+    // for admins (เอ๋ 2026-06-12): borrow a nearby part's drawing so the eye lights
+    // up here and everywhere (drawing_links/<code>, synced). A part already
+    // borrowing one keeps its 👁 plus a small 🔗 to re-pick / unlink.
+    const dl = getDrawingLink(p.code);   // admin link target ('' if none)
+    let viewBtn;
+    if (pdfHref) {
+      viewBtn = `<button class="bend-view-btn" data-url="${escapeHtml(pdfHref)}" title="View bending drawing PDF">👁</button>`
+        + (admin && dl ? `<button class="bend-link-btn is-linked" data-code="${escapeHtml(p.code)}" title="Borrowed from ${escapeHtml(dl)} — pick a different PDF or unlink">🔗</button>` : '');
+    } else if (admin) {
+      viewBtn = `<button class="bend-link-btn" data-code="${escapeHtml(p.code)}" title="No drawing PDF — pick a nearby part's PDF (admin)">🔗</button>`;
+    } else {
+      viewBtn = `<button class="bend-view-btn" disabled title="No drawing PDF for this part yet">👁</button>`;
+    }
     // Open-in-Fusion — เอ๋ 2026-06-11 'เพิ่มปุ่มให้ผมกลับไปดูที่ฟิวชั่น': jump from
     // a bend row back to the part's 3D master in Fusion. Reuses the mindmap
     // leaf-click router (_routeLeafToFusion → bridge :8765 with retry + the
@@ -1592,6 +1701,14 @@ function _wireBendList(parts, projectKey) {
       ev.stopPropagation();
       const url = btn.dataset.url;
       if (url) _openInNewTab(url);
+    });
+  });
+  // 🔗 Pick-PDF — admin only; appears on NO-PDF rows (and as a re-pick chip on
+  // linked rows). Opens the picker that sets drawing_links/<code> (syncs).
+  ROOT.querySelectorAll('.bend-link-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _openBendPdfPicker(btn.dataset.code);
     });
   });
   // Open-in-Fusion — delegate to the shared leaf router (bridge :8765, retry,

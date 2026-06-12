@@ -3331,6 +3331,56 @@ button.cut-status:focus-visible {
 }
 .bend-view-btn:hover:not(:disabled) { background: rgba(93, 187, 99, 0.22); }
 .bend-view-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+/* 🔗 Pick-PDF — admin affordance that replaces the dead 👁 on a NO-PDF row, so a
+   part can borrow a nearby drawing (เอ๋ 2026-06-12). Amber, same 52px square as
+   the eye so it sits in line. .is-linked = small re-pick chip beside a live eye. */
+.bend-link-btn {
+  background: rgba(242, 169, 59, 0.12);
+  border: 1px solid rgba(242, 169, 59, 0.45);
+  color: #F2A93B;
+  width: 52px; height: 52px; padding: 0;
+  border-radius: 8px; font-size: 21px; cursor: pointer;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+}
+.bend-link-btn:hover { background: rgba(242, 169, 59, 0.24); }
+.bend-link-btn.is-linked {
+  width: 30px; height: 30px; font-size: 13px; align-self: center; margin-left: 2px;
+}
+/* Pick-a-PDF picker — rides the opaque .kdstock shell (3-theme safe). */
+.bendpdf-modal .kdstock-frame { max-width: 600px; }
+.bendpdf-tools { display: flex; gap: 8px; padding: 10px 16px 6px; }
+.bendpdf-search {
+  flex: 1 1 auto; background: #0f1620; border: 1px solid #2a3a4f; border-radius: 6px;
+  color: #e8eef5; padding: 6px 10px; font-family: inherit; font-size: 13px;
+}
+.bendpdf-search:focus { outline: none; border-color: #2a5dff; }
+.bendpdf-clear {
+  flex: 0 0 auto; background: rgba(231,76,60,0.14); border: 1px solid rgba(231,76,60,0.5);
+  color: #e88; border-radius: 6px; padding: 6px 10px; font-family: inherit; font-size: 12px; cursor: pointer;
+}
+.bendpdf-clear:hover { background: rgba(231,76,60,0.28); }
+.bendpdf-list { overflow-y: auto; max-height: 60vh; padding: 4px 16px 14px; display: flex; flex-direction: column; gap: 4px; }
+.bendpdf-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: #0f1620; border: 1px solid #1c2530; border-radius: 7px; padding: 6px 10px;
+}
+.bendpdf-row.is-current { border-color: #F2A93B; box-shadow: 0 0 0 1px #F2A93B inset; }
+.bendpdf-code { font-family: "Flux Architect", monospace; font-size: 12.5px; color: #cfe0e6; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bendpdf-near { font-size: 9px; font-weight: 700; color: #5dbb63; border: 1px solid rgba(93,187,99,0.5); border-radius: 8px; padding: 0 5px; margin-left: 5px; }
+.bendpdf-cur { font-size: 9px; font-weight: 700; color: #F2A93B; margin-left: 5px; }
+.bendpdf-acts { flex: 0 0 auto; display: flex; gap: 6px; align-items: center; }
+.bendpdf-preview {
+  background: rgba(93,187,99,0.1); border: 1px solid rgba(93,187,99,0.35); color: #cad6e6;
+  width: 30px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+}
+.bendpdf-preview:hover { background: rgba(93,187,99,0.24); }
+.bendpdf-use {
+  background: #2a5dff; border: none; color: #fff; border-radius: 6px; padding: 5px 12px;
+  font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.bendpdf-use:hover { background: #1f49cc; }
+.bendpdf-empty { color: #88aab1; font-size: 13px; text-align: center; padding: 22px; }
 /* Open-in-Fusion chip — same 52px square as its siblings, amber accent
    (Brushed Steel + Amber) so "jump to Fusion" reads apart from the green
    PDF/bend affordances. SVG cube inherits currentColor. */
