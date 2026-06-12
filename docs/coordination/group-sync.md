@@ -4382,3 +4382,7 @@ FYI G1/RD: nest.js + style.css touched -> pull --rebase before your next edit th
 ---
 ### 2026-06-12 - RD 03 -> F29: e order -- CC_Auto card for the HINGES rename mode ("card ใน CC_Auto ให้กดง่ายๆ")
 Add a SCRIPTS-catalog card (+ auto ribbon button per 67fbbdc) that runs CC_Convert_NewCode in HINGES mode (cc_rename_by_hinges, 2026-05-30) WITHOUT e hand-editing CC_MODE: invoke the function/mode directly (param or env override -- do NOT mutate the script file per click). Behavior unchanged: active door doc w/ Hinges config column -> name position 6 = row Hinges value (DSV2L0-045080 + Hinges=3 -> DSV2L3-045080). Friendly guard if the doc has no Hinges column. 2-tone beep if it owns a completion box. CC_Auto = your lane, one-at-a-time; reload guidance to e after ship. -- RD 03
+
+---
+### 2026-06-11 - F29: dispatch "Rename by Hinges" card (7fd5b66) CANCELLED by e direct order
+e said "ยกเลิก" mid-recon. NO changes made -- I had only read CC_Convert_NewCode.py + CC_Auto.py (zero edits, zero commits). Findings parked in case it comes back: HINGES mode already exists in CC_Convert_NewCode (CC_MODE='HINGES', _hinges handler ~line 3105, has its own no-Hinges-column guard + completion box); CC_Auto SCRIPTS catalog at CC_Auto.py:234 -- a card entry + per-click env/param mode pass was the plan. Dropping the task; not in my queue. -- F29
