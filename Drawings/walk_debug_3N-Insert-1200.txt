@@ -1,0 +1,14 @@
+CC_Assembly walk debug — 2026-06-13T14:32:12.089137
+Project: 3N-Insert-1200
+Total occurrences visited: 4
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     | Steel            | Cup:1 (Cup)
+    0 |     |     | Steel            | Pivot1:1 (Pivot1)
+    0 |     |     | Steel            | Pivot2:1 (Pivot2)
+    0 |     |     | Steel            | DW:1 (DW)

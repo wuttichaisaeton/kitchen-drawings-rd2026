@@ -1,0 +1,32 @@
+{
+  "name": "BKDNC2-120000",
+  "status": "active",
+  "created_at": "2026-06-13T08:13:12.569120+00:00",
+  "updated_at": "2026-06-13T08:13:12.569120+00:00",
+  "total_unique_parts": 2,
+  "total_qty": 5,
+  "parts": [
+    {
+      "code": "BKDNC1-120002",
+      "qty": 1,
+      "family": "Other",
+      "variant_root": "BKDNC1-120002",
+      "urn": "urn:adsk.wipprod:dm.lineage:c8-O6UpJSRmrVuzwR-Htug"
+    },
+    {
+      "code": "BXXTR0-000000",
+      "qty": 4,
+      "family": "Other",
+      "parent_code": "BK2TR1-120000",
+      "variant_root": "BK2TR1-120000",
+      "urn": "urn:adsk.wipprod:dm.lineage:9nXAHOrYR_-p3w7ylFiTqw"
+    },
+    {
+      "code": "BK2TR1-120000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK2TR1-120000"
+    }
+  ]
+}
