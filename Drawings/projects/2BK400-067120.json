@@ -1,0 +1,16 @@
+{
+  "name": "2BK400-067120",
+  "status": "active",
+  "created_at": "2026-06-13T08:55:40.902521+00:00",
+  "updated_at": "2026-06-13T08:55:40.902521+00:00",
+  "total_unique_parts": 1,
+  "total_qty": 4,
+  "parts": [
+    {
+      "code": "2BK200-000000",
+      "qty": 4,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:im6FvtCRTVuxsyh79LxYRg"
+    }
+  ]
+}
