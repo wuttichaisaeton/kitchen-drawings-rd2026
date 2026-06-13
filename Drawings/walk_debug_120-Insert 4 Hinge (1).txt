@@ -1,0 +1,14 @@
+CC_Assembly walk debug — 2026-06-13T11:15:54.714421
+Project: 120-Insert 4 Hinge (1)
+Total occurrences visited: 4
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     | Steel            | Cup:1 (Cup)
+    0 |     |     | Steel            | Component14:1 (Component14)
+    0 |     |     | Steel            | Component15:1 (Component15)
+    0 |     |     | Steel            | DRW:1 (DRW)
