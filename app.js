@@ -5152,7 +5152,9 @@ function _bendRecheckChip(code, extraStyle, opts) {
   const tip = `DXF updated ${t(st.dxfAt)} — after this bend check (${t(st.checkedAt)}).`
     + (act ? ' Click to open the 3D master in Fusion, then re-run CC_CheckBend; this clears itself.'
            : ' Re-run CC_CheckBend in Fusion.');
-  return `<span class="${cls}" style="${extraStyle || ''}"${data} title="${tip}">↻ re-check</span>`;
+  // เอ๋ 2026-06-13: label says WHAT TO DO ("check bend" = go run Check Bend),
+  // not "re-check" — the chip means "not checked since the DXF changed".
+  return `<span class="${cls}" style="${extraStyle || ''}"${data} title="${tip}">↻ check bend</span>`;
 }
 
 // ── Sim.Bending Favorites (⭐) + Sync-from-Project ────────────────────────
