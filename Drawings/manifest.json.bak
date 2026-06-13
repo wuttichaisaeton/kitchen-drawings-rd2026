@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-12T22:24:37.614623+00:00",
+  "generated_at": "2026-06-13T01:46:28.160148+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3033,16 +3033,17 @@
     },
     "BKDNC1-120002": {
       "family": "Other",
-      "last_drawn_version": 3,
+      "last_drawn_version": 5,
       "fusion_version": 5,
       "pdf": "BKDNC1-120002.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-12T09:22:51.537481+00:00",
+      "generated_at": "2026-06-13T00:24:40.232640+00:00",
       "fusion_teams_url": null,
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:DlZ0N4HsQtW0N4JQ5ODi0Q"
     },
     "SD0HG1-000000": {
       "family": "Other",
@@ -3748,16 +3749,17 @@
     },
     "TS0BVH-0000UN": {
       "family": "Other",
-      "last_drawn_version": 5,
+      "last_drawn_version": 6,
       "fusion_version": 6,
       "pdf": "TS0BVH-0000UN.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-09T08:52:33.164220+00:00",
+      "generated_at": "2026-06-13T00:29:47.009972+00:00",
       "fusion_teams_url": null,
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:-0zzF9uGRvKL_Ijf3_QeQQ"
     },
     "SDLCN0-080003": {
       "family": "Other",
@@ -4268,16 +4270,17 @@
     },
     "DSV2F0-020080": {
       "family": "Other",
-      "last_drawn_version": 2,
+      "last_drawn_version": 3,
       "fusion_version": 3,
       "pdf": "DSV2F0-020080.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-09T21:00:33.897604+00:00",
+      "generated_at": "2026-06-13T00:27:55.019362+00:00",
       "fusion_teams_url": null,
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:KMw_lBc9TkSL_9wuQ8JdLA"
     },
     "SH0S12-000000": {
       "family": "Other",
@@ -4554,16 +4557,17 @@
     },
     "CVIL00-205093": {
       "family": "Other",
-      "last_drawn_version": 9,
+      "last_drawn_version": 10,
       "fusion_version": 10,
       "pdf": "CVIL00-205093.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-12T09:24:38.857564+00:00",
+      "generated_at": "2026-06-13T00:26:52.279273+00:00",
       "fusion_teams_url": null,
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:7jHIO74pSla7YQLd2sM7kg"
     },
     "BTHL00-000000": {
       "family": "Other",
@@ -4632,16 +4636,17 @@
     },
     "FTI000-145095-Ruth": {
       "family": "Other",
-      "last_drawn_version": 1,
+      "last_drawn_version": 2,
       "fusion_version": 2,
       "pdf": "FTI000-145095-Ruth.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-11T02:37:46.405199+00:00",
+      "generated_at": "2026-06-13T00:28:44.463440+00:00",
       "fusion_teams_url": null,
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:YQzMBo0FS_uR3tA91pzXuQ"
     },
     "02 Ruth": {
       "family": "Other",
@@ -5817,10 +5822,79 @@
       "name": "02 Ruth",
       "status": "active",
       "created_at": "2026-06-08T09:23:07.576072+00:00",
-      "updated_at": "2026-06-12T08:13:09.150272+00:00",
-      "total_unique_parts": 99,
-      "total_qty": 225,
+      "updated_at": "2026-06-13T01:46:28.156889+00:00",
+      "total_unique_parts": 108,
+      "total_qty": 263,
       "parts": [
+        {
+          "code": "2BK100-060120",
+          "qty": 3,
+          "family": "Other",
+          "parent_code": "2BK000-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:sXf-AMtoTLu2FgujgOvnHQ"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 12,
+          "family": "Other",
+          "parent_code": "2BK400-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:Yom7QitTQ8SN_TteRjdfMw"
+        },
+        {
+          "code": "2BK410-060000",
+          "qty": 6,
+          "family": "Other",
+          "parent_code": "2BK000-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:le3lMDvYQYCB4y01mq7e3A"
+        },
+        {
+          "code": "2CF000-060000",
+          "qty": 3,
+          "family": "Other",
+          "parent_code": "2FNLL0-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:uL7xjdHeQNisM-WpBz5WTw"
+        },
+        {
+          "code": "2CVH19-346LL0",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "F2",
+          "urn": "urn:adsk.wipprod:dm.lineage:evp2TmAwQqmK6Xq8FfYg4Q"
+        },
+        {
+          "code": "2CVH26-766LO0",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:ThqSXuz4TlqYppShN0r5eg"
+        },
+        {
+          "code": "2DN060-000000",
+          "qty": 3,
+          "family": "Other",
+          "parent_code": "2FNLL0-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:DwngxA_LTyu5m47YOW7x0A"
+        },
+        {
+          "code": "2SD140-120020",
+          "qty": 6,
+          "family": "Other",
+          "parent_code": "2FNLL0-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:JlWX2roeQJSStHgH0knvfA"
+        },
+        {
+          "code": "2UP000-0600L0",
+          "qty": 3,
+          "family": "Other",
+          "parent_code": "2FNLL0-060120",
+          "variant_root": "2FXLL0-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:okYxaVPkTfa2Mo1qi2ZZBg"
+        },
         {
           "code": "BK1DN1-020000",
           "qty": 1,
@@ -6843,6 +6917,14 @@
           "urn": "urn:adsk.wipprod:dm.lineage:28VLFffKTye7RPik2IVLIA"
         },
         {
+          "code": "1-HingeN",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2FNLL0-060120",
+          "variant_root": "2FXLL0-060120"
+        },
+        {
           "code": "1-HingeW",
           "qty": 0,
           "family": "Other",
@@ -6921,6 +7003,38 @@
           "is_wrapper": true,
           "parent_code": "F1",
           "variant_root": "1NSVFS-020000"
+        },
+        {
+          "code": "2BK000-060120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2FNLL0-060120",
+          "variant_root": "2FXLL0-060120"
+        },
+        {
+          "code": "2BK400-060120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2BK000-060120",
+          "variant_root": "2FXLL0-060120"
+        },
+        {
+          "code": "2FNLL0-060120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2FXLL0-060120",
+          "variant_root": "2FXLL0-060120"
+        },
+        {
+          "code": "2FXLL0-060120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "F2",
+          "variant_root": "2FXLL0-060120"
         },
         {
           "code": "BK0DN0-020000",
