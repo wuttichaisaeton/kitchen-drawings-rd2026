@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-13T00:24:40.232640+00:00",
+  "generated_at": "2026-06-13T00:26:52.279273+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4555,16 +4555,17 @@
     },
     "CVIL00-205093": {
       "family": "Other",
-      "last_drawn_version": 9,
+      "last_drawn_version": 10,
       "fusion_version": 10,
       "pdf": "CVIL00-205093.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-12T09:24:38.857564+00:00",
+      "generated_at": "2026-06-13T00:26:52.279273+00:00",
       "fusion_teams_url": null,
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:7jHIO74pSla7YQLd2sM7kg"
     },
     "BTHL00-000000": {
       "family": "Other",
