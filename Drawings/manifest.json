@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-13T08:42:18.940684+00:00",
+  "generated_at": "2026-06-13T08:53:19.533740+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -9581,7 +9581,7 @@
       "name": "2BK400-040060",
       "status": "active",
       "created_at": "2026-06-12T07:18:30.794401+00:00",
-      "updated_at": "2026-06-12T07:39:18.009243+00:00",
+      "updated_at": "2026-06-13T08:53:19.523654+00:00",
       "total_unique_parts": 1,
       "total_qty": 4,
       "parts": [
@@ -9589,7 +9589,7 @@
           "code": "2BK200-000000",
           "qty": 4,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:0QayKPb-RlW6Tp9feHyQOA"
+          "urn": "C:/Users/wutti/AppData/Local/Autodesk/Autodesk Fusion 360/A7V8L9BZNRJE/W.login/F/_2BK400-VARIES.3040c358-a5a1-4826-8d1e-acfaacdb2f20.f3d"
         }
       ]
     },
