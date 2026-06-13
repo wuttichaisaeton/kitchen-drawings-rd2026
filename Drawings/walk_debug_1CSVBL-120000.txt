@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-12T05:57:25.763464
+CC_Assembly walk debug — 2026-06-13T15:14:10.434198
 Project: 1CSVBL-120000
 Total occurrences visited: 81
 CAM-ALPF tagged components: 0
@@ -8,17 +8,17 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | BM1LCL-120000 v6:1 (BM1LCL-120000 v6)
     0 | SM  |     | ALPF             | SD0CN0-080083 v14:1 (SD0CN0-080083 v14)
-    0 | SM  |     | ALPF             | CLL000-000083 v14:1 (CLL000-000083 v14)
-    0 |     |     | Steel            | Blum-Insert 4 Hinge v1:1 (Blum-Insert 4 Hinge v1)
+    0 | SM  |     | ALPF             | BM1LCL-120000 v7:1 (BM1LCL-120000 v7)
+    0 | SM  |     | ALPF             | CLL000-000083 v15:1 (CLL000-000083 v15)
+    0 |     |     |                  | DSV0R4-060080 v14:1 (DSV0R4-060080 v14)
+    1 | SM  |     | ALPF             | DSV2R4-060080 v6:1 (DSV2R4-060080 v6)
+    1 | SM  |     | ALPF             | DSV100-060080 v6:1 (DSV100-060080 v6)
+    0 |     |     | Steel            | 080W-Insert 4 Hinges v3:1 (080W-Insert 4 Hinges v3)
     1 |     |     | Steel            | Cup:1 (Cup)
     1 |     |     | Steel            | Component14:1 (Component14)
     1 |     |     | Steel            | Component15:1 (Component15)
     1 |     |     | Steel            | DRW:1 (DRW)
-    0 |     |     |                  | DSV0R4-060080 v14:1 (DSV0R4-060080 v14)
-    1 | SM  |     | ALPF             | DSV2R4-060080 v6:1 (DSV2R4-060080 v6)
-    1 | SM  |     | ALPF             | DSV100-060080 v6:1 (DSV100-060080 v6)
     0 |     |     | Steel            | Sink - Franke FEX 210-50 v1:1 (Sink - Franke FEX 210-50 v1)
     0 |     |     |                  | TSSK2H-120002 v10:1 (TSSK2H-120002 v10)
     1 | SM  |     | ALPF             | TS1BHH-082002 v1:1 (TS1BHH-082002 v1)
@@ -81,11 +81,11 @@ depth | SM | CAM | material         | display_name (component)
     1 |     |     |                  | FN2NCL-120000 v2:1 (FN2NCL-120000 v2)
     2 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
     1 | SM  |     | ALPF             | FCLF1C-120000 v3:1 (FCLF1C-120000 v3)
-    0 |     |     |                  | BKDNC2-120000 v3:1 (BKDNC2-120000 v3)
+    0 |     |     |                  | BKDNC2-120000 v4:1 (BKDNC2-120000 v4)
     1 |     |     |                  | BK2TR1-120000 v4:1 (BK2TR1-120000 v4)
     2 | SM  |     | ALPF             | BXXTR0-000000:1 (BXXTR0-000000)
     2 | SM  |     | ALPF             | BXXTR0-000000:2 (BXXTR0-000000)
     2 | SM  |     | ALPF             | BXXTR0-000000:3 (BXXTR0-000000)
     2 | SM  |     | ALPF             | BXXTR0-000000:4 (BXXTR0-000000)
-    1 |     |     |                  | BKDNC1-120002 v3:1 (BKDNC1-120002 v3)
+    1 |     |     |                  | BKDNC1-120002 v5:1 (BKDNC1-120002 v5)
     2 | SM  |     | ALPF             | BKDNC1-120002:1 (BKDNC1-120002)

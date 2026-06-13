@@ -2,7 +2,7 @@
   "name": "1CSVBL-120000",
   "status": "active",
   "created_at": "2026-06-11T22:57:25.763981+00:00",
-  "updated_at": "2026-06-11T22:57:25.763981+00:00",
+  "updated_at": "2026-06-13T08:14:10.434633+00:00",
   "total_unique_parts": 21,
   "total_qty": 32,
   "parts": [
@@ -163,6 +163,13 @@
       "parent_code": "TS0TR0-000000",
       "variant_root": "TSSK2H-120002",
       "urn": "urn:adsk.wipprod:dm.lineage:TH5BkbvAR4CY4q19cgkUJQ"
+    },
+    {
+      "code": "080W-Insert",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "080W-Insert"
     },
     {
       "code": "BK2TR1-120000",
