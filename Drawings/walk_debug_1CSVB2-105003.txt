@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-11T04:20:22.896015
+CC_Assembly walk debug — 2026-06-13T15:23:14.077409
 Project: 1CSVB2-105003
 Total occurrences visited: 78
 CAM-ALPF tagged components: 0
@@ -63,18 +63,18 @@ depth | SM | CAM | material         | display_name (component)
     1 | SM  |     | ALPF             | TS1BHH-095000 v9:1 (TS1BHH-095000 v9)
     1 | SM  |     | ALPF             | TS1BHH-105000 v9:2 (TS1BHH-105000 v9)
     1 | SM  |     | ALPF             | TS1BHH-105000 v9:1 (TS1BHH-105000 v9)
-    0 |     |     |                  | CLL000-000083 v2:1 (CLL000-000083 v2)
-    1 | SM  |     | ALPF             | CLL000-000083 v14:1 (CLL000-000083 v14)
-    0 |     |     | Steel            | Blum-Insert 4 Hinge v1:1 (Blum-Insert 4 Hinge v1)
-    1 |     |     | Steel            | Cup:1 (Cup)
-    1 |     |     | Steel            | Component14:1 (Component14)
-    1 |     |     | Steel            | Component15:1 (Component15)
-    1 |     |     | Steel            | DRW:1 (DRW)
     0 |     |     |                  | EQM - FW Wire Basket-C600 v11:1 (EQM - FW Wire Basket-C600 v11)
     1 |     |     | Steel            | CL:1 (CL)
     1 |     |     | Steel            | Circle:1 (Circle)
     1 |     |     | Steel            | Wie:1 (Wie)
     1 |     |     | ALPF             | BMSPFW-000001 v5:1 (BMSPFW-000001 v5)
+    0 |     |     |                  | CLL000-000083 v3:1 (CLL000-000083 v3)
+    1 | SM  |     | ALPF             | CLL000-000083 v16:1 (CLL000-000083 v16)
+    0 |     |     | Steel            | 080W-Insert 4 Hinges v3:1 (080W-Insert 4 Hinges v3)
+    1 |     |     | Steel            | Cup:1 (Cup)
+    1 |     |     | Steel            | Component14:1 (Component14)
+    1 |     |     | Steel            | Component15:1 (Component15)
+    1 |     |     | Steel            | DRW:1 (DRW)
     0 | SM  |     | ALPF             | SD0CN0-080083 v7:1 (SD0CN0-080083 v7)
     0 |     |     |                  | DSV0R3-045080 v13:1 (DSV0R3-045080 v13)
     1 | SM  |     | ALPF             | DSV2R3-045080 v4:1 (DSV2R3-045080 v4)

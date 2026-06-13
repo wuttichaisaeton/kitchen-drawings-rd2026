@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-13T08:14:10.437408+00:00",
+  "generated_at": "2026-06-13T08:23:14.080348+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3021,7 +3021,7 @@
     "CLL000-000083": {
       "family": "Other",
       "last_drawn_version": 14,
-      "fusion_version": 14,
+      "fusion_version": 15,
       "pdf": "CLL000-000000.pdf",
       "bends": 0,
       "material": "",
@@ -3711,7 +3711,7 @@
     "BM1LCL-120000": {
       "family": "Other",
       "last_drawn_version": 6,
-      "fusion_version": 6,
+      "fusion_version": 7,
       "pdf": "BM1LCL-120000.pdf",
       "bends": 0,
       "material": "",
@@ -8771,7 +8771,7 @@
       "name": "1CSVB2-105003",
       "status": "active",
       "created_at": "2026-06-10T21:09:01.055566+00:00",
-      "updated_at": "2026-06-10T21:20:22.896397+00:00",
+      "updated_at": "2026-06-13T08:23:14.077923+00:00",
       "total_unique_parts": 18,
       "total_qty": 26,
       "parts": [
@@ -8907,6 +8907,13 @@
           "parent_code": "TS2TR4-120000",
           "variant_root": "TS2TR4-120000",
           "urn": "urn:adsk.wipprod:dm.lineage:Cv0V6zbIT96Nyc3nanIlNA"
+        },
+        {
+          "code": "080W-Insert",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "080W-Insert"
         },
         {
           "code": "BK0DN0-105000",
