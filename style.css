@@ -3422,8 +3422,11 @@ button.cut-status:focus-visible {
 .sb-fusion-btn:hover { background: rgba(242, 169, 59, 0.2); color: #F2A93B; }
 .sb-fusion-btn svg { width: 16px; height: 16px; display: block; }
 .bend-row:hover { background: rgba(93, 187, 99, 0.05); }
-.bend-row.is-bent { opacity: 0.55; }
-.bend-row.is-bent .bend-code { text-decoration: line-through; }
+/* Done-state styling lives in the v5 block below (.bend-row.is-bent — green
+   wash + accent bar + strikethrough). The old subtle `opacity: 0.55` here was
+   the ONLY thing applying because the v5 rules wrongly targeted `.bent-done`
+   (a class the JS never emits) — so "done" looked ~identical to not-done.
+   Retargeted to .is-bent 2026-06-13. */
 .bend-icon { font-size: 22px; opacity: 0.9; }
 .bend-code {
   font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace;
@@ -5451,14 +5454,14 @@ html[data-theme="sketch"] .dxf-preview-size { color: var(--ink-soft) !important;
   border-left: 4px solid transparent;
   transition: background .12s, opacity .12s;
 }
-.bend-row:not(.bent-done) .bend-code { color: #eef3f7; font-weight: 600; }
-.bend-row.bent-done {
+.bend-row:not(.is-bent) .bend-code { color: #eef3f7; font-weight: 600; }
+.bend-row.is-bent {
   opacity: 1;                                   /* drop the global fade */
   background: rgba(46, 125, 50, 0.16);
   border-color: #2e7d32;
   border-left: 4px solid #4caf50;
 }
-.bend-row.bent-done .bend-code {
+.bend-row.is-bent .bend-code {
   text-decoration: line-through;
   text-decoration-thickness: 2px;
   text-decoration-color: #4caf50;
@@ -5495,20 +5498,20 @@ html[data-theme="sketch"] .dxf-preview-size { color: var(--ink-soft) !important;
    ════════════════════════════════════════════════════════════════════ */
 
 /* (A) Bend done in Sketch — green wash on paper + inked strikethrough. */
-html[data-theme="sketch"] .bend-row.bent-done {
+html[data-theme="sketch"] .bend-row.is-bent {
   background-color: #d8e8c4 !important;
   border: 2px solid var(--pen) !important;
   border-left: 5px solid #3f7d2f !important;
   border-radius: var(--wob2) !important;
   opacity: 1 !important;
 }
-html[data-theme="sketch"] .bend-row.bent-done .bend-code {
+html[data-theme="sketch"] .bend-row.is-bent .bend-code {
   text-decoration: line-through;
   text-decoration-thickness: 2.5px;
   text-decoration-color: #3f7d2f;
   color: #4a5f3a !important;
 }
-html[data-theme="sketch"] .bend-row:not(.bent-done) .bend-code {
+html[data-theme="sketch"] .bend-row:not(.is-bent) .bend-code {
   color: var(--pen) !important;
 }
 
@@ -5902,17 +5905,17 @@ html[data-theme="chalk"] .kdnest-warn--unplaced *,
 html[data-theme="chalk"] .kdnest-warn--review * { color: inherit !important; }
 
 /* Bend list done — green-chalk wash + strikethrough. */
-html[data-theme="chalk"] .bend-row.bent-done {
+html[data-theme="chalk"] .bend-row.is-bent {
   background-color: #2c382c !important;
   border: 2px solid var(--line) !important;
   border-left: 5px solid var(--c-green) !important;
   border-radius: var(--wob2) !important; opacity: 1 !important;
 }
-html[data-theme="chalk"] .bend-row.bent-done .bend-code {
+html[data-theme="chalk"] .bend-row.is-bent .bend-code {
   text-decoration: line-through; text-decoration-thickness: 2.5px;
   text-decoration-color: var(--c-green); color: var(--chalk-dim) !important;
 }
-html[data-theme="chalk"] .bend-row:not(.bent-done) .bend-code { color: var(--chalk) !important; }
+html[data-theme="chalk"] .bend-row:not(.is-bent) .bend-code { color: var(--chalk) !important; }
 
 /* Depth shadows on every page (chalk = subtle dark drop). */
 html[data-theme="chalk"] .project-card,
