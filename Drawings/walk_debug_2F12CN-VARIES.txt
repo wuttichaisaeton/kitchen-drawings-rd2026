@@ -1,6 +1,6 @@
-CC_Assembly walk debug — 2026-06-13T11:19:24.446519
+CC_Assembly walk debug — 2026-06-13T12:02:46.202923
 Project: 2F12CN-VARIES
-Total occurrences visited: 26
+Total occurrences visited: 31
 CAM-ALPF tagged components: 0
 
 --- CAM API exploration ---
@@ -34,3 +34,8 @@ depth | SM | CAM | material         | display_name (component)
     2 |     |     | Steel            | Cup:1 (Cup)
     2 |     |     | Steel            | A:1 (A)
     2 |     |     | Steel            | B:1 (B)
+    0 |     |     | Steel            | 120N-Insert 3 Hinges v1:1 (120N-Insert 3 Hinges v1)
+    1 |     |     | Steel            | Cup:1 (Cup)
+    1 |     |     | Steel            | A:1 (A)
+    1 |     |     | Steel            | B:1 (B)
+    1 |     |     | Steel            | Door:1 (Door)

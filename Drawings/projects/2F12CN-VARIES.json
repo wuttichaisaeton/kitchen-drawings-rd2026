@@ -2,7 +2,7 @@
   "name": "2F12CN-VARIES",
   "status": "active",
   "created_at": "2026-06-13T04:19:24.446942+00:00",
-  "updated_at": "2026-06-13T04:19:24.446942+00:00",
+  "updated_at": "2026-06-13T05:02:46.203310+00:00",
   "total_unique_parts": 7,
   "total_qty": 12,
   "parts": [
@@ -60,6 +60,13 @@
       "family": "Other",
       "is_wrapper": true,
       "variant_root": "1-HingeN"
+    },
+    {
+      "code": "120N-Insert",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "120N-Insert"
     },
     {
       "code": "2BK000-060120",
