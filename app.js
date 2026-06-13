@@ -500,6 +500,20 @@ function _buildDrawingAliasIndex(aliasData) {
 // matches the pattern but returns its own code) keeps _effectiveDrawing
 // Code's fallthrough safe.
 function _patternAliasForDrawing(code) {
+  // FN3 family → FN3BLA-110000, the dedicated FN3 drawing (เอ๋ 2026-06-13
+  // "PDF FN3 ทั้งหมด ให้ใช้ FN3BLA-110000"). GATED on FN3BLA-110000 actually
+  // having its own manifest drawing: until เอ๋ exports it, FN3 codes fall
+  // THROUGH to the generic FN_B__→FN0B00 rule below — so no dead eye / no
+  // regression in the meantime. The MOMENT FN3BLA-110000 is drawn, every FN3*
+  // (incl. future FN3 subtypes) switches to it automatically. Must precede the
+  // FN_B__ rule, which would otherwise capture FN3* into the generic FN0B00.
+  // (FN3BLA-080000/110000 were also removed from the FN0B00 group in
+  // drawing_aliases.json so the group can't override this once it's drawn.)
+  if (/^FN3/i.test(code) && code.toUpperCase() !== 'FN3BLA-110000'
+      && manifest && manifest.auto_generated
+      && manifest.auto_generated['FN3BLA-110000']) {
+    return 'FN3BLA-110000';
+  }
   if (/^FN.B..-...000$/.test(code) && code !== 'FN0B00-000000') {
     return 'FN0B00-000000';
   }
