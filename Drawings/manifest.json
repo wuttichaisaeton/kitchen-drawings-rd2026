@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-14T02:04:55.926909+00:00",
+  "generated_at": "2026-06-14T04:35:16.848797+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4726,6 +4726,20 @@
       "fusion_teams_url": null,
       "page_number": 1,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:BS3TtOfsSvu72p-M-Xz7dg"
+    },
+    "BTHLSR-140000": {
+      "family": "Other",
+      "last_drawn_version": 4,
+      "fusion_version": 4,
+      "pdf": "BTHLSR-140000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-14T04:35:16.848797+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:vGnlQvGNRu6w7LuXqGa06g"
     }
   },
   "manual_uploads": [],
