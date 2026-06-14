@@ -4788,3 +4788,15 @@ FIX (app.js:2923 setDrawingLink, 1 spot): store the **original-case** trimmed ta
 VERIFIED: repro flips false→true; self-link + 2-cycle still rejected (both true); `node --check` clean; `node --test` 24/24; 0 console errors; Pages deploy 27488762459 success; live app.js carries the fix (curl ✓). No migration needed — current live `drawing_links` had NO case-broken entries (checked); new relinks just work, and any future mixed-case pick resolves.
 FYI: app.js touched → pull --rebase. pathspec app.js only (Drawings/ auto-commits + scratch files untouched).
 **NEEDS:** nothing. -- G2 (WEB16)
+
+---
+### 2026-06-14 - G2 (WEB16) -> RD 05 + FUSION lane: HANDOFF (e direct order, NOT my web lane) — CC_DrawingPDF "choose master" picker overflows screen + unsorted
+e (screenshot, direct to WEB16): the `CC_DrawingPDF — choose master` dialog listed **94+ open designs**, unsorted, taller than the screen → the inputBox text field + OK button are OFF the bottom → "ให้เลือกยังไงเต็มหน้าไปหมด และให้เรียงตามตัวอักษร". This is `_MASTERS/fusion_scripts/CC_DrawingPDF/CC_DrawingPDF.py` = **FUSION lane** — WEB16 (app.js/style.css) is NOT touching it (clobber rule + _MASTERS is local-only git). Logging the precise fix for whoever owns Fusion next.
+INTERIM I gave e (works with the dialog open NOW): the inputBox text field has focus + prefilled "1", so **type the number then press Enter** (no need to see the OK button); **Esc** = cancel. If the target's number is below the screen, Esc → close the unrelated master tabs → re-run (fewer candidates).
+ROOT (read-only, I inspected): `_pick_master(ui, candidates, drawing_name)` @ CC_DrawingPDF.py:135 — `names` built in DOCUMENT-OPEN order (L139, unsorted); when fuzzy auto-match (L143-148) misses, it dumps ALL N into one `ui.inputBox` (L149-154) → overflow for big N. Same shape in `_pick_drawing` @ L114-123.
+FIX SPEC (Fusion lane):
+1. **Sort A→Z** keeping the index→candidate map correct, e.g. `pairs = sorted(zip(names, candidates), key=lambda p: p[0].lower())` then enumerate `pairs`; map typed number back to `pairs[idx][1]` (NOT the original `candidates[idx]` — that's the bug-trap if you sort names only).
+2. **No-overflow picker** (the real fix): replace the giant inputBox with a SCROLLABLE widget — a transient command dialog with a `dropDownCommandInput` (TextListDropDownStyle) of the sorted names, or reuse the CC_Auto palette pattern. inputBox can't scroll, so any long list overflows regardless of sorting.
+3. **Shrink the list** (strong win): pre-filter `candidates` to designs that actually have a CONFIG TABLE / real rows (real masters) — 94 open tabs but few are masters; this often makes it auto-resolve. At minimum push fuzzy name-matches to `drawing_name` to the top.
+VERIFY (Fusion lane, live): open 2+ masters + a drawing whose master doesn't auto-match → picker shows sorted, scrolls, picks correctly; py_compile OK. -- G2 (WEB16)
+**NEEDS:** FUSION session to own this (paste-ready startup prompt handed to e in chat per [[feedback_fresh_session_prompt]]).
