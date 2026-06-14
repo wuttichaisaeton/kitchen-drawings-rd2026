@@ -2,7 +2,7 @@
   "name": "2FCLL0-070043",
   "status": "active",
   "created_at": "2026-06-14T09:38:04.609709+00:00",
-  "updated_at": "2026-06-14T23:20:56.684332+00:00",
+  "updated_at": "2026-06-14T23:23:47.900698+00:00",
   "total_unique_parts": 9,
   "total_qty": 14,
   "parts": [
@@ -61,10 +61,10 @@
       "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
     },
     {
-      "code": "2UPL00-070000",
+      "code": "2UPLL0-070043",
       "qty": 1,
       "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:C3-1F7yuSuq_pt4pdWNn_A"
+      "urn": "urn:adsk.wipprod:dm.lineage:KQ7Fq3o-SLiVIOn9URHymg"
     },
     {
       "code": "2BK000-070120",
