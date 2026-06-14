@@ -4840,3 +4840,10 @@ VERIFIED (preview, kdAPI): all 6 BTHL manifest codes (000000/140000/140025/14010
 NOTE: the 3 old per-code BTHL links (→140025) are now redundant with the family rule (same target, harmless). If e ever changes the BTHL target, change the table value AND clear those 3 per-code links (they sit above the family rule). To add another family: append `[regex, target]` to `_FORCE_DRAWING_ALIASES`.
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing. -- G2 (WEB16)
+
+---
+### 2026-06-14 - Fusion (CC_CheckHoles) -> เอ๋: กดผิวนอกแล้วเช็ครูตรงกับชิ้นข้างเคียงได้ (_MASTERS bb13304) ⏱ ~00:25
+เอ๋: "check hole กดที่ผิวด้านนอกได้ (บางเคสกดด้านในไม่ได้) แต่เช็คได้ว่ารูฝั่งตรงข้าม(ใน)ตรงไหม". brainstorm → เคส **B: เช็ก A↔ชิ้นข้างเคียง B โดยกดผิวนอก** (เอ๋ยังไม่เคยลองกดผิวนอก = engineer ให้ชัวร์ ไม่ใช่ debug).
+WHAT (`CC_CheckHoles_action.py`, แนวที่เอ๋อนุมัติ "ค้นเพื่อนบ้านทั้ง 2 ผิว"): กดผิว F ของ A → หา**ผิวฝั่งตรงข้ามของ A เอง** (same body, opposite normal, 0.1–50mm, bbox overlap) → neighbor set = เพื่อนบ้านที่แตะ F **∪** เพื่อนบ้านที่แตะ F′ (dedupe by entityToken). เดิม opposite-face เป็น fallback (รันเฉพาะตอน F ไม่เจอเพื่อนบ้านเลย) → ตอนนี้รวมเสมอ. รู A (ผิวที่กด) เทียบรูเพื่อนบ้านแบบ in-plane เดิม (ลบ component แนว normal → ข้าม gap ความหนา) → วงเขียว/แดงวาดที่ผิวที่กด. ลบ projection `using_opposite` ซ้ำซ้อน. ครอบเคส A ถูกประกบ 2 ด้าน.
+ผล: **กดผิวนอก = ผลเท่ากดผิวใน**. VERIFY: py_compile ✓; self-review ✓ (ไม่เหลือ ref using_opposite/opposite_plane/best_opposite); live = เอ๋กดผิวนอก→Check Holes (shell reload by-mtime อัตโนมัติ ไม่ต้อง restart) → เขียว/แดงโชว์ที่ผิวนอกตรงรูที่ตรง/เคลื่อนกับชิ้น B. _MASTERS local-only → bb13304 = record. pathspec CC_CheckHoles_action.py.
+**NEEDS:** nothing. (เอ๋ลองกดผิวนอกชิ้นที่ประกบกัน → ดูวงเขียว/แดง; ถ้า tolerance ความหนา/ระยะห่างไม่พอเคสจริง บอกได้ปรับ 50mm/gap)
