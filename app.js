@@ -1608,6 +1608,67 @@ function _openBendPdfPicker(code) {
   if (clearBtn) clearBtn.addEventListener('click', () => { setDrawingLink(code, ''); close(); render(); });
 }
 
+// F2 wall-cabinet 13-char code reference (เอ๋ 2026-06-13). Spec:
+// _MASTERS/standards/f2_wall_cabinet_naming.md. English + code + icons only —
+// Flux Architect can't render Thai (CLAUDE.md rule); the full Thai cheat sheet
+// is a separate downloadable image. Reuses the opaque .kdstock modal shell so
+// it stays readable on every theme; all colours are explicit (theme-proof, same
+// approach as the bend PDF picker).
+function _openF2Reference() {
+  document.querySelectorAll('.f2ref-modal').forEach(m => m.remove());
+  const INK='#e8edf2', SUB='#9fb0c0', STEEL='#7fb0ff', AMBER='#f2a93b',
+        CARD='#1b2430', LINE='rgba(255,255,255,0.10)', MONO="ui-monospace,'SF Mono',Menlo,Consolas,monospace";
+  const ic = (d, col, extra='') => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${extra}<path d="${d}"/></svg>`;
+  const bulbOn = ic('M9 18h6M10 21h4M12 3a6 6 0 0 1 4 10.5c-.7.6-1 1.3-1 2.5H9c0-1.2-.3-1.9-1-2.5A6 6 0 0 1 12 3z', AMBER);
+  const bulbOff = ic('M9 18h6M12 3a6 6 0 0 1 4 10.5c-.7.6-1 1.3-1 2.5H9c0-1.2-.3-1.9-1-2.5A6 6 0 0 1 12 3z', SUB, '<line x1="4" y1="4" x2="20" y2="20" stroke="'+SUB+'"/>');
+  const arrowL = ic('M19 12H5M12 19l-7-7 7-7', STEEL);
+  const arrowR = ic('M5 12h14M12 5l7 7-7 7', STEEL);
+  const dbl = ic('M9 6l-5 6 5 6M15 6l5 6-5 6', STEEL);
+  const dash = ic('M5 12h14', SUB);
+
+  const tmpl = [['2','d','1'],['T','d','2'],['T','d','3'],['L','d','4'],['H','d','5'],['V','d','6'],['-','x',''],['W','s','8'],['W','s','9'],['W','s','10'],['H','s','11'],['H','s','12'],['H','s','13']];
+  const cells = tmpl.map(c => c[1]==='x'
+    ? `<div style="width:14px;text-align:center;font:500 18px ${MONO};color:${SUB};align-self:flex-end;padding-bottom:8px">–</div>`
+    : `<div style="text-align:center"><div style="font:500 9px ${MONO};color:${c[1]==='d'?STEEL:AMBER};height:13px">${c[2]}</div><div style="width:27px;height:35px;display:flex;align-items:center;justify-content:center;border:1px solid ${c[1]==='d'?STEEL:AMBER};border-radius:5px;font:500 16px ${MONO};color:${INK};background:${CARD}">${c[0]}</div></div>`
+  ).join('');
+
+  const row = (icon, code, txt) => `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">${icon||'<span style="width:17px"></span>'}<span style="font:500 13px ${MONO};color:${INK};min-width:26px">${code}</span><span style="font-size:12.5px;color:${SUB}">${txt}</span></div>`;
+  const card = (title, rows) => `<div style="background:${CARD};border:1px solid ${LINE};border-radius:9px;padding:11px 13px"><div style="font-size:12px;color:${SUB};margin-bottom:9px">${title}</div>${rows}</div>`;
+
+  const legend = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px">`
+    + card('Cabinet (2–3)', row('', 'FN', 'straight') + row('', 'FC', 'corner'))
+    + card('Panel (2–3)', row('', 'BK', 'back') + row('', 'SD', 'side') + row('', 'UP', 'top') + row('', 'DN', 'bottom') + row('', 'CF', 'cover front') + row('', 'CH', 'cover horizontal'))
+    + card('Light (4)', row(bulbOn, 'L', 'on') + row(bulbOff, 'N', 'off') + row(dash, '0', 'n/a'))
+    + card('Hand (5)', row(arrowL, 'L', 'left') + row(arrowR, 'R', 'right') + row(dbl, 'D', 'double') + row(dash, '0', 'none'))
+    + card('Size (8–13)', row('', 'WWW', 'width · 060 = 600') + row('', 'HHH', 'height · 072 = 720'))
+    + card('Other', row('', '2', 'F2 wall cabinet') + row('', 'V', 'version 0–9'))
+    + `</div>`;
+
+  const ex = (codeStr, txt, hot) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap"><span style="font:500 13px ${MONO};color:${hot?'#0f1419':INK};background:${hot?AMBER:CARD};border:1px solid ${hot?AMBER:LINE};padding:3px 9px;border-radius:6px">${codeStr}</span><span style="font-size:12.5px;color:${SUB}">${txt}</span></div>`;
+  const examples = `<div style="border-top:1px solid ${LINE};padding-top:12px">`
+    + ex('2FNLL0-060072', 'straight · light on · left door · 600×720', true)
+    + ex('2FCND0-060060', 'corner · no light · double · 600×600', true)
+    + ex('2CF0R0-060072', 'cover front · right · 600×720 (panels have hand too)')
+    + `</div>`;
+
+  const over = `<div style="background:rgba(242,169,59,0.12);border:1px solid rgba(242,169,59,0.3);border-radius:7px;padding:9px 12px;margin-bottom:14px;font-size:12px;color:${INK}"><b style="font-weight:500;color:${AMBER}">overflow</b> — if slots 1–6 run out and a dimension is constant, borrow WWW/HHH for sub-detail (e.g. 090XXX)</div>`;
+
+  const modal = document.createElement('div');
+  modal.className = 'kdstock-modal f2ref-modal';
+  modal.innerHTML = '<div class="kdstock-backdrop"></div>'
+    + `<div class="kdstock-frame" role="dialog" aria-label="F2 code reference" style="max-width:660px;width:92vw">
+         <div class="kdstock-head">F2 wall cabinet — code reference<button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div style="padding:16px 18px 18px;background:#0f1419;font-family:var(--font-sans,-apple-system,sans-serif)">
+           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:18px">${cells}</div>
+           ${legend}${over}${examples}
+         </div>
+       </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
+  modal.querySelector('.kdstock-close').addEventListener('click', close);
+}
+
 function _renderBendList(parts, projectKey) {
   const aggregated = _aggregatePartsByCode(parts);
   aggregated.sort((a, b) => a.code.localeCompare(b.code));
@@ -12535,6 +12596,10 @@ async function init() {
     // header instance shown/hidden via _updateHeaderBack().
     const headerBack = document.getElementById('header-back-btn');
     if (headerBack) headerBack.addEventListener('click', navBack);
+
+    // F2 code reference button (header, next to the theme picker) — เอ๋ 2026-06-13.
+    const refBtn = document.getElementById('ref-btn');
+    if (refBtn) refBtn.addEventListener('click', _openF2Reference);
 
     // Tap-to-reload ("NEW VERSION" pill) / F5 must keep เอ๋ where she was — a hard
     // reload otherwise boots to the projects home and she has to navigate back in
