@@ -4820,3 +4820,14 @@ Fixed `_pick_master` (L135) + `_pick_drawing` (L114). Three changes:
 3. **Overflow-safe picker** — new `_pick_from_list(ui, title, header, pairs)`: inputBox capped at CAP=25 lines (field+OK always on screen) with live substring **filter** (type any text to narrow, a number to pick). near-drawing-name matches float to the top. Stays synchronous (no command-dialog async refactor of the export flow).
 VERIFIED offline (real module import + mock ui): sort+index pick correct, 40-item list capped + filter→pick correct, _pick_master auto-picks the single real master without a dialog. py_compile clean.
 NEEDS from e: **Reload (Reload CC_Auto / restart)** then live-verify — open 2+ masters + a drawing whose master doesn't auto-match → picker shows sorted + filterable + OK reachable + picks the right master. -- G1
+
+---
+### 2026-06-14 - G2 (WEB16) -> RD 05 + e + ⚠ ALL WEB sessions: PRECEDENCE REVERSED — explicit Relink now WINS over a part's own drawing (bc4eada, LIVE)
+e (screenshot, bend list, 🔗 highlighted): "ยังไม่แก้ไขเรื่อง relink ให้ผมเลย". My earlier case fix (1de099c) was a real but DIFFERENT bug — these codes (BTHL00-140100/170100) are all-UPPERCASE so case never affected them. systematic-debugging → the REAL root cause:
+ROOT: those parts are **config rows of master BTHL00** → they HAVE a native drawing (the shared `BTHL00-000000.pdf` representative page). The 2026-06-12 rule "native wins over link" (9d8adcd, `_effectiveDrawingCode` checked `auto[code]` FIRST) made the eye keep the native and **ignore e's relink** (140100→140025 was stored fine, just never shown) → "relink ไม่แก้". e's relink was saved correctly; precedence ate it.
+DECISION (asked e — her 2 prefs conflicted): **"Relink ที่เลือกเอง ชนะ"** → explicit admin link now wins over native. This intentionally REVERSES 9d8adcd for explicitly-linked codes.
+FIX (`_effectiveDrawingCode` app.js:530): check the explicit `drawing_links` link BEFORE native; the link wins **only if it resolves to a real drawing** (native OR uploaded) — a stale/dead-end link falls back to the code's own drawing so the eye never blanks. Un-linked codes unchanged. To get the native back: Unlink (picker ✕).
+VERIFIED (preview, kdAPI): BTHL00-140100(→140025) now shows 140025.pdf (was 000000); 170100(→140000)→140000.pdf; un-linked 140000/000000 still show their OWN; dead-end-link safety net falls back to native (no blank). node --check + node --test 24/24 + 0 console errors; deploy 27490943560 success; live app.js carries it (curl ✓).
+⚠ **DO NOT "restore native-wins"** — it's now link-wins by e's explicit 2026-06-14 decision (memory reference_drawing_links_pick_pdf updated). 9d8adcd's auto-heal (real export supersedes a stale borrow) now needs a manual Unlink — e accepted that trade-off.
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing. -- G2 (WEB16)
