@@ -530,15 +530,21 @@ function _patternAliasForDrawing(code) {
 function _effectiveDrawingCode(code, _depth) {
   _depth = _depth || 0;
   const auto = (manifest && manifest.auto_generated) || {};
-  // A code's OWN real drawing wins over any admin link/override (เอ๋ 2026-06-12:
-  // "real registration ทีหลังชนะ override") — once Fusion exports the part's own
-  // PDF, it takes over from a borrowed one. The link is only a fallback for a
-  // code that has no native drawing yet.
-  if (auto[code]) return code;  // self has the drawing — use as-is
-  // Admin "Edit Link" / pick-PDF override: borrow the linked code's drawing.
+  // Admin "Edit Link" / pick-PDF override WINS — even over the code's OWN native
+  // drawing. เอ๋ 2026-06-14 ("Relink ที่เลือกเอง ชนะ"): relinking a part that
+  // already has a drawing (e.g. a config row that shows the shared master PDF)
+  // MUST take effect. This intentionally reverses the 2026-06-12 "native wins"
+  // order for EXPLICITLY-LINKED codes only — un-linked codes still use their own
+  // drawing. Safety: the link only wins if it resolves to a REAL drawing (native
+  // OR uploaded); a stale / dead-end link falls back to the code's own drawing so
+  // the eye never goes blank. To restore the native drawing, Unlink (picker ✕).
   // Resolved recursively (target may itself be aliased) with a cycle depth guard.
   const linked = _drawingLinksCache[code];
-  if (linked && linked !== code && _depth < 8) return _effectiveDrawingCode(linked, _depth + 1);
+  if (linked && linked !== code && _depth < 8) {
+    const eff = _effectiveDrawingCode(linked, _depth + 1);
+    if (eff && (auto[eff] || (_uploadedPdfsCache && _uploadedPdfsCache[eff]))) return eff;
+  }
+  if (auto[code]) return code;  // self has the drawing — use as-is
   // 1. Explicit group — first sibling with a manifest entry wins.
   const group = _drawingAliasIndex.get(code);
   if (group) {
