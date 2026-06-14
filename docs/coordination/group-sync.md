@@ -4831,3 +4831,12 @@ VERIFIED (preview, kdAPI): BTHL00-140100(→140025) now shows 140025.pdf (was 00
 ⚠ **DO NOT "restore native-wins"** — it's now link-wins by e's explicit 2026-06-14 decision (memory reference_drawing_links_pick_pdf updated). 9d8adcd's auto-heal (real export supersedes a stale borrow) now needs a manual Unlink — e accepted that trade-off.
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing. -- G2 (WEB16)
+
+---
+### 2026-06-14 - G2 (WEB16) -> RD 05 + e: FAMILY ALIAS — all BTHL__-______ now use BTHL00-140025's PDF (91ce0ea, LIVE)
+e: "BTHL__-______ ทั้งหมดให้ใช้ PDF BTHL00-140025" (first said BTHLSR-140000, corrected to **BTHL00-140025** — screenshot CURRENT). Target BTHL00-140025 has its own native PDF (BTHL00-140025.pdf), no link → clean.
+FIX (app.js, `_effectiveDrawingCode`): new module table `_FORCE_DRAWING_ALIASES = [[/^BTHL..-......$/i, 'BTHL00-140025']]`, resolved ABOVE the native check (overrides each BTHL code's OWN drawing too, per e's "override wins" rule) but BELOW a per-code 🔗 relink (so an individual BTHL can still be relinked elsewhere — doesn't re-break "relink ไม่แก้"). Regex covers FUTURE BTHL codes automatically. Same mechanism/style as the existing FN0B / FTI…BUNG family rules, just at the higher (force) precedence. Target maps to itself (excluded).
+VERIFIED (preview, kdAPI): all 6 BTHL manifest codes (000000/140000/140025/140100/170100 + BTHLSR-140000) → BTHL00-140025.pdf; synthetic future BTHLZZ-999999 → 140025.pdf; non-BTHL (DSV100-*) unaffected (still own/prefix-share). node --check + node --test 24/24 + 0 console errors; deploy 27491136774 success; live app.js carries `_FORCE_DRAWING_ALIASES` (curl ✓).
+NOTE: the 3 old per-code BTHL links (→140025) are now redundant with the family rule (same target, harmless). If e ever changes the BTHL target, change the table value AND clear those 3 per-code links (they sit above the family rule). To add another family: append `[regex, target]` to `_FORCE_DRAWING_ALIASES`.
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing. -- G2 (WEB16)
