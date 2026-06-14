@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-14T02:04:55.916260+00:00",
+  "generated_at": "2026-06-14T04:35:54.220835+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4726,6 +4726,20 @@
       "fusion_teams_url": null,
       "page_number": 1,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:BS3TtOfsSvu72p-M-Xz7dg"
+    },
+    "BTHLSR-140000": {
+      "family": "Other",
+      "last_drawn_version": 4,
+      "fusion_version": 4,
+      "pdf": "BTHLSR-140000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-14T04:35:16.848797+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:vGnlQvGNRu6w7LuXqGa06g"
     }
   },
   "manual_uploads": [],
@@ -10309,6 +10323,22 @@
           "family": "Other",
           "is_wrapper": true,
           "variant_root": "3N-Insert-1200"
+        }
+      ]
+    },
+    "BTHL00-140025": {
+      "name": "BTHL00-140025",
+      "status": "active",
+      "created_at": "2026-06-14T04:35:54.219381+00:00",
+      "updated_at": "2026-06-14T04:35:54.219381+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "BTHL00-140025",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:pdvG2czISk2sjIL-Aj_Q8Q"
         }
       ]
     }

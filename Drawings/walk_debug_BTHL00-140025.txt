@@ -1,0 +1,10 @@
+CC_Assembly walk debug — 2026-06-14T11:35:54.219018
+Project: BTHL00-140025
+Total occurrences visited: 0
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
