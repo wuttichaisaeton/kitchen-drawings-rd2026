@@ -527,6 +527,16 @@ function _patternAliasForDrawing(code) {
   return code;
 }
 
+// Family-wide FORCE drawing aliases — every code matching the pattern shows the
+// TARGET's drawing, OVERRIDING the code's own native too (เอ๋ explicit "ทั้งหมด
+// ให้ใช้ PDF X"). [regex, targetCode]; target maps to itself (excluded). Resolved
+// in _effectiveDrawingCode ABOVE the native check but BELOW a per-code relink, so
+// a deliberate per-code 🔗 relink can still override the family default. Distinct
+// from _patternAliasForDrawing, which is a tier-LAST fallback for NO-drawing codes.
+const _FORCE_DRAWING_ALIASES = [
+  [/^BTHL..-......$/i, 'BTHL00-140025'],   // เอ๋ 2026-06-14: all BTHL__-______ → BTHL00-140025
+];
+
 function _effectiveDrawingCode(code, _depth) {
   _depth = _depth || 0;
   const auto = (manifest && manifest.auto_generated) || {};
@@ -543,6 +553,12 @@ function _effectiveDrawingCode(code, _depth) {
   if (linked && linked !== code && _depth < 8) {
     const eff = _effectiveDrawingCode(linked, _depth + 1);
     if (eff && (auto[eff] || (_uploadedPdfsCache && _uploadedPdfsCache[eff]))) return eff;
+  }
+  // Family-wide FORCE alias (wins over this code's own native; see _FORCE_DRAWING_ALIASES).
+  for (const [re, target] of _FORCE_DRAWING_ALIASES) {
+    if (re.test(code) && code.toUpperCase() !== target.toUpperCase() && _depth < 8) {
+      return _effectiveDrawingCode(target, _depth + 1);
+    }
   }
   if (auto[code]) return code;  // self has the drawing — use as-is
   // 1. Explicit group — first sibling with a manifest entry wins.
