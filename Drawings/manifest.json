@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-14T04:38:50.941428+00:00",
+  "generated_at": "2026-06-14T06:40:07.968085+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -10353,6 +10353,67 @@
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:pdvG2czISk2sjIL-Aj_Q8Q"
+        }
+      ]
+    },
+    "2FNCL0-070000": {
+      "name": "2FNCL0-070000",
+      "status": "active",
+      "created_at": "2026-06-14T06:40:07.958391+00:00",
+      "updated_at": "2026-06-14T06:40:07.958391+00:00",
+      "total_unique_parts": 5,
+      "total_qty": 10,
+      "parts": [
+        {
+          "code": "2BK001-070120",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2BK000-070120",
+          "variant_root": "2BK000-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
+        },
+        {
+          "code": "2BK002-070000",
+          "qty": 2,
+          "family": "Other",
+          "parent_code": "2BK000-070120",
+          "variant_root": "2BK000-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BK004-070120",
+          "variant_root": "2BK000-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:EKFgQ__3TPOMNjTYsP96MA"
+        },
+        {
+          "code": "2DNCL4-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:sOwq5J_YTw-8qjim0O_z8g"
+        },
+        {
+          "code": "2SD000-120000",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:JlWX2roeQJSStHgH0knvfA"
+        },
+        {
+          "code": "2BK000-070120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "2BK000-070120"
+        },
+        {
+          "code": "2BK004-070120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2BK000-070120",
+          "variant_root": "2BK000-070120"
         }
       ]
     }
