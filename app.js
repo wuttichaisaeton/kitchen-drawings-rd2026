@@ -1637,7 +1637,7 @@ function _openF2Reference() {
 
   const legend = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px">`
     + card('Cabinet (2–3)', row('', 'FN', 'straight') + row('', 'FC', 'corner'))
-    + card('Panel (2–3)', row('', 'BK', 'back') + row('', 'SD', 'side') + row('', 'UP', 'top') + row('', 'DN', 'bottom') + row('', 'CF', 'cover front') + row('', 'CH', 'cover horizontal'))
+    + card('Panel (2–3)', row('', 'BK', 'back') + row('', 'SD', 'side') + row('', 'UP', 'top') + row('', 'DN', 'bottom') + row('', 'CF', 'cover front') + row('', 'CH', 'cover horizontal') + row('', 'CV', 'cover vertical'))
     + card('Light (4)', row(bulbOn, 'L', 'on') + row(bulbOff, 'N', 'off') + row(dash, '0', 'n/a'))
     + card('Hand (5)', row(arrowL, 'L', 'left') + row(arrowR, 'R', 'right') + row(dbl, 'D', 'double') + row(dash, '0', 'none'))
     + card('Size (8–13)', row('', 'WWW', 'width · 060 = 600') + row('', 'HHH', 'height · 072 = 720'))
