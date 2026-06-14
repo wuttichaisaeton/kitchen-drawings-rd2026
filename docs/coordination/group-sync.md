@@ -4847,3 +4847,11 @@ FYI: app.js touched → pull --rebase. pathspec app.js only.
 WHAT (`CC_CheckHoles_action.py`, แนวที่เอ๋อนุมัติ "ค้นเพื่อนบ้านทั้ง 2 ผิว"): กดผิว F ของ A → หา**ผิวฝั่งตรงข้ามของ A เอง** (same body, opposite normal, 0.1–50mm, bbox overlap) → neighbor set = เพื่อนบ้านที่แตะ F **∪** เพื่อนบ้านที่แตะ F′ (dedupe by entityToken). เดิม opposite-face เป็น fallback (รันเฉพาะตอน F ไม่เจอเพื่อนบ้านเลย) → ตอนนี้รวมเสมอ. รู A (ผิวที่กด) เทียบรูเพื่อนบ้านแบบ in-plane เดิม (ลบ component แนว normal → ข้าม gap ความหนา) → วงเขียว/แดงวาดที่ผิวที่กด. ลบ projection `using_opposite` ซ้ำซ้อน. ครอบเคส A ถูกประกบ 2 ด้าน.
 ผล: **กดผิวนอก = ผลเท่ากดผิวใน**. VERIFY: py_compile ✓; self-review ✓ (ไม่เหลือ ref using_opposite/opposite_plane/best_opposite); live = เอ๋กดผิวนอก→Check Holes (shell reload by-mtime อัตโนมัติ ไม่ต้อง restart) → เขียว/แดงโชว์ที่ผิวนอกตรงรูที่ตรง/เคลื่อนกับชิ้น B. _MASTERS local-only → bb13304 = record. pathspec CC_CheckHoles_action.py.
 **NEEDS:** nothing. (เอ๋ลองกดผิวนอกชิ้นที่ประกบกัน → ดูวงเขียว/แดง; ถ้า tolerance ความหนา/ระยะห่างไม่พอเคสจริง บอกได้ปรับ 50mm/gap)
+
+---
+### 2026-06-14 - Fusion (CC_CheckHoles) -> เอ๋: gap-distance D — เช็ครู 2 ชิ้นที่ "ไม่แตะกัน" (_MASTERS 3fed9fa) ⏱ ~00:20
+เอ๋ (วาดภาพ): "2 ชิ้นไม่สัมผัสกันเลย มีช่องว่าง เช่น 15mm ตามแกนรู — เช็กว่ารูเล็งตรงข้ามช่องว่างไหม (สกรู/แกนยาวร้อยทะลุ)". ต่อยอด bb13304.
+DESIGN (เอ๋เคาะทุกข้อ): **inputBox ตอนรัน** — เว้นว่าง=แบบเก่า (แตะกัน, 26mm) · พิมพ์เลข เช่น 36 = เช็กชิ้นที่ไม่แตะ ภายใน ±D ตามแกนรู. เลือกโหมดแบบ "Enter=เก่า / พิมพ์เลข=ใหม่" (เอ๋เลือกเอง). "รูตรง" ในระนาบยังเป๊ะ (≤0.5mm + ขนาด) ทั้ง 2 โหมด; outer-click (bb13304) ทำงานทั้งคู่.
+HOW (`CC_CheckHoles_action.py`): `_find_adjacent_faces(... coplanar_tol_cm=2.6)` param ใหม่ (แทน hardcode 26mm coplanar) → ส่ง D เข้าทั้ง clicked-face + opposite-face search. inputBox: cancel→abort, ไม่ใช่ตัวเลข/≤0→เตือน, ว่าง→2.6cm. ข้อความ "no parts found" ใบ้ให้พิมพ์ D ใหญ่ขึ้น. prompt วางหลังเช็ครู (clear gesture/no-holes ไม่เด้ง).
+VERIFY: py_compile ✓; grep call-sites ส่ง coplanar_tol_cm ครบ 2 จุด ✓; self-review ✓. live = เอ๋กด Check Holes → พิมพ์ 36 (หรือเว้นว่าง) → reload by-mtime อัตโนมัติ ไม่ต้อง restart. _MASTERS local-only → 3fed9fa = record. pathspec CC_CheckHoles_action.py.
+**NEEDS:** nothing. (เอ๋ลอง: ชิ้นเว้นช่องว่าง → กด Check Holes → พิมพ์ระยะ → ดูเขียว/แดงข้ามช่องว่าง)
