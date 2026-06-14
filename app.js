@@ -1621,10 +1621,36 @@ function _openF2Reference() {
   const ic = (d, col, extra='') => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${extra}<path d="${d}"/></svg>`;
   const bulbOn = ic('M9 18h6M10 21h4M12 3a6 6 0 0 1 4 10.5c-.7.6-1 1.3-1 2.5H9c0-1.2-.3-1.9-1-2.5A6 6 0 0 1 12 3z', AMBER);
   const bulbOff = ic('M9 18h6M12 3a6 6 0 0 1 4 10.5c-.7.6-1 1.3-1 2.5H9c0-1.2-.3-1.9-1-2.5A6 6 0 0 1 12 3z', SUB, '<line x1="4" y1="4" x2="20" y2="20" stroke="'+SUB+'"/>');
-  const arrowL = ic('M19 12H5M12 19l-7-7 7-7', STEEL);
-  const arrowR = ic('M5 12h14M12 5l7 7-7 7', STEEL);
-  const dbl = ic('M9 6l-5 6 5 6M15 6l5 6-5 6', STEEL);
   const dash = ic('M5 12h14', SUB);
+
+  // Isometric-cube icon language (matches the F2 cheat-sheet image) — เอ๋ 2026-06-14:
+  // every panel/door drawn as WHICH FACE of the cabinet cube it is.
+  // periwinkle = box panel / door · red = cover · visible face = solid · hidden face = 50% + dashed.
+  // hand doors share ONE front face split in half: L=left leaf, R=right leaf, D=both.
+  const VX = { TB:[50,16],TR:[84,34],TF:[50,52],TL:[16,34], BB:[50,56],BR:[84,74],BF:[50,92],BL:[16,74], MT:[33,43],MB:[33,83] };
+  const _pt=k=>VX[k].join(','), _poly=ks=>ks.map(_pt).join(' ');
+  const _TOP=['TB','TR','TF','TL'], _FRONT=['TL','TF','BF','BL'], _RIGHT=['TF','TR','BR','BF'], _LL=['TL','MT','MB','BL'], _LR=['MT','TF','BF','MB'];
+  const _HID={ BACK:{pts:['TB','TR','BR','BB'],dash:[['BB','TB'],['BB','BR']],sol:[['TB','TR'],['TR','BR']]},
+               BOTTOM:{pts:['BB','BR','BF','BL'],dash:[['BB','BR'],['BB','BL']],sol:[['BR','BF'],['BF','BL']]} };
+  const CB={ gT:'#45484d',gL:'#6a6e75',gR:'#5f636b', bT:'#a6c6ee',bS:'#93b4e4',bL:'#bcd2f1', rS:'#e24b4a',rL:'#f2807f', ed:'#eef1f4', rd:'#e24b4a' };
+  const _face=(pts,col)=>`<polygon points="${_poly(pts)}" fill="${col}" stroke="${CB.ed}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  const _vcube=rc=>{rc=rc||{};return _face(_TOP,rc.TOP||CB.gT)+_face(_FRONT,rc.FRONT||CB.gL)+_face(_RIGHT,rc.RIGHT||CB.gR);};
+  const _door=(lB,rB)=>_face(_TOP,CB.gT)+_face(_RIGHT,CB.gR)+_face(_LL,lB?CB.bS:CB.gL)+_face(_LR,rB?CB.bS:CB.gL);
+  const _ln=(a,b,col,d)=>`<line x1="${VX[a][0]}" y1="${VX[a][1]}" x2="${VX[b][0]}" y2="${VX[b][1]}" stroke="${col}" stroke-width="3" stroke-linecap="round"${d?' stroke-dasharray="4 3.5"':''}/>`;
+  const _hover=(n,f,l)=>{const h=_HID[n];let s=`<polygon points="${_poly(h.pts)}" fill="${f}" fill-opacity="0.5"/>`;h.sol.forEach(e=>s+=_ln(e[0],e[1],l,false));h.dash.forEach(e=>s+=_ln(e[0],e[1],l,true));return s;};
+  const _strip=()=>`<line x1="16" y1="34" x2="50" y2="52" stroke="${CB.rd}" stroke-width="8" stroke-linecap="round"/>`;
+  const _csvg=(inner,w)=>`<svg width="${w||20}" height="20" viewBox="0 0 100 100" style="flex:none">${inner}</svg>`;
+  const cube = key => {
+    const M = {
+      BK:_vcube()+_hover('BACK',CB.bS,CB.bL), SD:_vcube({RIGHT:CB.bS}), UP:_vcube({TOP:CB.bT}), DN:_vcube()+_hover('BOTTOM',CB.bS,CB.bL),
+      CF:_vcube({FRONT:CB.bS})+_strip(), CH:_vcube()+_hover('BOTTOM',CB.rS,CB.rL), CV:_vcube({RIGHT:CB.rS}),
+      L:_door(true,false), R:_door(false,true), D:_door(true,true), O:_vcube(),
+      F2:_vcube({TOP:CB.bT,FRONT:CB.bS,RIGHT:CB.bS})
+    };
+    return _csvg(M[key]);
+  };
+  const fnIcon = _csvg(`<polygon points="${_poly(_TOP)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_FRONT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_RIGHT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/>`);
+  const fcIcon = (() => { const c=16,d=8,e=24,cx=66,cy=46; const pt=(X,Y,Z)=>[(cx+(X-Y)*c).toFixed(1),(cy+(X+Y)*d-Z*e).toFixed(1)]; const pol=a=>a.map(p=>p.join(',')).join(' '); const GR={T:CB.gT,L:CB.gL,R:CB.gR},BU={T:CB.bT,L:CB.bS,R:CB.bS}; const bx=(i,j,col)=>{const tp=[pt(i,j,1),pt(i+1,j,1),pt(i+1,j+1,1),pt(i,j+1,1)],rt=[pt(i+1,j,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i+1,j,1)],lf=[pt(i,j+1,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i,j+1,1)];const f=(p,fl)=>`<polygon points="${pol(p)}" fill="${fl}" stroke="${CB.ed}" stroke-width="2.4" stroke-linejoin="round"/>`;return f(lf,col.L)+f(rt,col.R)+f(tp,col.T);}; return `<svg width="26" height="20" viewBox="0 0 132 100" style="flex:none">${bx(0,1,GR)+bx(1,0,GR)+bx(1,1,BU)}</svg>`; })();
 
   const tmpl = [['2','d','1'],['T','d','2'],['T','d','3'],['L','d','4'],['H','d','5'],['V','d','6'],['-','x',''],['W','s','8'],['W','s','9'],['W','s','10'],['H','s','11'],['H','s','12'],['H','s','13']];
   const cells = tmpl.map(c => c[1]==='x'
@@ -1636,19 +1662,19 @@ function _openF2Reference() {
   const card = (title, rows) => `<div style="background:${CARD};border:1px solid ${LINE};border-radius:9px;padding:11px 13px"><div style="font-size:12px;color:${SUB};margin-bottom:9px">${title}</div>${rows}</div>`;
 
   const legend = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px">`
-    + card('Cabinet (2–3)', row('', 'FN', 'straight') + row('', 'FC', 'corner'))
-    + card('Panel (2–3)', row('', 'BK', 'back') + row('', 'SD', 'side') + row('', 'UP', 'top') + row('', 'DN', 'bottom') + row('', 'CF', 'cover front') + row('', 'CH', 'cover horizontal') + row('', 'CV', 'cover vertical'))
+    + card('Cabinet (2–3)', row(fnIcon, 'FN', 'straight') + row(fcIcon, 'FC', 'corner'))
+    + card('Panel (2–3)', row(cube('BK'), 'BK', 'back') + row(cube('SD'), 'SD', 'side') + row(cube('UP'), 'UP', 'top') + row(cube('DN'), 'DN', 'bottom') + row(cube('CF'), 'CF', 'cover front') + row(cube('CH'), 'CH', 'cover horizontal') + row(cube('CV'), 'CV', 'cover vertical'))
     + card('Light (4)', row(bulbOn, 'L', 'on') + row(bulbOff, 'N', 'off') + row(dash, '0', 'n/a'))
-    + card('Hand (5)', row(arrowL, 'L', 'left') + row(arrowR, 'R', 'right') + row(dbl, 'D', 'double') + row(dash, '0', 'none'))
+    + card('Hand (5)', row(cube('L'), 'L', 'left') + row(cube('R'), 'R', 'right') + row(cube('D'), 'D', 'double') + row(cube('O'), '0', 'none'))
     + card('Size (8–13)', row('', 'WWW', 'width · 060 = 600') + row('', 'HHH', 'height · 072 = 720'))
-    + card('Other', row('', '2', 'F2 wall cabinet') + row('', 'V', 'version 0–9'))
+    + card('Other', row(cube('F2'), '2', 'F2 wall cabinet') + row('', 'V', 'version 0–9'))
     + `</div>`;
 
-  const ex = (codeStr, txt, hot) => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap"><span style="font:500 13px ${MONO};color:${hot?'#0f1419':INK};background:${hot?AMBER:CARD};border:1px solid ${hot?AMBER:LINE};padding:3px 9px;border-radius:6px">${codeStr}</span><span style="font-size:12.5px;color:${SUB}">${txt}</span></div>`;
+  const ex = (codeStr, txt, hot, icons='') => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap"><span style="font:500 13px ${MONO};color:${hot?'#0f1419':INK};background:${hot?AMBER:CARD};border:1px solid ${hot?AMBER:LINE};padding:3px 9px;border-radius:6px">${codeStr}</span>${icons?`<span style="display:flex;gap:5px;align-items:center">${icons}</span>`:''}<span style="font-size:12.5px;color:${SUB}">${txt}</span></div>`;
   const examples = `<div style="border-top:1px solid ${LINE};padding-top:12px">`
-    + ex('2FNLL0-060072', 'straight · light on · left door · 600×720', true)
-    + ex('2FCND0-060060', 'corner · no light · double · 600×600', true)
-    + ex('2CF0R0-060072', 'cover front · right · 600×720 (panels have hand too)')
+    + ex('2FNLL0-060072', 'straight · light on · left door · 600×720', true, fnIcon + bulbOn + cube('L'))
+    + ex('2FCND0-060060', 'corner · no light · double · 600×600', true, fcIcon + bulbOff + cube('D'))
+    + ex('2CF0R0-060072', 'cover front · right · 600×720 (panels have hand too)', false, cube('CF') + cube('R'))
     + `</div>`;
 
   const over = `<div style="background:rgba(242,169,59,0.12);border:1px solid rgba(242,169,59,0.3);border-radius:7px;padding:9px 12px;margin-bottom:14px;font-size:12px;color:${INK}"><b style="font-weight:500;color:${AMBER}">overflow</b> — if slots 1–6 run out and a dimension is constant, borrow WWW/HHH for sub-detail (e.g. 090XXX)</div>`;
