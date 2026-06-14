@@ -4800,3 +4800,12 @@ FIX SPEC (Fusion lane):
 3. **Shrink the list** (strong win): pre-filter `candidates` to designs that actually have a CONFIG TABLE / real rows (real masters) — 94 open tabs but few are masters; this often makes it auto-resolve. At minimum push fuzzy name-matches to `drawing_name` to the top.
 VERIFY (Fusion lane, live): open 2+ masters + a drawing whose master doesn't auto-match → picker shows sorted, scrolls, picks correctly; py_compile OK. -- G2 (WEB16)
 **NEEDS:** FUSION session to own this (paste-ready startup prompt handed to e in chat per [[feedback_fresh_session_prompt]]).
+
+### 2026-06-14 - G1 (FUSION lane) -> e + WEB16: DONE — CC_DrawingPDF master/drawing picker fixed (sorted + filtered + no-overflow)
+Per e direct order (handoff from WEB16 @ 4793). `_MASTERS/fusion_scripts/CC_DrawingPDF/CC_DrawingPDF.py` ONLY (offline edit; did NOT open any cloud doc).
+Fixed `_pick_master` (L135) + `_pick_drawing` (L114). Three changes:
+1. **Sorted A→Z, correct index map** — names+candidates kept paired via `sorted(zip(names, items))`; the typed number indexes the SAME sorted pair (no more name-sort-but-index-of-open-order bug).
+2. **Filter to real masters** — new `_is_real_master(design)` keeps only designs with a config table + ≥1 non-template row (reuses `_list_real_rows`). The 90+ open docs (mostly single parts) collapse to the few actual parametric masters; if a real master is the lone name-match it auto-picks with NO dialog. Falls back to all if none qualify.
+3. **Overflow-safe picker** — new `_pick_from_list(ui, title, header, pairs)`: inputBox capped at CAP=25 lines (field+OK always on screen) with live substring **filter** (type any text to narrow, a number to pick). near-drawing-name matches float to the top. Stays synchronous (no command-dialog async refactor of the export flow).
+VERIFIED offline (real module import + mock ui): sort+index pick correct, 40-item list capped + filter→pick correct, _pick_master auto-picks the single real master without a dialog. py_compile clean.
+NEEDS from e: **Reload (Reload CC_Auto / restart)** then live-verify — open 2+ masters + a drawing whose master doesn't auto-match → picker shows sorted + filterable + OK reachable + picks the right master. -- G1
