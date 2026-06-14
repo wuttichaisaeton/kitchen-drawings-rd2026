@@ -2922,9 +2922,16 @@ async function _pdfFileExists(url) {
 }
 function setDrawingLink(code, target) {
   if (!code) return;
-  const t = (target || '').trim().toUpperCase();
+  // Preserve the target's ORIGINAL case. manifest auto_generated keys are
+  // case-SENSITIVE and mixed-case codes exist (project variants e.g. "…-Ruth",
+  // "…-Bung"), so an UPPERCASED target can't match → pdfUrlForCode returns ''
+  // → the borrowed PDF never shows ("กด Relink แล้วไม่เห็นเปลี่ยน", เอ๋ 2026-06-14).
+  // The self-link / 2-cycle guards compare case-INSENSITIVELY (a code is the same
+  // part regardless of case) so they still reject cycles without mangling the value.
+  const t = (target || '').trim();
+  const ci = s => (s || '').toUpperCase();
   // guard: clearing, self-link, or a direct 2-cycle (a→b while b→a) is rejected
-  if (t && t !== code && _drawingLinksCache[t] !== code) _drawingLinksCache[code] = t;
+  if (t && ci(t) !== ci(code) && ci(_drawingLinksCache[t]) !== ci(code)) _drawingLinksCache[code] = t;
   else delete _drawingLinksCache[code];
   try { localStorage.setItem(LS_DRAWING_LINKS_KEY, JSON.stringify(_drawingLinksCache)); } catch {}
   if (window.firebaseDB) {
