@@ -1661,12 +1661,20 @@ function _f2CubeKit() {
   const _hover=(n,f,l)=>{const h=_HID[n];let s=`<polygon points="${_poly(h.pts)}" fill="${f}" fill-opacity="0.5"/>`;h.sol.forEach(e=>s+=_ln(e[0],e[1],l,false));h.dash.forEach(e=>s+=_ln(e[0],e[1],l,true));return s;};
   const _strip=()=>`<line x1="16" y1="34" x2="50" y2="52" stroke="${CB.rd}" stroke-width="8" stroke-linecap="round"/>`;
   const _csvg=(inner,size)=>`<svg width="${size||20}" height="${size||20}" viewBox="0 0 100 100" style="flex:none">${inner}</svg>`;
+  // front-face horizontal seam at parameter t (0 = top edge TL→TF, 1 = bottom edge BL→BF)
+  const _fln=(t,col,w)=>`<line x1="16" y1="${(34+40*t).toFixed(1)}" x2="50" y2="${(52+40*t).toFixed(1)}" stroke="${col}" stroke-width="${w||4}" stroke-linecap="round"/>`;
   const cube = (key, size) => {
     const M = {
       BK:_vcube()+_hover('BACK',CB.bS,CB.bL), SD:_vcube({RIGHT:CB.bS}), UP:_vcube({TOP:CB.bT}), DN:_vcube()+_hover('BOTTOM',CB.bS,CB.bL),
       CF:_vcube({FRONT:CB.bS})+_strip(), CH:_vcube()+_hover('BOTTOM',CB.rS,CB.rL), CV:_vcube({RIGHT:CB.rS}),
       L:_door(true,false), R:_door(false,true), D:_door(true,true), O:_vcube(),
-      F2:_vcube({TOP:CB.bT,FRONT:CB.bS,RIGHT:CB.bS})
+      F2:_vcube({TOP:CB.bT,FRONT:CB.bS,RIGHT:CB.bS}),
+      // family-folder glyphs (เอ๋ 2026-06-15): FT = front panel (front face blue);
+      // DW = drawer (blue front + 2 white seams = 3 drawer fronts); SH = shelf
+      // (gray box + 2 blue shelves).
+      FT:_vcube({FRONT:CB.bS}),
+      DW:_vcube({FRONT:CB.bS})+_fln(0.36,CB.ed,3.5)+_fln(0.68,CB.ed,3.5),
+      SH:_vcube()+_fln(0.4,CB.bS,5)+_fln(0.72,CB.bS,5)
     };
     return _csvg(M[key] || M.O, size);
   };
@@ -2485,6 +2493,29 @@ function famVars(name) {
   const color = f.color || '#4a90e2';
   const tint  = f.tint  || '#1a1f24';
   return `--fam-color:${color};--fam-tint:${tint}`;
+}
+
+// Isometric-cube glyph per family for the LIBRARY folder cards (เอ๋ 2026-06-15,
+// visual-first): map each family to a cube variant from _f2CubeKit (reused, never
+// redrawn) — by WHICH FACE/feature the part is. Multi-colour (periwinkle box / red
+// cover / Fusion shading); the family colour stays on the card border/tint. Keyed
+// by the families.json key AND the remapped display label (both forms appear).
+const _FAMILY_CUBE = {
+  'BK':'BK', 'DW-BK':'BK',
+  'SD':'SD', 'Side Panel':'SD',
+  'CV':'CV',
+  'CL':'UP', 'TS':'UP', 'Top Sup':'UP',
+  'BT':'DN', 'FL':'DN', 'DW-FL':'DN',
+  'FT':'FT',
+  'DW-S1':'DW', 'DW-S2':'DW',
+  'SH':'SH', 'BM':'SH',
+  'Door':'D',
+  'F0':'F2', 'PROJECT':'F2', 'F1':'F2', 'F2':'F2', 'F3':'F2',
+  'Beam':'O', 'Custom':'O', 'Other':'O', 'OTHER':'O'
+};
+function _familyCubeIcon(fam, size) {
+  const key = _FAMILY_CUBE[fam] || _FAMILY_CUBE[String(fam || '').toUpperCase()] || 'O';
+  return _f2CubeKit().cube(key, size || 30);
 }
 
 function familyOrder(a, b) {
@@ -11985,7 +12016,7 @@ function renderLibraryHome() {
       ${renameBtn}
       ${deleteBtn}
       ${newCount > 0 ? `<div class="family-new-badge" title="${newCount} new drawing${newCount === 1 ? '' : 's'} since you last opened this folder">${newCount} new</div>` : ''}
-      <div class="family-icon">${familyIcon(fam)}</div>
+      <div class="family-icon family-icon-cube">${_familyCubeIcon(fam, 34)}</div>
       <div class="family-name">${escapeHtml(label)}</div>
       <div class="family-count">${partsInFam} parts</div>
     </div>`;
