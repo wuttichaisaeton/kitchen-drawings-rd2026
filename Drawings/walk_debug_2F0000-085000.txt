@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-15T09:56:33.280662
+CC_Assembly walk debug — 2026-06-15T11:14:49.541275
 Project: 2F0000-085000
 Total occurrences visited: 14
 CAM-ALPF tagged components: 0
@@ -11,14 +11,14 @@ depth | SM | CAM | material         | display_name (component)
     0 | SM  |     | ALPF             | 2SDCN1-120040 v1:1 (2SDCN1-120040 v1)
     0 | SM  |     | ALPF             | 2DN000-085000 v4:1 (2DN000-085000 v4)
     0 | SM  |     | ALPF             | 2SDCN1-120040 v1:2 (2SDCN1-120040 v1)
-    0 |     |     |                  | 2BK000-070120 v4:1 (2BK000-070120 v4)
-    1 | SM  |     | ALPF             | 2BK002-070000 v2:1 (2BK002-070000 v2)
-    1 | SM  |     | ALPF             | 2BK002-070000 v2:2 (2BK002-070000 v2)
-    1 | SM  |     | ALPF             | 2BK001-070120 v1:1 (2BK001-070120 v1)
-    1 |     |     |                  | 2BK004-070120 v4:1 (2BK004-070120 v4)
+    0 |     |     |                  | 2BK000-085120 v2:1 (2BK000-085120 v2)
+    1 | SM  |     | ALPF             | 2BK002-085000 v1:1 (2BK002-085000 v1)
+    1 | SM  |     | ALPF             | 2BK002-085000 v1:2 (2BK002-085000 v1)
+    1 | SM  |     | ALPF             | 2BK001-085120 v1:2 (2BK001-085120 v1)
+    1 |     |     |                  | 2BK004-085120 v1:1 (2BK004-085120 v1)
     2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
     0 | SM  |     | ALPF             | 2UP000-085043 v3:1 (2UP000-085043 v3)
-    0 | SM  |     | ALPF             | 2CF000-070000 v3:1 (2CF000-070000 v3)
+    0 | SM  |     | ALPF             | 2CF000-085000 v2:1 (2CF000-085000 v2)

@@ -2,39 +2,39 @@
   "name": "2F0000-085000",
   "status": "active",
   "created_at": "2026-06-15T02:45:32.824738+00:00",
-  "updated_at": "2026-06-15T02:56:33.280990+00:00",
+  "updated_at": "2026-06-15T04:14:49.541611+00:00",
   "total_unique_parts": 7,
   "total_qty": 12,
   "parts": [
     {
-      "code": "2BK001-070120",
+      "code": "2BK001-085120",
       "qty": 1,
       "family": "Other",
-      "parent_code": "2BK000-070120",
-      "variant_root": "2BK000-070120",
-      "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
+      "parent_code": "2BK000-085120",
+      "variant_root": "2BK000-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:UUyYBqS9Szmwdc5bDVLFrA"
     },
     {
-      "code": "2BK002-070000",
+      "code": "2BK002-085000",
       "qty": 2,
       "family": "Other",
-      "parent_code": "2BK000-070120",
-      "variant_root": "2BK000-070120",
-      "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
+      "parent_code": "2BK000-085120",
+      "variant_root": "2BK000-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:MxB16SZoRlqLoPva3V951g"
     },
     {
       "code": "2BK200-000000",
       "qty": 4,
       "family": "Other",
-      "parent_code": "2BK004-070120",
-      "variant_root": "2BK000-070120",
-      "urn": "urn:adsk.wipprod:dm.lineage:EKFgQ__3TPOMNjTYsP96MA"
+      "parent_code": "2BK004-085120",
+      "variant_root": "2BK000-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:L_vAIu83S0K1sbozBSeznQ"
     },
     {
-      "code": "2CF000-070000",
+      "code": "2CF000-085000",
       "qty": 1,
       "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:34xGLLuiT5GvJmENFXgn4g"
+      "urn": "urn:adsk.wipprod:dm.lineage:xGXoj9ZuS42Yx4FtzBh1YA"
     },
     {
       "code": "2DN000-085000",
@@ -55,19 +55,19 @@
       "urn": "urn:adsk.wipprod:dm.lineage:cwMKMAwGSfCp8gKJEaN5Lg"
     },
     {
-      "code": "2BK000-070120",
+      "code": "2BK000-085120",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "variant_root": "2BK000-070120"
+      "variant_root": "2BK000-085120"
     },
     {
-      "code": "2BK004-070120",
+      "code": "2BK004-085120",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "parent_code": "2BK000-070120",
-      "variant_root": "2BK000-070120"
+      "parent_code": "2BK000-085120",
+      "variant_root": "2BK000-085120"
     }
   ]
 }
