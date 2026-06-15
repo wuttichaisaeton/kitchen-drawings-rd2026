@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-15T13:24:16.458566
+CC_Assembly walk debug — 2026-06-15T13:35:58.558246
 Project: 2F0000-060000
 Total occurrences visited: 14
 CAM-ALPF tagged components: 0
@@ -21,4 +21,4 @@ depth | SM | CAM | material         | display_name (component)
     2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
     0 | SM  |     | ALPF             | 2UP000-060000 v3:1 (2UP000-060000 v3)
-    0 | SM  |     | ALPF             | 2CF000-085000 v2:1 (2CF000-085000 v2)
+    0 | SM  |     | ALPF             | 2CF000-060000 v3:1 (2CF000-060000 v3)
