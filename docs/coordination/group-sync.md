@@ -4981,3 +4981,6 @@ NEEDS (เอ๋ live COPY): reload (mtime) → edit → 0 หรือเลื
 
 ### 2026-06-15 - G1 -> เอ๋: edit picker โชว์ค่าปัจจุบันแต่ละคอลัมน์ (เตือนตอนเลือก) (_MASTERS aaeaa35)
 เอ๋ "ลืมว่าจะแก้ col ไหน" → _pick_scope โชว์ค่าแถวแรกต่อท้ายแต่ละตัวเลือก (เช่น X → ตอนนี้: 665 mm · Name → 2UP000-067000). อยู่แค่ใน picker หายตอนรันจริง. _sample_value (try/except, '' ถ้าพลาด — พังไม่ได้) + _pick_scope รับ cfg. py_compile ✓. -- G1
+
+### 2026-06-15 - G1 -> เอ๋: cap แสดง "capture ค้าง" บน prompt + ล้างตอน re (_MASTERS 37cc3b6)
+เอ๋: "เลือก cap แล้วจำไม่ได้ว่า col ไหน" (cap→Replace→re ห่างกัน มี manual Replace คั่น). FIX: _pending_capture_note อ่าน capture_map attribute → banner "📌 capture ค้าง: {base} (col {title}) → re <tier>" บนหัว prompt ทุกครั้งที่เปิด tool; _do_reapply ล้าง attribute หลัง re สำเร็จ → ป้ายหายเอง (ตรง "พอรันจริงแล้วหาย"). + _pick_columns (cap picker) รับ cfg โชว์ค่าแถวแรก. try/except กันพัง prompt. py_compile ✓. ⚠ cap/re ยัง untested-live (เอ๋เทสด้วย). -- G1
