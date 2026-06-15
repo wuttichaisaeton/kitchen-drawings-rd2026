@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-15T05:59:56.528722+00:00",
+  "generated_at": "2026-06-15T06:24:16.469862+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -9661,33 +9661,33 @@
       "name": "2F0000-060000",
       "status": "active",
       "created_at": "2026-06-15T05:59:56.518222+00:00",
-      "updated_at": "2026-06-15T05:59:56.518222+00:00",
+      "updated_at": "2026-06-15T06:24:16.459103+00:00",
       "total_unique_parts": 7,
       "total_qty": 12,
       "parts": [
         {
-          "code": "2BK001-085120",
+          "code": "2BK001-060120",
           "qty": 1,
           "family": "Other",
-          "parent_code": "2BK000-085120",
-          "variant_root": "2BK000-085120",
-          "urn": "urn:adsk.wipprod:dm.lineage:UUyYBqS9Szmwdc5bDVLFrA"
+          "parent_code": "2BK000-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:sXf-AMtoTLu2FgujgOvnHQ"
         },
         {
-          "code": "2BK002-085000",
+          "code": "2BK002-060000",
           "qty": 2,
           "family": "Other",
-          "parent_code": "2BK000-085120",
-          "variant_root": "2BK000-085120",
-          "urn": "urn:adsk.wipprod:dm.lineage:MxB16SZoRlqLoPva3V951g"
+          "parent_code": "2BK000-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:le3lMDvYQYCB4y01mq7e3A"
         },
         {
           "code": "2BK200-000000",
           "qty": 4,
           "family": "Other",
-          "parent_code": "2BK004-085120",
-          "variant_root": "2BK000-085120",
-          "urn": "urn:adsk.wipprod:dm.lineage:L_vAIu83S0K1sbozBSeznQ"
+          "parent_code": "2BK004-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:Yom7QitTQ8SN_TteRjdfMw"
         },
         {
           "code": "2CF000-085000",
@@ -9714,19 +9714,19 @@
           "urn": "urn:adsk.wipprod:dm.lineage:csuCkC1qSLSDp-jdSXtowA"
         },
         {
-          "code": "2BK000-085120",
+          "code": "2BK000-060120",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "variant_root": "2BK000-085120"
+          "variant_root": "2BK000-060120"
         },
         {
-          "code": "2BK004-085120",
+          "code": "2BK004-060120",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "parent_code": "2BK000-085120",
-          "variant_root": "2BK000-085120"
+          "parent_code": "2BK000-060120",
+          "variant_root": "2BK000-060120"
         }
       ]
     }
