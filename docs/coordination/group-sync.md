@@ -4972,3 +4972,9 @@ VERIFIED (preview, e-approved screenshot): 56 real F2 configs / 8 groups; decode
 PHASE-2 (RD noted): CC_ export config-rows from Fusion → feed the browser ALL variants + urns (so the 12 url-less + future configs open + the catalog is complete). That's the Fusion lane.
 FYI: app.js touched → pull --rebase. pathspec app.js + plan doc only.
 **NEEDS:** nothing (phase-2 = Fusion lane when e wants it). -- G2 (WEB16)
+
+### 2026-06-15 - G1 -> เอ๋: edit mode REDESIGN — visual "OLD -> NEW" (X=คงไว้) + ALL scope (_MASTERS d53b295)
+เอ๋ "ใช้ยากจัง" + เสนอวิธีคิดใหม่: เลือก ALL/column → พิมพ์ XXXXXX-060XXX -> XXXXXX-067XXX (X=คงไว้) เปลี่ยนทั้ง col / หรือ 665 -> 600. เข้าใจง่ายกว่า 085xxx/xxx120 เดิม → redesign.
+WHAT (_do_edit_column rewrite): edit → _pick_scope (0=ALL ทุกคอลัมน์ / เลือก 1) → 1 inputbox OLD -> NEW. _apply_pattern: มี X → positional (เท่ากัน, match literal, keep-X/set-literal); ไม่มี X → substring replace. _iter_scope_cells: ALL = names + ทุก param/config cell; single = คอลัมน์นั้น. _apply_edit_cell: NAME rename(retry3) / param expression / config re-point (G36 + parent cache). confirm 3 samples + save เฉพาะเมื่อ changed>=1. ลบ 085xxx/xxx120 + dead fix dispatch.
+VERIFY: py_compile ✓ · offline test 19/19 ✓ (ตัวอย่างเอ๋ 060→067 + 665→600 + back-group + const + X-in-code-kept + parse arrow/→) · adversarial review #2 จับ HIGH: lowercase x เป็น wildcard → poison literal data → แก้ uppercase-X-only + LOW (save-if-ok, ลบ dead fix). d53b295 3 files pathspec (+296/-254). ⚠ ยังไม่เทส live.
+NEEDS (เอ๋ live COPY): reload (mtime) → edit → 0 หรือเลือก Name → XXXXXX-060XXX -> XXXXXX-067XXX → confirm → Yes. ตรวจ last_run.log. -- G1
