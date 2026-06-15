@@ -4855,3 +4855,14 @@ DESIGN (เอ๋เคาะทุกข้อ): **inputBox ตอนรัน*
 HOW (`CC_CheckHoles_action.py`): `_find_adjacent_faces(... coplanar_tol_cm=2.6)` param ใหม่ (แทน hardcode 26mm coplanar) → ส่ง D เข้าทั้ง clicked-face + opposite-face search. inputBox: cancel→abort, ไม่ใช่ตัวเลข/≤0→เตือน, ว่าง→2.6cm. ข้อความ "no parts found" ใบ้ให้พิมพ์ D ใหญ่ขึ้น. prompt วางหลังเช็ครู (clear gesture/no-holes ไม่เด้ง).
 VERIFY: py_compile ✓; grep call-sites ส่ง coplanar_tol_cm ครบ 2 จุด ✓; self-review ✓. live = เอ๋กด Check Holes → พิมพ์ 36 (หรือเว้นว่าง) → reload by-mtime อัตโนมัติ ไม่ต้อง restart. _MASTERS local-only → 3fed9fa = record. pathspec CC_CheckHoles_action.py.
 **NEEDS:** nothing. (เอ๋ลอง: ชิ้นเว้นช่องว่าง → กด Check Holes → พิมพ์ระยะ → ดูเขียว/แดงข้ามช่องว่าง)
+
+---
+### 2026-06-14 - Fusion (CC_TierShift) -> เอ๋: RE-WIDTH mode — เปลี่ยน WWW ในชื่อ config + ตั้ง X width ในคลิกเดียว (_MASTERS fb3e796) ⏱ ~00:40
+เอ๋: "เปลี่ยน 070→085 ทุกแถว + ความกว้างจริง X→850" และ "เพิ่มเข้า tool เดิม อย่าให้ card เยอะ ตัวไหนใกล้กว่า + ทำ icon ใหม่". เลือก **CC_TierShift** (semantic = "เปลี่ยน WWW tier" + มัน rename 070→085 อยู่แล้ว; FillWidths = สร้างแถวใหม่ คนละงาน).
+WHAT (`CC_TierShift_action.py`): พิมพ์ **'w' ต่อท้าย target** (เช่น `085w`) → โหมด **RE-WIDTH in-place**: ทุก row ชื่อ `-070xxx` → ตั้ง **X param = target×10 mm** (850) + rename WWW 070→085. **ไม่ Save-As, ไม่แตะ cell/suppress อื่น**. ไม่มี 'w' = พฤติกรรม tier-shift เดิม (refs/Save-As) ไม่เปลี่ยน.
+HOW: ฟังก์ชันใหม่ `_set_width_params` reuse config API ที่พิสูจน์แล้วใน CC_FillWidths (`row.getCellByColumnIndex` + `ParameterCell.expression`); หา X column ด้วย title 'X' (log ทุก column title ถ้าไม่เจอ → degrade graceful, rename ยังทำ). prompt parse 'w' + เคลียร์ก่อน regex (กัน `085w` ไม่ match). force in-place+single เมื่อ 'w'. confirm dialog โชว์แผน (X→850 + rename) ก่อนแก้.
+ICON ใหม่: bar แคบ→bar กว้าง(amber) + ลูกศร ↔ = "shift tier + set width" (palette steel/ink/amber).
+VERIFY: py_compile ✓; tuple/flag wiring grep ✓ (4-tuple ครบ); icon render ดูแล้วอ่านออก ✓; API ยืนยันจาก FillWidths (top table = cfg, kind='top'). live = เอ๋รัน (มี Yes/No confirm กันพลาด). _MASTERS local → fb3e796.
+**RELOAD:** logic 'w' = มีผลคลิกถัดไป (action reload by-mtime, ไม่ต้อง restart). **ICON = ต้อง Stop→Run add-in CC_TierShift** (หรือ restart Fusion) เพื่อ re-register ปุ่ม.
+**⚠ G34:** หลัง save ตู้/assembly ที่อ้าง config ที่เปลี่ยน X อาจต้อง getLatestVersion+reactivate ให้ geometry อัปเดต.
+**NEEDS:** nothing. (เอ๋: เปิด 2UP master → Tier Shift → พิมพ์ `085w` → Yes; ถ้า X ไม่เปลี่ยนแต่ชื่อเปลี่ยน = log จะบอก column title ของ X → ผมแก้ตัวจับคอลัมน์)
