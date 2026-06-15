@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-13T17:43:05.699303
+CC_Assembly walk debug — 2026-06-15T18:12:18.939923
 Project: 2FNLL0-060120
 Total occurrences visited: 20
 CAM-ALPF tagged components: 0
@@ -9,19 +9,19 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 | SM  |     | ALPF             | 2DN060-000000 v9:1 (2DN060-000000 v9)
-    0 | SM  |     | ALPF             | 2SD000-120000 v6:1 (2SD000-120000 v6)
-    0 | SM  |     | ALPF             | 2SD000-120000 v6:2 (2SD000-120000 v6)
-    0 |     |     |                  | 2BK000-060120 v5:1 (2BK000-060120 v5)
-    1 | SM  |     | ALPF             | 2BK410-060000 v1:1 (2BK410-060000 v1)
-    1 | SM  |     | ALPF             | 2BK410-060000 v1:2 (2BK410-060000 v1)
-    1 | SM  |     | ALPF             | 2BK100-060120 v1:1 (2BK100-060120 v1)
-    1 |     |     |                  | 2BK400-060120 v4:1 (2BK400-060120 v4)
+    0 | SM  |     | ALPF             | 2SD000-120040 v14:1 (2SD000-120040 v14)
+    0 | SM  |     | ALPF             | 2SD000-120040 v14:2 (2SD000-120040 v14)
+    0 |     |     |                  | 2BK000-060120 v9:1 (2BK000-060120 v9)
+    1 | SM  |     | ALPF             | 2BK002-060000 v3:1 (2BK002-060000 v3)
+    1 | SM  |     | ALPF             | 2BK002-060000 v3:2 (2BK002-060000 v3)
+    1 | SM  |     | ALPF             | 2BK001-060120 v1:2 (2BK001-060120 v1)
+    1 |     |     |                  | 2BK004-060120 v4:1 (2BK004-060120 v4)
     2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
-    0 | SM  |     | ALPF             | 2UP000-0600L0 v2:1 (2UP000-0600L0 v2)
-    0 | SM  |     | ALPF             | 2CF000-060000 v1:1 (2CF000-060000 v1)
+    0 | SM  |     | ALPF             | 2UPL00-060000 v2:1 (2UPL00-060000 v2)
+    0 | SM  |     | ALPF             | 2CF000-060000 v2:1 (2CF000-060000 v2)
     0 |     |     | Steel            | HingeN3-H120 v3:2 (HingeN3-H120 v3)
     1 |     |     | Steel            | Door:1 (Door)
     1 |     |     | Steel            | 1-HingeN v2:1 (1-HingeN v2)

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-15T11:08:46.803340+00:00",
+  "generated_at": "2026-06-15T11:12:18.950208+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -8463,12 +8463,12 @@
       "name": "2FNLL0-060120",
       "status": "active",
       "created_at": "2026-06-13T03:06:15.246882+00:00",
-      "updated_at": "2026-06-13T10:43:05.699739+00:00",
+      "updated_at": "2026-06-15T11:12:18.940272+00:00",
       "total_unique_parts": 7,
       "total_qty": 12,
       "parts": [
         {
-          "code": "2BK100-060120",
+          "code": "2BK001-060120",
           "qty": 1,
           "family": "Other",
           "parent_code": "2BK000-060120",
@@ -8476,20 +8476,20 @@
           "urn": "urn:adsk.wipprod:dm.lineage:sXf-AMtoTLu2FgujgOvnHQ"
         },
         {
-          "code": "2BK200-000000",
-          "qty": 4,
-          "family": "Other",
-          "parent_code": "2BK400-060120",
-          "variant_root": "2BK000-060120",
-          "urn": "urn:adsk.wipprod:dm.lineage:Yom7QitTQ8SN_TteRjdfMw"
-        },
-        {
-          "code": "2BK410-060000",
+          "code": "2BK002-060000",
           "qty": 2,
           "family": "Other",
           "parent_code": "2BK000-060120",
           "variant_root": "2BK000-060120",
           "urn": "urn:adsk.wipprod:dm.lineage:le3lMDvYQYCB4y01mq7e3A"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BK004-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:Yom7QitTQ8SN_TteRjdfMw"
         },
         {
           "code": "2CF000-060000",
@@ -8504,13 +8504,13 @@
           "urn": "urn:adsk.wipprod:dm.lineage:DwngxA_LTyu5m47YOW7x0A"
         },
         {
-          "code": "2SD000-120000",
+          "code": "2SD000-120040",
           "qty": 2,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:JlWX2roeQJSStHgH0knvfA"
         },
         {
-          "code": "2UP000-0600L0",
+          "code": "2UPL00-060000",
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:okYxaVPkTfa2Mo1qi2ZZBg"
@@ -8530,7 +8530,7 @@
           "variant_root": "2BK000-060120"
         },
         {
-          "code": "2BK400-060120",
+          "code": "2BK004-060120",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
