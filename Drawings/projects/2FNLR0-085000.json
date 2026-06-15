@@ -1,0 +1,79 @@
+{
+  "name": "2FNLR0-085000",
+  "status": "active",
+  "created_at": "2026-06-15T04:26:10.593863+00:00",
+  "updated_at": "2026-06-15T04:26:10.593863+00:00",
+  "total_unique_parts": 8,
+  "total_qty": 12,
+  "parts": [
+    {
+      "code": "2BK001-085120",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "2BK000-085120",
+      "variant_root": "2BK000-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:UUyYBqS9Szmwdc5bDVLFrA"
+    },
+    {
+      "code": "2BK002-085000",
+      "qty": 2,
+      "family": "Other",
+      "parent_code": "2BK000-085120",
+      "variant_root": "2BK000-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:MxB16SZoRlqLoPva3V951g"
+    },
+    {
+      "code": "2BK200-000000",
+      "qty": 4,
+      "family": "Other",
+      "parent_code": "2BK004-085120",
+      "variant_root": "2BK000-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:L_vAIu83S0K1sbozBSeznQ"
+    },
+    {
+      "code": "2CF000-085000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:xGXoj9ZuS42Yx4FtzBh1YA"
+    },
+    {
+      "code": "2DN000-085000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:ubmOHqayQVSJyFoJcFXmOw"
+    },
+    {
+      "code": "2SDCN1-120040",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
+    },
+    {
+      "code": "2SDCN2-120034",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:ferf1f9uRJC1vYO6a5C-Ag"
+    },
+    {
+      "code": "2UP000-085043",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:cwMKMAwGSfCp8gKJEaN5Lg"
+    },
+    {
+      "code": "2BK000-085120",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "2BK000-085120"
+    },
+    {
+      "code": "2BK004-085120",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "2BK000-085120",
+      "variant_root": "2BK000-085120"
+    }
+  ]
+}
