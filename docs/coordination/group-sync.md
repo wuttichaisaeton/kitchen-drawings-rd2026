@@ -4866,3 +4866,12 @@ VERIFY: py_compile ✓; tuple/flag wiring grep ✓ (4-tuple ครบ); icon ren
 **RELOAD:** logic 'w' = มีผลคลิกถัดไป (action reload by-mtime, ไม่ต้อง restart). **ICON = ต้อง Stop→Run add-in CC_TierShift** (หรือ restart Fusion) เพื่อ re-register ปุ่ม.
 **⚠ G34:** หลัง save ตู้/assembly ที่อ้าง config ที่เปลี่ยน X อาจต้อง getLatestVersion+reactivate ให้ geometry อัปเดต.
 **NEEDS:** nothing. (เอ๋: เปิด 2UP master → Tier Shift → พิมพ์ `085w` → Yes; ถ้า X ไม่เปลี่ยนแต่ชื่อเปลี่ยน = log จะบอก column title ของ X → ผมแก้ตัวจับคอลัมน์)
+
+---
+### 2026-06-14 - Fusion (CC_TierShift) -> เอ๋: Capture/Reapply helper รอบ Replace Component (per-tier sub-master files) (_MASTERS b97f5ce) ⏱ ~00:45
+เอ๋ (wrapper 2F0000-085043): sub-master เป็น **ไฟล์แยกราย tier** (2UP000-070043 vs -085043) → ต้อง manual Replace Component (TierShift cell-switch ไม่ถึงไฟล์อื่น). ปัญหาเอ๋ชี้: **Replace ทำ insert column ยุบเหลือ config เดียวทุกแถว** เสีย per-row mapping (2FCLL0→2UPLL0, 2FCLR0→2UPLR0 …). เอ๋สั่ง: เพิ่มเข้า tool เดิม + มี option เลือกทีละ column/ทั้งหมด.
+WHAT (`CC_TierShift_action.py`, 2 โหมดใหม่ isolated — พิมพ์ที่ prompt target): **`cap`** = จำ pick ราย row ราย column (เลือก 1 column หรือ ALL ผ่าน picker) → root attribute (รอด Replace); **`re 085`** = หลัง Replace มือ, คืน pick แต่ละแถว map →tier ใหม่ (2UPLL0-070043→2UPLL0-085043) ผ่าน table ของ master ใหม่ (cell.row.parentTable + itemByName + G36 phantom-guard) แล้ว rename แถว wrapper →085 + save. Replace เองยัง manual (ไม่มี public API). dispatch ด้วย mode tag — **ไม่แตะ path tier-shift เดิมเลย**.
+HOW: reuse API ที่พิสูจน์ (getCellByColumnIndex / InsertCell.row / _shift_name / _extract_tier `-(\d{3})\d{3}`). Yes/No confirm ตอน reapply. เขียน `last_run.log` ให้อ่าน offline.
+VERIFY: py_compile ✓; wiring grep ✓ (cap/re/shift tag + dispatch + 5 helpers + json). **live = เอ๋รัน (test เองไม่ได้ — Fusion bridge หลุด)**; capture = read-only ปลอดภัยลองก่อน, reapply มี confirm + map เก็บ re-run ได้. _MASTERS local → b97f5ce.
+FLOW เอ๋: เปิด wrapper → Tier Shift `cap` (เลือก column/all) → manual **Replace All Instances** 070→085 sub-master → Tier Shift `re 085`. RELOAD: action mtime auto (ไม่ต้อง restart).
+**NEEDS:** nothing. (เอ๋ลอง cap ก่อน (อ่าน-only) ดู log ว่าจับ column+pick ครบ → แล้วค่อย Replace+`re 085`; ถ้า MISS/column index เพี้ยน ส่ง last_run.log มา ผมปรับ)
