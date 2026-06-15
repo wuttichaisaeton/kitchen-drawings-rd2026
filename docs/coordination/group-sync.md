@@ -4914,3 +4914,17 @@ VERIFY (RD): `python -m py_compile` ✓ · commit e01dcb5 = **1 file pathspec** 
 WHAT (`CC_TierShift_action.py`): trigger = `low.startswith('fix') or low.startswith('fill')` (**`fix` หลัก, `fill` เป็น alias**); syntax `fix hhh 120` (fix HHH, vary WWW) · `fix www 085` (fix WWW, vary HHH) · `fix 120` (default hhh). full sweep: tuple tag `'fix'` + dispatch · `_do_fill→_do_fix` (def+call) · log prefix `[FILL]→[FIX]` · dialog `FILL→FIX column` · save msg · help · comments. **logic เดิมไม่แตะ** (single-col guard, cell-set mirror reapply, G36, _extract_tier/_extract_hhh, target string, save).
 VERIFY: Workflow 3 lens **ok=true** (parse trace ครบทุก input + intercept ก่อน set_width + ไม่ชน cap/re/normal target · completeness: tag↔dispatch + def↔call ตรง, ไม่มี stale · regression: โหมดอื่นครบ + logic เดิม + py_compile). **RD verify เอง:** py_compile ✓ · HEAD bd7f1c2 msg สะอาด · 1 file pathspec (31+/30-) ✓ · grep trigger/tag/dispatch/fn ตรง + NO_STALE_FILL_TOKENS ✓. ⚠ ยังไม่เทส live.
 **NEEDS (เอ๋ live-test):** 2BK000 → Tier Shift → `fix 120` (= fix HHH คอลัมน์สุดท้าย) → เลือกเลขคอลัมน์ → Yes. ทิศใหม่ `fix www 085`. copy ก่อนทับ master · cell ไม่เปลี่ยน → ส่ง last_run.log. reload by-mtime. -- RD
+
+---
+### 2026-06-15 - RD (Workflow) -> เอ๋: CC_TierShift fix **CONSTANT** mode — เลข 6 หลัก = เซ็ตทั้งคอลัมน์ค่าเดียว (_MASTERS c05721c)
+เอ๋ (รูป wrapper 2F0000): "คอลัมน์ 2BK000 เปลี่ยน config ทั้งหมดเป็น 2BK000-085000 ทำไง" → ต่างจาก fix/vary (ต้องการ constant). **Workflow** (implement + verify 3 มุม).
+WHAT: พิมพ์ **เลข 6 หลัก** `fix 085000` → ทุกแถวในคอลัมน์ที่เลือก = `{base}-085000` (constant, no vary). 3-digit = vary เหมือนเดิม (`fix 120`/`fix www 085`). **6-digit เช็คก่อน 3-digit** (ไม่งั้น `\d{3}` จับ 085 กลายเป็น vary). reuse cell-set + G36 + single-col guard + save; confirm โชว์ "set ALL N rows = {base}-085000".
+VERIFY: Workflow 3 lens ok (parse precedence 6>3 + ไม่ชน set_width/cap/re/normal · const branch ครบไม่ crash · vary modes ไม่ regress) · **RD เอง:** py_compile ✓ c05721c 1 file pathspec (75+/30-) ✓ wiring L646/671/677/692/892/921 ✓. ⚠ ยังไม่เทส live.
+**NEEDS (เอ๋):** 2F0000 → Tier Shift → `fix 085000` → เลือกคอลัมน์ 2BK000 → Yes (row 2BK000-085000 ต้องมีใน sub-master). reload by-mtime. -- RD
+
+---
+### 2026-06-15 - RD -> เอ๋ + ทุก session: LINE bot "ไม่ตอบ" = Render free spin-down → keep-alive LIVE (drawings-ui 47fb424)
+เอ๋: บอท LINE ไม่ตอบ. **systematic-debug:** probe = HTTP 000 ตอนหลับ; เน็ต/DNS ปกติ; โค้ดไม่แตะ 7 สัปดาห์, gunicorn+ACK เร็ว → infra. หลัง re-probe `/api/health` = **200 ตื่นที่ 52s** (cold start) → root cause = **Render free หลับหลัง idle 15 นาที** (ลูกค้าทักตอนหลับ → 52s ช้าเกิน reply token หมด) ไม่ใช่ crash.
+FIX: **keep-alive** GitHub Actions `drawings-ui/.github/workflows/keepalive-line-bot.yml` (cron `*/5`, ping `/api/health`, retry-on-coldstart). วางใน drawings-ui = **public (Actions ฟรีไม่จำกัด) + active (schedule ไม่ถูก disable) + ไม่แตะ repo บอท (ไม่ทริกเกอร์ Render redeploy)**. doubles เป็น uptime monitor.
+VERIFY: manual `gh workflow run` → **run success ใน 8s** (ping 200); push 47fb424 deploy. memory [[project_line_bot]] อัปแล้ว.
+NOTE: GH cron มี jitter — ถ้าหลับบางครั้ง → cron-job.org/UptimeRobot (5นาที no-jitter) เป็น primary, หรือ Render $7/เดือน always-on. มี Render API key `rd-bot-deploy` (ดู logs/env ได้) ถ้าต้อง diagnose ลึก. -- RD
