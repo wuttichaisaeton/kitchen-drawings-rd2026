@@ -4952,3 +4952,9 @@ WHY UptimeRobot: GitHub Actions cron `*/5` (47fb424) มี jitter — new workf
 DUAL LAYER: GH Actions keepalive-line-bot.yml (47fb424) ยังอยู่ = backup + uptime log. UptimeRobot = primary pinger + alerting ถ้า bot down.
 VERIFY: dashboard.uptimerobot.com/monitors/803299395 — Status=Up, Checked every 5m, 100% last 24h (ชั่วโมงแรก), response 268ms.
 NEXT: ยังค้าง 2 เรื่อง — (1) set LINE_GROUP_ROUGH_JACK + LINE_GROUP_AE_TOTO env vars บน Render (เอ๋ทำใน Render dashboard); (2) auto-forward งาน/ผลิต → LINE group (implement ทีหลัง, เอ๋ต้องยืนยัน group target + event types ก่อน). -- LINE lane
+
+### 2026-06-15 - G1 -> เอ๋: รวม fix → edit config (group หน้า/หลัง) + ลบ fix จากเมนู (_MASTERS be62c12)
+เอ๋ approve (2 รอบ): edit รับ as-is + "ไม่ต้องแบ่ง wwwhhh พิมพ์ทีเดียว 6 ตัว...ถ้าแบ่ง แบ่ง group หน้าหลัง" → ยุบ fix เข้า edit จริง (ONE-tool ที่ตั้งใจแต่แรก).
+WHAT (_do_edit_column config branch): พิมพ์ในช่อง config — 085000=ทั้งคอลัมน์เท่ากัน · 085xxx=group หน้า (ตั้ง 3 หน้า เก็บ 3 หลังรายแถว = fix www เดิม) · xxx120=group หลัง (ตั้ง 3 หลัง เก็บ 3 หน้ารายแถว = fix hhh เดิม) · full code=ทั้งแถว. x/X/_=เก็บของเดิม. bare 3-digit=reject (กำกวม). per-row plan + confirm 3 samples + G36 guard + save. ลบ fix hhh/www/const จาก prompt; fix/fill=redirect ไป edit (กัน misroute เป็น tier-shift). _do_fix + dispatch เก็บเป็น dead reference (ไม่แตะ).
+VERIFY: py_compile ✓ · offline logic test 13/13 ✓ (front/back math=fix www/hhh เป๊ะ, placeholder, ambiguous, skip 2-digit) · adversarial review (subagent) จับ bug HIGH: mode_line เป็น dict literal → eager-eval grp/const_target → NameError ทุก config edit → แก้เป็น if/elif · be62c12 1 file pathspec (+85/-39). ⚠ ยังไม่เทส live (bridge หลุด).
+NEEDS (เอ๋ live-test บน COPY): เปิด master → Tier Shift → reload by-mtime → edit → เลือก config column → 085xxx/xxx120/085000 → ดู confirm → Yes. ตรวจ last_run.log. -- G1
