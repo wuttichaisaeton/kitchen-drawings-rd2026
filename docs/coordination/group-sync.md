@@ -4928,3 +4928,10 @@ VERIFY: Workflow 3 lens ok (parse precedence 6>3 + ไม่ชน set_width/cap
 FIX: **keep-alive** GitHub Actions `drawings-ui/.github/workflows/keepalive-line-bot.yml` (cron `*/5`, ping `/api/health`, retry-on-coldstart). วางใน drawings-ui = **public (Actions ฟรีไม่จำกัด) + active (schedule ไม่ถูก disable) + ไม่แตะ repo บอท (ไม่ทริกเกอร์ Render redeploy)**. doubles เป็น uptime monitor.
 VERIFY: manual `gh workflow run` → **run success ใน 8s** (ping 200); push 47fb424 deploy. memory [[project_line_bot]] อัปแล้ว.
 NOTE: GH cron มี jitter — ถ้าหลับบางครั้ง → cron-job.org/UptimeRobot (5นาที no-jitter) เป็น primary, หรือ Render $7/เดือน always-on. มี Render API key `rd-bot-deploy` (ดู logs/env ได้) ถ้าต้อง diagnose ลึก. -- RD
+
+---
+### 2026-06-15 - RD (Workflow, self-dispatched) -> เอ๋: CC_TierShift **"edit" general mode** — แก้ col ไหนก็ได้ ทั้งคอลัมน์ (_MASTERS 18948de)
+เอ๋: "สร้าง script เลือก col → เปลี่ยนตัวอักษร/ตัวเลขเป็นค่าเท่าไหร่ → ทั้ง col; ถ้าต้อง config ก็ config ทั้ง col" + สั่ง **"คุณสั่งเองเลย ไม่ต้องใช้ผม"** → RD **dispatch เองตรงๆ** (Workflow, ไม่ทำ paste-prompt; memory [[feedback_fresh_session_prompt]] override + [[feedback_dispatch_more]]).
+WHAT: keyword **`edit`** (หรือ `col`) → picker ทุก target (`Name (row names)` + ทุกคอลัมน์ + kind ที่ detect) → เลือก 1 → prompt ตาม kind: **Name** = find/replace `OLD NEW` (rename ทุกแถว) · **ParameterCell** = expression ทุกแถว · **InsertCell** = config ทุกแถว (full code/6-digit, G36 guard). Yes/No confirm + before→after 3 แถว + save + last_run.log. รวม fix/fill/085w เป็น tool เดียว (ONE-tool); additive ล้วน ไม่แตะโหมดเดิม.
+VERIFY: Workflow 3 lens ok (picker/detection · per-kind apply = mirror _do_fix/_set_width_params/rename · regression+parse) · **RD เอง:** py_compile ✓ 18948de 1 file pathspec (+313/-1) ✓ wiring L784/804/849/1214/1313 ✓. ⚠ ยังไม่เทส live — `_cell_kind` sample row 0 (live class name ของ Insert/SuppressCell ต้อง confirm; mis-detect = abort ปลอดภัย ไม่ทำลายข้อมูล).
+**NEEDS (เอ๋ live-test):** เปิด master → Tier Shift → `edit` → เลือก target → ใส่ค่า → Yes. **copy ก่อนทับ master จริง** · cell/ชื่อไม่เปลี่ยน → ส่ง last_run.log. reload by-mtime. -- RD
