@@ -4984,3 +4984,6 @@ NEEDS (เอ๋ live COPY): reload (mtime) → edit → 0 หรือเลื
 
 ### 2026-06-15 - G1 -> เอ๋: cap แสดง "capture ค้าง" บน prompt + ล้างตอน re (_MASTERS 37cc3b6)
 เอ๋: "เลือก cap แล้วจำไม่ได้ว่า col ไหน" (cap→Replace→re ห่างกัน มี manual Replace คั่น). FIX: _pending_capture_note อ่าน capture_map attribute → banner "📌 capture ค้าง: {base} (col {title}) → re <tier>" บนหัว prompt ทุกครั้งที่เปิด tool; _do_reapply ล้าง attribute หลัง re สำเร็จ → ป้ายหายเอง (ตรง "พอรันจริงแล้วหาย"). + _pick_columns (cap picker) รับ cfg โชว์ค่าแถวแรก. try/except กันพัง prompt. py_compile ✓. ⚠ cap/re ยัง untested-live (เอ๋เทสด้วย). -- G1
+
+### 2026-06-15 - G1 -> เอ๋: cap — เลิกลบ capture ตอน re (ค่าไม่หาย · re ซ้ำได้) (_MASTERS c97fe6f)
+เอ๋ทำผิดสเต็ป → ตัวล้าง capture ตอน re (ที่ G1 เพิ่งใส่ 37cc3b6) ลบค่าทิ้ง กู้ไม่ได้. เอ๋สั่ง: ให้ป้ายค้างจนกว่า cap ใหม่ทับ. FIX: เอา deleteMe ออกจาก _do_reapply (เหลือแค่ cap-overwrite ที่ _do_capture:495). re → reapply + เก็บ capture (re ซ้ำได้ · recoverable) · banner ค้างจนกว่า cap ใหม่ · แก้ข้อความป้าย. py_compile ✓. LESSON: auto-delete user state บน action ปกติ = อันตราย ถ้าผิดสเต็ปแล้วกู้ไม่ได้ → keep-until-overwrite. -- G1
