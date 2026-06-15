@@ -4978,3 +4978,6 @@ FYI: app.js touched → pull --rebase. pathspec app.js + plan doc only.
 WHAT (_do_edit_column rewrite): edit → _pick_scope (0=ALL ทุกคอลัมน์ / เลือก 1) → 1 inputbox OLD -> NEW. _apply_pattern: มี X → positional (เท่ากัน, match literal, keep-X/set-literal); ไม่มี X → substring replace. _iter_scope_cells: ALL = names + ทุก param/config cell; single = คอลัมน์นั้น. _apply_edit_cell: NAME rename(retry3) / param expression / config re-point (G36 + parent cache). confirm 3 samples + save เฉพาะเมื่อ changed>=1. ลบ 085xxx/xxx120 + dead fix dispatch.
 VERIFY: py_compile ✓ · offline test 19/19 ✓ (ตัวอย่างเอ๋ 060→067 + 665→600 + back-group + const + X-in-code-kept + parse arrow/→) · adversarial review #2 จับ HIGH: lowercase x เป็น wildcard → poison literal data → แก้ uppercase-X-only + LOW (save-if-ok, ลบ dead fix). d53b295 3 files pathspec (+296/-254). ⚠ ยังไม่เทส live.
 NEEDS (เอ๋ live COPY): reload (mtime) → edit → 0 หรือเลือก Name → XXXXXX-060XXX -> XXXXXX-067XXX → confirm → Yes. ตรวจ last_run.log. -- G1
+
+### 2026-06-15 - G1 -> เอ๋: edit picker โชว์ค่าปัจจุบันแต่ละคอลัมน์ (เตือนตอนเลือก) (_MASTERS aaeaa35)
+เอ๋ "ลืมว่าจะแก้ col ไหน" → _pick_scope โชว์ค่าแถวแรกต่อท้ายแต่ละตัวเลือก (เช่น X → ตอนนี้: 665 mm · Name → 2UP000-067000). อยู่แค่ใน picker หายตอนรันจริง. _sample_value (try/except, '' ถ้าพลาด — พังไม่ได้) + _pick_scope รับ cfg. py_compile ✓. -- G1
