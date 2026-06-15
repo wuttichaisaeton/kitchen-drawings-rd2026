@@ -1,0 +1,37 @@
+{
+  "name": "2BK000-085120",
+  "status": "active",
+  "created_at": "2026-06-15T03:40:24.494463+00:00",
+  "updated_at": "2026-06-15T03:40:24.494463+00:00",
+  "total_unique_parts": 3,
+  "total_qty": 7,
+  "parts": [
+    {
+      "code": "2BK001-085120",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:UUyYBqS9Szmwdc5bDVLFrA"
+    },
+    {
+      "code": "2BK002-085000",
+      "qty": 2,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:MxB16SZoRlqLoPva3V951g"
+    },
+    {
+      "code": "2BK200-000000",
+      "qty": 4,
+      "family": "Other",
+      "parent_code": "2BK004-085120",
+      "variant_root": "2BK004-085120",
+      "urn": "urn:adsk.wipprod:dm.lineage:L_vAIu83S0K1sbozBSeznQ"
+    },
+    {
+      "code": "2BK004-085120",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "2BK004-085120"
+    }
+  ]
+}
