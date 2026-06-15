@@ -1,0 +1,73 @@
+{
+  "name": "2FNL00-067000",
+  "status": "active",
+  "created_at": "2026-06-15T10:05:50.497140+00:00",
+  "updated_at": "2026-06-15T10:05:50.497140+00:00",
+  "total_unique_parts": 7,
+  "total_qty": 12,
+  "parts": [
+    {
+      "code": "2BK100-067120",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "2BK000-067120",
+      "variant_root": "2BK000-067120",
+      "urn": "urn:adsk.wipprod:dm.lineage:OkoWRba3TF2BRrvOhLPJ6A"
+    },
+    {
+      "code": "2BK200-000000",
+      "qty": 4,
+      "family": "Other",
+      "parent_code": "2BK400-067120",
+      "variant_root": "2BK000-067120",
+      "urn": "urn:adsk.wipprod:dm.lineage:bCukAyBETfKFi9D6aIO8Ng"
+    },
+    {
+      "code": "2BK400-066500",
+      "qty": 2,
+      "family": "Other",
+      "parent_code": "2BK000-067120",
+      "variant_root": "2BK000-067120",
+      "urn": "urn:adsk.wipprod:dm.lineage:zI5s4OiwQw6GWXf8PB_W8w"
+    },
+    {
+      "code": "2CF000-060000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:wUmXR_jgTVKm6EfgC6eQ5Q"
+    },
+    {
+      "code": "2DN000-060000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:9aZj97BISY2Fi2dfpsJ86A"
+    },
+    {
+      "code": "2SDCN1-120040",
+      "qty": 2,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
+    },
+    {
+      "code": "2UP000-067000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:IuoG-Fp7SVeV1tF4yJHNQQ"
+    },
+    {
+      "code": "2BK000-067120",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "2BK000-067120"
+    },
+    {
+      "code": "2BK400-067120",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "2BK000-067120",
+      "variant_root": "2BK000-067120"
+    }
+  ]
+}
