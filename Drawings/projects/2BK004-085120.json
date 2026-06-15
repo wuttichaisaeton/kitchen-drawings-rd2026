@@ -1,0 +1,16 @@
+{
+  "name": "2BK004-085120",
+  "status": "active",
+  "created_at": "2026-06-15T03:04:45.237365+00:00",
+  "updated_at": "2026-06-15T03:04:45.237365+00:00",
+  "total_unique_parts": 1,
+  "total_qty": 4,
+  "parts": [
+    {
+      "code": "2BK200-000000",
+      "qty": 4,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:0QayKPb-RlW6Tp9feHyQOA"
+    }
+  ]
+}
