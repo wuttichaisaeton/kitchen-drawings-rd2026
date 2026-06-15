@@ -4875,3 +4875,10 @@ HOW: reuse API ที่พิสูจน์ (getCellByColumnIndex / InsertCell
 VERIFY: py_compile ✓; wiring grep ✓ (cap/re/shift tag + dispatch + 5 helpers + json). **live = เอ๋รัน (test เองไม่ได้ — Fusion bridge หลุด)**; capture = read-only ปลอดภัยลองก่อน, reapply มี confirm + map เก็บ re-run ได้. _MASTERS local → b97f5ce.
 FLOW เอ๋: เปิด wrapper → Tier Shift `cap` (เลือก column/all) → manual **Replace All Instances** 070→085 sub-master → Tier Shift `re 085`. RELOAD: action mtime auto (ไม่ต้อง restart).
 **NEEDS:** nothing. (เอ๋ลอง cap ก่อน (อ่าน-only) ดู log ว่าจับ column+pick ครบ → แล้วค่อย Replace+`re 085`; ถ้า MISS/column index เพี้ยน ส่ง last_run.log มา ผมปรับ)
+
+---
+### 2026-06-14 - Fusion (CC_TierShift) -> เอ๋: FIX reapply ไม่ทำงาน — จับคอลัมน์ผิดเพราะ index ขยับหลัง Replace (_MASTERS 76d9e94)
+เอ๋รัน `re 085` → cells ไม่เปลี่ยน (ค่าเดียวหมด). debug จาก log จริง: `[RE] col[5] captured='2UP000-070043' now='Rigid 7' · set=0` → **ROOT CAUSE: Replace สลับลำดับคอลัมน์** — capture จับ index 5 (=2UP) แต่หลัง Replace index 5 = 'Rigid 7' (SuppressCell) → InsertCell-guard ข้ามหมด → set=0, คอลัมน์ 2UP จริงไม่โดน.
+FIX (3 ชั้น): (1) **key capture ด้วย component BASE** ('2UP000') แล้ว re-resolve index สดด้วย base ตอน reapply (ไม่ผูก index); (2) **backward-compat อ่าน capture เก่า** (index-keyed → derive base จาก title ที่เก็บ) → เอ๋**ไม่ต้อง re-capture** (mapping 070043 เดิมยังใช้ได้); (3) **match row แบบตัด WWW** (`_norm_row` `-(\d{3})(\d{3})→-###\2`) ทนแถวถูก rename 070→085 ระหว่างทาง. + log ละเอียด (live insert cols + set/miss/rows-not-in-map+sample).
+VERIFY: py_compile ✓ wiring grep ✓. _MASTERS local → 76d9e94. action mtime reload (ไม่ต้อง restart).
+**NEEDS:** nothing. (เอ๋แค่รัน `re 085` ซ้ำ — capture เดิมยังอยู่ใน attribute, โค้ดใหม่อ่านได้ + จับคอลัมน์ถูก; ถ้ายัง MISS ส่ง last_run.log)
