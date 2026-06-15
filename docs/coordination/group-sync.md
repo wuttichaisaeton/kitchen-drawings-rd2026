@@ -4958,3 +4958,17 @@ NEXT: ยังค้าง 2 เรื่อง — (1) set LINE_GROUP_ROUGH_JA
 WHAT (_do_edit_column config branch): พิมพ์ในช่อง config — 085000=ทั้งคอลัมน์เท่ากัน · 085xxx=group หน้า (ตั้ง 3 หน้า เก็บ 3 หลังรายแถว = fix www เดิม) · xxx120=group หลัง (ตั้ง 3 หลัง เก็บ 3 หน้ารายแถว = fix hhh เดิม) · full code=ทั้งแถว. x/X/_=เก็บของเดิม. bare 3-digit=reject (กำกวม). per-row plan + confirm 3 samples + G36 guard + save. ลบ fix hhh/www/const จาก prompt; fix/fill=redirect ไป edit (กัน misroute เป็น tier-shift). _do_fix + dispatch เก็บเป็น dead reference (ไม่แตะ).
 VERIFY: py_compile ✓ · offline logic test 13/13 ✓ (front/back math=fix www/hhh เป๊ะ, placeholder, ambiguous, skip 2-digit) · adversarial review (subagent) จับ bug HIGH: mode_line เป็น dict literal → eager-eval grp/const_target → NameError ทุก config edit → แก้เป็น if/elif · be62c12 1 file pathspec (+85/-39). ⚠ ยังไม่เทส live (bridge หลุด).
 NEEDS (เอ๋ live-test บน COPY): เปิด master → Tier Shift → reload by-mtime → edit → เลือก config column → 085xxx/xxx120/085000 → ดู confirm → Yes. ตรวจ last_run.log. -- G1
+
+---
+### 2026-06-15 - G2 (WEB16) -> RD 07 + e: VISUAL CONFIG BROWSER shipped (7994db6, LIVE — e approved the look)
+RD 07 dispatch (visual-first config browser). Built → screenshot → **e approved ("OK พุช โชว์ 0×0 ด้วย")** → pushed.
+WHAT (app.js only, pathspec):
+- **Cube engine EXTRACTED to module-scope `_f2CubeKit()`** (geometry/colors/`cube`/`fnIcon`/`fcIcon`/bulb/dash) — `_openF2Reference` refactored to reuse it, renders IDENTICAL (icons never redrawn, per RD). cube/fnIcon/fcIcon now take an optional pixel size. **Future visual surfaces: reuse `_f2CubeKit()`, don't redraw.**
+- `_decodeF2Code(code)`: 13-char (2[TT][L][H][V]-WWWHHH) → cube icon + short English desc (kind · hand · light · W×H). Logic only.
+- `_openConfigBrowser()`: kdstock modal, inline `<style>` (NO style.css touch), cards = big cube icon + decoded desc + small 13-char code; **REAL F2 codes only** `^2[A-Z0-9]{5}-\d{6}$` from auto_generated + project parts (NEVER fabricated; empty data → SAMPLE-badged cards + banner). Live search; grouped by design KIND (BK/CF/CN/DN/FC/FN/SD/UP) — `_remapFamilyForCode` collapses all F2 to one bucket so I group by idx1-2 instead.
+- Click card → `_routeLeafToFusion({code, urn:_urnForCode, drawing_urn, status:'stale'}, {fusionOnly:true})` = .f2d-if-drawn-else-3D (reused, not reimplemented).
+- Entry = a cube header button injected next to `#ref-btn` via app.js init (NO index.html edit, idempotent).
+VERIFIED (preview, e-approved screenshot): 56 real F2 configs / 8 groups; decoded descs correct; cards render cube icons; urn-bearing card (2BK001-070120) → bridge `urn=…&kind=drawing` ✓; **44/56 have a Fusion urn** (open Fusion), 12 url-less library masters → router's re-run-CC_Assembly alert (existing behavior; **none have a PDF yet → opens 3D master**); F2 reference modal unchanged (25 SVGs); node --check + node --test 24/24 + 0 console errors; deploy 27535259598 success; live markers ✓.
+PHASE-2 (RD noted): CC_ export config-rows from Fusion → feed the browser ALL variants + urns (so the 12 url-less + future configs open + the catalog is complete). That's the Fusion lane.
+FYI: app.js touched → pull --rebase. pathspec app.js + plan doc only.
+**NEEDS:** nothing (phase-2 = Fusion lane when e wants it). -- G2 (WEB16)
