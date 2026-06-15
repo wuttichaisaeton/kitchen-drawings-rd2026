@@ -4882,3 +4882,14 @@ FLOW เอ๋: เปิด wrapper → Tier Shift `cap` (เลือก colum
 FIX (3 ชั้น): (1) **key capture ด้วย component BASE** ('2UP000') แล้ว re-resolve index สดด้วย base ตอน reapply (ไม่ผูก index); (2) **backward-compat อ่าน capture เก่า** (index-keyed → derive base จาก title ที่เก็บ) → เอ๋**ไม่ต้อง re-capture** (mapping 070043 เดิมยังใช้ได้); (3) **match row แบบตัด WWW** (`_norm_row` `-(\d{3})(\d{3})→-###\2`) ทนแถวถูก rename 070→085 ระหว่างทาง. + log ละเอียด (live insert cols + set/miss/rows-not-in-map+sample).
 VERIFY: py_compile ✓ wiring grep ✓. _MASTERS local → 76d9e94. action mtime reload (ไม่ต้อง restart).
 **NEEDS:** nothing. (เอ๋แค่รัน `re 085` ซ้ำ — capture เดิมยังอยู่ใน attribute, โค้ดใหม่อ่านได้ + จับคอลัมน์ถูก; ถ้ายัง MISS ส่ง last_run.log)
+
+---
+### 2026-06-14 - RD (dispatched research) -> เอ๋ + session ถัดไป: Fusion **มี API replace component** (เปิดทาง scripted Replace เต็มสาย)
+เอ๋ feedback "จ่ายงานมากขึ้น" → จ่าย research ไป subagent (background). ผล (source = Fusion API docs help.autodesk.com):
+- **`Occurrence.replace(newFile, replaceAll)`** (ต.ค.2023) สลับ external reference ได้ · `newFile` = **`core.DataFile`** (hub เดียวกัน, ไม่ใช่ path/Document) · replaceAll bool · fail ถ้าไม่ใช่ external ref
+- **`ConfigurationInsertColumn.occurrence`** (ม.ค.2024) = สะพาน: get column → `.occurrence` → `.replace(newFile, ...)`. **ต้องเป็น active/open doc** (ถ้าอ่านจาก DataFile จะ return null)
+- ❌ ไม่มี API set ไฟล์ของ insert column ตรงๆ; `switchConfiguration` = สลับ row ในไฟล์เดิมเท่านั้น (ข้ามไฟล์ไม่ได้); `documentReference`/`configuredDataFile` read-only (แค่เปลี่ยน version)
+- ⚠ **per-row preservation หลัง replace ไม่การันตี** (เสี่ยงเหมือน UI) — แต่ cap/reapply ของเรา (b97f5ce/76d9e94) จัดการเรื่องนี้อยู่แล้ว (capture ก่อน → reapply หลัง)
+- ⚠ resolve `newFile` = เดิน `project.rootFolder.dataFiles` = **cloud crawl → ติด guardrail** (รันตอนเอ๋ idle เท่านั้น)
+**OPPORTUNITY:** รวมเป็น **full-auto "Replace" mode ใน CC_TierShift** = capture → `occ.replace(newFile)` → reapply → rename ในคลิกเดียว (ตัด manual Replace ทิ้ง). **ยังไม่ build** — ต้อง live-test (Fusion bridge หลุด) + cloud-crawl ต้องนัด window. ref docs: Occurrence_replace.htm, ConfigurationInsertColumn_occurrence.htm.
+**NEEDS:** เอ๋เคาะว่าจะให้ build full-auto Replace mode ไหม (ตอน bridge กลับ + idle window) — ถ้าเอา ผม build + test กับ throwaway copy ก่อน.
