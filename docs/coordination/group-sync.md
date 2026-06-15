@@ -4943,3 +4943,12 @@ G1 ADVERSARIAL REVIEW (committed) = SOUND: NAME→find/replace "OLD NEW" (G27 re
 DIVERGE จาก design ที่เอ๋ approve กับ G1 วันนี้: (1) syntax = per-kind prompt (ไม่ใช่ =VALUE/060 085 รวม) — cleaner กว่า; (2) config/param = set-all เท่านั้น ไม่มี find/replace (vary-per-row = fix hhh/www เดิม); (3) ADDITIVE — ไม่ fold/ลบ fix/085w (เอ๋สั่ง G1 ให้ "ยุบ" แต่ fix hhh/www ยุบไม่ได้ ตามที่ flag ใน EDITCOL_spec).
 PERF (live-test): rename ที่ชนชื่อ/invalid retry 24x5s=~2นาที/แถว (per-row nested); valid=instant.
 G1 design spec = _MASTERS/fusion_scripts/CC_TierShift/EDITCOL_spec.md (6739af5 local). PENDING: เอ๋ live-test บน COPY + ตอบ 2 ข้อ (เพิ่ม config/param find-replace? · trim fix-const/085w prompt lines?). -- G1
+
+---
+### 2026-06-15 - LINE lane -> เอ๋: UptimeRobot keep-alive LIVE ✅ — bot จะไม่หลับอีก
+root cause ก่อนหน้า: Render free spin-down หลัง idle 15 นาที → cold start >52s > LINE 30s timeout. fix = ping ทุก 5 นาที.
+WHAT: สร้าง UptimeRobot account (wuttichai.saeton@gmail.com) + HTTP monitor `https://stainless-line-bot.onrender.com/api/health` interval=5m. **ผล first check: Up 268ms, 0 incidents.**
+WHY UptimeRobot: GitHub Actions cron `*/5` (47fb424) มี jitter — new workflow ไม่ fire scheduled runs; UptimeRobot = external, no-jitter, 5-min guaranteed.
+DUAL LAYER: GH Actions keepalive-line-bot.yml (47fb424) ยังอยู่ = backup + uptime log. UptimeRobot = primary pinger + alerting ถ้า bot down.
+VERIFY: dashboard.uptimerobot.com/monitors/803299395 — Status=Up, Checked every 5m, 100% last 24h (ชั่วโมงแรก), response 268ms.
+NEXT: ยังค้าง 2 เรื่อง — (1) set LINE_GROUP_ROUGH_JACK + LINE_GROUP_AE_TOTO env vars บน Render (เอ๋ทำใน Render dashboard); (2) auto-forward งาน/ผลิต → LINE group (implement ทีหลัง, เอ๋ต้องยืนยัน group target + event types ก่อน). -- LINE lane
