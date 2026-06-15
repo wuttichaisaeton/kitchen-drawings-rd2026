@@ -1636,19 +1636,18 @@ function _openBendPdfPicker(code) {
 // is a separate downloadable image. Reuses the opaque .kdstock modal shell so
 // it stays readable on every theme; all colours are explicit (theme-proof, same
 // approach as the bend PDF picker).
-function _openF2Reference() {
-  document.querySelectorAll('.f2ref-modal').forEach(m => m.remove());
-  const INK='#e8edf2', SUB='#9fb0c0', STEEL='#7fb0ff', AMBER='#f2a93b',
-        CARD='#1b2430', LINE='rgba(255,255,255,0.10)', MONO="ui-monospace,'SF Mono',Menlo,Consolas,monospace";
+// Cube-icon engine for the F2 wall-cabinet codes (เอ๋ 2026-06-14) — extracted to
+// module scope so BOTH _openF2Reference (the code cheat-sheet) and _openConfigBrowser
+// (the visual config browser) reuse the SAME icons, never redrawn. Isometric-cube
+// language: periwinkle = box panel / door · red = cover · visible face = solid ·
+// hidden face = 50% + dashed; a hand door is ONE front face split L / R / D.
+// cube(key,size) / fnIcon(size) / fcIcon(size) take an optional pixel size (default 20).
+function _f2CubeKit() {
+  const SUB='#9fb0c0', AMBER='#f2a93b';
   const ic = (d, col, extra='') => `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="${col}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex:none">${extra}<path d="${d}"/></svg>`;
   const bulbOn = ic('M9 18h6M10 21h4M12 3a6 6 0 0 1 4 10.5c-.7.6-1 1.3-1 2.5H9c0-1.2-.3-1.9-1-2.5A6 6 0 0 1 12 3z', AMBER);
   const bulbOff = ic('M9 18h6M12 3a6 6 0 0 1 4 10.5c-.7.6-1 1.3-1 2.5H9c0-1.2-.3-1.9-1-2.5A6 6 0 0 1 12 3z', SUB, '<line x1="4" y1="4" x2="20" y2="20" stroke="'+SUB+'"/>');
   const dash = ic('M5 12h14', SUB);
-
-  // Isometric-cube icon language (matches the F2 cheat-sheet image) — เอ๋ 2026-06-14:
-  // every panel/door drawn as WHICH FACE of the cabinet cube it is.
-  // periwinkle = box panel / door · red = cover · visible face = solid · hidden face = 50% + dashed.
-  // hand doors share ONE front face split in half: L=left leaf, R=right leaf, D=both.
   const VX = { TB:[50,16],TR:[84,34],TF:[50,52],TL:[16,34], BB:[50,56],BR:[84,74],BF:[50,92],BL:[16,74], MT:[33,43],MB:[33,83] };
   const _pt=k=>VX[k].join(','), _poly=ks=>ks.map(_pt).join(' ');
   const _TOP=['TB','TR','TF','TL'], _FRONT=['TL','TF','BF','BL'], _RIGHT=['TF','TR','BR','BF'], _LL=['TL','MT','MB','BL'], _LR=['MT','TF','BF','MB'];
@@ -1661,18 +1660,26 @@ function _openF2Reference() {
   const _ln=(a,b,col,d)=>`<line x1="${VX[a][0]}" y1="${VX[a][1]}" x2="${VX[b][0]}" y2="${VX[b][1]}" stroke="${col}" stroke-width="3" stroke-linecap="round"${d?' stroke-dasharray="4 3.5"':''}/>`;
   const _hover=(n,f,l)=>{const h=_HID[n];let s=`<polygon points="${_poly(h.pts)}" fill="${f}" fill-opacity="0.5"/>`;h.sol.forEach(e=>s+=_ln(e[0],e[1],l,false));h.dash.forEach(e=>s+=_ln(e[0],e[1],l,true));return s;};
   const _strip=()=>`<line x1="16" y1="34" x2="50" y2="52" stroke="${CB.rd}" stroke-width="8" stroke-linecap="round"/>`;
-  const _csvg=(inner,w)=>`<svg width="${w||20}" height="20" viewBox="0 0 100 100" style="flex:none">${inner}</svg>`;
-  const cube = key => {
+  const _csvg=(inner,size)=>`<svg width="${size||20}" height="${size||20}" viewBox="0 0 100 100" style="flex:none">${inner}</svg>`;
+  const cube = (key, size) => {
     const M = {
       BK:_vcube()+_hover('BACK',CB.bS,CB.bL), SD:_vcube({RIGHT:CB.bS}), UP:_vcube({TOP:CB.bT}), DN:_vcube()+_hover('BOTTOM',CB.bS,CB.bL),
       CF:_vcube({FRONT:CB.bS})+_strip(), CH:_vcube()+_hover('BOTTOM',CB.rS,CB.rL), CV:_vcube({RIGHT:CB.rS}),
       L:_door(true,false), R:_door(false,true), D:_door(true,true), O:_vcube(),
       F2:_vcube({TOP:CB.bT,FRONT:CB.bS,RIGHT:CB.bS})
     };
-    return _csvg(M[key]);
+    return _csvg(M[key] || M.O, size);
   };
-  const fnIcon = _csvg(`<polygon points="${_poly(_TOP)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_FRONT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_RIGHT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/>`);
-  const fcIcon = (() => { const c=16,d=8,e=24,cx=66,cy=46; const pt=(X,Y,Z)=>[(cx+(X-Y)*c).toFixed(1),(cy+(X+Y)*d-Z*e).toFixed(1)]; const pol=a=>a.map(p=>p.join(',')).join(' '); const GR={T:CB.gT,L:CB.gL,R:CB.gR},BU={T:CB.bT,L:CB.bS,R:CB.bS}; const bx=(i,j,col)=>{const tp=[pt(i,j,1),pt(i+1,j,1),pt(i+1,j+1,1),pt(i,j+1,1)],rt=[pt(i+1,j,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i+1,j,1)],lf=[pt(i,j+1,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i,j+1,1)];const f=(p,fl)=>`<polygon points="${pol(p)}" fill="${fl}" stroke="${CB.ed}" stroke-width="2.4" stroke-linejoin="round"/>`;return f(lf,col.L)+f(rt,col.R)+f(tp,col.T);}; return `<svg width="26" height="20" viewBox="0 0 132 100" style="flex:none">${bx(0,1,GR)+bx(1,0,GR)+bx(1,1,BU)}</svg>`; })();
+  const fnIcon = (size) => _csvg(`<polygon points="${_poly(_TOP)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_FRONT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_RIGHT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/>`, size);
+  const fcIcon = (size) => { const s=size||20; const c=16,d=8,e=24,cx=66,cy=46; const pt=(X,Y,Z)=>[(cx+(X-Y)*c).toFixed(1),(cy+(X+Y)*d-Z*e).toFixed(1)]; const pol=a=>a.map(p=>p.join(',')).join(' '); const GR={T:CB.gT,L:CB.gL,R:CB.gR},BU={T:CB.bT,L:CB.bS,R:CB.bS}; const bx=(i,j,col)=>{const tp=[pt(i,j,1),pt(i+1,j,1),pt(i+1,j+1,1),pt(i,j+1,1)],rt=[pt(i+1,j,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i+1,j,1)],lf=[pt(i,j+1,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i,j+1,1)];const f=(p,fl)=>`<polygon points="${pol(p)}" fill="${fl}" stroke="${CB.ed}" stroke-width="2.4" stroke-linejoin="round"/>`;return f(lf,col.L)+f(rt,col.R)+f(tp,col.T);}; return `<svg width="${(s*1.3).toFixed(0)}" height="${s}" viewBox="0 0 132 100" style="flex:none">${bx(0,1,GR)+bx(1,0,GR)+bx(1,1,BU)}</svg>`; };
+  return { cube, fnIcon, fcIcon, bulbOn, bulbOff, dash };
+}
+
+function _openF2Reference() {
+  document.querySelectorAll('.f2ref-modal').forEach(m => m.remove());
+  const K = _f2CubeKit();
+  const INK='#e8edf2', SUB='#9fb0c0', STEEL='#7fb0ff', AMBER='#f2a93b',
+        CARD='#1b2430', LINE='rgba(255,255,255,0.10)', MONO="ui-monospace,'SF Mono',Menlo,Consolas,monospace";
 
   const tmpl = [['2','d','1'],['T','d','2'],['T','d','3'],['L','d','4'],['H','d','5'],['V','d','6'],['-','x',''],['W','s','8'],['W','s','9'],['W','s','10'],['H','s','11'],['H','s','12'],['H','s','13']];
   const cells = tmpl.map(c => c[1]==='x'
@@ -1684,19 +1691,19 @@ function _openF2Reference() {
   const card = (title, rows) => `<div style="background:${CARD};border:1px solid ${LINE};border-radius:9px;padding:11px 13px"><div style="font-size:12px;color:${SUB};margin-bottom:9px">${title}</div>${rows}</div>`;
 
   const legend = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px">`
-    + card('Cabinet (2–3)', row(fnIcon, 'FN', 'straight') + row(fcIcon, 'FC', 'corner'))
-    + card('Panel (2–3)', row(cube('BK'), 'BK', 'back') + row(cube('SD'), 'SD', 'side') + row(cube('UP'), 'UP', 'top') + row(cube('DN'), 'DN', 'bottom') + row(cube('CF'), 'CF', 'cover front') + row(cube('CH'), 'CH', 'cover horizontal') + row(cube('CV'), 'CV', 'cover vertical'))
-    + card('Light (4)', row(bulbOn, 'L', 'on') + row(bulbOff, 'N', 'off') + row(dash, '0', 'n/a'))
-    + card('Hand (5)', row(cube('L'), 'L', 'left') + row(cube('R'), 'R', 'right') + row(cube('D'), 'D', 'double') + row(cube('O'), '0', 'none'))
+    + card('Cabinet (2–3)', row(K.fnIcon(), 'FN', 'straight') + row(K.fcIcon(), 'FC', 'corner'))
+    + card('Panel (2–3)', row(K.cube('BK'), 'BK', 'back') + row(K.cube('SD'), 'SD', 'side') + row(K.cube('UP'), 'UP', 'top') + row(K.cube('DN'), 'DN', 'bottom') + row(K.cube('CF'), 'CF', 'cover front') + row(K.cube('CH'), 'CH', 'cover horizontal') + row(K.cube('CV'), 'CV', 'cover vertical'))
+    + card('Light (4)', row(K.bulbOn, 'L', 'on') + row(K.bulbOff, 'N', 'off') + row(K.dash, '0', 'n/a'))
+    + card('Hand (5)', row(K.cube('L'), 'L', 'left') + row(K.cube('R'), 'R', 'right') + row(K.cube('D'), 'D', 'double') + row(K.cube('O'), '0', 'none'))
     + card('Size (8–13)', row('', 'WWW', 'width · 060 = 600') + row('', 'HHH', 'height · 072 = 720'))
-    + card('Other', row(cube('F2'), '2', 'F2 wall cabinet') + row('', 'V', 'version 0–9'))
+    + card('Other', row(K.cube('F2'), '2', 'F2 wall cabinet') + row('', 'V', 'version 0–9'))
     + `</div>`;
 
   const ex = (codeStr, txt, hot, icons='') => `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap"><span style="font:500 13px ${MONO};color:${hot?'#0f1419':INK};background:${hot?AMBER:CARD};border:1px solid ${hot?AMBER:LINE};padding:3px 9px;border-radius:6px">${codeStr}</span>${icons?`<span style="display:flex;gap:5px;align-items:center">${icons}</span>`:''}<span style="font-size:12.5px;color:${SUB}">${txt}</span></div>`;
   const examples = `<div style="border-top:1px solid ${LINE};padding-top:12px">`
-    + ex('2FNLL0-060072', 'straight · light on · left door · 600×720', true, fnIcon + bulbOn + cube('L'))
-    + ex('2FCND0-060060', 'corner · no light · double · 600×600', true, fcIcon + bulbOff + cube('D'))
-    + ex('2CF0R0-060072', 'cover front · right · 600×720 (panels have hand too)', false, cube('CF') + cube('R'))
+    + ex('2FNLL0-060072', 'straight · light on · left door · 600×720', true, K.fnIcon() + K.bulbOn + K.cube('L'))
+    + ex('2FCND0-060060', 'corner · no light · double · 600×600', true, K.fcIcon() + K.bulbOff + K.cube('D'))
+    + ex('2CF0R0-060072', 'cover front · right · 600×720 (panels have hand too)', false, K.cube('CF') + K.cube('R'))
     + `</div>`;
 
   const over = `<div style="background:rgba(242,169,59,0.12);border:1px solid rgba(242,169,59,0.3);border-radius:7px;padding:9px 12px;margin-bottom:14px;font-size:12px;color:${INK}"><b style="font-weight:500;color:${AMBER}">overflow</b> — if slots 1–6 run out and a dimension is constant, borrow WWW/HHH for sub-detail (e.g. 090XXX)</div>`;
@@ -1715,6 +1722,127 @@ function _openF2Reference() {
   const close = () => modal.remove();
   modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
   modal.querySelector('.kdstock-close').addEventListener('click', close);
+}
+
+// ── Visual Config Browser (เอ๋ visual-first) ─────────────────────────────────
+// Decode a 13-char F2 code into its cube icon + a short English description.
+// Logic only (the ICONS come from _f2CubeKit — reused, never redrawn). Positions
+// (F2 scheme 2[TT][L][H][V]-WWWHHH): idx1-2 type, idx3 light, idx4 hand, idx5
+// version, idx7-9 width×10, idx10-12 height×10.
+const _F2_TYPE_LABEL = { FN:'straight', FC:'corner', BK:'back', SD:'side', UP:'top', DN:'bottom', CF:'cover front', CH:'cover horizontal', CV:'cover vertical' };
+const _F2_HAND_LABEL = { L:'left', R:'right', D:'double' };
+const _F2_PANELS = ['BK','SD','UP','DN','CF','CH','CV'];
+function _decodeF2Code(code, kit) {
+  if (!/^2[A-Z0-9]{5}-\d{6}$/.test(code)) return { valid: false };
+  const K = kit || _f2CubeKit();
+  const type = code.slice(1, 3), light = code[3], hand = code[4], version = code[5];
+  const w = parseInt(code.slice(7, 10), 10) * 10, h = parseInt(code.slice(10, 13), 10) * 10;
+  let icon;
+  if (type === 'FN') icon = K.fnIcon;
+  else if (type === 'FC') icon = K.fcIcon;
+  else if (_F2_PANELS.includes(type)) icon = (sz) => K.cube(type, sz);
+  else icon = (sz) => K.cube('F2', sz);
+  const parts = [_F2_TYPE_LABEL[type] || ('type ' + type)];
+  if (hand && hand !== '0' && _F2_HAND_LABEL[hand]) parts.push(_F2_HAND_LABEL[hand]);
+  if (light === 'L') parts.push('light on'); else if (light === 'N') parts.push('light off');
+  return { valid: true, type, icon, light, hand, version, w, h, desc: parts.join(' · ') + ' · ' + w + '×' + h };
+}
+
+// Card grid of REAL F2 configs (never fabricated — empty data → clearly-badged
+// SAMPLE cards). Click a card → Fusion (.f2d if drawn, else 3D) via the shared
+// router. Reuses the kdstock modal shell; styles inline (no style.css edit).
+function _openConfigBrowser() {
+  document.querySelectorAll('.cfgbrowse-modal').forEach(m => m.remove());
+  const K = _f2CubeKit();
+  const F2_RE = /^2[A-Z0-9]{5}-\d{6}$/;
+  // Gather REAL F2 codes from data the web already has.
+  const seen = new Set();
+  const auto = (manifest && manifest.auto_generated) || {};
+  Object.keys(auto).forEach(c => { if (F2_RE.test(c)) seen.add(c); });
+  const projects = (manifest && manifest.projects) || {};
+  for (const p of Object.values(projects)) for (const part of (p.parts || [])) { if (part && F2_RE.test(part.code)) seen.add(part.code); }
+  let codes = [...seen].sort();
+  const isSample = codes.length === 0;
+  if (isSample) codes = ['2FNLL0-060072', '2FCND0-060060', '2CF0R0-060072'];
+  // Group by the design KIND (idx1-2: BK/CF/CN/FN/…) — the useful mid-level
+  // "family". (_remapFamilyForCode collapses every F2 code into one 'F2' bucket,
+  // too coarse for browsing.)
+  const groupOf = (code) => code.slice(1, 3);
+  const groups = {};
+  codes.forEach(c => { const g = groupOf(c); (groups[g] = groups[g] || []).push(c); });
+  const groupKeys = Object.keys(groups).sort();
+
+  const cardHtml = (code) => {
+    const d = _decodeF2Code(code, K);
+    const icon = d.valid ? d.icon(54) : K.cube('F2', 54);
+    const desc = d.valid ? d.desc : code;
+    return `<div class="cfg-card${isSample ? ' is-sample' : ''}" data-code="${escapeHtml(code)}" title="${isSample ? 'Sample — not in the data' : 'Open in Fusion (.f2d if drawn, else 3D master)'}">
+        <div class="cfg-card-icon">${icon}</div>
+        <div class="cfg-card-desc">${escapeHtml(desc)}</div>
+        <div class="cfg-card-code">${escapeHtml(displayCodeFor(code))}</div>
+        ${isSample ? '<div class="cfg-card-sample">SAMPLE</div>' : ''}
+      </div>`;
+  };
+  const sections = groupKeys.map(g =>
+    `<div class="cfg-section"><div class="cfg-section-head">${escapeHtml(g)}${_F2_TYPE_LABEL[g] ? ' · ' + _F2_TYPE_LABEL[g] : ''} <span class="cfg-section-n">${groups[g].length}</span></div>`
+    + `<div class="cfg-grid">${groups[g].map(cardHtml).join('')}</div></div>`
+  ).join('');
+  const banner = isSample
+    ? `<div class="cfg-banner">No real F2 configs in the data yet — showing samples (these won't open in Fusion).</div>`
+    : `<div class="cfg-count">${codes.length} F2 config${codes.length === 1 ? '' : 's'} · ${groupKeys.length} group${groupKeys.length === 1 ? '' : 's'}</div>`;
+
+  const STYLE = `<style>
+    .cfgbrowse-modal .cfg-tools{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid #2a4a52;flex-wrap:wrap}
+    .cfgbrowse-modal .cfg-search{flex:1 1 180px;min-width:140px;background:#0f1620;border:1px solid #2a3a44;border-radius:7px;padding:7px 11px;color:#e8edf2;font:500 13px ui-monospace,Menlo,monospace;outline:none}
+    .cfgbrowse-modal .cfg-count{font-size:12px;color:#9fb0c0}
+    .cfgbrowse-modal .cfg-banner{font-size:12px;color:#f2a93b}
+    .cfgbrowse-modal .cfg-body{flex:1 1 auto;overflow-y:auto;padding:14px 16px 18px;background:#0f1419}
+    .cfgbrowse-modal .cfg-section{margin-bottom:18px}
+    .cfgbrowse-modal .cfg-section-head{font:600 13px ui-monospace,Menlo,monospace;color:#7fb0ff;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .cfgbrowse-modal .cfg-section-n{font-size:11px;color:#9fb0c0;background:#1b2430;border-radius:10px;padding:1px 8px}
+    .cfgbrowse-modal .cfg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:10px}
+    .cfgbrowse-modal .cfg-card{background:#1b2430;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 10px 10px;display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;transition:border-color .12s,transform .12s,background .12s;position:relative}
+    .cfgbrowse-modal .cfg-card:hover{border-color:#7fb0ff;background:#202a38;transform:translateY(-1px)}
+    .cfgbrowse-modal .cfg-card.is-sample{cursor:default;opacity:.85}
+    .cfgbrowse-modal .cfg-card.is-sample:hover{border-color:rgba(255,255,255,0.08);background:#1b2430;transform:none}
+    .cfgbrowse-modal .cfg-card-icon{height:56px;display:flex;align-items:center;justify-content:center}
+    .cfgbrowse-modal .cfg-card-desc{font-size:11px;line-height:1.35;color:#cdd6e0;text-align:center;min-height:30px}
+    .cfgbrowse-modal .cfg-card-code{font:500 11px ui-monospace,Menlo,monospace;color:#8794a4;letter-spacing:.3px}
+    .cfgbrowse-modal .cfg-card-sample{position:absolute;top:6px;right:6px;font:600 8px ui-monospace,monospace;color:#0f1419;background:#f2a93b;border-radius:4px;padding:1px 4px;letter-spacing:.5px}
+    .cfgbrowse-modal .cfg-empty{color:#9fb0c0;text-align:center;padding:30px}
+  </style>`;
+
+  const modal = document.createElement('div');
+  modal.className = 'kdstock-modal cfgbrowse-modal';
+  modal.innerHTML = STYLE + '<div class="kdstock-backdrop"></div>'
+    + `<div class="kdstock-frame" role="dialog" aria-label="Visual config browser" style="max-width:980px;width:94vw;max-height:90vh">
+         <div class="kdstock-head">Visual config browser<button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="cfg-tools"><input class="cfg-search" type="text" placeholder="Search code…" autocomplete="off">${banner}</div>
+         <div class="cfg-body">${sections || '<div class="cfg-empty">No F2 configs.</div>'}</div>
+       </div>`;
+  document.body.appendChild(modal);
+  const close = () => modal.remove();
+  modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
+  modal.querySelector('.kdstock-close').addEventListener('click', close);
+
+  const search = modal.querySelector('.cfg-search');
+  search.addEventListener('input', () => {
+    const q = search.value.trim().toUpperCase();
+    modal.querySelectorAll('.cfg-card').forEach(c => { c.style.display = (!q || c.dataset.code.toUpperCase().includes(q)) ? '' : 'none'; });
+    modal.querySelectorAll('.cfg-section').forEach(sec => { sec.style.display = [...sec.querySelectorAll('.cfg-card')].some(c => c.style.display !== 'none') ? '' : 'none'; });
+  });
+  try { search.focus(); } catch (e) {}
+
+  if (!isSample) {
+    modal.querySelectorAll('.cfg-card').forEach(card => {
+      card.addEventListener('click', () => {
+        const code = card.dataset.code;
+        const eff = _effectiveDrawingCode(code);
+        const entry = ((manifest && manifest.auto_generated) || {})[eff] || null;
+        _routeLeafToFusion({ code, urn: _urnForCode(code), drawing_urn: entry ? (entry.drawing_urn || null) : null, status: 'stale' }, { fusionOnly: true });
+      });
+    });
+  }
 }
 
 function _renderBendList(parts, projectKey) {
@@ -12654,7 +12782,21 @@ async function init() {
 
     // F2 code reference button (header, next to the theme picker) — เอ๋ 2026-06-13.
     const refBtn = document.getElementById('ref-btn');
-    if (refBtn) refBtn.addEventListener('click', _openF2Reference);
+    if (refBtn) {
+      refBtn.addEventListener('click', _openF2Reference);
+      // Visual config browser (เอ๋ 2026-06-14, visual-first) — inject a sibling
+      // header button (cube glyph) additively, no index.html edit. Idempotent.
+      if (!document.getElementById('cfg-browse-btn')) {
+        const b = document.createElement('button');
+        b.id = 'cfg-browse-btn';
+        b.className = refBtn.className;
+        b.title = 'Visual config browser';
+        b.setAttribute('aria-label', 'Visual config browser');
+        b.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.6 L20 7 V17 L12 21.4 L4 17 V7 Z"/><path d="M4 7 L12 11.4 L20 7"/><line x1="12" y1="11.4" x2="12" y2="21.4"/></svg>';
+        refBtn.parentNode.insertBefore(b, refBtn.nextSibling);
+        b.addEventListener('click', _openConfigBrowser);
+      }
+    }
 
     // Tap-to-reload ("NEW VERSION" pill) / F5 must keep เอ๋ where she was — a hard
     // reload otherwise boots to the projects home and she has to navigate back in
