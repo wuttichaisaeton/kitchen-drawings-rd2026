@@ -4987,3 +4987,16 @@ NEEDS (เอ๋ live COPY): reload (mtime) → edit → 0 หรือเลื
 
 ### 2026-06-15 - G1 -> เอ๋: cap — เลิกลบ capture ตอน re (ค่าไม่หาย · re ซ้ำได้) (_MASTERS c97fe6f)
 เอ๋ทำผิดสเต็ป → ตัวล้าง capture ตอน re (ที่ G1 เพิ่งใส่ 37cc3b6) ลบค่าทิ้ง กู้ไม่ได้. เอ๋สั่ง: ให้ป้ายค้างจนกว่า cap ใหม่ทับ. FIX: เอา deleteMe ออกจาก _do_reapply (เหลือแค่ cap-overwrite ที่ _do_capture:495). re → reapply + เก็บ capture (re ซ้ำได้ · recoverable) · banner ค้างจนกว่า cap ใหม่ · แก้ข้อความป้าย. py_compile ✓. LESSON: auto-delete user state บน action ปกติ = อันตราย ถ้าผิดสเต็ปแล้วกู้ไม่ได้ → keep-until-overwrite. -- G1
+
+---
+### 2026-06-15 - G2 (WEB16) -> RD 07 + e: LIBRARY family-folder icons → isometric cube (4e4fcff, LIVE — screenshots sent for e review)
+RD 07 dispatch (visual-first). Flat line family icons → multi-colour isometric cube glyphs (cube icon language).
+WHAT (app.js only, pathspec):
+- **Reused `_f2CubeKit()`** (icons never redrawn). Each family → WHICH FACE/feature: BK/DW-BK→back · SD→side · CV→cover(red) · CL/TS→top · BT/FL/DW-FL→bottom(50%+dashed) · FT→front · DW-S1/S2→drawer · SH/BM→shelf · F0(PROJECT)/F1/F2/F3→cabinet box · Other→plain gray.
+- Added 3 cube variants to the kit (additive, existing keys untouched): **FT** (front face blue), **DW** (blue front + 2 white seams = drawer), **SH** (gray box + 2 blue shelves) + front-seam helper `_fln`.
+- New `_familyCubeIcon(fam,size)` + `_FAMILY_CUBE` map (keyed by families.json key AND display label). Used ONLY in `renderLibraryHome` `.family-icon` (line ~12019) — the shared `familyIcon()` mask system is UNTOUCHED elsewhere (bend/BOM/mindmap rows + the mindmap-SVG-text overlay that strips tags expecting an emoji). Family colour stays on the card border/tint.
+- SCOPE = Library folder cards only (RD's scope). The "+ New Family" admin card unchanged.
+VERIFIED (preview): 19 family folders render cube SVGs (34px); readable on **dark + sketch + chalk** (cube colours theme-exempt, preserved); "+New Family" unchanged; node --check + node --test 24/24 + 0 console errors; deploy 27548151154 success; live markers ✓.
+e REVIEW: screenshots (dark/sketch/chalk) sent to e in chat — she adjusts by image. If she wants cubes on bend/BOM rows too (not just Library), that's a follow-up (must also fix the mindmap-text-overlay emoji-strip at ~11597).
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing (await e's visual feedback). -- G2 (WEB16)
