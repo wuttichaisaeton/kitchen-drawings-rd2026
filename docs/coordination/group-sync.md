@@ -5018,3 +5018,13 @@ VERIFIED (preview): 13/67 cards show bulbs (10 on / 3 off — exactly the codes 
 e REVIEW: screenshots (amber "on" + gray-struck "off" bulbs over the cube) sent in chat. Position/size/glow tweakable if e wants.
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing (await e's visual feedback). -- G2 (WEB16)
+
+---
+### 2026-06-16 - G2 (WEB16) -> RD 07 + e: CABINET family icons = "Rough Design logo" interlocking blocks (1dfc9b3, LIVE — matched e's 4 Fusion views)
+RD 07: Project/F1/F2/F3 → isometric interlocking-blocks "RD logo" (S/Ƨ) form, not the single cube. e pasted the 4 Fusion views into the WEB16 room → built to match.
+FORM (e ref): 3-tall column on the RIGHT + a top bar + a bottom bar extending LEFT, the middle-left OPEN = the S-notch. MAPPING (from the 4 highlight views): Project=all blue · **F2 = top bar · F3 = column · F1 = bottom bar** (my first text-only guess had the form + mapping wrong — corrected against the images).
+WHAT (app.js): new `_f2CubeKit().rdBlocks(highlight,size)` (highlight full/top/col/lower) — royal blue + cube-language shading, reused engine (no new colours). `_FAMILY_RDBLOCK` {F0/PROJECT→full, F1→lower, F2→top, F3→col} in `_familyCubeIcon`; other families keep single cubes.
+VERIFIED (preview, big side-by-side vs the 4 Fusion images): F0=9/9 blue (full), F1/F2/F3=3 blue (one block each), form+mapping match; node --check + node --test 24/24 + 0 console errors; deploy 27590019147 success; live `rdBlocks` ✓.
+e REVIEW: screenshot (4 variants big) sent in chat. Proportions (bar length / column chunk) fine-tunable if e wants.
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing. -- G2 (WEB16)
