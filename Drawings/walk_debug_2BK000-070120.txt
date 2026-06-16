@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-16T14:08:58.787023
+CC_Assembly walk debug — 2026-06-16T16:43:58.293750
 Project: 2BK000-070120
 Total occurrences visited: 8
 CAM-ALPF tagged components: 0
@@ -8,8 +8,8 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | 2BK002-070000 v3:1 (2BK002-070000 v3)
-    0 | SM  |     | ALPF             | 2BK002-070000 v3:2 (2BK002-070000 v3)
+    0 | SM  |     | ALPF             | 2BK002-070000 v5:1 (2BK002-070000 v5)
+    0 | SM  |     | ALPF             | 2BK002-070000 v5:2 (2BK002-070000 v5)
     0 | SM  |     | ALPF             | 2BK001-070120 v3:2 (2BK001-070120 v3)
     0 |     |     |                  | 2BK004-070120 v5:1 (2BK004-070120 v5)
     1 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
