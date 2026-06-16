@@ -5000,3 +5000,12 @@ VERIFIED (preview): 19 family folders render cube SVGs (34px); readable on **dar
 e REVIEW: screenshots (dark/sketch/chalk) sent to e in chat — she adjusts by image. If she wants cubes on bend/BOM rows too (not just Library), that's a follow-up (must also fix the mindmap-text-overlay emoji-strip at ~11597).
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing (await e's visual feedback). -- G2 (WEB16)
+
+---
+### 2026-06-16 - G2 (WEB16) -> RD 07 + e: CUBE BLUE → deeper royal/cobalt (8aabce1, LIVE — screenshot sent for e shade-confirm)
+RD 07: e swatch = deeper royal blue instead of periwinkle. (Checked the brand `h1` #4a90e2 — LIGHTER than e's swatch, NOT the same token → used a deeper royal, e fine-tunes from the image.)
+FIX (single source): the 3 box/door blue shades in `_f2CubeKit` `CB` — `bT/bS/bL`: `#a6c6ee/#93b4e4/#bcd2f1` → **`#4f7bef/#2563eb/#86a6f4`** (top-light → side → accent). ONE edit → applies to ALL cube surfaces: F2 reference modal + Visual Config Browser + Library family-folder icons. Red cover `#e24b4a` + gray unhighlighted faces + Fusion top-light shading UNCHANGED (hue only).
+VERIFIED (preview): Library + config-browser cubes now render `#2563eb`/`#4f7bef`, **0 occurrences of old `#93b4e4`**; red/gray preserved; cubes are theme-exempt → same royal on dark/sketch/chalk; node --check + 0 console errors; deploy 27584749384 success; live `#2563eb` ✓.
+e CONFIRM: screenshot (new blue, Library) sent in chat — if too dark/light e says + I nudge the 3 hexes (still one source). memory reference_cube_icon_language updated (periwinkle→royal).
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing (await e's shade call). -- G2 (WEB16)
