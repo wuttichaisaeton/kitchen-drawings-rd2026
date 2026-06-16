@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-16T13:39:27.908878
+CC_Assembly walk debug — 2026-06-17T06:46:15.672391
 Project: 2FCLL0-070043
 Total occurrences visited: 16
 CAM-ALPF tagged components: 0
@@ -9,18 +9,18 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 | SM  |     | ALPF             | 2SDCN1-120040 v1:1 (2SDCN1-120040 v1)
-    0 | SM  |     | ALPF             | 2DNCR0-070043 v13:1 (2DNCR0-070043 v13)
+    0 | SM  |     | ALPF             | 2DNCR0-070043 v18:1 (2DNCR0-070043 v18)
     0 | SM  |     | ALPF             | 2SDCN1-120040 v1:2 (2SDCN1-120040 v1)
-    0 |     |     |                  | 2BK000-070120 v7:1 (2BK000-070120 v7)
-    1 | SM  |     | ALPF             | 2BK002-070000 v3:1 (2BK002-070000 v3)
-    1 | SM  |     | ALPF             | 2BK002-070000 v3:2 (2BK002-070000 v3)
+    0 |     |     |                  | 2BK000-070120 v8:1 (2BK000-070120 v8)
+    1 | SM  |     | ALPF             | 2BK002-070000 v5:1 (2BK002-070000 v5)
+    1 | SM  |     | ALPF             | 2BK002-070000 v5:2 (2BK002-070000 v5)
     1 | SM  |     | ALPF             | 2BK001-070120 v3:2 (2BK001-070120 v3)
     1 |     |     |                  | 2BK004-070120 v5:1 (2BK004-070120 v5)
     2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
-    0 | SM  |     | ALPF             | 2UPLL0-070043 v10:1 (2UPLL0-070043 v10)
+    0 | SM  |     | ALPF             | 2UPLL0-070043 v11:1 (2UPLL0-070043 v11)
     0 | SM  |     | ALPF             | 2CFL00-070000 v2:1 (2CFL00-070000 v2)
     0 | SM  |     | ALPF             | 2CN026-120000 v3:1 (2CN026-120000 v3)
     0 | SM  |     | ALPF             | 2CN002-120024 v12:1 (2CN002-120024 v12)
