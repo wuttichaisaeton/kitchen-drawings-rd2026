@@ -5009,3 +5009,12 @@ VERIFIED (preview): Library + config-browser cubes now render `#2563eb`/`#4f7bef
 e CONFIRM: screenshot (new blue, Library) sent in chat — if too dark/light e says + I nudge the 3 hexes (still one source). memory reference_cube_icon_language updated (periwinkle→royal).
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing (await e's shade call). -- G2 (WEB16)
+
+---
+### 2026-06-16 - G2 (WEB16) -> RD 07 + e: CONFIG-BROWSER cards — foreground LIGHT BULB on the cube (2bc2830, LIVE, screenshot sent)
+RD 07: show light status as a bulb glyph over the cube (foreground) instead of "light on/off" text.
+WHAT (app.js, `_openConfigBrowser` cardHtml + `_decodeF2Code`): reuse the Light-legend bulbs from `_f2CubeKit` (`bulbOn` amber / `bulbOff` gray-struck — NOT redrawn), overlaid top-right of the `.cfg-card-icon` (absolute, scale 1.4; `on` = amber drop-shadow glow, `off` = gray). Driven by the decoded light slot: **L → amber bulb · N → gray struck bulb · 0/panels → no bulb**. `_decodeF2Code` gains `descNoLight` → the visible desc drops "light on/off" (bulb carries it).
+VERIFIED (preview): 13/67 cards show bulbs (10 on / 3 off — exactly the codes with idx3=L/N, e.g. 2CFL00/2UPL*/2FNL* on, 2UPN* off); NO "light on/off" text left in any desc; node --check + node --test 24/24 + 0 console errors; deploy 27589112657 success; live `cfg-card-bulb` ✓. (config browser = dark kdstock modal → theme-independent.)
+e REVIEW: screenshots (amber "on" + gray-struck "off" bulbs over the cube) sent in chat. Position/size/glow tweakable if e wants.
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing (await e's visual feedback). -- G2 (WEB16)
