@@ -1,0 +1,26 @@
+CC_Assembly walk debug — 2026-06-16T09:27:47.757843
+Project: 2FCLL0-060043
+Total occurrences visited: 16
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | 2SDCN1-120040 v1:1 (2SDCN1-120040 v1)
+    0 | SM  |     | ALPF             | 2DNCR0-060043 v6:1 (2DNCR0-060043 v6)
+    0 | SM  |     | ALPF             | 2SDCN1-120040 v1:2 (2SDCN1-120040 v1)
+    0 |     |     |                  | 2BK000-060120 v9:1 (2BK000-060120 v9)
+    1 | SM  |     | ALPF             | 2BK002-060000 v3:1 (2BK002-060000 v3)
+    1 | SM  |     | ALPF             | 2BK002-060000 v3:2 (2BK002-060000 v3)
+    1 | SM  |     | ALPF             | 2BK001-060120 v1:2 (2BK001-060120 v1)
+    1 |     |     |                  | 2BK004-060120 v4:1 (2BK004-060120 v4)
+    2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
+    2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
+    2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
+    2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
+    0 | SM  |     | ALPF             | 2UPLL0-060043 v6:1 (2UPLL0-060043 v6)
+    0 | SM  |     | ALPF             | 2CFL00-085000 v3:1 (2CFL00-085000 v3)
+    0 | SM  |     | ALPF             | 2CN000-120000 v20:1 (2CN000-120000 v20)
+    0 | SM  |     | ALPF             | 2CN002-120014 v1:1 (2CN002-120014 v1)

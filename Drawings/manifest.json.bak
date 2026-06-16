@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-16T02:13:10.777580+00:00",
+  "generated_at": "2026-06-16T02:27:47.760599+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -10106,6 +10106,91 @@
           "is_wrapper": true,
           "parent_code": "2BK000-067120",
           "variant_root": "2BK000-067120"
+        }
+      ]
+    },
+    "2FCLL0-060043": {
+      "name": "2FCLL0-060043",
+      "status": "active",
+      "created_at": "2026-06-16T02:27:47.758216+00:00",
+      "updated_at": "2026-06-16T02:27:47.758216+00:00",
+      "total_unique_parts": 9,
+      "total_qty": 14,
+      "parts": [
+        {
+          "code": "2BK001-060120",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2BK000-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:sXf-AMtoTLu2FgujgOvnHQ"
+        },
+        {
+          "code": "2BK002-060000",
+          "qty": 2,
+          "family": "Other",
+          "parent_code": "2BK000-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:le3lMDvYQYCB4y01mq7e3A"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BK004-060120",
+          "variant_root": "2BK000-060120",
+          "urn": "urn:adsk.wipprod:dm.lineage:Yom7QitTQ8SN_TteRjdfMw"
+        },
+        {
+          "code": "2CFL00-085000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:vuk5GGLMTFCpGDdI3pL7yA"
+        },
+        {
+          "code": "2CN000-120000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:kVVRHCwcRimgANZp9Lx87Q"
+        },
+        {
+          "code": "2CN002-120014",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:AYaWoakWS8Cy4L7XMYLOqA"
+        },
+        {
+          "code": "2DNCR0-060043",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:eBCel2WdToSHkfZgd99ZaA"
+        },
+        {
+          "code": "2SDCN1-120040",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
+        },
+        {
+          "code": "2UPLL0-060043",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:SpOZYqvMSPeWGOngL756WQ"
+        },
+        {
+          "code": "2BK000-060120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "2BK000-060120"
+        },
+        {
+          "code": "2BK004-060120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2BK000-060120",
+          "variant_root": "2BK000-060120"
         }
       ]
     }
