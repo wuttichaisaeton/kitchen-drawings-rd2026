@@ -1653,7 +1653,11 @@ function _f2CubeKit() {
   const _TOP=['TB','TR','TF','TL'], _FRONT=['TL','TF','BF','BL'], _RIGHT=['TF','TR','BR','BF'], _LL=['TL','MT','MB','BL'], _LR=['MT','TF','BF','MB'];
   const _HID={ BACK:{pts:['TB','TR','BR','BB'],dash:[['BB','TB'],['BB','BR']],sol:[['TB','TR'],['TR','BR']]},
                BOTTOM:{pts:['BB','BR','BF','BL'],dash:[['BB','BR'],['BB','BL']],sol:[['BR','BF'],['BF','BL']]} };
-  const CB={ gT:'#45484d',gL:'#6a6e75',gR:'#5f636b', bT:'#a6c6ee',bS:'#93b4e4',bL:'#bcd2f1', rS:'#e24b4a',rL:'#f2807f', ed:'#eef1f4', rd:'#e24b4a' };
+  // bT/bS/bL = the box/door blue (top-light → side → accent). เอ๋ 2026-06-15:
+  // periwinkle → deeper royal/cobalt blue (single source → applies to the F2
+  // reference, config browser, AND Library family-folder cubes). Red cover + gray
+  // unhighlighted faces + Fusion top-light shading unchanged — hue only.
+  const CB={ gT:'#45484d',gL:'#6a6e75',gR:'#5f636b', bT:'#4f7bef',bS:'#2563eb',bL:'#86a6f4', rS:'#e24b4a',rL:'#f2807f', ed:'#eef1f4', rd:'#e24b4a' };
   const _face=(pts,col)=>`<polygon points="${_poly(pts)}" fill="${col}" stroke="${CB.ed}" stroke-width="2.6" stroke-linejoin="round"/>`;
   const _vcube=rc=>{rc=rc||{};return _face(_TOP,rc.TOP||CB.gT)+_face(_FRONT,rc.FRONT||CB.gL)+_face(_RIGHT,rc.RIGHT||CB.gR);};
   const _door=(lB,rB)=>_face(_TOP,CB.gT)+_face(_RIGHT,CB.gR)+_face(_LL,lB?CB.bS:CB.gL)+_face(_LR,rB?CB.bS:CB.gL);
