@@ -1709,7 +1709,25 @@ function _f2CubeKit() {
               + box(BL, 0, 1, 3, F('col'));     // column (right)     z 0..3
     return `<svg width="${s}" height="${s}" viewBox="0 0 100 100" style="flex:none">${out}</svg>`;
   };
-  return { cube, fnIcon, fcIcon, bulbOn, bulbOff, dash, rdBlocks };
+  // CL = corner cover panel (เอ๋ ref 2026-06-16): an L-corner of two GRAY cabinet
+  // boxes + a thin TALL BLUE vertical cover post at the front inner-corner joint.
+  const clIcon = (size) => {
+    const s = size || 20;
+    const u=15, v=8, h=23;
+    const P=(X,Y,Z)=>[ 50 + (X-Y)*u, 52 + (X+Y)*v - Z*h ];
+    const poly=(p,c)=>`<polygon points="${p.map(q=>q[0].toFixed(1)+','+q[1].toFixed(1)).join(' ')}" fill="${c}" stroke="${CB.ed}" stroke-width="2.2" stroke-linejoin="round"/>`;
+    const cub=(x0,y0,z0,dx,dy,dz,C)=>{const x1=x0+dx,y1=y0+dy,z1=z0+dz;
+      return poly([P(x0,y1,z0),P(x1,y1,z0),P(x1,y1,z1),P(x0,y1,z1)],C.L)
+           + poly([P(x1,y0,z0),P(x1,y1,z0),P(x1,y1,z1),P(x1,y0,z1)],C.R)
+           + poly([P(x0,y0,z1),P(x1,y0,z1),P(x1,y1,z1),P(x0,y1,z1)],C.T);};
+    const G={T:CB.gT,L:CB.gL,R:CB.gR}, B={T:CB.bT,L:CB.bS,R:CB.bS};
+    // two gray arms (left + right) + a thin tall blue post at the centre-front joint
+    const out = cub(0,1, 0, 1,1,1, G)            // left arm (back-left)
+              + cub(1,0, 0, 1,1,1, G)            // right arm (back-right)
+              + cub(0.86,0.86, 0, 0.28,0.28,1.32, B);  // thin tall blue cover post
+    return `<svg width="${s}" height="${s}" viewBox="0 0 100 100" style="flex:none">${out}</svg>`;
+  };
+  return { cube, fnIcon, fcIcon, bulbOn, bulbOff, dash, rdBlocks, clIcon };
 }
 
 function _openF2Reference() {
@@ -2561,6 +2579,7 @@ function _familyCubeIcon(fam, size) {
   const f = String(fam || '');
   const hl = _FAMILY_RDBLOCK[fam] || _FAMILY_RDBLOCK[f.toUpperCase()];
   if (hl) return K.rdBlocks(hl, size || 30);
+  if (f.toUpperCase() === 'CL') return K.clIcon(size || 30);   // corner cover post
   const key = _FAMILY_CUBE[fam] || _FAMILY_CUBE[f.toUpperCase()] || 'O';
   return K.cube(key, size || 30);
 }
