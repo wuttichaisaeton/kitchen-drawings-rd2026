@@ -1684,7 +1684,32 @@ function _f2CubeKit() {
   };
   const fnIcon = (size) => _csvg(`<polygon points="${_poly(_TOP)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_FRONT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/><polygon points="${_poly(_RIGHT)}" fill="none" stroke="${CB.bS}" stroke-width="5" stroke-linejoin="round"/>`, size);
   const fcIcon = (size) => { const s=size||20; const c=16,d=8,e=24,cx=66,cy=46; const pt=(X,Y,Z)=>[(cx+(X-Y)*c).toFixed(1),(cy+(X+Y)*d-Z*e).toFixed(1)]; const pol=a=>a.map(p=>p.join(',')).join(' '); const GR={T:CB.gT,L:CB.gL,R:CB.gR},BU={T:CB.bT,L:CB.bS,R:CB.bS}; const bx=(i,j,col)=>{const tp=[pt(i,j,1),pt(i+1,j,1),pt(i+1,j+1,1),pt(i,j+1,1)],rt=[pt(i+1,j,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i+1,j,1)],lf=[pt(i,j+1,0),pt(i+1,j+1,0),pt(i+1,j+1,1),pt(i,j+1,1)];const f=(p,fl)=>`<polygon points="${pol(p)}" fill="${fl}" stroke="${CB.ed}" stroke-width="2.4" stroke-linejoin="round"/>`;return f(lf,col.L)+f(rt,col.R)+f(tp,col.T);}; return `<svg width="${(s*1.3).toFixed(0)}" height="${s}" viewBox="0 0 132 100" style="flex:none">${bx(0,1,GR)+bx(1,0,GR)+bx(1,1,BU)}</svg>`; };
-  return { cube, fnIcon, fcIcon, bulbOn, bulbOff, dash };
+  // "Rough Design logo" — S/Ƨ form (เอ๋ 4-view Fusion ref 2026-06-16): a 3-tall
+  // column on the RIGHT + a top bar and a bottom bar extending LEFT, the middle-left
+  // left OPEN (the S-notch). highlight: 'full'=all blue (Project) · 'top'=F2 top bar ·
+  // 'col'=F3 column · 'lower'=F1 bottom bar. Royal blue + cube-language shading.
+  const rdBlocks = (highlight, size) => {
+    const s = size || 20;
+    const ux=15.5, uy=8.7, hz=20.5, BL=2.2;   // iso units + bar length (units)
+    const tx = 50 - (BL*ux)/2, ty = 50 - (((BL+2)*uy) - 3*hz)/2;
+    const P=(X,Y,Z)=>[ tx + (X-Y)*ux, ty + (X+Y)*uy - Z*hz ];
+    const poly=(pts,col)=>`<polygon points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="${col}" stroke="${CB.ed}" stroke-width="2.2" stroke-linejoin="round"/>`;
+    const box=(x0,z0,dx,dz,blue)=>{
+      const C = blue?{T:CB.bT,L:CB.bS,R:CB.bS}:{T:CB.gT,L:CB.gL,R:CB.gR};
+      const x1=x0+dx, z1=z0+dz, y0=0, y1=1;
+      const top=[P(x0,y0,z1),P(x1,y0,z1),P(x1,y1,z1),P(x0,y1,z1)];
+      const left=[P(x0,y1,z0),P(x1,y1,z0),P(x1,y1,z1),P(x0,y1,z1)];
+      const right=[P(x1,y0,z0),P(x1,y1,z0),P(x1,y1,z1),P(x1,y0,z1)];
+      return poly(left,C.L)+poly(right,C.R)+poly(top,C.T);
+    };
+    const F=(h)=>highlight==='full'||highlight===h;
+    // draw back→front: bars (low X, up-left) first, then the column (high X, front)
+    const out = box(0, 0, BL, 1, F('lower'))    // bottom bar (left)  z 0..1
+              + box(0, 2, BL, 1, F('top'))      // top bar (left)     z 2..3
+              + box(BL, 0, 1, 3, F('col'));     // column (right)     z 0..3
+    return `<svg width="${s}" height="${s}" viewBox="0 0 100 100" style="flex:none">${out}</svg>`;
+  };
+  return { cube, fnIcon, fcIcon, bulbOn, bulbOff, dash, rdBlocks };
 }
 
 function _openF2Reference() {
@@ -2528,9 +2553,16 @@ const _FAMILY_CUBE = {
   'F0':'F2', 'PROJECT':'F2', 'F1':'F2', 'F2':'F2', 'F3':'F2',
   'Beam':'O', 'Custom':'O', 'Other':'O', 'OTHER':'O'
 };
+// Cabinet families use the interlocking-blocks "RD logo" form instead of a single
+// cube — same assembly, each family highlights a different block (Project=full).
+const _FAMILY_RDBLOCK = { 'F0':'full', 'PROJECT':'full', 'F1':'lower', 'F2':'top', 'F3':'col' };
 function _familyCubeIcon(fam, size) {
-  const key = _FAMILY_CUBE[fam] || _FAMILY_CUBE[String(fam || '').toUpperCase()] || 'O';
-  return _f2CubeKit().cube(key, size || 30);
+  const K = _f2CubeKit();
+  const f = String(fam || '');
+  const hl = _FAMILY_RDBLOCK[fam] || _FAMILY_RDBLOCK[f.toUpperCase()];
+  if (hl) return K.rdBlocks(hl, size || 30);
+  const key = _FAMILY_CUBE[fam] || _FAMILY_CUBE[f.toUpperCase()] || 'O';
+  return K.cube(key, size || 30);
 }
 
 function familyOrder(a, b) {
