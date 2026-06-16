@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-16T07:26:54.410306+00:00",
+  "generated_at": "2026-06-16T07:41:50.758207+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -10721,6 +10721,71 @@
           "qty": 4,
           "family": "Other",
           "urn": "C:/Users/wutti/AppData/Local/Autodesk/Autodesk Fusion 360/A7V8L9BZNRJE/W.login/F/_2BKCL4-070120.f98373f5-fe78-4d09-b58a-0218ebe19bf1.f3d"
+        }
+      ]
+    },
+    "2FNCL1-070000": {
+      "name": "2FNCL1-070000",
+      "status": "active",
+      "created_at": "2026-06-16T07:41:50.746150+00:00",
+      "updated_at": "2026-06-16T07:41:50.746150+00:00",
+      "total_unique_parts": 7,
+      "total_qty": 14,
+      "parts": [
+        {
+          "code": "2BK002-035000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BKCL1-070120",
+          "variant_root": "2BKCL1-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:SelbWBQcSFK-lmiKvDsC9A"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BKCL4-070120",
+          "variant_root": "2BKCL1-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:R1F-iY2jRlOc2rQI445v5g"
+        },
+        {
+          "code": "2BKCL1-070120",
+          "qty": 1,
+          "family": "Other",
+          "variant_root": "2BKCL1-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:n1CQekNdQUyNJNqWyYyZIw"
+        },
+        {
+          "code": "2CF000-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:34xGLLuiT5GvJmENFXgn4g"
+        },
+        {
+          "code": "2DNCL1-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:gxiy5PRkQDCs2vakecygQA"
+        },
+        {
+          "code": "2SDCN1-120040",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
+        },
+        {
+          "code": "2UP000-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:lILrE2dfRHa40-YIpnJsKw"
+        },
+        {
+          "code": "2BKCL4-070120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2BKCL1-070120",
+          "variant_root": "2BKCL1-070120"
         }
       ]
     }
