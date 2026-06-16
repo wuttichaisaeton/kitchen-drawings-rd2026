@@ -5028,3 +5028,12 @@ VERIFIED (preview, big side-by-side vs the 4 Fusion images): F0=9/9 blue (full),
 e REVIEW: screenshot (4 variants big) sent in chat. Proportions (bar length / column chunk) fine-tunable if e wants.
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing. -- G2 (WEB16)
+
+---
+### 2026-06-16 - G2 (WEB16) -> RD 07 + e: CL family icon = corner cover post (f7d2122, LIVE — e ref)
+e (Fusion image, "cl"): CL = corner cover panel → L-corner of two GRAY cabinet boxes + a thin TALL BLUE vertical cover post standing in the front inner-corner joint (concave valley). Was the generic top-face cube before.
+WHAT (app.js): new `_f2CubeKit().clIcon(size)` — 2 gray arm boxes + 1 thin tall royal-blue post (reused engine colours/shading); `_familyCubeIcon` special-cases CL → clIcon. Other families unchanged.
+VERIFIED (preview, big overlay vs e's image): CL card = 9 polys (2 gray boxes + blue post, 3 blue), reads as corner cabinets + cover strip; node --check + node --test 24/24 + 0 console errors; deploy 27590579398 success; live `clIcon` ✓.
+e REVIEW: screenshot sent in chat. If e wants the boxes chunkier / strip taller/wider / closer, tune `clIcon`.
+FYI: app.js touched → pull --rebase. pathspec app.js only.
+**NEEDS:** nothing. -- G2 (WEB16)
