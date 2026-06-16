@@ -1754,10 +1754,13 @@ function _decodeF2Code(code, kit) {
   else if (type === 'FC') icon = K.fcIcon;
   else if (_F2_PANELS.includes(type)) icon = (sz) => K.cube(type, sz);
   else icon = (sz) => K.cube('F2', sz);
-  const parts = [_F2_TYPE_LABEL[type] || ('type ' + type)];
-  if (hand && hand !== '0' && _F2_HAND_LABEL[hand]) parts.push(_F2_HAND_LABEL[hand]);
-  if (light === 'L') parts.push('light on'); else if (light === 'N') parts.push('light off');
-  return { valid: true, type, icon, light, hand, version, w, h, desc: parts.join(' · ') + ' · ' + w + '×' + h };
+  const base = [_F2_TYPE_LABEL[type] || ('type ' + type)];
+  if (hand && hand !== '0' && _F2_HAND_LABEL[hand]) base.push(_F2_HAND_LABEL[hand]);
+  const size = w + '×' + h;
+  const descNoLight = base.join(' · ') + ' · ' + size;   // light shown as a bulb glyph, not text
+  const withLight = base.slice();
+  if (light === 'L') withLight.push('light on'); else if (light === 'N') withLight.push('light off');
+  return { valid: true, type, icon, light, hand, version, w, h, desc: withLight.join(' · ') + ' · ' + size, descNoLight };
 }
 
 // Card grid of REAL F2 configs (never fabricated — empty data → clearly-badged
@@ -1787,9 +1790,14 @@ function _openConfigBrowser() {
   const cardHtml = (code) => {
     const d = _decodeF2Code(code, K);
     const icon = d.valid ? d.icon(54) : K.cube('F2', 54);
-    const desc = d.valid ? d.desc : code;
+    const desc = d.valid ? d.descNoLight : code;
+    // Light status as a foreground bulb glyph over the cube (เอ๋ 2026-06-16) —
+    // reuse the Light-legend bulbs from _f2CubeKit (never redrawn). Only cabinets
+    // with a light slot (L/N) show one; light='0'/panels show nothing.
+    const bulb = (d.valid && d.light === 'L') ? `<div class="cfg-card-bulb on" title="light on">${K.bulbOn}</div>`
+               : (d.valid && d.light === 'N') ? `<div class="cfg-card-bulb off" title="light off">${K.bulbOff}</div>` : '';
     return `<div class="cfg-card${isSample ? ' is-sample' : ''}" data-code="${escapeHtml(code)}" title="${isSample ? 'Sample — not in the data' : 'Open in Fusion (.f2d if drawn, else 3D master)'}">
-        <div class="cfg-card-icon">${icon}</div>
+        <div class="cfg-card-icon">${icon}${bulb}</div>
         <div class="cfg-card-desc">${escapeHtml(desc)}</div>
         <div class="cfg-card-code">${escapeHtml(displayCodeFor(code))}</div>
         ${isSample ? '<div class="cfg-card-sample">SAMPLE</div>' : ''}
@@ -1817,7 +1825,10 @@ function _openConfigBrowser() {
     .cfgbrowse-modal .cfg-card:hover{border-color:#7fb0ff;background:#202a38;transform:translateY(-1px)}
     .cfgbrowse-modal .cfg-card.is-sample{cursor:default;opacity:.85}
     .cfgbrowse-modal .cfg-card.is-sample:hover{border-color:rgba(255,255,255,0.08);background:#1b2430;transform:none}
-    .cfgbrowse-modal .cfg-card-icon{height:56px;display:flex;align-items:center;justify-content:center}
+    .cfgbrowse-modal .cfg-card-icon{height:56px;display:flex;align-items:center;justify-content:center;position:relative}
+    .cfgbrowse-modal .cfg-card-bulb{position:absolute;top:-3px;right:14px;display:flex;align-items:center;justify-content:center;transform:scale(1.4);transform-origin:center;pointer-events:none}
+    .cfgbrowse-modal .cfg-card-bulb.on{filter:drop-shadow(0 0 4px rgba(242,169,59,0.9))}
+    .cfgbrowse-modal .cfg-card-bulb.off{opacity:.8}
     .cfgbrowse-modal .cfg-card-desc{font-size:11px;line-height:1.35;color:#cdd6e0;text-align:center;min-height:30px}
     .cfgbrowse-modal .cfg-card-code{font:500 11px ui-monospace,Menlo,monospace;color:#8794a4;letter-spacing:.3px}
     .cfgbrowse-modal .cfg-card-sample{position:absolute;top:6px;right:6px;font:600 8px ui-monospace,monospace;color:#0f1419;background:#f2a93b;border-radius:4px;padding:1px 4px;letter-spacing:.5px}
