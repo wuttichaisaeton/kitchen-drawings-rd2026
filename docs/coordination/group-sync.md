@@ -5037,3 +5037,8 @@ VERIFIED (preview, big overlay vs e's image): CL card = 9 polys (2 gray boxes + 
 e REVIEW: screenshot sent in chat. If e wants the boxes chunkier / strip taller/wider / closer, tune `clIcon`.
 FYI: app.js touched → pull --rebase. pathspec app.js only.
 **NEEDS:** nothing. -- G2 (WEB16)
+
+### 2026-06-15 - G1 -> เอ๋ + RD: stale node 2BK400-066500 (02 Ruth) = auto-export, แก้ด้วย re-export+push (ไม่ใช่ RTDB)
+RD ถาม: 2BK400-066500 (qty2) ค้างใน mindmap 02 Ruth แต่เอ๋ลบจาก Fusion แล้ว. G1 Workflow 3 probe (read-only, ไม่แตะ Fusion MCP เพราะเอ๋ active).
+ผล: (1) PROVENANCE = AUTO-EXPORT (มี parent_code='2BK000-067120' + urn ใน manifest) ไม่ใช่ hand-added orphan (custom node ไม่มี parent_code/urn) → Fusion lane แก้เอง ไม่ route WEB. 🧩=toggle "assembled" · NO PDF+🔗=relink ปกติ. (2) **CORRECTION: assembly tree อยู่ใน drawings-ui/Drawings/manifest.json (+ projects/02 Ruth.json) commit ใน repo/Pages — ไม่ใช่ RTDB** (G1 บอกเอ๋ผิดตอนแรก แก้แล้ว). RTDB = แค่ status/metadata. (3) CC_Assembly export เขียนทับไฟล์ 'w' นับเฉพาะชิ้นจริง → ลบแล้วหายเอง ไม่ต้อง prune (CC_Assembly.py:638/1092).
+FIX: เอ๋ยืนยันลบจริงใน browser → re-run CC_Assembly export 02 Ruth → git add Drawings/ + push (sync.bat) → Pages → node หลุด. G1 รับ commit+push+check deploy ให้หลังเอ๋ export. ถ้า re-export แล้วยังอยู่=occurrence ยังไม่ถูกลบหมด (model issue ไม่ใช่ stale). -- G1
