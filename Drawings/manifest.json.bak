@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-17T22:15:04.114736+00:00",
+  "generated_at": "2026-06-17T22:40:24.502607+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -11027,27 +11027,39 @@
       "name": "SH0002-190015",
       "status": "active",
       "created_at": "2026-06-17T22:15:04.110342+00:00",
-      "updated_at": "2026-06-17T22:15:04.110342+00:00",
-      "total_unique_parts": 3,
-      "total_qty": 4,
+      "updated_at": "2026-06-17T22:40:24.498018+00:00",
+      "total_unique_parts": 5,
+      "total_qty": 5,
       "parts": [
         {
+          "code": "2SHCV1-190015",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
+        },
+        {
+          "code": "2SHCV2-190015",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
+        },
+        {
           "code": "2SHCV3-190015",
-          "qty": 2,
-          "family": "Other",
-          "urn": "C:/Users/wutti/AppData/Local/Autodesk/Autodesk Fusion 360/A7V8L9BZNRJE/W.login/F/_SH0002-190015.aa3156c1-2608-409b-bd90-29963285e7e6.f3d"
-        },
-        {
-          "code": "2SHSH1-190015",
           "qty": 1,
           "family": "Other",
-          "urn": "C:/Users/wutti/AppData/Local/Autodesk/Autodesk Fusion 360/A7V8L9BZNRJE/W.login/F/_SH0002-190015.aa3156c1-2608-409b-bd90-29963285e7e6.f3d"
+          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
         },
         {
-          "code": "2SHSH2-190015",
+          "code": "2SHSH3-190015",
           "qty": 1,
           "family": "Other",
-          "urn": "C:/Users/wutti/AppData/Local/Autodesk/Autodesk Fusion 360/A7V8L9BZNRJE/W.login/F/_SH0002-190015.aa3156c1-2608-409b-bd90-29963285e7e6.f3d"
+          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
+        },
+        {
+          "code": "2SHSH4-190015",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
         }
       ]
     }

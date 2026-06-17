@@ -1,6 +1,6 @@
-CC_Assembly walk debug — 2026-06-18T05:15:04.109820
+CC_Assembly walk debug — 2026-06-18T05:40:24.497450
 Project: SH0002-190015
-Total occurrences visited: 4
+Total occurrences visited: 5
 CAM-ALPF tagged components: 0
 
 --- CAM API exploration ---
@@ -8,7 +8,8 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | 2SHSH1-190015:1 (2SHSH1-190015)
-    0 | SM  |     | ALPF             | 2SHSH2-190015:1 (2SHSH2-190015)
+    0 | SM  |     | ALPF             | 2SHSH3-190015:1 (2SHSH3-190015)
+    0 | SM  |     | ALPF             | 2SHSH4-190015:1 (2SHSH4-190015)
+    0 | SM  |     | ALPF             | 2SHCV1-190015:1 (2SHCV1-190015)
+    0 | SM  |     | ALPF             | 2SHCV2-190015:1 (2SHCV2-190015)
     0 | SM  |     | ALPF             | 2SHCV3-190015:1 (2SHCV3-190015)
-    0 | SM  |     | ALPF             | 2SHCV3-190015:2 (2SHCV3-190015)
