@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-16T16:50:05.931756
+CC_Assembly walk debug — 2026-06-17T16:28:36.189312
 Project: 2FNL00-060000
 Total occurrences visited: 14
 CAM-ALPF tagged components: 0
@@ -8,17 +8,17 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | 2SDCN1-120040 v1:1 (2SDCN1-120040 v1)
-    0 | SM  |     | ALPF             | 2DN000-060000 v6:1 (2DN000-060000 v6)
-    0 | SM  |     | ALPF             | 2SDCN1-120040 v1:2 (2SDCN1-120040 v1)
-    0 |     |     |                  | 2BK000-060120 v10:1 (2BK000-060120 v10)
-    1 | SM  |     | ALPF             | 2BK002-060000 v5:1 (2BK002-060000 v5)
-    1 | SM  |     | ALPF             | 2BK002-060000 v5:2 (2BK002-060000 v5)
+    0 | SM  |     | ALPF             | 2DN000-060000 v8:1 (2DN000-060000 v8)
+    0 | SM  |     | ALPF             | 2SDCN1-120040 v2:1 (2SDCN1-120040 v2)
+    0 | SM  |     | ALPF             | 2SDCN1-120040 v2:2 (2SDCN1-120040 v2)
+    0 |     |     |                  | 2BK000-060120 v11:1 (2BK000-060120 v11)
+    1 | SM  |     | ALPF             | 2BK002-060000 v9:1 (2BK002-060000 v9)
+    1 | SM  |     | ALPF             | 2BK002-060000 v9:2 (2BK002-060000 v9)
     1 | SM  |     | ALPF             | 2BK001-060120 v1:2 (2BK001-060120 v1)
     1 |     |     |                  | 2BK004-060120 v4:1 (2BK004-060120 v4)
     2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
-    0 | SM  |     | ALPF             | 2UP000-060000 v6:1 (2UP000-060000 v6)
+    0 | SM  |     | ALPF             | 2UP000-060000 v8:1 (2UP000-060000 v8)
     0 | SM  |     | ALPF             | 2CF000-060000 v3:1 (2CF000-060000 v3)
