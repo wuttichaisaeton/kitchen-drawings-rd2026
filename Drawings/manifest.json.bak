@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-17T22:53:27.830712+00:00",
+  "generated_at": "2026-06-17T23:08:08.406563+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -10368,7 +10368,7 @@
       "name": "Configuration 1",
       "status": "active",
       "created_at": "2026-06-16T03:06:51.103820+00:00",
-      "updated_at": "2026-06-17T22:53:27.823804+00:00",
+      "updated_at": "2026-06-17T23:08:08.398797+00:00",
       "total_unique_parts": 135,
       "total_qty": 324,
       "parts": [
@@ -10549,11 +10549,19 @@
         },
         {
           "code": "2SHCV1-190015",
+          "qty": 2,
+          "family": "Other",
+          "parent_code": "SH0001-190015",
+          "variant_root": "SH0001-190015",
+          "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
+        },
+        {
+          "code": "2SHCV1-190015",
           "qty": 1,
           "family": "Other",
           "parent_code": "SH0002-190015",
           "variant_root": "SH0002-190015",
-          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
+          "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
         },
         {
           "code": "2SHCV2-190015",
@@ -10565,19 +10573,11 @@
         },
         {
           "code": "2SHCV3-190015",
-          "qty": 2,
-          "family": "Other",
-          "parent_code": "SH0001-190015",
-          "variant_root": "SH0001-190015",
-          "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
-        },
-        {
-          "code": "2SHCV3-190015",
           "qty": 1,
           "family": "Other",
           "parent_code": "SH0002-190015",
           "variant_root": "SH0002-190015",
-          "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
+          "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
         },
         {
           "code": "2SHSH1-190015",

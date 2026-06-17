@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-18T05:53:27.821809
+CC_Assembly walk debug — 2026-06-18T06:08:08.396932
 Project: Configuration 1
 Total occurrences visited: 704
 CAM-ALPF tagged components: 0
@@ -698,14 +698,14 @@ depth | SM | CAM | material         | display_name (component)
     1 |     |     |                  | CV (1):1 (CV (1))
     2 | SM  |     | ALPF             | 2CVH19-346LL0 v12:1 (2CVH19-346LL0 v12)
     2 | SM  |     | ALPF             | 2CVH26-766LER v9:1 (2CVH26-766LER v9)
-    2 | SM  |     | ALPF             | 2FCVN1-120030 v2:1 (2FCVN1-120030 v2)
-    2 | SM  |     | ALPF             | 2FCVN1-120020 v2:1 (2FCVN1-120020 v2)
-    1 |     |     |                  | SH0001-190015 v5:1 (SH0001-190015 v5)
+    2 | SM  |     | ALPF             | 2FCVN1-120030 v3:1 (2FCVN1-120030 v3)
+    2 | SM  |     | ALPF             | 2FCVN1-120020 v3:1 (2FCVN1-120020 v3)
+    1 |     |     |                  | SH0001-190015 v7:1 (SH0001-190015 v7)
     2 | SM  |     | ALPF             | 2SHSH1-190015:1 (2SHSH1-190015)
     2 | SM  |     | ALPF             | 2SHSH2-190015:1 (2SHSH2-190015)
-    2 | SM  |     | ALPF             | 2SHCV3-190015:1 (2SHCV3-190015)
-    2 | SM  |     | ALPF             | 2SHCV3-190015:2 (2SHCV3-190015)
-    1 |     |     |                  | SH0002-190015 v3:1 (SH0002-190015 v3)
+    2 | SM  |     | ALPF             | 2SHCV1-190015:1 (2SHCV1-190015)
+    2 | SM  |     | ALPF             | 2SHCV1-190015:2 (2SHCV1-190015)
+    1 |     |     |                  | SH0002-190015 v4:1 (SH0002-190015 v4)
     2 | SM  |     | ALPF             | 2SHSH3-190015:1 (2SHSH3-190015)
     2 | SM  |     | ALPF             | 2SHSH4-190015:1 (2SHSH4-190015)
     2 | SM  |     | ALPF             | 2SHCV1-190015:1 (2SHCV1-190015)
