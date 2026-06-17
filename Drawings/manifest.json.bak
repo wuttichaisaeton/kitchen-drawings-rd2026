@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-17T09:28:36.193126+00:00",
+  "generated_at": "2026-06-17T09:29:59.204649+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -10881,6 +10881,76 @@
           "family": "Other",
           "is_wrapper": true,
           "variant_root": "2BKCL4-070120"
+        }
+      ]
+    },
+    "2FNCL2-070000": {
+      "name": "2FNCL2-070000",
+      "status": "active",
+      "created_at": "2026-06-17T09:29:59.201534+00:00",
+      "updated_at": "2026-06-17T09:29:59.201534+00:00",
+      "total_unique_parts": 10,
+      "total_qty": 12,
+      "parts": [
+        {
+          "code": "2BK000-000000",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:cpl55CpVTv-QBWbskYX2Gw"
+        },
+        {
+          "code": "2BK001-000001",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:FgAA1BTtTw2N2YYHIEnndA"
+        },
+        {
+          "code": "2BK001-000002",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:ocwuQnfLToCjq_4zyt8iVg"
+        },
+        {
+          "code": "2BK001-070120",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
+        },
+        {
+          "code": "2BK002-070000",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
+        },
+        {
+          "code": "2CF000-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:34xGLLuiT5GvJmENFXgn4g"
+        },
+        {
+          "code": "2DNCL2-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:vgzv0QXESmqwF8RIjbitLg"
+        },
+        {
+          "code": "2SD0C1-120026",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:fnZ5qfkwQsC-Lo_Y5YUtbQ"
+        },
+        {
+          "code": "2SD0C1-120040",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:s4oJmEzWSGaa3cIvZTV_Rw"
+        },
+        {
+          "code": "2UPCN2-070000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:Jco-Ak6hTiKCWGnWqsi-Og"
         }
       ]
     }
