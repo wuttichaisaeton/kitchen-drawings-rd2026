@@ -1,0 +1,28 @@
+{
+  "name": "SH0000-190020",
+  "status": "active",
+  "created_at": "2026-06-17T22:10:54.401293+00:00",
+  "updated_at": "2026-06-17T22:10:54.401293+00:00",
+  "total_unique_parts": 3,
+  "total_qty": 4,
+  "parts": [
+    {
+      "code": "2SHCV3-190015",
+      "qty": 2,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
+    },
+    {
+      "code": "2SHSH1-190015",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
+    },
+    {
+      "code": "2SHSH2-190015",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
+    }
+  ]
+}
