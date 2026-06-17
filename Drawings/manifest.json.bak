@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-17T00:08:37.647603+00:00",
+  "generated_at": "2026-06-17T00:10:32.106306+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -10368,9 +10368,9 @@
       "name": "Configuration 1",
       "status": "active",
       "created_at": "2026-06-16T03:06:51.103820+00:00",
-      "updated_at": "2026-06-16T03:06:51.103820+00:00",
-      "total_unique_parts": 20,
-      "total_qty": 88,
+      "updated_at": "2026-06-17T00:10:32.102893+00:00",
+      "total_unique_parts": 26,
+      "total_qty": 92,
       "parts": [
         {
           "code": "2BK001-060120",
@@ -10381,10 +10381,17 @@
         },
         {
           "code": "2BK001-070120",
-          "qty": 3,
+          "qty": 2,
           "family": "Other",
           "parent_code": "2BK000-070120",
           "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
+        },
+        {
+          "code": "2BK002-035000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BKCL1-070120",
+          "urn": "urn:adsk.wipprod:dm.lineage:SelbWBQcSFK-lmiKvDsC9A"
         },
         {
           "code": "2BK002-060000",
@@ -10395,7 +10402,7 @@
         },
         {
           "code": "2BK002-070000",
-          "qty": 6,
+          "qty": 4,
           "family": "Other",
           "parent_code": "2BK000-070120",
           "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
@@ -10406,6 +10413,13 @@
           "family": "Other",
           "parent_code": "2BK004-070120",
           "urn": "urn:adsk.wipprod:dm.lineage:EKFgQ__3TPOMNjTYsP96MA"
+        },
+        {
+          "code": "2BKCL1-070120",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2FNCL1-070000",
+          "urn": "urn:adsk.wipprod:dm.lineage:n1CQekNdQUyNJNqWyYyZIw"
         },
         {
           "code": "2CF000-060000",
@@ -10436,11 +10450,11 @@
           "urn": "urn:adsk.wipprod:dm.lineage:MkClCGBPQWORd48ODrctSA"
         },
         {
-          "code": "2CN025-120000",
+          "code": "2CN026-120000",
           "qty": 1,
           "family": "Other",
           "parent_code": "2FCLL0-070043",
-          "urn": "urn:adsk.wipprod:dm.lineage:uJ8cSQTRQuenCqb6sVbssA"
+          "urn": "urn:adsk.wipprod:dm.lineage:CqMsJwXxTMOeJwIZCHV9xw"
         },
         {
           "code": "2CVH19-346LL0",
@@ -10465,10 +10479,17 @@
         },
         {
           "code": "2DN000-070000",
-          "qty": 2,
+          "qty": 1,
           "family": "Other",
           "parent_code": "2FNLR0-070000",
           "urn": "urn:adsk.wipprod:dm.lineage:VVXeRCWQQCejMbVtpnaWQg"
+        },
+        {
+          "code": "2DNCL1-070000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2FNCL1-070000",
+          "urn": "urn:adsk.wipprod:dm.lineage:gxiy5PRkQDCs2vakecygQA"
         },
         {
           "code": "2DNCR0-070043",
@@ -10476,6 +10497,20 @@
           "family": "Other",
           "parent_code": "2FCLL0-070043",
           "urn": "urn:adsk.wipprod:dm.lineage:sOwq5J_YTw-8qjim0O_z8g"
+        },
+        {
+          "code": "2FCVN1-120020",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "F2",
+          "urn": "urn:adsk.wipprod:dm.lineage:KMKV8eUwQLuhUvD5ItEvyg"
+        },
+        {
+          "code": "2FCVN1-120030",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "F2",
+          "urn": "urn:adsk.wipprod:dm.lineage:6YLQld0VTq-1hBtfE3BhkQ"
         },
         {
           "code": "2SDCN1-120040",
@@ -10500,10 +10535,17 @@
         },
         {
           "code": "2UP000-070000",
-          "qty": 2,
+          "qty": 1,
           "family": "Other",
           "parent_code": "2FNLR0-070000",
           "urn": "urn:adsk.wipprod:dm.lineage:lILrE2dfRHa40-YIpnJsKw"
+        },
+        {
+          "code": "2UPCN1-070000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2FNCL1-070000",
+          "urn": "urn:adsk.wipprod:dm.lineage:uu_vRAvsQCyI5X19pqsbuA"
         },
         {
           "code": "2UPLL0-070043",
@@ -10545,6 +10587,22 @@
           "variant_root": "2BK004-070120"
         },
         {
+          "code": "2BKCL1-070120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2FNCL1-070000",
+          "variant_root": "2BKCL1-070120"
+        },
+        {
+          "code": "2BKCL4-070120",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2BKCL1-070120",
+          "variant_root": "2BKCL4-070120"
+        },
+        {
           "code": "2FCLL0-070043",
           "qty": 0,
           "family": "Other",
@@ -10553,20 +10611,20 @@
           "variant_root": "2FCLL0-070043"
         },
         {
+          "code": "2FNCL1-070000",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "F2",
+          "variant_root": "2FNCL1-070000"
+        },
+        {
           "code": "2FNL00-060000",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
           "parent_code": "2FXLL0-060120",
           "variant_root": "2FNL00-060000"
-        },
-        {
-          "code": "2FNL00-070000",
-          "qty": 0,
-          "family": "Other",
-          "is_wrapper": true,
-          "parent_code": "F2",
-          "variant_root": "2FNL00-070000"
         },
         {
           "code": "2FNLR0-070000",
