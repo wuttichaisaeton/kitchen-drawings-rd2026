@@ -1,0 +1,15 @@
+CC_Assembly walk debug — 2026-06-17T17:31:10.987345
+Project: GLASS1-070000
+Total occurrences visited: 5
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | Fitting:1 (Fitting)
+    1 |     |     |                  | Shelf Support M5 by SSD v27:1 (Shelf Support M5 by SSD v27)
+    1 |     |     |                  | Shelf Support M5 by SSD v27:2 (Shelf Support M5 by SSD v27)
+    1 |     |     |                  | Shelf Support M5 by SSD v27:3 (Shelf Support M5 by SSD v27)
+    1 |     |     |                  | Shelf Support M5 by SSD v27:4 (Shelf Support M5 by SSD v27)
