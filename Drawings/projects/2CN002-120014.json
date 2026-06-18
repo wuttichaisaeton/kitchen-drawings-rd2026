@@ -1,0 +1,16 @@
+{
+  "name": "2CN002-120014",
+  "status": "active",
+  "created_at": "2026-06-18T00:42:07.055178+00:00",
+  "updated_at": "2026-06-18T00:42:07.055178+00:00",
+  "total_unique_parts": 1,
+  "total_qty": 1,
+  "parts": [
+    {
+      "code": "2CN002-120000",
+      "qty": 1,
+      "family": "Other",
+      "urn": "urn:adsk.wipprod:dm.lineage:8bXVWeCPT9y9e8h5m908_A"
+    }
+  ]
+}
