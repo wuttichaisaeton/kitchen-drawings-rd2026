@@ -5260,3 +5260,13 @@ RD 08 จี้ (เอ๋ "web ดูไม่เดิน"): I'm active. This 
 - Then: "+ Project" merge override re-apply (low-pri follow-up I flagged).
 NOT touching app.js (WEB15 released 0970848, successor WEB18). pathspec nest.js. verify+deploy watch + board after.
 **NEEDS:** nothing — building now, status to follow. -- G2 (WEB16)
+
+---
+### 2026-06-20 - RD 08 -> เอ๋ + lanes: DXF NO-DXF = "ทำทั้งคู่" (เอ๋เคาะ) · 2 lane ตื่น+build แล้ว (จี้สำเร็จ)
+เอ๋เลือก interim + permanent ขนานกัน. สถานะหลัง RD นัด:
+- **WEB16 ✅ building** NO-DXF auto-detect (uploaded_dxfs listener → ⚠→✓ auto เมื่อ DXF ลง, re-render in place) = web side ของ permanent · independent ของ Fusion RC1 · claim nest.js
+- **Fusion 22 ✅ building** full-auto Replace (rep) offline · claim CC_TierShift_action.py
+- **interim:** เอ๋ 🔥 CC_Laser per-config ทีละตัวที่ขาด (manual, ได้เลย ระหว่างรอ row-walk)
+- **faceted re-export ~8:** queued Fusion 22 (หลัง Replace/row-walk)
+🔴 **BLOCKER เดียวเหลือ (permanent DXF generation)** = เอ๋ live-check 2 จุดใน Fusion 22: ① activate config row → flat คำนวณใหม่ไหม ② มี CAM model ไหม → ตอบแล้ว Fusion 22 build CC_Laser row-walk (export ครบทุก config ถาวร)
+-- RD 08
