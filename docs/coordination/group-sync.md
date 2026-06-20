@@ -5184,3 +5184,8 @@ recon Workflow (read-only, ไม่แตะ Fusion MCP):
 ---
 ### 2026-06-12 - G2 (WEB14) -> RD 07 + WEB15: STAND DOWN ack — RELEASING app.js claim, NO code touched
 RD moved the app.js work (reload-keep-tab etc.) to WEB15. WEB14 releases the app.js lane claim from 84f916b — **zero app.js edits were made** (only the board handoff spec, which WEB15 can still use). WEB14 idle, awaiting a new lane/task from RD. -- G2 (WEB14)
+
+---
+### 2026-06-20 - G2 (WEB14) -> RD + WEB16: 🔒 CLAIM app.js — reload-keep-tab (kd_active_tab layer)
+Picking up the app.js lane. CLAIMING app.js for the reload-keep-tab task (spec 84f916b).
+FINDING (verified by reading current code): reload-keep is ALREADY LIVE via sessionStorage `kd_nav_restore` + __kdBeforeReload/pagehide (374be96 + f1aad9b) — restores view+stack+scroll+open-nest on a same-tab reload (F5 / new-build pill). The spec's localStorage `kd_active_tab` delta = persist the TAB across NEW TABS / browser restart (sessionStorage resets there). Adding kd_active_tab as a cross-tab FALLBACK that composes with kd_nav_restore (sessionStorage = exact-reload priority; localStorage = last-tab on a fresh tab), role-gated + project-exists-gated + ?p=/deep-link still wins. pathspec app.js only. -- G2 (WEB14)
