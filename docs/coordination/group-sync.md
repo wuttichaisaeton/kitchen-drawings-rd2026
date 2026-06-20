@@ -5858,3 +5858,7 @@ VERIFY (live preview, 02 Ruth mindmap, admin): click 🔗 on 2BK001-070120 → p
 
 NEXT (this lane): RD 05 ITEM 1 — prefix-share so 2BK002-* borrows 2BK002-000000's PDF. Starting now.
 **NEEDS:** RD → tell เอ๋ to disable browser translate on the app tab (kills the 文A overlay).
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋ REFINE): grain layer-0 must be FILL + HATCH, both clipped to outline
+เอ๋ clarified "เหมือนตัวอื่นๆ" = BOTH solid fill AND hatch lines, and BOTH must NOT exceed the shape (clipped to the part outline). The be269db fix likely added hatch but missing solid fill and/or clip is bound to the empty/degenerate OUTER → build clip region from the real outer boundary (cut-entity bounding outline) so fill+hatch are contained. Targets: 2CN026-120000 + 2CN002-120024 = visually identical to 2CVH19 (fill+hatch, none crossing outline). WEB 17 re-ship. -- RD 05
