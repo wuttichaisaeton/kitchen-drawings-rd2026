@@ -5475,3 +5475,13 @@ LIVE LANES (list_sessions 09:20Z): **Fusion = Fusion 21** local_f421d5d0 (CC_*/M
 STAND DOWN (kill double-RD): RD 05/06/07 superseded by THIS hub (RD 07 still running — เอ๋ close it).
 DISPATCHED now: web grain/parts-table row bug (✓ wraps to own line → must be inline; row overflow / width collapse) → WEB 17 (queued).
 OPEN (lane-owned, RD tracking): Fusion21 RC1 row-walk + 18 broken per-config flats (source-side) · Replace `rep` COPY test (ae8d920) · ~8 faceted re-export · 2CVH19→2CH000 migrate · CC_Auto Laser-card icon (icon rework WIP). RD-SUCCESSOR: read this entry + board bottom-up; roster above; resume the watchdog loop. -- RD
+
+---
+### 2026-06-20 - G2 (WEB15, style.css) -> e + RD: Nest parts-row layout FIX — admin ✓ wrap + collapsed columns (627939d, LIVE) ⏱ 00:16
+STATUS: shipped e's screenshot bug (parts/grain row พัง 2 จุด: ✓ เขียว wrap ลงบรรทัดใหม่ + แถว overflow/column ยุบ). style.css lane only, pathspec.
+ROOT: `.kdnest-part` เป็น CSS **grid 11 คอลัมน์** แต่แถวมี child ที่ "โผล่เฉพาะ admin" = ปุ่ม ✏️ rename (แทรกหลัง code cell, nest.js:4595). admin mode → 12 items ใน 11 cols + `grid-auto-flow:row` → ทุก field เลื่อนขวา 1 ช่อง: ✏️ ไปกินช่อง W (44px), **W input ตกลงช่อง × (8px) → ยุบ**, แล้ว item ที่ 12 (✓ status) **wrap ลง grid-row ใหม่ใต้แถว** (rowHeight 60). non-admin (11 items) เลยปกติ → เห็นเฉพาะ owner.
+FIX: เปลี่ยน `.kdnest-part` เป็น **flex (flex-wrap:nowrap)** — รับ child count ที่แปรผันได้ (✏️ optional): code cell เดียวที่ flex (`flex:1 1 auto; min-width:0; ellipsis`), field อื่น fixed flex-basis คืนความกว้างที่ยุบ (W/H 42px, qty 34px, grain/👁/📍/✓ 26px). ใส่ flex ชัดเจนทุก child เพื่อกัน `width:100%` (มรดกจาก grid cell ของ input/grain/👁/📍) ไม่ให้ขยาย flex item เต็มแถว. ✓ กลับมา inline ท้ายแถว.
+VERIFY (live preview, 02 Ruth, ทั้ง 3 ธีม dark/sketch/chalk, admin=12 child AND non-admin/laser=11): display:flex; ทุกแถว single-line (height 34-35 จากเดิม 60); max child center-spread = 0; ✓ inline ชิดขอบขวา (right edge ตรงกับ row); ไม่ overflow ขวา. theme override แตะแค่สี/border → ไม่กระทบ layout. deploy 27866915191 success; curl cache-bust → live style.css มี flex markers + grid-template เดิมหายแล้ว.
+NB: นี่คือ Nest parts list (nest.js render DOM) แต่ bug เป็น CSS ล้วน → แก้ใน style.css อย่างเดียว ไม่ต้องแตะ nest.js/app.js (DOM order ถูกอยู่แล้ว, ✓ เป็น child สุดท้าย).
+FYI: style.css touched -> lane อื่น pull --rebase.
+**NEEDS:** nothing.
