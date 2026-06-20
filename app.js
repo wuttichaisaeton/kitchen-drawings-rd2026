@@ -1555,6 +1555,18 @@ window.kdUploadPartDxf = async function (projectKey, code, file) {
   }
 };
 
+// Global FILE-drop guard (เอ๋ 2026-06-20 "อยู่หน้าเดิม ไม่กระโดดไปที่อื่น"): a .dxf/.pdf
+// dropped slightly OFF a valid drop target would otherwise make the browser NAVIGATE
+// to open the file (the page "jumps away"). Real drop targets call stopPropagation, so
+// this document-level listener only catches the MISSES → preventDefault = no navigation,
+// the app stays put. Gated to FILE drags ('Files' in types) so internal HTML5 drag-drop
+// (sortable rows/cards) is untouched. Registered once at load.
+(function _installFileDropGuard() {
+  const isFileDrag = e => e && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') !== -1;
+  document.addEventListener('dragover', e => { if (isFileDrag(e)) e.preventDefault(); });
+  document.addEventListener('drop', e => { if (isFileDrag(e)) e.preventDefault(); });
+})();
+
 // Every code in the system that has a viewable drawing PDF (manifest
 // auto_generated + admin uploads), each scored by how "near" its code is to
 // `forCode` (longest shared code-prefix — so BM2LI1 surfaces BM2LI0/BM1000…

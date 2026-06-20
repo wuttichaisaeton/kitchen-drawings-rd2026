@@ -4788,22 +4788,30 @@
         // fusionOnly: this button means "open in FUSION to fix" — never a PDF tab.
         route({ code: part.code, status: 'missing', urn: part.urn || null, drawing_urn: null, fusion_link: null }, { fusionOnly: true });
       });
-      // ⚠ DROP-TO-UPLOAD (เอ๋ 2026-06-20): drag a .dxf onto the ⚠ → upload this
-      // part's DXF directly (manual, alongside the Fusion-export pipeline) →
+      // ⚠ DROP-TO-UPLOAD (เอ๋ 2026-06-20): drag a .dxf onto a NO-DXF row → upload
+      // this part's DXF directly (manual, alongside the Fusion-export pipeline) →
       // Drawings/dxf/<code>/<code>.dxf + uploaded_dxfs/<code> via app.js
-      // (window.kdUploadPartDxf — SAME laser pipeline, code CASE-PRESERVED) →
-      // parse → ⚠ flips to ✓ in place. NO-DXF rows only; scroll preserved.
+      // (window.kdUploadPartDxf — SAME laser pipeline, code CASE-PRESERVED). The
+      // WHOLE row is the target (easy to hit; the ⚠ shows the affordance). On
+      // success the row updates IN PLACE — NO _refreshView — so the page never
+      // jumps (เอ๋ "อยู่หน้าเดิม ไม่กระโดด"); a global guard (app.js) stops a missed
+      // drop from navigating the browser to the file.
       const _fBtn = row.querySelector('.kdnest-part-fusion');
       if (_fBtn && part.dxfError && !part.dxfLoaded) {
-        _fBtn.title += ' · or DROP a .dxf here to upload it';
-        const _over = on => { _fBtn.style.boxShadow = on ? '0 0 0 2px #2563eb' : ''; _fBtn.style.background = on ? 'rgba(37,99,235,0.18)' : ''; };
-        _fBtn.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); _over(true); });
-        _fBtn.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); _over(true); });
-        _fBtn.addEventListener('dragleave', e => { e.stopPropagation(); _over(false); });
-        _fBtn.addEventListener('drop', async e => {
+        _fBtn.title += ' · or DROP a .dxf on this row to upload it';
+        const _over = on => {
+          _fBtn.style.boxShadow = on ? '0 0 0 2px #2563eb' : '';
+          _fBtn.style.background = on ? 'rgba(37,99,235,0.18)' : '';
+          row.style.outline = on ? '1px dashed #2563eb' : '';
+          row.style.outlineOffset = on ? '-1px' : '';
+        };
+        row.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); _over(true); });
+        row.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); _over(true); });
+        row.addEventListener('dragleave', e => { if (e.target === row) _over(false); });
+        row.addEventListener('drop', async e => {
           e.preventDefault(); e.stopPropagation(); _over(false);
           const files = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter(f => /\.dxf$/i.test(f.name));
-          if (!files.length) { alert('Drop a .dxf file onto the ⚠.'); return; }
+          if (!files.length) { alert('Drop a .dxf file onto this part row.'); return; }
           if (files.length > 1) { alert('Drop one .dxf at a time.'); return; }
           if (typeof window.kdUploadPartDxf !== 'function') { alert('DXF upload not available — open the main app as admin (🔓) first.'); return; }
           const proj = Object.keys(part.sources || {})[0] || '';
@@ -4811,16 +4819,24 @@
           _fBtn.textContent = '⏫'; _fBtn.title = 'uploading…';
           const r = await window.kdUploadPartDxf(proj, part.code, files[0]);
           if (!r || !r.ok) { alert('Upload failed for ' + part.code + ':\n' + ((r && r.error) || 'unknown error')); _fBtn.textContent = _txt; _fBtn.title = _ttl; return; }
-          // Parse the just-uploaded DXF from the RAW url (immediate) so ⚠ → ✓.
+          // Parse the just-uploaded DXF from the RAW url (immediate, jsdelivr lags).
           part.dxfUrl = r.url; part.dxfMeta = r.metadata || null; part.dxfError = null; part.dxfLoaded = false;
           part.thickness = (r.metadata && r.metadata.thickness_mm) || part.thickness || 0;
           try { await _ensureDxfLib(); await _loadOneDxf(part, { directUrl: r.url }); } catch (_) {}
-          // Re-render but keep the part-list scroll where เอ๋ left it.
-          const _sc = S.rootEl.querySelector('.kdnest-parts');
-          const _top = _sc ? _sc.scrollTop : 0;
-          _refreshView();
-          const _sc2 = S.rootEl.querySelector('.kdnest-parts');
-          if (_sc2) _sc2.scrollTop = _top;
+          // Update THIS row in place — no full re-render → the page stays exactly put.
+          if (part.dxfLoaded) {
+            _fBtn.textContent = '✓';
+            _fBtn.classList.add('kdnest-part-fusion-ok');
+            _fBtn.title = 'DXF loaded — click to open this part in Fusion';
+            const wEl = row.querySelector('.kdnest-part-w'), hEl = row.querySelector('.kdnest-part-h');
+            if (wEl) wEl.value = part.w || ''; if (hEl) hEl.value = part.h || '';
+            const vEl = row.querySelector('.kdnest-part-view'); if (vEl) vEl.disabled = false;
+            row.classList.remove('kdnest-part-review');
+          } else {
+            // uploaded but the parse failed (CDN lag etc.) — it's in uploaded_dxfs now;
+            // reopening the nest will load it. Restore the ⚠.
+            _fBtn.textContent = '⚠'; _fBtn.title = (part.dxfError || 'DXF error') + ' — uploaded; reopen the nest to load it';
+          }
         });
       }
       // ✕ remove a manual rectangular part
