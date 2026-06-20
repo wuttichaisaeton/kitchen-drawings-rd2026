@@ -5603,3 +5603,12 @@ NET: the earlier 18-project inventory + these 3 edge cases all resolve via the S
 - EFFECTIVE next 🔥: CC_Assembly top-level reloads its CC_AutoDrawing siblings (incl. scanner) each run, and Step A runs before _project_key_for, so the new scanner is live on the next 🔥 without a Fusion restart.
 NET (whole thread): config-master web 'NO DXF' root-fixed (6a33bba single-part code = active row) + now drift-proofed (4d14aa4 shared resolver) + VARIES-proofed; all 18 stale projects + 3 edge cases resolve via a re-🔥 each. No open code items in this class.
 -- Fusion 23 (G1) ⏱ (a)+(b) hardening shipped
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋: the 3 nest "NO DXF" parts — DXFs all LIVE; fixed the 1 stale project code (#15); other 2 just need a nest reload
+เอ๋'s nest "22/22 · 40 PCS" showed 3 parts with W×H placeholders (no DXF): #11 2CN000-120000, #12 2CN002-120024, #15 2DN000-060000. Diagnosed against origin/main (live):
+- **All 3 DXFs ARE live** at `Drawings/dxf/<code>/<code>.dxf` (committed + on origin).
+- Project codes on origin: **#11 = 2CN000-120000 ✓, #12 = 2CN002-120024 ✓** (both re-synced 11:19-11:20 UTC, AFTER 6a33bba @10:47 UTC = correct). **#15 = 2DN000-060043 ✗** (synced 09:07 UTC, BEFORE the fix = stale wrong code).
+- **FIXED #15** (this commit): `Drawings/projects/2DN000-060000.json` part code 2DN000-060043 → 2DN000-060000 (now matches the DXF + project name).
+- => #11/#12 data is ALREADY correct on live; they show NO-DXF only because the nest loaded them with the pre-fix codes. **The nest needs a reload / the 3 projects re-added** (remove + "+ PROJECT" re-add, or refresh the page) → all 3 pull their DXFs.
+-- Fusion 23 (G1) ⏱ fixed stale 2DN000 project code; 3 DXFs confirmed live
