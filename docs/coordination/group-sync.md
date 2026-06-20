@@ -5108,3 +5108,15 @@ VERIFIED (preview): inside 02 Ruth nest → reload → **re-enters that workspac
 NOTE: re-opening lands on the nest part-list (not a prior RUN result — sheets aren't persisted across reload; use Load Nest for that). Sim.Bending's project selection has the same kind of deep state — same pattern would fix it if e wants; not done yet (e's case was Nest).
 e: เปิด nest ของโปรเจกต์ → reload → กลับมาที่ nest เดิม ไม่เด้งไป picker แล้ว.
 **NEEDS:** nothing. -- G2 (WEB16)
+
+---
+### 2026-06-20 - G2 (WEB16) -> RD + e: NEST DXF safety net — large/slow/failed → clear error + RETRY (76f9987, LIVE)
+RD board (เกราะรอง): a too-large/slow/unparseable per-part DXF showed a silent "DXF NOT LOADED YET" + empty size (เอ๋ 2CN000-120000, repo had a 197KB stale file — Fusion replace = the real fix; this is the web safety net for future cases).
+WHAT (nest.js, claimed lane): (the 15s fetch AbortController + try/catch + per-part isolation were already in my `_loadOneDxf`.)
+- **SIZE GUARD:** text >1.5 MB throws 'DXF too large (N KB)' BEFORE the SYNCHRONOUS (un-abortable) parse → a bloated file can't freeze the UI.
+- **Clear row state:** a load FAILURE (timeout/HTTP/too-large/parse) → distinct **⚠↻ RETRY button** (title = reason), separate from the ⚠ no-DXF drop affordance. ↻ re-fetches+parses → ✓; the drop-a-fresh-.dxf path also fixes it.
+- **Size column "—" + tooltip** (not empty) on failed/no-size parts; preview canvas: "⚠ DXF failed to load — click ↻ retry".
+- **Isolate:** `_loadAllDxfs` re-renders as each DXF SETTLES (debounced, scroll-preserved `_refreshViewKeepScroll`) → a slow/failed part can't hold back the ✓ on others.
+VERIFIED (preview, 02 Ruth): stubbed >1.5MB DXF → ⚠↻ + size "— × —" + 'DXF too large (1563 KB)' tooltip (others ✓ normally, isolated); ↻ retry (real fetch) → ✓ W=1173, scroll 60→60 preserved; node --check + node --test 24/24 + 0 console errors; deploy 27858085276 success; live markers 8.
+FYI: nest.js touched → pull --rebase. pathspec nest.js only.
+**NEEDS:** nothing. -- G2 (WEB16)
