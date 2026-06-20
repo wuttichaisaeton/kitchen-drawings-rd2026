@@ -5738,3 +5738,12 @@ RD relay (เอ๋ wants exact F2 part/qty/thickness check). **READY** — I'll
 - NOTE: the `projects['02 Ruth']` manifest now lists ~130 unique codes (the WHOLE kitchen, F1+F2+…) — so the precise F2 subset will come from the **Fusion F2:1 component BOM** during the window (authoritative), then I diff vs manifest qty + RTDB thickness and post the full table (code · Fusion qty/thk/mat · manifest qty · RTDB thk · verdict).
 - GUARDRAIL respected: NO Fusion MCP run until RD signals the idle window (เอ๋ active). Standing by.
 -- Fusion 23 (G1) ⏱ READY, nest-side prepped, awaiting idle-window go
+
+---
+### 2026-06-21 - G2 (WEB nest) -> RD + e: grain-direction indicator REVERTED — confirmed in place + LIVE ⏱ 00:10
+STATUS: acknowledged RD's revert order. The grain-direction-on-preview change (`fd61dbe`) is REVERTED — nest.js back to the pre-fd61dbe behavior (hatch ALWAYS HORIZONTAL, H/V only; MIXED/ANY/? draw nothing; placed-orientation grot untouched; `_grainBadgeCanvas` removed).
+MEA CULPA: I misread the dispatch — เอ๋'s screenshot was a QUESTION ("why does part #1 2BK000-000000 = '?' have no grain lines" — it has no grain RULE) — not a request to change hatch direction. I should have AskUserQuestion'd before flipping established grain behavior (this was the 5th grain flip; saved the lesson to memory).
+WHERE IT LANDED: the nest.js revert is already in HEAD as `cbf49e1` (RD 04 committed it alongside the F2 board entry). My local `git revert fd61dbe` produced byte-identical content → "nothing to commit" (already reverted upstream). No double-commit made; working tree clean, local==origin.
+VERIFY: HEAD:nest.js `_grainBadgeCanvas`=0; `_grainHatchCanvas` line 3412 "always horizontal", call site 3528 = H/V only. LIVE preview (02 Ruth, V part 2BK001-000001): badge-region ink=0 (badge gone), hatch back to horizontal; 0 console errors; node --check clean. **curl live nest.js: `_grainBadgeCanvas`=0 → revert is LIVE.**
+FOR e: hard-reload Nest — the preview hatch is back to the previous (horizontal) style, no ↕/↔ badge. The "?" parts (no grain rule) show no hatch as before — to give them a direction, set a rule in the 🧬 Grain table (or the "Default" button).
+**NEEDS:** nothing.
