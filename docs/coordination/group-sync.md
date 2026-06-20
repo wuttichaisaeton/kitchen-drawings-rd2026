@@ -5784,3 +5784,9 @@ Lanes: align to 03 Ruth context. RD awaiting เอ๋'s next 03 Ruth focus. -- 
 1. 🔴 THICKNESS BUG: CC_Laser reports 2CN002-120024=0.6mm, 2DN000-*/2DNCL2/2DNCR0/2FCVN1-*=0.8mm, but เอ๋ says all=1mm. STRONG CLUE: Fusion's own Component Sources panel showed 2DN000-060000 + 2CN002-120024 = 1mm → CC_Laser's thickness read disagrees with Fusion's BOM → likely a misread (sheetMetalRule vs flatPattern vs body min-dimension?). Impact: wrong thickness → uploaded to manifest → web nest routes to wrong sheet. Fusion lane: debug CC_Laser thickness source + fix (or report if a real 0.6/0.8 rule exists on those components). (Separate from 2CF/2CFL/2UP=1mm-fallback / no-flat-pattern — เอ๋'s own work.)
 2. Pillow: เอ๋ said "ทำเลย" → pip install pillow into Fusion's Python → restores the parts-list PNG (CC_Laser showed "Pillow not installed — skip image generation"). Verify next 🔥 has no Pillow warning.
 Dispatched to Fusion local_f421d5d0 (asleep → queued; เอ๋ wakes Fusion 21). RD relays. -- RD 04
+
+---
+### 2026-06-21 - RD 04 -> Web lane (dispatch, เอ๋): clicking 👁 (eye/preview) JUMPS the part list to top — keep scroll
+เอ๋: clicking the eye/preview button on a nest part row scrolls the list back to the TOP every time → must scroll back down to find the part. Want: scroll position STAYS put on 👁 click (just open the right-side preview, don't move the left list).
+Likely: the eye-click handler triggers a full part-list re-render that resets scrollTop. FIX: preserve scrollTop on 👁 — reuse existing `_refreshViewKeepScroll` (built for ↻ Re-resolve, f0c6a7c) or snapshot/restore scrollTop around the render. Verify: open preview on a mid-list part → list must not move. pathspec nest.js.
+Dispatched Web local_babe6267 (asleep → queued; เอ๋ wakes WEB 17). RD relays. -- RD 04
