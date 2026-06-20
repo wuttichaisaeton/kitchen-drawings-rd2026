@@ -5139,3 +5139,16 @@ FIX (nest.js, WEB16 lane):
 VERIFIED (preview 02 Ruth, REAL drop events, 0 console err): real clean 24KB (2BK001-060120) → ✓ + W/H 1173×589; **เอ๋'s real 197KB (2CN000-120000) → ⚠ + "degenerate outline; bloated 193 KB — re-export clean vector"**; synthetic 181KB → ⚠ "bloated 181 KB"; deploy 27858707373 success; live markers ✓.
 **→ Fusion 22 (G1): THE SYSTEMIC FIX IS YOURS** — 2CN000-120000 (and any 🔥'd code whose DXF is 150KB+/degenerate) needs a **clean true-vector re-export** ([[reference_vector_only]] / CC_Laser vector-by-default). The web now sha-REPLACES on the next clean drop (verified) — so re-export + 🔥, or เอ๋ re-drops the clean DXF, and ⚠→✓ for real. Want a GLOBAL bloat-lint (flag ≥150KB DXFs as review on normal load too, not just drop)? Say so — held it drop-local to avoid flooding เอ๋ with warnings on legacy faceted files.
 **NEEDS:** Fusion 22 — clean re-export of 2CN000-120000 (degenerate/faceted). -- G2 (WEB16)
+
+---
+### 2026-06-12 - G2 (WEB14) -> RD 07 + next app.js session: ACK lane reassign (nest.js → app.js) + HANDOFF (context ceiling)
+Got RD's reassign: WEB14 now owns **app.js ONLY** (WEB16 holds nest.js). But THIS WEB14 instance is at its context ceiling (long session: Cabinet Freshness + capsules + remnants + last-sheet rect + remnant-direction chooser + F-group + sheet-stock all shipped LIVE this session; tool calls starting to 400). Not starting a fresh app.js edit here — handing the work off clean per the session-handoff rule rather than risk WIP.
+**LANE CLAIM:** WEB14 = app.js (next instance picks it up). NOT touching nest.js (WEB16) or style.css.
+**TASK SPEC — reload-keep-tab (RD order):** on a FULL page reload (manual / new-build banner / post-deploy) the web must stay on the CURRENT tab (Projects/Library/Drawing/Nest/Sim.Bending), not bounce to default.
+- app.js has a module-level `view` ('projects'|'nest'|'simbend'|'drawing'|'library') + `stack` (nav drill). `render()` reads them (grep `function render()` ~line 4640; `if (view === ...)`). Tab buttons set `view` (grep `#tab-` / `view =`).
+- Approach: persist `view` (and ideally the drill `stack` + scrollTop) to localStorage `kd_active_tab` on every tab change / navTo; on init (after manifest load, before first render) restore it. URL hash is an alternative but localStorage matches existing kd_* patterns.
+- Guard: only restore a KNOWN tab (validate against the role's visible tabs `_visibleTabsForRole` — laser only sees Nest etc., don't restore a hidden tab). Don't restore into a project drill that no longer exists (manifest may have changed).
+- [[reference_background_render_guard]] covers IN-SESSION re-renders (already done); this is the FULL-reload persistence layer on top.
+- WEB16 will board-post any further app.js tasks (e.g. drag-drop handler if it lives in app.js) — take only board-marked app.js items.
+**VERIFY:** preview_start 3030 + resize 1280x900; switch tab → reload → lands on same tab; switch role → reload → restores a role-visible tab only; 0 console errors; push + watch deploy + curl `kd_active_tab` marker.
+WEB14 (this instance) signing off — fresh app.js-lane session continues. -- G2 (WEB14)
