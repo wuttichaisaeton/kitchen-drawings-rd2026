@@ -654,6 +654,82 @@
     await Promise.all(S.parts.map(p => _loadOneDxf(p).then(onSettle, onSettle)));
   }
 
+  // ── ✏️ Inline rename / re-point a part code (เอ๋ 2026-06-20, WEB16) ──────────
+  // Fix a legacy/typo'd code in the Nest list (e.g. 2CVH19-346LL0 → 2CH000-…)
+  // WITHOUT touching Fusion or the real DXF files (เอ๋ chose "web override").
+  // The override lives in RTDB nest_code_overrides/<manifestCode> = {to,at} —
+  // nest-LOCAL (not app.js drawing_links), keyed by the MANIFEST code so it
+  // survives a Fusion/BOM re-sync (the manifest re-emits the orig code every
+  // load → we re-map). part.origCode keeps the manifest code for revert.
+  // Re-point = part.code becomes the new code → DXF / size / grain all resolve
+  // to it. CASE-PRESERVED — never uppercase (the drawing_links relink bug,
+  // [[reference_drawing_links_pick_pdf]]).
+  async function _applyCodeOverride(part, rawVal) {
+    const next = String(rawVal == null ? '' : rawVal).trim();   // NO uppercase
+    const orig = part.origCode || part.code;
+    if (!next) return { err: 'empty code' };
+    if (!/^[A-Za-z0-9]+-[A-Za-z0-9]+$/.test(next)) return { err: 'invalid format (expected like 2CH000-120000)' };
+    if (next === part.code) return { ok: true, noop: true };
+    const reverting = (next === orig);
+    // Persist (or clear) the override, keyed by the MANIFEST code.
+    if (window.firebaseDB) {
+      try {
+        if (reverting) await window.firebaseDB.ref('nest_code_overrides/' + orig).remove();
+        else await window.firebaseDB.ref('nest_code_overrides/' + orig).set({ to: next, at: Date.now() });
+      } catch (e) { return { err: 'save failed: ' + ((e && e.message) || e) }; }
+    }
+    if (S.codeOverrides) { if (reverting) delete S.codeOverrides[orig]; else S.codeOverrides[orig] = { to: next, at: 0 }; }
+    // Re-point in memory.
+    if (reverting) { part.code = orig; delete part.origCode; }
+    else { part.origCode = orig; part.code = next; }
+    // Re-resolve DXF + grain + size for the EFFECTIVE code (the same lookups
+    // _loadProjectParts does — by part.code, which is now the new code).
+    part.dxfUrl = ''; part.dxfMeta = null; part.dxfLoaded = false; part.dxfError = null;
+    part.polys = null; part.bbox = null; part.w = 0; part.h = 0;
+    let meta = (S.dxfsAll && S.dxfsAll[part.code]) || null;
+    if (!meta && window.firebaseDB) {
+      try { const s = await window.firebaseDB.ref('uploaded_dxfs/' + part.code).once('value'); meta = s.val() || null; if (meta && S.dxfsAll) S.dxfsAll[part.code] = meta; } catch (e) {}
+    }
+    if (meta) { part.dxfUrl = meta.url || ''; part.dxfMeta = meta; part.thickness = meta.thickness_mm || part.thickness || 0; }
+    if (S.grainMap) { const lk = _lookupPattern(part.code, S.grainMap); part.grain = (lk && lk.grain) ? lk.grain : '?'; }
+    try { await _ensureDxfLib(); await _loadOneDxf(part); } catch (e) {}
+    return { ok: true, reverting: reverting, to: part.code };
+  }
+
+  // Swap the code label for an inline text field (admin ✏️). Enter = save,
+  // Esc / blur = cancel, type the ORIGINAL manifest code to revert. Re-renders
+  // in place (scroll preserved) so เอ๋'s spot in the list never jumps.
+  function _startRenameEdit(row, part) {
+    const span = row.querySelector('.kdnest-part-code');
+    if (!span || row.querySelector('.kdnest-part-code-edit')) return;
+    const cur = part.code;
+    const inp = document.createElement('input');
+    inp.type = 'text'; inp.className = 'kdnest-part-code-edit'; inp.value = cur;
+    inp.spellcheck = false; inp.autocapitalize = 'off'; inp.setAttribute('autocomplete', 'off');
+    inp.title = 'Type the correct code · Enter = save · Esc = cancel · type the original code to revert';
+    inp.style.cssText = 'font:inherit;width:14ch;max-width:46vw;padding:1px 4px;border:1px solid #2563eb;border-radius:4px;background:rgba(37,99,235,0.12);color:inherit';
+    span.style.display = 'none';
+    span.insertAdjacentElement('afterend', inp);
+    inp.focus(); inp.select();
+    let done = false;
+    const cleanup = () => { try { inp.remove(); } catch (e) {} span.style.display = ''; };
+    const commit = async () => {
+      if (done) return; done = true;
+      const val = inp.value;   // case-preserved (NO uppercase)
+      cleanup();
+      const res = await _applyCodeOverride(part, val);
+      if (res && res.err) { alert('Rename failed: ' + res.err); return; }
+      if (res && res.noop) return;
+      _refreshViewKeepScroll();
+    };
+    const cancel = () => { if (done) return; done = true; cleanup(); };
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); commit(); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    });
+    inp.addEventListener('blur', () => cancel());
+  }
+
   // ── Load parts list ────────────────────────────────────────────────
   // Projects live in the static manifest.json (loaded by app.js, exposed
   // as window.kdManifest). DXFs live under RTDB uploaded_dxfs/<code> +
@@ -688,6 +764,16 @@
     S.dxfsAll = dxfsAll;
     S.loadedJobStale = null;   // fresh project open = no loaded job
 
+    // Per-part code overrides (✏️ rename, เอ๋ 2026-06-20): nest-LOCAL re-point
+    // map keyed by MANIFEST code → survives a Fusion/BOM re-sync. Loaded whole,
+    // applied to the aggregated parts below (before DXF/grain attach).
+    let codeOverrides = {};
+    if (window.firebaseDB) {
+      try { const ovs = await window.firebaseDB.ref('nest_code_overrides').once('value'); codeOverrides = ovs.val() || {}; }
+      catch (e) { console.warn('[kdNest] code overrides load failed', e); }
+    }
+    S.codeOverrides = codeOverrides;
+
     // Aggregate qty by code. Skip WRAPPER entries (container/occurrence codes,
     // qty 0 — CC_Assembly emits them to carry the deep tree): without this they
     // flooded the nest as phantom "unique parts" with no DXF — เอ๋'s 1NSVB0
@@ -719,6 +805,14 @@
         _addContrib(np, projectKey, cab, p.qty || 0);
         byCode.set(p.code, np);
       }
+    }
+
+    // Apply ✏️ code overrides BEFORE DXF/grain attach so the new code resolves
+    // its OWN DXF/size/grain. part.origCode retained for display + revert.
+    for (const part of byCode.values()) {
+      const ov = codeOverrides[part.code];
+      const to = ov && (typeof ov === 'string' ? ov : ov.to);
+      if (to && to !== part.code) { part.origCode = part.code; part.code = to; }
     }
 
     for (const part of byCode.values()) {
@@ -4446,7 +4540,7 @@
         <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${p.code === S.previewCode ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
-          <span class="kdnest-part-code" title="${_esc(p.code)}${p.sources && Object.keys(p.sources).length > 1 ? _esc(' — ' + Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + ')) : ''}">${p.manual ? '▭ ' : ''}${_esc(_disp(p.code))}${p.sources && Object.keys(p.sources).length > 1 ? `<sup class="kdnest-part-srcs" title="${_esc(Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + '))}">${Object.keys(p.sources).length}P</sup>` : ''}</span>
+          <span class="kdnest-part-code" title="${_esc(p.code)}${p.origCode ? _esc(' · renamed from ' + p.origCode) : ''}${p.sources && Object.keys(p.sources).length > 1 ? _esc(' — ' + Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + ')) : ''}">${p.manual ? '▭ ' : ''}${p.origCode ? '✎ ' : ''}${_esc(_disp(p.code))}${p.sources && Object.keys(p.sources).length > 1 ? `<sup class="kdnest-part-srcs" title="${_esc(Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + '))}">${Object.keys(p.sources).length}P</sup>` : ''}</span>${(!p.manual && typeof window.isAdmin === 'function' && window.isAdmin()) ? `<button class="kdnest-part-rename" title="${p.origCode ? 'Re-pointed to ' + _esc(p.code) + ' (from ' + _esc(p.origCode) + ') — click to change or revert' : 'Rename / re-point this part code (web override — does not touch Fusion)'}" style="background:none;border:none;cursor:pointer;font-size:0.82em;opacity:0.5;padding:0 1px;line-height:1">✏️</button>` : ''}
           <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="${_szPh || 'W'}"${whLock}>
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="${_szPh || 'H'}"${whLock}>
@@ -4795,6 +4889,8 @@
       const code = row.dataset.code;
       const part = S.parts.find(p => p.code === code);
       if (!part) return;
+      // ✏️ rename / re-point this part code (admin, web override — เอ๋ 2026-06-20)
+      row.querySelector('.kdnest-part-rename')?.addEventListener('click', () => _startRenameEdit(row, part));
       row.querySelector('.kdnest-part-sel')?.addEventListener('change', e => {
         part.selected = e.target.checked;
       });
