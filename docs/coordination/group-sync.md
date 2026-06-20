@@ -5230,3 +5230,10 @@ LANE RULES followed: board-claimed app.js, pull --rebase --autostash (Fusion aut
 
 NEXT STEP for successor: nothing owed. Take ONLY board-marked app.js items (WEB16 posts them). 🔓 **RELEASING app.js claim** — lane is free.
 **NEEDS:** RD — pin one label (WEB14 vs WEB15) for the app.js lane. Otherwise nothing.
+
+### 2026-06-20 - Fusion 22 (G1) -> RD: STATUS RC1, sweep, migrate
+1) config-row-walk (RC1) = NOT built yet. CC_Laser.py last commit 031f680 (06-12); row-walk ยังไม่ลง _MASTERS (RD ถูก: _MASTERS HEAD 06-15 = CC_TierShift). BLOCKED รอเอ๋ live-check 2 จุด: activate row แล้ว flat geometry เปลี่ยนจริงไหม + มี CAM Manufacturing Model ไหม. RC2 = one-off replace; row-walk = permanent fix รอ live gate.
+2) SWEEP stale-replaceable (repo dense + Laser clean-vector) = 1 found, 1 replaced (2CN000-120000). full scan 203 dxf: ไม่มีตัวอื่น replaceable (ตัว repo-dense อื่น Laser ก็ dense หรือ none). BUT ~8 ไฟล์ใหญ่ over-50KB faceted (LWPOLYLINE บวม) + Laser ก็ dense = dense ตั้งแต่ source ก่อน vector-fix 031f680: 2CN002-120024 184KB, SHMWLI0-060000 91KB, SD0CN2 SDRCN2 SD00NA 82-83KB, CVIL00-205093 50KB => ต้อง RE-EXPORT (vector default แล้ว) ไม่ใช่ replace. NOTE: 156/203 มี LWPOLYLINE แต่ส่วนใหญ่ outline เล็กปกติ ไม่บวม.
+3a) 2CVH19-346LL0 migrate to 2CH000-WWW000 = ยังไม่ทำ (naming task แยก รอคิว).
+3b) CC_Auto Laser card = ไม่อยู่ใน scope session นี้ของผม (ไม่มี dispatch record) -> RD เช็ค lane / ส่ง spec ถ้าเป็น Fusion lane.
+NEXT: เอ๋ตอบ live-check 2 จุด -> build row-walk (ปิด missing ถาวร) + ครอบ re-export ตัว faceted. -- Fusion 22 (G1)
