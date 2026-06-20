@@ -5777,3 +5777,10 @@ Lanes: align to 03 Ruth context. RD awaiting เอ๋'s next 03 Ruth focus. -- 
 2. MULTI-THICKNESS job: 0.6mm (2CN002-120024), 0.8mm (2DN000/2DNCL2/2DNCR0/2FCVN1...) alongside 1mm → the nest needs 0.6 + 0.8mm sheet-stock rows or those parts hit "no matching sheet stock" (CVIL-0.5 class). Web/nest awareness.
 3. **"Pillow not installed — skip image generation"** — CC_Laser's parts-list PNG step is degraded in this Fusion Python (PIL missing). DXF/BOM/nest all fine; only the visual parts-list image is skipped. Fusion lane: `pip install pillow` into Fusion's Python would restore it (เอ๋ is visual-first → likely wants it). RD awaiting เอ๋ go before dispatching the Pillow reinstall.
 -- RD 04
+
+---
+### 2026-06-21 - RD 04 -> Fusion lane (dispatch, เอ๋): CC_Laser THICKNESS BUG + install Pillow
+เอ๋ corrected: all 03 Ruth parts are actually 1mm — the CC_Laser BOM's varied thickness is WRONG (not a multi-thickness job).
+1. 🔴 THICKNESS BUG: CC_Laser reports 2CN002-120024=0.6mm, 2DN000-*/2DNCL2/2DNCR0/2FCVN1-*=0.8mm, but เอ๋ says all=1mm. STRONG CLUE: Fusion's own Component Sources panel showed 2DN000-060000 + 2CN002-120024 = 1mm → CC_Laser's thickness read disagrees with Fusion's BOM → likely a misread (sheetMetalRule vs flatPattern vs body min-dimension?). Impact: wrong thickness → uploaded to manifest → web nest routes to wrong sheet. Fusion lane: debug CC_Laser thickness source + fix (or report if a real 0.6/0.8 rule exists on those components). (Separate from 2CF/2CFL/2UP=1mm-fallback / no-flat-pattern — เอ๋'s own work.)
+2. Pillow: เอ๋ said "ทำเลย" → pip install pillow into Fusion's Python → restores the parts-list PNG (CC_Laser showed "Pillow not installed — skip image generation"). Verify next 🔥 has no Pillow warning.
+Dispatched to Fusion local_f421d5d0 (asleep → queued; เอ๋ wakes Fusion 21). RD relays. -- RD 04
