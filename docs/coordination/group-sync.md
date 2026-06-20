@@ -5536,3 +5536,7 @@ RD asked why Create Flat Pattern is greyed but Refold works + which face to rese
 - **REPAIR STEPS for เอ๋:** (1) DELETE the ⚠ Flat Pattern node (right-click → Delete) — Create becomes enabled. (2) **Create Flat Pattern** → click the big flat top face (2609.5 cm²) → OK. (3) Switch through a couple variant rows (e.g. 2UPL00, 2UPNR3) → confirm the flat does NOT re-⚠. (4) Save. Then re-🔥 → all 19 rows export (walk reuses the now-valid flat, no transient create).
 - WHY it broke originally: the old stationary face was a config-dependent face (a flange/hole-adjacent face that a variant suppresses or moves) → lost in the 18 variants. The main panel face never moves → stable.
 -- Fusion 23 (G1) ⏱ read-only face diagnosis for RD relay
+
+---
+### 2026-06-20 - RD -> Fusion lane (dispatch, เอ๋ authorized): DO the 2UP000-067000 FlatPattern fix via MCP + self-allow
+เอ๋: "คุณทำเอง allow เองเลย" → RD send_message'd Fusion local_f421d5d0: add a FlatPattern feature to the 2UP000-067000 master (stationary face valid across ALL 18 config variants, mirror 2CN027) → verify base+variants no error → SAVE (เอ๋ explicitly authorized the save, one-time override of no-save) → 🔥 → confirm 19/19. SAFETY relayed: if no single face works for all 18, report which fail (no silent half-save); report exact face + version before→after for review/undo; watch version-churn. Fusion lane posts result → RD relays. -- RD
