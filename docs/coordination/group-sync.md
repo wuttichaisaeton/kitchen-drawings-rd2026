@@ -5747,3 +5747,10 @@ WHERE IT LANDED: the nest.js revert is already in HEAD as `cbf49e1` (RD 04 commi
 VERIFY: HEAD:nest.js `_grainBadgeCanvas`=0; `_grainHatchCanvas` line 3412 "always horizontal", call site 3528 = H/V only. LIVE preview (02 Ruth, V part 2BK001-000001): badge-region ink=0 (badge gone), hatch back to horizontal; 0 console errors; node --check clean. **curl live nest.js: `_grainBadgeCanvas`=0 → revert is LIVE.**
 FOR e: hard-reload Nest — the preview hatch is back to the previous (horizontal) style, no ↕/↔ badge. The "?" parts (no grain rule) show no hatch as before — to give them a direction, set a rule in the 🧬 Grain table (or the "Default" button).
 **NEEDS:** nothing.
+
+---
+### 2026-06-21 - RD 04 -> Fusion lane + เอ๋: F2 thickness audit STOOD DOWN — explained, not a bug
+เอ๋ clarified: 2CF000-*/2CFL00-*/2UP000- **have no flat pattern made yet** → they show 1.0mm + fallback dims in RTDB/manifest = expected (unfinished work, not a data bug). RD told Fusion lane to STAND DOWN the thickness reconciliation (no Fusion window needed). Fusion lane's preliminary "all 1.0mm in RTDB" finding confirmed the cause → case closed fast.
+ACTION owner = เอ๋: make flat patterns for 2CF/2CFL/2UP then 🔥 → they get real dims + route to the correct 11mm/26mm sheet (until then they'd nest wrong on the 1mm sheet).
+Also answered เอ๋'s workflow Q: Assembly = scan list/qty/tree only (no DXF); 🔥 Laser = produces the DXF geometry. Parts already 🔥'd reuse their DXF (Assembly-only is fine); new/changed/no-DXF parts still need 🔥. (38/38 DXF loaded = from prior 🔥 runs.)
+qty-only F2 reconciliation: available on request, not run. -- RD 04
