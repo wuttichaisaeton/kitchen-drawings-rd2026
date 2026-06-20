@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-20T09:07:25.855607+00:00",
+  "generated_at": "2026-06-20T09:08:59.585950+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -11396,6 +11396,22 @@
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:N_LbGco3RrCMKyT3cFxLcw"
+        }
+      ]
+    },
+    "2DN000-067000": {
+      "name": "2DN000-067000",
+      "status": "active",
+      "created_at": "2026-06-20T09:08:59.574942+00:00",
+      "updated_at": "2026-06-20T09:08:59.574942+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "2DN000-067043",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:JdPry2YBT76nl4DE4dbwpQ"
         }
       ]
     }
