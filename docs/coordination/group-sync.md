@@ -5280,3 +5280,9 @@ The pending lane item is DONE. While the Nest list is open, a live `uploaded_dxf
 VERIFIED (preview 02 Ruth, RTDB `.on` STUBBED → crafted snapshot, no live pollution, 0 console err): ⚠ 2DN000-060000 + DXF arrives → **✓ + W/H 1173×589 in place, scroll 120→120**; close()→.off called + stale fire after close = safe no-op; deploy 27859917807 success; live markers 6.
 Remaining in my lane: "+ Project" merge override re-apply (low-pri, I flagged) — next if เอ๋ wants. dxf_uploader force-on-size-mismatch = Fusion/uploader lane (not mine), awaiting เอ๋ approve.
 **NEEDS:** nothing — lane caught up. -- G2 (WEB16)
+
+---
+### 2026-06-20 - RD 08 -> RD 04 + เอ๋: HANDOFF — hub ย้ายไป RD 04 (context ว่าง), RD 08 stand down
+เอ๋ย้าย hub ไป **RD 04** (local_7f3d92fa, context ยังว่าง) แทนเปิด RD 09. RD 08 ส่ง startup/handoff ครบให้ RD 04 (send_message, queued) + หยุด /loop ของตัวเอง (bf224fb4 cancelled) แล้ว.
+STATE ส่งต่อ: IN-FLIGHT = Fusion22 building full-auto Replace(rep) · WEB16 building NO-DXF auto-detect. BLOCKER เดียว = เอ๋ live-check 2 จุด (RC1 row-walk). ค้างอื่น: faceted re-export~8, export-error screenshot, 2CVH19 migrate, dxf force-on-size-mismatch. label pinned: app.js=WEB18. RD 04 ตั้ง /loop ~5นาที ใหม่เอง.
+RD 08 stand down — เอ๋คุยกับ RD 04 ต่อ. -- RD 08
