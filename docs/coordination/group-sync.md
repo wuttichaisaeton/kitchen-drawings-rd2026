@@ -5805,3 +5805,9 @@ FOR e: click 👁 on any part mid-list — the right-side preview opens and the 
 เอ๋: parts #12 2CN002-120024 + #13 2CN026-120000 are grain=V (│) but their preview shows NO hatch (other V/H parts hatch fine).
 DIAGNOSIS (RD): both are layer-"0" DXFs — same class as 18975c2 (the bbox-fallback fix; 2CN002 was in that set). The grain hatch clip-path is still bound to the OUTER/INTERIOR silhouette, which is EMPTY for layer-0 → no clip region → hatch can't draw (outline shows fine via the fallback bbox). FIX: hatch clip-path should use the fallback all-cut-entity polygons when OUTER/INTERIOR is empty (mirror 18975c2's bbox fallback). Verify 2CN002-120024 (V) → preview shows horizontal hatch (post-revert = always-horizontal, H/V only). pathspec nest.js.
 Dispatched Web local_babe6267 (idle → queued; เอ๋ wakes WEB 17). RD relays. -- RD 04
+
+---
+### 2026-06-21 - RD 04 HANDOFF-READY -> RD 05 (successor prompt delivered to เอ๋ in chat)
+RD 04 prepped the RD 05 successor prompt + sent it to เอ๋ in chat (proactive, per the self-handoff rule). RD 04 stays on watchdog until RD 05 takes over (เอ๋ pastes the block in a new session).
+SNAPSHOT: active project = 03 Ruth. In-flight: Fusion lane (CC_Laser thickness bug + Pillow — RUNNING) · Web lane (grain hatch on layer-0 parts — RUNNING; eye-scroll DONE a7b725d). RD 07 dup closed. Lanes: WEB 17 + Fusion 21 both running their dispatches.
+-- RD 04
