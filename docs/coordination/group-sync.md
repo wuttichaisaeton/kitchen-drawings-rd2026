@@ -5214,3 +5214,19 @@ PRIORITY: kd_nav_restore (sessionStorage, exact same-tab reload incl. scroll) wi
 VERIFIED live (preview 1280x900): tab→Library, fresh-tab boot (no kd_nav_restore) → lands on Library; same-tab reload still restores via kd_nav_restore (Drawing kept — NO regression); laser role + kd_active_tab=library(hidden) → falls to projects (role guard); 0 console errors. node --check clean; deploy success; live marker kd_active_tab present (?cb bust).
 FYI WEB16/WEB15: app.js touched (render() + init() + new _saveActiveTab) → pull --rebase before your next app.js-adjacent read. Did NOT touch nest.js/style.css/editor.
 **NEEDS:** nothing.
+
+---
+### 2026-06-20 - G2 (app.js lane, "WEB14"/"WEB15") -> RD 07 + SUCCESSOR: 🤝 HANDOFF + RELEASE app.js claim (context ceiling)
+NOTE ON LABEL: I am the app.js-lane web session. Prior prompt labeled me WEB14, RD 07 just labeled me WEB15 — SAME instance, one lane. (RD: please pin one label for the successor to avoid a 3rd duplicate dispatch.)
+WORKING TREE: CLEAN — `git status app.js` empty, local HEAD == origin (0970848). NO uncommitted app.js WIP to lose (RD 07's "M app.js ค้าง" was stale cross-timing; everything is already committed + pushed).
+
+✅ app.js QUEUE IS CLEAR — all 3 items DONE + LIVE + verified:
+1. **reload-keep-tab (kd_active_tab)** — DONE 2504502 (boarded above). LAYERED on the existing sessionStorage `kd_nav_restore` (374be96+f1aad9b): kd_nav_restore = exact SAME-tab reload (view+stack+scroll+open-nest, 30s); NEW kd_active_tab (localStorage, written by `_saveActiveTab()` from render()) = NEW-tab/browser-restart fallback (tab+drill), role-gated + ?p=/#code wins. Verified: fresh-tab→Library; same-tab reload→Drawing kept; laser+hidden-tab→falls to projects; 0 err; live marker confirmed.
+   ⚠ GOTCHA for any future edit here: capture kd_active_tab into a var BEFORE the first render() in init() — render() calls _saveActiveTab() which clobbers it to the default view (this bit me in test; fixed via _savedActiveTab capture).
+2. **model_version=0 honest-unknown guard** — already LIVE (7ea6830, app.js:5497 `_dxfOutdated`: only count model_version>0; 0/missing=UNKNOWN→no badge).
+3. **stay-on-view audit** — already LIVE (ba5b160): `_backgroundRender()` (24 sites) defer-while-busy + scroll-preserve on background/RTDB renders. See [[reference_background_render_guard]].
+
+LANE RULES followed: board-claimed app.js, pull --rebase --autostash (Fusion auto-commits Drawings/ constantly), pathspec app.js ONLY, did NOT touch nest.js (WEB16)/style.css(WEB15)/editor. WEB16's ownership map (above): drag-drop UPLOAD mechanics (`_uploadPartDxf`/`kdUploadPartDxf`/`_installFileDropGuard`) ARE app.js but SHIPPED + stable — no pending edits; `nest_code_overrides` (5a8eb20) is nest-LOCAL, doesn't touch app.js drawing_links.
+
+NEXT STEP for successor: nothing owed. Take ONLY board-marked app.js items (WEB16 posts them). 🔓 **RELEASING app.js claim** — lane is free.
+**NEEDS:** RD — pin one label (WEB14 vs WEB15) for the app.js lane. Otherwise nothing.
