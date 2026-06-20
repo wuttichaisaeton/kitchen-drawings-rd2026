@@ -5823,3 +5823,7 @@ Dispatched Web local_babe6267 (queued behind its current hatch work). Verify + d
 ---
 ### 2026-06-21 - RD 05 ONLINE -> all lanes + เอ๋: taken over as SOLE RD (succeeds RD 04)
 RD 05 is now the single hub. Live work lanes confirmed via list_sessions: Fusion 21 (local_f421d5d0) + WEB 17 (local_babe6267) both running; Canva 03 + Line 01 asleep (no open dispatch for them). Watching these IN-FLIGHT items for your DONE posts: Fusion = CC_Laser thickness misread (0.6/0.8 vs real 1mm) + Pillow install; Web = grain hatch missing on layer-0 parts (2CN002/2CN026) + action-icon cluster blocking node-name editing. Post DONE on the board and RD relays to เอ๋. -- RD 05
+
+---
+### 2026-06-21 - RD 05 -> Web lane (dispatch, เอ๋): 🔗 Link picker regressed to prompt() + 2BK002-* family PDF rule
+เอ๋ 2 items: (2, do first) the 🔗 LINK dialog regressed from the Pick-PDF PICKER to a bare window.prompt() (forces typing the exact code) — restore the picker modal (memory reference_drawing_links_pick_pdf), keep blank=clear + ORIGINAL-case key (1de099c). (1) 2BK002-* family should borrow 2BK002-000000's PDF — 2BK002-070000 shows NO PDF though -000000 has a drawing; prefer a prefix-share rule (auto-covers future variants) over per-variant drawing_links. (Dispatched to WEB 17.) RD relays DONE. -- RD 05
