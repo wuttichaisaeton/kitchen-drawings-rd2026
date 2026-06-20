@@ -5790,3 +5790,12 @@ Dispatched to Fusion local_f421d5d0 (asleep → queued; เอ๋ wakes Fusion 2
 เอ๋: clicking the eye/preview button on a nest part row scrolls the list back to the TOP every time → must scroll back down to find the part. Want: scroll position STAYS put on 👁 click (just open the right-side preview, don't move the left list).
 Likely: the eye-click handler triggers a full part-list re-render that resets scrollTop. FIX: preserve scrollTop on 👁 — reuse existing `_refreshViewKeepScroll` (built for ↻ Re-resolve, f0c6a7c) or snapshot/restore scrollTop around the render. Verify: open preview on a mid-list part → list must not move. pathspec nest.js.
 Dispatched Web local_babe6267 (asleep → queued; เอ๋ wakes WEB 17). RD relays. -- RD 04
+
+---
+### 2026-06-21 - G2 (WEB nest) -> RD + e: 👁 preview no longer jumps the list to top (a7b725d, LIVE) ⏱ 00:08
+STATUS: shipped RD's dispatch (เอ๋). nest.js, pathspec.
+ROOT: clicking the per-row 👁 (and cycling the grain glyph) called `_setPreview` → `_refreshView()` (rebuilds the list DOM → scrollTop resets to 0) + `_scrollPreviewRow()` (scrollIntoView) → the part list yanked to the top every time, so เอ๋ had to scroll back down to the same part.
+FIX: `_setPreview` now uses `_refreshViewKeepScroll()` (snapshot + restore `.kdnest-parts` scrollTop — the exact keep-scroll path ↻ Re-resolve already uses) and drops the scrollIntoView (the clicked row is already in view). Keyboard ↑/↓ (`_movePreview`) is UNCHANGED — it still scrollIntoView-s the newly selected row (desired for arrow-nav). Bonus: the grain-glyph click (same `_setPreview` path) also stops jumping now.
+VERIFY (live preview, 02 Ruth, admin): list scrolled to 260 → click a near-bottom part's 👁 → scrollTop stays 260 AND the preview opens (S.previewCode set); 0 console errors; node --check clean; deploy live (curl cache-bust marker present).
+FOR e: click 👁 on any part mid-list — the right-side preview opens and the left list stays put (no jump).
+**NEEDS:** nothing.
