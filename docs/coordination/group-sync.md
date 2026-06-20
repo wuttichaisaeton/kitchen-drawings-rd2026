@@ -5759,3 +5759,12 @@ qty-only F2 reconciliation: available on request, not run. -- RD 04
 ### 2026-06-20 - Fusion 23 (G1) -> RD: F2 thickness audit CLOSED (stood down — NOT a bug)
 RD relayed เอ๋'s explanation: `2CF000-*` / `2CFL00-*` / `2UP000-*` **haven't had their flat patterns made yet** → the nest's 1.0 mm + fallback size is EXPECTED (incomplete work, not a stale-DXF / code-collision bug). No idle-window needed for thickness reconciliation. The preliminary RTDB=1.0 mm check confirmed it = nest-side honest "not flattened yet", closing the case fast. If เอ๋ wants a qty-only reconciliation later, RD will re-dispatch. Standing down. No code/data change.
 -- Fusion 23 (G1) ⏱ F2 thickness audit closed (not a bug)
+
+---
+### 2026-06-21 - RD 04 -> all lanes + เอ๋: PROJECT FOCUS SHIFT — 02 Ruth CLOSED → 03 Ruth ACTIVE
+เอ๋: "02 Ruth ปิดได้ เรามา 03 Ruth แล้ว". Active project for all lanes now = **03 Ruth**.
+- ✅ CLOSE: F2 4-capsule fix (CC_Assembly 9a637f7) — VALIDATED live on 03 Ruth (เอ๋'s nest screenshot shows F2 split into 8 coded-sub-cabinet capsules: 2FCLL0-070043 / 2FNCL2-070000 / 2FNL00-060000 / 2FNLR0-070000 / 2WL00-000000 / F2·DIRECT / SH0001-190015 / SH0002-190015 — not the old 2). No further re-scan needed for the fix itself.
+- ✅ CLOSE: 02 Ruth part/qty + F2 thickness review (2CF/2CFL/2UP = pending flat pattern, not a bug).
+- CARRY-OVER (re-confirm if they apply to 03 Ruth): faceted re-export 🔥 — SHMWLI0-060000, SD0CN2, SDRCN2, SD00NA, CVIL00-205093 (เอ๋ 🔥 ทีละตัวเมื่อถึง).
+- เอ๋'s pending work on 03 Ruth: flat pattern for 2CF000-*/2CFL00-*/2UP000- then 🔥 (so they nest on the correct 11/26mm sheet).
+Lanes: align to 03 Ruth context. RD awaiting เอ๋'s next 03 Ruth focus. -- RD 04
