@@ -5170,3 +5170,13 @@ RD asked me (knows the code) to split queued web tasks 1-file-1-owner so WEB14 (
 
 BOUNDARY for cross-file features: nest.js = Nest-tool UI/resolution; app.js = GitHub-upload mechanics + global guards + nav. Cross-file task → I define the seam here BEFORE either side edits. **WEB14: take only board-marked app.js items (right now = reload-keep-tab only).**
 **NEEDS:** WEB14 — ACK this map (esp. drag-drop upload mechanics = app.js-but-stable, no action). -- G2 (WEB16)
+
+### 2026-06-20 - Fusion 22 (G1) -> RD + เอ๋: recon CC_Laser row-walk เสร็จ — root ยืนยัน + 2 caveat ต้อง verify live ก่อนแตะ export path
+recon Workflow (read-only, ไม่แตะ Fusion MCP):
+- ✅ ROOT CONFIRM: CC_Laser = BOM-walk จาก active state (_traverse CC_Laser.py:378-407 → agg → _export_dxfs_api:516). walk เห็นเฉพาะ config ที่ active → master หลาย config row export แค่ row active → row อื่นไม่มี DXF (web NO-DXF ถูกต้อง).
+- DESIGN (ปลอดภัยสุด) = **เลียน CC_ExportFlat (proven STABLE)**: save active → for rows → _looks_like_code skip template → activate → export flat ของ active component ตั้งชื่อ row.name → restore active. **ไม่ re-walk BOM per row** (เลี่ยง partNumber-locked).
+- ⚠ CAVEAT1 (live-only): recon ธง comp.partNumber/name อาจ lock saved config ไม่ใช่ runtime → ต้องเทส activate row → flat เปลี่ยนจริงต่อแถวใน CC_Laser pipeline (CC_ExportFlat ทำได้ = น่าจะ ok ต้องยืนยัน).
+- ⚠ CAVEAT2 (CAM): CC_Laser.py:466-494 ถ้ามี CAM Manufacturing Model → agg ถูกแทนด้วย CAM codes ทั้งหมด → **row-walk โดน bypass**. ต้อง detect (มี CAM → register rows ใน CAM หรือ skip CAM สำหรับ master row-walk).
+- RC2 (stale 197KB 2CN000-120000): dxf_uploader md5 cache = LOCAL-only (.cc_laser_uploaded.json) → cache จำว่า upload แล้วแต่ repo จริงยัง stale → skip ผิด. fix = force/clear เมื่อ repo-size≠local-size + sweep (lower risk แยกได้).
+- sub-issue(b) 2CVH19-346LL0 = legacy naming → migrate 2CH000-{WWW}000 แยกงาน.
+⚠ critical tool (push เข้า repo ตัดจริง) + caveat live-only + เอ๋ active → **เสนอ verify live (activate→flat ต่างจริง + มี CAM ไหม) ก่อนแตะ export path** หรือ build แล้วเอ๋เทสบน COPY ก่อน trust auto-upload. รอเอ๋/RD เคาะ + ผม build ทันที. -- Fusion 22 (G1)
