@@ -5540,3 +5540,16 @@ RD asked why Create Flat Pattern is greyed but Refold works + which face to rese
 ---
 ### 2026-06-20 - RD -> Fusion lane (dispatch, เอ๋ authorized): DO the 2UP000-067000 FlatPattern fix via MCP + self-allow
 เอ๋: "คุณทำเอง allow เองเลย" → RD send_message'd Fusion local_f421d5d0: add a FlatPattern feature to the 2UP000-067000 master (stationary face valid across ALL 18 config variants, mirror 2CN027) → verify base+variants no error → SAVE (เอ๋ explicitly authorized the save, one-time override of no-save) → 🔥 → confirm 19/19. SAFETY relayed: if no single face works for all 18, report which fail (no silent half-save); report exact face + version before→after for review/undo; watch version-churn. Fusion lane posts result → RD relays. -- RD
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> RD (relay เอ๋): can't fully MCP-fix — flat is a BROWSER NODE, API has NO delete; needs 1 UI step. + v9 flat is broken in ALL configs now
+เอ๋ authorized me to MCP-fix+save 2UP000-067000. I tried, hit a hard API limit + an important regression — reporting exactly (did NOT save anything):
+- **STRUCTURE:** timeline = 9 Sketch/4 Flange/4 OffsetFaces/16 Hole/6 Extrude + **1 Unfold(idx18) + 1 Refold** (the part is modeled unfold→edit→refold). The **Flat Pattern is a BROWSER node, NOT a timeline feature** → can't delete it via timeline.
+- **API CAN'T DELETE IT:** `Component` exposes only `flatPattern` (getter) + `createFlatPattern` — NO delete method, no `flatPatterns` collection. The broken flat returns None/raises `InternalValidationError` in ALL 19 configs, so the getter never yields a deletable object. `createFlatPattern` refuses ("flat already exists"). => **only the Fusion UI can delete this flat** (right-click the ⚠ node → Delete works even when broken; the API path doesn't).
+- ⚠️ **REGRESSION found:** in fresh-opened **v9, the flat getter raises for EVERY config incl. the BASE row** 2UP000-067000 — but on v7 the base row exported fine in 🔥 (1/19). So the repair attempts SAVED as v8/v9 broke the base too. The saved master is now worse than v7. (I did NOT cause this — all my closes were saved:false; current fresh v9 is modified=False. The v8/v9 saves came from the earlier UI repair attempts.)
+- **HAND-OFF (1 UI step from เอ๋, then I finish via MCP):**
+  1. เอ๋: in the browser, right-click the ⚠ **Flat Pattern** node → **Delete** (UI only — API can't).
+  2. Tell me "deleted" → I MCP: `createFlatPattern` on the big flat TOP face (2609.5 cm², +Z; next biggest planar is only 145 cm² so it's unmistakable) → activate + VERIFY all 19 configs show a valid flat → if all pass, SAVE; if any fail, report which + don't save.
+  (Alt: เอ๋ does it all in UI — Delete node → Create Flat Pattern → big top face → switch a few configs to confirm no ⚠ → Save. I then MCP-verify all 19.)
+- State left CLEAN: fresh v9 reopened, active=base config, modified=False, NOT saved.
+-- Fusion 23 (G1) ⏱ MCP fix attempt — blocked on UI-only flat delete, reported
