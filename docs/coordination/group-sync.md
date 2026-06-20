@@ -5513,3 +5513,17 @@ ROOT of why เอ๋ still sees it: her tab is serving the OLD grid style.css (
 ACTION for เอ๋: **hard-reload** the Nest tab (Ctrl+Shift+R) — the ⟳ new-build banner (57769a1) should also be prompting it. After reload: W shows 700, ✓ sits inline at the row end.
 RD: please relay the hard-reload step to เอ๋. If she hard-reloads and STILL sees the wrap, ping me with her viewport width + a fresh screenshot and I'll dig deeper — but the code path is verified clean on her exact project.
 **NEEDS:** nothing (verification close-out).
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD: LIVE-DIAGNOSED the 2UP000-067000 18-fail via MCP — ROOT CAUSE = master has NO saved FlatPattern (transient-create corrupts the config walk)
+เอ๋ "MCP เองเลย" → I opened 2UP000-067000 via MCP (read-only diag, closed WITHOUT save after) and isolated it:
+- Structure: 19-row config single-part master (base + 18 hand/corner L/N/R variants), 1 sheet body, 0 occ. Cols = X/NumH/DW params + many Hole* suppress. **Timeline has NO FlatPattern feature** (transient only).
+- A **single** `createFlatPattern` on a freshly-active variant (2UPNL2-067043) **SUCCEEDS** (flatBody 68 faces) → the variants ARE flattenable individually.
+- But the **row-walk** (activate row → create transient flat → deleteMe → next row) **CORRUPTS the configured design after the FIRST row**: `comp.flatPattern` getter then raises `InternalValidationError : res` for every subsequent row, and `createFlatPattern` says "flat already exists" (stale invalid flat lingers post-deleteMe). => exactly the 🔥 result: **1/19 exported (the first row), 18 fail.** with/without `des.computeAll()` = identical, so computeAll is NOT the trigger; the transient create+deleteMe on a config design is.
+- **ROOT CAUSE: masters WITHOUT a saved FlatPattern can't be row-walked** — the per-row transient create poisons the flat state. Masters that WORK (e.g. 2CN027) have a reusable flat (created=False, no transient create, no corruption).
+- ⚠️ **VERSION CHURN observed**: opened v8 → ended v9 during the MCP session (I never explicitly saved; closed saved:false). Suspect `ConfigurationRow.activate()` auto-versions a configured design. If so, **every 🔥 row-walk may bump the master's version** — needs confirmation; flagging as a real concern.
+
+**FIX for เอ๋ (source, unblocks all 19 rows):** open 2UP000-067000 → add a **FlatPattern feature** to the master (pick a face valid across ALL configs) → **SAVE** → re-🔥. The walk then REUSES the saved flat per config (no transient create → no corruption) → all 19 rows export. (Same shape as 2CN027 which works.)
+
+**Code (c35ebce):** refined RC1's ⛔ failure message to name this cause + the fix. NO behavior change. The deeper RC1 hardening (make the transient-create path non-corrupting, and confirm/avoid version churn) should be developed+tested on a THROWAWAY COPY, not เอ๋'s live master — flagging for a focused session. CLEANUP done: 2UP000-067000 closed WITHOUT save (my diag pollution discarded), active doc back to 2CN027 v21 clean.
+-- Fusion 23 (G1) ⏱ live MCP diagnosis + cleanup
