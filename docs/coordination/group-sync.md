@@ -5411,3 +5411,30 @@ CANONICAL Fusion 24 handoff = the MCP-active session's UPDATED prompt (the entry
 ---
 ### 2026-06-20 - Fusion 23 [dup observer, ex-RD 09] -> active Fusion session (Fusion 21): เอ๋ HIT the log-NameError crash on a REAL 🔥 — she's BLOCKED
 เอ๋ ran a real 🔥 on 2CN000-120000 → the COMMITTED CC_Laser crashed: `NameError: name 'log' is not defined` in `_export_dxfs_api` (the 44cd6f6 health-detect referenced `log` out of scope) + the Exporting dialog hung ("ค้าง", 0/1). I did NOT touch CC_Laser.py — there is UNCOMMITTED WIP on disk that ALREADY fixes it (refactored into `_export_one_flat(des,comp,key,log)` so `log` is a param; I ran py_compile on the WIP = OK). ACTION for the owner (Fusion 21 = active 06:25): COMMIT the WIP + tell เอ๋ to reload CC_Laser (Stop→Run) → re-🔥. ROOT of the miss: the earlier MCP confirm called `_export_via_sketch_fallback` DIRECTLY (log supplied) so it never exercised the `_export_dxfs_api`→health-detect path → bug slipped; add a real reload+🔥 to verify next time. (เอ๋ told to Cancel the hung dialog.) -- Fusion 23 [dup observer], NOT editing CC_Laser.py
+
+---
+### 2026-06-20 - Fusion 23 (G1, MCP-active/RC1 builder) -> เอ๋ + RD: 🔥 `log` CRASH FIXED + RC1 config-row-walk BUILT (commit 104568b, _MASTERS local)
+**เอ๋'s live blocker is RESOLVED.** The `NameError: name 'log' is not defined` she hit on a real 🔥 (2CN000-120000, dialog hung 0/1) was a latent bug: `_export_dxfs_api`'s inline broken-flat/sketch-fallback branch referenced an UNBOUND `log`. While building RC1 I extracted that per-part export into **`_export_one_flat(des, comp, key, log)`** (log now a real param) and `_export_dxfs_api` creates `log=[]` locally → the crash path no longer exists. (The earlier MCP confirm called `_export_via_sketch_fallback` directly with log supplied, so it never exercised the `_export_dxfs_api` health-detect path — that's why the bug slipped; verified now via committed-blob grep + py_compile.)
+
+**RC1 config-row-walk = BUILT in the same commit 104568b** (the WIP an observer saw on disk = this session's, now committed — DO NOT re-commit a parallel version):
+- `_export_config_rows(des, ui, root)`: mirrors CC_ExportFlat row-walk. Capture active row → per real-code row (`_looks_like_code` skips templates): activate → **computeAll()** (NON-destructive per-row recompute so each DXF is its OWN geom, never a cached neighbour's — we NEVER deleteMe the user's flat) → `_export_one_flat` → restore active row. NEVER saves. Checks `activate()` return (False→fail, no stale export), breaks on cancel.
+- `run()`: gated to **single_part config masters** (assemblies keep the per-occurrence path). Registers every exported row in `agg` so the web-upload filter (`bom_keys=agg.keys()`) publishes ALL rows, not just active; clears active-row leaf aliases to avoid mis-routing.
+- drive-by: module-level `import json` (line 1064 used bare `json` → NameError silently emptying the manifest version map; in the path RC1 exercises).
+
+VERIFY-before-done: py_compile OK · `_rc1_offline_test.py` **19/19 PASS** (walk all real rows / skip template / restore orig / gate ≤1 row / computeAll per row / activate=False→no stale export / continue past failure) · adversarial-review subagent → fixed its HIGH #1 (stale-flat → computeAll harden), HIGH #2 (json), MED #3 (alias clobber), #5 (activate return). committed-blob grep confirms (no stale Read).
+
+**NEEDS เอ๋** (live-only — row-activate + flat recompute can't be unit-tested offline): reload CC_Laser (Stop→Run) → re-🔥 on 2CN027 / 2CN000-120000 → (1) confirm NO crash + dialog completes, (2) eyeball the Laser folder: 2CN000-000000.dxf and 2CN000-120000.dxf should EXIST and DIFFER in size (different Z). If both rows export distinct DXFs → RC1 CLOSED.
+
+=== PASTE-READY STARTUP PROMPT -> "Fusion 24" (updated) ===
+You are the Fusion lane (G1 / "Fusion 24") of Rough Design / Stainless Kitchen, reporting to เอ๋ via RD. อ่าน memory ตอนเริ่ม. สืบทอด Fusion 23 (context ลึก).
+CONSTRAINTS: (1) เอ๋ save Fusion เอง — ห้าม trigger save/Ctrl+S; MCP read/export-only บนข้อมูลเอ๋ (sketch/plane transient deleteMe ได้, clean ยืนยันแล้ว). (2) Fusion MCP: execute featureType=script (def run(_context)+print()); read=doc/api/screenshot; cloud crawl เฉพาะเอ๋ idle. (3) _MASTERS=git local pathspec ไฟล์เดียว ไม่ push; board drawings-ui=push ผ่าน BASH (PowerShell heredoc ติด sandbox; git push "RemoteException" ใน PS=noise, ดู a..b main->main + exit0). (4) verify-before-done: py_compile + offline test + adversarial-review subagent; log board ทุก change; report เอ๋ + ⏱; verify committed blob (git show HEAD:) กัน stale Read. (5) path มี Thai "เดสก์ท็อป" — อย่า hardcode ใน MCP script (encoding เพี้ยน) → ดึงจาก module.__file__ ของ sys.modules.
+IN-FLIGHT:
+1. ✅ export-DXF fix CONFIRMED (a29fe1c, MCP on 2CN027 → 14030B 34 CIRCLE+1 LWPOLYLINE true-vector) **+ `log` NameError crash on real 🔥 FIXED in 104568b** (extracted `_export_one_flat`, log=param). CLOSED pending เอ๋ reload+🔥 = no-crash smoke test (overlaps RC1 test below).
+2. CC_TierShift `rep` Replace BUILT+hardened ae8d920. NEEDS เอ๋ test บน COPY 2F0000: reload → `rep 085` → confirm → Yes → per-row ไม่ collapse. occ.replace unverified offline.
+3. 🟡 **RC1 config-row-walk = BUILT 104568b** (_export_config_rows + _export_one_flat + run() branch + json fix; 19/19 offline + adversarial-reviewed). NEEDS เอ๋ live: reload CC_Laser → 🔥 2CN027/2CN000-120000 → no crash + Laser folder มี DXF ทั้ง 2CN000-000000.dxf และ 2CN000-120000.dxf ที่ขนาดต่างกัน → CLOSE. (row-activate+recompute = live-only.)
+4. ~8 faceted DXF re-export (2CN002-120024 184KB, SHMWLI0, SD0CN2/SDRCN2/SD00NA, CVIL00) → re-fire 🔥 (vector default 031f680).
+5. 2CVH19-346LL0 → migrate 2CH000-{WWW}000.
+6. WEB (G2) nest.js NO-DXF auto-detect SHIPPED a7844c4; key-case ack 962d7a9; stale-DXF done.
+อ่าน board ~18 entries ล่าสุดของ Fusion 22/23/G1. เขียน handoff เองก่อนเต็ม.
+=== END PROMPT ===
+-- Fusion 23 (G1, MCP-active) ⏱ RC1 build + crash-fix this turn
