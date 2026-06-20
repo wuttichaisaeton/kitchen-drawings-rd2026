@@ -5438,3 +5438,17 @@ IN-FLIGHT:
 อ่าน board ~18 entries ล่าสุดของ Fusion 22/23/G1. เขียน handoff เองก่อนเต็ม.
 === END PROMPT ===
 -- Fusion 23 (G1, MCP-active) ⏱ RC1 build + crash-fix this turn
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD: item 4 was STALE (DONE) + item 2 re-verified — audited DXFs offline
+เอ๋ "ทำทั้ง 2 อย่าง" (save memory + ลุยข้อถัดไป) → memory saved (reference_cc_laser RC1+log-crash+sketch-fallback+vector). ข้อถัดไปทั้งคู่เป็น live-Fusion-gated → ผม verify/audit offline ให้พร้อมยิง:
+
+**ITEM 4 = ALREADY DONE (board entry was STALE).** Wrote a DXF entity-classifier, scanned all 159 files in Laser/. Every PART code the board listed as faceted is now TRUE-VECTOR (re-exported 2026-06-12 06:07-08, post vector-fix 031f680):
+- 2CN002-120024 (188KB): 21 CIRCLE + 4 ARC + 12 SPLINE ✓ (board said "184KB faceted" — re-exported, now vector; touched again 06-20 09:21 by เอ๋'s 🔥)
+- SHMWLI0-060000: 61 CIR + 8 ARC + 8 SPL ✓ · SD0CN2-080000: 368 CIR ✓ · SDRCN2-080000: 363 CIR ✓ · SD00NA-080000: 361 CIR ✓ · CVIL00-205093: 66 CIR + 8 SPL ✓
+=> NO 🔥 re-export needed for these. **The ONLY faceted files left = the `02_Ruth_20260611_130702_s1..s9` NEST CUT-SHEETS** (s1-4,7-9 = 0 curves + dense polylines up to 6174 verts; s5,s6 already vector). Those are nest OUTPUT, not part DXFs → fix via web 📂Load+💾Save (layout เดิม) per [[feedback-vector-only]], NOT Fusion 🔥 — and may be obsolete (dated 06-11). เอ๋: ทิ้งได้ไหม / ต้อง re-cut 02 Ruth จาก sheet พวกนี้อีกไหม?
+
+**ITEM 2 (CC_TierShift `rep`) re-verified offline:** py_compile ✓ both files · `rep` dispatch intact (L1501, before 're') → `_do_replace` (L699) → `occ.replace(newdf, False)` (L796). Already adversarial-hardened (regex BASE-WWWHHH parse not blind str.replace; ALL-OR-NOTHING swap — partial → no reapply/rename/save). ⚠ `rep` **SAVES the design** after a clean full swap (new version) → MUST test on a throwaway COPY (the confirm dialog warns this too). occ.replace = live API, can't test offline. NEEDS เอ๋: COPY 2F0000 → reload CC_TierShift → `rep 085` → confirm Yes → per-row ไม่ collapse + sub-files swap to tier 085.
+
+NET pending for เอ๋ (all live-Fusion, can't do for her while she's in the doc): (1) reload CC_Laser → 🔥 2CN027 = confirm RC1 no-crash + per-row DXFs differ; (2) CC_TierShift `rep 085` on COPY 2F0000; (3) decide fate of 02_Ruth faceted cut-sheets.
+-- Fusion 23 (G1) ⏱ audit+verify this turn
