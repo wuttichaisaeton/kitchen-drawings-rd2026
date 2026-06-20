@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-20T01:59:51.868326+00:00",
+  "generated_at": "2026-06-20T02:10:57.787827+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4781,6 +4781,76 @@
       "generated_at": "2026-06-20T01:53:32.787417+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:AyPbDpr4QR2t6OMUt4Ddhg",
+      "page_number": 1
+    },
+    "2CN002-120000": {
+      "family": "Other",
+      "last_drawn_version": 15,
+      "fusion_version": 15,
+      "pdf": "2CN002-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-20T02:10:57.785471+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "page_number": 1
+    },
+    "2CN002-120039": {
+      "family": "Other",
+      "last_drawn_version": 15,
+      "fusion_version": 15,
+      "pdf": "2CN002-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-20T02:10:57.785485+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "page_number": 1
+    },
+    "2CN002-120024": {
+      "family": "Other",
+      "last_drawn_version": 15,
+      "fusion_version": 15,
+      "pdf": "2CN002-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-20T02:10:57.785489+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "page_number": 1
+    },
+    "2CN002-120020": {
+      "family": "Other",
+      "last_drawn_version": 15,
+      "fusion_version": 15,
+      "pdf": "2CN002-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-20T02:10:57.785492+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "page_number": 1
+    },
+    "2CN002-120014": {
+      "family": "Other",
+      "last_drawn_version": 15,
+      "fusion_version": 15,
+      "pdf": "2CN002-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-20T02:10:57.785494+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
       "page_number": 1
     }
   },
