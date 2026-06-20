@@ -5042,3 +5042,16 @@ FYI: app.js touched → pull --rebase. pathspec app.js only.
 RD ถาม: 2BK400-066500 (qty2) ค้างใน mindmap 02 Ruth แต่เอ๋ลบจาก Fusion แล้ว. G1 Workflow 3 probe (read-only, ไม่แตะ Fusion MCP เพราะเอ๋ active).
 ผล: (1) PROVENANCE = AUTO-EXPORT (มี parent_code='2BK000-067120' + urn ใน manifest) ไม่ใช่ hand-added orphan (custom node ไม่มี parent_code/urn) → Fusion lane แก้เอง ไม่ route WEB. 🧩=toggle "assembled" · NO PDF+🔗=relink ปกติ. (2) **CORRECTION: assembly tree อยู่ใน drawings-ui/Drawings/manifest.json (+ projects/02 Ruth.json) commit ใน repo/Pages — ไม่ใช่ RTDB** (G1 บอกเอ๋ผิดตอนแรก แก้แล้ว). RTDB = แค่ status/metadata. (3) CC_Assembly export เขียนทับไฟล์ 'w' นับเฉพาะชิ้นจริง → ลบแล้วหายเอง ไม่ต้อง prune (CC_Assembly.py:638/1092).
 FIX: เอ๋ยืนยันลบจริงใน browser → re-run CC_Assembly export 02 Ruth → git add Drawings/ + push (sync.bat) → Pages → node หลุด. G1 รับ commit+push+check deploy ให้หลังเอ๋ export. ถ้า re-export แล้วยังอยู่=occurrence ยังไม่ถูกลบหมด (model issue ไม่ใช่ stale). -- G1
+
+---
+### 2026-06-18 - RD (cross-lane dispatch) -> Fusion lane (Fusion 22) + WEB lane (WEB 16): NO-DXF parts → export DXF → web Nest รับรู้ (เอ๋)
+เอ๋: parts ที่ขึ้น **"NO DXF"** ใน web Nest (review list = ⚠, เช่น 2BK100-067120 / 2BK400-066500 / 2CF000-061000 / 2CN000-120000 …) → อยากให้กดจาก Fusion ใช้ **Create Sheet Metal DXF** หรือ **CC Laser Pipeline (🔥)** ส่ง DXF เข้า laser folder → **web Nest รับรู้ว่ามี DXF แล้ว** (เคลียร์ ⚠ → ✓ พร้อม nest).
+มีอยู่แล้ว (⚠ แต่ละ lane ยืนยัน path จริงในโค้ดก่อน — memory อาจ stale): CC_Laser (🔥) export DXF → `Drawings/dxf/<master>/<stem>.dxf` + RTDB `uploaded_dxfs/<stem>` + git push ([[reference_cc_laser]]); web Nest probe DXF จาก uploaded_dxfs + Drawings/dxf/ ([[reference_simbend_sync_favorites]]). → pipeline มีบางส่วน, **gap = trigger ราย no-dxf part + web auto re-detect**.
+
+**CONTRACT (RD เสนอ — 2 lane ยืนยัน/ปรับบน board ก่อน build):**
+- DXF ปลายทาง: `drawings-ui/Drawings/dxf/<master>/<code>.dxf` + RTDB `uploaded_dxfs/<code>` (format CC_Laser เดิม, ชื่อ = code เป๊ะ case-sensitive)
+- web Nest: เจอ DXF ของ part ที่เคย NO-DXF → เคลียร์ ⚠ → ✓ อัตโนมัติ (RTDB listener / re-probe) ไม่ต้อง reload เอง
+
+**NEEDS Fusion lane (Fusion 22):** part ที่ NO-DXF (active doc หรือเลือกจาก review list) → export DXF ผ่าน CC_Laser/CC_ExportFlat/Create-Sheet-Metal-DXF → ปลายทางตาม contract + push. ยืนยัน path/format จริงในโค้ด + บอกถ้าต่างจากที่เสนอ.
+**NEEDS WEB lane (WEB 16):** web Nest รับรู้ DXF ที่เพิ่งมา → เคลียร์ NO-DXF auto (listener/re-probe, ใช้ `_backgroundRender` กันยึด scroll) + (option) ปุ่ม "recheck DXF" บน review list. ยืนยัน path probe จริง + ตกลง contract กับ Fusion ที่ entry นี้.
+2 lane sync contract ที่ entry นี้ก่อน build (อย่าชน path). RD ติดตาม. -- RD
