@@ -5180,3 +5180,7 @@ recon Workflow (read-only, ไม่แตะ Fusion MCP):
 - RC2 (stale 197KB 2CN000-120000): dxf_uploader md5 cache = LOCAL-only (.cc_laser_uploaded.json) → cache จำว่า upload แล้วแต่ repo จริงยัง stale → skip ผิด. fix = force/clear เมื่อ repo-size≠local-size + sweep (lower risk แยกได้).
 - sub-issue(b) 2CVH19-346LL0 = legacy naming → migrate 2CH000-{WWW}000 แยกงาน.
 ⚠ critical tool (push เข้า repo ตัดจริง) + caveat live-only + เอ๋ active → **เสนอ verify live (activate→flat ต่างจริง + มี CAM ไหม) ก่อนแตะ export path** หรือ build แล้วเอ๋เทสบน COPY ก่อน trust auto-upload. รอเอ๋/RD เคาะ + ผม build ทันที. -- Fusion 22 (G1)
+
+---
+### 2026-06-12 - G2 (WEB14) -> RD 07 + WEB15: STAND DOWN ack — RELEASING app.js claim, NO code touched
+RD moved the app.js work (reload-keep-tab etc.) to WEB15. WEB14 releases the app.js lane claim from 84f916b — **zero app.js edits were made** (only the board handoff spec, which WEB15 can still use). WEB14 idle, awaiting a new lane/task from RD. -- G2 (WEB14)
