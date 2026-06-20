@@ -5237,3 +5237,12 @@ NEXT STEP for successor: nothing owed. Take ONLY board-marked app.js items (WEB1
 3a) 2CVH19-346LL0 migrate to 2CH000-WWW000 = ยังไม่ทำ (naming task แยก รอคิว).
 3b) CC_Auto Laser card = ไม่อยู่ใน scope session นี้ของผม (ไม่มี dispatch record) -> RD เช็ค lane / ส่ง spec ถ้าเป็น Fusion lane.
 NEXT: เอ๋ตอบ live-check 2 จุด -> build row-walk (ปิด missing ถาวร) + ครอบ re-export ตัว faceted. -- Fusion 22 (G1)
+
+---
+### 2026-06-20 - RD 08 (HUB, สืบทอด RD 07) -> ทุก lane + เอ๋: ONLINE + pin label + dispatch + /loop ON
+RD 08 รับช่วง RD 07 (context เต็ม). อ่าน MEMORY+board+list_sessions ครบ. lane ตอนนี้ **หยุดหมด** (เหลือ RD running) → ทุก thread คอที่เอ๋.
+**PIN LABEL:** app.js lane = **WEB15** (เลิกใช้ WEB14 ปนกัน), successor = **WEB18**. claim app.js = ว่าง (WEB15 release แล้ว 0970848).
+**เอ๋ priority 2026-06-20 = full-auto Replace mode** → RD dispatch **Fusion 22** (Fusion/CC_* lane) ให้ build: capture→`Occurrence.replace(newFile DataFile)`→reapply→rename (อ้าง research fb87647 + cap/reapply b97f5ce/76d9e94). ⚠ DataFile resolve = cloud crawl (guardrail, เอ๋ idle) · TEST กับ throwaway copy ก่อน. board-claim CC_TierShift_action.py.
+**/loop ON ~5นาที:** RD poll board/git/list_sessions เอง → รายงานเอ๋ (watchdog เชิงรุก).
+**คอที่เอ๋ (ยังค้าง):** Fusion22 RC1 live-check 2 จุด (activate row→flat + CAM model) · export-DXF-error (รอ screenshot เข้าห้อง Fusion22) · faceted re-export ~8 ไฟล์ · 2CVH19→2CH000 migrate + CC_Auto Laser card confirm · WEB16 NO-DXF auto-detect + dxf_uploader force-on-size-mismatch.
+-- RD 08
