@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-20T02:10:57.787827+00:00",
+  "generated_at": "2026-06-20T02:19:03.792081+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4792,9 +4792,9 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-20T02:10:57.785471+00:00",
+      "generated_at": "2026-06-20T02:19:03.790434+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:nL-Dc2BBTuKv1n8qW59_mw",
       "page_number": 1
     },
     "2CN002-120039": {
@@ -4806,9 +4806,9 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-20T02:10:57.785485+00:00",
+      "generated_at": "2026-06-20T02:19:03.790446+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:nL-Dc2BBTuKv1n8qW59_mw",
       "page_number": 1
     },
     "2CN002-120024": {
@@ -4820,9 +4820,9 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-20T02:10:57.785489+00:00",
+      "generated_at": "2026-06-20T02:19:03.790450+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:nL-Dc2BBTuKv1n8qW59_mw",
       "page_number": 1
     },
     "2CN002-120020": {
@@ -4834,9 +4834,9 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-20T02:10:57.785492+00:00",
+      "generated_at": "2026-06-20T02:19:03.790452+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:nL-Dc2BBTuKv1n8qW59_mw",
       "page_number": 1
     },
     "2CN002-120014": {
@@ -4848,9 +4848,9 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-20T02:10:57.785494+00:00",
+      "generated_at": "2026-06-20T02:19:03.790454+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:fZB-myF8Tgua_rTWyZCUVw",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:nL-Dc2BBTuKv1n8qW59_mw",
       "page_number": 1
     }
   },
