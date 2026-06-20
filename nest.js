@@ -577,58 +577,60 @@
   // Returns when ALL parts have either {bbox set, polys set} or
   // {dxfError set}. Errors don't block — those parts get filtered
   // out before nesting.
-  async function _loadAllDxfs() {
-    await _ensureDxfLib();
-    const tasks = S.parts.map(async function (p) {
-      if (!p.dxfUrl) {
-        p.dxfError = 'No DXF uploaded yet';
-        return;
-      }
-      try {
-        // Cache-bust by CONTENT VERSION: jsdelivr serves multi-hour max-age, so
-        // a plain (or force-) cached fetch kept showing the PRE-fix bytes after
-        // a re-export (เอ๋ 2026-06-10 'เหมือนเดิม' — DSV1 despike invisible).
-        // content_md5 (in uploaded_dxfs since today) keys the browser cache per
-        // content: unchanged file = cached, changed file = new URL = fresh
-        // fetch. Entries without md5 fall back to uploaded_at (re-fetch per
-        // upload), else a one-shot Date.now().
-        const ver = (p.dxfMeta && (p.dxfMeta.content_md5 || p.dxfMeta.uploaded_at)) || Date.now();
-        let fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
+  // Fetch + parse ONE part's DXF → sets polys/bbox/dxfLoaded (or dxfError).
+  // opts.directUrl = fetch that exact URL (no-store) instead of the jsdelivr
+  // mirror — used right after a manual ⚠ drop-upload: raw.githubusercontent
+  // serves the just-committed file immediately, while jsdelivr@main lags ~1min.
+  async function _loadOneDxf(p, opts) {
+    if (!p.dxfUrl && !(opts && opts.directUrl)) {
+      p.dxfError = 'No DXF uploaded yet';
+      return;
+    }
+    try {
+      // Cache-bust by CONTENT VERSION: jsdelivr serves multi-hour max-age, so
+      // a plain (or force-) cached fetch kept showing the PRE-fix bytes after
+      // a re-export (เอ๋ 2026-06-10 'เหมือนเดิม' — DSV1 despike invisible).
+      // content_md5 keys the browser cache per content; else uploaded_at; else Date.now().
+      const ver = (p.dxfMeta && (p.dxfMeta.content_md5 || p.dxfMeta.uploaded_at)) || Date.now();
+      let fetchUrl;
+      if (opts && opts.directUrl) {
+        fetchUrl = opts.directUrl + (opts.directUrl.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(ver);
+      } else {
+        fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
         // COMMIT-PINNED when the uploader stamped one: @<sha> jsdelivr URLs
-        // are immutable — zero CDN staleness, no purging needed. (@main
-        // objects cache for hours, the purge API rate-limits on repeat, and
-        // the CDN strips query strings so ?v= only busts the BROWSER cache —
-        // เอ๋'s DSV1 fix kept resurfacing stale until pinned. 2026-06-10)
+        // are immutable — zero CDN staleness, no purging needed.
         if (p.dxfMeta && p.dxfMeta.commit) {
           fetchUrl = fetchUrl.replace('@main/', '@' + p.dxfMeta.commit + '/');
         }
-        // Abort a stalled fetch (dead/slow CDN, flaky mobile network) after 15s.
-        // A bare `await fetch` with no timeout never resolves on a hung socket, so
-        // ONE bad part used to hang the whole `Promise.all` → the Load froze and
-        // the sheets never appeared (เอ๋ 2026-06-10). The abort surfaces as a
-        // normal dxfError (drawn as a rectangle) and lets the load finish.
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 15000);
-        let resp;
-        try { resp = await fetch(fetchUrl, { cache: 'force-cache', signal: ctrl.signal }); }
-        finally { clearTimeout(timer); }
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const text = await resp.text();
-        const parsed = window.dxf.parseString(text);
-        const ex = _extractPolygons(parsed);
-        p.polys = { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes, entities: ex.entities || [] };
-        p.bbox = ex.bbox;
-        if (ex.bbox) {
-          // Default W/H to the bbox dimensions; user can override.
-          p.w = Math.round(ex.bbox[2] - ex.bbox[0]);
-          p.h = Math.round(ex.bbox[3] - ex.bbox[1]);
-        }
-        p.dxfLoaded = true;
-      } catch (e) {
-        p.dxfError = (e && e.name === 'AbortError') ? 'DXF fetch timed out' : String(e.message || e);
       }
-    });
-    await Promise.all(tasks);
+      // Abort a stalled fetch after 15s so one bad part can't hang Promise.all.
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 15000);
+      let resp;
+      try { resp = await fetch(fetchUrl, { cache: (opts && opts.directUrl) ? 'no-store' : 'force-cache', signal: ctrl.signal }); }
+      finally { clearTimeout(timer); }
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const text = await resp.text();
+      const parsed = window.dxf.parseString(text);
+      const ex = _extractPolygons(parsed);
+      p.polys = { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes, entities: ex.entities || [] };
+      p.bbox = ex.bbox;
+      if (ex.bbox) {
+        // Default W/H to the bbox dimensions; user can override.
+        p.w = Math.round(ex.bbox[2] - ex.bbox[0]);
+        p.h = Math.round(ex.bbox[3] - ex.bbox[1]);
+      }
+      p.dxfLoaded = true;
+      p.dxfError = null;
+    } catch (e) {
+      p.dxfError = (e && e.name === 'AbortError') ? 'DXF fetch timed out' : String(e.message || e);
+    }
+  }
+
+  // Returns when ALL parts have either {bbox+polys} or {dxfError}.
+  async function _loadAllDxfs() {
+    await _ensureDxfLib();
+    await Promise.all(S.parts.map(p => _loadOneDxf(p)));
   }
 
   // ── Load parts list ────────────────────────────────────────────────
@@ -4786,6 +4788,41 @@
         // fusionOnly: this button means "open in FUSION to fix" — never a PDF tab.
         route({ code: part.code, status: 'missing', urn: part.urn || null, drawing_urn: null, fusion_link: null }, { fusionOnly: true });
       });
+      // ⚠ DROP-TO-UPLOAD (เอ๋ 2026-06-20): drag a .dxf onto the ⚠ → upload this
+      // part's DXF directly (manual, alongside the Fusion-export pipeline) →
+      // Drawings/dxf/<code>/<code>.dxf + uploaded_dxfs/<code> via app.js
+      // (window.kdUploadPartDxf — SAME laser pipeline, code CASE-PRESERVED) →
+      // parse → ⚠ flips to ✓ in place. NO-DXF rows only; scroll preserved.
+      const _fBtn = row.querySelector('.kdnest-part-fusion');
+      if (_fBtn && part.dxfError && !part.dxfLoaded) {
+        _fBtn.title += ' · or DROP a .dxf here to upload it';
+        const _over = on => { _fBtn.style.boxShadow = on ? '0 0 0 2px #2563eb' : ''; _fBtn.style.background = on ? 'rgba(37,99,235,0.18)' : ''; };
+        _fBtn.addEventListener('dragenter', e => { e.preventDefault(); e.stopPropagation(); _over(true); });
+        _fBtn.addEventListener('dragover',  e => { e.preventDefault(); e.stopPropagation(); _over(true); });
+        _fBtn.addEventListener('dragleave', e => { e.stopPropagation(); _over(false); });
+        _fBtn.addEventListener('drop', async e => {
+          e.preventDefault(); e.stopPropagation(); _over(false);
+          const files = [...((e.dataTransfer && e.dataTransfer.files) || [])].filter(f => /\.dxf$/i.test(f.name));
+          if (!files.length) { alert('Drop a .dxf file onto the ⚠.'); return; }
+          if (files.length > 1) { alert('Drop one .dxf at a time.'); return; }
+          if (typeof window.kdUploadPartDxf !== 'function') { alert('DXF upload not available — open the main app as admin (🔓) first.'); return; }
+          const proj = Object.keys(part.sources || {})[0] || '';
+          const _txt = _fBtn.textContent, _ttl = _fBtn.title;
+          _fBtn.textContent = '⏫'; _fBtn.title = 'uploading…';
+          const r = await window.kdUploadPartDxf(proj, part.code, files[0]);
+          if (!r || !r.ok) { alert('Upload failed for ' + part.code + ':\n' + ((r && r.error) || 'unknown error')); _fBtn.textContent = _txt; _fBtn.title = _ttl; return; }
+          // Parse the just-uploaded DXF from the RAW url (immediate) so ⚠ → ✓.
+          part.dxfUrl = r.url; part.dxfMeta = r.metadata || null; part.dxfError = null; part.dxfLoaded = false;
+          part.thickness = (r.metadata && r.metadata.thickness_mm) || part.thickness || 0;
+          try { await _ensureDxfLib(); await _loadOneDxf(part, { directUrl: r.url }); } catch (_) {}
+          // Re-render but keep the part-list scroll where เอ๋ left it.
+          const _sc = S.rootEl.querySelector('.kdnest-parts');
+          const _top = _sc ? _sc.scrollTop : 0;
+          _refreshView();
+          const _sc2 = S.rootEl.querySelector('.kdnest-parts');
+          if (_sc2) _sc2.scrollTop = _top;
+        });
+      }
       // ✕ remove a manual rectangular part
       row.querySelector('.kdnest-part-del')?.addEventListener('click', () => {
         S.parts = S.parts.filter(x => x !== part);

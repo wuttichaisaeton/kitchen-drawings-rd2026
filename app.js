@@ -1536,6 +1536,25 @@ async function _uploadPartDxf(projectKey, code, file) {
   return { code, url, metadata };
 }
 
+// Exposed for nest.js (the Nest review-list ⚠ drag-drop, เอ๋ 2026-06-20): upload a
+// part DXF via the SAME laser pipeline (_uploadPartDxf → Drawings/dxf/<code>/<code>.dxf
+// + uploaded_dxfs/<code>, code CASE-PRESERVED). Returns {ok, url, metadata} or
+// {ok:false, error, noPat?/authFailed?}; clears the PAT on a 401/403 (same as the
+// Library drop). nest.js does the row UX + parses the result so ⚠ flips to ✓.
+window.kdUploadPartDxf = async function (projectKey, code, file) {
+  if (!file || !/\.dxf$/i.test(file.name)) return { ok: false, error: 'Please drop a .dxf file.' };
+  if (!code) return { ok: false, error: 'No part code.' };
+  if (!getGitHubPat()) return { ok: false, error: 'GitHub PAT not set — open admin settings (🔓) to add it, then retry.', noPat: true };
+  try {
+    const r = await _uploadPartDxf(projectKey || '', code, file);
+    return { ok: true, url: r.url, metadata: r.metadata };
+  } catch (e) {
+    const msg = String((e && e.message) || e);
+    if (/\b(401|403)\b/.test(msg)) { try { resetGitHubPat(); } catch (_) {} return { ok: false, error: 'GitHub auth failed — PAT cleared. Re-add it (🔓) and retry.', authFailed: true }; }
+    return { ok: false, error: msg };
+  }
+};
+
 // Every code in the system that has a viewable drawing PDF (manifest
 // auto_generated + admin uploads), each scored by how "near" its code is to
 // `forCode` (longest shared code-prefix — so BM2LI1 surfaces BM2LI0/BM1000…
