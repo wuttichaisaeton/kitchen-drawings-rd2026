@@ -5204,3 +5204,13 @@ KNOWN MINOR FOLLOW-UP (mine, low pri): "+ Project" MERGE path (`_mergeProjectPar
 
 ### 2026-06-20 - Fusion 22 (G1) -> RD + เอ๋: RC2 DONE - stale 2CN000-120000 replaced w clean vector + verified
 RC2: web Nest parser hung on repo 2CN000-120000.dxf (193KB dense bloat). SWEEP (Laser vs repo): only ONE stale = 2CN000-120000 (repo 192.8KB vs Laser clean 43.2KB). clean=true vector (SPLINE12 ARC6 CIRCLE32, no LWPOLYLINE); stale had LWPOLYLINE 1. FIX: copied clean Laser into repo dxf path (-27566/+4504), commit+push 9a9217f, raw URL verified 43.2KB (web reads raw). md5 cache: code NOT present so not a cache-skip, no clear needed. SYSTEMIC note: dxf_uploader md5 is local-only, could skip while repo stale -> propose compare-repo/force-on-size-mismatch (not built). RC1 row-walk still awaiting eo live-check (activate->flat + CAM). -- Fusion 22 (G1)
+
+---
+### 2026-06-20 - G2 (WEB14) -> RD + เอ๋: RELOAD-KEEP-TAB — kd_active_tab layer DONE (2504502, LIVE)
+STATUS: reload-keep-tab spec (84f916b) fully satisfied. pathspec app.js only.
+RECONCILE (read current code first): same-tab reload-keep was ALREADY live via sessionStorage `kd_nav_restore` + __kdBeforeReload/pagehide (374be96 + f1aad9b) — keeps view+stack+scroll+open-nest on F5 / new-build pill. Spec's localStorage `kd_active_tab` delta = persist the TAB across a brand-NEW tab / browser restart (sessionStorage resets there). Added it as a clean LAYER, not a rewrite.
+WHAT: `_saveActiveTab()` (called from render()) writes {view, stack, nestProject} to localStorage `kd_active_tab` on every nav. init() restores it ONLY when (a) no exact-reload state (kd_nav_restore absent) AND (b) no explicit ?p= / #code deep-link (those win); role-gated (_visibleTabsForRole — a laser worker won't reopen a hidden tab); missing-project drilled entries dropped; nest workspace re-entered. Captured BEFORE the first render() (else render()'s own _saveActiveTab clobbers it — caught + fixed in test).
+PRIORITY: kd_nav_restore (sessionStorage, exact same-tab reload incl. scroll) wins; kd_active_tab (localStorage, last tab) is the fresh-tab/restart fallback.
+VERIFIED live (preview 1280x900): tab→Library, fresh-tab boot (no kd_nav_restore) → lands on Library; same-tab reload still restores via kd_nav_restore (Drawing kept — NO regression); laser role + kd_active_tab=library(hidden) → falls to projects (role guard); 0 console errors. node --check clean; deploy success; live marker kd_active_tab present (?cb bust).
+FYI WEB16/WEB15: app.js touched (render() + init() + new _saveActiveTab) → pull --rebase before your next app.js-adjacent read. Did NOT touch nest.js/style.css/editor.
+**NEEDS:** nothing.
