@@ -4645,13 +4645,16 @@ body.sb-fs-lock { overflow: hidden; }
 }
 .sb-fresh-cab.changed { border-style: dashed; }
 .kdnest-part {
-  display: grid;
-  /* sel · #N · code · w · × · h · qty · grain · 👁 · 📍 · status
-     Sized so the whole row fits in a 360-wide sidebar without
-     clipping the new emoji buttons off the right edge (user
-     2026-05-28 saw 👁 📍 missing because sidebar was 404px and
-     a wider grid pushed them past the visible boundary). */
-  grid-template-columns: 16px 24px minmax(60px, 1fr) 44px 8px 44px 32px 24px 24px 24px 14px;
+  /* sel · #N · code · (✏️ admin) · w · × · h · qty · grain · 👁 · 📍 · status
+     FLEX one-liner (no-wrap). A grid was used before, but the row has an
+     OPTIONAL extra child — the ✏️ rename button only renders for admins —
+     so an 11-column grid mis-flowed in admin mode: ✏️ stole the W slot, the
+     W input collapsed into the 8px × track, and the 12th item (✓ status)
+     wrapped onto a new grid row below (เอ๋ screenshot 2026-06-20). Flex
+     handles a variable child count: only the code cell flexes, every other
+     field keeps a fixed basis, ✓ stays inline at the row end. */
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 3px;
   padding: 4px 0;
@@ -4659,6 +4662,27 @@ body.sb-fs-lock { overflow: hidden; }
   color: #cad6e6;
   border-bottom: 1px solid #131c28;
 }
+/* Per-field flex basis — restores the widths the mis-flow collapsed. Every
+   child gets an EXPLICIT flex so the width:100% on the inputs / grain / 👁 / 📍
+   (needed by the old grid cells) can't expand a flex item to the full row. */
+.kdnest-part-sel    { flex: 0 0 auto; }
+.kdnest-part-num    { flex: 0 0 auto; }
+.kdnest-part-code   { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kdnest-part-rename { flex: 0 0 auto; }
+.kdnest-part-w,
+.kdnest-part-h      { flex: 0 0 42px; }
+.kdnest-x           { flex: 0 0 auto; }
+.kdnest-part-qty    { flex: 0 0 34px; }
+.kdnest-part-grain,
+.kdnest-part-view,
+.kdnest-part-onsheet{ flex: 0 0 26px; }
+.kdnest-part-fusion,
+.kdnest-part-fusion-ok,
+.kdnest-part-del,
+.kdnest-part-retry,
+.kdnest-part-load,
+.kdnest-part-ok,
+.kdnest-part-err    { flex: 0 0 auto; }
 /* Grain glyph button — symbols match the Python Nesting Tool legend
    (─ H / │ V / ✱ ANY / ? unknown) so a worker switching tools reads
    the same code at a glance. Click cycles ? → H → V → ANY → H. */
