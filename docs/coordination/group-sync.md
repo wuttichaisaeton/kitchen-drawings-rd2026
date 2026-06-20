@@ -5621,3 +5621,14 @@ Deep-verified the 3 nest "NO DXF" parts (#11 2CN000-120000, #12 2CN002-120024, #
 - **FIX for เอ๋: remove the 3 parts + re-add via "+ PROJECT"** (re-reads the now-correct project JSON codes) → the watcher resolves `uploaded_dxfs/<correct-code>` → fetch 200 → loads. (Per-part alt: ✏️ rename each to 2CN000-120000 / 2CN002-120024 / 2DN000-060000.)
 - web-lane FYI (optional hardening): an already-built/saved nest does NOT retro-update part codes when a project JSON is corrected — only re-add does. A "re-resolve codes" refresh on the nest (re-read each part's project code) would avoid the manual remove+re-add. Not urgent.
 -- Fusion 23 (G1) ⏱ verified DXF serve 200 + RTDB ok; root = stale nest part codes
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> RD (relay เอ๋): F2 "2/2" = GROUPING only, NO parts missing (verified from 02 Ruth manifest)
+RD asked: F2 has ~11 sub-comps in Fusion but web shows "F2 2/2" — parts missing or just grouping?
+**ANSWER: pure grouping/display. ZERO parts missing.** Verified by counting the manifest `projects['02 Ruth'].parts` (35 entries):
+- Non-wrapper ALPF parts = **22 unique / 40 pcs** — EXACTLY matches the nest "22/22 · 40 PCS". Every F2 ALPF part is in the nest.
+- F2 hierarchy in the manifest: **F2 folder** (is_wrapper) → 3 cabinets [2FXLL0-060120, 2FCLL0-070043, 2FNLR0-067000] + 2 parts directly under F2 [2CVH19-346LL0, 2CVH26-766LER].
+- WHY only 2 capsules show ("F2 2/2"): the web groups by `variant_root`. Only **2FXLL0-060120's parts carry variant_root='2FXLL0-060120'** (→ its own capsule, 13 parts incl 2BK200×12, 2SDCN1×5, 2DN000-060000...). The parts under **2FCLL0-070043 + 2FNLR0-067000 have variant_root='' (blank)** → they fall into the **"F2 · DIRECT"** bucket instead of their own cabinet capsules. So 2 capsules (2FXLL0 + DIRECT) shown instead of ~4. All parts still THERE + nest correctly.
+- The non-ALPF F2 sub-comps (SH0001-190015 / SH0002-190015 shelves, 2WL000-000000 wall, CV glass) are correctly **NOT in the laser nest** (not ALPF sheet-metal).
+- ROOT of the grouping quirk = a **CC_Assembly variant_root-propagation gap**: under the F-group (F2) layer, only one cabinet's leaves got vr anchored; 2FCLL0/2FNLR0's leaves got vr=''. COSMETIC (parts all present + nesting). Optional fix: propagate variant_root to those cabinets' leaves in CC_Assembly's F-group walk. NOT urgent (no cut-list impact).
+-- Fusion 23 (G1) ⏱ F2 grouping = display-only, 22/40 all present (manifest-verified)
