@@ -1008,6 +1008,161 @@
     if (!S.closing) _refreshView();
   }
 
+  // ── "↻ Re-resolve codes" (RD/เอ๋ 2026-06-20) ───────────────────────────────
+  // A saved/loaded nest stores each part's code as a snapshot at add-time. When a
+  // project's part code is later corrected in Fusion (CC_Assembly rename, e.g.
+  // 2CN027-000000 → 2CN002-120000), the snapshot keeps the OLD code → its
+  // uploaded_dxfs/<old> is null → NO-DXF. A page refresh doesn't help (a loaded
+  // nest re-reads its own snapshot, not the manifest). This re-reads every part's
+  // CURRENT code from a FRESH manifest by its STABLE Fusion lineage urn, adopts
+  // it, re-links the DXF, and clears the stuck NO-DXF rows IN PLACE — no
+  // remove/re-add. Loaded jobs that predate urn-persistence recover the urn from
+  // the manifest for any part whose code hasn't drifted yet.
+  async function _reresolveCodes() {
+    const btn = S.rootEl && S.rootEl.querySelector('#kdnest-reresolve');
+    const orig = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = '↻ …'; }
+    try {
+      // 1) FRESH manifest — defeats stale CDN / in-memory manifest AND the loaded
+      //    nest's own snapshot. ?t= makes the Drawings/*.json a CDN cache-miss
+      //    (same trick app.js uses) + no-store bypasses the browser cache.
+      let manifest = window.kdManifest;
+      try {
+        const mu = (window.APP_CONFIG && window.APP_CONFIG.MANIFEST_URL) || 'Drawings/manifest.json';
+        const url = mu + (mu.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now();
+        const resp = await fetch(url, { cache: 'no-store' });
+        if (resp.ok) { manifest = await resp.json(); window.kdManifest = manifest; }
+      } catch (e) { console.warn('[kdNest] re-resolve: manifest refetch failed, using cached', e); }
+      if (!manifest || !manifest.projects) { alert('Manifest unavailable — cannot re-resolve codes.'); return; }
+
+      // 2) urn ⇄ current-code maps across EVERY source project in this nest.
+      const projKeys = (S.mergedProjects && S.mergedProjects.length) ? S.mergedProjects : [S.projectKey];
+      const codeByUrn = new Map();   // lineage urn → current code
+      const urnByCode = new Map();   // current code → lineage urn (recover urn for un-drifted parts)
+      for (const pk of projKeys) {
+        const proj = manifest.projects[pk];
+        if (!proj || !Array.isArray(proj.parts)) continue;
+        for (const mp of proj.parts) {
+          if (!mp || !mp.code || mp.is_wrapper || !mp.urn) continue;
+          if (!codeByUrn.has(mp.urn)) codeByUrn.set(mp.urn, mp.code);
+          urnByCode.set(mp.code, mp.urn);
+        }
+      }
+
+      // 3) fresh uploaded_dxfs + ✏️ code overrides + grain map (so the corrected
+      //    code resolves its OWN DXF / size / grain, exactly like a fresh open).
+      let dxfsAll = S.dxfsAll || {};
+      if (window.firebaseDB) {
+        try { const s = await window.firebaseDB.ref('uploaded_dxfs').once('value'); dxfsAll = s.val() || {}; S.dxfsAll = dxfsAll; }
+        catch (e) { console.warn('[kdNest] re-resolve: uploaded_dxfs fetch failed', e); }
+      }
+      let overrides = S.codeOverrides || {};
+      if (window.firebaseDB) {
+        try { const s = await window.firebaseDB.ref('nest_code_overrides').once('value'); overrides = s.val() || {}; S.codeOverrides = overrides; }
+        catch (e) { /* keep prior overrides */ }
+      }
+      if (!S.grainMap) { try { S.grainRows = null; await _loadGrainRows(); _grainRowsToMap(); } catch (e) { /* continue without */ } }
+
+      // 4) re-resolve each part: adopt current code (urn → manifest, then ✏️
+      //    override), re-link DXF meta, re-apply grain rules.
+      const remap = new Map();   // oldCode → newCode (to follow on the laid-out sheets)
+      const beforeNoDxf = new Set();
+      const toReload = [];
+      let changed = 0;
+      for (const p of S.parts) {
+        if (p.manual) continue;
+        if (!p.dxfLoaded || p.dxfError || !p.polys) beforeNoDxf.add(p);
+        const oldCode = p.code;
+        // recover a missing urn from the manifest (un-drifted parts / pre-urn jobs)
+        if (!p.urn && urnByCode.has(oldCode)) p.urn = urnByCode.get(oldCode);
+        let newCode = (p.urn && codeByUrn.has(p.urn)) ? codeByUrn.get(p.urn) : oldCode;
+        const ov = overrides[newCode];
+        const ovTo = ov && (typeof ov === 'string' ? ov : ov.to);
+        if (ovTo && ovTo !== newCode) newCode = ovTo;
+        const codeChanged = newCode !== oldCode;
+        if (codeChanged) { remap.set(oldCode, newCode); p.code = newCode; p.origCode = null; changed++; }
+        // re-link DXF meta for the (possibly new) code
+        const meta = dxfsAll[p.code];
+        if (meta) {
+          p.dxfUrl = meta.url || '';
+          p.dxfMeta = meta;
+          p.thickness = meta.thickness_mm || 0;
+          p.grain = (meta.grain || p.grain || 'ANY').toUpperCase();
+          if (meta.grain) p.grainExplicit = true;
+        } else if (codeChanged) {
+          // the corrected code has no uploaded DXF (yet) → honest NO-DXF, not a stale link
+          p.dxfUrl = ''; p.dxfMeta = null; p.dxfLoaded = false; p.dxfError = 'No DXF uploaded yet'; p.polys = null; p.bbox = null;
+        }
+        // grain rules are the live source (same as a fresh load — เอ๋'s modal edits win)
+        if (S.grainMap) {
+          const looked = _lookupPattern(p.code, S.grainMap);
+          p.grain = (looked && looked.grain) ? looked.grain : '?';
+          if (looked && looked.thickness) { const t = parseFloat(String(looked.thickness).replace(/mm/i, '')); if (!isNaN(t)) p.thickness = t; }
+          const _fix = _parseFixHeights(looked && looked.fix);
+          const _g = looked ? String(looked.grain || '').toUpperCase() : '';
+          p.fixHeights = (_g === 'V') ? _fix : [];
+          p.fixWidths  = (_g === 'H') ? _fix : [];
+        }
+        // (re)load the DXF when the code changed or the part is currently NO-DXF
+        if (p.dxfUrl && (codeChanged || !p.dxfLoaded || p.dxfError || !p.polys)) {
+          p.dxfLoaded = false; p.dxfError = null; p.polys = null; p.bbox = null;
+          toReload.push(p);
+        }
+      }
+
+      // 5) reload in place — STANDARD path (no directUrl): _loadOneDxf maps the
+      //    stored url through _toJsdelivrUrl (uploaded_dxfs urls use a synthetic
+      //    github.io host that only resolves via the CORS-friendly jsdelivr
+      //    mirror; a raw directUrl fetch fails CORS) + commit-pin + content_md5
+      //    cache key — exactly how the initial load resolves every part.
+      if (toReload.length) {
+        try { await _ensureDxfLib(); } catch (e) { /* parse will surface the error per-part */ }
+        await Promise.all(toReload.map(p => _loadOneDxf(p).catch(() => {})));
+      }
+
+      // 6) the laid-out sheets reference parts by code — follow the rename so the
+      //    placements keep their outline + the saved cut sheet uses the right code.
+      if (S.flatSheets && S.flatSheets.length) {
+        for (const sh of S.flatSheets) {
+          for (const pl of (sh.placements || [])) {
+            if (remap.has(pl.code)) pl.code = remap.get(pl.code);
+            const part = S.parts.find(x => x.code === pl.code && !x.manual);
+            if (part) { pl.polys = part.polys; pl.bbox = part.bbox; }
+          }
+        }
+      }
+
+      // 7) tally, render in place (no scroll jump), report.
+      let resolvedNow = 0, stillMissing = 0;
+      for (const p of S.parts) {
+        if (p.manual) continue;
+        if (beforeNoDxf.has(p) && p.dxfLoaded && p.polys && !p.dxfError) resolvedNow++;
+        if (!p.dxfUrl) stillMissing++;
+      }
+      S.loadedJobStale = null;   // codes are now reconciled to the live manifest
+      if (!S.closing) _refreshViewKeepScroll();
+
+      let msg;
+      if (!changed && !resolvedNow) {
+        msg = stillMissing
+          ? `Codes already current — ${stillMissing} part(s) still have no uploaded DXF (export + upload in Fusion, or remove if not needed).`
+          : 'All codes already current — nothing to re-resolve.';
+      } else {
+        msg = `Re-resolved ${changed} code${changed === 1 ? '' : 's'}`;
+        if (resolvedNow) msg += ` · ${resolvedNow} now linked to a DXF`;
+        if (stillMissing) msg += ` · ${stillMissing} still missing a DXF`;
+        msg += '.';
+      }
+      alert(msg);
+    } catch (e) {
+      console.error('[kdNest] re-resolve failed', e);
+      alert('Re-resolve failed: ' + (e && e.message || e));
+    } finally {
+      const b2 = S.rootEl && S.rootEl.querySelector('#kdnest-reresolve');
+      if (b2) { b2.disabled = false; b2.textContent = orig || '↻ Re-resolve'; }
+    }
+  }
+
   // ── Cabinet capsules (เอ๋ 2026-06-11: "เลือกว่าเอาหรือไม่เอา เป็นรายตู้") ──
   // manifest leaf parts carry variant_root = the top cabinet; aggregation by
   // code can merge 2+ cabinets into one row, so every row keeps contrib
@@ -3708,6 +3863,12 @@
       w: p.w || 0, h: p.h || 0, manual: !!p.manual, dxfUrl: p.dxfUrl || '',
       // provenance (multi-project nesting): which project wants how many
       sources: p.sources || null,
+      // Fusion lineage urn — the STABLE key "↻ Re-resolve" matches on to adopt a
+      // part's CURRENT manifest code after a Fusion CC_Assembly rename (the urn
+      // never changes across renames; the snapshot code does). Older jobs saved
+      // before this carry null → re-resolve recovers it from the manifest by code
+      // for any part whose code hasn't drifted yet. (RD/เอ๋ 2026-06-20)
+      urn: p.urn || null,
     };
   }
   // Strip a flatSheet to thick/size + placements without polys/bbox.
@@ -3998,6 +4159,7 @@
       base.dxfError = null;
       base.polys = null; base.bbox = null;
       base.sources = sp.sources || null;   // multi-project provenance survives a load
+      base.urn = sp.urn || null;           // lineage key for ↻ Re-resolve (older jobs: null → recovered from the manifest by code on re-resolve)
       return base;
     });
     S.mergedProjects = (Array.isArray(job.merged_projects) && job.merged_projects.length)
@@ -4764,6 +4926,7 @@
               ${isAdminUser ? '<button id="kdnest-add-rect" class="kdnest-mini kdnest-add-rect" title="Add a manual rectangular part (no DXF) — set W×H">+ ▭ Rect</button>' : ''}
               <button id="kdnest-default-grain" class="kdnest-mini kdnest-default-grain" title="Set every part that has NO grain rule (?) to its DEFAULT — the original incoming orientation (kept as drawn, not rotated 90°). Clears the warning; applies for this run only (not saved to the grain table).">Default</button>
               <button id="kdnest-addproj" class="kdnest-mini" title="Merge another project's parts into this nest (multi-project nesting) — per-project counts are kept on every part">+ Project</button>
+              <button id="kdnest-reresolve" class="kdnest-mini" title="Re-resolve codes: re-read each part's CURRENT code from the project (by Fusion lineage) and re-link its DXF — clears NO-DXF rows stuck on an old code after a Fusion rename, in place, no remove/re-add.">↻ Re-resolve</button>
               <span class="kdnest-parts-count">${totalUnique} / ${visParts.length} · ${totalPcs} pcs</span>
             </div>
             ${cabsRow}
@@ -4868,6 +5031,9 @@
     });
     // ＋ Project — merge another project's parts into this nest (เอ๋ 76ebca5).
     $('#kdnest-addproj')?.addEventListener('click', _openAddProjectModal);
+    // ↻ Re-resolve — adopt each part's CURRENT manifest code (by lineage urn) +
+    // re-link its DXF in place; fixes NO-DXF rows after a Fusion rename (RD/เอ๋).
+    $('#kdnest-reresolve')?.addEventListener('click', _reresolveCodes);
     // Cabinet capsules — tap toggles one cabinet; All/None act on the group.
     $('#kdnest-cabs-all')?.addEventListener('click', () => _setAllCabinets(true));
     $('#kdnest-cabs-none')?.addEventListener('click', () => _setAllCabinets(false));

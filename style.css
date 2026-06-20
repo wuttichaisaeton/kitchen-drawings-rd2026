@@ -4526,6 +4526,13 @@ body.sb-fs-lock { overflow: hidden; }
 }
 .kdnest-parts-head {
   display: flex;
+  /* Wrap the control buttons (All/None/+Rect/Default/+Project/↻ Re-resolve/
+     count) onto a 2nd line when the sidebar is too narrow to hold them —
+     a toolbar may wrap (unlike the part ROWS, which stay one no-wrap line).
+     Without this the row overflowed right once the ↻ Re-resolve button was
+     added, and the existing buttons already overflowed on a narrow/resized
+     sidebar. (WEB nest, 2026-06-20) */
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   position: sticky;
