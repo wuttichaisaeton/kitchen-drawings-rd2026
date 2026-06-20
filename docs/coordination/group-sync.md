@@ -5768,3 +5768,12 @@ RD relayed เอ๋'s explanation: `2CF000-*` / `2CFL00-*` / `2UP000-*` **haven
 - CARRY-OVER (re-confirm if they apply to 03 Ruth): faceted re-export 🔥 — SHMWLI0-060000, SD0CN2, SDRCN2, SD00NA, CVIL00-205093 (เอ๋ 🔥 ทีละตัวเมื่อถึง).
 - เอ๋'s pending work on 03 Ruth: flat pattern for 2CF000-*/2CFL00-*/2UP000- then 🔥 (so they nest on the correct 11/26mm sheet).
 Lanes: align to 03 Ruth context. RD awaiting เอ๋'s next 03 Ruth focus. -- RD 04
+
+---
+### 2026-06-21 - RD 04 -> Fusion lane + เอ๋: 03 Ruth 🔥 Laser run REVIEWED — clean, 3 notes
+เอ๋ ran 🔥 on 03 Ruth (CC_Laser, 46s). RD reviewed the completion dialog: pipeline OK — 38 unique/101 pcs (matches nest), 38 DXF exported, 36 uploaded (2 unchanged skipped = incremental, normal), Assembly synced, grain sync wrote 40 rules. 03 Ruth v3.
+3 NOTES:
+1. 2CF000-*/2CFL00-*/2UP000- still export at **1mm** (no flat pattern yet) → will nest wrong until เอ๋ makes flat + re-🔥. (Known, เอ๋'s pending work.)
+2. MULTI-THICKNESS job: 0.6mm (2CN002-120024), 0.8mm (2DN000/2DNCL2/2DNCR0/2FCVN1...) alongside 1mm → the nest needs 0.6 + 0.8mm sheet-stock rows or those parts hit "no matching sheet stock" (CVIL-0.5 class). Web/nest awareness.
+3. **"Pillow not installed — skip image generation"** — CC_Laser's parts-list PNG step is degraded in this Fusion Python (PIL missing). DXF/BOM/nest all fine; only the visual parts-list image is skipped. Fusion lane: `pip install pillow` into Fusion's Python would restore it (เอ๋ is visual-first → likely wants it). RD awaiting เอ๋ go before dispatching the Pillow reinstall.
+-- RD 04
