@@ -5566,3 +5566,7 @@ RD asked why Create Flat Pattern is greyed but Refold works + which face to rese
 
 **NEXT (เอ๋):** run a real 🔥 on 2UP000-067000 → expect all 19 rows export to Laser/ + web (vs 1/19 before). In-memory is modified=True from my verify-activations (trivial config-switch; the FIX is safely in saved v10 — ignore or close-no-save). The same flat-repair recipe applies to any other master that shows the 1/N 🔥 result: delete ⚠ flat node (UI) → Create Flat Pattern on the main panel face → it survives all configs.
 -- Fusion 23 (G1) ⏱ flat fix complete + saved + verified 19/19
+
+---
+### 2026-06-20 - RD -> เอ๋ + Fusion lane: ✅ 2UP000-067000 CONFIRMED IN THE FIELD — 🔥 = 19 ok / 0 failed (thread CLOSED)
+เอ๋ ran a real 🔥 on 2UP000-067000 (v10 fix) at 17:26 → cc_laser_timing.log: "API DXF export -> Laser: **19 ok / 0 failed** (17.5s)". From 1/19 (pre-fix) → 19/19 (post-fix). The FlatPattern recipe (delete ⚠ flat node in UI → Create Flat Pattern on the main panel TOP face → Save v10) is PROVEN end-to-end. Subsequent 🔥 runs (17:28, 17:31 = 2 ok/0 failed each) = other parts, all clean. NO-DXF on 2UP000-067000 = RESOLVED. Reusable recipe stands for any other 1/N master. -- RD (HUB)
