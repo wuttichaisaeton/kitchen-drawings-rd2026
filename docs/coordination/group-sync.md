@@ -5649,3 +5649,20 @@ RD asked: F2 has ~11 sub-comps in Fusion but web shows "F2 2/2" — parts missin
 - **Verify:** py_compile + `test_fgroup_layer.py` **31/31** (added a non-code-intermediate case: `F2 > 2N601 > 2FCLL0-070043 > leaf` → vr=`2FCLL0-070043`, no empty-vr leak) + adversarial-review = **SHIP** (confirmed no-regression at both sites + cut-list invariance + parent-link consistency).
 - **NEEDS เอ๋ (live validate):** reload CC_Assembly (so 9a637f7 is live) → re-scan / 🔥 02 Ruth → the 2FCLL0/2FNLR0 leaves now carry their variant_root in the manifest → re-add 02 Ruth to the nest → F2 shows each coded sub-cabinet as its own capsule (more than 2). NOTE: capsules form at the CODED sub-cabinet level (2FCLL0/2FNLR0/2FNL00…), since the `2N601`-style parents have no codes.
 -- Fusion 23 (G1) ⏱ F2 vr-anchor fix shipped + verified (needs live re-scan)
+
+---
+### 2026-06-20 - G2 (WEB nest) -> e + RD: "↻ Re-resolve codes" button DONE+LIVE (f0c6a7c) ⏱ 00:38
+STATUS: shipped RD's dispatch (e approved) — one-click heal for nest parts stuck NO-DXF on a stale snapshot code after a Fusion CC_Assembly rename (e.g. 2CN027-000000 → 2CN002-120000). nest.js + style.css, pathspec.
+WHY a refresh didn't help: a LOADED nest re-reads its OWN saved snapshot codes (nest_jobs), not the manifest — so the old code persists → uploaded_dxfs/<old>=null → NO-DXF. Remove + "+ Project" re-add was the only fix.
+WHAT (`_reresolveCodes`, parts-head toolbar button "↻ Re-resolve"):
+- Re-fetches a FRESH manifest (?t= CDN cache-miss + no-store) → sees CURRENT codes even when the in-memory/CDN copy OR the loaded snapshot is stale.
+- Builds **urn → current-code** maps across every source project (multi-project aware). Fusion lineage **urn = the STABLE key** (never changes on rename; the code does).
+- Per part: adopt current code by urn (recovers a missing urn from the manifest for un-drifted parts / pre-urn jobs), apply ✏️ override, re-link uploaded_dxfs/<correct-code>, re-apply grain rules, reload DXF in place via the STANDARD `_loadOneDxf` (jsdelivr-mapped + commit-pin — a raw directUrl fails CORS on the synthetic github.io host; that was a debug catch).
+- Remaps laid-out sheet placements to the new code + re-attaches polys → saved cut sheets follow the rename.
+- `_refreshViewKeepScroll` (no jump); reports "Re-resolved N code(s) · M now linked · K still missing".
+- **urn now persisted** in saved jobs (`_serializePart`) + restored (`_restoreJob`) → future loads re-resolve without the manifest-recovery step.
+- style.css: `.kdnest-parts-head` → `flex-wrap:wrap` so the now-6-button toolbar wraps instead of overflowing the sidebar right edge (part ROWS stay 1 no-wrap line — unaffected).
+VERIFY (live preview, 02 Ruth, admin): simulated a stale-code NO-DXF part (urn kept) → click ↻ → code restored, DXF re-linked+loaded (W×H 607×52, 40 vector entities), row → ✓, scroll preserved (set 78 → stayed 78), alert "Re-resolved 1 code · 1 now linked to a DXF". No-op path: "All codes already current", idempotent, no damage. Toolbar wraps clean (no x-overflow). node --check clean; 0 console errors; deploy live (curl cache-bust: nest.js 5 markers + style.css wrap marker present).
+NB for e: load a nest with a NO-DXF part that was renamed in Fusion → click "↻ Re-resolve" in the parts toolbar → it links the DXF + size in place (no remove/re-add). Old saved nests (pre-today) with an ALREADY-drifted code + no urn can't auto-bridge — those still need remove + re-add once; everything saved from now on carries the urn.
+FYI: nest.js + style.css touched -> other lane pull --rebase.
+**NEEDS:** nothing.
