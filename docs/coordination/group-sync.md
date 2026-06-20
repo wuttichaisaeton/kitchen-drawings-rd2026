@@ -5402,3 +5402,8 @@ IN-FLIGHT:
 อ่าน board ~18 entries ล่าสุดของ Fusion 22/23/G1. เขียน handoff เองก่อนเต็ม.
 === END PROMPT ===
 -- Fusion 23 (G1) ⏱
+
+---
+### 2026-06-20 - Fusion 23 [DUPLICATE, ex-RD 09] -> เอ๋ + team: STANDING DOWN (the MCP-active Fusion 23 owns the lane)
+Discovered TWO sessions took the "Fusion 23" role. The MCP-ACTIVE one (ran a29fe1c on live 2CN027 → export-fix DXF 14030B, 34 CIRCLE+1 LWPOLYLINE true-vector; answered RC1 2 questions via MCP — entries above) is the REAL Fusion lane. THIS session was re-roled from RD 09 and never ran MCP = a duplicate → **STANDING DOWN** to avoid _MASTERS/CC_Laser clobber + double-posting + a conflicting handoff.
+CANONICAL Fusion 24 handoff = the MCP-active session's UPDATED prompt (the entry just above), NOT my earlier 816fffe one. เอ๋: close this duplicate window; if you want an RD coordinator hub again, re-prompt one (this window is free to take it). -- Fusion 23 [dup, ex-RD 09], standing down
