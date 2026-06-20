@@ -3400,14 +3400,20 @@
   // placements on the sheet). So the lines never change direction — only the
   // PART turns. Drawn only for directional grain (H or V); MIXED/ANY = none.
   // Function declarations → hoisted, usable everywhere in this IIFE.
-  function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr) {
+  function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr, bold) {
     const g = String(grain || '').toUpperCase();
     if (g !== 'H' && g !== 'V') return;   // directional only — MIXED/ANY draw nothing
-    const step = 8 * (dpr || 1);
+    const d = dpr || 1;
+    const step = 8 * d;
     ctx.save();
     ctx.strokeStyle = colour;
-    ctx.lineWidth = Math.max(0.5, 0.5 * (dpr || 1));
-    ctx.globalAlpha = 0.45;
+    // ``bold`` = no steel silhouette behind the hatch (layer-"0" DXF, degenerate
+    // outer → no fill). On the bare dark canvas the normal 0.5px/0.45a lines are
+    // sub-pixel-faint = invisible (เอ๋ 2026-06-21 'ไม่มีเส้น hatch เลย' on
+    // 2CN002-120024 / 2CN026-120000), so draw thicker + more opaque there. Parts
+    // WITH a steel fill keep the subtle hatch they already had.
+    ctx.lineWidth = bold ? Math.max(1, 1.1 * d) : Math.max(0.5, 0.5 * d);
+    ctx.globalAlpha = bold ? 0.5 : 0.45;
     ctx.beginPath();
     for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }  // always horizontal
     ctx.stroke();
@@ -3521,15 +3527,30 @@
     if (polys.outer && polys.outer.length > 1) {
       trace(polys.outer, true);
       ctx.fillStyle = STEEL; ctx.fill();
-      // Grain hatch — clipped to the silhouette so the lines read as grain on
-      // the metal. The preview is already rotated so V parts run vertically
-      // (grot=90), so screen-space H/V matches what the worker sees on the
-      // sheet. (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน')
-      if (part.grain === 'H' || part.grain === 'V') {
-        ctx.save(); trace(polys.outer, true); ctx.clip();
-        _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr);
-        ctx.restore();
+    }
+    // Grain hatch — clipped to the silhouette so the lines read as grain on the
+    // metal. The preview is already rotated so V parts run vertically (grot=90),
+    // so screen-space H/V matches what the worker sees on the sheet (เอ๋
+    // 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน'). Clip to the real
+    // OUTER loop when it's a proper closed polygon; a layer-"0" DXF has a
+    // DEGENERATE stitched outer (a stray 2-pt segment, zero area — its boundary
+    // didn't stitch), which would clip the hatch to nothing → fall back to the
+    // drawn bbox so the hatch still shows (เอ๋ 2026-06-21: 2CN002-120024 /
+    // 2CN026-120000 V had no hatch; same layer-"0" set as the bbox fix 18975c2).
+    // Runs independently of the outer block so a degenerate/absent outer can't
+    // suppress it. Always-horizontal, H/V only (post-revert behaviour).
+    if (part.grain === 'H' || part.grain === 'V') {
+      ctx.save();
+      var _noFill = true;   // true → bbox-clip + no steel behind → draw the hatch bolder so it's visible
+      if (polys.outer && polys.outer.length > 2 && _polyArea(polys.outer) > 1) {
+        trace(polys.outer, true); ctx.clip(); _noFill = false;
+      } else {
+        ctx.beginPath(); ctx.rect(offX, offY, drawW, drawH); ctx.clip();
       }
+      _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr, _noFill);
+      ctx.restore();
+    }
+    if (polys.outer && polys.outer.length > 1) {
       ctx.strokeStyle = colour; ctx.lineWidth = 2.2 * dpr; trace(polys.outer, true); ctx.stroke();
     }
     if (polys.strokes && polys.strokes.length > 1) {
