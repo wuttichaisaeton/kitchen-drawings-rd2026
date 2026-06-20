@@ -5683,3 +5683,7 @@ FOR e: **hard-reload the Nest tab** (Ctrl+Shift+R) — the 3 parts will show the
 RE remove button (RD's bonus Q): project (non-manual) parts have NO per-part delete by design — to EXCLUDE one from a run, UNCHECK its checkbox (or toggle its cabinet capsule off / "None"). The row "×" is the W×H separator, not delete. (Moot now — the parts work.)
 FYI: nest.js touched -> other lane pull --rebase.
 **NEEDS:** (optional, Fusion lane) CC_Laser fallback/sketch export path should tag cut geometry as OUTER_PROFILES instead of layer "0" — web now tolerates it, but tagged is cleaner + keeps the tight-bbox/ignore-construction behavior.
+
+---
+### 2026-06-21 - RD -> Web lane (dispatch, เอ๋): GRAIN-DIRECTION indicator on the part PREVIEW
+✅ layer-0 fix confirmed live (เอ๋ screenshot: #11 209×1247, #12 1207×342, #15 623×484 now load + preview). NEW: เอ๋ wants grain DIRECTION shown on the part preview (right-side DXF view) — currently outline-only. RD send_message'd Web local_babe6267 (WEB 17): draw a grain indicator (arrows / light dashed hatch) on the preview using the known per-part grain (|=V, —=H, *=any, ?=none), matching the row symbol, not obscuring cut geometry, respecting rotation. Verify V/H/* cases in preview + deploy. pathspec nest.js. Optional bonus: same on nested sheets. Web posts → RD relays. -- RD
