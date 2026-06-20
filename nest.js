@@ -453,6 +453,13 @@
     }
 
     let minX = +Infinity, minY = +Infinity, maxX = -Infinity, maxY = -Infinity;
+    // Fallback bbox over EVERY cut entity (any non-bend layer). Used only when
+    // the strict OUTER/INTERIOR bbox below finds nothing — some CC_Laser
+    // fallback/sketch exports put all geometry on the default layer "0" instead
+    // of OUTER_/INTERIOR_PROFILES, so the strict bbox came back null and the
+    // part rendered with blank W×H = looked NO-DXF even though it loaded fine
+    // (เอ๋ 2026-06-20: 2CN000-120000 / 2CN002-120024 / 2DN000-060000, all on "0").
+    let aMinX = +Infinity, aMinY = +Infinity, aMaxX = -Infinity, aMaxY = -Infinity;
     const outerStrokes = [];   // every OUTER-layer polyline / line / arc
     const interior = [];       // every INTERIOR-layer entity
     // True-entity descriptors (CIRCLE/ARC/LINE/…) parallel to the tessellated
@@ -464,8 +471,13 @@
       const pts = entityPoints(e);
       if (!pts || pts.length < 2) continue;
       const layer = String(e.layer || '');
-      if (isCutLayer(layer)) {
-        for (const [x, y] of pts) {
+      const cut = isCutLayer(layer);
+      for (const [x, y] of pts) {
+        if (x < aMinX) aMinX = x;
+        if (y < aMinY) aMinY = y;
+        if (x > aMaxX) aMaxX = x;
+        if (y > aMaxY) aMaxY = y;
+        if (cut) {
           if (x < minX) minX = x;
           if (y < minY) minY = y;
           if (x > maxX) maxX = x;
@@ -488,7 +500,12 @@
     // the tessellated polyline (older cached parts, or an unsupported type).
     const entities = (trueEnts.length === nPts && nPts > 0) ? trueEnts : [];
 
-    const bbox = isFinite(minX) ? [minX, minY, maxX, maxY] : null;
+    // Prefer the OUTER/INTERIOR-tagged bbox (tight — ignores any stray
+    // construction lines on untagged layers). Fall back to the all-entity bbox
+    // ONLY when no cut-layer geometry exists at all (layer-"0" exports), so a
+    // normal part's bbox is unchanged but a layer-"0" part stops reading 0×0.
+    const bbox = isFinite(minX) ? [minX, minY, maxX, maxY]
+               : (isFinite(aMinX) ? [aMinX, aMinY, aMaxX, aMaxY] : null);
 
     // The renderer wants ONE 'outer' polyline to draw as a filled
     // closed shape (single LWPOLYLINE = the common Fusion case), AND
