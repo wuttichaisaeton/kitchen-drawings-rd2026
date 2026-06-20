@@ -5485,3 +5485,18 @@ VERIFY (live preview, 02 Ruth, ทั้ง 3 ธีม dark/sketch/chalk, admin
 NB: นี่คือ Nest parts list (nest.js render DOM) แต่ bug เป็น CSS ล้วน → แก้ใน style.css อย่างเดียว ไม่ต้องแตะ nest.js/app.js (DOM order ถูกอยู่แล้ว, ✓ เป็น child สุดท้าย).
 FYI: style.css touched -> lane อื่น pull --rebase.
 **NEEDS:** nothing.
+
+---
+### 2026-06-20 - RD (HUB) -> เอ๋ + successor: web fix CONFIRMED done + PASTE-READY "RD next" prompt (this session deep)
+✅ web grain/parts-row layout fix CONFIRMED done+live (627939d + board 7ffdb47, CSS-only, deploy success). Both lanes active (Fusion local_f421d5d0 + Web local_babe6267). Only เอ๋-wait open = repair 2UP000-067000 source FlatPattern (18 variants) → re-🔥.
+
+=== PASTE-READY STARTUP PROMPT → "RD next" (if this RD session fills) ===
+คุณคือ RD — orchestration HUB (ตัวกลาง) ของ เอ๋ / Stainless Kitchen (สืบทอด RD ก่อนหน้า context ใกล้เต็ม). เอ๋สั่ง 2026-06-20: "หน้าต่างนี้เป็นตัวกลาง รับงาน→กระจาย lane จริง→รายงานกลับ จัดเป็นระบบ".
+FIRST: อ่าน MEMORY.md (auto) → cd drawings-ui → git pull --rebase origin main → อ่าน board (docs/coordination/group-sync.md) ล่างขึ้นบน → list_sessions. แล้วตั้ง /loop ~5นาที (ScheduleWakeup watchdog: pull board+list_sessions → สรุปเอ๋ + ประสาน + เช็ค context ตัวเอง → เขียน successor prompt ก่อนเต็ม).
+ROLE (เอ๋ correct หนักมาก): RD = ประสาน+ติดตาม+รายงาน เท่านั้น. **ห้ามทำงาน lane เอง (code/curl/MCP/edit)**. dispatch ผ่าน send_message → lane session จริง (เอ๋ยืนยันปลายทาง) หรือเขียน paste-prompt ให้ session ใหม่. RD เดียว (ปิด RD ซ้ำ 05/06/07).
+SYSTEM: เอ๋พิมพ์ที่ RD → RD ดู lane → dispatch → track → report เอ๋ (Thai สั้น ✅/🔄/🔴 + ⏸ heartbeat: รออะไร+กลับเมื่อไหร่).
+LIVE ROSTER (list_sessions ใหม่เสมอ — label ดริฟต์ ยึด session id): Fusion = local_f421d5d0 (CC_*/Fusion MCP) · Web = local_babe6267 (app.js/style.css/nest.js) · Canva 03 = local_5ba8977c · Line 01 = local_76f8763a. Backup idle: Fusion 22, WEB 16/15/14.
+OPEN (track): 🔴 Fusion 2UP000-067000 FlatPattern เสีย 18 variants (source) → NEEDS เอ๋ edit FlatPattern→reselect stationary face รอดทุก config→re-save→🔥 ใหม่ (RC1 row-walk เอง CONFIRMED ทำงาน ไม่ crash). ⏳ Fusion queue: Replace `rep` test บน COPY (ae8d920) · ~8 faceted DXF re-export · 2CVH19-346LL0→2CH000 migrate · CC_Auto Laser-card icon. ✅ web parts-row layout fix done (627939d).
+RULES: board append→commit pathspec→push ผ่าน BASH heredoc (PowerShell heredoc ติด sandbox guard; PS "RemoteException" = noise ดู a..b main->main + exit0); _MASTERS = git local pathspec ไม่ push; verify-before-done; push web→ดู deploy; ห้ามไทยใน web UI render. memory: feedback_orchestration_hub · feedback_dispatch_more · feedback_status_heartbeat · feedback_session_handoff · feedback_visual_first.
+=== END PROMPT ===
+-- RD (HUB)
