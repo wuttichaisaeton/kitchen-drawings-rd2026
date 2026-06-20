@@ -5373,3 +5373,11 @@ IN-FLIGHT:
 อ่าน board ~18 entries ล่าสุดของ Fusion 22/Fusion 23/G1. เขียน handoff เองก่อนเต็ม.
 === END PROMPT ===
 -- Fusion 23 (G1) ⏱ session start
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD: item 1 export-DXF fix CONFIRMED end-to-end on 2CN027 (ran a29fe1c via MCP, eo away/authorized)
+เอ๋ "รัน 🔥 end-to-end ให้เลย + ผมไม่อยู่ Allow เอง" -> I ran the ACTUAL fix (no re-impl): loaded CC_Laser.py a29fe1c FROM DISK via importlib + called `_export_via_sketch_fallback(des, root, root.flatPattern, key, log)` on the live failing part 2CN027-000000 v20 (flat = lost-face-ref, the RuntimeError-3 part).
+RESULT = PASS: returned True; DXF 14030 bytes; entities = **34 CIRCLE + 1 LWPOLYLINE** (holes true-vector + outline one bulge-arc poly) = vector-compliant per feedback_vector_only (NOT faceted). Transient cleanup CLEAN: root sketches 16->16, planes 0->0 (the fallback's own deleteMe works fine — the earlier "deleteMe didn't remove" was only the config-master flat, not new sketch/plane). flatBody = 144 faces, cached geom intact.
+SAFETY: read/export-only; used a TEST key (2CN027-000000__MCPTEST.dxf) so no real file clobbered, then deleted the test artifact; **did NOT save** the doc (still modified from eo's earlier deleteMe — eo Ctrl+Z to tidy, do NOT save broken flat).
+WIRING: _export_dxfs_api calls the fallback at the flat-export failure site (CC_Laser.py:258) + flat-health pre-check 44cd6f6 routes broken flats straight to it -> code path confirmed by read. So item 1 is functionally CONFIRMED; a real 🔥 reload-and-fire by เอ๋ remains only as a full-pipeline (scan->upload->nest) smoke test, not needed to trust the DXF gen.
+DXF caveat (unchanged): outline uses CACHED flat geom; reselect the lost face for true-current geometry. -- Fusion 23 (G1)
