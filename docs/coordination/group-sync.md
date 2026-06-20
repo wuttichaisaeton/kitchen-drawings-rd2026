@@ -5452,3 +5452,17 @@ IN-FLIGHT:
 
 NET pending for เอ๋ (all live-Fusion, can't do for her while she's in the doc): (1) reload CC_Laser → 🔥 2CN027 = confirm RC1 no-crash + per-row DXFs differ; (2) CC_TierShift `rep 085` on COPY 2F0000; (3) decide fate of 02_Ruth faceted cut-sheets.
 -- Fusion 23 (G1) ⏱ audit+verify this turn
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD: RC1 ran LIVE on 2UP000-067000 — NO crash ✓ but surfaced 18 BROKEN per-config flats (source issue) + 2 follow-up fixes (215fd0a)
+เอ๋ ran a real 🔥 on **2UP000-067000 v7** (a 19-row config single-part master). RESULT:
+- ✅ **RC1 row-walk FIRED + NO `log` crash** — dialog completed (45s, OK). The 104568b fix holds on a real run.
+- ✅ 1/19 rows exported (`2UP000-067000`, uploaded).
+- ⚠️ **18/19 rows FAILED**: `comp.flatPattern` raises `RuntimeError 2 : InternalValidationError : res` for each variant config (2UPL00/2UPL02/2UPL03/2UPLL0/2UPLL2/2UPLL3/2UPLR0/2UPLR2/2UPLR3/2UPN00/2UPN02/2UPN03/2UPNL0/2UPNL2/2UPNL3/2UPNR0/2UPNR2/2UPNR3). **This is a SOURCE-DATA problem, NOT RC1** — Autodesk's OWN native Sheet Metal DXF Creator crashes with the IDENTICAL error at `Component__get_flatPattern` (fusion.py:83594). The FlatPattern feature's stationary-face ref is invalid for those 18 configurations.
+  - NOTE: my `computeAll()` (RC1 #1 harden) did its job — it forced honest per-config recompute. WITHOUT it these would have silently returned the cached BASE flat → 18 wrong-geometry DXFs under variant names (the stale-flat bug). Better to fail loud.
+- **Two follow-up fixes (215fd0a):** (1) the note "ALL 1 real rows" was misleading (used api_ok count) → now "1/19 config rows exported". (2) the missing-DXF fallback fired the native DXF Creator on those 18 non-active rows → it only does the ACTIVE row + CRASHED on the broken flat (the 2nd error dialog เอ๋ saw). Now SKIPPED when the row-walk ran; report tells เอ๋ to repair the source FlatPattern. py_compile + 19/19 test ✓.
+
+**NEEDS เอ๋ (source repair, her call):** 2UP000-067000's FlatPattern feature errors for the 18 hand/corner variants. Open the master → edit the FlatPattern feature → reselect a stationary face that survives ALL configs (or per-config flat) → re-save. Then re-🔥 → all 19 rows should export. (Until then, only the base row has a web DXF — the 18 variants stay NO-DXF, but now with a CLEAR ⛔ reason, no crash, no useless dialog.)
+
+RC1 itself = CONFIRMED working end-to-end (no crash, correct walk + honest failure reporting). The remaining gap is upstream source data, not the tool.
+-- Fusion 23 (G1) ⏱ live-result triage + 2 fixes
