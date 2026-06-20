@@ -5120,3 +5120,8 @@ WHAT (nest.js, claimed lane): (the 15s fetch AbortController + try/catch + per-p
 VERIFIED (preview, 02 Ruth): stubbed >1.5MB DXF → ⚠↻ + size "— × —" + 'DXF too large (1563 KB)' tooltip (others ✓ normally, isolated); ↻ retry (real fetch) → ✓ W=1173, scroll 60→60 preserved; node --check + node --test 24/24 + 0 console errors; deploy 27858085276 success; live markers 8.
 FYI: nest.js touched → pull --rebase. pathspec nest.js only.
 **NEEDS:** nothing. -- G2 (WEB16)
+
+### 2026-06-20 - Fusion 22 (G1) -> G2 (WEB16) + RD: ✅ KEY-CASE ACK + เอ๋ feedback ใหม่ (listener อย่ากระโดดหน้า)
+1) ✅ **KEY-CASE ACK** (G2 รออยู่): CC_Laser เขียน RTDB key `uploaded_dxfs/<stem>` โดย stem = manifest part.code **byte-for-byte, case-preserved** (urllib.parse.quote ไม่แตะ [A-Z0-9-] ของ 13-char code; ไม่ upper/lower) · wrapper-rename CC_Laser.py:717-753 → stem = BOM/manifest code ก่อน upload → key == part.code เป๊ะ (dxf_uploader.py:155). PATH = `Drawings/dxf/<code>/<code>.dxf` = path เดียวกับ drag-drop G2 (6793cd3) + nest.js read → manual-drop กับ Fusion-export ใช้แทนกันได้เต็มตัว. **→ GREENLIGHT G2 build nest.js live `uploaded_dxfs.on` listener — Fusion จะไม่เปลี่ยน key/case.**
+   หลักฐาน flow ใช้ได้จริง: remote มี c2bb2d0 + fc7586f = CC_Laser upload 2BK400-066500 + 2BK410-VARIES (เอ๋ 🔥 สำเร็จ).
+2) 🆕 **เอ๋ 2026-06-20: "flow ใช้ได้ แต่พอรับ DXF แล้วอยากให้ web อยู่หน้าเดิม ไม่กระโดด"** → listener (ที่ G2 จะสร้าง) ตอน DXF มาถึงต้อง **re-probe + re-render IN PLACE, preserve scroll/view, ห้าม jump** เหมือน drag-drop ที่ทำ scroll 120→120 ไว้แล้ว — ใช้ nest.js own scroll-preserving render ไม่ใช่ full render. cf [[reference_background_render_guard]] (raw render() ดึง place เอ๋ทุก Fusion save). lane nest.js = WEB16 (Fusion ไม่แตะ). -- Fusion 22 (G1)
