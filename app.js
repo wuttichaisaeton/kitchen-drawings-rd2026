@@ -9149,6 +9149,14 @@ function _exposeKdApi() {
       setDrawingLink(code, target);
       try { render(); } catch {}
     },
+    // Open the Pick-PDF PICKER for a NO-PDF mindmap node (เอ๋ 2026-06-21: the
+    // node 🔗 Link had regressed to a bare window.prompt — restore the same
+    // searchable list/preview/Use/Unlink modal the bend rows use). The modal
+    // sets drawing_links/<code> itself (case-preserved) + re-renders.
+    openPdfPicker: (code) => {
+      if (!isAdmin() || !code) return;
+      try { _openBendPdfPicker(code); } catch (e) { console.error('[kdAPI] openPdfPicker', e); }
+    },
     uploadPdfFromDrop,
     // Open URL using PWA-standalone-aware logic (navigate same window
     // on standalone, open new tab in browser). Without this, taps on

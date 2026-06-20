@@ -504,7 +504,7 @@ function MindmapNode({ id, data, selected }) {
         {isBom && qty != null && !isVariantRoot && !isWrapper && (
           <span className="kme-node-qty">x<span className="kme-node-qty-num">{qty}</span></span>
         )}
-        {missing && isBom && !(api.pdfUrlForCode && api.pdfUrlForCode(code)) && (
+        {missing && isBom && !editing && !(api.pdfUrlForCode && api.pdfUrlForCode(code)) && (
           <span
             className="kme-missing-badge nodrag nopan"
             title="No PDF yet — tap to open the 3D master in Fusion"
@@ -539,48 +539,27 @@ function MindmapNode({ id, data, selected }) {
             friendly button → prompt for the target code → api.setDrawingLink
             persists it (RTDB) → pdfUrlForCode resolves → the NO-PDF badge above
             auto-hides + the linked drawing opens. */}
-        {missing && isBom && admin && !(api.pdfUrlForCode && api.pdfUrlForCode(code)) && (
+        {missing && isBom && admin && !editing && !(api.pdfUrlForCode && api.pdfUrlForCode(code)) && (
           <button
             className="kme-link-edit nodrag nopan"
-            title="Edit Link — point this NO-PDF part at another part's drawing PDF"
-            onClick={async (e) => {
+            title="Edit Link — pick another part's drawing PDF to borrow (searchable list)"
+            onClick={(e) => {
               e.stopPropagation();
-              const cur = api.getDrawingLink ? api.getDrawingLink(code) : '';
-              // suggest a REAL same-family code whose drawing file actually exists (HEAD-verified)
-              const suggestion = api.suggestDrawingTarget ? await api.suggestDrawingTarget(code) : '';
-              const target = window.prompt(
-                'Link "' + code + '" to which part\'s drawing PDF?\n' +
-                'That part MUST already have a drawing.' +
-                (suggestion ? '\n(e.g. ' + suggestion + ')' : '') +
-                '\nLeave blank to clear the link.',
-                cur || suggestion || ''
-              );
-              if (target === null) return;   // cancelled
-              const t = (target || '').trim().toUpperCase();
-              if (t) {
-                // Validate the target's drawing FILE actually exists (a manifest key can
-                // resolve a URL that 404s) — else the node would silently stay NO-PDF
-                // (เอ๋ 2026-06-09). Tell the admin clearly + don't set the link.
-                const url = api.pdfUrlForCode && api.pdfUrlForCode(t);
-                let exists = false;
-                if (url) exists = api.pdfFileExists ? await api.pdfFileExists(url) : true;
-                if (!exists) {
-                  window.alert('"' + t + '" has no drawing PDF (the file is missing) — pick a part whose drawing actually opens.' +
-                    (suggestion ? '\nTry: ' + suggestion : '') + '\n(Link not changed.)');
-                  return;
-                }
-              }
-              if (api.setDrawingLink) api.setDrawingLink(code, t);
-              bump();
-              const url2 = api.pdfUrlForCode && api.pdfUrlForCode(code);
-              if (url2 && api.openInNewTab) api.openInNewTab(url2);
+              // Open the Pick-PDF PICKER (searchable list + preview + Use/Unlink) —
+              // restored after it regressed to a bare window.prompt (เอ๋ 2026-06-21).
+              // The picker writes drawing_links itself (case-preserved) + re-renders;
+              // fall back to the prompt only if the API isn't present (old shell).
+              if (api.openPdfPicker) { api.openPdfPicker(code); return; }
+              const t = (window.prompt('Link "' + code + '" to which code\'s drawing PDF?\nLeave blank to clear.', api.getDrawingLink ? (api.getDrawingLink(code) || '') : '') || '').trim();
+              if (api.setDrawingLink) { api.setDrawingLink(code, t); bump(); }
             }}
+            onPointerDown={(e) => e.stopPropagation()}
           >🔗 Link</button>
         )}
         {uploading && (
           <span className="kme-missing-badge nodrag nopan" style={{ background: '#1f6feb', color: '#fff' }}>uploading…</span>
         )}
-        {comments.length > 0 && (
+        {comments.length > 0 && !editing && (
           <button
             className={'kme-comment-count nodrag nopan' + (cmtOpen ? ' is-open' : '')}
             title={`${comments.length} comment(s) — tap to view`}
@@ -628,7 +607,10 @@ function MindmapNode({ id, data, selected }) {
           </div>
         </div>
       )}
-      {isBom && (
+      {isBom && !editing && (
+        // Hidden while renaming so the 🧩/📄 cluster doesn't sit in the way of
+        // the name input (เอ๋ 2026-06-21 'ไอคอนบัง แก้ชื่อไม่ได้'). Reappears on
+        // blur/commit.
         // `nodrag` removed from the row container so the empty space
         // around the buttons stays draggable — user 2026-05-28:
         // 'ให้สามารถจับบนพื้นที่ว่าง แล้วย้าย ได้'. The buttons
@@ -667,7 +649,7 @@ function MindmapNode({ id, data, selected }) {
           )}
         </div>
       )}
-      {linked && (
+      {linked && !editing && (
         <div
           className="kme-link-badge nodrag nopan"
           title={`Open ${fusion_link.master_code || 'file'} in Fusion`}
