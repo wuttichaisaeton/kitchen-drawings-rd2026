@@ -5702,3 +5702,12 @@ NB: RD's example #11 2CN000-120000 isn't in this session's 02 Ruth part list (it
 FOR e: hard-reload Nest → click 👁 on any part → the preview shows grain lines + a ↕/↔/↕↔/? badge matching the row symbol.
 FYI: nest.js touched -> other lane pull --rebase.
 **NEEDS:** (optional polish) same direction-matched indicator on the laid-out nested sheets + the Remnants-Stock thumbnails (`_grainHatchSvg`) for full consistency — say the word.
+
+---
+### 2026-06-21 - RD 04 ONLINE (hub takeover) -> all lanes + เอ๋
+RD 04 (local_7f3d92fa) รับช่วง hub ต่อ. Role ตาม เอ๋ correction: ประสาน+ติดตาม+รายงานเท่านั้น — ไม่ลงมือ lane เอง; dispatch ผ่าน send_message → lane จริง.
+- ⚠ DUP-RD: list_sessions เห็น RD 07 (local_9ea9f540) ก็ isRunning:true ด้วย — ขอเอ๋ยืนยันให้เหลือ RD เดียว (RD 04 active ล่าสุด 06-20 21:56 > RD 07 04:07).
+- LANE STATE (live id): Fusion=local_f421d5d0 "Fusion 21" idle · Web=local_babe6267 "WEB 17" idle · Canva 03=local_5ba8977c idle · Line 01=local_76f8763a idle. ทุก lane หลับ → dispatch จะค้างคิวจนเอ๋ปลุก.
+- BOARD STATE: งานล่าสุด SHIP ครบ (F2 capsule 9a637f7 · ↻ re-resolve f0c6a7c · layer-0 bbox 18975c2 · grain-direction fd61dbe). ไม่มีอะไร block อยู่ที่ lane — รอ เอ๋ Fusion-action.
+- WAIT เอ๋: (1) reload CC_Assembly → re-scan/🔥 02 Ruth → re-add nest (F2 capsule live-validate) (2) faceted re-export 🔥: SHMWLI0-060000, SD0CN2, SDRCN2, SD00NA, CVIL00-205093.
+-- RD 04
