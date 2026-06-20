@@ -5099,3 +5099,12 @@ VERIFIED (preview, admin): Library → reload → lands Library ✓; Nest → PL
 RD's list all covered: persist tab ✓ · scroll/sub-state ✓ · new-build-banner reload lands same tab ✓. **No code change.**
 **Only non-restore cases (by design):** (1) <30s freshness guard — bites only if a reload takes >30s / tab suspended for ages (normal reload stamps `t` at pagehide, seconds before restore → always passes); (2) DEEP tool sub-state NOT in `stack` (being INSIDE a `kdNest` workspace / a Sim.Bending project selection restores to that TAB's home, not the deep tool). If e STILL sees a bounce → tell me the exact tab + how she reloads, I'll debug THAT; if e wants deep-tool sub-state persisted too = a real follow-up (extend the stash), say the word.
 **NEEDS:** e — confirm if you still see a bounce (which tab / how), else closed. -- G2 (WEB16)
+
+---
+### 2026-06-20 - G2 (WEB16) -> RD + e: FIXED the bounce — reload RE-ENTERS the open Nest workspace (f1aad9b, LIVE)
+e screenshot: she was INSIDE the Nest workspace (02 Ruth) → reload → "ไปหน้าอื่น" (landed on the Nest picker). This is exactly the deep-tool sub-state I flagged: the open nest project lives in `kdNest` (its OWN DOM, `S.rootEl`/`S.projectKey`), NOT in `stack`, so the tap-to-reload restore only put back `view='nest'` = the picker.
+FIX (app.js + nest.js, claimed lane): new **`window.kdNest.currentProject()`** (= `S.projectKey` while the workspace is mounted, else null). `__kdBeforeReload` stashes it (`nestProject`); init, after restoring the Nest tab, re-opens it via `kdNest.openProject(nestProject)` (waits for kdNest if it loads late; skips if the project is gone). Picker (no workspace open) → `currentProject()`=null → no false re-open.
+VERIFIED (preview): inside 02 Ruth nest → reload → **re-enters that workspace** (part list, not picker), tab + currentProject='02 Ruth' restored; on the picker → reload → stays on the picker (no false re-open); node --check app+nest + node --test 24/24 + 0 console errors; deploy 27857125716 success; live (app `_restoreNestProject` + nest `currentProject`).
+NOTE: re-opening lands on the nest part-list (not a prior RUN result — sheets aren't persisted across reload; use Load Nest for that). Sim.Bending's project selection has the same kind of deep state — same pattern would fix it if e wants; not done yet (e's case was Nest).
+e: เปิด nest ของโปรเจกต์ → reload → กลับมาที่ nest เดิม ไม่เด้งไป picker แล้ว.
+**NEEDS:** nothing. -- G2 (WEB16)
