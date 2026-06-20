@@ -5381,3 +5381,24 @@ RESULT = PASS: returned True; DXF 14030 bytes; entities = **34 CIRCLE + 1 LWPOLY
 SAFETY: read/export-only; used a TEST key (2CN027-000000__MCPTEST.dxf) so no real file clobbered, then deleted the test artifact; **did NOT save** the doc (still modified from eo's earlier deleteMe — eo Ctrl+Z to tidy, do NOT save broken flat).
 WIRING: _export_dxfs_api calls the fallback at the flat-export failure site (CC_Laser.py:258) + flat-health pre-check 44cd6f6 routes broken flats straight to it -> code path confirmed by read. So item 1 is functionally CONFIRMED; a real 🔥 reload-and-fire by เอ๋ remains only as a full-pipeline (scan->upload->nest) smoke test, not needed to trust the DXF gen.
 DXF caveat (unchanged): outline uses CACHED flat geom; reselect the lost face for true-current geometry. -- Fusion 23 (G1)
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD: item 3 RC1 row-walk UNBLOCKED — answered the 2 live questions via MCP (read-only)
+เอ๋ "ทำเอง" -> I answered both blocker questions on 2CN027 via MCP (read-only, no mutation, no save):
+- **(a) flat geometry changes per config row? YES.** Configured design, 2 rows: `2CN000-000000` (template/WWW000) + `2CN000-120000` (active). 4 cols incl 2 ConfigurationParameterColumn driving params **"Z"** + **"Hinges"** per row. Active-row flatBody bbox = ~1247×209mm (matches WWW=120) -> the 000-row drives a different Z -> different flat. => 🔥 MUST row-walk (active-row-only export is why other rows show NO-DXF).
+- **(b) CAM Manufacturing Model present? NO.** doc products = ['DesignProductType','FlatPatternProductType'] only. => the CAM-bypass path (CC_Laser.py:466-494) does NOT apply; the row-walk approach is correct (no need to register rows in CAM).
+=> **RC1 is GREEN to build** (no longer waiting on เอ๋). Plan: mirror CC_ExportFlat row-walk (L141-160) in CC_Laser — capture active row -> for each row: `_looks_like_code` skip templates -> activate row -> export per row.name via the existing _export_dxfs_api + sketch-fallback -> restore the original active row -> NO save. Closes non-active-row NO-DXF permanently. occ/row-activate is live-Fusion-only (verify on reload). DEFERRED to the next focused Fusion session (this one's context is deep) — answers are captured here so the build needs no re-investigation.
+
+=== PASTE-READY STARTUP PROMPT -> "Fusion 24" (updated) ===
+You are the Fusion lane (G1 / "Fusion 24") of Rough Design / Stainless Kitchen, reporting to เอ๋ via RD. อ่าน memory ตอนเริ่ม. สืบทอด Fusion 23 (context ลึก).
+CONSTRAINTS: (1) เอ๋ save Fusion เอง — ห้าม trigger save/Ctrl+S; MCP read/export-only บนข้อมูลเอ๋ (sketch/plane transient deleteMe ได้, มัน clean — ยืนยันแล้ว). (2) Fusion MCP: execute featureType=script (def run(_context)+print()); read=doc/api/screenshot; cloud crawl เฉพาะเอ๋ idle. (3) _MASTERS=git local pathspec ไฟล์เดียว ไม่ push; board drawings-ui = push ผ่าน BASH (PowerShell heredoc ติด sandbox; git push "RemoteException" ใน PS = noise, ดู a..b main->main + exit0). (4) verify-before-done: py_compile + offline test + adversarial-review subagent; log board ทุก change; report เอ๋ + ⏱. (5) path มี Thai "เดสก์ท็อป" — อย่า hardcode ใน script ที่ส่งผ่าน MCP (encoding เพี้ยน) → ดึงจาก module.__file__ ของ sys.modules แทน.
+IN-FLIGHT:
+1. ✅ export-DXF fix CONFIRMED end-to-end (Fusion 23 ran a29fe1c `_export_via_sketch_fallback` via MCP on 2CN027 → DXF 14030B, 34 CIRCLE + 1 LWPOLYLINE true-vector, clean cleanup, no save). Wiring at CC_Laser.py:258 + health-precheck 44cd6f6. CLOSED — optional: เอ๋ real 🔥 reload+fire = full-pipeline (scan→upload→nest) smoke test only.
+2. CC_TierShift `rep` Replace BUILT+hardened ae8d920. NEEDS เอ๋ test บน COPY 2F0000: reload → `rep 085` → confirm → Yes → per-row ไม่ collapse. occ.replace unverified offline.
+3. 🟢 **RC1 config-row-walk — UNBLOCKED, BUILD THIS.** Answers (Fusion 23, via MCP): (a) flat DIFFERS per row (params Z/Hinges; rows 000000 vs 120000) → row-walk needed; (b) NO CAM → CAM-bypass N/A. BUILD: mirror CC_ExportFlat row-walk L141-160 in CC_Laser → capture active row → per row: _looks_like_code skip template → activate → export per row.name (reuse _export_dxfs_api + fallback) → restore active row → NO save. Then 🔥 exports ALL rows. verify offline + adversarial subagent; live test on reload (row-activate = live-only).
+4. ~8 faceted DXF re-export (2CN002-120024 184KB, SHMWLI0, SD0CN2/SDRCN2/SD00NA, CVIL00) → re-fire 🔥 (vector default 031f680).
+5. 2CVH19-346LL0 → migrate 2CH000-{WWW}000.
+6. WEB (G2) nest.js NO-DXF auto-detect SHIPPED a7844c4; key-case ack 962d7a9; stale-DXF done.
+อ่าน board ~18 entries ล่าสุดของ Fusion 22/23/G1. เขียน handoff เองก่อนเต็ม.
+=== END PROMPT ===
+-- Fusion 23 (G1) ⏱
