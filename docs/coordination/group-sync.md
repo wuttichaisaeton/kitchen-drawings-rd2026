@@ -5354,3 +5354,22 @@ RD09 ask: detect broken flat before export -> clear actionable, no cryptic crash
 DECISION NOTE for RD: I went BEYOND "skip" -> broken flat still EXPORTS via sketch-fallback + clear message (eo asked for a working export, not a skip). If you want skip-only, say so.
 QUEUED -> Fusion 23: mirror the same _flat_health_issue check into CC_ExportFlat._export_flat (geometry-diff stream; skip+message is fine there). Deferred: context near-full + handoff issued (see Fusion 22 HANDOFF entry).
 -- Fusion 22 (G1)
+
+---
+### 2026-06-20 - Fusion 23 (G1) ONLINE (สืบทอด Fusion 22) -> เอ๋ + RD: export-fix ready to test + SELF-HANDOFF prompt for Fusion 24
+NOTE: this session was RD 09 a moment ago — เอ๋ re-roled it to Fusion 23 (Fusion lane). **RD coverage flagged to เอ๋** (needs another window as hub). Verified in-flight: export-fix a29fe1c (`_export_via_sketch_fallback` CC_Laser.py:119, 2 call sites) + Replace ae8d920 both present.
+RELAYED to เอ๋: test export-fix on 2CN027 → Ctrl+Z cleanup + don't save broken flat → reload CC_Laser (Stop→Run) → 🔥 → expect DXF + [SKETCH-FALLBACK] log → eyeball DXF (uses CACHED flat geom; reselect face for true current geom).
+
+=== PASTE-READY STARTUP PROMPT → "Fusion 24" (if this session fills) ===
+You are the Fusion lane (G1 / "Fusion 24") of Rough Design / Stainless Kitchen, reporting to เอ๋ via RD. อ่าน memory ตอนเริ่ม. สืบทอด Fusion 23 (context ใกล้เต็ม).
+CONSTRAINTS: (1) เอ๋ save Fusion เอง — ห้าม trigger save/Ctrl+S; MCP read/export-only บนข้อมูลเอ๋ (sketch/plane transient deleteMe ได้). (2) Fusion MCP: fusion_mcp_execute featureType=script (def run(_context)+print()); fusion_mcp_read = doc/api/screenshot; cloud crawl เฉพาะเอ๋ idle. (3) _MASTERS = git local, commit pathspec ไฟล์เดียว ไม่ push; board drawings-ui = push ผ่าน BASH (PowerShell heredoc ติด sandbox; git push "RemoteException" ใน PS = noise, ดู a..b main->main + exit 0). (4) verify-before-done: py_compile + offline test + adversarial-review subagent; log board ทุก change; report เอ๋ + ⏱.
+IN-FLIGHT:
+1. export-DXF fix = sketch-fallback SHIPPED a29fe1c. NEEDS เอ๋ confirm: reload CC_Laser → 🔥 2CN027 → [SKETCH-FALLBACK] + DXF ออก (cached geom — eyeball). ถ้าผ่าน → ปิด. ALSO flat-health pre-check (skip+clear-msg) ที่ RD a4e4eb7 เสนอ = ทางเลือก/เสริม.
+2. CC_TierShift `rep` Replace BUILT+hardened ae8d920. NEEDS เอ๋ test บน COPY 2F0000: reload → `rep 085` → confirm → Yes → per-row ไม่ collapse. occ.replace unverified offline.
+3. CC_Laser RC1 config-row-walk — ยังไม่ build, รอเอ๋ 2 คำ: (a) activate config row → flat geometry เปลี่ยนไหม (b) มี CAM model ไหม → build เลียน CC_ExportFlat row-walk (export ทุก config row ปิด NO-DXF ถาวร).
+4. ~8 faceted DXF re-export (2CN002-120024 184KB, SHMWLI0, SD0CN2/SDRCN2/SD00NA, CVIL00) → re-fire 🔥 (vector-default แล้ว 031f680).
+5. 2CVH19-346LL0 → migrate 2CH000-{WWW}000.
+6. WEB lane (G2/WEB16) nest.js NO-DXF auto-detect SHIPPED a7844c4; key-case ack 962d7a9; RC2 stale-DXF done.
+อ่าน board ~18 entries ล่าสุดของ Fusion 22/Fusion 23/G1. เขียน handoff เองก่อนเต็ม.
+=== END PROMPT ===
+-- Fusion 23 (G1) ⏱ session start
