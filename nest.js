@@ -5049,6 +5049,11 @@
   window.kdNest = {
     openProject: openProject,
     close: close,
+    // The project whose nest WORKSPACE is currently open (null when on the
+    // picker / closed). Lets app.js persist "เอ๋ was inside this nest" across a
+    // reload and re-open it (เอ๋ 2026-06-20 "กด reload แล้วไปหน้าอื่น"). S.rootEl
+    // is set only while the workspace is mounted; close() nulls it.
+    currentProject: () => (S.rootEl ? S.projectKey : null),
     // Open the shared Remnants Stock modal from anywhere (e.g. the Laser
     // Cut List) — it loads from RTDB + appends to <body>, no nest workspace
     // needed. (เอ๋ 2026-05-31 'ให้แสดงที่ User Laser ด้วย')

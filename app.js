@@ -12933,7 +12933,7 @@ async function init() {
     // render so there's no projects-home flash. Guarded to a fresh reload (< 30s)
     // so reopening the tab much later still starts clean; a now-hidden tab or a
     // deleted project is dropped.
-    let _navRestored = false, _restoreScrollY = 0;
+    let _navRestored = false, _restoreScrollY = 0, _restoreNestProject = null;
     try {
       const rawR = sessionStorage.getItem('kd_nav_restore');
       if (rawR) {
@@ -12947,6 +12947,7 @@ async function init() {
             ? s.stack.filter(n => n && (n.kind !== 'project' || (manifest.projects && manifest.projects[n.name])))
             : [];
           _restoreScrollY = +s.scrollY || 0;
+          if (s.view === 'nest' && s.nestProject) _restoreNestProject = s.nestProject;
           _navRestored = true;
         }
       }
@@ -12959,6 +12960,14 @@ async function init() {
       if (_restoreScrollY) {
         const r = () => { try { window.scrollTo(0, _restoreScrollY); } catch (e) {} };
         r(); requestAnimationFrame(r); setTimeout(r, 80);
+      }
+      // Re-enter the Nest WORKSPACE that was open before the reload (deep sub-state
+      // not held in `stack`) — else view='nest' lands on the picker (เอ๋ "ไปหน้าอื่น").
+      // kdNest loads as a separate script; wait for it if it isn't ready yet.
+      if (_restoreNestProject && manifest.projects && manifest.projects[_restoreNestProject]) {
+        const _reopenNest = () => { try { if (window.kdNest && typeof window.kdNest.openProject === 'function') window.kdNest.openProject(_restoreNestProject); } catch (e) {} };
+        if (window.kdNest && window.kdNest.openProject) _reopenNest();
+        else { let _t = 0; const _iv = setInterval(() => { if ((window.kdNest && window.kdNest.openProject) || ++_t > 50) { clearInterval(_iv); _reopenNest(); } }, 100); }
       }
     } else {
       // Deep-link from a merged-PDF link / shared URL — only when NOT restoring a
@@ -12984,8 +12993,13 @@ async function init() {
 function __kdBeforeReload() {
   try {
     const se = document.scrollingElement || document.documentElement;
+    // Deep sub-state: the Nest TAB's open workspace (kdNest owns its own DOM, so
+    // it isn't in `stack`) — stash which project's nest is open so reload re-enters
+    // it instead of bouncing to the picker (เอ๋ 2026-06-20 "reload แล้วไปหน้าอื่น").
+    let nestProject = null;
+    try { nestProject = (window.kdNest && typeof window.kdNest.currentProject === 'function') ? window.kdNest.currentProject() : null; } catch (e) {}
     sessionStorage.setItem('kd_nav_restore', JSON.stringify({
-      view, stack, scrollY: window.scrollY || (se && se.scrollTop) || 0, t: Date.now(),
+      view, stack, scrollY: window.scrollY || (se && se.scrollTop) || 0, nestProject, t: Date.now(),
     }));
   } catch (e) {}
 }
