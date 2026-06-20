@@ -654,6 +654,58 @@
     await Promise.all(S.parts.map(p => _loadOneDxf(p).then(onSettle, onSettle)));
   }
 
+  // ── NO-DXF auto-detect: live ⚠→✓ when a DXF lands (เอ๋ 2026-06-20, WEB16) ────
+  // While the Nest list is open, watch RTDB uploaded_dxfs. When a DXF appears for a
+  // part that's still ⚠ (no DXF) or errored — Fusion 🔥 export, another device's
+  // drop — re-resolve + (re)load it (raw directUrl = immediate, no jsdelivr lag) and
+  // re-render IN PLACE (scroll preserved, NO jump — เอ๋ "อยู่หน้าเดิม ไม่กระโดด").
+  // Fusion 22 acked the key is uploaded_dxfs/<code> == part.code byte-exact
+  // ([[reference_github_pat_drawings_upload]]). Detached on close() — no leak, no
+  // fire after the workspace is gone. Debounced 400ms so a Fusion BATCH upload
+  // (many DXFs at once) re-renders once, not N times.
+  function _installDxfWatcher() {
+    if (!window.firebaseDB || S._dxfWatchRef) return;
+    const ref = window.firebaseDB.ref('uploaded_dxfs');
+    let pending = null, to = null;
+    const process = async () => {
+      to = null;
+      const all = pending; pending = null;
+      if (!all || S.closing || !S.rootEl) return;
+      S.dxfsAll = all;   // keep fresh (rename re-resolve + staleness checks reuse it)
+      const toLoad = [];
+      for (const p of S.parts) {
+        if (!p || p.manual || p.dxfLoaded) continue;
+        const meta = all[p.code];
+        if (!meta || !meta.url) continue;
+        // Act on a NEW arrival only: no url yet, a different url, or an errored part
+        // whose meta got a newer uploaded_at (Fusion re-exported a clean file to the
+        // same path). Won't loop: once loaded, dxfLoaded skips it; a still-broken file
+        // keeps its uploaded_at in p.dxfMeta → no retry until a NEWER upload.
+        const fresh = (p.dxfUrl !== meta.url) ||
+          (p.dxfError && (!p.dxfMeta || p.dxfMeta.uploaded_at !== meta.uploaded_at));
+        if (!fresh) continue;
+        p.dxfUrl = meta.url; p.dxfMeta = meta; p.dxfError = null;
+        p.thickness = meta.thickness_mm || p.thickness || 0;
+        toLoad.push(p);
+      }
+      if (!toLoad.length) return;
+      await _ensureDxfLib();
+      await Promise.all(toLoad.map(p => _loadOneDxf(p, { directUrl: p.dxfUrl })));
+      if (!S.closing && S.rootEl) _refreshViewKeepScroll();
+    };
+    const cb = ref.on('value', snap => {
+      if (S.closing || !S.rootEl) return;
+      pending = snap.val() || {};
+      clearTimeout(to); to = setTimeout(process, 400);
+    });
+    S._dxfWatchRef = ref; S._dxfWatchCb = cb; S._dxfWatchClear = () => clearTimeout(to);
+  }
+  function _teardownDxfWatcher() {
+    if (S._dxfWatchRef && S._dxfWatchCb) { try { S._dxfWatchRef.off('value', S._dxfWatchCb); } catch (e) {} }
+    if (S._dxfWatchClear) { try { S._dxfWatchClear(); } catch (e) {} }
+    S._dxfWatchRef = null; S._dxfWatchCb = null; S._dxfWatchClear = null;
+  }
+
   // ── ✏️ Inline rename / re-point a part code (เอ๋ 2026-06-20, WEB16) ──────────
   // Fix a legacy/typo'd code in the Nest list (e.g. 2CVH19-346LL0 → 2CH000-…)
   // WITHOUT touching Fusion or the real DXF files (เอ๋ chose "web override").
@@ -5105,6 +5157,7 @@
     if (!projectKey) return;
     S.rootEl = document.getElementById('root');
     if (!S.rootEl) return;
+    _teardownDxfWatcher();   // drop any prior project's live DXF watcher first
     // ↑/↓ flips through parts in single-part preview (desktop-style). Bound
     // to the document so it works anywhere in the workspace; ignored while a
     // field is focused so the W/H/qty spinners keep their native arrows.
@@ -5148,7 +5201,9 @@
       // Kick DXF parse off as a background phase so the user sees the
       // parts list immediately, then watches the ✓ markers populate.
       _loadAllDxfs().then(() => {
-        if (!S.closing) _refreshView();
+        if (S.closing) return;
+        _refreshView();
+        _installDxfWatcher();   // live ⚠→✓ when a DXF lands later (Fusion 🔥 / drop)
       });
     } catch (e) {
       console.error('[kdNest] open failed', e);
@@ -5158,6 +5213,7 @@
 
   function close() {
     S.closing = true;
+    _teardownDxfWatcher();   // stop the live DXF listener — no leak, no fire after close
     if (S.rootEl && S.prevHtml != null) {
       S.rootEl.innerHTML = S.prevHtml;
     }
