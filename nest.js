@@ -3548,9 +3548,14 @@
     if (row) row.scrollIntoView({ block: 'nearest' });
   }
   function _setPreview(code) {
+    // Keep the part-list scroll where it is — the user clicked 👁 (or the grain
+    // glyph) ON a row that's already in view, so the re-render must NOT yank the
+    // list back to the top (เอ๋ 2026-06-21 'กด 👁 แล้วลิสต์เด้งขึ้นบนสุด ต้อง scroll
+    // กลับลงมาทุกที'). Reuses the same keep-scroll re-render as ↻ Re-resolve.
+    // (Keyboard ↑/↓ uses _movePreview → _scrollPreviewRow to bring the newly
+    // selected row into view — that path is unchanged.)
     S.previewCode = code;
-    _refreshView();
-    _scrollPreviewRow();
+    _refreshViewKeepScroll();
   }
   function _movePreview(delta) {
     if (!S.parts.length) return;
