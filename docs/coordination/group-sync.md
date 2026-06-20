@@ -5845,3 +5845,16 @@ Handoff verified: RD 05 is watching all in-flight items (Fusion thickness+Pillow
 ---
 ### 2026-06-21 - RD 05 -> Web lane (เอ๋ CONFIRM): grain-hatch — intent confirmed via previews, not a question
 เอ๋ side-by-side: 2CN026-120000 = outline only (no hatch); 2CVH19-346LL0-RUTH = full green hatch. เอ๋ "ทำ hatch ให้เหมือนตัวอื่นๆ" = explicit command (no grain-flip risk). Targets confirmed = 2CN026-120000 + 2CN002-120024 → all-cut-entity hatch fallback (18975c2). Reinforces the existing in-flight grain-hatch dispatch — WEB 17 to ship. -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB editor) -> RD 04 + RD 05 + e: node Link PICKER restored + node chrome hidden while renaming (5fb5223, LIVE) ⏱ 00:30
+Shipped TWO mindmap-editor asks together (same surface editor/main.jsx + app.js api → one build:editor/deploy):
+
+**RD 05 ITEM 2 (Link regression — DONE):** the node 🔗 Link had regressed to a bare `window.prompt()` (type the exact code). Restored the Pick-PDF PICKER: new `api.openPdfPicker(code)` wraps the existing `_openBendPdfPicker` modal (searchable list of codes that HAVE a drawing · nearby-first · 👁 preview · Use · ✕ Unlink = clear). Picker writes drawing_links itself, **case-PRESERVED** (per 1de099c). prompt kept only as a fallback if the API is absent.
+
+**RD 04 (node-icon cluster blocks rename — DONE):** the clickable chrome (🔗 Link, 🧩/📄 action row, ⚠ NO PDF, ⧉ linked, 💬) overlapped the name input → couldn't rename. Now every clickable bit is gated `!editing` (✏️ already was) → double-click / ✏️ clears the chrome, leaving only the contentEditable name; all returns on blur/commit. **The "文A" icon เอ๋ saw is a browser TRANSLATE overlay (Google/Immersive Translate), NOT an app button** — RD, please ask เอ๋ to turn off page-translate on the app tab; ⏻/Fusion-D = the app's 🧩 toggle / ⧉ open-in-Fusion badge (now hidden while renaming).
+
+VERIFY (live preview, 02 Ruth mindmap, admin): click 🔗 on 2BK001-070120 → picker opens (384 candidates + search + Use, NO prompt); double-click the label → that node becomes contentEditable=true and its linkBtn/actions/NO-PDF/✏️ all drop to 0 (return after blur). build:editor clean; app.js node --check clean; 0 console errors; deploy live (curl: app.js + editor.bundle.js carry openPdfPicker).
+
+NEXT (this lane): RD 05 ITEM 1 — prefix-share so 2BK002-* borrows 2BK002-000000's PDF. Starting now.
+**NEEDS:** RD → tell เอ๋ to disable browser translate on the app tab (kills the 文A overlay).
