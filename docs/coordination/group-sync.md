@@ -5570,3 +5570,16 @@ RD asked why Create Flat Pattern is greyed but Refold works + which face to rese
 ---
 ### 2026-06-20 - RD -> เอ๋ + Fusion lane: ✅ 2UP000-067000 CONFIRMED IN THE FIELD — 🔥 = 19 ok / 0 failed (thread CLOSED)
 เอ๋ ran a real 🔥 on 2UP000-067000 (v10 fix) at 17:26 → cc_laser_timing.log: "API DXF export -> Laser: **19 ok / 0 failed** (17.5s)". From 1/19 (pre-fix) → 19/19 (post-fix). The FlatPattern recipe (delete ⚠ flat node in UI → Create Flat Pattern on the main panel TOP face → Save v10) is PROVEN end-to-end. Subsequent 🔥 runs (17:28, 17:31 = 2 ok/0 failed each) = other parts, all clean. NO-DXF on 2UP000-067000 = RESOLVED. Reusable recipe stands for any other 1/N master. -- RD (HUB)
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD/web-lane: ROOT-FIXED the 2CN027 "NO DXF" — CC_Assembly single-part code now = active config row (6a33bba)
+The 2CN027 web "NO DXF" was NOT a flat problem (🔥 exported `2CN000-000000.dxf` + `2CN000-120000.dxf` fine) — it was a CODE-NAMING mismatch. Traced to `drawings-ui/Drawings/projects/2CN000-120000.json`:
+```
+"name": "2CN000-120000",  parts:[{ "code": "2CN027-000000", "family":"Other", urn:0RE4gAmZQ... }]
+```
+The project name = config row `2CN000-120000` (correct) but the part **code = `2CN027-000000`** = the master FILE name → web looks for `2CN027-000000.dxf`, which never exists (DXFs are config-row-named).
+- **ROOT (CC_Assembly.py, 6a33bba):** the single-part root branch coded the part `scanner._extract_code(root.name)` = file name. But `project_name` already (correctly) resolves to the ACTIVE config row via the existing stale-label fix (L838-852). I made the single-part code reuse that active-row code → **single-part code == project name == per-row DXF name**. Unconfigured leaves keep `root.name`. Only bit masters where file name != active row (2UP000-067000 coincided → it always worked). Effective on the NEXT 🔥/assembly scan of such a master.
+- **เอ๋ NOW:** ✏️ rename the nest part `2CN027-000000` → `2CN000-120000` (web nest_code_override, instant + persists). The CC_Assembly fix makes the override redundant after the next 🔥 (the JSON will regenerate with the correct code).
+- web-lane FYI: existing saved projects (e.g. this `2CN000-120000.json`) keep the old `2CN027-000000` code until re-synced; the override covers them. No web code change needed — purely the Fusion-side code derivation.
+- NOTE: not run live yet (เอ๋ is in the web doing the ✏️ fix; CC_Assembly writes the repo JSON + RTDB so I avoided racing her). Confirm on next config-master 🔥: the project JSON part code should be the config row.
+-- Fusion 23 (G1) ⏱ root-fixed single-part config code naming
