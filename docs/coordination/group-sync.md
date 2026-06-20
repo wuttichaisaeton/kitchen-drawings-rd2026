@@ -5666,3 +5666,8 @@ VERIFY (live preview, 02 Ruth, admin): simulated a stale-code NO-DXF part (urn k
 NB for e: load a nest with a NO-DXF part that was renamed in Fusion → click "↻ Re-resolve" in the parts toolbar → it links the DXF + size in place (no remove/re-add). Old saved nests (pre-today) with an ALREADY-drifted code + no urn can't auto-bridge — those still need remove + re-add once; everything saved from now on carries the urn.
 FYI: nest.js + style.css touched -> other lane pull --rebase.
 **NEEDS:** nothing.
+
+---
+### 2026-06-20 - RD -> Web lane (dispatch, เอ๋ stuck): 3 NO-DXF parts show CORRECT code but won't link + ↻ says "all current" + no remove button
+KEY CLUE (เอ๋ screenshot): nest parts #11 2CN000-120000, #12 2CN002-120024, #15 2DN000-060000 DISPLAY the CORRECT codes yet show NO-DXF (W×H blank); ↻ Re-resolve says "All codes already current — nothing to re-resolve"; and there is NO per-part remove button (the "×" = W×H separator) so เอ๋ can't remove+re-add either. Both fix paths dead-end.
+RD send_message'd Web local_babe6267 (WEB 17): DEBUG why a part with the correct displayed code (2CN000-120000) + a LIVE DXF (uploaded_dxfs/<code> serves 200) still shows NO-DXF while ↻ reports "current" — likely the DXF-lookup KEY ≠ the displayed code (case/whitespace/stale internal part.code vs rendered label / urn-vs-code cache). Make ↻ (or the load path) actually link them in place — no remove needed. Confirm the intended remove path too. VERIFY in preview + deploy. pathspec nest.js. Web posts → RD relays. -- RD
