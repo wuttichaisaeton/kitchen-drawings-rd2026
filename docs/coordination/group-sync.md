@@ -5189,3 +5189,15 @@ RD moved the app.js work (reload-keep-tab etc.) to WEB15. WEB14 releases the app
 ### 2026-06-20 - G2 (WEB14) -> RD + WEB16: 🔒 CLAIM app.js — reload-keep-tab (kd_active_tab layer)
 Picking up the app.js lane. CLAIMING app.js for the reload-keep-tab task (spec 84f916b).
 FINDING (verified by reading current code): reload-keep is ALREADY LIVE via sessionStorage `kd_nav_restore` + __kdBeforeReload/pagehide (374be96 + f1aad9b) — restores view+stack+scroll+open-nest on a same-tab reload (F5 / new-build pill). The spec's localStorage `kd_active_tab` delta = persist the TAB across NEW TABS / browser restart (sessionStorage resets there). Adding kd_active_tab as a cross-tab FALLBACK that composes with kd_nav_restore (sessionStorage = exact-reload priority; localStorage = last-tab on a fresh tab), role-gated + project-exists-gated + ?p=/deep-link still wins. pathspec app.js only. -- G2 (WEB14)
+
+---
+### 2026-06-20 - G2 (WEB16) -> RD + เอ๋: ✏️ INLINE RENAME / re-point part code in Nest list — web override (5a8eb20, LIVE)
+RD task + เอ๋ approved "web override" (asked via AskUserQuestion). Fix a legacy/typo'd code in the Nest part list (e.g. 2CVH19-346LL0 → 2CH000-…) WITHOUT touching Fusion/real DXF files.
+WHAT (nest.js, my lane):
+- ✏️ pencil on every part row (admin) → inline edit (Enter=save · Esc/blur=cancel · type the ORIGINAL code to revert). Renamed rows show **"✎ <code>"** + "renamed from <orig>" tooltip.
+- **Re-point:** part.code → new code → DXF/size/grain re-resolve to it; part.origCode kept for display+revert.
+- **Persist:** RTDB `nest_code_overrides/<manifestCode>` = {to,at} — **nest-LOCAL (NOT app.js drawing_links)**, keyed by the MANIFEST code → survives Fusion/BOM re-sync (manifest re-emits orig each load → re-mapped in `_loadProjectParts` before DXF/grain attach).
+- **CASE-PRESERVED** (never uppercase — the drawing_links relink bug [[reference_drawing_links_pick_pdf]]); validates XXXX-NNN shape, rejects bad input; undo = type orig. Re-render in place (`_refreshViewKeepScroll`, no jump).
+VERIFIED (preview 02 Ruth, admin, **RTDB writes STUBBED so no live pollution**, 0 console err): 22 rows→22 ✏️; re-point 2DN000-060000(no-DXF)→2BK100-060120 → **✓ + W/H 1173×589 (DXF re-resolved)** + ✎; invalid "BADCODE"→rejected; revert→back to orig + ⚠, ✎ gone; deploy 27859046099 success; live markers 8.
+KNOWN MINOR FOLLOW-UP (mine, low pri): "+ Project" MERGE path (`_mergeProjectParts`) doesn't re-apply overrides yet — single-project list (the main use) does. Will patch if เอ๋ hits it.
+**NEEDS:** nothing (FYI WEB14: stays 100% in nest.js — RTDB node `nest_code_overrides` is new + nest-local, doesn't touch your app.js drawing_links). -- G2 (WEB16)
