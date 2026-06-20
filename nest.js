@@ -581,36 +581,45 @@
   // opts.directUrl = fetch that exact URL (no-store) instead of the jsdelivr
   // mirror — used right after a manual ⚠ drop-upload: raw.githubusercontent
   // serves the just-committed file immediately, while jsdelivr@main lags ~1min.
+  // opts.text = parse THESE bytes directly (the File we just uploaded) — no
+  // fetch at all, so no CDN lag/lie: raw can serve the OLD cached file for
+  // minutes after a REPLACE, which makes a fresh drop look "still broken"
+  // (WEB16 2026-06-20 — the size/view we show must be EXACTLY what landed).
   async function _loadOneDxf(p, opts) {
-    if (!p.dxfUrl && !(opts && opts.directUrl)) {
+    if (!(opts && typeof opts.text === 'string') && !p.dxfUrl && !(opts && opts.directUrl)) {
       p.dxfError = 'No DXF uploaded yet';
       return;
     }
     try {
-      // Cache-bust by CONTENT VERSION: jsdelivr serves multi-hour max-age, so
-      // a plain (or force-) cached fetch kept showing the PRE-fix bytes after
-      // a re-export (เอ๋ 2026-06-10 'เหมือนเดิม' — DSV1 despike invisible).
-      // content_md5 keys the browser cache per content; else uploaded_at; else Date.now().
-      const ver = (p.dxfMeta && (p.dxfMeta.content_md5 || p.dxfMeta.uploaded_at)) || Date.now();
-      let fetchUrl;
-      if (opts && opts.directUrl) {
-        fetchUrl = opts.directUrl + (opts.directUrl.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(ver);
+      let text;
+      if (opts && typeof opts.text === 'string') {
+        text = opts.text;
       } else {
-        fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
-        // COMMIT-PINNED when the uploader stamped one: @<sha> jsdelivr URLs
-        // are immutable — zero CDN staleness, no purging needed.
-        if (p.dxfMeta && p.dxfMeta.commit) {
-          fetchUrl = fetchUrl.replace('@main/', '@' + p.dxfMeta.commit + '/');
+        // Cache-bust by CONTENT VERSION: jsdelivr serves multi-hour max-age, so
+        // a plain (or force-) cached fetch kept showing the PRE-fix bytes after
+        // a re-export (เอ๋ 2026-06-10 'เหมือนเดิม' — DSV1 despike invisible).
+        // content_md5 keys the browser cache per content; else uploaded_at; else Date.now().
+        const ver = (p.dxfMeta && (p.dxfMeta.content_md5 || p.dxfMeta.uploaded_at)) || Date.now();
+        let fetchUrl;
+        if (opts && opts.directUrl) {
+          fetchUrl = opts.directUrl + (opts.directUrl.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(ver);
+        } else {
+          fetchUrl = _toJsdelivrUrl(p.dxfUrl) + '?v=' + encodeURIComponent(ver);
+          // COMMIT-PINNED when the uploader stamped one: @<sha> jsdelivr URLs
+          // are immutable — zero CDN staleness, no purging needed.
+          if (p.dxfMeta && p.dxfMeta.commit) {
+            fetchUrl = fetchUrl.replace('@main/', '@' + p.dxfMeta.commit + '/');
+          }
         }
+        // Abort a stalled fetch after 15s so one bad part can't hang Promise.all.
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 15000);
+        let resp;
+        try { resp = await fetch(fetchUrl, { cache: (opts && opts.directUrl) ? 'no-store' : 'force-cache', signal: ctrl.signal }); }
+        finally { clearTimeout(timer); }
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        text = await resp.text();
       }
-      // Abort a stalled fetch after 15s so one bad part can't hang Promise.all.
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 15000);
-      let resp;
-      try { resp = await fetch(fetchUrl, { cache: (opts && opts.directUrl) ? 'no-store' : 'force-cache', signal: ctrl.signal }); }
-      finally { clearTimeout(timer); }
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const text = await resp.text();
       // Size guard: a real per-part DXF is tens of KB (the uploader caps at 1 MB).
       // A multi-MB file is broken/bloated — skip the SYNCHRONOUS (un-abortable)
       // parse so it can't freeze the UI; surface a clear error instead.
@@ -4866,21 +4875,44 @@
           _fBtn.textContent = '⏫'; _fBtn.title = 'uploading…';
           const r = await window.kdUploadPartDxf(proj, part.code, files[0]);
           if (!r || !r.ok) { alert('Upload failed for ' + part.code + ':\n' + ((r && r.error) || 'unknown error')); _fBtn.textContent = _txt; _fBtn.title = _ttl; return; }
-          // Parse the just-uploaded DXF from the RAW url (immediate, jsdelivr lags).
+          // Parse the DROPPED BYTES directly (opts.text) — NOT a raw re-fetch.
+          // After a REPLACE, raw.githubusercontent can serve the OLD cached file
+          // for minutes, so re-fetching would show the stale size/view and the
+          // drop would look "still broken" even when the upload succeeded
+          // (root cause of RD's 2CN000-120000 mis-read 2026-06-20). The File is
+          // exactly what we committed → parse it, zero CDN ambiguity.
           part.dxfUrl = r.url; part.dxfMeta = r.metadata || null; part.dxfError = null; part.dxfLoaded = false;
           part.thickness = (r.metadata && r.metadata.thickness_mm) || part.thickness || 0;
-          try { await _ensureDxfLib(); await _loadOneDxf(part, { directUrl: r.url }); } catch (_) {}
+          let _bytes = null;
+          try { _bytes = await files[0].text(); } catch (_) {}
+          try { await _ensureDxfLib(); await _loadOneDxf(part, _bytes != null ? { text: _bytes } : { directUrl: r.url }); } catch (_) {}
           // Update THIS row in place — no full re-render → the page stays exactly put.
           if (part.dxfLoaded) {
-            _fBtn.textContent = '✓';
-            _fBtn.classList.add('kdnest-part-fusion-ok');
-            _fBtn.title = 'DXF loaded — click to open this part in Fusion';
             const wEl = row.querySelector('.kdnest-part-w'), hEl = row.querySelector('.kdnest-part-h');
             if (wEl) wEl.value = part.w || ''; if (hEl) hEl.value = part.h || '';
             const vEl = row.querySelector('.kdnest-part-view'); if (vEl) vEl.disabled = false;
-            row.classList.remove('kdnest-part-review');
+            // HONEST state: don't flash a clean ✓ for a file the review logic still
+            // flags (degenerate / gross size-vs-code) OR that's obviously BLOATED
+            // (a clean per-part DXF is tens of KB; 150 KB+ = a faceted, non-true-
+            // vector export → re-export clean per the vector-only rule). เอ๋ saw
+            // ✓ on a 197 KB faceted 2CN000-120000 and thought it was fixed — it
+            // wasn't (WEB16 2026-06-20). Show ⚠-review so the file's state is true.
+            const reasons = _reviewReasons(part);
+            const kb = files[0].size ? Math.round(files[0].size / 1024) : 0;
+            if (kb >= 150) reasons.push('bloated ' + kb + ' KB — re-export clean vector');
+            if (reasons.length) {
+              _fBtn.textContent = '⚠';
+              _fBtn.classList.remove('kdnest-part-fusion-ok');
+              _fBtn.title = 'DXF loaded but needs review: ' + reasons.join('; ') + ' — click to open this part in Fusion';
+              row.classList.add('kdnest-part-review');
+            } else {
+              _fBtn.textContent = '✓';
+              _fBtn.classList.add('kdnest-part-fusion-ok');
+              _fBtn.title = 'DXF loaded — click to open this part in Fusion';
+              row.classList.remove('kdnest-part-review');
+            }
           } else {
-            // uploaded but the parse failed (CDN lag etc.) — it's in uploaded_dxfs now;
+            // uploaded but the parse failed — it's in uploaded_dxfs now;
             // reopening the nest will load it. Restore the ⚠.
             _fBtn.textContent = '⚠'; _fBtn.title = (part.dxfError || 'DXF error') + ' — uploaded; reopen the nest to load it';
           }
