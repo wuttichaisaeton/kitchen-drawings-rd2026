@@ -5194,6 +5194,7 @@ function render() {
   // view — every render either reveals or hides it based on stack depth.
   _updateHeaderBack();
   _subscribeBendSim();   // keep _bendSimCache live so 🔧 bend chips show in the library [เอ๋]
+  _saveActiveTab();      // persist the live tab+drill (kd_active_tab) for a new-tab/restart reopen
   if (stack.length === 0) {
     if (view === 'projects') return renderProjectsHome();
     if (view === 'nest')     return renderNestHome();
@@ -12934,6 +12935,10 @@ async function init() {
     // so reopening the tab much later still starts clean; a now-hidden tab or a
     // deleted project is dropped.
     let _navRestored = false, _restoreScrollY = 0, _restoreNestProject = null;
+    // Capture kd_active_tab BEFORE the first render() — render() calls
+    // _saveActiveTab() which would otherwise overwrite it with the default view.
+    let _savedActiveTab = null;
+    try { _savedActiveTab = JSON.parse(localStorage.getItem('kd_active_tab') || 'null'); } catch (e) {}
     try {
       const rawR = sessionStorage.getItem('kd_nav_restore');
       if (rawR) {
@@ -12970,15 +12975,43 @@ async function init() {
         else { let _t = 0; const _iv = setInterval(() => { if ((window.kdNest && window.kdNest.openProject) || ++_t > 50) { clearInterval(_iv); _reopenNest(); } }, 100); }
       }
     } else {
-      // Deep-link from a merged-PDF link / shared URL — only when NOT restoring a
-      // reload, so a stale #code hash can't override the saved view.
-      _applyDeepLinkFromHash();
-      // ?p=<projectKey> auto-navigate (admin shares a link straight into a project).
-      const initialProject = window.__kdInitialProject;
-      if (initialProject && manifest.projects && manifest.projects[initialProject]) {
-        stack.push({ kind: 'project', name: initialProject });
-        window.__kdInitialProject = null;
-        render();
+      // No exact same-tab reload state (sessionStorage). Try the persisted active
+      // TAB (localStorage kd_active_tab) so a NEW tab / browser restart reopens the
+      // tab เอ๋ was on (spec 84f916b). An explicit ?p= / #code deep-link is an
+      // intentional entry point and still wins; role-gated + missing-project drilled
+      // entries dropped.
+      let _tabRestored = false;
+      if (!(/[#&]code=/.test(location.hash) || window.__kdInitialProject)) {
+        try {
+          const at = _savedActiveTab;   // captured before render() clobbered it
+          if (at && at.view && at.view !== view
+              && (!_TAB_IDS[at.view] || _visibleTabsForRole()[at.view])) {
+            view = at.view;
+            document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+            stack = Array.isArray(at.stack)
+              ? at.stack.filter(n => n && (n.kind !== 'project' || (manifest.projects && manifest.projects[n.name])))
+              : [];
+            render();
+            if (at.view === 'nest' && at.nestProject && manifest.projects && manifest.projects[at.nestProject]) {
+              const _reopen = () => { try { if (window.kdNest && window.kdNest.openProject) window.kdNest.openProject(at.nestProject); } catch (e) {} };
+              if (window.kdNest && window.kdNest.openProject) _reopen();
+              else { let _t = 0; const _iv = setInterval(() => { if ((window.kdNest && window.kdNest.openProject) || ++_t > 50) { clearInterval(_iv); _reopen(); } }, 100); }
+            }
+            _tabRestored = true;
+          }
+        } catch (e) {}
+      }
+      if (!_tabRestored) {
+        // Deep-link from a merged-PDF link / shared URL — only when NOT restoring a
+        // reload/tab, so a stale #code hash can't override the saved view.
+        _applyDeepLinkFromHash();
+        // ?p=<projectKey> auto-navigate (admin shares a link straight into a project).
+        const initialProject = window.__kdInitialProject;
+        if (initialProject && manifest.projects && manifest.projects[initialProject]) {
+          stack.push({ kind: 'project', name: initialProject });
+          window.__kdInitialProject = null;
+          render();
+        }
       }
     }
     window.addEventListener('hashchange', _applyDeepLinkFromHash);
@@ -13005,5 +13038,18 @@ function __kdBeforeReload() {
 }
 window.__kdBeforeReload = __kdBeforeReload;
 window.addEventListener('pagehide', __kdBeforeReload);
+
+// Persist the live tab + drill to localStorage `kd_active_tab` (เอ๋ spec 84f916b)
+// so a brand-NEW tab / a browser restart reopens the tab เอ๋ was on — the
+// sessionStorage `kd_nav_restore` path only survives a same-tab reload. Called
+// from render() so it always mirrors the current nav; restored on init only when
+// there's no exact-reload state and no explicit ?p=/deep-link entry.
+function _saveActiveTab() {
+  try {
+    let nestProject = null;
+    try { nestProject = (window.kdNest && typeof window.kdNest.currentProject === 'function') ? window.kdNest.currentProject() : null; } catch (e) {}
+    localStorage.setItem('kd_active_tab', JSON.stringify({ view, stack, nestProject, t: Date.now() }));
+  } catch (e) {}
+}
 
 init();
