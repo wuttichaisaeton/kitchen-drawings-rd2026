@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-17T17:25:03.738854
+CC_Assembly walk debug — 2026-06-21T06:08:37.632318
 Project: 2FNCL2-070000
 Total occurrences visited: 13
 CAM-ALPF tagged components: 0
@@ -9,10 +9,10 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 | SM  |     | ALPF             | 2DNCL2-070000 v1:1 (2DNCL2-070000 v1)
-    0 | SM  |     | ALPF             | 2SD0C1-120040 v3:1 (2SD0C1-120040 v3)
-    0 | SM  |     | ALPF             | 2SD0C1-120026 v4:1 (2SD0C1-120026 v4)
+    0 | SM  |     | ALPF             | 2SD0C1-120040 v5:1 (2SD0C1-120040 v5)
+    0 | SM  |     | ALPF             | 2SD0C1-120026 v6:1 (2SD0C1-120026 v6)
     0 | SM  |     | ALPF             | 2UPCN2-070000 v1:1 (2UPCN2-070000 v1)
-    0 | SM  |     | ALPF             | 2CF000-070000 v3:1 (2CF000-070000 v3)
+    0 | SM  |     | ALPF             | 2CF000-070000 v4:1 (2CF000-070000 v4)
     0 |     |     |                  | BK:1 (BK)
     1 | SM  |     | ALPF             | 2BK002-070000 v9:1 (2BK002-070000 v9)
     1 | SM  |     | ALPF             | 2BK002-070000 v9:2 (2BK002-070000 v9)
