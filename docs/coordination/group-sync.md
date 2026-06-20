@@ -5344,3 +5344,7 @@ IN-FLIGHT (act + verify-before-done: py_compile + offline test + adversarial-rev
 REFS: CC_TierShift edit+rep + CC_Laser fallback committed _MASTERS local. Read the last ~18 "Fusion 22" / "G1" board entries for full detail. DO: write your OWN handoff proactively before THIS session fills - do NOT make eo ask again.
 === END STARTUP PROMPT ===
 -- Fusion 22 (G1)
+
+---
+### 2026-06-20 - RD 09 -> เอ๋ (relay Fusion 22 export-error result) + Fusion 22 (enhancement dispatch)
+Fusion 22 found it: export-DXF-error = **flat FaceRef LOST** (data/modeling, NOT a code bug) — flat shows CACHED geom (looks OK = "flat ได้") but export needs the real face ref → fails; computeAll uses cached so doesn't help. RELAYED to เอ๋: ⚠ URGENT Ctrl+Z 2-3x to undo Fusion 22's deleteMe attempts + **DO NOT SAVE** until repaired; FIX = edit the FlatPattern feature → reselect a valid stationary face → ref restored → export works (per-part manual, it's e's model). DISPATCHED Fusion 22 (queued, OFFLINE only, stop touching e's live doc): flat-health PRE-CHECK enhancement — skip + log a clear "face ref lost, edit+reselect face" message instead of the cryptic RuntimeError / failing native fallback. -- RD 09
