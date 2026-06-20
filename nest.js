@@ -611,6 +611,10 @@
       finally { clearTimeout(timer); }
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
       const text = await resp.text();
+      // Size guard: a real per-part DXF is tens of KB (the uploader caps at 1 MB).
+      // A multi-MB file is broken/bloated — skip the SYNCHRONOUS (un-abortable)
+      // parse so it can't freeze the UI; surface a clear error instead.
+      if (text.length > 1500000) throw new Error('DXF too large (' + Math.round(text.length / 1024) + ' KB) — re-export a clean one');
       const parsed = window.dxf.parseString(text);
       const ex = _extractPolygons(parsed);
       p.polys = { outer: ex.outer, strokes: ex.strokes || [], holes: ex.holes, entities: ex.entities || [] };
@@ -627,10 +631,18 @@
     }
   }
 
-  // Returns when ALL parts have either {bbox+polys} or {dxfError}.
+  // Returns when ALL parts have either {bbox+polys} or {dxfError}. Re-renders the
+  // list as each DXF SETTLES (debounced) so a slow/failed part can't hold back the
+  // ✓ on the others — and its own ⚠↻ shows the moment it times out (RD isolate).
   async function _loadAllDxfs() {
     await _ensureDxfLib();
-    await Promise.all(S.parts.map(p => _loadOneDxf(p)));
+    let rerenderTO = null;
+    const onSettle = () => {
+      if (S.closing || !S.rootEl) return;
+      clearTimeout(rerenderTO);
+      rerenderTO = setTimeout(() => { if (!S.closing && S.rootEl) _refreshViewKeepScroll(); }, 200);
+    };
+    await Promise.all(S.parts.map(p => _loadOneDxf(p).then(onSettle, onSettle)));
   }
 
   // ── Load parts list ────────────────────────────────────────────────
@@ -3132,8 +3144,11 @@
       ctx.textBaseline = 'middle';
       ctx.font = `${14 * dpr}px "Flux Architect", monospace`;
       ctx.fillStyle = MUTED;
-      ctx.fillText(part && part.dxfError ? ('DXF error: ' + part.dxfError)
-                   : 'DXF not loaded yet…', cw / 2, ch / 2);
+      ctx.fillText(
+        !part || !part.dxfError ? 'Loading DXF…'
+          : part.dxfError === 'No DXF uploaded yet' ? '⚠ No DXF — drop a .dxf or open in Fusion'
+          : '⚠ DXF failed to load — click ↻ retry',
+        cw / 2, ch / 2);
       return;
     }
     const [minX, minY, maxX, maxY] = bbox;
@@ -4152,6 +4167,16 @@
   // ════════════════════════════════════════════════════════════════════
   //  UI rendering
   // ════════════════════════════════════════════════════════════════════
+  // Re-render but keep the part-list scroll where it is (เอ๋ no-jump) — used by
+  // the per-DXF settle re-render + the ↻ retry so the page doesn't move.
+  function _refreshViewKeepScroll() {
+    const sc = S.rootEl && S.rootEl.querySelector('.kdnest-parts');
+    const top = sc ? sc.scrollTop : 0;
+    _refreshView();
+    const sc2 = S.rootEl && S.rootEl.querySelector('.kdnest-parts');
+    if (sc2) sc2.scrollTop = top;
+  }
+
   function _refreshView() {
     if (!S.rootEl) return;
     S.rootEl.innerHTML = _viewHtml();
@@ -4371,18 +4396,26 @@
     }
 
     const partsRows = visParts.map((p, i) => {
+      // Distinguish "no DXF yet" (drop-to-upload affordance) from a DXF that
+      // FAILED to load/parse (timeout / HTTP / too large / bad geometry) — the
+      // latter gets a clear RETRY button instead of a silent ⋯ (เอ๋ 2026-06-20:
+      // "2CN000-120000 ค้าง DXF NOT LOADED YET" — safety net, RD board).
+      const _noDxf = p.dxfError === 'No DXF uploaded yet';
+      const _loadErr = !!p.dxfError && !_noDxf;
       const status = p.manual
         ? `<button class="kdnest-part-del" title="Remove this manual part">✕</button>`
         : p.dxfLoaded
           // ✓ also opens the part in Fusion (เอ๋ 2026-06-10 "เครื่องหมายถูกก็ทำให้
           // เปิด Fusion ได้ด้วย") — same bridge flow as the ⚠ button below.
           ? `<button class="kdnest-part-fusion kdnest-part-fusion-ok" title="DXF loaded — click to open this part in Fusion">✓</button>`
-          : p.dxfError
-            // No usable DXF → the ⚠ is a BUTTON that opens this part in Fusion
-            // via the localhost bridge (same flow as the mindmap NO-PDF badge)
-            // so เอ๋ can jump straight in, fix/rename, and re-run Laser.
-            ? `<button class="kdnest-part-fusion" title="${_esc(p.dxfError)} — click to open this part in Fusion">⚠</button>`
-            : `<span class="kdnest-part-load" title="loading…">⋯</span>`;
+          : _loadErr
+            // DXF failed to load/parse → a clear RETRY button (not a silent hang).
+            // Dropping a fresh .dxf on the row also fixes it.
+            ? `<button class="kdnest-part-retry" title="${_esc('⚠ Couldn\'t load DXF: ' + p.dxfError)} — click to retry, or drop a fresh .dxf on this row">⚠↻</button>`
+            : _noDxf
+              // No DXF yet → ⚠ opens the part in Fusion (or drop a .dxf on the row).
+              ? `<button class="kdnest-part-fusion" title="No DXF — click to open in Fusion, or drop a .dxf on this row">⚠</button>`
+              : `<span class="kdnest-part-load" title="loading DXF…">⋯</span>`;
       const g = grainGlyph(p.grain);
       const onSheetIdx = findSheetIdx(p.code);
       const viewDisabled = !p.dxfUrl;
@@ -4390,7 +4423,12 @@
       // DXF parts: W/H come from the parsed bbox — lock them so a stray edit
       // can't desync the size from the actual cut geometry. Manual rectangles
       // stay editable. (user 2026-05-30)
-      const whLock = p.manual ? '' : ' disabled title="size comes from the DXF — locked"';
+      // Size column: a failed/no-DXF part shows "—" (+ the reason in the tooltip),
+      // not an empty box (เอ๋ "size ว่าง" was ambiguous).
+      const whLock = p.manual ? '' : (_loadErr
+        ? ` disabled title="${_esc('size unknown — ' + p.dxfError)}"`
+        : ' disabled title="size comes from the DXF — locked"');
+      const _szPh = (_loadErr || _noDxf) ? '—' : '';
       const grainDir = _isGrainDirectional(p);
       const grainWarn = grainDir ? ' kdnest-grain-warn' : '';
       const rowGrainWarn = grainDir ? ' kdnest-part-grainwarn' : '';
@@ -4400,9 +4438,9 @@
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
           <span class="kdnest-part-code" title="${_esc(p.code)}${p.sources && Object.keys(p.sources).length > 1 ? _esc(' — ' + Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + ')) : ''}">${p.manual ? '▭ ' : ''}${_esc(_disp(p.code))}${p.sources && Object.keys(p.sources).length > 1 ? `<sup class="kdnest-part-srcs" title="${_esc(Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + '))}">${Object.keys(p.sources).length}P</sup>` : ''}</span>
-          <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="W"${whLock}>
+          <input type="number" class="kdnest-part-w" value="${p.w || ''}" min="0" step="1" placeholder="${_szPh || 'W'}"${whLock}>
           <span class="kdnest-x">×</span>
-          <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="H"${whLock}>
+          <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="${_szPh || 'H'}"${whLock}>
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
           <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set yet — pick H/V if it matters · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
@@ -4788,6 +4826,15 @@
         // fusionOnly: this button means "open in FUSION to fix" — never a PDF tab.
         route({ code: part.code, status: 'missing', urn: part.urn || null, drawing_urn: null, fusion_link: null }, { fusionOnly: true });
       });
+      // ↻ RETRY — re-attempt loading a DXF that failed (timeout / HTTP / too large /
+      // parse). The file's still in uploaded_dxfs; just re-fetch+parse it.
+      row.querySelector('.kdnest-part-retry')?.addEventListener('click', async () => {
+        const btn = row.querySelector('.kdnest-part-retry');
+        if (btn) { btn.textContent = '⏳'; btn.title = 'retrying…'; }
+        part.dxfError = null; part.dxfLoaded = false;
+        try { await _ensureDxfLib(); await _loadOneDxf(part); } catch (_) {}
+        _refreshViewKeepScroll();   // re-render (✓ or ⚠↻) keeping เอ๋'s scroll
+      });
       // ⚠ DROP-TO-UPLOAD (เอ๋ 2026-06-20): drag a .dxf onto a NO-DXF row → upload
       // this part's DXF directly (manual, alongside the Fusion-export pipeline) →
       // Drawings/dxf/<code>/<code>.dxf + uploaded_dxfs/<code> via app.js
@@ -4796,7 +4843,7 @@
       // success the row updates IN PLACE — NO _refreshView — so the page never
       // jumps (เอ๋ "อยู่หน้าเดิม ไม่กระโดด"); a global guard (app.js) stops a missed
       // drop from navigating the browser to the file.
-      const _fBtn = row.querySelector('.kdnest-part-fusion');
+      const _fBtn = row.querySelector('.kdnest-part-fusion, .kdnest-part-retry');
       if (_fBtn && part.dxfError && !part.dxfLoaded) {
         _fBtn.title += ' · or DROP a .dxf on this row to upload it';
         const _over = on => {
