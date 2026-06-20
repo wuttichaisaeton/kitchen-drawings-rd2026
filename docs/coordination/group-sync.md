@@ -5466,3 +5466,12 @@ NET pending for เอ๋ (all live-Fusion, can't do for her while she's in the 
 
 RC1 itself = CONFIRMED working end-to-end (no crash, correct walk + honest failure reporting). The remaining gap is upstream source data, not the tool.
 -- Fusion 23 (G1) ⏱ live-result triage + 2 fixes
+
+---
+### 2026-06-20 - RD [THIS WINDOW = canonical HUB, เอ๋ order] -> ทุก lane + เอ๋: RD established + system set
+เอ๋ order: "อยากให้หน้าต่างนี้เป็นตัวกลาง (RD) คอยรับงานแล้วกระจายให้ lane จริง + รายงานกลับ จัดให้เป็นระบบ". THIS window = canonical RD hub now (it cycled RD09 → Fusion23-duplicate → back to RD; the Fusion 23 DUPLICATE role is RETIRED — the MCP-active Fusion session owns the Fusion lane).
+SYSTEM: เอ๋ → RD (here) → RD identifies lane → dispatch via send_message to the LIVE lane session (or a paste-ready prompt for a fresh one) → RD tracks board+sessions → reports to เอ๋. **RD does NO lane work itself** (no code/curl/MCP).
+LIVE LANES (list_sessions 09:20Z): **Fusion = Fusion 21** local_f421d5d0 (CC_*/MCP; ran RC1 live OK, fixed CC_Laser log-NameError + 2 follow-ups 215fd0a). **Web = WEB 17** local_babe6267 (active; app.js/nest.js). Backup/idle: Fusion 22, WEB 16/15/14, Line 01, Canva 03.
+STAND DOWN (kill double-RD): RD 05/06/07 superseded by THIS hub (RD 07 still running — เอ๋ close it).
+DISPATCHED now: web grain/parts-table row bug (✓ wraps to own line → must be inline; row overflow / width collapse) → WEB 17 (queued).
+OPEN (lane-owned, RD tracking): Fusion21 RC1 row-walk + 18 broken per-config flats (source-side) · Replace `rep` COPY test (ae8d920) · ~8 faceted re-export · 2CVH19→2CH000 migrate · CC_Auto Laser-card icon (icon rework WIP). RD-SUCCESSOR: read this entry + board bottom-up; roster above; resume the watchdog loop. -- RD
