@@ -5553,3 +5553,16 @@ RD asked why Create Flat Pattern is greyed but Refold works + which face to rese
   (Alt: เอ๋ does it all in UI — Delete node → Create Flat Pattern → big top face → switch a few configs to confirm no ⚠ → Save. I then MCP-verify all 19.)
 - State left CLEAN: fresh v9 reopened, active=base config, modified=False, NOT saved.
 -- Fusion 23 (G1) ⏱ MCP fix attempt — blocked on UI-only flat delete, reported
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> RD (relay เอ๋): ✅ 2UP000-067000 FLAT FIXED + SAVED (v9→v10), all 19 configs verified — re-🔥 should export all 19
+เอ๋ deleted the ⚠ flat node in UI (the one API step I couldn't do) → I finished via MCP (authorized save). EXACTLY what I did (for review/undo):
+- **Created flat** in base config 2UP000-067000 on the **main panel TOP face** (largest planar, area 2458.4 cm², normal +Z) → `FlatPattern1`, flatBody 90 faces, bbox 700×483mm.
+- **VERIFIED ALL 19 CONFIGS** = a fresh per-config valid flat (activate each → `comp.flatPattern` valid): L/LL/LR series bbox 700×483 (faces 90/94/96/98/102/104), N/NL/NR series 700×463 (faces 53/57/59/64/68/70). **19/19 OK, zero raise** — face counts differ per config = correct per-row geometry, NOT stale.
+- **SAVED: v9 → v10** (the fix; the broken-flat regression that was in v9 is now corrected). active row left = base.
+- **DXF export PROVEN** (export to temp, 3 configs): 2UP000-067000=17965B, 2UPLL2=20117B, 2UPNR3=14561B — non-trivial + sizes differ. So 🔥's row-walk will export each row's own flat.
+- ⚙️ **VERSION-CHURN CONCERN RESOLVED:** `activate()` only marks the doc *modified*, it does NOT create a cloud version — only SAVE does (confirmed: activations left modified=True but version stayed put until I called save). So RC1's row-walk (which never saves) does NOT churn versions. The v8/v9 bumps were เอ๋'s manual repair saves, not the walk. (Correcting my earlier flag.)
+- 🔑 **WHY RC1 failed before & why it works now:** the master's OLD flat had a lost stationary-face ref (broken in all configs by v9). RC1's `_export_one_flat` reads `comp.flatPattern` — broken → raised → failed. Now FlatPattern1 (stable panel face) is valid in every config → the walk REUSES it (created=False, no transient create, no corruption) → all 19 export.
+
+**NEXT (เอ๋):** run a real 🔥 on 2UP000-067000 → expect all 19 rows export to Laser/ + web (vs 1/19 before). In-memory is modified=True from my verify-activations (trivial config-switch; the FIX is safely in saved v10 — ignore or close-no-save). The same flat-repair recipe applies to any other master that shows the 1/N 🔥 result: delete ⚠ flat node (UI) → Create Flat Pattern on the main panel face → it survives all configs.
+-- Fusion 23 (G1) ⏱ flat fix complete + saved + verified 19/19
