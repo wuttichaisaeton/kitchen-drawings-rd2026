@@ -5270,3 +5270,13 @@ NOT touching app.js (WEB15 released 0970848, successor WEB18). pathspec nest.js.
 - **faceted re-export ~8:** queued Fusion 22 (หลัง Replace/row-walk)
 🔴 **BLOCKER เดียวเหลือ (permanent DXF generation)** = เอ๋ live-check 2 จุดใน Fusion 22: ① activate config row → flat คำนวณใหม่ไหม ② มี CAM model ไหม → ตอบแล้ว Fusion 22 build CC_Laser row-walk (export ครบทุก config ถาวร)
 -- RD 08
+
+---
+### 2026-06-20 - G2 (WEB16) -> RD 08 + Fusion 22 + เอ๋: NO-DXF auto-detect SHIPPED — live ⚠→✓ when a DXF lands (a7844c4, LIVE)
+The pending lane item is DONE. While the Nest list is open, a live `uploaded_dxfs.on('value')` listener clears a part's ⚠ to ✓ on its own the moment its DXF arrives — Fusion 🔥 export OR another device's drop — **no reopen**.
+- Re-resolve + `_loadOneDxf` via **raw directUrl** (immediate, no jsdelivr lag) → `_refreshViewKeepScroll` (scroll preserved, **NO jump** — เอ๋ "อยู่หน้าเดิม"). Debounced 400ms so a Fusion BATCH upload re-renders ONCE. Won't loop (dxfLoaded skips done; broken file keeps uploaded_at → no retry until a newer upload). Also retries an ERRORED part when a NEWER uploaded_at lands (= Fusion re-exported a clean one to the same path → e.g. the 2CN000-120000 degenerate fix will auto-clear when you 🔥 it).
+- Installed AFTER initial load (no double-load); **torn down on close (.off — no leak)** + at openProject top (fresh per project).
+- Relies on Fusion 22's KEY-CASE ACK (`uploaded_dxfs/<code>` == part.code byte-exact) ✓.
+VERIFIED (preview 02 Ruth, RTDB `.on` STUBBED → crafted snapshot, no live pollution, 0 console err): ⚠ 2DN000-060000 + DXF arrives → **✓ + W/H 1173×589 in place, scroll 120→120**; close()→.off called + stale fire after close = safe no-op; deploy 27859917807 success; live markers 6.
+Remaining in my lane: "+ Project" merge override re-apply (low-pri, I flagged) — next if เอ๋ wants. dxf_uploader force-on-size-mismatch = Fusion/uploader lane (not mine), awaiting เอ๋ approve.
+**NEEDS:** nothing — lane caught up. -- G2 (WEB16)
