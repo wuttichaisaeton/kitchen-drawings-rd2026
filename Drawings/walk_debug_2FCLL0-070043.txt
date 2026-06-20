@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-20T18:50:47.063409
+CC_Assembly walk debug — 2026-06-20T18:53:29.774892
 Project: 2FCLL0-070043
 Total occurrences visited: 16
 CAM-ALPF tagged components: 0
@@ -23,4 +23,4 @@ depth | SM | CAM | material         | display_name (component)
     0 | SM  |     | ALPF             | 2UPLL0-070043 v11:1 (2UPLL0-070043 v11)
     0 | SM  |     | ALPF             | 2CFL00-070000 v2:1 (2CFL00-070000 v2)
     0 | SM  |     | ALPF             | 2CN026-120000 v3:1 (2CN026-120000 v3)
-    0 | SM  |     | ALPF             | 2CN002-120024 v14:1 (2CN002-120024 v14)
+    0 | SM  |     | ALPF             | 2CN002-120024 v15:1 (2CN002-120024 v15)

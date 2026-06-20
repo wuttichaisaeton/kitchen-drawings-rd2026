@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-20T11:50:47.074790+00:00",
+  "generated_at": "2026-06-20T11:53:29.785980+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4814,7 +4814,7 @@
     "2CN002-120024": {
       "family": "Other",
       "last_drawn_version": 15,
-      "fusion_version": 14,
+      "fusion_version": 15,
       "pdf": "2CN002-120000.pdf",
       "bends": 0,
       "material": "",
@@ -9167,7 +9167,7 @@
       "name": "2FCLL0-070043",
       "status": "active",
       "created_at": "2026-06-14T09:38:04.609709+00:00",
-      "updated_at": "2026-06-20T11:50:47.063733+00:00",
+      "updated_at": "2026-06-20T11:53:29.775314+00:00",
       "total_unique_parts": 9,
       "total_qty": 14,
       "parts": [
