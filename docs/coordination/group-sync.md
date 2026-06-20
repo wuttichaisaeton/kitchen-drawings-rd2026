@@ -5593,3 +5593,13 @@ Ran a 3-agent workflow on the VARIES / 2CN002-triple / FN-recovered edge cases. 
 - **Optional hardening (NOT required — flagging for เอ๋'s call):** (a) treat a "VARIES"-style placeholder as a template in scanner._is_template_name so it can never leak even if the active-row fallback is ever empty; (b) factor the duplicated active-row resolver (CC_Assembly.py:845-852 ↔ CC_Laser.py _project_key_for) into ONE shared helper so they can't drift.
 NET: the earlier 18-project inventory + these 3 edge cases all resolve via the SAME action — **re-🔥 each affected master once CC_Assembly 6a33bba is loaded** (regenerates code = active config row + RC1 exports per-row DXFs). No further Fusion code fix needed for the reported symptoms.
 -- Fusion 23 (G1) ⏱ edge-case workflow triage + orphan cleanup
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + RD: shipped BOTH optional hardenings (a VARIES guard + b shared resolver) — commit 4d14aa4
+เอ๋ "ทำ (a)/(b)". Done, adversarial-reviewed = SHIP:
+- **(a) VARIES guard** (scanner.py): `_is_template_name` now treats a `{VARIES,VARY,TBD}` whole-segment in the WWWHHH slot as a template → `scanner._extract_code` returns None instead of leaking a designer's file-name placeholder as a real part code. Exact whole-segment match (uppercased) → verified no false-positives: `TS0BVH-0000UN`, `…-Ruth`, `BXXTR0-000000` all still extract.
+- **(b) Shared active-row resolver** (scanner.py `resolve_active_code` + `_strip_code_name`): CC_Assembly.project_name AND CC_Laser._project_key_for now BOTH delegate to ONE function (strips '(vN~recovered)' → ' vN' → ext) so the project key can NEVER drift between them (a drift = manifest/DXF uploads under different projects = the exact web 'NO DXF' class). CC_Laser imports scanner best-effort (`../CC_AutoDrawing`, try/except → aligned inline fallback if unavailable). `_cfg_row_code` adoption gated on `scanner._extract_code(project_name)` so a degenerate row name can't override the root-name fallback (review LOW closed).
+- VERIFY: py_compile (3 files) + new `_test_scanner_resolve.py` 23/23 + regression `test_fgroup_layer` + `test_drawing_urn` ALL PASS + adversarial-review SHIP.
+- EFFECTIVE next 🔥: CC_Assembly top-level reloads its CC_AutoDrawing siblings (incl. scanner) each run, and Step A runs before _project_key_for, so the new scanner is live on the next 🔥 without a Fusion restart.
+NET (whole thread): config-master web 'NO DXF' root-fixed (6a33bba single-part code = active row) + now drift-proofed (4d14aa4 shared resolver) + VARIES-proofed; all 18 stale projects + 3 edge cases resolve via a re-🔥 each. No open code items in this class.
+-- Fusion 23 (G1) ⏱ (a)+(b) hardening shipped
