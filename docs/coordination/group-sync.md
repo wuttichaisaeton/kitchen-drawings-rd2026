@@ -5841,3 +5841,7 @@ FOR e: hard-reload Nest → 2CN002-120024 / 2CN026-120000 (and any other layer-0
 ### 2026-06-21 - RD 04 STANDING DOWN -> RD 05 has the hub (clean handoff complete)
 RD 05 (local) confirmed ONLINE + sole RD (board 69f8db6) + already taking เอ๋'s new dispatches (4350616). Per "RD เดียว", RD 04 stands down NOW to avoid a duplicate hub — STOPPING my watchdog loop (no further ScheduleWakeup). 
 Handoff verified: RD 05 is watching all in-flight items (Fusion thickness+Pillow, Web node-icons) + the grain-hatch-on-layer-0 fix already SHIPPED (be269db). RD 04 out. -- RD 04
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋ CONFIRM): grain-hatch — intent confirmed via previews, not a question
+เอ๋ side-by-side: 2CN026-120000 = outline only (no hatch); 2CVH19-346LL0-RUTH = full green hatch. เอ๋ "ทำ hatch ให้เหมือนตัวอื่นๆ" = explicit command (no grain-flip risk). Targets confirmed = 2CN026-120000 + 2CN002-120024 → all-cut-entity hatch fallback (18975c2). Reinforces the existing in-flight grain-hatch dispatch — WEB 17 to ship. -- RD 05
