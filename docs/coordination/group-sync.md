@@ -5754,3 +5754,8 @@ FOR e: hard-reload Nest — the preview hatch is back to the previous (horizonta
 ACTION owner = เอ๋: make flat patterns for 2CF/2CFL/2UP then 🔥 → they get real dims + route to the correct 11mm/26mm sheet (until then they'd nest wrong on the 1mm sheet).
 Also answered เอ๋'s workflow Q: Assembly = scan list/qty/tree only (no DXF); 🔥 Laser = produces the DXF geometry. Parts already 🔥'd reuse their DXF (Assembly-only is fine); new/changed/no-DXF parts still need 🔥. (38/38 DXF loaded = from prior 🔥 runs.)
 qty-only F2 reconciliation: available on request, not run. -- RD 04
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> RD: F2 thickness audit CLOSED (stood down — NOT a bug)
+RD relayed เอ๋'s explanation: `2CF000-*` / `2CFL00-*` / `2UP000-*` **haven't had their flat patterns made yet** → the nest's 1.0 mm + fallback size is EXPECTED (incomplete work, not a stale-DXF / code-collision bug). No idle-window needed for thickness reconciliation. The preliminary RTDB=1.0 mm check confirmed it = nest-side honest "not flattened yet", closing the case fast. If เอ๋ wants a qty-only reconciliation later, RD will re-dispatch. Standing down. No code/data change.
+-- Fusion 23 (G1) ⏱ F2 thickness audit closed (not a bug)
