@@ -3393,23 +3393,58 @@
   // Thin parallel lines showing which way the grain runs, so a worker can read
   // the grain at a glance on the Part preview, the Sheet, and a Remnant
   // thumbnail (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน').
-  // Grain hatch = ALWAYS HORIZONTAL lines (เอ๋ 2026-05-31 'Sheet จะเป็นเส้น
-  // แนวนอนเสมอ และใน Preview ก็จะเป็นเส้นแนวนอนเสมอ ให้คุณ Rotate Part เอา').
-  // The stock sheet's grain runs horizontally; a directional part is ROTATED to
-  // align with it (the preview already rotates V parts 90°, the packer rotates
-  // placements on the sheet). So the lines never change direction — only the
-  // PART turns. Drawn only for directional grain (H or V); MIXED/ANY = none.
+  // Grain hatch on the PART PREVIEW — direction MATCHES the row's grain glyph
+  // (เอ๋ 2026-06-20 'อยากเห็นทิศ grain บน preview ให้ตรงกับสัญลักษณ์'): V (│) =
+  // VERTICAL dashed lines, H (─) = HORIZONTAL, ANY (✱) = a faint both-way grid,
+  // ? = nothing (the corner badge shows it). Screen-space so it reads the same
+  // way the worker sees the row symbol. (Supersedes the 2026-05-31 'always
+  // horizontal, rotate the part' rule for the part preview — เอ๋ now wants the
+  // indicator to track the symbol, not the sheet. The placed-orientation
+  // rotation (grot) is untouched; _grainHatchSvg remnant thumbnails unchanged.)
   // Function declarations → hoisted, usable everywhere in this IIFE.
   function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr) {
     const g = String(grain || '').toUpperCase();
-    if (g !== 'H' && g !== 'V') return;   // directional only — MIXED/ANY draw nothing
-    const step = 8 * (dpr || 1);
+    const vertical = (g === 'V'), horizontal = (g === 'H'), any = (g === 'ANY' || g === '*');
+    if (!vertical && !horizontal && !any) return;   // ? / unknown → no hatch
+    const d = dpr || 1;
+    const step = 9 * d;
     ctx.save();
     ctx.strokeStyle = colour;
-    ctx.lineWidth = Math.max(0.5, 0.5 * (dpr || 1));
-    ctx.globalAlpha = 0.45;
+    ctx.lineWidth = Math.max(0.6, 0.7 * d);
+    ctx.globalAlpha = any ? 0.16 : 0.40;   // ANY = subtle grid, directional = clearer
+    ctx.setLineDash([5 * d, 4 * d]);
     ctx.beginPath();
-    for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }  // always horizontal
+    if (vertical || any) { for (let x = x0 + step; x < x1; x += step) { ctx.moveTo(x, y0); ctx.lineTo(x, y1); } }
+    if (horizontal || any) { for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); } }
+    ctx.stroke();
+    ctx.restore();
+  }
+  // Small corner badge (arrow + letter) so the grain direction is unmistakable
+  // even when the hatch is faint or the part is tiny. ↕ V / ↔ H / ↕↔ ANY / "?".
+  // Drawn UNCLIPPED in the top-left padding so it never obscures the cut paths.
+  function _grainBadgeCanvas(ctx, grain, dpr, colour, bg) {
+    const g = String(grain || '').toUpperCase();
+    const d = dpr || 1;
+    const label = g === 'V' ? 'V' : g === 'H' ? 'H' : (g === 'ANY' || g === '*') ? 'ANY' : '?';
+    const bx = 8 * d, by = 8 * d, bh = 22 * d, ipad = 6 * d, gap = 5 * d, aw = 16 * d;
+    ctx.save();
+    ctx.font = `${11 * d}px "Flux Architect", monospace`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    const tw = ctx.measureText(label).width;
+    const bw = ipad + aw + gap + tw + ipad;
+    // readable chip over the part
+    ctx.globalAlpha = 0.82; ctx.fillStyle = bg; ctx.fillRect(bx, by, bw, bh);
+    ctx.globalAlpha = 1; ctx.strokeStyle = colour; ctx.lineWidth = 1 * d; ctx.strokeRect(bx, by, bw, bh);
+    // double-headed direction arrow(s)
+    const cx = bx + ipad + aw / 2, cy = by + bh / 2, r = 7 * d, hd = 3 * d;
+    ctx.lineWidth = 1.7 * d; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    function vArr() { ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r); ctx.moveTo(cx - hd, cy - r + hd); ctx.lineTo(cx, cy - r); ctx.lineTo(cx + hd, cy - r + hd); ctx.moveTo(cx - hd, cy + r - hd); ctx.lineTo(cx, cy + r); ctx.lineTo(cx + hd, cy + r - hd); }
+    function hArr() { ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy); ctx.moveTo(cx - r + hd, cy - hd); ctx.lineTo(cx - r, cy); ctx.lineTo(cx - r + hd, cy + hd); ctx.moveTo(cx + r - hd, cy - hd); ctx.lineTo(cx + r, cy); ctx.lineTo(cx + r - hd, cy + hd); }
+    if (g === 'V') vArr();
+    else if (g === 'H') hArr();
+    else if (g === 'ANY' || g === '*') { vArr(); hArr(); }
+    // '?' → no arrow (the label already reads "?")
     ctx.stroke();
     ctx.restore();
   }
@@ -3522,10 +3557,11 @@
       trace(polys.outer, true);
       ctx.fillStyle = STEEL; ctx.fill();
       // Grain hatch — clipped to the silhouette so the lines read as grain on
-      // the metal. The preview is already rotated so V parts run vertically
-      // (grot=90), so screen-space H/V matches what the worker sees on the
-      // sheet. (เอ๋ 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน')
-      if (part.grain === 'H' || part.grain === 'V') {
+      // the metal. Direction MATCHES the row glyph (V=│ vertical, H=─ horizontal,
+      // ANY=✱ faint grid) so เอ๋ sees the grain run the same way the symbol shows.
+      // (เอ๋ 2026-06-20 'อยากเห็นทิศ grain บน preview'; supersedes the 2026-05-31
+      // 'always horizontal' rule for this view.)
+      if (part.grain === 'H' || part.grain === 'V' || part.grain === 'ANY' || part.grain === '*') {
         ctx.save(); trace(polys.outer, true); ctx.clip();
         _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr);
         ctx.restore();
@@ -3540,6 +3576,9 @@
       ctx.strokeStyle = colour + 'cc'; ctx.lineWidth = 1.0 * dpr;
       for (const hole of polys.holes) { if (hole.length >= 2) { trace(hole, true); ctx.stroke(); } }
     }
+    // Grain-direction badge (↕ V / ↔ H / ↕↔ ANY / "?") — corner chip, on top of
+    // everything but in the padding so it never covers the cut geometry.
+    if (part && part.grain) _grainBadgeCanvas(ctx, part.grain, dpr, INK, BG);
   }
 
   function _scrollPreviewRow() {
