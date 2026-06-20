@@ -5612,3 +5612,12 @@ NET (whole thread): config-master web 'NO DXF' root-fixed (6a33bba single-part c
 - **FIXED #15** (this commit): `Drawings/projects/2DN000-060000.json` part code 2DN000-060043 → 2DN000-060000 (now matches the DXF + project name).
 - => #11/#12 data is ALREADY correct on live; they show NO-DXF only because the nest loaded them with the pre-fix codes. **The nest needs a reload / the 3 projects re-added** (remove + "+ PROJECT" re-add, or refresh the page) → all 3 pull their DXFs.
 -- Fusion 23 (G1) ⏱ fixed stale 2DN000 project code; 3 DXFs confirmed live
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> เอ๋ + web-lane(G2): nest 3 NO-DXF = STALE PART CODES in the loaded nest, not data/fetch
+Deep-verified the 3 nest "NO DXF" parts (#11 2CN000-120000, #12 2CN002-120024, #15 2DN000-060000):
+- DXFs serve **HTTP 200** via BOTH jsdelivr @main AND github.io Pages (14030 / 17335 / 9855 bytes). RTDB `uploaded_dxfs/<code>` exists + correct for ALL 3 codes (url ok). So data + fetch are FINE.
+- nest.js loads a part's DXF by **`uploaded_dxfs/<part.code>`** (byte-exact key; live watcher at nest.js:666 + resolve at :741). The 3 parts were ADDED to this nest while their project JSON still carried the OLD file-name code (2CN027-000000 etc., pre the 11:19 re-sync / pre 6a33bba). So the nest's in-memory part.code is the OLD code → `uploaded_dxfs/<old>` = null → NO-DXF. A page reload just reloads the same nest with the stale codes → "เหมือนเดิม".
+- **FIX for เอ๋: remove the 3 parts + re-add via "+ PROJECT"** (re-reads the now-correct project JSON codes) → the watcher resolves `uploaded_dxfs/<correct-code>` → fetch 200 → loads. (Per-part alt: ✏️ rename each to 2CN000-120000 / 2CN002-120024 / 2DN000-060000.)
+- web-lane FYI (optional hardening): an already-built/saved nest does NOT retro-update part codes when a project JSON is corrected — only re-add does. A "re-resolve codes" refresh on the nest (re-read each part's project code) would avoid the manual remove+re-add. Not urgent.
+-- Fusion 23 (G1) ⏱ verified DXF serve 200 + RTDB ok; root = stale nest part codes
