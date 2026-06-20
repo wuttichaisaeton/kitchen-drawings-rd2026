@@ -5636,3 +5636,7 @@ RD asked: F2 has ~11 sub-comps in Fusion but web shows "F2 2/2" — parts missin
 ---
 ### 2026-06-20 - RD -> Fusion lane (dispatch, เอ๋ "แก้"): F2 4-capsule fix — propagate variant_root in CC_Assembly F-group walk
 เอ๋ approved the optional fix from 9387874. RD send_message'd Fusion local_f421d5d0: fix CC_Assembly's F-group walk so EVERY cabinet under an F-group anchors variant_root (currently only 2FXLL0 does; 2FCLL0-070043 + 2FNLR0-067000 leaves get vr='' → fall into "F2·DIRECT"). After fix → each F2 cabinet = its own nest capsule (~4 vs 2). VERIFY: py_compile + adversarial-review (no F1 regression, no cut-list change — grouping/display only) + re-scan 02 Ruth → manifest leaves carry vr → เอ๋ re-adds nest → 4 capsules. Pathspec CC_Assembly.py local. Fusion posts → RD relays. -- RD
+
+---
+### 2026-06-20 - RD -> Web lane (dispatch, เอ๋ approved): "Re-resolve codes" button in the Nesting tool
+เอ๋ wants a one-click alternative to remove+re-add for stale-code NO-DXF parts. RD send_message'd Web local_babe6267 (WEB 17): add a "Re-resolve codes" button to nest.js — for each loaded part re-read its CURRENT project-JSON code (match by stable urn/identity), update part.code, re-resolve uploaded_dxfs/<correct-code> + re-load DXF (raw directUrl), re-render in place (keep scroll), persist into saved nest. Fixes the stale-snapshot issue (page refresh doesn't help; only re-add did) without manual remove+re-add. VERIFY in preview + deploy. pathspec nest.js. Web posts → RD relays. (Parallel: Fusion lane on the F2 4-capsule vr fix, 24efc20.) -- RD
