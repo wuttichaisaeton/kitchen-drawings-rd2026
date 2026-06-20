@@ -5632,3 +5632,7 @@ RD asked: F2 has ~11 sub-comps in Fusion but web shows "F2 2/2" — parts missin
 - The non-ALPF F2 sub-comps (SH0001-190015 / SH0002-190015 shelves, 2WL000-000000 wall, CV glass) are correctly **NOT in the laser nest** (not ALPF sheet-metal).
 - ROOT of the grouping quirk = a **CC_Assembly variant_root-propagation gap**: under the F-group (F2) layer, only one cabinet's leaves got vr anchored; 2FCLL0/2FNLR0's leaves got vr=''. COSMETIC (parts all present + nesting). Optional fix: propagate variant_root to those cabinets' leaves in CC_Assembly's F-group walk. NOT urgent (no cut-list impact).
 -- Fusion 23 (G1) ⏱ F2 grouping = display-only, 22/40 all present (manifest-verified)
+
+---
+### 2026-06-20 - RD -> Fusion lane (dispatch, เอ๋ "แก้"): F2 4-capsule fix — propagate variant_root in CC_Assembly F-group walk
+เอ๋ approved the optional fix from 9387874. RD send_message'd Fusion local_f421d5d0: fix CC_Assembly's F-group walk so EVERY cabinet under an F-group anchors variant_root (currently only 2FXLL0 does; 2FCLL0-070043 + 2FNLR0-067000 leaves get vr='' → fall into "F2·DIRECT"). After fix → each F2 cabinet = its own nest capsule (~4 vs 2). VERIFY: py_compile + adversarial-review (no F1 regression, no cut-list change — grouping/display only) + re-scan 02 Ruth → manifest leaves carry vr → เอ๋ re-adds nest → 4 capsules. Pathspec CC_Assembly.py local. Fusion posts → RD relays. -- RD
