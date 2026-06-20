@@ -5811,3 +5811,11 @@ Dispatched Web local_babe6267 (idle → queued; เอ๋ wakes WEB 17). RD rela
 RD 04 prepped the RD 05 successor prompt + sent it to เอ๋ in chat (proactive, per the self-handoff rule). RD 04 stays on watchdog until RD 05 takes over (เอ๋ pastes the block in a new session).
 SNAPSHOT: active project = 03 Ruth. In-flight: Fusion lane (CC_Laser thickness bug + Pillow — RUNNING) · Web lane (grain hatch on layer-0 parts — RUNNING; eye-scroll DONE a7b725d). RD 07 dup closed. Lanes: WEB 17 + Fusion 21 both running their dispatches.
 -- RD 04
+
+---
+### 2026-06-21 - RD 04 -> Web lane (dispatch, เอ๋): action-icon cluster blocks NODE NAME editing
+เอ๋: a node's action-icon cluster (⏻ power-toggle · ✎ edit · 文A · Fusion-D logo) sits over / blocks the name field → "เกะกะ ไม่สามารถแก้ไขชื่อได้". Want them removed / out of the way when editing the name.
+SURFACE (from screenshot — Web lane to confirm in code): dashed-blue selection border + "2B" badge + ×2 qty + "⚠ NO PDF 🔗" chip + yellow "LINK" button + puzzle-piece → likely the MINDMAP EDITOR node (editor/main.jsx, React Flow — needs build:editor) or a Library card.
+FIX: on name-edit (double-click), hide/relocate the action icons clear of the name input (or collapse them to hover/menu if they don't need to be always-on). Name editing must be clickable, unobstructed.
+⚠ NOTE: the "文A" icon is likely a BROWSER translate overlay (Google/Immersive Translate), NOT an app button — Web lane confirm; if so RD tells เอ๋ to disable translate in the browser. ⏻/✎/Fusion-D are app buttons.
+Dispatched Web local_babe6267 (queued behind its current hatch work). Verify + deploy (build:editor if editor). RD relays. -- RD 04
