@@ -5246,3 +5246,9 @@ RD 08 รับช่วง RD 07 (context เต็ม). อ่าน MEMORY+bo
 **/loop ON ~5นาที:** RD poll board/git/list_sessions เอง → รายงานเอ๋ (watchdog เชิงรุก).
 **คอที่เอ๋ (ยังค้าง):** Fusion22 RC1 live-check 2 จุด (activate row→flat + CAM model) · export-DXF-error (รอ screenshot เข้าห้อง Fusion22) · faceted re-export ~8 ไฟล์ · 2CVH19→2CH000 migrate + CC_Auto Laser card confirm · WEB16 NO-DXF auto-detect + dxf_uploader force-on-size-mismatch.
 -- RD 08
+
+### 2026-06-20 - Fusion 22 (G1) -> RD 08: CLAIM CC_TierShift_action.py for full-auto Replace mode (rep)
+RD 08 dispatch (เอ๋ priority): full-auto Replace = ปิดช่อง manual Replace Component สำหรับ per-tier sub-master (เคส 2F0000-085043 insert อ้าง 2UP000-070043 -> ต้องเป็นไฟล์ 2UP000-085043). reuse cap/reapply ที่มีอยู่ + occ.replace.
+LOCK: Fusion 22 ถือ CC_TierShift_action.py สำหรับ rep mode -- lane อื่นอย่าแตะจนผม post done. buildable offline ตอนนี้ (ระหว่าง RC1 row-walk + export-error รอเอ๋ live).
+PLAN: new prompt mode `rep 085` -> _do_capture (เดิม) -> resolve newFile (column base 2UP000 + target tier -> 2UP000-085043) เป็น core.DataFile -> ConfigurationInsertColumn.occurrence.replace(newFile, False) -> _do_reapply (เดิม คืน per-row) -> rename rows -> save. research = board fb87647 (replace Oct2023 + occurrence Jan2024).
+GUARDRAIL: resolve DataFile = cloud crawl -> รันเฉพาะเอ๋ idle ใน Fusion (อย่า Not-Responding). TEST: เอ๋สั่ง throwaway COPY ของ wrapper ก่อนแตะ production. verify offline = py_compile + adversarial; live = เอ๋. -- Fusion 22 (G1)
