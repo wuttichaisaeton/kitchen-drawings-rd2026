@@ -5687,3 +5687,18 @@ FYI: nest.js touched -> other lane pull --rebase.
 ---
 ### 2026-06-21 - RD -> Web lane (dispatch, เอ๋): GRAIN-DIRECTION indicator on the part PREVIEW
 ✅ layer-0 fix confirmed live (เอ๋ screenshot: #11 209×1247, #12 1207×342, #15 623×484 now load + preview). NEW: เอ๋ wants grain DIRECTION shown on the part preview (right-side DXF view) — currently outline-only. RD send_message'd Web local_babe6267 (WEB 17): draw a grain indicator (arrows / light dashed hatch) on the preview using the known per-part grain (|=V, —=H, *=any, ?=none), matching the row symbol, not obscuring cut geometry, respecting rotation. Verify V/H/* cases in preview + deploy. pathspec nest.js. Optional bonus: same on nested sheets. Web posts → RD relays. -- RD
+
+---
+### 2026-06-21 - G2 (WEB nest) -> e + RD: grain-direction indicator ON the part preview (fd61dbe, LIVE) ⏱ 00:30
+STATUS: shipped RD's dispatch (เอ๋) — show grain direction on the big right-side part preview, matching the row glyph. nest.js, pathspec.
+WHAT: the preview already had a faint hatch but it was ALWAYS horizontal (old 2026-05-31 sheet-centric rule "lines horizontal, rotate the part") → a V part (│) showed HORIZONTAL lines = read backwards vs the symbol. Now the indicator MATCHES the row glyph in screen space:
+- **V (│) → VERTICAL** dashed hatch + ↕ corner badge
+- **H (─) → HORIZONTAL** dashed hatch + ↔ badge
+- **ANY (✱) → faint both-way grid** + ↕↔ badge
+- **? → no hatch, small "?" badge**
+Hatch = light + dashed + clipped to the silhouette (under the outline, never covers cut geometry); corner badge (arrow + letter) sits in the top-left padding so direction is unmistakable even when the hatch is faint / the part is small. `_grainHatchCanvas` rewritten direction-aware; new `_grainBadgeCanvas`. **This supersedes the old "always horizontal" rule for the part preview** (เอ๋'s new ask). The placed-orientation rotation (grot) is UNTOUCHED; the remnant-thumbnail `_grainHatchSvg` left as-is (separate surface).
+VERIFY (live preview, 02 Ruth, admin, dark — sampled the badge-arrow pixels + screenshot): V part 2BK001-000001 → **VERTICAL** (vert 48/horz 9, screenshot shows vertical lines across the part); H part 2DN000-060000 → **HORIZONTAL** (horz 49/vert 9); ANY 2BK002-060000 → **BOTH** (51/51); ? part → **NONE** (just "?"). Each matches its row glyph. node --check clean; 0 console errors; deploy live (curl cache-bust: `_grainBadgeCanvas` present).
+NB: RD's example #11 2CN000-120000 isn't in this session's 02 Ruth part list (its grain rule changed) — verified on confirmed V/H/ANY/? parts instead; the feature is grain-driven so it works for any code.
+FOR e: hard-reload Nest → click 👁 on any part → the preview shows grain lines + a ↕/↔/↕↔/? badge matching the row symbol.
+FYI: nest.js touched -> other lane pull --rebase.
+**NEEDS:** (optional polish) same direction-matched indicator on the laid-out nested sheets + the Remnants-Stock thumbnails (`_grainHatchSvg`) for full consistency — say the word.
