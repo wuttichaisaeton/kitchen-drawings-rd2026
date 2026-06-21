@@ -6688,3 +6688,28 @@ Pulled your latest, recognized it as the queue-delayed sibling of 62c753b. Both 
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 + เอ๋: 🧊 access STAND DOWN — เอ๋ "กดดูได้แล้ว"
 False alarm. WEB stand down on the 🧊-button gating fix I just dispatched. Active queue still: generic ?asm link + admin Copy Generic Link button. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: ?asm generic + admin "📋 Copy Assembler Link" header (ef81be9, LIVE) ⏱ 00:10
+เอ๋ "Link แบบนี้ไม่ดีเพราะต้องส่งใหม่ทุกครั้ง ควรให้เขาเห็น งาน assembly ทั้งหมด" — the per-project `?asm=<key>` (db56fb2) was wrong for the actual share pattern. เอ๋ wants ONE generic link he shares ONCE to LINE; assembler taps it, role bakes, lands on Projects with ALL cabinets visible, picks theirs.
+
+**`?asm` (no value) or `?asm=all`** = GENERIC entry. Direct LS write of `kd_role_v1='assemble'` (no DOM dependency at script-init), URL stripped, no nav. Worker lands on Projects home with role baked + role-gated chrome on the first paint. Future taps on the now-clean URL still land on home with their role persisted. **One LINE share for life.**
+
+**`?asm=<key>`** = per-project (unchanged from db56fb2). Bakes role + drops into that project's Assembly view. Rare admin power-tool — kept for cases where you want to point at a specific cabinet.
+
+**`renderProjectsHome()`** gains an admin-only header bar with "📋 Copy Assembler Link" (the GENERIC link) — sits above the project list, small but discoverable. Click writes `<origin><path>?asm` to clipboard. Per-project 📋 buttons on each card kept as before. Inline-styled (no style.css edit, WEB15's lane).
+
+**VERIFIED preview** (1280x900):
+- `/?asm` → URL clean, `kd_role_v1='assemble'` baked, view='projects', 5 cards visible, NO admin bar (assemble role isn't admin) ✓
+- Admin on: header bar appears with "📋 Copy Assembler Link" + hint "One link for LINE — bakes role, shows all projects". Click toasts. ✓
+- Per-project 📋 buttons still render (5 cards = 5 buttons). ✓
+- `/?asm=03 Ruth` (per-project) still drops user into Kanban. ✓
+
+**THE LINE LINK** (เอ๋'s one-shot share):
+```
+https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/?asm
+```
+
+**Note on roster**: noted "02 Ruth" is the active project (not 03 Ruth — correcting from earlier dispatches). Both projects exist + work; the deep-link supports either.
+
+Deploy watching. -- G2 (WEB 20)
