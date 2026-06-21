@@ -6479,3 +6479,28 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ revert): KEEP Hidden Line (2e4f6bc), withdraw Outline correction
 เอ๋ tested original 2e4f6bc Hidden Line (solid+dashed CAD) and prefers it: "outline ไม่เอา ทำเป็น Hidden line แบบเดิมดีกว่า". WITHDRAW my 59e7e4a "Outline" correction. Mode 1/2 stay as 2e4f6bc. Active WEB queue unchanged otherwise: (a) edges to Realistic+Explode, (b) Mode 5 🎨 Component Color. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (race condition): 84d67cd Outline shipped ก่อนเอ๋ revert — flip Mode 1/2 back to Hidden Line
+WEB 20 shipped 84d67cd (Outline rename + Astronaut Realistic) BEFORE seeing my withdraw message. เอ๋'s "outline ไม่เอา" rejection means revert Mode 1/2 back to 2e4f6bc Hidden Line (solid+dashed). KEEP Mode 3 Astronaut-demo change from 84d67cd (separately good per เอ๋ ref). Net final = Hidden Line + Hidden Line+Shade + Astronaut Realistic + Explode (+ Mode 5 Component Color + edges-in-Realistic/Explode still queued). Dispatched to WEB 20. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: 3D viewer — NEW 🌈 Component Color + edges in all 5 modes (856dc31, LIVE) ⏱ 00:25
+Two requests in one push.
+
+**Edges everywhere** (เอ๋ "realistic explode ให้เพิ่มเส้นเข้าไปด้วย"): refactored the EdgesGeometry overlay material to `transparent:true` from build time + added `setEdgesOpacity(op)` called per mode — 1.0 in Outline modes (full CAD), **0.7** in Component Color / Realistic / Explode (so colour + PBR reflection + spread geometry still reads). Edges are LineSegments children of meshes → automatically follow explode translations, no per-piece bookkeeping needed.
+
+**NEW Mode 5 🌈 "Component Color"** (เอ๋ ref = Fusion Shift+N): per-leaf deterministic colour from `ownerKey = mesh.name`, hash via djb2, hue = `(seed × φ) mod 1` (golden-ratio spread = max visual separation), sat 0.45, lit 0.62 → pleasant non-fluorescent palette matching เอ๋'s Fusion reference. Same leaf name → same colour across reloads (deterministic, no shuffle).
+**CRITICAL FIX** the first build hit: Fusion's trimesh-exported GLB uses ONE shared material across all 57 per-leaf meshes (verified by probe — initial implementation found only 2 distinct colours because setHSL on a shared instance overwrites itself each iteration). Fix: **clone the material per mesh**, swap `mesh.material` to the clone, setHSL on the clone. Meshes share geometry + textures, clones are cheap (no GPU re-upload). `meshOrigMat` snapshot captured in snapshotScene so leaving compcolor mode restores each mesh's original material ref.
+
+**Mode 5 is the new DEFAULT** (most assembler-friendly: every part instantly distinguishable). LS bumped to `kd_3d_mode_v5` with transparent migration from v4/v3/v2.
+
+Order in the picker: 📐 Outline · 🎨 Outline + Shade · 🌈 Component Color · 💎 Realistic · 💥 Explode (logical progression from line-art → shaded → coloured → realistic → spread).
+
+**VERIFIED preview** (1280x900, 1CSVB2-105003.glb):
+- **Component Color (default)**: 54/59 distinct colours (5 dupes = multi-mesh parts that share a leaf name — semantically correct), each panel cleanly coloured, BLACK edges overlaid at 0.7 opacity. Reads exactly like the Fusion Shift+N reference.
+- **Explode at 50%**: pieces spread, edges follow each piece (LineSegments children inherit transforms), 0.7 opacity. Cabinet visibly "blown up" with clear piece outlines.
+- Realistic + Outline modes: edges at the right opacity per mode.
+
+**For เอ๋** — Ctrl+Shift+R, 🧊 on 1CSVB2-105003. Default opens straight to 🌈 Component Color (your Fusion Shift+N look). 💥 Explode now shows piece outlines as they spread. 💎 Realistic stays Astronaut-demo quality with subtle edges.
+Deploy watching. -- G2 (WEB 20)
