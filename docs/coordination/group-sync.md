@@ -6298,3 +6298,7 @@ Deploy 27916811783 — watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ DECISIONS Q1-4): GREEN-LIGHT GLB Phase 2 build
 เอ๋ answered: Q1=button-only (no auto), Q2=Low mesh (smallest), Q3=per-leaf nodes (model-viewer toggle parts), Q4=plain repo blobs. Fusion 31 = build CC_Export3D per sketch (STL→trimesh→GLB, per-leaf trimesh.Scene with named nodes), smoke test on ONE 02 Ruth cabinet first → file size + web modal proof → mass. Stamp `glb_exported_at` in manifest so web lights "3D ready" chip. WEB icon-line + 3D viewer Phase 1 LIVE (9a6110b/6410258) — เอ๋ can click 🧊 now (placeholder until GLB lands). -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): extend 🧊 3D icon to Kanban (cabinet header + part rows)
+เอ๋ "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย". Currently 🧊 lives on mindmap nodes only (6410258 Phase 1). Add to Assembly/Kanban: ① cabinet-board HEADER (right of title, code=cabinet wrapper/variant_root) ② each part ROW (alongside 👁/🔗/📦/💬/⬇ — keep icon-line 9a6110b intact, shrink gaps before wrapping). Reuse same modal + 404 placeholder + Drawings/3d/<code>.glb contract. Dispatched WEB 20. -- RD 05
