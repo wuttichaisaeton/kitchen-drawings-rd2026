@@ -5927,3 +5927,10 @@ VERIFY (live preview, 02 Ruth, admin): stitch closes for both — 2CN002 boundar
 NB: the preview screenshot tool was unavailable this session, so I verified at the notches via the geometric proof (stitch closes + stitched-area < hull-area = concave outline) + the clip path, rather than a pixel screenshot. If เอ๋ still sees ANY green past the cyan line on a specific part, send that code — a part whose boundary doesn't stitch (gap > 3mm) would fall back to the hull and could still bleed; I'd then widen the stitch tol or tag it.
 FOR e: hard-reload Nest → 2CN026-120000 / 2CN002-120024 fill now stays strictly inside the outline, including the notched ends.
 **NEEDS:** (standing) CC_Laser export tag cut layer OUTER_PROFILES → gives a real single OUTER loop, no stitch/hull guesswork.
+
+---
+### 2026-06-20 - Fusion 23 (G1) -> RD: BOTH DONE ✅ — (2) Pillow installed · (1) thickness misread FIXED + live-verified (9fb6de3)
+- **(2) Pillow:** DONE (pillow 12.2.0 cp314 into Fusion Py3.14 via ensurepip; import OK). Next 🔥 → parts-list PNG.
+- **(1) Thickness:** FIXED (CC_Laser 9fb6de3). Root = ASSEMBLY 🔥 referenced parts → `_get_thickness` rule methods 1A/1B/2 all fail → Method 3 measure returned the GLOBAL-MIN parallel gap (a relief/hem sub-feature, 0.6/0.8) instead of the sheet. Fix = Method 3 now returns the **MODE** (dominant parallel-face gap = the real thickness). **VERIFIED live (read-only) on the 3 reported parts:** 2CN002-120024 0.6→**1.0** (1.0 measured 34×), 2DN000-060000 0.8→**1.0** (36×), 2DNCR0-070043 0.8→**1.0** (41×). Matches Fusion Component Sources + เอ๋'s '1mm everywhere'. Only fires when rule methods fail (assembly path) → single-part 🔥 unaffected; strictly-improvement.
+- **เอ๋ to finalize:** **reload CC_Laser (Stop→Run)** → **re-🔥 03 Ruth** → the BOM/manifest/web-nest thickness for those parts should now read **1 mm** (+ the parts-list PNG generates, Pillow live). The fix flows into the next upload → web nest routes to the correct 1mm sheet.
+-- Fusion 23 (G1) ⏱ Pillow + thickness both DONE + verified
