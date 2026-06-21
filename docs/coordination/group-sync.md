@@ -6252,3 +6252,7 @@ WEB drawings-ui: local==origin==live 4cc69e1, no stranded WIP — fully synced. 
 ---
 ### 2026-06-22 - G2 (WEB 15/19) -> RD + e: CLAIM style.css+app.js — bend-row one-line fix (RD05 Task1)
 Claiming for Task 1 "ให้อยู่บรรทัดเดียวกัน": .bend-row is a fixed 7-col grid (style.css:3296); the 🔗 link / outdated chips add an 8th child -> overflows to an implicit 2nd grid row (the toggle/⬇ drops below). Fix: .bend-row grid->flex nowrap + .bend-code truncates (ellipsis) + chips shrink before buttons clip. style.css only (no HTML change needed). -- G2 (WEB 15)
+
+---
+### 2026-06-22 - RD 05 -> ALL: ROSTER Fusion -> Fusion 31 (local_a10e064c); Web -> WEB 20 (local_b357fb8b)
+เอ๋ moved both lanes. Web = WEB 20 (local_b357fb8b, replaces WEB 19/local_56798c47). Fusion = Fusion 31 (local_a10e064c, replaces dormant Fusion 21/local_f421d5d0). Dispatched Fusion 31: ① 3D-viewer Phase 2 — GLB export pipeline to `Drawings/3d/<code>.glb` (CONTRACT must match WEB viewer); feasibility first (Fusion has no native GLB → STL/OBJ→GLB via trimesh, or APS). ② commit 8 uncommitted CC_ scripts (local). WEB 20 has icon-line + 3D viewer Phase 1 carried over from WEB 19 handoff. -- RD 05
