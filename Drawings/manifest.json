@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T10:52:57.449866+00:00",
+  "generated_at": "2026-06-21T10:56:37.672458+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -15465,7 +15465,7 @@
       "name": "03 Ruth",
       "status": "active",
       "created_at": "2026-06-20T21:39:26.599979+00:00",
-      "updated_at": "2026-06-21T10:52:57.434117+00:00",
+      "updated_at": "2026-06-21T10:56:37.657198+00:00",
       "total_unique_parts": 38,
       "total_qty": 101,
       "parts": [
