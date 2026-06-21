@@ -1967,6 +1967,143 @@ function _openConfigBrowser() {
   }
 }
 
+// ── 3D viewer (เอ๋ 2026-06-22) ──────────────────────────────────────────────
+// Phase 1: a 🧊 icon on each Assembly mindmap cabinet → modal with Google
+// <model-viewer> (orbit/zoom/touch, iPad-friendly) loading the part's GLB
+// from the jsdelivr mirror of Drawings/3d/<code>.glb. 404 → placeholder
+// ("3D not exported yet"). Phase 2 (Fusion lane) will produce the GLBs.
+// A demo flag wires ONE sample GLB so the UX is testable BEFORE any real
+// export — pass code 'DEMO' or click with no GLB available + ?demo3d=1.
+const _KD3D_MV_CDN = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
+const _KD3D_DEMO_GLB = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+
+function _kd3dGlbUrl(code) {
+  // jsdelivr mirror of the kitchen-drawings-rd2026 repo — same pattern as
+  // _githubPagesToJsdelivr. jsdelivr has CORS; GH Pages does not.
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}.glb`;
+}
+
+let _kd3dMvPromise = null;
+function _kd3dEnsureModelViewer() {
+  if (window.customElements && window.customElements.get('model-viewer')) return Promise.resolve();
+  if (_kd3dMvPromise) return _kd3dMvPromise;
+  _kd3dMvPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.type = 'module';
+    s.src = _KD3D_MV_CDN;
+    s.onload = () => resolve();
+    s.onerror = () => { _kd3dMvPromise = null; reject(new Error('Failed to load model-viewer')); };
+    document.head.appendChild(s);
+  });
+  return _kd3dMvPromise;
+}
+
+// Quick HEAD probe — true if the GLB exists at the jsdelivr URL. jsdelivr
+// answers 404 cleanly for missing files; we never fall back to GH Pages
+// for misses (no point — Pages would also 404).
+async function _kd3dGlbExists(url) {
+  try {
+    const r = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    return r.ok;
+  } catch (e) { return false; }
+}
+
+// Open the 3D viewer modal for a part code. Reuses the .kdstock-modal /
+// .kdstock-frame shell (3-theme safe, opaque). All extra styling inline so
+// style.css isn't touched (WEB 15's lane). Closes on backdrop click, ✕, Esc.
+async function _kdOpen3D(code) {
+  if (!code) return;
+  // Replace any existing instance (one viewer at a time).
+  document.querySelectorAll('.kd3d-modal').forEach(m => m.remove());
+  const display = (typeof displayCodeFor === 'function') ? displayCodeFor(code) : code;
+  // Demo mode: a) ?demo3d=1 query flag forces the sample GLB; b) literal
+  // code 'DEMO' shows it (used by the editor's hidden debug entry). Real
+  // codes still go to the jsdelivr URL.
+  const wantDemo = code === 'DEMO' || /[?&]demo3d=1\b/.test(location.search);
+  const glbUrl = wantDemo ? _KD3D_DEMO_GLB : _kd3dGlbUrl(code);
+
+  const STYLE = `<style>
+    .kd3d-modal .kd3d-body{padding:0;background:#0f1419;display:flex;flex-direction:column;min-height:0}
+    .kd3d-modal .kd3d-viewer{flex:1 1 auto;width:100%;height:60vh;min-height:320px;background:#0b0f14;display:block}
+    .kd3d-modal model-viewer{width:100%;height:100%;background:#0b0f14;--poster-color:#0b0f14}
+    .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
+    .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
+    .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
+    .kd3d-modal .kd3d-placeholder .kd3d-ph-title{font-size:15px;color:#e6edf4}
+    .kd3d-modal .kd3d-placeholder .kd3d-ph-sub{font-size:12px;opacity:.7;max-width:380px;line-height:1.5}
+    .kd3d-modal .kd3d-loading{flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#9fb0c0;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px}
+  </style>`;
+
+  const modal = document.createElement('div');
+  modal.className = 'kdstock-modal kd3d-modal';
+  modal.innerHTML = STYLE
+    + '<div class="kdstock-backdrop"></div>'
+    + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
+         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''} — 3D view<button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kd3d-body">
+           <div class="kd3d-loading">Loading 3D model…</div>
+         </div>
+       </div>`;
+  document.body.appendChild(modal);
+
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
+  modal.querySelector('.kdstock-close').addEventListener('click', close);
+  document.addEventListener('keydown', onKey);
+
+  const body = modal.querySelector('.kd3d-body');
+  const showPlaceholder = (title, sub) => {
+    body.innerHTML = `<div class="kd3d-placeholder">
+      <div class="kd3d-ph-icon">🧊</div>
+      <div class="kd3d-ph-title">${escapeHtml(title)}</div>
+      <div class="kd3d-ph-sub">${escapeHtml(sub)}</div>
+    </div>`;
+  };
+
+  // For DEMO mode skip the HEAD probe (modelviewer.dev sample is known-good).
+  // For real codes: HEAD-check first so a missing GLB shows the placeholder
+  // immediately instead of a model-viewer error blip.
+  if (!wantDemo) {
+    const exists = await _kd3dGlbExists(glbUrl);
+    if (!exists) {
+      showPlaceholder('3D not exported yet', `No GLB found at Drawings/3d/${code}.glb. The Fusion lane will export it (Phase 2). Append ?demo3d=1 to the URL to preview the viewer with a sample model.`);
+      return;
+    }
+  }
+
+  try {
+    await _kd3dEnsureModelViewer();
+  } catch (e) {
+    showPlaceholder('Viewer unavailable', 'Could not load the 3D viewer library (network/CDN issue). Try again or check the connection.');
+    return;
+  }
+
+  body.innerHTML = `<model-viewer
+      class="kd3d-viewer"
+      src="${escapeHtml(glbUrl)}"
+      camera-controls
+      touch-action="pan-y"
+      auto-rotate
+      auto-rotate-delay="2500"
+      interaction-prompt="auto"
+      shadow-intensity="0.8"
+      exposure="1.0"
+      ar="false"
+      reveal="auto"
+      ></model-viewer>
+      <div class="kd3d-foot">Drag to orbit · pinch / scroll to zoom · two-finger drag to pan</div>`;
+  const mv = body.querySelector('model-viewer');
+  // model-viewer's error event fires when src fails to load — swap to the
+  // placeholder (covers the rare HEAD-200 but parse-fail case).
+  mv && mv.addEventListener('error', () => {
+    showPlaceholder('Failed to load 3D model', 'The GLB at Drawings/3d/' + code + '.glb returned an error during load (possibly a stale CDN cache or corrupt file).');
+  });
+}
+
+// Global handle for console / direct callers (เอ๋'s scripts also use this).
+window.kdOpen3D = _kdOpen3D;
+
 function _renderBendList(parts, projectKey) {
   const aggregated = _aggregatePartsByCode(parts);
   aggregated.sort((a, b) => a.code.localeCompare(b.code));
@@ -9284,6 +9421,10 @@ function _exposeKdApi() {
       stack = [{ kind: 'family', name: fam, highlight: code, source }];
       render();
     },
+    // 3D viewer (เอ๋ 2026-06-22 Phase 1). The editor mindmap cabinet/leaf
+    // calls this from its 🧊 button. Loads model-viewer lazily + a GLB from
+    // jsdelivr Drawings/3d/<code>.glb; 404 → placeholder. Workshop-safe.
+    open3D: _kdOpen3D,
   };
 }
 

@@ -647,6 +647,19 @@ function MindmapNode({ id, data, selected }) {
               title="Open PDF"
             >📄</button>
           )}
+          {/* 3D viewer — เอ๋ 2026-06-22 Phase 1. Inline <model-viewer> modal,
+              GLB at jsdelivr Drawings/3d/<code>.glb; 404 → "3D not exported yet"
+              placeholder. Phase 2 (Fusion) will produce the GLBs. Always shown
+              on BOM nodes so the workshop knows the option exists — the modal
+              itself tells them when a GLB hasn't been exported. */}
+          {code && api.open3D && (
+            <button
+              className="kme-mini kme-3d nodrag nopan"
+              onClick={(e) => { e.stopPropagation(); api.open3D(code); }}
+              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); api.open3D(code); } }}
+              title="View 3D model"
+            >🧊</button>
+          )}
         </div>
       )}
       {linked && !editing && (
