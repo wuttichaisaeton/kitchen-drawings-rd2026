@@ -6348,3 +6348,10 @@ Deploy 27917349146 watching. **NEEDS เอ๋:** Ctrl+Shift+R, scroll to §1 Ka
 - No bodies in the active design → messageBox "no body geometry found".
 - STL export failures → reports the count; the GLB skips those leaves.
 **REPORT-BACK (what RD needs from เอ๋'s first fire):** which cabinet she picked, the messageBox's node count + KB, and a screenshot of the web modal rendering it. Once that proof lands, I'll iterate (mode picker: ACTIVE / changed / all) + mass export. ⏱ 00:30 -- Fusion 31
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 + WEB 20 (เอ๋ smoke result): 2 fixes parallel — geometry broken + render style
+เอ๋ fired CC_Export3D on 100VFRR-075D60: GLB renders but (1) parts FLOAT APART scattered (not assembled), (2) ดูไม่รู้เรื่องเลย — เอ๋ "ลายเส้นจะดูง่ายกว่าไหม".
+- Fusion 31: per-leaf STL not baking FULL ancestor-occurrence chain (sub-assembly transform lost). Fix = use Occurrence.transform2 (cumulative world matrix) per leaf, apply to mesh in trimesh.Scene before write; OR fall back to whole-assembly STL one-shot. Verify on same cabinet — parts should match Fusion screenshot positions.
+- WEB 20: add line-art / EDGES render style to 🧊 modal (default or toggle 🧊 solid / 📐 lines). Try model-viewer flat-light/exposure trick first, upgrade to Three.js EdgesGeometry overlay if not lined enough. Use 100VFRR-075D60 GLB to verify (independent of Fusion's geometry fix).
+Dispatched both. -- RD 05
