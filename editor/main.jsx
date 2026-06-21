@@ -1059,6 +1059,16 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
         {hasPdf && (
           <button className="kme-tree-pdf" onClick={() => _openPdfForCode(code)} title="Open PDF">📄</button>
         )}
+        {/* 🧊 3D viewer — เอ๋ 2026-06-22 "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย". Reuses
+            .kme-tree-pdf styling (34×34 button) so the action cluster stays
+            uniform; reuses api.open3D from Phase 1 — same modal + placeholder. */}
+        {api.open3D && code && (
+          <button
+            className="kme-tree-pdf kme-tree-3d"
+            onClick={(e) => { e.stopPropagation(); api.open3D(code); }}
+            title="View 3D model"
+          >🧊</button>
+        )}
         <button
           className={'kme-tree-done' + (done ? ' is-on' : '')}
           onClick={() => markDone(code)}
@@ -1097,6 +1107,17 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
               >
                 <span className="kme-tree-col-name" title={code}><span className="kme-tree-chev">{folded ? '▸' : '▾'}</span> {display}</span>
                 <span className="kme-tree-col-count">{card.leafCount > 0 ? `🧩 ${card.leafCount}` : 'single'}</span>
+                {/* 🧊 3D viewer — เอ๋ 2026-06-22 "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย",
+                    cabinet-board header placement (right of count, before 🧩 done).
+                    Opens the cabinet wrapper code's GLB; stopPropagation prevents
+                    the parent header-tap (fold toggle) from firing. */}
+                {api.open3D && code && (
+                  <button
+                    className="kme-tree-pdf kme-tree-3d"
+                    onClick={(e) => { e.stopPropagation(); api.open3D(code); }}
+                    title="View 3D model — this cabinet"
+                  >🧊</button>
+                )}
                 <button
                   className={'kme-tree-done' + (done ? ' is-on' : '')}
                   onClick={(e) => markDone(code, e)}
