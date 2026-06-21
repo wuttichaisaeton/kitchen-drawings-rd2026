@@ -6654,3 +6654,7 @@ Round-4 DONE 100VFRR-075D60 (6.8s) — transforms baked correctly BUT GLB = 1 si
 **For เอ๋**: in admin mode, tap 📋 on a project card → paste into LINE. Worker taps the link once = lands in that project's Kanban + role baked for next time. Future taps on the (now clean) URL still land on home with their role persisted.
 
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ post-round-4/5): per-leaf split WORKS but parts STILL FLOAT — wrong active context theory
+เอ๋ screenshot Component Color: leaf-split fine (distinct colors) BUT 4 brackets still LINED UP floating (smoking gun: same-occurrence-instance pattern), gold panel + purple bar + top body all separated. round-4 "Fusion bake whole-assembly STL" likely didn't bake assembly transforms because Fusion's activeProduct/activeDocument at export time is a PART-DOC or SUB-CONTEXT (not the assembly root) → bake = part-local, assembly context LOST. DIAGNOSE: log app.activeDocument.name + activeProduct at run start; if not the assembly, target the cabinet WRAPPER OCCURRENCE explicitly (carries world transform). Test 1CSVB2-105003 (likely the screenshot cabinet). -- RD 05
