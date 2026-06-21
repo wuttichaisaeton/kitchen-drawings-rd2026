@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T10:25:08.768509+00:00",
+  "generated_at": "2026-06-21T10:26:20.648988+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -5850,7 +5850,7 @@
     "2UP000-070000": {
       "family": "Other",
       "last_drawn_version": 14,
-      "fusion_version": 14,
+      "fusion_version": 11,
       "pdf": "2UP000-070043.pdf",
       "bends": 0,
       "material": "",
@@ -6158,7 +6158,7 @@
     "2SDCN2-120034": {
       "family": "Other",
       "last_drawn_version": 16,
-      "fusion_version": 16,
+      "fusion_version": 11,
       "pdf": "2SD000-120000.pdf",
       "bends": 0,
       "material": "",
@@ -6172,7 +6172,7 @@
     "2DN000-070000": {
       "family": "Other",
       "last_drawn_version": 26,
-      "fusion_version": 26,
+      "fusion_version": 24,
       "pdf": "2DN000-070043.pdf",
       "bends": 0,
       "material": "",
@@ -6648,7 +6648,7 @@
     "2FCVN1-120020": {
       "family": "Other",
       "last_drawn_version": 8,
-      "fusion_version": 8,
+      "fusion_version": 5,
       "pdf": "2FCV00-120000.pdf",
       "bends": 0,
       "material": "",
@@ -6872,7 +6872,7 @@
     "2CVH26-766LER": {
       "family": "Other",
       "last_drawn_version": 13,
-      "fusion_version": 13,
+      "fusion_version": 10,
       "pdf": "2CVH26-766V00.pdf",
       "bends": 0,
       "material": "",
@@ -15451,7 +15451,7 @@
       "name": "03 Ruth",
       "status": "active",
       "created_at": "2026-06-20T21:39:26.599979+00:00",
-      "updated_at": "2026-06-21T00:42:43.368814+00:00",
+      "updated_at": "2026-06-21T10:26:20.633862+00:00",
       "total_unique_parts": 38,
       "total_qty": 101,
       "parts": [
