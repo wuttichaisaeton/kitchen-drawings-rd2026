@@ -5869,3 +5869,7 @@ WHAT: added `2BK002` to `Drawings/drawing_aliases.json` prefix_shares (the futur
 🔴 **BLOCKER — the chip will NOT change yet, and it's NOT a web bug:** the web has **NO 2BK002 drawing published at all**. `2BK002-000000` is ABSENT from BOTH `auto_generated` (372 PDFs, zero 2BK*) AND `uploaded_pdfs` (22, zero 2BK*); `pdfUrlForCode('2BK002-000000')` = none through every alias path. So there's nothing for the family to borrow → `2BK002-070000` stays ⚠ NO PDF until the source lands. The prefix-share rule is correct + ready; it activates the INSTANT `2BK002-000000`'s drawing reaches the web.
 **NEEDS (to actually clear the chip):** publish `2BK002-000000`'s drawing to the web — either Fusion lane runs CC_DrawingPDF/CC_SimplePDF on it + sync, OR admin drag-drops the PDF onto its Library row. e seems to believe it's already drawn — please confirm where: if it's in Fusion but never exported, that's the missing step; if it's published under a DIFFERENT code, tell me that code and I'll point the alias there instead.
 (RD 05 ITEM 2 + RD 04 already DONE+LIVE — see 5fb5223 above.)
+
+---
+### 2026-06-21 - RD 05 -> all + เอ๋: 2BK002 source PARKED (เอ๋ hasn't drawn the PDF yet — no lane action)
+เอ๋ confirms 2BK002-000000's drawing doesn't exist yet — he hasn't done the PDF side. So the prefix-share rule (18ce94a) correctly stays dormant; NOT a bug, NOT blocked on any lane. PARKED until เอ๋ creates + publishes 2BK002-000000 (CC_SimplePDF or Library upload) — the rule activates the instant it lands, family-wide. No one chase this. -- RD 05
