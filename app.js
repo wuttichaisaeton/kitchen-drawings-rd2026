@@ -2025,8 +2025,17 @@ async function _kdOpen3D(code) {
   const STYLE = `<style>
     .kd3d-modal .kd3d-body{padding:0;background:#0f1419;display:flex;flex-direction:column;min-height:0}
     .kd3d-modal .kd3d-viewer{flex:1 1 auto;width:100%;height:60vh;min-height:320px;background:#0b0f14;display:block}
-    .kd3d-modal model-viewer{width:100%;height:100%;background:#0b0f14;--poster-color:#0b0f14}
-    .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
+    .kd3d-modal model-viewer{width:100%;height:100%;background:#0b0f14;--poster-color:#0b0f14;transition:filter .15s ease}
+    /* Edges mode: high contrast + nearly desaturated → emphasizes silhouette and
+       face boundaries against the dark background (technical-drawing look).
+       Combined with white-flattened materials + neutral lighting on the
+       model-viewer side, this reads as line-art at a distance. */
+    .kd3d-modal model-viewer.kd3d-edges{filter:contrast(1.45) saturate(.10) brightness(.92)}
+    .kd3d-modal .kd3d-foot{display:flex;align-items:center;gap:12px;padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
+    .kd3d-modal .kd3d-hint{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .kd3d-modal .kd3d-mode{flex:0 0 auto;display:inline-flex;gap:2px;background:#0b0f14;border:1px solid #1c2530;border-radius:8px;padding:2px;font-family:"Flux Architect",ui-monospace,monospace}
+    .kd3d-modal .kd3d-mode button{background:transparent;border:0;color:#9fb0c0;font:inherit;font-size:11px;padding:4px 9px;border-radius:6px;cursor:pointer;letter-spacing:.3px}
+    .kd3d-modal .kd3d-mode button.is-on{background:#1c2530;color:#e6edf4}
     .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-title{font-size:15px;color:#e6edf4}
@@ -2079,25 +2088,137 @@ async function _kdOpen3D(code) {
     return;
   }
 
+  // Initial mode = edges (เอ๋ 2026-06-22: "ดูไม่รู้เรื่องเลย หรือให้รูปเป็นลายเส้น
+  // จะดูง่ายกว่าไหม"). The default shaded view rendered the cabinet as featureless
+  // white blobs; edges mode flattens lighting + nearly-desaturates the canvas via
+  // CSS contrast filter, then walks the GLB materials to set baseColor near-white,
+  // metallic=0, roughness=1 → reads as a technical drawing. Toggle in the footer
+  // restores shaded view. Choice persists via localStorage so a worker only picks
+  // once. kd_3d_mode_v1 = 'edges' | 'solid'.
+  let mode = (() => {
+    try { const m = localStorage.getItem('kd_3d_mode_v1'); return m === 'solid' ? 'solid' : 'edges'; }
+    catch { return 'edges'; }
+  })();
+
   body.innerHTML = `<model-viewer
-      class="kd3d-viewer"
+      class="kd3d-viewer ${mode === 'edges' ? 'kd3d-edges' : ''}"
       src="${escapeHtml(glbUrl)}"
       camera-controls
       touch-action="pan-y"
       auto-rotate
       auto-rotate-delay="2500"
       interaction-prompt="auto"
-      shadow-intensity="0.8"
-      exposure="1.0"
+      shadow-intensity="${mode === 'edges' ? '0' : '0.8'}"
+      exposure="${mode === 'edges' ? '1.3' : '1.0'}"
+      tone-mapping="${mode === 'edges' ? 'neutral' : 'auto'}"
+      environment-image="${mode === 'edges' ? 'neutral' : ''}"
       ar="false"
       reveal="auto"
       ></model-viewer>
-      <div class="kd3d-foot">Drag to orbit · pinch / scroll to zoom · two-finger drag to pan</div>`;
+      <div class="kd3d-foot">
+        <span class="kd3d-hint">Drag to orbit · pinch / scroll to zoom · two-finger drag to pan</span>
+        <span class="kd3d-mode" role="tablist" aria-label="View mode">
+          <button data-mode="edges" class="${mode === 'edges' ? 'is-on' : ''}" title="Technical drawing / line-art look">📐 Edges</button>
+          <button data-mode="solid" class="${mode === 'solid' ? 'is-on' : ''}" title="Shaded / lit render">🧊 Solid</button>
+        </span>
+      </div>`;
   const mv = body.querySelector('model-viewer');
   // model-viewer's error event fires when src fails to load — swap to the
   // placeholder (covers the rare HEAD-200 but parse-fail case).
   mv && mv.addEventListener('error', () => {
     showPlaceholder('Failed to load 3D model', 'The GLB at Drawings/3d/' + code + '.glb returned an error during load (possibly a stale CDN cache or corrupt file).');
+  });
+
+  // Snapshot of each material's pbrMetallicRoughness so a toggle back to 'solid'
+  // restores the GLB's authored look exactly (Fusion 31's STL→trimesh path emits
+  // a default white material, but the GLB authoring may change — never assume).
+  let matSnap = null;
+  const snapshotMaterials = () => {
+    try {
+      const mats = mv && mv.model && mv.model.materials;
+      if (!mats || !mats.length) return false;
+      matSnap = mats.map(m => {
+        const p = m.pbrMetallicRoughness;
+        if (!p) return null;
+        return { baseColor: [...(p.baseColorFactor || [1,1,1,1])], metallic: p.metallicFactor, roughness: p.roughnessFactor };
+      });
+      return true;
+    } catch (e) { return false; }
+  };
+
+  const applyEdgesMaterials = () => {
+    try {
+      const mats = mv && mv.model && mv.model.materials;
+      if (!mats) return;
+      for (const m of mats) {
+        const p = m.pbrMetallicRoughness;
+        if (!p) continue;
+        // Near-white but not pure 1.0 so the contrast filter still finds edges.
+        p.setBaseColorFactor && p.setBaseColorFactor([0.94, 0.94, 0.94, 1.0]);
+        p.setMetallicFactor && p.setMetallicFactor(0.0);
+        p.setRoughnessFactor && p.setRoughnessFactor(1.0);
+      }
+    } catch (e) {}
+  };
+  const restoreSolidMaterials = () => {
+    try {
+      const mats = mv && mv.model && mv.model.materials;
+      if (!mats || !matSnap) return;
+      for (let i = 0; i < mats.length; i++) {
+        const p = mats[i].pbrMetallicRoughness;
+        const s = matSnap[i];
+        if (!p || !s) continue;
+        p.setBaseColorFactor && p.setBaseColorFactor(s.baseColor);
+        p.setMetallicFactor && p.setMetallicFactor(s.metallic);
+        p.setRoughnessFactor && p.setRoughnessFactor(s.roughness);
+      }
+    } catch (e) {}
+  };
+
+  // Apply / restore lighting attrs + materials according to the current mode.
+  const applyMode = (next) => {
+    if (!mv) return;
+    mode = next;
+    try { localStorage.setItem('kd_3d_mode_v1', mode); } catch {}
+    // CSS filter toggle for the contrast/desat boost.
+    mv.classList.toggle('kd3d-edges', mode === 'edges');
+    // Lighting attrs — set them BEFORE the material flattening so the env image
+    // change takes effect on the next render tick.
+    if (mode === 'edges') {
+      mv.setAttribute('shadow-intensity', '0');
+      mv.setAttribute('exposure', '1.3');
+      mv.setAttribute('tone-mapping', 'neutral');
+      mv.setAttribute('environment-image', 'neutral');
+      applyEdgesMaterials();
+    } else {
+      mv.setAttribute('shadow-intensity', '0.8');
+      mv.setAttribute('exposure', '1.0');
+      mv.setAttribute('tone-mapping', 'auto');
+      mv.removeAttribute('environment-image');
+      restoreSolidMaterials();
+    }
+    // Update the toggle button highlight.
+    body.querySelectorAll('.kd3d-mode button').forEach(btn => {
+      btn.classList.toggle('is-on', btn.getAttribute('data-mode') === mode);
+    });
+  };
+
+  // The materials are only on mv.model AFTER the GLB has loaded. Snapshot once,
+  // then apply the initial mode's materials. (CSS filter + lighting attrs were
+  // already set in the HTML so the first paint is correct even pre-load.)
+  if (mv) {
+    mv.addEventListener('load', () => {
+      if (snapshotMaterials() && mode === 'edges') applyEdgesMaterials();
+    }, { once: true });
+  }
+
+  // Wire the toggle.
+  body.querySelectorAll('.kd3d-mode button').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const next = btn.getAttribute('data-mode');
+      if (next && next !== mode) applyMode(next);
+    });
   });
 }
 
