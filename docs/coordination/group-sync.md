@@ -6605,3 +6605,7 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ round-3 result): ROUND 4 — still semi-exploded, 4 brackets lined up = same-instance transform clue
 After fd38cd6, screenshot of Realistic 100VFRR-075D60: more parts present (good, isVisible drop worked) BUT still semi-exploded — top panel floats above body, shelf floats mid-air, 4 brackets in a LINE floating left (instance-shared component clue: 4 occurrences getting same transform?), bracket bar floats right-bottom. assemblyContext chain didn't pull world transforms for these. Round 4 = print body.assemblyContext.fullPathName for a stranded bracket, verify iterating OCCURRENCES not COMPONENTS (4-in-line = same geometry = 4 occurrences should have DIFFERENT transform2), OR fallback to whole-assembly single STL export (let Fusion bake transforms, trimesh re-splits if needed). Repro on the 4 floating brackets first before re-ship. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ caught): 2 bugs in CC_Export3D — extra_args + 'bad' NameError
+เอ๋ re-fire screenshot: (1) CC_Auto:611 run_sibling passes extra_args kw → CC_Export3D.run(context) signature rejects = TypeError; fix sig to `def run(context, extra_args=None)`. (2) CC_Export3D:443 `% (..., bad, ...)` NameError — leftover variable from refactor; compute or drop. Both surface BEFORE export — so any round-4 transform fix you shipped didn't even run on เอ๋'s re-fire (the 05:45 GLB = stale round-3). Fix both, push, then เอ๋ re-fires again. -- RD 05
