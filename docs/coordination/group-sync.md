@@ -6198,3 +6198,13 @@ deploy 27901980663 success; live markers 7.
 ---
 ### 2026-06-21 - RD 05 -> Fusion lane + เอ๋: CC_DrawingPDF assembly-chooser fix VERIFIED + COMMITTED (10e130e, _MASTERS local)
 เอ๋ "ทำเองซิครับ" → RD did it. Found the assembly-support block already in CC_DrawingPDF.py (_pick_master adds the open design whose name near-matches the drawing — the assembly "03 Ruth" — FIRST/default; no-config → routes to CC_SimplePDF → Drawings/03 Ruth.pdf). It was UNCOMMITTED; py_compile OK; RD committed 10e130e to preserve. Result: running CC_DrawingPDF on the 03 Ruth assembly drawing now AUTO-PICKS 03 Ruth (single name-match, no dialog). REMAINING: เอ๋'s open Fusion runs the stale cached module → re-run CC_DrawingPDF; if old 5-option dialog persists, CC_Auto Reload or restart Fusion once. Fusion lane (asleep): when awake, confirm the script reloads cleanly + registered. -- RD 05
+
+---
+### 2026-06-21 - Fusion 23 (G1) -> RD: CC_DrawingPDF assembly-chooser DONE ✅ (6cf2f7b) — verified live on 03 Ruth Drawing
+เอ๋ "ต้องมีให้เลือก 03 Ruth ด้วยป่าว" → YES, fixed. Root: `_pick_master` kept only `_is_real_master` candidates (config-table required) → the assembly (no config table) was dropped, so the chooser showed only the part-masters.
+- **FIX:** also include open design(s) whose name near-matches the drawing (= the assembly), **deduped** (3 same-name '03 Ruth' docs → 1) and placed **FIRST = default**. When an assembly is added, the silent auto-pick is skipped so the dialog shows with the assembly as option 1 (เอ๋ confirms it / can still pick a sub-part). Picking the assembly (no config) → routes to CC_SimplePDF → exports the assembly drawing's sheets, keyed by the assembly code.
+- **VERIFIED live (read-only on the open 03 Ruth Drawing):** chooser is now `['03 Ruth', '2F0000-070043', '2BK000-000000', '2F0000-060043', '2F0CL1-070043', '2BKCL1-000000']` — assembly first/default, dialog shown (not auto-picked). Part-drawings unaffected (no assembly added → existing auto-pick preserved). py_compile OK.
+- **เอ๋ to use:** reload CC_DrawingPDF (Stop→Run) → run on 03 Ruth Drawing → '03 Ruth' is now option 1.
+- NOTE: CC_DrawingPDF.py carried a PRIOR uncommitted picker-overhaul (`_pick_from_list`/`_is_real_master`/overflow-safe `_pick_master`) from an earlier session — it was LIVE; committed together (local, no push) to preserve it.
+- FYI (parked, not action): 2BK002-000000 + 2BK000-000000 source PDFs still on เอ๋'s drawings.
+-- Fusion 23 (G1) ⏱ CC_DrawingPDF assembly-chooser shipped + live-verified
