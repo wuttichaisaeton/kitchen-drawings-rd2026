@@ -13051,7 +13051,7 @@ async function init() {
     // render so there's no projects-home flash. Guarded to a fresh reload (< 30s)
     // so reopening the tab much later still starts clean; a now-hidden tab or a
     // deleted project is dropped.
-    let _navRestored = false, _restoreScrollY = 0, _restoreNestProject = null;
+    let _navRestored = false, _restoreScrollY = 0, _restoreAssemblyScroll = 0, _restoreNestProject = null;
     // Capture kd_active_tab BEFORE the first render() — render() calls
     // _saveActiveTab() which would otherwise overwrite it with the default view.
     let _savedActiveTab = null;
@@ -13069,6 +13069,7 @@ async function init() {
             ? s.stack.filter(n => n && (n.kind !== 'project' || (manifest.projects && manifest.projects[n.name])))
             : [];
           _restoreScrollY = +s.scrollY || 0;
+          _restoreAssemblyScroll = +s.assemblyScroll || 0;
           if (s.view === 'nest' && s.nestProject) _restoreNestProject = s.nestProject;
           _navRestored = true;
         }
@@ -13082,6 +13083,25 @@ async function init() {
       if (_restoreScrollY) {
         const r = () => { try { window.scrollTo(0, _restoreScrollY); } catch (e) {} };
         r(); requestAnimationFrame(r); setTimeout(r, 80);
+      }
+      // The Assembly/Mindmap page scrolls INSIDE .kme-assembly-shell (overflow container),
+      // NOT the window — so the window restore above is a no-op there (window.scrollY is
+      // always 0). Restore the SHELL's scrollTop once the editor has lazy-mounted + grown
+      // tall enough to reach the saved spot, so a reload scrolled to §3 Mindmap STAYS at the
+      // Mindmap, not §1 Kanban. Keep re-applying while below target (covers the mount + a late
+      // re-render) for ~9s, then เอ๋ owns the scroll. (เอ๋ "Ctrl+Shift+R คงรูปแรก"; safe now the
+      // editor reliably populates — 1ac4ae9 fixed the blank this used to expose.)
+      if (_restoreAssemblyScroll) {
+        const _aTarget = _restoreAssemblyScroll;
+        let _an = 0;
+        const _aiv = setInterval(() => {
+          const sh = document.querySelector('.kme-assembly-shell');
+          if (sh) {
+            const maxT = Math.max(0, sh.scrollHeight - sh.clientHeight);
+            if (maxT >= _aTarget - 4 && sh.scrollTop < _aTarget - 4) { try { sh.scrollTop = _aTarget; } catch (e) {} }
+          }
+          if (++_an > 90) clearInterval(_aiv);
+        }, 100);
       }
       // Re-enter the Nest WORKSPACE that was open before the reload (deep sub-state
       // not held in `stack`) — else view='nest' lands on the picker (เอ๋ "ไปหน้าอื่น").
@@ -13148,8 +13168,13 @@ function __kdBeforeReload() {
     // it instead of bouncing to the picker (เอ๋ 2026-06-20 "reload แล้วไปหน้าอื่น").
     let nestProject = null;
     try { nestProject = (window.kdNest && typeof window.kdNest.currentProject === 'function') ? window.kdNest.currentProject() : null; } catch (e) {}
+    // The Assembly/Mindmap page scrolls inside .kme-assembly-shell (overflow), NOT the
+    // window — window.scrollY is 0 there, so stash the shell's scrollTop too so reload can
+    // keep เอ๋ at §3 Mindmap, not §1 Kanban. (เอ๋ "Ctrl+Shift+R คงรูปแรก".)
+    let assemblyScroll = 0;
+    try { const sh = document.querySelector('.kme-assembly-shell'); if (sh) assemblyScroll = sh.scrollTop || 0; } catch (e) {}
     sessionStorage.setItem('kd_nav_restore', JSON.stringify({
-      view, stack, scrollY: window.scrollY || (se && se.scrollTop) || 0, nestProject, t: Date.now(),
+      view, stack, scrollY: window.scrollY || (se && se.scrollTop) || 0, assemblyScroll, nestProject, t: Date.now(),
     }));
   } catch (e) {}
 }
