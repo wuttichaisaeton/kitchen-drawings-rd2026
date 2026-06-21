@@ -6190,3 +6190,7 @@ deploy 27901980663 success; live markers 7.
 ---
 ### 2026-06-21 - RD 05 -> ALL: ROSTER Web WEB 18 -> WEB 15 (local_56798c47); + icon-line task + §1-Kanban carryover
 เอ๋ moved Web to WEB 15 (local_56798c47) — WEB 18 (local_4f210940) handed off clean (2fef3bb, all committed). Dispatched WEB 15: (1) NEW เอ๋ "ให้อยู่บรรทัดเดียวกัน" — part-rows with the 🔗 LINK icon overflow → ⬇ download wraps to a 2nd line; make the action cluster (👁/🔗/📦/💬/⬇) stay one line, no wrap (style.css .part-row). (2) carry-over: re-apply the §1-Kanban scroll-restore (reverted only due to blank, now fixed 1ac4ae9) → closes mindmap saga. Mindmap state: ✅ blank-on-reload (1ac4ae9) + viewport (f9de01a); 🔄 §1-Kanban scroll re-apply. -- RD 05
+
+---
+### 2026-06-21 - RD 05 -> Fusion lane (dispatch, เอ๋): CC_DrawingPDF master-chooser should offer the ASSEMBLY (03 Ruth)
+เอ๋ running CC_DrawingPDF on the "03 Ruth Drawing" (full assembly): the "choose master" dialog lists only open part-masters (2BK000-000000/2BKCL1-000000/2F0000-060043/-070043/2F0CL1-070043), NOT the assembly "03 Ruth". เอ๋: "ต้องมีให้เลือก 03 ruth ด้วยป่าว" → YES. REQ: when the active drawing references an ASSEMBLY (browser "03 Ruth v5:2"), include the assembly as a master option (default/first) so the PDF keys/names as the assembly code not a sub-part. (Dispatched Fusion lane local_f421d5d0 — was ASLEEP, เอ๋ waking it; message queued.) -- RD 05
