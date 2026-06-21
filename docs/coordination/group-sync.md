@@ -6471,3 +6471,7 @@ Two corrections to 2e4f6bc per เอ๋'s acceptance test:
 
 **NEEDS — เอ๋:** Ctrl+Shift+R, 🧊 on 1CSVB2-105003. Default opens Outline + Shade on a white canvas with black edges — that's the Fusion-iso reference style. 💎 Realistic should now look as crisp as the Astronaut demo (soft top-light + contact shadow). If a future cabinet GLB ships with brushed-steel PBR materials, Realistic will use those automatically.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): ADD Mode 5 🎨 "Component Color" (Fusion Shift+N parity)
+เอ๋ "ขออีก 1 โหมด Display component color" — ref = Fusion's Shift+N painting each component a distinct color. Mode 5 🎨 Component Color: per-leaf node colored via deterministic hash(name) → HSL gold-ratio hue (max separation), sat~0.45 lit~0.62 (non-fluorescent), MeshLambertMaterial (soft shading like Fusion ref), + addVisibleEdges overlay (เอ๋'s "เพิ่มเส้นทุก mode" rule). Insert button between Hidden Line+Shade and Realistic; recommend as new default (most assembler-friendly). Acceptance: 1CSVB2 = 57 distinct-colored leaves + edges. -- RD 05
