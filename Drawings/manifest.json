@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T10:27:16.905579+00:00",
+  "generated_at": "2026-06-21T10:34:20.043634+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -5807,17 +5807,17 @@
     },
     "2BK000-000000": {
       "family": "Other",
-      "last_drawn_version": 2,
+      "last_drawn_version": 3,
       "fusion_version": 3,
-      "pdf": "2BK00-000000.pdf",
+      "pdf": "2BK000-000000.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-21T01:05:23.192211+00:00",
+      "generated_at": "2026-06-21T10:34:20.043634+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:HtdNinWsRyexsIfmcIjexw",
-      "page_number": 1
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:HtdNinWsRyexsIfmcIjexw"
     },
     "2BK001-000001": {
       "family": "Other",
