@@ -1659,10 +1659,14 @@ function _openBendPdfPicker(code) {
     ev.stopPropagation();
     setDrawingLink(code, b.dataset.code);   // RTDB drawing_links/<code> — syncs everywhere
     close();
-    render();
+    // _backgroundRender (NOT raw render) — when the mindmap editor is live this
+    // does the in-place kme:extsync delta instead of rebuilding ROOT, so picking a
+    // PDF from a node deep in the canvas keeps the editor's pan/zoom (เอ๋ 2026-06-21
+    // standing rule: LINK must not jump). Off the editor it's a scroll-preserving render.
+    _backgroundRender();
   }));
   const clearBtn = modal.querySelector('.bendpdf-clear');
-  if (clearBtn) clearBtn.addEventListener('click', () => { setDrawingLink(code, ''); close(); render(); });
+  if (clearBtn) clearBtn.addEventListener('click', () => { setDrawingLink(code, ''); close(); _backgroundRender(); });
 }
 
 // F2 wall-cabinet 13-char code reference (เอ๋ 2026-06-13). Spec:
@@ -4289,7 +4293,13 @@ function _updateProgressPills(key) {
 
 function _refreshAssemblyUI() {
   const top = stack[stack.length - 1];
-  const editorLive = !!window.__kmeInstance && !!document.getElementById('kme-mount');
+  // Require the editor to be POPULATED (has nodes), not just mounted: on a reload
+  // the editor can mount EMPTY (manifest not ready at first mount) — then this must
+  // fall through to _backgroundRender → render() to REPOPULATE it (and restore its
+  // viewport via _vpGet), instead of an extsync that delta-syncs nothing and leaves
+  // a blank canvas (เอ๋ 2026-06-21).
+  const editorLive = !!window.__kmeInstance && !!document.getElementById('kme-mount')
+    && !!document.querySelector('.react-flow__node');
   if (top && top.kind === 'project' && editorLive) {
     _updateProgressPills(top.name);
     try { window.dispatchEvent(new Event('kme:extsync')); } catch {}
@@ -5249,8 +5259,14 @@ function _backgroundRender() {
   // safety net for EVERY direct _backgroundRender() caller (RTDB listeners, the
   // NEW-badge poll, Fusion-save sync, NO-PDF chip flips), not just the ones that
   // already route through _refreshAssemblyUI.
+  // Only take the in-place path when the editor is live AND POPULATED (has nodes).
+  // If it mounted EMPTY (e.g. on a reload the manifest wasn't ready at first mount),
+  // fall through to a real render() so this tick REPOPULATES it (and restores its
+  // viewport via _vpGet/defaultViewport) — otherwise the extsync path would leave
+  // a blank canvas forever (no nodes to delta-sync). (เอ๋ 2026-06-21)
   const _top = stack[stack.length - 1];
-  if (_top && _top.kind === 'project' && window.__kmeInstance && document.getElementById('kme-mount')) {
+  if (_top && _top.kind === 'project' && window.__kmeInstance
+      && document.getElementById('kme-mount') && document.querySelector('.react-flow__node')) {
     _bgRenderPending = false;
     try { _updateProgressPills(_top.name); } catch {}
     try { window.dispatchEvent(new Event('kme:extsync')); } catch {}
@@ -9161,15 +9177,21 @@ function _exposeKdApi() {
     pdfFileExists: _pdfFileExists,
     // Shared display-rename: a mindmap node rename + a Library rename both write here.
     displayLabelForCode: displayCodeFor,
+    // Editor-bridge user-edits (rename / link) use _backgroundRender, NOT raw
+    // render(): when the mindmap editor is live it does the in-place kme:extsync
+    // delta and RETURNS before the ROOT rebuild, so a node rename / re-link keeps
+    // the editor's pan/zoom + node positions exactly in place (เอ๋ 2026-06-21
+    // standing rule — no jump on ANY update/action). Off the editor it falls back
+    // to a scroll-preserving render.
     setDisplayOverride: (code, label) => {
       if (!isAdmin()) return;
       setDisplayOverride(code, label);
-      try { render(); } catch {}
+      try { _backgroundRender(); } catch {}
     },
     setDrawingLink: (code, target) => {
       if (!isAdmin()) return;
       setDrawingLink(code, target);
-      try { render(); } catch {}
+      try { _backgroundRender(); } catch {}
     },
     // Open the Pick-PDF PICKER for a NO-PDF mindmap node (เอ๋ 2026-06-21: the
     // node 🔗 Link had regressed to a bare window.prompt — restore the same

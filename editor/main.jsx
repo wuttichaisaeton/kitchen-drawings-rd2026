@@ -1171,6 +1171,25 @@ function _writeCollapsedState(pk, state) {
 // that the user's own pan/zoom (and the Zoom-fit button) own the viewport.
 // User 2026-05-29: 'ไม่ต้องยุ่งเรื่อง pan zoom ... ให้ user จัดการเอง'.
 const _vpCache = {};
+// Persist the editor viewport (pan + zoom) per project to localStorage so it
+// survives a FULL page reload — tapping "NEW VERSION — TAP TO RELOAD" reopens the
+// same project AT the same pan/zoom, no re-fitView/re-center (เอ๋ 2026-06-21
+// standing rule: ANY update/reload must not jump). In-session remounts use the
+// in-memory _vpCache; localStorage is the cross-reload layer. _vpGet prefers the
+// live in-memory value, then the persisted one.
+function _vpKey(pk) { return 'kme_vp_' + pk; }
+function _vpSave(pk, vp) {
+  try { if (pk && vp && isFinite(vp.x) && isFinite(vp.y) && isFinite(vp.zoom)) localStorage.setItem(_vpKey(pk), JSON.stringify({ x: vp.x, y: vp.y, zoom: vp.zoom })); } catch (e) {}
+}
+function _vpLoad(pk) {
+  try {
+    const r = pk && localStorage.getItem(_vpKey(pk));
+    if (!r) return null;
+    const v = JSON.parse(r);
+    return (v && isFinite(v.x) && isFinite(v.y) && isFinite(v.zoom)) ? v : null;
+  } catch (e) { return null; }
+}
+function _vpGet(pk) { return _vpCache[pk] || _vpLoad(pk); }
 
 // Seed (collapse-to-cabinets) guard — module-scoped so the auto-seed runs ONCE
 // per PAGE LOAD per project, NOT per mount: a Firebase/timer remount must not
@@ -2117,10 +2136,10 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
              (Firebase sync) restore the cached viewport so the view never
              jumps. After that the user owns pan/zoom (+ the Zoom-fit button).
              onMoveEnd caches every pan/zoom so the restore is up to date. */
-          fitView={!_vpCache[projectKey]}
+          fitView={!_vpGet(projectKey)}
           fitViewOptions={{ padding: 0.12, minZoom: (typeof window !== 'undefined' && window.innerWidth < 700) ? 0.6 : 0.1 }}
-          defaultViewport={_vpCache[projectKey] || undefined}
-          onMoveEnd={(_e, vp) => { if (projectKey && vp) _vpCache[projectKey] = vp; }}
+          defaultViewport={_vpGet(projectKey) || undefined}
+          onMoveEnd={(_e, vp) => { if (projectKey && vp) { _vpCache[projectKey] = vp; _vpSave(projectKey, vp); } }}
           /* minZoom needs to be loose enough that a phone can pinch
              out to see both variants (at ±720 in expanded checklist
              mode → 1440 px wide layout vs 375 px iPhone viewport).
