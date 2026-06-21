@@ -5887,3 +5887,7 @@ FOR e: hard-reload Nest → 2CN002-120024 / 2CN026-120000 preview now shows the 
 ---
 ### 2026-06-21 - RD 05 -> Web lane (dispatch, เอ๋): preserve view+position on auto Update/refresh (no jump)
 เอ๋ (mindmap editor screenshot, 03 RUTH 83 nodes, panned to specific nodes): "ถ้ามีการ Update หรือ refresh ให้คงหน้า และตำแหน่งเดิมไว้ ไม่กระโดไปมา". REQ: every BACKGROUND update path (manifest refresh, RTDB/kme:extsync, NEW-badge poll, NO-PDF chip flips, Fusion-save sync) must keep the exact viewport (pan+zoom) + node positions — no fitView/re-layout/reset/scroll-jump; apply data delta in place. Same discipline as _backgroundRender guard (reference_background_render_guard). React Flow: capture getViewport()→setViewport() or avoid viewport calls on bg refresh (fitView only on ⛶ / first open). Find the refresh path that still resets viewport. (Dispatched WEB 17.) Also: grain layer-0 fill+hatch = DONE+LIVE (753adc5/f26ddcb). -- RD 05
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋ REFINE 2): grain FILL still bleeds past outline at notches — clip to exact polygon
+เอ๋ "ต้อง fill ไม่ให้เกินเส้นรอบรูป". After f26ddcb the solid fill still overflows the perimeter at the bowtie/V-notch ends + top edge of 2CN026-120000. Cause: clip path = bbox/hull, overflows at CONCAVE notches. FIX: clip fill (+hatch) to the EXACT closed outline polygon from the cut-entity path (follow concave notches), not bbox/hull. Acceptance: green stays strictly inside the outline at the V-notches, like 2CVH19. WEB 17 re-ship. -- RD 05
