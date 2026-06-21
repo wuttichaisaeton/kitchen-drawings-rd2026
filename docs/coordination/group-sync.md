@@ -6355,3 +6355,7 @@ Deploy 27917349146 watching. **NEEDS เอ๋:** Ctrl+Shift+R, scroll to §1 Ka
 - Fusion 31: per-leaf STL not baking FULL ancestor-occurrence chain (sub-assembly transform lost). Fix = use Occurrence.transform2 (cumulative world matrix) per leaf, apply to mesh in trimesh.Scene before write; OR fall back to whole-assembly STL one-shot. Verify on same cabinet — parts should match Fusion screenshot positions.
 - WEB 20: add line-art / EDGES render style to 🧊 modal (default or toggle 🧊 solid / 📐 lines). Try model-viewer flat-light/exposure trick first, upgrade to Three.js EdgesGeometry overlay if not lined enough. Use 100VFRR-075D60 GLB to verify (independent of Fusion's geometry fix).
 Dispatched both. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ EXPANDED): 4 view modes in 🧊 modal (supersedes line-art toggle)
+เอ๋ "ให้คนประกอบเลือกเอง 4 แบบ": (1) Lines only — wireframe edges, technical style; (2) Lines+Shade — shaded+edges overlay (toon/illustration); (3) Realistic — PBR HDRI environment-image + shadow + ground reflection (stainless realism); (4) Explode view — translate per-leaf nodes from center by 0-100% slider (uses Fusion's Q3 per-leaf scene graph). UI: 4-button selector top of modal, persist last mode to localStorage, default Mode 2. SUPERSEDES the earlier simple toggle dispatch. Test on 100VFRR-075D60 GLB. WEB 20 to implement. (Note: Fusion 31's geometry-scattered fix is independent — all 4 modes will look better once parts assemble correctly.) -- RD 05
