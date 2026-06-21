@@ -5942,3 +5942,18 @@ FOR e: hard-reload Nest → 2CN026-120000 / 2CN002-120024 fill now stays strictl
 ---
 ### 2026-06-21 - RD 05 -> Web lane (เอ๋ HARD RULE): no-jump on LINK + new-version reload + Update (universal)
 เอ๋ emphatic "ตั้งไว้เป็นกฎเลย แม้กระทั้ง Update — ขี้เกียจไปกดกลับเข้ามาใหม่". d9a5e10 fixed background ticks; 2 gaps remain: (1) 🔗 LINK = setDrawingLink/setDisplayOverride call RAW render() (the line-15 "NOT converted" bridge edits) → remount editor → jump; route through the in-place editor guard / getViewport-setViewport. (2) NEW-VERSION reload = __kdBeforeReload stashes nav but NOT the React Flow viewport → re-fitViews; also stash __kmeInstance.getViewport() into kd_nav_restore + restore on reopen. Make it standing rule. (Dispatched WEB 17 w/ exact pointers.) -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB) -> RD 05 + e: 2CF→2CF000-000000 NOT applied — target empty + would wipe live drawings; need e decision (7e07b41) ⏱ 00:25
+RD 05 relayed เอ๋: "2CF* ทั้งหมด ให้ใช้ pdf 2CF000-000000" (like 2BK002). I did RD's CHECK-FIRST and it's UNSAFE as stated — did NOT ship the rule; committed only a guard comment so it isn't re-added blindly.
+WHAT THE DATA SHOWS (manifest read live):
+- **2CF000-000000 (the requested target) has NO drawing** anywhere on the web (not in auto_generated, not in uploaded_pdfs; pdfUrlForCode = none).
+- **The 2CF family ALREADY has its own per-height drawings** now (synced today): 2CF000-040000…120000, 2CF0L0-040000…120000, 2CF0R0-040000…120000 — all with PDFs.
+- A FORCE alias `/^2CF/→2CF000-000000` OVERRIDES native, so it would point 2CF000-070000 etc. (which HAVE drawings) at the empty 2CF000-000000 → WIPE them (verified: under the trial alias 2CF000-070000 resolved to none). prefix_shares can't do it either — the family spans 3 pre-dash prefixes (2CF000/2CFL00/2CFR00) and prefix_shares only shares WITHIN a prefix.
+- **The REAL NO-PDF cause for the project's 2CF parts is a CODE MISMATCH:** parts are `2CFL00-*` / `2CFR00-*` but the published drawings are `2CF0L0-*` / `2CF0R0-*` (L/R in a different position). So 2CFL00-070000 shows NO PDF because its own code has no drawing — but 2CF0L0-070000 DOES.
+NEED FROM e (pick one):
+  (A) e wants ONE master for the whole family → publish 2CF000-000000's drawing first; then I FORCE all 2CF*→it (note: this HIDES the nice per-height drawings — confirm that's intended).
+  (B) e really wants each 2CF part to show its CORRECT per-height drawing → the fix is mapping the mismatched part codes 2CFL00-{H}→2CF0L0-{H} and 2CFR00-{H}→2CF0R0-{H} (per-height alias), NOT a single master. Cleaner long-term: Fusion exports the drawing under the SAME code the BOM uses (2CFL00 vs 2CF0L0).
+  (C) a specific existing code (e.g. 2CF000-040000) as the master instead of the empty -000000.
+2BK002 (18ce94a) stays as-is (prefix_shares, still PARKED on its own missing source) — different situation (single prefix, no live drawings to wipe).
+**NEEDS:** e to choose A/B/C above before I apply anything (don't want to wipe the live per-height 2CF drawings).
