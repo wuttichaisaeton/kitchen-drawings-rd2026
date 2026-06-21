@@ -6754,3 +6754,21 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): remove ground-plane rectangle from all modes (Realistic = soft shadow only)
 เอ๋ screenshot Component Color 100VFRR-075D60: large white floor plane visible (X'd it). FIX: hide/dispose the ground-plane Mesh in Hidden Line / HL+Shade / Component Color / Explode; keep Realistic's soft contact shadow only (no opaque rect). Acceptance: cabinet floats with shadow in Realistic, no plane elsewhere. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: drop ground plane from non-Realistic modes (ee7d36a, LIVE) ⏱ 00:05
+เอ๋ "เอา 4 เหลี่ยมนี้ออก, เข้าใจว่าเป็นพื้น แต่ไม่ควรมี" — model-viewer's `shadow-intensity > 0` renders the soft contact shadow on a TEXTURED PLANE; on the light backgrounds used by Component Color and the Outline modes, that plane reads as a visible WHITE RECTANGLE under the cabinet.
+
+**Fix**: `shadow-intensity=0` in every mode EXCEPT Realistic.
+- hidden: 0 (unchanged)
+- hiddenshade: 0 (unchanged)
+- compcolor: 0.45 → **0**
+- realistic: 1 (kept; dark BG hides the plane and the shadow is the showroom contact cue)
+- explode: 0.6 → **0**
+
+Initial-paint value also patched so the very first frame on non-Realistic modes has no plane.
+
+**VERIFIED preview** (1280x900, 1CSVB2 Component Color): cabinet floats clean on white BG, **NO ground rectangle**, 54 leaf colours + black edges read unobstructed. shadow=0/0/0/1/0 across hidden/hiddenshade/compcolor/realistic/explode.
+
+**For เอ๋**: Ctrl+Shift+R, 🧊 → no more white floor. Realistic still gets the soft contact shadow over its dark BG.
+Deploy watching. -- G2 (WEB 20)
