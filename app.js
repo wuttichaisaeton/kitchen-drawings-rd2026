@@ -2047,16 +2047,13 @@ async function _kdOpen3D(code) {
     .kd3d-modal .kd3d-body{padding:0;background:#0f1419;display:flex;flex-direction:column;min-height:0}
     .kd3d-modal .kd3d-viewer{flex:1 1 auto;width:100%;height:60vh;min-height:320px;background:#0b0f14;display:block;position:relative}
     .kd3d-modal model-viewer{width:100%;height:100%;background:#0b0f14;--poster-color:#0b0f14;transition:filter .15s ease}
-    /* Lines-only: extreme contrast to dim the surface fill (still drawn under the
-       white wireframe). Wireframe rendering happens via material.wireframe=true on
-       the THREE side; this CSS just sharpens the look. */
-    .kd3d-modal model-viewer.kd3d-mode-lines{filter:contrast(1.35) brightness(.95)}
-    /* Lines + shade (default): high contrast + nearly desaturated → emphasizes
-       silhouette + face boundaries on the white-flattened material → reads as
-       technical illustration. */
-    .kd3d-modal model-viewer.kd3d-mode-linesshade{filter:contrast(1.45) saturate(.10) brightness(.92)}
-    /* Realistic + Explode: no filter — let model-viewer's PBR + shadow do the
-       talking. */
+    /* Outline (เอ๋ ref: Fusion's "Shaded with Visible Edges" view) — white panels
+       with crisp black edge lines. White background so the BLACK EdgesGeometry
+       overlay reads. No CSS filter; the contrast comes from the material+edges. */
+    .kd3d-modal model-viewer.kd3d-mode-outline,
+    .kd3d-modal model-viewer.kd3d-mode-outlineshade{background:#ffffff;--poster-color:#ffffff;filter:none}
+    /* Realistic + Explode: dark background like a viewer chrome, model-viewer's
+       PBR + shadow does the rest. */
     .kd3d-modal model-viewer.kd3d-mode-realistic,
     .kd3d-modal model-viewer.kd3d-mode-explode{filter:none}
     /* Mode picker — 4 buttons across the top of the modal body (visible the
@@ -2123,33 +2120,37 @@ async function _kdOpen3D(code) {
     return;
   }
 
-  // FOUR view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง" + refinement pass):
-  //   hidden      — Hidden Line: pure technical drawing (solid visible edges +
-  //                 dashed hidden edges via EdgesGeometry overlays). No fill.
-  //   hiddenshade — Hidden Line + Shade: same edge overlays on top of a
-  //                 flat-shaded white surface. DEFAULT.
-  //   realistic   — Full PBR with a workshop HDRI, shadows + soft-shadow
-  //                 contact, ACES tone-mapping — looks like a showroom render.
-  //   explode     — Push each per-leaf node outward by a slider 0-100%.
-  //                 Centroid-based: trimesh-exported GLBs bake transforms into
-  //                 vertices (node.position=0), so we use each unit's geometric
-  //                 bbox center, not node.position, for the spread vector.
-  // Persist mode + last explode % per device (kd_3d_mode_v3 / kd_3d_explode_v1).
-  // (v3 because the labels/IDs changed; v2 is migrated transparently.)
-  const MODE_KEY = 'kd_3d_mode_v3';
+  // FOUR view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง" + refinement passes):
+  //   outline      — "Shaded with Visible Edges" / Fusion isometric: flat WHITE
+  //                  surface + crisp BLACK EdgesGeometry overlay on every
+  //                  visible edge. No dashed/hidden pass. White background.
+  //   outlineshade — Same black edge overlay BUT surface uses subtle PBR shading
+  //                  (slight metalness + roughness) so panels have depth. DEFAULT.
+  //   realistic    — Astronaut-demo treatment: env="neutral" (model-viewer's
+  //                  built-in), shadow=1, softness=0.5, exposure=1. Material
+  //                  authored colors are RESTORED — no fake-chrome override.
+  //   explode      — Push each per-leaf node outward via slider 0-100%, using
+  //                  each unit's geometric centroid (trimesh-baked GLBs ship
+  //                  node.position=0 with world-baked vertices).
+  // Persist mode + last explode % per device (kd_3d_mode_v4 / kd_3d_explode_v1).
+  // Migrates v3 (hidden/hiddenshade) and v2 (lines/linesshade) transparently.
+  const MODE_KEY = 'kd_3d_mode_v4';
   const EXPLODE_KEY = 'kd_3d_explode_v1';
-  const VALID = ['hidden', 'hiddenshade', 'realistic', 'explode'];
+  const VALID = ['outline', 'outlineshade', 'realistic', 'explode'];
   let mode = (() => {
     try {
       const m = localStorage.getItem(MODE_KEY);
       if (VALID.includes(m)) return m;
-      // Migrate v2 ids → v3 ids so a returning worker keeps their choice.
+      const v3 = localStorage.getItem('kd_3d_mode_v3');
+      if (v3 === 'hidden') return 'outline';
+      if (v3 === 'hiddenshade') return 'outlineshade';
+      if (v3 === 'realistic' || v3 === 'explode') return v3;
       const v2 = localStorage.getItem('kd_3d_mode_v2');
-      if (v2 === 'lines') return 'hidden';
-      if (v2 === 'linesshade') return 'hiddenshade';
+      if (v2 === 'lines') return 'outline';
+      if (v2 === 'linesshade') return 'outlineshade';
       if (v2 === 'realistic' || v2 === 'explode') return v2;
-      return 'hiddenshade';
-    } catch { return 'hiddenshade'; }
+      return 'outlineshade';
+    } catch { return 'outlineshade'; }
   })();
   let explodePct = (() => {
     try { const v = parseInt(localStorage.getItem(EXPLODE_KEY) || '40', 10); return Math.max(0, Math.min(100, isNaN(v) ? 40 : v)); }
@@ -2159,14 +2160,15 @@ async function _kdOpen3D(code) {
   const modeBtn = (id, ico, label, title) => `<button data-mode="${id}" class="${mode === id ? 'is-on' : ''}" title="${escapeHtml(title)}"><span class="kd3d-mode-ico">${ico}</span><span>${escapeHtml(label)}</span></button>`;
   // mv attrs for the INITIAL paint (so first-frame is correct even before load).
   // Per-mode attribute set is also re-applied in applyMode() on every switch.
-  const initShadow = (mode === 'realistic') ? '1.0' : (mode === 'explode' ? '0.6' : '0');
-  const initExp = (mode === 'realistic') ? '1.4' : (mode === 'explode' ? '1.1' : '1.3');
+  const initShadow = (mode === 'realistic') ? '1' : (mode === 'explode' ? '0.6' : '0');
+  const initSoft = (mode === 'realistic') ? '0.5' : '0.3';
+  const initExp = (mode === 'realistic') ? '1' : (mode === 'explode' ? '1.1' : '1');
   const initTone = (mode === 'realistic' || mode === 'explode') ? 'aces' : 'neutral';
-  const initEnv = (mode === 'realistic') ? _KD3D_HDRI_REALISTIC : 'neutral';
+  const initEnv = 'neutral';   // built-in for all four modes (Astronaut-demo default)
   body.innerHTML = `<div class="kd3d-modebar">
-        ${modeBtn('hidden', '📐', 'Hidden Line', 'Technical drawing: solid lines for visible edges + dashed lines for hidden edges. No fill.')}
-        ${modeBtn('hiddenshade', '🎨', 'Hidden Line + Shade', 'Hidden-line overlay on top of a flat-shaded surface (default).')}
-        ${modeBtn('realistic', '💎', 'Realistic', 'Full PBR with a workshop HDRI + soft shadows + ACES tone-mapping.')}
+        ${modeBtn('outline', '📐', 'Outline', 'Fusion isometric look: flat white panels + crisp black edge lines on every visible edge.')}
+        ${modeBtn('outlineshade', '🎨', 'Outline + Shade', 'Black edges + subtle surface shading so panels have depth (default).')}
+        ${modeBtn('realistic', '💎', 'Realistic', 'model-viewer Astronaut-demo treatment: neutral env IBL + soft shadow + exposure 1.')}
         ${modeBtn('explode', '💥', 'Explode', 'Spread each cabinet part outward by a percentage.')}
       </div>
       <div class="kd3d-explodebar">
@@ -2185,7 +2187,7 @@ async function _kdOpen3D(code) {
           auto-rotate-delay="2500"
           interaction-prompt="auto"
           shadow-intensity="${initShadow}"
-          shadow-softness="0.3"
+          shadow-softness="${initSoft}"
           exposure="${initExp}"
           tone-mapping="${initTone}"
           environment-image="${escapeHtml(initEnv)}"
@@ -2312,11 +2314,11 @@ async function _kdOpen3D(code) {
     return true;
   };
 
-  // Build EdgesGeometry-based line overlays for Hidden Line modes. Each mesh
-  // gets TWO LineSegments children: a solid 'lineVis' (depthTest=true → drawn
-  // only where in front, i.e. visible edges) and a dashed 'lineHid' (depthFunc
-  // = GreaterDepth → drawn only where occluded, i.e. hidden edges). Both
-  // inherit their parent mesh's transform automatically.
+  // Build EdgesGeometry-based BLACK outline overlay for Outline modes. Each
+  // mesh gets ONE LineSegments child (solid visible-edge); depthTest=true so
+  // it's drawn only where in front (no dashed hidden-edge pass — เอ๋ ref =
+  // Fusion's "Shaded with Visible Edges", visible edges only). The line
+  // inherits its parent mesh's transform automatically.
   let _edgesAttempted = false;
   const buildEdgeOverlays = async () => {
     if (_edgesAttempted) return;
@@ -2324,7 +2326,7 @@ async function _kdOpen3D(code) {
     if (!threeScene) return;
     let THREE;
     try { THREE = await _kd3dEnsureThree(); }
-    catch (e) { console.warn('[kd3d] THREE module failed to load — Hidden Line falls back to wireframe-only', e); return; }
+    catch (e) { console.warn('[kd3d] THREE module failed to load — outline overlay disabled', e); return; }
     edgeOverlays = [];
     threeScene.traverse(n => {
       if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
@@ -2333,49 +2335,19 @@ async function _kdOpen3D(code) {
         // triangle-strip seams. (THREE default = 1°, way too noisy.)
         const eg = new THREE.EdgesGeometry(n.geometry, 22);
         const matVis = new THREE.LineBasicMaterial({
-          color: 0xffffff, transparent: false, depthTest: true, depthWrite: false,
+          color: 0x111317, transparent: false, depthTest: true, depthWrite: false,
         });
         const lineVis = new THREE.LineSegments(eg, matVis);
         lineVis.renderOrder = 2;
-        // Dashed hidden: depthFunc = THREE.GreaterDepth makes the lines render
-        // ONLY where they're BEHIND existing depth — i.e. the occluded portion.
-        const matHid = new THREE.LineDashedMaterial({
-          color: 0xc8d4e0, dashSize: 6, gapSize: 4,
-          transparent: true, opacity: 0.55,
-          depthTest: true, depthWrite: false,
-        });
-        matHid.depthFunc = THREE.GreaterDepth || 4;   // 4 = GREATER constant fallback
-        const lineHid = new THREE.LineSegments(eg, matHid);
-        lineHid.renderOrder = 1;
-        lineHid.computeLineDistances && lineHid.computeLineDistances();
-        // Both invisible until applyMode toggles them on.
-        lineVis.visible = false; lineHid.visible = false;
-        n.add(lineVis); n.add(lineHid);
-        edgeOverlays.push({ mesh: n, lineVis, lineHid });
+        lineVis.visible = false;
+        n.add(lineVis);
+        edgeOverlays.push({ mesh: n, lineVis });
       } catch (e) {}
     });
   };
 
-  const setEdgesVisible = (showSolid, showDashed) => {
-    for (const o of edgeOverlays) {
-      o.lineVis.visible = !!showSolid;
-      o.lineHid.visible = !!showDashed;
-    }
-  };
-
-  // material.colorWrite=false lets the mesh keep writing to the DEPTH buffer
-  // (so the dashed-hidden pass can detect occlusion) while drawing nothing
-  // visible — exactly what Hidden Line mode wants. Pure 'hidden' mode flips
-  // this on every mesh; the other modes restore it.
-  const setMeshFillVisible = (showFill) => {
-    for (const s of materialSnap) {
-      const m = s.mat;
-      if (!m) continue;
-      try {
-        m.colorWrite = !!showFill;
-        m.needsUpdate = true;
-      } catch (e) {}
-    }
+  const setEdgesVisible = (show) => {
+    for (const o of edgeOverlays) o.lineVis.visible = !!show;
   };
 
   const applyMaterials = (m) => {
@@ -2383,30 +2355,35 @@ async function _kdOpen3D(code) {
     for (const s of materialSnap) {
       const mat = s.mat;
       try {
-        if (m === 'hidden' || m === 'hiddenshade') {
-          // Flat near-white fill so the shaded surface reads as paper; matches
-          // technical-drawing convention. Hidden mode hides the fill via
-          // colorWrite (see setMeshFillVisible) but materials stay flat.
+        if (m === 'outline') {
+          // Flat WHITE, NO shading — emissive=white + color=black makes the PBR
+          // material render as pure unshaded white (everything from emissive,
+          // no contribution from lights). Closest equivalent to MeshBasicMaterial
+          // without swapping material types (which would lose vertex-group
+          // bindings on per-leaf GLBs).
           mat.wireframe = false;
-          mat.color && mat.color.setRGB && mat.color.setRGB(0.94, 0.94, 0.94);
+          if (mat.color && mat.color.setRGB) mat.color.setRGB(0, 0, 0);
+          if (mat.emissive && mat.emissive.setRGB) mat.emissive.setRGB(1, 1, 1);
+          if (typeof mat.emissiveIntensity === 'number') mat.emissiveIntensity = 1.0;
           if (typeof mat.metalness === 'number') mat.metalness = 0;
           if (typeof mat.roughness === 'number') mat.roughness = 1;
-        } else if (m === 'realistic') {
-          // Stainless-steel PBR override (เอ๋: "ไม่สวยเลย ต้องการแสงเงาที่
-          // เหมือนจริง") — Fusion's trimesh-exported GLB ships with matte
-          // white defaults, which kill the HDRI reflection. Force metallic +
-          // low roughness so the workshop HDRI actually bounces off the surface
-          // like brushed steel. Original snapshot is still kept so any other
-          // mode restores it.
+        } else if (m === 'outlineshade') {
+          // Subtle PBR shading so panels read 3D — slight off-white, slight
+          // metalness, mid roughness so the HDRI bounces gently without going
+          // chrome. Edges still pop because the surface is light overall.
           mat.wireframe = false;
-          if (mat.color && mat.color.setRGB) mat.color.setRGB(0.86, 0.87, 0.89);
-          if (typeof mat.metalness === 'number') mat.metalness = 0.85;
-          if (typeof mat.roughness === 'number') mat.roughness = 0.28;
+          if (mat.color && mat.color.setRGB) mat.color.setRGB(0.92, 0.93, 0.95);
+          if (mat.emissive && mat.emissive.setRGB) mat.emissive.setRGB(0, 0, 0);
+          if (typeof mat.emissiveIntensity === 'number') mat.emissiveIntensity = 0;
+          if (typeof mat.metalness === 'number') mat.metalness = 0.05;
+          if (typeof mat.roughness === 'number') mat.roughness = 0.85;
         } else {
-          // explode — restore the GLB's authored colors so the per-piece
-          // shapes are easy to distinguish at distance.
+          // realistic + explode — restore the GLB's authored colors/PBR so the
+          // model looks like model-viewer's Astronaut demo (เอ๋ benchmark).
           mat.wireframe = false;
           if (s.color && mat.color && mat.color.copy) mat.color.copy(s.color);
+          if (mat.emissive && mat.emissive.setRGB) mat.emissive.setRGB(0, 0, 0);
+          if (typeof mat.emissiveIntensity === 'number') mat.emissiveIntensity = 0;
           if (s.metalness != null && typeof mat.metalness === 'number') mat.metalness = s.metalness;
           if (s.roughness != null && typeof mat.roughness === 'number') mat.roughness = s.roughness;
         }
@@ -2439,35 +2416,40 @@ async function _kdOpen3D(code) {
     mode = next;
     try { localStorage.setItem(MODE_KEY, mode); } catch {}
     VALID.forEach(v => mv.classList.toggle('kd3d-mode-' + v, v === mode));
-    // model-viewer attrs per mode.
-    if (mode === 'hidden' || mode === 'hiddenshade') {
+    // model-viewer attrs per mode. All four use 'neutral' (built-in IBL),
+    // matching the Astronaut demo's lighting baseline; modes vary only on
+    // shadow + exposure + tone for the look they want.
+    mv.setAttribute('environment-image', 'neutral');
+    if (mode === 'outline') {
       mv.setAttribute('shadow-intensity', '0');
-      mv.setAttribute('exposure', '1.3');
+      mv.setAttribute('shadow-softness', '0.5');
+      mv.setAttribute('exposure', '1.0');
       mv.setAttribute('tone-mapping', 'neutral');
-      mv.setAttribute('environment-image', 'neutral');
+    } else if (mode === 'outlineshade') {
+      mv.setAttribute('shadow-intensity', '0.4');
+      mv.setAttribute('shadow-softness', '0.5');
+      mv.setAttribute('exposure', '1.05');
+      mv.setAttribute('tone-mapping', 'neutral');
     } else if (mode === 'realistic') {
-      mv.setAttribute('shadow-intensity', '1.0');
-      mv.setAttribute('shadow-softness', '0.3');
-      mv.setAttribute('exposure', '1.4');
-      mv.setAttribute('tone-mapping', 'aces');
-      mv.setAttribute('environment-image', _KD3D_HDRI_REALISTIC);
+      // Astronaut-demo treatment — exactly what model-viewer ships by default
+      // (เอ๋ benchmark): env="neutral", shadow=1, softness=0.5, exposure=1,
+      // tone="neutral". Materials stay authored (no fake-chrome override).
+      mv.setAttribute('shadow-intensity', '1');
+      mv.setAttribute('shadow-softness', '0.5');
+      mv.setAttribute('exposure', '1');
+      mv.setAttribute('tone-mapping', 'neutral');
     } else if (mode === 'explode') {
       mv.setAttribute('shadow-intensity', '0.6');
-      mv.setAttribute('exposure', '1.1');
-      mv.setAttribute('tone-mapping', 'aces');
-      mv.setAttribute('environment-image', 'neutral');
+      mv.setAttribute('shadow-softness', '0.5');
+      mv.setAttribute('exposure', '1');
+      mv.setAttribute('tone-mapping', 'neutral');
     }
     applyMaterials(mode);
-    // Hidden Line modes: build overlays on first need, then show solid + dashed.
-    if (mode === 'hidden' || mode === 'hiddenshade') {
-      buildEdgeOverlays().then(() => {
-        // colorWrite ON for 'hiddenshade' (mesh visible), OFF for 'hidden' (only edges).
-        setMeshFillVisible(mode === 'hiddenshade');
-        setEdgesVisible(true, true);
-      });
+    // Outline modes: build the black-edge overlay on first need, then show it.
+    if (mode === 'outline' || mode === 'outlineshade') {
+      buildEdgeOverlays().then(() => setEdgesVisible(true));
     } else {
-      setMeshFillVisible(true);
-      setEdgesVisible(false, false);
+      setEdgesVisible(false);
     }
     if (mode === 'explode') applyExplode(explodePct);
     else resetExplode();
