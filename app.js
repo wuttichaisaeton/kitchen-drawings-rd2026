@@ -13058,26 +13058,23 @@ async function init() {
       // a reload scrolled to §3 Mindmap stays at the Mindmap, not §1 Kanban. (เอ๋
       // 2026-06-21 "Ctrl+Shift+R คงรูปแรก".) This is THE fix for the page-bounce.
       if (_restoreAssemblyScroll) {
-        // The editor (and its .kme-assembly-shell scroll container) LAZY-mounts and
-        // then GROWS as nodes fill, so applying the saved scroll too early clamps to
-        // an intermediate height and lands short. Wait until the shell's scrollHeight
-        // has SETTLED (unchanged ~400ms) and can actually reach the target, then apply
-        // ONCE and stop — so a reload scrolled to §3 Mindmap lands back there, not at
-        // §1 Kanban, without fighting a user who scrolls. (เอ๋ "Ctrl+Shift+R คงรูปแรก".)
+        // The editor + its .kme-assembly-shell scroll container LAZY-mount, GROW as
+        // nodes fill, and can REMOUNT/re-render late (RTDB data, repopulate) — each of
+        // which can leave the shell scrolled to the TOP (§1 Kanban). So for a window
+        // after the reload, keep RE-applying the saved scroll whenever the shell can
+        // reach it but is still BELOW it (covers lazy mount, height fluctuation, AND a
+        // late reset). Only acts while below target, so once เอ๋ is at §3 Mindmap (or
+        // scrolls further down) it stops; after the window she fully owns the scroll.
+        // (เอ๋ 2026-06-21 "Ctrl+Shift+R ให้คงรูปแรก ไม่ไปที่อื่น".)
         const _aTarget = _restoreAssemblyScroll;
-        let _lastH = -1, _stable = 0, _done = false, _n = 0;
+        let _n = 0;
         const _iv = setInterval(() => {
           const sh = document.querySelector('.kme-assembly-shell');
           if (sh) {
-            const h = sh.scrollHeight;
-            if (h === _lastH) _stable++; else { _lastH = h; _stable = 0; }
-            const maxT = Math.max(0, h - sh.clientHeight);
-            if (_stable >= 4 && maxT >= _aTarget - 4 && Math.abs(sh.scrollTop - _aTarget) > 4) {
-              try { sh.scrollTop = _aTarget; } catch (e) {}
-              if (Math.abs(sh.scrollTop - _aTarget) <= 4) _done = true;
-            }
-          } else { _lastH = -1; _stable = 0; }
-          if (_done || ++_n > 150) clearInterval(_iv);
+            const maxT = Math.max(0, sh.scrollHeight - sh.clientHeight);
+            if (maxT >= _aTarget - 4 && sh.scrollTop < _aTarget - 4) { try { sh.scrollTop = _aTarget; } catch (e) {} }
+          }
+          if (++_n > 120) clearInterval(_iv);   // ~12s — covers slow mount + late re-renders, then เอ๋ owns the scroll
         }, 100);
       }
       // Re-enter the Nest WORKSPACE that was open before the reload (deep sub-state
