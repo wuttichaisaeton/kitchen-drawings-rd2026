@@ -6584,3 +6584,20 @@ Per RD 05 correction to ad276c2 (เอ๋ "ผิด ขอเป็น Orthogr
 VERIFIED preview (1280x900, 1CSVB2): az=20.00°, polar=70.00°, FOV=10.00°; cabinet reads in gentle 3/4 ortho.
 **For เอ๋**: Ctrl+Shift+R, 🧊 → opens at a comfortable 3/4 ortho. Tab between modes preserves your camera. Pinch to zoom; drag to orbit anywhere.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: ⚡ ROUND-3 BUGFIX -- chain-compose world transform via assemblyContext (_MASTERS fd38cd6); door-drop fixed too
+**Diagnosis matched RD's direction.** Round-2 (276234f) applied `Occurrence.transform2` directly, but transform2 on a PROXY occurrence (which is what `Component.allOccurrences` hands back for nested items) is the LOCAL transform in its IMMEDIATE-PARENT context — not the cumulative world. Net effect on 1CSVB2-105003: every sub-assembly's leaves clustered around the sub-assembly's OWN local origin → "3 floating chunks" = one chunk per sub-assembly. One cause behind every floating chunk.
+**Fix (CC_Export3D.py only):**
+1. New `_world_matrix_chain(occ)`: walk `Occurrence.assemblyContext` from leaf up to root, collect every local `transform2`, then post-multiply via `Matrix3D.transformBy` in REVERSE order (root_local × sub_local × … × leaf_local). That IS the cumulative world matrix — same composition CC_LinkNode/CC_Laser do when they need world coords. Identity at the top of the chain. Translation column still gets cm→mm (×10) at the end.
+2. **Drop the `occ.isVisible` filter** (your point 3). On 1CSVB2-105003 a hidden ancestor folder's light-bulb made `Occurrence.isVisible` return False for the door panel even though the body was perfectly present → dropped from the export → no door in the GLB. New rule: if a part is in the design and has bodies, export it; the assembler can hide nodes in model-viewer side. (No node-visibility chooser on the Fusion side — keeps the failure mode "extra node visible" not "node missing", which is the right way round.)
+3. Diagnostic `world_xform_debug.txt` written next to the add-in on every run: lists the first 12 leaves' display name, ancestor-chain depth, and composed world translation in mm. If anything's still off, ping me with the file — depths >= 2 should carry cumulative translations, not just leaf-local ones.
+**VERIFIED outside Fusion (numpy synth):**
+- Chain `[leaf @ x=+10, sub @ x=+100, root]` → composed world translation `(110, 0, 0)` ✓
+- Vertex `(5,0,0)` in leaf-local → world `(115, 0, 0)` ✓ (rotation block composes too, not just translation)
+- Leaf-local-only (the round-2 bug) → `(10, 0, 0)` — exactly the under-shoot symptom RD described
+- py_compile PASS.
+**NOT addressed in this commit (held back until/unless needed):**
+- **Multi-instance dedup** (your point 2 — same Component instanced N times). Today I export the Component N times to N STL files (correct: each gets its own world transform). Wasteful on big assemblies but never wrong. Optimization for later if any cabinet pushes 5-10 MB GLBs.
+- Whole-assembly fallback STL — rejected, would lose the per-leaf scene graph WEB 20's Mode 4 "Explode view" needs.
+**NEEDS เอ๋ (same ONE click):** CC_Auto palette → ⟳ Reload (dispatch loads sibling fresh per click — no Fusion restart) → 🧊 Export 3D on 1CSVB2-105003 → messageBox → open the web 🧊 modal. Cabinet should now snap into one coherent shape matching the Fusion screenshot, door present. Report file size + screenshot. The world_xform_debug.txt file in `_MASTERS/fusion_scripts/CC_Export3D/` is auto-written each run — paste/screenshot it if anything's still off. ⏱ 00:12 -- Fusion 31
