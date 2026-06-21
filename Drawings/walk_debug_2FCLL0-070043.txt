@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-21T05:14:59.538914
+CC_Assembly walk debug — 2026-06-21T16:44:07.425459
 Project: 2FCLL0-070043
 Total occurrences visited: 16
 CAM-ALPF tagged components: 0
@@ -11,9 +11,9 @@ depth | SM | CAM | material         | display_name (component)
     0 | SM  |     | ALPF             | 2SDCN1-120040 v2:1 (2SDCN1-120040 v2)
     0 | SM  |     | ALPF             | 2DNCR0-070043 v21:1 (2DNCR0-070043 v21)
     0 | SM  |     | ALPF             | 2SDCN1-120040 v2:2 (2SDCN1-120040 v2)
-    0 |     |     |                  | 2BK000-070120 v9:1 (2BK000-070120 v9)
-    1 | SM  |     | ALPF             | 2BK002-070000 v9:1 (2BK002-070000 v9)
-    1 | SM  |     | ALPF             | 2BK002-070000 v9:2 (2BK002-070000 v9)
+    0 |     |     |                  | 2BK000-070120 v10:1 (2BK000-070120 v10)
+    1 | SM  |     | ALPF             | 2BK002-070000 v11:1 (2BK002-070000 v11)
+    1 | SM  |     | ALPF             | 2BK002-070000 v11:2 (2BK002-070000 v11)
     1 | SM  |     | ALPF             | 2BK001-070120 v3:2 (2BK001-070120 v3)
     1 |     |     |                  | 2BK004-070120 v5:1 (2BK004-070120 v5)
     2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
@@ -22,5 +22,5 @@ depth | SM | CAM | material         | display_name (component)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
     0 | SM  |     | ALPF             | 2UPLL0-070043 v12:1 (2UPLL0-070043 v12)
     0 | SM  |     | ALPF             | 2CFL00-070000 v3:1 (2CFL00-070000 v3)
-    0 | SM  |     | ALPF             | 2CN026-120000 v3:1 (2CN026-120000 v3)
+    0 | SM  |     | ALPF             | 2CN026-120000 v4:1 (2CN026-120000 v4)
     0 | SM  |     | ALPF             | 2CN002-120024 v15:1 (2CN002-120024 v15)
