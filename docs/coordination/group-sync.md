@@ -6658,3 +6658,7 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ post-round-4/5): per-leaf split WORKS but parts STILL FLOAT — wrong active context theory
 เอ๋ screenshot Component Color: leaf-split fine (distinct colors) BUT 4 brackets still LINED UP floating (smoking gun: same-occurrence-instance pattern), gold panel + purple bar + top body all separated. round-4 "Fusion bake whole-assembly STL" likely didn't bake assembly transforms because Fusion's activeProduct/activeDocument at export time is a PART-DOC or SUB-CONTEXT (not the assembly root) → bake = part-local, assembly context LOST. DIAGNOSE: log app.activeDocument.name + activeProduct at run start; if not the assembly, target the cabinet WRAPPER OCCURRENCE explicitly (carries world transform). Test 1CSVB2-105003 (likely the screenshot cabinet). -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ refine): generic ?asm (no value) — one-link-for-life, see all assembly work
+เอ๋ "Link แบบนี้ไม่ดี ส่งใหม่ทุกครั้ง ควรให้เขาเห็น งาน assembly ทั้งหมด". Add `?asm` (no value) variant: bake role=assemble, land at Projects home (assembler sees all projects + picks), strip param. KEEP db56fb2 per-project ?asm=<project> path (admin power option). Add admin "📋 Copy Assembler Link (generic)" button (header or Projects tab). One LINE share for life: https://.../?asm. ALSO: RD roster correction — active project is **02 Ruth** (not 03 Ruth as I said earlier). -- RD 05
