@@ -2024,18 +2024,32 @@ async function _kdOpen3D(code) {
 
   const STYLE = `<style>
     .kd3d-modal .kd3d-body{padding:0;background:#0f1419;display:flex;flex-direction:column;min-height:0}
-    .kd3d-modal .kd3d-viewer{flex:1 1 auto;width:100%;height:60vh;min-height:320px;background:#0b0f14;display:block}
+    .kd3d-modal .kd3d-viewer{flex:1 1 auto;width:100%;height:60vh;min-height:320px;background:#0b0f14;display:block;position:relative}
     .kd3d-modal model-viewer{width:100%;height:100%;background:#0b0f14;--poster-color:#0b0f14;transition:filter .15s ease}
-    /* Edges mode: high contrast + nearly desaturated → emphasizes silhouette and
-       face boundaries against the dark background (technical-drawing look).
-       Combined with white-flattened materials + neutral lighting on the
-       model-viewer side, this reads as line-art at a distance. */
-    .kd3d-modal model-viewer.kd3d-edges{filter:contrast(1.45) saturate(.10) brightness(.92)}
-    .kd3d-modal .kd3d-foot{display:flex;align-items:center;gap:12px;padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
-    .kd3d-modal .kd3d-hint{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .kd3d-modal .kd3d-mode{flex:0 0 auto;display:inline-flex;gap:2px;background:#0b0f14;border:1px solid #1c2530;border-radius:8px;padding:2px;font-family:"Flux Architect",ui-monospace,monospace}
-    .kd3d-modal .kd3d-mode button{background:transparent;border:0;color:#9fb0c0;font:inherit;font-size:11px;padding:4px 9px;border-radius:6px;cursor:pointer;letter-spacing:.3px}
-    .kd3d-modal .kd3d-mode button.is-on{background:#1c2530;color:#e6edf4}
+    /* Lines-only: extreme contrast to dim the surface fill (still drawn under the
+       white wireframe). Wireframe rendering happens via material.wireframe=true on
+       the THREE side; this CSS just sharpens the look. */
+    .kd3d-modal model-viewer.kd3d-mode-lines{filter:contrast(1.35) brightness(.95)}
+    /* Lines + shade (default): high contrast + nearly desaturated → emphasizes
+       silhouette + face boundaries on the white-flattened material → reads as
+       technical illustration. */
+    .kd3d-modal model-viewer.kd3d-mode-linesshade{filter:contrast(1.45) saturate(.10) brightness(.92)}
+    /* Realistic + Explode: no filter — let model-viewer's PBR + shadow do the
+       talking. */
+    .kd3d-modal model-viewer.kd3d-mode-realistic,
+    .kd3d-modal model-viewer.kd3d-mode-explode{filter:none}
+    /* Mode picker — 4 buttons across the top of the modal body (visible the
+       moment the modal opens, even before the GLB loads). */
+    .kd3d-modal .kd3d-modebar{display:flex;align-items:center;gap:2px;padding:6px 8px;background:#0b0f14;border-bottom:1px solid #1c2530;font-family:"Flux Architect",ui-monospace,monospace}
+    .kd3d-modal .kd3d-modebar button{flex:1 1 0;background:transparent;border:1px solid transparent;color:#9fb0c0;font:inherit;font-size:11.5px;padding:6px 4px;border-radius:6px;cursor:pointer;letter-spacing:.2px;display:flex;align-items:center;justify-content:center;gap:5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .kd3d-modal .kd3d-modebar button .kd3d-mode-ico{font-size:13px}
+    .kd3d-modal .kd3d-modebar button:hover{background:#0f1620;color:#e6edf4}
+    .kd3d-modal .kd3d-modebar button.is-on{background:#1c2530;border-color:#2b3a4d;color:#e6edf4}
+    .kd3d-modal .kd3d-explodebar{display:none;align-items:center;gap:10px;padding:6px 12px 8px;background:#0b0f14;border-bottom:1px solid #1c2530;font-family:"Flux Architect",ui-monospace,monospace;font-size:11px;color:#9fb0c0}
+    .kd3d-modal.kd3d-modal-explode .kd3d-explodebar{display:flex}
+    .kd3d-modal .kd3d-explodebar input[type=range]{flex:1 1 auto;min-width:0;accent-color:#f2a93b}
+    .kd3d-modal .kd3d-explodebar .kd3d-explode-val{flex:0 0 36px;text-align:right;color:#e6edf4;font-weight:600}
+    .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
     .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-title{font-size:15px;color:#e6edf4}
@@ -2088,138 +2102,249 @@ async function _kdOpen3D(code) {
     return;
   }
 
-  // Initial mode = edges (เอ๋ 2026-06-22: "ดูไม่รู้เรื่องเลย หรือให้รูปเป็นลายเส้น
-  // จะดูง่ายกว่าไหม"). The default shaded view rendered the cabinet as featureless
-  // white blobs; edges mode flattens lighting + nearly-desaturates the canvas via
-  // CSS contrast filter, then walks the GLB materials to set baseColor near-white,
-  // metallic=0, roughness=1 → reads as a technical drawing. Toggle in the footer
-  // restores shaded view. Choice persists via localStorage so a worker only picks
-  // once. kd_3d_mode_v1 = 'edges' | 'solid'.
+  // FOUR view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง"):
+  //   lines       — pure wireframe / edges only (material.wireframe=true via THREE).
+  //   linesshade  — shaded surface + edge-emphasizing CSS contrast (DEFAULT).
+  //   realistic   — full PBR: shadows, ground reflection, neutral env IBL.
+  //   explode     — push each per-leaf node outward by a slider 0-100%.
+  // Persist mode + last explode % per device (kd_3d_mode_v2 / kd_3d_explode_v1).
+  const MODE_KEY = 'kd_3d_mode_v2';
+  const EXPLODE_KEY = 'kd_3d_explode_v1';
+  const VALID = ['lines', 'linesshade', 'realistic', 'explode'];
   let mode = (() => {
-    try { const m = localStorage.getItem('kd_3d_mode_v1'); return m === 'solid' ? 'solid' : 'edges'; }
-    catch { return 'edges'; }
+    try { const m = localStorage.getItem(MODE_KEY); return VALID.includes(m) ? m : 'linesshade'; }
+    catch { return 'linesshade'; }
+  })();
+  let explodePct = (() => {
+    try { const v = parseInt(localStorage.getItem(EXPLODE_KEY) || '40', 10); return Math.max(0, Math.min(100, isNaN(v) ? 40 : v)); }
+    catch { return 40; }
   })();
 
-  body.innerHTML = `<model-viewer
-      class="kd3d-viewer ${mode === 'edges' ? 'kd3d-edges' : ''}"
-      src="${escapeHtml(glbUrl)}"
-      camera-controls
-      touch-action="pan-y"
-      auto-rotate
-      auto-rotate-delay="2500"
-      interaction-prompt="auto"
-      shadow-intensity="${mode === 'edges' ? '0' : '0.8'}"
-      exposure="${mode === 'edges' ? '1.3' : '1.0'}"
-      tone-mapping="${mode === 'edges' ? 'neutral' : 'auto'}"
-      environment-image="${mode === 'edges' ? 'neutral' : ''}"
-      ar="false"
-      reveal="auto"
-      ></model-viewer>
-      <div class="kd3d-foot">
-        <span class="kd3d-hint">Drag to orbit · pinch / scroll to zoom · two-finger drag to pan</span>
-        <span class="kd3d-mode" role="tablist" aria-label="View mode">
-          <button data-mode="edges" class="${mode === 'edges' ? 'is-on' : ''}" title="Technical drawing / line-art look">📐 Edges</button>
-          <button data-mode="solid" class="${mode === 'solid' ? 'is-on' : ''}" title="Shaded / lit render">🧊 Solid</button>
-        </span>
-      </div>`;
+  const modeBtn = (id, ico, label, title) => `<button data-mode="${id}" class="${mode === id ? 'is-on' : ''}" title="${escapeHtml(title)}"><span class="kd3d-mode-ico">${ico}</span><span>${escapeHtml(label)}</span></button>`;
+  // mv attrs for the INITIAL paint (so first-frame is correct even before load).
+  // Per-mode attribute set is also re-applied in applyMode() on every switch.
+  const initShadow = (mode === 'realistic' || mode === 'explode') ? '1.0' : '0';
+  const initExp = (mode === 'realistic' || mode === 'explode') ? '1.0' : '1.3';
+  const initTone = (mode === 'realistic') ? 'aces' : 'neutral';
+  body.innerHTML = `<div class="kd3d-modebar">
+        ${modeBtn('lines', '📐', 'Lines', 'Pure wireframe / line art — no fill')}
+        ${modeBtn('linesshade', '🎨', 'Lines + Shade', 'Shaded surface + edge-emphasizing contrast (default)')}
+        ${modeBtn('realistic', '💎', 'Realistic', 'Full PBR — lighting, shadows, ground reflection')}
+        ${modeBtn('explode', '💥', 'Explode', 'Spread the cabinet apart by a percentage')}
+      </div>
+      <div class="kd3d-explodebar">
+        <span>Explode</span>
+        <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
+        <span class="kd3d-explode-val">${explodePct}%</span>
+      </div>
+      <div class="kd3d-viewer">
+        <model-viewer
+          class="kd3d-mode-${mode}"
+          src="${escapeHtml(glbUrl)}"
+          camera-controls
+          touch-action="pan-y"
+          auto-rotate
+          auto-rotate-delay="2500"
+          interaction-prompt="auto"
+          shadow-intensity="${initShadow}"
+          shadow-softness="0.5"
+          exposure="${initExp}"
+          tone-mapping="${initTone}"
+          environment-image="neutral"
+          ar="false"
+          reveal="auto"
+        ></model-viewer>
+      </div>
+      <div class="kd3d-foot">Drag to orbit · pinch / scroll to zoom · two-finger drag to pan</div>`;
   const mv = body.querySelector('model-viewer');
+  const modal2 = body.closest('.kd3d-modal');
+  if (mode === 'explode') modal2 && modal2.classList.add('kd3d-modal-explode');
   // model-viewer's error event fires when src fails to load — swap to the
   // placeholder (covers the rare HEAD-200 but parse-fail case).
   mv && mv.addEventListener('error', () => {
     showPlaceholder('Failed to load 3D model', 'The GLB at Drawings/3d/' + code + '.glb returned an error during load (possibly a stale CDN cache or corrupt file).');
   });
 
-  // Snapshot of each material's pbrMetallicRoughness so a toggle back to 'solid'
-  // restores the GLB's authored look exactly (Fusion 31's STL→trimesh path emits
-  // a default white material, but the GLB authoring may change — never assume).
-  let matSnap = null;
-  const snapshotMaterials = () => {
+  // ── THREE.js scene access ────────────────────────────────────────────────
+  // model-viewer keeps its real THREE.Scene on a private Symbol-keyed prop.
+  // The wrapper API (mv.model.materials) only exposes PBR — not material.wireframe,
+  // not node positions — so for true wireframe + explode we need the THREE side.
+  let threeScene = null;          // THREE.Scene (mv[Symbol(scene)])
+  let materialSnap = [];          // [{mat, color: THREE.Color clone, metalness, roughness, wireframe}]
+  let explodeRoot = null;         // THREE.Object3D — parent whose children are the explode units
+  let explodeUnits = [];          // [{node, x, y, z}] — original positions (in explodeRoot's local space)
+  let explodeCenter = { x: 0, y: 0, z: 0 };
+
+  const _getScene = () => {
+    if (!mv) return null;
     try {
-      const mats = mv && mv.model && mv.model.materials;
-      if (!mats || !mats.length) return false;
-      matSnap = mats.map(m => {
-        const p = m.pbrMetallicRoughness;
-        if (!p) return null;
-        return { baseColor: [...(p.baseColorFactor || [1,1,1,1])], metallic: p.metallicFactor, roughness: p.roughnessFactor };
-      });
-      return true;
-    } catch (e) { return false; }
+      const sym = Object.getOwnPropertySymbols(mv).find(s => s.toString() === 'Symbol(scene)');
+      return sym ? mv[sym] : null;
+    } catch (e) { return null; }
   };
 
-  const applyEdgesMaterials = () => {
-    try {
-      const mats = mv && mv.model && mv.model.materials;
-      if (!mats) return;
-      for (const m of mats) {
-        const p = m.pbrMetallicRoughness;
-        if (!p) continue;
-        // Near-white but not pure 1.0 so the contrast filter still finds edges.
-        p.setBaseColorFactor && p.setBaseColorFactor([0.94, 0.94, 0.94, 1.0]);
-        p.setMetallicFactor && p.setMetallicFactor(0.0);
-        p.setRoughnessFactor && p.setRoughnessFactor(1.0);
+  const snapshotScene = () => {
+    threeScene = _getScene();
+    if (!threeScene) return false;
+    // Materials — snapshot color (THREE.Color), metalness/roughness/wireframe so
+    // 'realistic' can restore the GLB's authored look exactly.
+    materialSnap = [];
+    threeScene.traverse(n => {
+      if (n.isMesh && n.material) {
+        const mats = Array.isArray(n.material) ? n.material : [n.material];
+        for (const m of mats) {
+          materialSnap.push({
+            mat: m,
+            color: m.color && m.color.clone ? m.color.clone() : null,
+            metalness: (typeof m.metalness === 'number') ? m.metalness : null,
+            roughness: (typeof m.roughness === 'number') ? m.roughness : null,
+            wireframe: !!m.wireframe,
+          });
+        }
       }
-    } catch (e) {}
-  };
-  const restoreSolidMaterials = () => {
-    try {
-      const mats = mv && mv.model && mv.model.materials;
-      if (!mats || !matSnap) return;
-      for (let i = 0; i < mats.length; i++) {
-        const p = mats[i].pbrMetallicRoughness;
-        const s = matSnap[i];
-        if (!p || !s) continue;
-        p.setBaseColorFactor && p.setBaseColorFactor(s.baseColor);
-        p.setMetallicFactor && p.setMetallicFactor(s.metallic);
-        p.setRoughnessFactor && p.setRoughnessFactor(s.roughness);
+    });
+    // Explode root: deepest ancestor of all meshes that has ≥ 2 children, with
+    // ≥ 2 meshes in its subtree. Tie-break by highest direct-child count (more
+    // explode units = better visual). For a typical Fusion-exported cabinet
+    // (per-leaf nodes per Fusion 31 Q3), this lands on the cabinet wrapper.
+    let best = null, bestDepth = -1, bestKids = 0;
+    const depth = (n) => { let d = 0; let c = n; while (c && c.parent) { d++; c = c.parent; } return d; };
+    threeScene.traverse(n => {
+      if (!n.children || n.children.length < 2) return;
+      let m = 0;
+      n.traverse(d => { if (d.isMesh) m++; });
+      if (m < 2) return;
+      const dp = depth(n);
+      if (dp > bestDepth || (dp === bestDepth && n.children.length > bestKids)) {
+        best = n; bestDepth = dp; bestKids = n.children.length;
       }
-    } catch (e) {}
+    });
+    explodeRoot = best;
+    if (explodeRoot) {
+      explodeUnits = explodeRoot.children.map(ch => ({ node: ch, x: ch.position.x, y: ch.position.y, z: ch.position.z }));
+      let sx = 0, sy = 0, sz = 0;
+      for (const u of explodeUnits) { sx += u.x; sy += u.y; sz += u.z; }
+      const n = explodeUnits.length || 1;
+      explodeCenter = { x: sx / n, y: sy / n, z: sz / n };
+    } else {
+      explodeUnits = [];
+    }
+    return true;
   };
 
-  // Apply / restore lighting attrs + materials according to the current mode.
+  const applyMaterials = (m) => {
+    if (!materialSnap.length) return;
+    for (const s of materialSnap) {
+      const mat = s.mat;
+      try {
+        if (m === 'lines') {
+          mat.wireframe = true;
+          mat.color && mat.color.setRGB && mat.color.setRGB(0.94, 0.94, 0.94);
+          if (typeof mat.metalness === 'number') mat.metalness = 0;
+          if (typeof mat.roughness === 'number') mat.roughness = 1;
+        } else if (m === 'linesshade') {
+          mat.wireframe = false;
+          mat.color && mat.color.setRGB && mat.color.setRGB(0.94, 0.94, 0.94);
+          if (typeof mat.metalness === 'number') mat.metalness = 0;
+          if (typeof mat.roughness === 'number') mat.roughness = 1;
+        } else {
+          // realistic + explode — restore originals
+          mat.wireframe = false;
+          if (s.color && mat.color && mat.color.copy) mat.color.copy(s.color);
+          if (s.metalness != null && typeof mat.metalness === 'number') mat.metalness = s.metalness;
+          if (s.roughness != null && typeof mat.roughness === 'number') mat.roughness = s.roughness;
+        }
+        mat.needsUpdate = true;
+      } catch (e) {}
+    }
+  };
+
+  const applyExplode = (pct) => {
+    if (!explodeUnits.length) return;
+    const factor = (pct / 100) * 1.5;   // 100% → push 1.5× the original offset
+    for (const u of explodeUnits) {
+      u.node.position.set(
+        u.x + (u.x - explodeCenter.x) * factor,
+        u.y + (u.y - explodeCenter.y) * factor,
+        u.z + (u.z - explodeCenter.z) * factor,
+      );
+    }
+  };
+  const resetExplode = () => {
+    for (const u of explodeUnits) u.node.position.set(u.x, u.y, u.z);
+  };
+
   const applyMode = (next) => {
-    if (!mv) return;
+    if (!mv || !VALID.includes(next)) return;
     mode = next;
-    try { localStorage.setItem('kd_3d_mode_v1', mode); } catch {}
-    // CSS filter toggle for the contrast/desat boost.
-    mv.classList.toggle('kd3d-edges', mode === 'edges');
-    // Lighting attrs — set them BEFORE the material flattening so the env image
-    // change takes effect on the next render tick.
-    if (mode === 'edges') {
+    try { localStorage.setItem(MODE_KEY, mode); } catch {}
+    // CSS class drives the filter.
+    VALID.forEach(v => mv.classList.toggle('kd3d-mode-' + v, v === mode));
+    // model-viewer attrs per mode.
+    if (mode === 'lines' || mode === 'linesshade') {
       mv.setAttribute('shadow-intensity', '0');
       mv.setAttribute('exposure', '1.3');
       mv.setAttribute('tone-mapping', 'neutral');
       mv.setAttribute('environment-image', 'neutral');
-      applyEdgesMaterials();
-    } else {
+    } else if (mode === 'realistic') {
+      mv.setAttribute('shadow-intensity', '1.0');
+      mv.setAttribute('shadow-softness', '0.5');
+      mv.setAttribute('exposure', '1.0');
+      mv.setAttribute('tone-mapping', 'aces');
+      mv.setAttribute('environment-image', 'neutral');
+    } else if (mode === 'explode') {
       mv.setAttribute('shadow-intensity', '0.8');
       mv.setAttribute('exposure', '1.0');
-      mv.setAttribute('tone-mapping', 'auto');
-      mv.removeAttribute('environment-image');
-      restoreSolidMaterials();
+      mv.setAttribute('tone-mapping', 'aces');
+      mv.setAttribute('environment-image', 'neutral');
     }
-    // Update the toggle button highlight.
-    body.querySelectorAll('.kd3d-mode button').forEach(btn => {
+    // THREE-side material updates (no-op if not loaded yet; load handler re-applies).
+    applyMaterials(mode);
+    // Explode units: reset when leaving explode, apply on entry.
+    if (mode === 'explode') applyExplode(explodePct);
+    else resetExplode();
+    // Show / hide explode slider.
+    modal2 && modal2.classList.toggle('kd3d-modal-explode', mode === 'explode');
+    // Mode-button highlight.
+    body.querySelectorAll('.kd3d-modebar button').forEach(btn => {
       btn.classList.toggle('is-on', btn.getAttribute('data-mode') === mode);
     });
   };
 
-  // The materials are only on mv.model AFTER the GLB has loaded. Snapshot once,
-  // then apply the initial mode's materials. (CSS filter + lighting attrs were
-  // already set in the HTML so the first paint is correct even pre-load.)
+  // After the GLB loads, snapshot the scene + (re-)apply the current mode so
+  // material/wireframe/explode changes take effect now that mv[Symbol(scene)]
+  // has real geometry. Without this the initial mode would only have its CSS
+  // filter + mv-attribute effects, not the THREE-side ones.
   if (mv) {
     mv.addEventListener('load', () => {
-      if (snapshotMaterials() && mode === 'edges') applyEdgesMaterials();
+      if (snapshotScene()) applyMode(mode);
     }, { once: true });
   }
 
-  // Wire the toggle.
-  body.querySelectorAll('.kd3d-mode button').forEach(btn => {
+  // Wire mode buttons.
+  body.querySelectorAll('.kd3d-modebar button').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const next = btn.getAttribute('data-mode');
       if (next && next !== mode) applyMode(next);
     });
   });
+
+  // Wire explode slider (live, debounced through requestAnimationFrame).
+  const slider = body.querySelector('.kd3d-explodebar input[type=range]');
+  const sliderVal = body.querySelector('.kd3d-explode-val');
+  if (slider) {
+    let raf = 0;
+    slider.addEventListener('input', () => {
+      explodePct = parseInt(slider.value, 10) || 0;
+      sliderVal && (sliderVal.textContent = explodePct + '%');
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => { raf = 0; if (mode === 'explode') applyExplode(explodePct); });
+    });
+    slider.addEventListener('change', () => {
+      try { localStorage.setItem(EXPLODE_KEY, String(explodePct)); } catch {}
+    });
+  }
 }
 
 // Global handle for console / direct callers (เอ๋'s scripts also use this).
