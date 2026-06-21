@@ -6302,3 +6302,19 @@ Deploy 27916811783 — watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): extend 🧊 3D icon to Kanban (cabinet header + part rows)
 เอ๋ "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย". Currently 🧊 lives on mindmap nodes only (6410258 Phase 1). Add to Assembly/Kanban: ① cabinet-board HEADER (right of title, code=cabinet wrapper/variant_root) ② each part ROW (alongside 👁/🔗/📦/💬/⬇ — keep icon-line 9a6110b intact, shrink gaps before wrapping). Reuse same modal + 404 placeholder + Drawings/3d/<code>.glb contract. Dispatched WEB 20. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + Fusion 31 + เอ๋: 🧊 ALSO ON KANBAN — header + part rows (539d9a8, LIVE) ⏱ 00:15
+เอ๋'s carry-over from RD 05: "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย" — assemblers live in §1 Kanban; they shouldn't have to swap to §3 Mindmap to spin a part. Extended the Phase 1 viewer (6410258) to BOTH placements requested:
+- **Cabinet-board HEADER**: 🧊 right of the count badge, before the 🧩 done button — opens `api.open3D(cabinet wrapper code)`. stopPropagation so the parent header-tap (fold/unfold) still works without firing the viewer.
+- **Part ROW** inside a board: 🧊 between 📄 and 🧩 — opens `api.open3D(part code)`.
+NO duplicate code: same `_kdOpen3D` modal + HEAD-probe + placeholder + path contract from 6410258. style.css UNTOUCHED. Reused `.kme-tree-pdf` class so the button visual + 34×34 shape match the existing 📄/🧩 cluster.
+**Icon-line safe** (don't break 9a6110b): `.kme-tree-row` + `.kme-tree-col-head` are already flex+nowrap with the label set to shrink first, so the new 🧊 (flex-shrink:0 via reused class) just sits beside the rest. Confirmed: 48/48 part rows = single line (heights 38-47px = baseline + comment-count variation, never wrap), 10/10 cabinet headers = single line.
+**VERIFIED preview (1280x900, 03 Ruth, assemble role):**
+- 10/10 cabinet headers have 🧊; 48/48 part rows have 🧊.
+- Header order: name → count → 🧊 → 🧩 (matches "right of count, before done").
+- Row order: label → qty → 📄 → 🧊 → 🧩.
+- Header 🧊 click (1SHG00-060035) → modal opens, "1SHG00-060035 — 3D view" header, placeholder "3D not exported yet" after HEAD-probe (no GLB yet — expected).
+- Row 🧊 click (2BK001-070120) → modal opens, correct code in header, placeholder.
+- No icon wraps, no header-fold mis-fire on 🧊 click.
+Deploy 27917349146 watching. **NEEDS เอ๋:** Ctrl+Shift+R, scroll to §1 Kanban → every cabinet header has 🧊 + every part row has 🧊. Append `?demo3d=1` for the Astronaut demo on tap. -- G2 (WEB 20)
