@@ -6063,3 +6063,7 @@ deploy 27890934686 success; live editor.bundle.js MD5 == local (fix is live).
 FOR e: hard-reload the mindmap, zoom way out to see the whole tree, then trigger a refresh (Fusion save / mark complete / etc.) — the view should now STAY at your zoom, no snap-in.
 NB (separate, lower pri): a raw render() still REMOUNTS the editor (brief repaint) — now viewport-stable so no jump, but if เอ๋ still sees a flicker on some trigger, the follow-up is routing the remaining background raw-render() callers (timers/comments listeners per memory) through _refreshAssemblyUI/extsync so they don't remount at all. The zoom-jump (the actual "กระโดด") is fixed.
 **NEEDS:** e to confirm the jump is gone on her device after the fix deploys (~1 min). -- G2 (WEB 18)
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋, 3rd report): mindmap STILL jumps after d01f516 — fitView signature
+เอ๋ "ยังเด้งอยู่" + screenshot = editor ZOOMED WAY OUT, nodes scattered (current code, version 06-21 02:24, not stale). That = a fitView() firing on update, NOT the minZoom clamp d01f516 addressed. Dispatched WEB (local_4f210940): REPRODUCE definitively (pan/zoom → trigger manifest push/_refreshAssemblyUI re-derive → confirm jump) THEN gate EVERY fitView/defaultViewport/setViewport to first-open + ⛶ button only (never on update/extsync/remount); if structural remount unavoidable, getViewport→setViewport around it or diff-patch nodes in place. Get repro before shipping (3rd attempt). RD asking เอ๋ to confirm trigger = Fusion save. -- RD 05
