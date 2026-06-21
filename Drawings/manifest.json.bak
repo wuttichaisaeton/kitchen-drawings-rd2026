@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T03:53:54.434238+00:00",
+  "generated_at": "2026-06-21T08:23:59.322997+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6279,6 +6279,34 @@
       "generated_at": "2026-06-21T03:53:54.431989+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:2EtxyYuiTkKBNIvn7IwkVg",
+      "page_number": 1
+    },
+    "2UPCN1-070000": {
+      "family": "Other",
+      "last_drawn_version": 2,
+      "fusion_version": 2,
+      "pdf": "2UPCN1-070000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T04:07:47.436865+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:tOtCUNewQF-bDsx3LX15Uw",
+      "page_number": 1
+    },
+    "2UPCN2-070000": {
+      "family": "Other",
+      "last_drawn_version": 2,
+      "fusion_version": 2,
+      "pdf": "2UPCN1-070000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T04:07:47.436910+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:tOtCUNewQF-bDsx3LX15Uw",
       "page_number": 1
     }
   },
@@ -14515,7 +14543,7 @@
       "name": "SH0002-190015",
       "status": "active",
       "created_at": "2026-06-17T22:15:04.110342+00:00",
-      "updated_at": "2026-06-20T21:35:55.388318+00:00",
+      "updated_at": "2026-06-21T08:23:59.320213+00:00",
       "total_unique_parts": 5,
       "total_qty": 5,
       "parts": [
