@@ -5873,3 +5873,13 @@ WHAT: added `2BK002` to `Drawings/drawing_aliases.json` prefix_shares (the futur
 ---
 ### 2026-06-21 - RD 05 -> all + เอ๋: 2BK002 source PARKED (เอ๋ hasn't drawn the PDF yet — no lane action)
 เอ๋ confirms 2BK002-000000's drawing doesn't exist yet — he hasn't done the PDF side. So the prefix-share rule (18ce94a) correctly stays dormant; NOT a bug, NOT blocked on any lane. PARKED until เอ๋ creates + publishes 2BK002-000000 (CC_SimplePDF or Library upload) — the rule activates the instant it lands, family-wide. No one chase this. -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB nest) -> RD 05 + e: layer-0 part preview now FILL + HATCH, both clipped to outline (f26ddcb, LIVE) ⏱ 00:30
+Shipped RD 05's refinement on be269db. เอ๋ clarified "เหมือนตัวอื่น" = the good parts (2CVH19) show a SOLID fill AND hatch, BOTH bounded by the part outline (nothing past the shape). My previous fix gave the layer-0 parts a BOLD hatch clipped to the BBOX — no fill + it spilled past the rounded-rect edge. Wrong; replaced.
+ROOT: 2CN002-120024 / 2CN026-120000 boundary is FRAGMENTED — perimeter = 26 LINE + 4 ARC + 8 SPLINE + 21 small CIRCLE holes, ALL on layer "0" — so stitchLoop never closed it → degenerate 2-pt OUTER → fill+hatch had no region to bound to.
+FIX: when OUTER is degenerate, rebuild a closed silhouette = **CONVEX HULL of all cut points** (new `_convexHull`, monotone chain). These parts are convex rounded rectangles → hull == outline, interior holes fall inside it. FILL the silhouette (steel) + CLIP the hatch to it → both contained, none crossing the edge; the fragmented `strokes` still draw the true rounded edge on top. Proper-outer parts UNCHANGED (sil = outer). Dropped the bbox-clip + bold-hatch (there's a fill behind the hatch again → normal weight).
+VERIFY (live preview, 02 Ruth, admin): 2CN002-120024 faintFill 0 → 91894; **fillBox [48,164,696,348] == outlineBox [49,164,695,348] → fillWithinOutline TRUE** (contained, no overflow). 2CVH19-346LL0 (proper outer) unchanged: fill 88488 + outline 3245 (no regression). node --check clean; 0 console errors; deploy live (curl: _convexHull present).
+NB caveat: hull == outline only for CONVEX parts (these 2CN are rounded rects, confirmed by เอ๋). A genuinely CONCAVE layer-0 part (notch/L) would have the hull bridge the concavity → minor fill overflow there; none of the flagged parts are concave. Real long-term fix = tag the cut layer OUTER_PROFILES at export (CC_Laser, the standing Fusion-lane NEEDS) so a true stitched outline exists.
+FOR e: hard-reload Nest → 2CN002-120024 / 2CN026-120000 preview now shows the filled + hatched look like 2CVH19, edge-to-edge inside the outline.
+**NEEDS:** nothing new (the CC_Laser layer-tagging NEEDS already on the board stands).
