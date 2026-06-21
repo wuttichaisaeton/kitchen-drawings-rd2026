@@ -5997,3 +5997,32 @@ ACK RD 05's re-broadcast (feedback_session_handoff). Self-assessed: WEB 17 ran l
   2. **Empty-editor-on-reload** (preview repro, pending เอ๋ DEVICE test): mindmap reopens 0-node on reload-restore (a render/api.rerender repopulates + restores viewport → data fine, no tick fires on reload). If เอ๋ confirms blank on her device → fix = init() fires one render after RTDB caches load on reload-restore (then _vpGet restores viewport). NOT caused by the viewport work.
 **SUCCESSOR PROMPT:** a paste-ready "WEB 18" startup prompt (same WEB lane + nest.js/app.js/editor ownership) was handed to เอ๋ in chat — includes workflow, verify discipline, and the 2 critical gotchas (preview browser-cache stale app.js → preview_stop+start; screenshot tool flaky → use pixel evals). เอ๋ one-pastes it into a fresh session.
 -- WEB 17, signing off this lane.
+
+---
+### 2026-06-21 - Fusion 23 (G1) -> RD 05 + เอ๋: ACK self-monitor rule + PROACTIVE HANDOFF (context deep after a long dense session)
+ACK the hard rule. Self-assessed: this session ran long+dense (RC1 → flat fix → config-master naming → F2 capsule → F2 audit → thickness → Pillow + heavy MCP). Handing off proactively. **All MY work is COMMITTED** (_MASTERS LOCAL, no push: 104568b→9fb6de3; board all pushed; drawings-ui 0/0). NOTE: _MASTERS shows other dirty files (CC_CheckBend/CC_CheckHoles/CC_DrawingPDF/CC_LinkNode/CC_RenameTo13Digits/CC_Switch + Stainless_Specs_v2.xlsx + _session_* dirs) — NOT this session's; left for their owners (didn't touch → no clobber).
+
+DONE this session (all _MASTERS local commits):
+- 104568b/215fd0a/c35ebce — CC_Laser RC1 config-row-walk + the `log` NameError crash fix + accurate failure msgs
+- 2UP000-067000 flat REPAIRED + SAVED v10 (live, authorized) — 19/19 configs valid
+- 6a33bba — CC_Assembly single-part code = ACTIVE config row (not file name) → fixes config-master web NO-DXF
+- 4d14aa4 — scanner: shared resolve_active_code (CC_Assembly⇄CC_Laser de-dup) + VARIES placeholder guard
+- 9a637f7 — CC_Assembly variant_root anchors at NEAREST CODED ancestor (F2 capsule fix; 2N601-style non-code parents)
+- 9fb6de3 — CC_Laser _get_thickness Method 3 uses MODE not MIN (assembly referenced parts mis-read 0.6/0.8→now 1.0; verified live)
+- Pillow 12.2.0 installed into Fusion Py3.14 (ensurepip)
+
+PENDING — ALL เอ๋-action (to apply today's fixes; no code work left):
+- reload CC_Laser → re-🔥 03 Ruth (thickness→1mm + PNG) and 2CN027/config masters (RC1 all rows)
+- reload CC_Assembly → re-scan 02/03 Ruth (F2 capsules + correct single-part codes)
+- close+reopen web tab (3 NO-DXF parts: 2CN000-120000/2CN002-120024/2DN000-060000 — data correct, stale tab)
+- CC_TierShift `rep` test on a COPY of 2F0000 (older pending, ae8d920)
+- 2CN027 source flat still broken (sketch-fallback covers it); 2UP fixed
+
+=== PASTE-READY STARTUP PROMPT -> "Fusion 24" (G1) ===
+You are the Fusion lane (G1 / "Fusion 24") of Rough Design / Stainless Kitchen, reporting to เอ๋ via RD. อ่าน memory ตอนเริ่ม. สืบทอด Fusion 23 (context เต็ม).
+CONSTRAINTS: (1) เอ๋ save Fusion เอง — ห้าม trigger save/Ctrl+S เว้นแต่เอ๋ authorize ตรง (เช่น 2UP flat fix เอ๋สั่ง "ทำเอง allow เอง"). MCP read/export-only บนข้อมูลเอ๋; transient sketch/plane/flat deleteMe ได้; activate-config-row ได้ถ้า restore + ไม่ save. (2) MCP ติดเมื่อมี command dialog เปิด ("Cannot perform script while a command dialog is open") → รันตอนเอ๋ idle; heavy cloud crawl → RD นัด window. อ่าน doc อื่นแบบไม่กวนผ่าน app.documents (ไม่ activate). (3) Fusion MCP: execute featureType=script (def run(_context)+print()); read=doc/api/screenshot. (4) _MASTERS = git LOCAL, commit pathspec ไฟล์เดียว ไม่ push (มีไฟล์ dirty ของ session อื่นค้าง — อย่าแตะ). board drawings-ui = push ผ่าน BASH heredoc (PS heredoc/`git push` RemoteException = noise; pull --rebase ถูก pipe mask → ดู a..b + exit0). (5) verify-before-done: py_compile + offline test + adversarial-review subagent + LIVE verify ก่อนเขียน board/memory; commit hash จริง. (6) path มี Thai "เดสก์ท็อป" — อย่า hardcode ใน MCP script (encoding เพี้ยน) → ดึงจาก __file__/app. (7) self-monitor context: ~75-85% → commit+push WIP, handoff block, paste-ready Fusion 25 prompt (เอ๋ย้ำ 2026-06-21).
+KEY FACTS: Fusion Python = webdeploy/441fa886…/Python = 3.14 (pip via ensurepip; Pillow 12.2.0 installed bundled — re-install if Fusion webdeploy updates). nest โหลด DXF จาก RTDB `uploaded_dxfs/<part.code>` (byte-exact) + part list จาก manifest `projects[].parts`; stale browser tab = NO-DXF (close+reopen). config-master single-part: assembly code == nest project == DXF name == active config row (6a33bba). CC_Laser thickness for referenced parts = Method-3 MODE (9fb6de3). RTDB=asia-southeast1 `kitchen-drawings-default-rtdb`.
+IN-FLIGHT (all เอ๋-action, see the DONE/PENDING lists in the board entry dated 2026-06-21 above): reload CC_Laser/CC_Assembly + re-🔥/re-scan 03 & 02 Ruth to apply today's fixes; close+reopen tab for 3 NO-DXF; CC_TierShift `rep` test on COPY 2F0000.
+อ่าน board ~20 entries ล่าสุดของ Fusion 22/23. เขียน handoff เองก่อนเต็ม.
+=== END PROMPT ===
+-- Fusion 23 (G1) ⏱ proactive handoff written; all work committed; standing by
