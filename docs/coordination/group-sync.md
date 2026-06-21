@@ -6376,3 +6376,20 @@ Dispatched both. -- RD 05
 **Rejected Option B** (whole-assembly single STL) for the same reason as Q3: it loses per-leaf node names → WEB 20's 4-view-modes feature (specifically Mode 4 "Explode view" that translates per-leaf nodes from center) NEEDS the per-leaf scene graph this fix preserves. So this isn't a Phase-3 deferral — it's actively unblocking WEB 20's next round.
 **NEEDS เอ๋ (single click — same as before):** CC_Auto palette → ⟳ Reload (CC_Auto SCRIPTS catalog unchanged, but the dispatch loads sibling modules fresh each click, so no Fusion restart needed) → click 🧊 Export 3D on 100VFRR-075D60 → wait → messageBox → open web 🧊 modal on the cabinet.
 **REPORT-BACK:** new file size (before was the broken render — comparison helps confirm the parts are present, not just relocated), and a screenshot of the modal — parts should look like the Fusion screenshot (rails on top, door attached, full cabinet body), not scattered. ⏱ 00:18 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + Fusion 31 + เอ๋: 3D viewer "Edges" mode default (d1f4710, LIVE) ⏱ 00:20
+เอ๋'s feedback after the first GLB landed: "ดูไม่รู้เรื่องเลย หรือให้รูปเป็นลายเส้นจะดูง่ายกว่าไหม" — the default shaded render made cabinets look like featureless white blobs. Default flipped to a technical-drawing look; shaded view is a one-tap toggle.
+**Edges mode (default)** = three combined effects (no Three.js overlay, no extra dep):
+1. **model-viewer attrs**: `environment-image=neutral`, `tone-mapping=neutral`, `shadow-intensity=0`, `exposure=1.3` → flat lighting, no glamour reflections.
+2. **Material flatten** via scene-graph on the `load` event: baseColor→[0.94,0.94,0.94], metallic→0, roughness→1 across every PBR material — kills the chrome/shadow that washed Fusion 31's white-default materials out.
+3. **CSS filter** on the canvas: `contrast(1.45) saturate(.10) brightness(.92)` → pushes residual lighting into edge-emphasizing contrast bands, reads as line-art at iPad distance.
+**Footer toggle** (📐 Edges / 🧊 Solid) — persists to `kd_3d_mode_v1` so a worker only picks once. Materials are snapshotted on first load so Solid restores the GLB's authored look exactly.
+**Why not true EdgesGeometry wireframe**: model-viewer's THREE.Scene isn't part of the public API; a Three.js overlay would re-implement camera/orbit/touch/AR that model-viewer gives us for free. CSS contrast + material flatten gets ~90% of the payoff with ~0% of the wiring risk. Easy to upgrade to true EdgesGeometry later if เอ๋ wants more.
+**VERIFIED preview** (1280x900, on Astronaut DEMO since preview WebGL doesn't render larger GLBs):
+- open DEMO → **Edges by default** — Astronaut now reads as a high-contrast B&W illustration: visible suit panels, helmet seams, badges (was a smooth color render).
+- click 🧊 Solid → filter cleared, attrs restored, full color shaded view (blue NASA patch + red trim now visible).
+- close + reopen → mode persisted (Edges), button highlight correct.
+- no console errors.
+- 100VFRR-075D60.glb HEAD = 200, 1.5 MB on jsdelivr — เอ๋'s end-to-end test will be on that real cabinet.
+**NEEDS — เอ๋:** Ctrl+Shift+R, open 100VFRR-075D60 via 🧊 → should be readable now (edges visible, not a blob). If still not "lined enough" on real geometry, tell me — next step would be a true `EdgesGeometry` line overlay (more work, more accurate). The Fusion 31 "parts floating apart" geometry fix is the OTHER half — these two land independently. -- G2 (WEB 20)
