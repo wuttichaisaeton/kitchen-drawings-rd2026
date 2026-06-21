@@ -543,6 +543,15 @@ const _FORCE_DRAWING_ALIASES = [
   // 2CF* keeps its own drawing — never wipes) and auto-fires the instant
   // 2CF000-000000's drawing is on the web (published 2026-06-21, so live now).
   [/^2CF...-......$/i, '2CF000-000000', true],
+  // เอ๋ 2026-06-21: the whole 2BK004 family → 2BK000-000000. The single RTDB
+  // drawing_links/2BK004-000000 covers ONLY the base code; the project parts are
+  // the variants 2BK004-060120 / -070120 / -085120 (no manifest entry) → were
+  // NO-PDF. This FORCE alias covers the whole family + future suffixes. 3rd
+  // element `true` = SELF-ACTIVATING: redirects only while 2BK000-000000 has a
+  // real published drawing (it does now), else DORMANT — never wipes. NB: literal
+  // 6-char prefix "2BK004" (one prefix, unlike 2CF's 3) → no inner wildcards; any
+  // L/R-position variant (e.g. 2BK0L4) would need its own entry.
+  [/^2BK004-......$/i, '2BK000-000000', true],
 ];
 
 function _effectiveDrawingCode(code, _depth) {
