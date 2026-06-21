@@ -6444,3 +6444,30 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): add visible edges to Realistic + Explode modes
 เอ๋ "realistic explode ให้เพิ่มเส้นข้าไปด้วย" — visible-edge overlay (black solid only, no dashed) should appear in Mode 3 Realistic + Mode 4 Explode too. Realistic: subtle (opacity 0.7) so HDRI reflections still read. Explode: per-leaf edges follow each spread piece — clarifies parts. Keep Mode 1+2 full hidden-line (solid+dashed). Single helper `addVisibleEdges(mesh, opacity)` reused by all 4. Verify 1CSVB2 — Realistic = brushed steel + edges, Explode = spread + edges. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: 3D viewer corrections — Outline (เอ๋ ref) + Astronaut-demo Realistic (84d67cd, LIVE) ⏱ 00:20
+Two corrections to 2e4f6bc per เอ๋'s acceptance test:
+
+**Modes 1+2 renamed Hidden Line → Outline / Outline + Shade.** เอ๋'s ref screenshot = Fusion's "Shaded with Visible Edges" view (not true hidden-line — no dashed/occluded pass). Reworked:
+- Background dark → **WHITE** for both outline modes (CSS `.kd3d-mode-outline/outlineshade`).
+- Edge color white → **BLACK** (`0x111317`).
+- Dropped the LineDashedMaterial + GreaterDepth dashed pass — single solid LineSegments per mesh (59 instead of 118, cleaner look).
+- **Mode 1 'outline'**: flat white via emissive (color=0, emissive=1, intensity=1) = unshaded white from any angle. Closest PBR equivalent of MeshBasicMaterial without swapping material types (would lose per-leaf bindings on Fusion's trimesh export).
+- **Mode 2 'outlineshade'** (default): slight off-white + metalness=0.05 + roughness=0.85 so panels read 3D against the white BG.
+
+**Mode 3 'realistic' = Astronaut-demo treatment.** เอ๋ benchmark = exactly what model-viewer ships by default:
+- `environment-image="neutral"` (built-in, was external workshop HDRI URL)
+- `shadow-intensity=1`, `shadow-softness=0.5`, `exposure=1`, `tone-mapping="neutral"`
+- Materials RESTORED from snapshot — NO fake-chrome metalness override (stainless look will come naturally when Fusion exports proper PBR materials).
+
+**LS key bumped v3 → v4** with transparent migration from v3 (hidden/hiddenshade) and v2 (lines/linesshade), so a returning worker keeps their mode equivalent.
+
+**VERIFIED preview** (1280x900, 1CSVB2-105003.glb live):
+- **Outline + Shade (default)**: white BG, crisp black edges on every panel/hole/bracket, subtle surface shading. Reads as a CAD isometric — เอ๋ reference matched.
+- **Outline**: pure white panels (emissive flat), silhouette + visible edges on white BG. 59 LineSegments = 1 per mesh.
+- **Realistic**: env=neutral, shadow=1, softness=0.5, exposure=1, tone=neutral — exact Astronaut-demo defaults. Cabinet shows soft IBL gradient (top→sides), contact shadow underneath, full 3D depth.
+- Explode unchanged — 57 pieces, centroid spread.
+
+**NEEDS — เอ๋:** Ctrl+Shift+R, 🧊 on 1CSVB2-105003. Default opens Outline + Shade on a white canvas with black edges — that's the Fusion-iso reference style. 💎 Realistic should now look as crisp as the Astronaut demo (soft top-light + contact shadow). If a future cabinet GLB ships with brushed-steel PBR materials, Realistic will use those automatically.
+Deploy watching. -- G2 (WEB 20)
