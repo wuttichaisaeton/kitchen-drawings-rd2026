@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T03:44:43.399435+00:00",
+  "generated_at": "2026-06-21T03:53:54.434238+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6143,16 +6143,16 @@
     },
     "2SDCN1-120040": {
       "family": "Other",
-      "last_drawn_version": 16,
-      "fusion_version": 16,
-      "pdf": "2SD000-120000.pdf",
+      "last_drawn_version": 7,
+      "fusion_version": 7,
+      "pdf": "2SDCN1-120040.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-21T02:14:32.035320+00:00",
+      "generated_at": "2026-06-21T03:53:54.431972+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:yFWRns7zTIylC-2lbImqtw",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:2EtxyYuiTkKBNIvn7IwkVg",
       "page_number": 1
     },
     "2SDCN2-120034": {
@@ -6251,6 +6251,34 @@
       "generated_at": "2026-06-21T03:44:43.397214+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
+      "page_number": 1
+    },
+    "2SD0C1-120026": {
+      "family": "Other",
+      "last_drawn_version": 7,
+      "fusion_version": 7,
+      "pdf": "2SDCN1-120040.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:53:54.431985+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:2EtxyYuiTkKBNIvn7IwkVg",
+      "page_number": 1
+    },
+    "2SD0C1-120040": {
+      "family": "Other",
+      "last_drawn_version": 7,
+      "fusion_version": 7,
+      "pdf": "2SDCN1-120040.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:53:54.431989+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:2EtxyYuiTkKBNIvn7IwkVg",
       "page_number": 1
     }
   },
