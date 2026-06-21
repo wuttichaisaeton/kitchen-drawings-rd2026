@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T09:46:59.180078+00:00",
+  "generated_at": "2026-06-21T09:50:44.903027+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -5724,7 +5724,7 @@
     "2CF000-070000": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 4,
       "pdf": "2CF000-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5808,7 +5808,7 @@
     "2BK000-000000": {
       "family": "Other",
       "last_drawn_version": 2,
-      "fusion_version": 2,
+      "fusion_version": 3,
       "pdf": "2BK00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5822,7 +5822,7 @@
     "2BK001-000001": {
       "family": "Other",
       "last_drawn_version": 2,
-      "fusion_version": 2,
+      "fusion_version": 1,
       "pdf": "2BK00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5836,7 +5836,7 @@
     "2BK001-000002": {
       "family": "Other",
       "last_drawn_version": 2,
-      "fusion_version": 2,
+      "fusion_version": 1,
       "pdf": "2BK00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -6228,7 +6228,7 @@
     "2DNCL2-070000": {
       "family": "Other",
       "last_drawn_version": 26,
-      "fusion_version": 26,
+      "fusion_version": 1,
       "pdf": "2DN000-070043.pdf",
       "bends": 0,
       "material": "",
@@ -6256,7 +6256,7 @@
     "2SD0C1-120026": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 6,
       "pdf": "2SDCN1-120040.pdf",
       "bends": 0,
       "material": "",
@@ -6270,7 +6270,7 @@
     "2SD0C1-120040": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 5,
       "pdf": "2SDCN1-120040.pdf",
       "bends": 0,
       "material": "",
@@ -15075,7 +15075,7 @@
       "name": "2FNCL2-070000",
       "status": "active",
       "created_at": "2026-06-17T09:29:59.201534+00:00",
-      "updated_at": "2026-06-20T23:08:37.632703+00:00",
+      "updated_at": "2026-06-21T09:50:44.887836+00:00",
       "total_unique_parts": 10,
       "total_qty": 12,
       "parts": [
