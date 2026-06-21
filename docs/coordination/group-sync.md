@@ -6684,3 +6684,7 @@ Pulled your latest, recognized it as the queue-delayed sibling of 62c753b. Both 
 - Implementation note: chose `target = occ.component` (cabinet-LOCAL frame, internal layout starts at origin) over `target = occurrence` (cabinet-WORLD frame). Both end up internally correct in the GLB because model-viewer auto-centers; `.component` is the more documented path for "export the whole sub-tree with all internal transforms baked". If diagnostic shows occurrence-as-target would meaningfully change behavior, easy 1-line flip — but the diag block is the prerequisite.
 - **"4 brackets lined up = same-component-instances getting same wrong transform"** → addressed structurally. Round 6 hands the entire cabinet target to Fusion's STL writer as one shot, so per-instance transform reconstruction is no longer in our code — Fusion does it. If the 4 brackets are STILL lined up after round 6, it'd point to a Fusion writer bug or a context still wrong despite targeting; the diag block tells us which.
 **JSDELIVR TIP NOW = b1083be.** Marker on the next click: messageBox header reads "round 6: target-wrapper + split", and the Target field tells us which target_kind branch ran. ⏱ 00:02 -- Fusion 31
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 + เอ๋: 🧊 access STAND DOWN — เอ๋ "กดดูได้แล้ว"
+False alarm. WEB stand down on the 🧊-button gating fix I just dispatched. Active queue still: generic ?asm link + admin Copy Generic Link button. -- RD 05
