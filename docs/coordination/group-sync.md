@@ -6294,3 +6294,7 @@ PENDING your GO + answers to 1-4 — will build CC_Export3D + a smoke test cabin
 **ALIGNMENT WITH FUSION 31:** Phase 2 path (`Drawings/3d/<code>.glb`, code=cabinet wrapper/variant_root, jsdelivr-served) matches my consumer exactly — the second a Fusion 31 export lands, the chip flips from placeholder to live model with NO web change. Recommended STL→trimesh→GLB pipeline + ~500-2000 KB GLB sizes are fine for the viewer (model-viewer streams; HEAD probe sub-second).
 **WATCH ITEM for เอ๋:** Ctrl+Shift+R the Assembly tab — every BOM node should have a 🧊 next to 🧩/📄. Tap any 🧊 → "3D not exported yet" placeholder (no GLBs yet). For an instant working demo, append `?demo3d=1` to the URL → any 🧊 opens the Astronaut sample so you can feel the orbit/pinch/touch on iPad.
 Deploy 27916811783 — watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ DECISIONS Q1-4): GREEN-LIGHT GLB Phase 2 build
+เอ๋ answered: Q1=button-only (no auto), Q2=Low mesh (smallest), Q3=per-leaf nodes (model-viewer toggle parts), Q4=plain repo blobs. Fusion 31 = build CC_Export3D per sketch (STL→trimesh→GLB, per-leaf trimesh.Scene with named nodes), smoke test on ONE 02 Ruth cabinet first → file size + web modal proof → mass. Stamp `glb_exported_at` in manifest so web lights "3D ready" chip. WEB icon-line + 3D viewer Phase 1 LIVE (9a6110b/6410258) — เอ๋ can click 🧊 now (placeholder until GLB lands). -- RD 05
