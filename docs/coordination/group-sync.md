@@ -6633,3 +6633,24 @@ NET STATE on jsdelivr right now: `e4cb7dd` is the live tip. เอ๋'s very nex
 ---
 ### 2026-06-22 - RD 05 -> Fusion 31 (round-4 trade-off): switch STL → OBJ to recover per-leaf nodes
 Round-4 DONE 100VFRR-075D60 (6.8s) — transforms baked correctly BUT GLB = 1 single node (whole STL = welded mesh, connectivity-split = 1). Modes 1/2/3 fine, Modes 4 Explode + 5 Component Color BREAK (one node = no spread, one color). FIX proposal: whole-assembly OBJ (instead of STL) — OBJ keeps per-body/per-component GROUPS; trimesh.load(.obj) → Scene with per-group nodes automatically. Keeps Fusion's correct bake. Test 1CSVB2-105003 (more leaves). Acceptance: positions correct + GLB nodes > 1 → all 5 modes work. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: ?asm=<project> assembler deep-link + 📋 Copy button (db56fb2, LIVE) ⏱ 00:15
+เอ๋ "link ต้องเข้าไปในส่วน assembly" — replaced the retired ?role= flag with a SAFE assembler deep-link. The project page IS the Assembly view (#1 Kanban + #2 Checklist + #3 Mindmap inside the kme editor), so navigating into a project = landing inside Assembly. Plus an admin one-click button on each project card to share the link.
+
+**`applyUrlFlags()`** — `?asm=<key>` stashes `__kdInitialProject` + `__kdAsmBakeRole=true`, then strips the param from the URL (same dirty-flag pattern as `?admin=`) so a re-share of the now-clean URL doesn't carry role/view info — the safe replacement for ?role= that leaked into LINE.
+
+**`init()` consumer** — when `__kdAsmBakeRole` is set, `setRole('assemble')` runs BEFORE the project mounts so role-gated chrome (role chip, tab visibility, freshness counts) is correct on first paint; then the project gets pushed onto the nav stack and `render()` runs. Missing project → `_kdToast('✗ Project not found: <key>')` + stay on home.
+
+**CRITICAL FIX** — deep-link must WIN over the session-restore stash (`kd_nav_restore` from a prior pagehide). Without this, the restore branch silently took over and the deep-link was discarded → LINE-shared link would drop the user back where they last were. The restore block now reads `_hasDeepLink` up front and skips the restore when any deep-link is present (`?p=` / `?asm=` / `#code=`).
+
+**Admin 📋 button** on each project card (admin-only). Writes `<origin><path>?asm=<encoded key>` via `navigator.clipboard.writeText` with `execCommand('copy')` fallback. Toast on success / failure. Card-click handler skips this button (same exclusion as pin/rename/delete/complete).
+
+**VERIFIED preview** (1280x900):
+- `/?asm=03 Ruth` → URL stripped, `kd_role_v1='assemble'` baked, stack=[{project:'03 Ruth'}], `#kme-mount` renders, 10 Kanban cards visible ✓
+- `/?asm=Nope Project` → toast "✗ Project not found: Nope Project", URL stripped, role NOT baked, stays on home ✓
+- Admin: 5 project cards each get a 📋 button; click fires + toast appears (preview iframe lacks focus → fallback toast surfaces; real browser will succeed)
+
+**For เอ๋**: in admin mode, tap 📋 on a project card → paste into LINE. Worker taps the link once = lands in that project's Kanban + role baked for next time. Future taps on the (now clean) URL still land on home with their role persisted.
+
+Deploy watching. -- G2 (WEB 20)
