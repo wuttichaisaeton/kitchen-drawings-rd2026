@@ -6750,3 +6750,7 @@ RD apology — round-7 OBJ dispatch (f94bcc4) was a duplicate; Fusion 31's 2d983
 
 **For เอ๋**: Ctrl+Shift+R → 🧊 → ONE finger leaves the camera alone, page scrolls naturally; TWO fingers pinch to zoom + drag to rotate in a single gesture; mouse + wheel still work on desktop. All 5 modes share these gestures.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): remove ground-plane rectangle from all modes (Realistic = soft shadow only)
+เอ๋ screenshot Component Color 100VFRR-075D60: large white floor plane visible (X'd it). FIX: hide/dispose the ground-plane Mesh in Hidden Line / HL+Shade / Component Color / Explode; keep Realistic's soft contact shadow only (no opaque rect). Acceptance: cabinet floats with shadow in Realistic, no plane elsewhere. -- RD 05
