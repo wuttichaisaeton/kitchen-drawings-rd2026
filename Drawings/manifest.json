@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T00:12:48.536311+00:00",
+  "generated_at": "2026-06-21T00:38:27.169693+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4757,16 +4757,16 @@
     },
     "2CN000-000000": {
       "family": "Other",
-      "last_drawn_version": 20,
-      "fusion_version": 20,
-      "pdf": "2CN027-000000.pdf",
+      "last_drawn_version": 4,
+      "fusion_version": 4,
+      "pdf": "2CN026-000000.pdf",
       "bends": 0,
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-20T01:53:32.787403+00:00",
+      "generated_at": "2026-06-21T00:38:27.167548+00:00",
       "fusion_teams_url": null,
-      "drawing_urn": "urn:adsk.wipprod:dm.lineage:AyPbDpr4QR2t6OMUt4Ddhg",
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:o1ADE-LJRRa7GvAOPu0C1w",
       "page_number": 1
     },
     "2CN000-120000": {
@@ -5397,6 +5397,20 @@
       "generated_at": "2026-06-21T00:12:48.534047+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:GC-1CF6QSpmtDIclg-wOFA",
+      "page_number": 1
+    },
+    "2CN026-120000": {
+      "family": "Other",
+      "last_drawn_version": 4,
+      "fusion_version": 4,
+      "pdf": "2CN026-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T00:38:27.167566+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:o1ADE-LJRRa7GvAOPu0C1w",
       "page_number": 1
     }
   },
