@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T09:23:38.595736+00:00",
+  "generated_at": "2026-06-21T09:29:25.117742+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6826,6 +6826,20 @@
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:pbHo-YkwTy6am7f7Prxr6Q",
       "page_number": 1
+    },
+    "2CVH19-346LL0-Ruth": {
+      "family": "Other",
+      "last_drawn_version": 2,
+      "fusion_version": 2,
+      "pdf": "2CVH19-346LL0-Ruth.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T09:29:25.117742+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:oXtFMEeoROOGzjx7dcdcRg"
     }
   },
   "manual_uploads": [],
