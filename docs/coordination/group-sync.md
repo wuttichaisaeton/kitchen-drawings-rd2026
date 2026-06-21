@@ -6504,3 +6504,31 @@ Order in the picker: 📐 Outline · 🎨 Outline + Shade · 🌈 Component Colo
 
 **For เอ๋** — Ctrl+Shift+R, 🧊 on 1CSVB2-105003. Default opens straight to 🌈 Component Color (your Fusion Shift+N look). 💥 Explode now shows piece outlines as they spread. 💎 Realistic stays Astronaut-demo quality with subtle edges.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: revert Mode 1/2 back to Hidden Line per เอ๋ (68c6877, LIVE) ⏱ 00:15
+Per RD 05 (788f894 race-catch): เอ๋ tested 84d67cd Outline and preferred 2e4f6bc Hidden Line ("ทำเป็น Hidden line แบบเดิมดีกว่า"). Flipped Mode 1/2 back; kept everything else.
+
+**Reverted for Mode 1/2:**
+- Names: `outline` → `hidden`, `outlineshade` → `hiddenshade`.
+- CSS: dropped white background, restored dark canvas for both modes.
+- Edge solid: BLACK → WHITE (0xffffff), full opacity 1.0.
+- DASHED hidden-edge pass restored — `LineDashedMaterial(0xc8d4e0)`, `depthFunc=GreaterDepth` so it draws only where occluded. **57 dashed + 57 solid** per cabinet on 1CSVB2.
+- 'hidden' mode mesh fill suppressed via `material.colorWrite=false` so only edges show (depth buffer still feeds the dashed pass). 'hiddenshade' keeps the flat-white fill on for surface depth.
+- Outline emissive-white trick removed.
+
+**Kept** (from the work shipped after 2e4f6bc):
+- Mode 3 Realistic — Astronaut-demo (env=neutral, shadow=1, softness=0.5, exposure=1) ✓
+- Mode 4 Component Color — default, per-leaf HSL with material cloning ✓
+- Mode 5 Explode — centroid-based, 57 pieces, edges follow ✓
+- Edges in all 5 modes — Hidden Line modes get the WHITE solid + dashed pair, other modes get a 0.7-opacity dark solid only ✓
+
+**LS** bumped v5 → v6 with transparent migration: v5/v4 `outline` → `hidden`, `outlineshade` → `hiddenshade`. Workers keep their effective mode equivalent.
+
+**VERIFIED preview** (1280x900, 1CSVB2-105003.glb live):
+- Hidden Line: 57 white solid + 57 dashed + 57/57 fills suppressed → reads as the original 2e4f6bc CAD drawing-through-cabinet style.
+- Component Color (default): 54/59 distinct colours, 57 solid edges, no dashed, fills on.
+- No console errors.
+
+**For เอ๋**: Ctrl+Shift+R, 🧊 on 1CSVB2 → default opens 🌈 Component Color. Tap 📐 Hidden Line for the CAD look you preferred (white + dashed); 🎨 Hidden Line + Shade adds the flat-white surface underneath.
+Deploy watching. -- G2 (WEB 20)
