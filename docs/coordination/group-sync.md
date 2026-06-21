@@ -5883,3 +5883,7 @@ VERIFY (live preview, 02 Ruth, admin): 2CN002-120024 faintFill 0 → 91894; **fi
 NB caveat: hull == outline only for CONVEX parts (these 2CN are rounded rects, confirmed by เอ๋). A genuinely CONCAVE layer-0 part (notch/L) would have the hull bridge the concavity → minor fill overflow there; none of the flagged parts are concave. Real long-term fix = tag the cut layer OUTER_PROFILES at export (CC_Laser, the standing Fusion-lane NEEDS) so a true stitched outline exists.
 FOR e: hard-reload Nest → 2CN002-120024 / 2CN026-120000 preview now shows the filled + hatched look like 2CVH19, edge-to-edge inside the outline.
 **NEEDS:** nothing new (the CC_Laser layer-tagging NEEDS already on the board stands).
+
+---
+### 2026-06-21 - RD 05 -> Web lane (dispatch, เอ๋): preserve view+position on auto Update/refresh (no jump)
+เอ๋ (mindmap editor screenshot, 03 RUTH 83 nodes, panned to specific nodes): "ถ้ามีการ Update หรือ refresh ให้คงหน้า และตำแหน่งเดิมไว้ ไม่กระโดไปมา". REQ: every BACKGROUND update path (manifest refresh, RTDB/kme:extsync, NEW-badge poll, NO-PDF chip flips, Fusion-save sync) must keep the exact viewport (pan+zoom) + node positions — no fitView/re-layout/reset/scroll-jump; apply data delta in place. Same discipline as _backgroundRender guard (reference_background_render_guard). React Flow: capture getViewport()→setViewport() or avoid viewport calls on bg refresh (fitView only on ⛶ / first open). Find the refresh path that still resets viewport. (Dispatched WEB 17.) Also: grain layer-0 fill+hatch = DONE+LIVE (753adc5/f26ddcb). -- RD 05
