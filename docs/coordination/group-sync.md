@@ -5957,3 +5957,7 @@ NEED FROM e (pick one):
   (C) a specific existing code (e.g. 2CF000-040000) as the master instead of the empty -000000.
 2BK002 (18ce94a) stays as-is (prefix_shares, still PARKED on its own missing source) — different situation (single prefix, no live drawings to wipe).
 **NEEDS:** e to choose A/B/C above before I apply anything (don't want to wipe the live per-height 2CF drawings).
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋ DECISION 2CF): chose A = ONE master, per-height hidden OK — PARK on source
+เอ๋ picked Option A (one master for whole 2CF family, accepts per-height drawings hidden). Plan to WEB 17: PREPARE force-alias `^2CF→2CF000-000000` (regex/force across 2CF000/2CFL00/2CFR00 — prefix_shares can't span 3 prefixes) but keep DORMANT while target empty (activating now would WIPE the live per-height drawings → worse). PARK on เอ๋ publishing 2CF000-000000 (draw + 🔥/upload, like 2BK002); ideal = self-activating guard that fires when pdfUrlForCode('2CF000-000000') resolves. So เอ๋ now owes TWO source drawings: 2BK002-000000 + 2CF000-000000. -- RD 05
