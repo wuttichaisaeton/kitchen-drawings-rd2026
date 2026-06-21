@@ -3525,16 +3525,29 @@
       if (close) ctx.closePath();
     };
     // Silhouette = the closed region we FILL (steel) + CLIP the grain hatch to.
-    // Normally the OUTER loop; but a layer-"0" DXF has a fragmented boundary that
-    // didn't stitch (degenerate 2-pt outer), so fill + hatch had nothing to bound
-    // to. Rebuild a CONVEX HULL of all cut points — the parts เอ๋ flagged
-    // (2CN002-120024 / 2CN026-120000) are convex rounded rectangles, so the hull
-    // == the outline and interior holes fall inside it — so BOTH the fill and the
-    // hatch stay INSIDE the shape, never spilling past it (เอ๋ 2026-06-21 'ทำให้
-    // เหมือนตัวอื่น — fill + hatch ไม่เกินรูปทรง'; matches 2CVH19's filled+hatched
-    // look). 18975c2 set the bbox; this gives the matching look.
+    // Normally the OUTER loop. A layer-"0" DXF has a fragmented boundary that
+    // didn't stitch (degenerate 2-pt outer), so we rebuild it. The parts เอ๋
+    // flagged (2CN002-120024 / 2CN026-120000) are CONCAVE (V-notch / bowtie ends),
+    // so a convex hull bled the fill into the notches — instead STITCH the open
+    // boundary segments into the EXACT outline (drop the small closed loops =
+    // drill holes first; they're what made the original stitch fail) so fill +
+    // hatch never cross the perimeter (เอ๋ 2026-06-21 'fill ไม่ให้เกินเส้นรอบรูป').
+    // Convex hull stays only as a last-resort fallback if stitching can't close.
     const outerOk = polys.outer && polys.outer.length > 2 && _polyArea(polys.outer) > 1;
-    const sil = outerOk ? polys.outer : _convexHull([].concat(polys.outer || [], ...(polys.strokes || [])));
+    let sil;
+    if (outerOk) {
+      sil = polys.outer;
+    } else {
+      const all = (polys.strokes || []).filter(s => s && s.length >= 2);
+      const bboxArea = bbox ? Math.abs((bbox[2] - bbox[0]) * (bbox[3] - bbox[1])) : 0;
+      const isHoleLoop = (s) => {
+        const closed = s.length > 2 && Math.hypot(s[0][0] - s[s.length - 1][0], s[0][1] - s[s.length - 1][1]) < 1.0;
+        return closed && _polyArea(s) < Math.max(1, bboxArea * 0.05);   // small closed loop = drill hole
+      };
+      const boundary = all.filter(s => !isHoleLoop(s));
+      sil = _stitchLoop(boundary, 1.0) || _stitchLoop(boundary, 3.0)
+        || _convexHull([].concat(polys.outer || [], ...all));   // fallback: hull (may bleed on concave)
+    }
     if (sil && sil.length > 2) {
       trace(sil, true);
       ctx.fillStyle = STEEL; ctx.fill();
@@ -4599,6 +4612,42 @@
     for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
     lower.pop(); upper.pop();
     return lower.concat(upper);
+  }
+  // Stitch open boundary segments end-to-end into ONE closed loop (same algorithm
+  // as _extractPolygons' inner stitchLoop). Used to rebuild the EXACT outline of a
+  // layer-"0" part for fill/hatch clip — unlike a convex hull it FOLLOWS concave
+  // notches (the V-notch / bowtie ends on 2CN026) so the fill can't bleed past the
+  // perimeter (เอ๋ 2026-06-21 'fill ไม่ให้เกินเส้นรอบรูป'). Returns null unless every
+  // segment is consumed AND the loop closes (end ≈ start) within tol.
+  function _stitchLoop(segments, tol) {
+    const segs = (segments || []).map(s => s.slice()).filter(s => s.length >= 2);
+    if (segs.length < 1) return null;
+    const near = (p, q) => Math.hypot(p[0] - q[0], p[1] - q[1]) <= tol;
+    const used = new Array(segs.length).fill(false);
+    used[0] = true;
+    let loop = segs[0].slice();
+    let go = true;
+    while (go) {
+      go = false;
+      const tail = loop[loop.length - 1];
+      let bi = -1, brev = false, bd = Infinity;
+      for (let i = 0; i < segs.length; i++) {
+        if (used[i]) continue;
+        const s = segs[i];
+        const da = Math.hypot(tail[0] - s[0][0], tail[1] - s[0][1]);
+        const db = Math.hypot(tail[0] - s[s.length - 1][0], tail[1] - s[s.length - 1][1]);
+        if (da < bd) { bd = da; bi = i; brev = false; }
+        if (db < bd) { bd = db; bi = i; brev = true; }
+      }
+      if (bi >= 0 && bd <= tol) {
+        const s = brev ? segs[bi].slice().reverse() : segs[bi];
+        for (let k = 1; k < s.length; k++) loop.push(s[k]);
+        used[bi] = true;
+        go = true;
+      }
+    }
+    if (used.every(Boolean) && loop.length >= 4 && near(loop[0], loop[loop.length - 1])) return loop;
+    return null;
   }
   // "Looks weird" reasons for a selected part (empty array = nothing to flag).
   // Checks: no DXF · DXF parse error / degenerate outline · parsed bbox vs the
