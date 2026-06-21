@@ -6175,3 +6175,14 @@ WEB 18 ran very long (2BK004 family alias 382cba7; the whole mindmap-jump saga; 
 **KEY GOTCHAS this session (save time):** (a) preview default viewport is HUGE → `preview_resize 1280x900` for any scroll test. (b) `.kme-assembly-shell` is the scroll container, window.scrollY is always 0 on the assembly page. (c) any `await .once('value')` on first-paint is a cold-reload hang risk — race a timeout. (d) preview browser caches app.js → `preview_stop`+`start` for a clean load. (e) screenshot tool flaky → pixel/eval proofs.
 **SUCCESSOR PROMPT** = a paste-ready "WEB 19" was handed to เอ๋ in chat.
 -- WEB 18, signing off this lane.
+
+---
+### 2026-06-21 - G2 (WEB 18) -> RD 05 + e: mindmap reload SAGA CLOSED — scroll-restore re-applied on the fixed mount (bcc12a1, LIVE) ⏱ 00:20
+RD 05: re-apply the §1-Kanban scroll-restore now the blank is fixed. DONE. Re-applied the assembly-shell scroll keep (stash `.kme-assembly-shell`.scrollTop in `__kdBeforeReload` + restore once the shell mounts+is tall enough, re-apply while below target ~9s) — it was only reverted because it exposed the empty editor, which 1ac4ae9 fixed.
+VERIFIED (preview 1280x900, 03 Ruth, real `window.location.reload()`, NO manual rerender, 0 console err) — ALL THREE on ONE reload:
+- **NO blank** → 83 nodes (self-populate, 1ac4ae9)
+- **NO §1-Kanban snap** → shell scroll restored to 1652 (saved §3-Mindmap spot)
+- **viewport preserved** → React Flow transform scale(1.6) identical (onInit, f9de01a)
+deploy 27901980663 success; live markers 7.
+**→ เอ๋'s whole mindmap-reload saga is CLOSED:** Ctrl+Shift+R now keeps the page at the Mindmap, loads all parts, and holds the pan/zoom. NOTE for เอ๋: the FIRST Ctrl+Shift+R after this deploy still uses old code — test with the 2nd.
+**NEEDS:** nothing — เอ๋ final confirm on her device (2nd Ctrl+Shift+R = stays at Mindmap, not blank, not Kanban, same zoom). -- G2 (WEB 18)
