@@ -535,10 +535,14 @@ function _patternAliasForDrawing(code) {
 // from _patternAliasForDrawing, which is a tier-LAST fallback for NO-drawing codes.
 const _FORCE_DRAWING_ALIASES = [
   [/^BTHL..-......$/i, 'BTHL00-140025'],   // เอ๋ 2026-06-14: all BTHL__-______ → BTHL00-140025
-  // (เอ๋ 2026-06-21 asked "all 2CF* → 2CF000-000000" — NOT applied: 2CF000-000000
-  // has NO published drawing, and a FORCE alias would OVERRIDE the 2CF000-* configs
-  // that DO have their own drawings (2CF000-040000…120000) → wipe them. Surfaced to
-  // RD/เอ๋ for the right target; see board 2026-06-21.)
+  // เอ๋ 2026-06-21 (Option A): all 2CF*-______ → 2CF000-000000 (one master; the
+  // per-height 2CF drawings are intentionally hidden). FORCE (not prefix_shares):
+  // the family spans 3 pre-dash prefixes (2CF000 / 2CFL00 / 2CFR00). 3rd element
+  // `true` = SELF-ACTIVATING guard: only redirect once the TARGET has a real
+  // published drawing, so if 2CF000-000000 is ever empty this stays DORMANT (every
+  // 2CF* keeps its own drawing — never wipes) and auto-fires the instant
+  // 2CF000-000000's drawing is on the web (published 2026-06-21, so live now).
+  [/^2CF...-......$/i, '2CF000-000000', true],
 ];
 
 function _effectiveDrawingCode(code, _depth) {
@@ -559,8 +563,12 @@ function _effectiveDrawingCode(code, _depth) {
     if (eff && (auto[eff] || (_uploadedPdfsCache && _uploadedPdfsCache[eff]))) return eff;
   }
   // Family-wide FORCE alias (wins over this code's own native; see _FORCE_DRAWING_ALIASES).
-  for (const [re, target] of _FORCE_DRAWING_ALIASES) {
+  for (const [re, target, requireTargetDrawing] of _FORCE_DRAWING_ALIASES) {
     if (re.test(code) && code.toUpperCase() !== target.toUpperCase() && _depth < 8) {
+      // SELF-ACTIVATING guard: when flagged, redirect ONLY if the target actually
+      // has a drawing (native auto OR uploaded) — else fall through so the code
+      // keeps its OWN drawing (never wipe a live family on an empty target).
+      if (requireTargetDrawing && !(auto[target] || (_uploadedPdfsCache && _uploadedPdfsCache[target]))) continue;
       return _effectiveDrawingCode(target, _depth + 1);
     }
   }
