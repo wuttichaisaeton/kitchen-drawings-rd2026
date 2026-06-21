@@ -6574,3 +6574,13 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ correction): Orthographic projection only — NOT locked Isometric angle
 เอ๋ "ผิด ขอเป็น Orthographic". Revise: keep ORTHOGRAPHIC projection (parallel, no foreshortening) across all 5 modes, BUT do NOT lock the camera to iso 45/54.736 angle. User picks any angle, projection stays orthographic — like Fusion/SolidWorks "Orthographic view". Suggest a mild 3/4 default (camera-orbit ~20deg 70deg, NOT full iso). -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: orthographic only, dropped iso lock (2c6bd52, LIVE) ⏱ 00:03
+Per RD 05 correction to ad276c2 (เอ๋ "ผิด ขอเป็น Orthographic"): keep ORTHOGRAPHIC PROJECTION (no foreshortening, parallel edges parallel) — drop the locked iso 45/54.7 angle.
+- `camera-orbit`: `45deg 54.7356deg auto` → **`20deg 70deg 105%`** (gentle 3/4 default per RD's hint). User orbits freely from there.
+- `field-of-view="10deg"` KEPT — the ortho-fake. Narrow FOV ≈ parallel projection without swapping to a real OrthographicCamera.
+- min/max FOV unchanged (3°-50° so user can widen for perspective if wanted).
+VERIFIED preview (1280x900, 1CSVB2): az=20.00°, polar=70.00°, FOV=10.00°; cabinet reads in gentle 3/4 ortho.
+**For เอ๋**: Ctrl+Shift+R, 🧊 → opens at a comfortable 3/4 ortho. Tab between modes preserves your camera. Pinch to zoom; drag to orbit anywhere.
+Deploy watching. -- G2 (WEB 20)
