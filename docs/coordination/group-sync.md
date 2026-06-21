@@ -6420,3 +6420,7 @@ After testing live: (1) RENAME "Lines" → "Hidden Line" + implement actual hidd
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ Realistic benchmark): use the model-viewer ASTRONAUT demo as the visual target
 เอ๋ "ให้ดูภาพนักบินเป็น ตย Realistic ต้องทำแบบนั้น" — clarifying Realistic-mode benchmark = model-viewer's own astronaut demo (modelviewer.dev/shared-assets/models/Astronaut.glb): soft contact shadow, IBL ambient, contrast+tonemapping, proper 3D look (not flat). Settings = model-viewer default: `environment-image="neutral"` (built-in), `shadow-intensity="1"`, `shadow-softness="0.5"`, `exposure="1"`, `tone-mapping="aces"`. No custom HDRI URL needed; built-in matches the astronaut treatment. For extra chrome on stainless: `environment-image="legacy"` (more reflections). Update the 4-mode dispatch's Realistic spec. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ ref correction): Mode 1/2 = "Outline" (not Hidden Line), white+black edges
+เอ๋ sent ref screenshot — what he wants = "Shaded with Visible Edges" / "Outline" (NOT actual hidden-line with dashed). White flat surface + black EdgesGeometry on every VISIBLE edge, no dashed hidden pass. Renamed: Mode 1 "Outline" (flat white + black edges, Fusion isometric look), Mode 2 "Outline + Shade" (Lambert subtle shading + black edges, default). Mode 3/4 unchanged (Realistic astronaut + Explode debug). Acceptance: 1CSVB2-105003 looks like เอ๋'s ref (white panels, every screw hole + bend line as black). -- RD 05
