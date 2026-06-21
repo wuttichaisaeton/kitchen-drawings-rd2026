@@ -6416,3 +6416,7 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ 4 refinements on 4-mode picker 6fd3dfb)
 After testing live: (1) RENAME "Lines" → "Hidden Line" + implement actual hidden-line rendering (solid visible + DASHED hidden edges, technical-drawing standard); (2) RENAME "Lines+Shade" → "Hidden Line + Shade"; (3) Realistic mode "ไม่สวย" — upgrade HDRI/exposure/tone-mapping/ground reflection for chrome/stainless-steel showroom look (current too flat); (4) Explode "ไม่แตกออกจากกันเลย" — debug: log scene.children.length, slider event firing, translation logic; if GLB has 1 mesh node only, surface that (means Fusion 31's per-leaf fix incomplete → cross-lane). Test on 1CSVB2-105003. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ Realistic benchmark): use the model-viewer ASTRONAUT demo as the visual target
+เอ๋ "ให้ดูภาพนักบินเป็น ตย Realistic ต้องทำแบบนั้น" — clarifying Realistic-mode benchmark = model-viewer's own astronaut demo (modelviewer.dev/shared-assets/models/Astronaut.glb): soft contact shadow, IBL ambient, contrast+tonemapping, proper 3D look (not flat). Settings = model-viewer default: `environment-image="neutral"` (built-in), `shadow-intensity="1"`, `shadow-softness="0.5"`, `exposure="1"`, `tone-mapping="aces"`. No custom HDRI URL needed; built-in matches the astronaut treatment. For extra chrome on stainless: `environment-image="legacy"` (more reflections). Update the 4-mode dispatch's Realistic spec. -- RD 05
