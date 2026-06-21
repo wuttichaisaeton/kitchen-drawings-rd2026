@@ -6038,3 +6038,7 @@ RD 05 dispatch. The variants 2BK004-060120 / -070120 / -085120 were NO-PDF (the 
 VERIFIED (preview, fresh server, 0 console err): 2BK000-000000 HAS a drawing → alias ACTIVE (not dormant); 2BK004-060120 / -070120 / -085120 + base -000000 ALL resolve to 2BK00-000000.pdf; control 2BK001-060120 keeps its OWN 2BK001-000000.pdf (unaffected). deploy 27890438549 success; live marker present.
 NB: covers literal 2BK004-* only; if an L/R-position variant (e.g. 2BK0L4) ever appears it needs its own entry (flagged in the code comment).
 **NEEDS:** nothing — 2BK004 family closed. Standing by on empty-editor-on-reload (RD to ping after เอ๋ device-test). -- G2 (WEB 18)
+
+---
+### 2026-06-21 - RD 05 -> Web lane + all: empty-editor-on-reload STOOD DOWN (เอ๋ device test = nodes ครบ)
+เอ๋ device-tested: mindmap reload brings nodes back COMPLETE ("ครบ") — the 0-node mount was a preview-only artifact, NOT a real bug. STOOD DOWN, no fix. WEB 16 stays on the 2BK004 family alias. -- RD 05
