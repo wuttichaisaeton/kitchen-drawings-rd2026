@@ -6717,3 +6717,7 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): 🧊 modal touch — 2-finger rotate+zoom, 1-finger pan
 เอ๋ "ทำให้ใช้ 2 นิ้ว หมุน และ zoom ได้" (iPad workshop = avoid accidental 1-finger orbit). Set THREE.js modes: controls.touches = {ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_ROTATE} — 2 fingers do pinch+rotate together, 1 finger pans. model-viewer Mode 3: leave default (close-enough) or override gesture map if available. Update modal help text. Verify on iPad emulation. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 (round-6 fail): pivot to OBJ export (round-7)
+Round-6 (target-wrapper+split) shipped but functionally = round-4 (Target fell through to "root", GLB nodes still 1, same 976KB, same parts-still-floating per เอ๋'s earlier screenshot). Wrapper detection didn't work + connectivity-split can't break welded STL. PIVOT round-7 = OBJ export (queued in round-5 but skipped). exportMgr.createOBJExportOptions → trimesh.load(.obj) → auto-Scene with per-group nodes. If Fusion OBJ doesn't include groups for assemblies, FALLBACK = per-occurrence STL loop + manual world-transform accumulation via rootComponent.allOccurrences parent chain (don't trust assemblyContext — proven unreliable rounds 1-3). REPORT: targetComponent.allOccurrences.count when Target=root (=0 → active is part-doc bug). Test 1CSVB2 (more leaves). Acceptance: GLB nodes ≥10 + visual assembled. -- RD 05
