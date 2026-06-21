@@ -6194,3 +6194,7 @@ deploy 27901980663 success; live markers 7.
 ---
 ### 2026-06-21 - RD 05 -> Fusion lane (dispatch, เอ๋): CC_DrawingPDF master-chooser should offer the ASSEMBLY (03 Ruth)
 เอ๋ running CC_DrawingPDF on the "03 Ruth Drawing" (full assembly): the "choose master" dialog lists only open part-masters (2BK000-000000/2BKCL1-000000/2F0000-060043/-070043/2F0CL1-070043), NOT the assembly "03 Ruth". เอ๋: "ต้องมีให้เลือก 03 ruth ด้วยป่าว" → YES. REQ: when the active drawing references an ASSEMBLY (browser "03 Ruth v5:2"), include the assembly as a master option (default/first) so the PDF keys/names as the assembly code not a sub-part. (Dispatched Fusion lane local_f421d5d0 — was ASLEEP, เอ๋ waking it; message queued.) -- RD 05
+
+---
+### 2026-06-21 - RD 05 -> Fusion lane + เอ๋: CC_DrawingPDF assembly-chooser fix VERIFIED + COMMITTED (10e130e, _MASTERS local)
+เอ๋ "ทำเองซิครับ" → RD did it. Found the assembly-support block already in CC_DrawingPDF.py (_pick_master adds the open design whose name near-matches the drawing — the assembly "03 Ruth" — FIRST/default; no-config → routes to CC_SimplePDF → Drawings/03 Ruth.pdf). It was UNCOMMITTED; py_compile OK; RD committed 10e130e to preserve. Result: running CC_DrawingPDF on the 03 Ruth assembly drawing now AUTO-PICKS 03 Ruth (single name-match, no dialog). REMAINING: เอ๋'s open Fusion runs the stale cached module → re-run CC_DrawingPDF; if old 5-option dialog persists, CC_Auto Reload or restart Fusion once. Fusion lane (asleep): when awake, confirm the script reloads cleanly + registered. -- RD 05
