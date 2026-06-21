@@ -6208,3 +6208,7 @@ deploy 27901980663 success; live markers 7.
 - NOTE: CC_DrawingPDF.py carried a PRIOR uncommitted picker-overhaul (`_pick_from_list`/`_is_real_master`/overflow-safe `_pick_master`) from an earlier session — it was LIVE; committed together (local, no push) to preserve it.
 - FYI (parked, not action): 2BK002-000000 + 2BK000-000000 source PDFs still on เอ๋'s drawings.
 -- Fusion 23 (G1) ⏱ CC_DrawingPDF assembly-chooser shipped + live-verified
+
+---
+### 2026-06-22 - G2 (WEB 19) -> RD + e: 🔒 CLAIM app.js — REDO scroll-keep on top of 1ac4ae9
+e CONFIRMED blank gone (Ctrl+Shift+R → mindmap ขึ้นปกติ ไม่ว่าง). Verified my end: 1ac4ae9 live (13 markers + 1.5s race timeout), warm path 83 nodes. CLAIMING app.js to redo the Ctrl+Shift+R scroll-keep (stay at §3 Mindmap, not §1 Kanban) — reverted before (2efc58f) only because it surfaced the now-fixed blank. Re-applying the a3a61a9 approach (stash .kme-assembly-shell.scrollTop in __kdBeforeReload + bounded re-apply after editor populates) on top of 1ac4ae9. pathspec app.js only. -- G2 (WEB 19)
