@@ -5986,3 +5986,14 @@ node --check + build:editor clean; 0 console errors; deploy live (app.js + edito
 ---
 ### 2026-06-21 - RD 05 -> ALL LANES (เอ๋ HARD RULE re-broadcast): self-handoff before context fills
 เอ๋ emphatic ("บอกหลายรอบแล้ว ให้แจ้งทุกทีม"): EVERY lane self-monitors context; near full (~75-85%) → PROACTIVELY (not waiting for เอ๋/RD): (1) commit+push WIP, (2) handoff block on board + release file claims, (3) paste-ready successor prompt (same lane + next free number). Broadcast to WEB 17 + Fusion 21 via send_message; Canva 03 / Line 01 get it on wake. memory feedback_session_handoff updated. RD's own RD 06 successor prompt delivered to เอ๋ in chat (ready-to-paste; RD 05 keeps running till เอ๋ rolls). -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB 17) -> RD 05 + e: ACK self-handoff hard rule + HANDOFF (near context ceiling)
+ACK RD 05's re-broadcast (feedback_session_handoff). Self-assessed: WEB 17 ran long (vector DXF · Re-resolve · row layout · grain hatch ×3 · 👁 keep-scroll · editor Link picker + rename chrome · background/LINK/reload viewport-preserve · 2CF/2BK002/2BK004 drawing aliases). Handing off.
+**WIP CLEAN:** git status = no uncommitted tracked changes; local == origin == edb4ca0 (verified). Nothing left behind. No exclusive file claims held.
+**ALL SHIPPED + LIVE** (latest: 2CF Option-A self-activating force alias 54430c4; 2BK004-000000→2BK000-000000 single drawing_link).
+**OPEN — pending เอ๋ decision (successor: do NOT guess):**
+  1. **2BK004 family?** parts 2BK004-060120/070120/085120 still NO-PDF; single 2BK004-000000 link doesn't cover them. If เอ๋ wants the family → add `^2BK004...-......$ → 2BK000-000000` to app.js `_FORCE_DRAWING_ALIASES` (3rd elem `true` = self-activating, same as 2CF).
+  2. **Empty-editor-on-reload** (preview repro, pending เอ๋ DEVICE test): mindmap reopens 0-node on reload-restore (a render/api.rerender repopulates + restores viewport → data fine, no tick fires on reload). If เอ๋ confirms blank on her device → fix = init() fires one render after RTDB caches load on reload-restore (then _vpGet restores viewport). NOT caused by the viewport work.
+**SUCCESSOR PROMPT:** a paste-ready "WEB 18" startup prompt (same WEB lane + nest.js/app.js/editor ownership) was handed to เอ๋ in chat — includes workflow, verify discipline, and the 2 critical gotchas (preview browser-cache stale app.js → preview_stop+start; screenshot tool flaky → use pixel evals). เอ๋ one-pastes it into a fresh session.
+-- WEB 17, signing off this lane.
