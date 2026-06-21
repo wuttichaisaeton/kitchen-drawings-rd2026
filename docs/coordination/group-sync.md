@@ -6393,3 +6393,22 @@ Dispatched both. -- RD 05
 - no console errors.
 - 100VFRR-075D60.glb HEAD = 200, 1.5 MB on jsdelivr — เอ๋'s end-to-end test will be on that real cabinet.
 **NEEDS — เอ๋:** Ctrl+Shift+R, open 100VFRR-075D60 via 🧊 → should be readable now (edges visible, not a blob). If still not "lined enough" on real geometry, tell me — next step would be a true `EdgesGeometry` line overlay (more work, more accurate). The Fusion 31 "parts floating apart" geometry fix is the OTHER half — these two land independently. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + Fusion 31 + เอ๋: 3D viewer 4-MODE picker (6fd3dfb, LIVE) ⏱ 00:30
+SUPERSEDES the 2-toggle (d1f4710). เอ๋ expanded the ask to "ให้คนประกอบเลือกเอง" with 4 specific looks. Implemented all 4 with a top-bar picker; default = 🎨 Lines + Shade (the look from d1f4710 that read best).
+- **📐 Lines** — TRUE wireframe via `material.wireframe=true` on the THREE side (every triangle visible, classic CAD line drawing — not a CSS approximation).
+- **🎨 Lines + Shade** (DEFAULT) — shaded surface + CSS contrast filter + white-flattened materials (the prior "edges" look, kept verbatim since it shipped well).
+- **💎 Realistic** — full PBR: `shadow-intensity=1`, `shadow-softness=0.5`, `tone-mapping=aces`, neutral env IBL, original materials restored from snapshot.
+- **💥 Explode** — slider 0-100% pushes each per-leaf node outward from the cabinet center: `child.position = orig + (orig - center) * (pct/100 * 1.5)`. Reset on mode-out. Persists last % to `kd_3d_explode_v1`.
+**Scene access:** model-viewer keeps its real THREE.Scene on `Symbol(scene)` (private but stable across v4.x; probed via `Object.getOwnPropertySymbols` + match). The wrapper API (mv.model) doesn't expose `wireframe` or per-node positions — only PBR factors — so true wireframe + explode need the THREE side. Snapshot on `load`: every material's color/metalness/roughness/wireframe, plus an "explode root" (deepest ancestor with ≥2 children + ≥2 meshes in subtree, tie-broken by direct-child count — lands on the cabinet wrapper for Fusion 31's per-leaf exports), and each root child's local position + centroid.
+**Persistence:** `kd_3d_mode_v2` + `kd_3d_explode_v1`. Per-device sticky.
+**VERIFIED preview** (1280x900, Astronaut DEMO — preview WebGL is sandboxed):
+- Default Lines+Shade: high-contrast B&W illustration look ✓
+- 📐 Lines: TRUE wireframe — every triangle visible against dark bg ✓ (screenshot in chat)
+- 💎 Realistic: full color, shadow=1, tone=aces, no filter, original materials restored ✓
+- 💥 Explode: slider reveals, drag to 70%, position update on each rAF tick, persisted ✓ (Astronaut is one mesh under one group → minimal visible separation; Fusion-exported cabinets with per-leaf nodes will spread visibly — exactly what Fusion 31 Q3 per-leaf export delivers)
+- Mode persists across modal close/reopen ✓
+- No console errors.
+**NEEDS — เอ๋:** Ctrl+Shift+R, 🧊 on 100VFRR-075D60 → 4-button picker at the top. 📐 Lines is the truest "ลายเส้น" view. 💥 Explode + slider only useful when Fusion 31 emits per-leaf nodes (Q3 answer pending). If 100VFRR-075D60 is a single-mesh GLB, explode will look flat — that's the Fusion side, not the viewer.
+Deploy watching. -- G2 (WEB 20)
