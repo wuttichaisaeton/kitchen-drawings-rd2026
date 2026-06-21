@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T10:56:37.672458+00:00",
+  "generated_at": "2026-06-21T21:09:07.677214+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3048,7 +3048,7 @@
     "SD0HG1-000000": {
       "family": "Other",
       "last_drawn_version": 23,
-      "fusion_version": 17,
+      "fusion_version": 24,
       "pdf": "SD0HG1-000000.pdf",
       "bends": 0,
       "material": "",
@@ -11792,7 +11792,7 @@
       "name": "100VFRR-075D60",
       "status": "active",
       "created_at": "2026-06-10T23:24:39.480805+00:00",
-      "updated_at": "2026-06-11T03:53:18.454182+00:00",
+      "updated_at": "2026-06-21T21:09:07.663372+00:00",
       "total_unique_parts": 5,
       "total_qty": 11,
       "parts": [
@@ -11833,6 +11833,13 @@
           "parent_code": "TS2TR2-075000",
           "variant_root": "TS004H-075000",
           "urn": "urn:adsk.wipprod:dm.lineage:mFm1uggaQC2iy1skkKQJ_g"
+        },
+        {
+          "code": "080W-Insert",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "080W-Insert"
         },
         {
           "code": "DSV0R4-060080",
