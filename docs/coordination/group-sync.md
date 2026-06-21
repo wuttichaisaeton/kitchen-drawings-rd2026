@@ -6223,3 +6223,24 @@ Claimed app.js to REDO scroll-keep per the WEB18 handoff, but the handoff was ST
 VERIFIED my end: (1) blank fix 1ac4ae9 live + e confirmed "ขึ้นปกติแล้ว ไม่ว่าง" + warm path 83 nodes; (2) scroll-keep STASH works — scrolled .kme-assembly-shell to 1400 then __kdBeforeReload stashed assemblyScroll=1400; restore = the a3a61a9 logic (re-apply while below target ~9s) previously verified 1599 to 1599. NOTE: preview server drops on every reload here (flaky-preview gotcha) so the live reload round-trip relies on the prior verification + e's device.
 SAGA STATUS: blank done (e confirmed) + scroll-keep shipped (bcc12a1, stash verified). RELEASING the app.js claim. Asked e to confirm Ctrl+Shift+R STAYS at the Mindmap (not Kanban) — if it still bounces on her device I will move scroll-keep INTO the editor (main.jsx owns the shell) + add continuous persistence.
 Picking up RD 05's new dispatch next (7d4013c, in-browser 3D viewer phase1). -- G2 (WEB 19)
+
+---
+### 2026-06-22 - G2 (WEB 19) -> RD + e + WEB 20: 🤝 HANDOFF (context ceiling) — mindmap saga CLOSED, 3D-viewer scoped for successor
+WEB 19 ran inside a very long shared context. Handing off per the hard rule (e ดุเรื่อง handoff).
+WIP CLEAN: git status clean; app.js untouched by me (no code edits — both my items were already shipped); no exclusive claims held (released).
+DONE + LIVE (this session = verification + reconciliation, no new code):
+- BLANK mindmap on reload — 1ac4ae9 live (13 markers + 1.5s race timeout→LS). **e CONFIRMED "ขึ้นปกติแล้ว ไม่ว่าง."** Warm path 83 nodes verified my end.
+- scroll-keep (Ctrl+Shift+R stays at §3 Mindmap) — ALREADY shipped bcc12a1 "(closes saga)"; handoff that said "redo it" was STALE. Verified: stash works (scrolled .kme-assembly-shell→1400, __kdBeforeReload stashed assemblyScroll=1400); restore = a3a61a9 logic (re-apply while below target ~9s), previously verified 1599→1599.
+- (reload-keep-tab kd_active_tab 2504502 also live from earlier.)
+WATCH-ITEM for e: if e says Ctrl+Shift+R STILL bounces to §1 Kanban (scroll-keep), the next step is to move scroll-keep INTO editor/main.jsx (owns .kme-assembly-shell) + continuous persistence — bcc12a1 lives in app.js init and re-applies for ~9s, which CAN lose a very-late editor remount.
+
+NEXT TASK for WEB 20 = RD 05's 3D-viewer Phase 1 (board 7d4013c). SCOPED (saves re-investigation):
+- GOAL: 🧊 icon on each Assembly cabinet card → modal with Google <model-viewer> (orbit/zoom/touch, iPad) loading the cabinet's GLB; 404 → "3D not exported yet" placeholder; DEMO one card with a sample GLB so e sees the UX now.
+- FILES (CROSS-LANE — claim both): ICON = **editor/main.jsx** cabinet-node action cluster (near the 🧩/edit/💬 buttons, ~main.jsx:476-566) → needs `npm run build:editor` (node editor/build.mjs) + COMMIT editor.bundle.js. MODAL/logic = **app.js**: a global `window.kdOpen3D(code)` (also expose on window.kdAPI so the editor button calls it) — REUSE the opaque `.kdstock-modal`/`.kdstock-frame` shell (3-theme safe) + inline the <model-viewer> sizing (DON'T touch style.css = WEB15's lane).
+- model-viewer = lazy-inject CDN on first open: `<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js">` (inject once).
+- GLB URL via **jsdelivr** (has CORS; Pages does not): `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/<code>.glb`. app.js has a jsdelivr helper ~line 835 — reuse/mirror it.
+- 404 handling: HEAD-check the GLB first OR listen for <model-viewer>'s `error` event → swap to the placeholder.
+- SAMPLE DEMO (so e sees it before any real GLB): point ONE card / a demo flag at `https://modelviewer.dev/shared-assets/models/Astronaut.glb`.
+- PHASE 2 (Fusion lane, NOT web): GLB export → Drawings/3d/<code>.glb (Fusion exports STL/OBJ natively; GLB needs a converter). Web only consumes the path contract.
+GOTCHAS: (a) editor change → build:editor + commit editor.bundle.js. (b) flaky preview: server DROPS on every window.location.reload() → for the 3D modal use DOM proofs (no reload needed: open modal, assert <model-viewer> src). preview_stop+start if it gets weird; curl disk for markers. (c) .kme-assembly-shell is the scroll container (window.scrollY=0 on assembly). (d) kdAPI/__kmeInstance set async on editor mount. (e) English-only rendered UI (Flux). (f) commit pathspec only (app.js / editor/main.jsx / editor.bundle.js) — never git add -A (Fusion auto-commits Drawings/). pull --rebase --autostash.
+SUCCESSOR PROMPT: a paste-ready "WEB 20" was handed to e in chat. -- G2 (WEB 19), signing off
