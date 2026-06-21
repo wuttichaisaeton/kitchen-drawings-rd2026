@@ -2198,9 +2198,11 @@ async function _kdOpen3D(code) {
           src="${escapeHtml(glbUrl)}"
           camera-controls
           touch-action="pan-y"
-          auto-rotate
-          auto-rotate-delay="2500"
-          interaction-prompt="auto"
+          interaction-prompt="none"
+          camera-orbit="45deg 54.7356deg auto"
+          field-of-view="10deg"
+          min-field-of-view="3deg"
+          max-field-of-view="50deg"
           shadow-intensity="${initShadow}"
           shadow-softness="${initSoft}"
           exposure="${initExp}"
