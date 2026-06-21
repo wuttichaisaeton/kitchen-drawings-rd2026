@@ -416,6 +416,20 @@ function _renderAdminRoleSwitcher() {
       params.delete('p');
       dirty = true;
     }
+    // Deep-link `?asm=<project>` = SHARED ASSEMBLER LINK (เอ๋ 2026-06-22 "link
+    // ต้องเข้าไปในส่วน assembly"). Lands a worker straight inside the project's
+    // Assembly view (the project page IS the Kanban+Checklist+Mindmap editor)
+    // AND bakes role=assemble onto this device so the role chip + tab gating
+    // are correct from now on. The URL is stripped post-apply (same dirty-flag
+    // pattern as ?admin=) so a re-share of the now-clean URL doesn't carry
+    // role/view info — the safe replacement for the retired ?role= flag that
+    // had leaked into LINE chats.
+    if (params.has('asm')) {
+      window.__kdInitialProject = params.get('asm') || '';
+      window.__kdAsmBakeRole = true;
+      params.delete('asm');
+      dirty = true;
+    }
     if (dirty) {
       const qs = params.toString();
       const cleanUrl = window.location.origin + window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
@@ -9249,6 +9263,13 @@ function renderProjectsHome() {
         ? `<button class="project-complete-btn on" data-uncomplete-project="${escapeHtml(p.key)}" aria-label="Restore project" title="Move back to the active list">↩</button>`
         : `<button class="project-complete-btn" data-complete-project="${escapeHtml(p.key)}" aria-label="Mark complete" title="Move to the Complete folder">📦</button>`)
       : '';
+    // 📋 Copy assembler link (เอ๋ 2026-06-22): admin one-click copies
+    // `…/?asm=<projectKey>` → paste to LINE → assembler taps it once = lands
+    // straight in this project's Kanban + role=assemble baked on their device.
+    // Future taps on the now-clean URL still work (role stays in LS).
+    const asmLinkBtn = adminMode
+      ? `<button class="project-asmlink-btn" data-asmlink-project="${escapeHtml(p.key)}" aria-label="Copy assembler link" title="Copy assembler link — share via LINE so the worker lands straight in this project's Assembly view">📋</button>`
+      : '';
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -9259,6 +9280,7 @@ function renderProjectsHome() {
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
         </div>
         ${pinBtn}
+        ${asmLinkBtn}
         ${completeBtn}
         ${renameBtn}
         ${deleteBtn}
@@ -9295,10 +9317,39 @@ function renderProjectsHome() {
     });
   });
 
-  // Card click → drill into project (but ignore clicks on pin, drag, rename, or delete).
+  // 📋 Copy assembler link — admin-only. Writes `…/?asm=<key>` to clipboard;
+  // worker pastes into LINE → assembler taps = lands in Assembly + role baked.
+  ROOT.querySelectorAll('[data-asmlink-project]').forEach(btn => {
+    btn.addEventListener('click', async (ev) => {
+      ev.stopPropagation();
+      const key = btn.dataset.asmlinkProject;
+      const url = window.location.origin + window.location.pathname + '?asm=' + encodeURIComponent(key);
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(url);
+          ok = true;
+        }
+      } catch (e) {}
+      if (!ok) {
+        // Fallback for browsers that block async clipboard outside a secure
+        // context — use a hidden textarea + execCommand('copy').
+        try {
+          const ta = document.createElement('textarea');
+          ta.value = url; ta.style.position = 'fixed'; ta.style.top = '-1000px';
+          document.body.appendChild(ta); ta.select();
+          ok = document.execCommand('copy');
+          document.body.removeChild(ta);
+        } catch (e) {}
+      }
+      _kdToast(ok ? '📋 Assembler link copied' : '✗ Copy failed — long-press URL to copy manually');
+    });
+  });
+
+  // Card click → drill into project (but ignore clicks on pin, drag, rename, delete, or asmlink).
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn')) return;
+      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn, .project-asmlink-btn')) return;
       markProjectSeen('proj', el.dataset.project);   // opening clears this surface's NEW badge
       navTo({ kind: 'project', name: el.dataset.project });
     });
@@ -13731,8 +13782,14 @@ async function init() {
       const rawR = sessionStorage.getItem('kd_nav_restore');
       if (rawR) {
         sessionStorage.removeItem('kd_nav_restore');
+        // An explicit deep-link (?p= / ?asm= / #code=) is an intentional entry
+        // point — it must WIN over any stashed restore state from a prior reload
+        // (otherwise the LINE-shared assembler link would silently drop the user
+        // back where they last were instead of into the project).
+        const _hasDeepLink = !!window.__kdInitialProject || /[#&]code=/.test(location.hash);
         const s = JSON.parse(rawR);
-        if (s && s.view && (Date.now() - (s.t || 0)) < 30000
+        if (!_hasDeepLink
+            && s && s.view && (Date.now() - (s.t || 0)) < 30000
             && (!_TAB_IDS[s.view] || _visibleTabsForRole()[s.view])) {
           view = s.view;
           document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.view === view));
@@ -13813,12 +13870,26 @@ async function init() {
         // Deep-link from a merged-PDF link / shared URL — only when NOT restoring a
         // reload/tab, so a stale #code hash can't override the saved view.
         _applyDeepLinkFromHash();
-        // ?p=<projectKey> auto-navigate (admin shares a link straight into a project).
+        // ?p=<projectKey> / ?asm=<projectKey> auto-navigate. For ?asm= the
+        // role is also baked to 'assemble' on this device BEFORE the project
+        // mounts so role-gated chrome (role chip, tab visibility) is correct
+        // on the first paint. Missing project → toast + stay on home.
         const initialProject = window.__kdInitialProject;
-        if (initialProject && manifest.projects && manifest.projects[initialProject]) {
-          stack.push({ kind: 'project', name: initialProject });
-          window.__kdInitialProject = null;
-          render();
+        const bakeAsm = !!window.__kdAsmBakeRole;
+        if (initialProject) {
+          if (manifest.projects && manifest.projects[initialProject]) {
+            if (bakeAsm) {
+              try { setRole('assemble'); } catch (e) {}
+            }
+            stack.push({ kind: 'project', name: initialProject });
+            window.__kdInitialProject = null;
+            window.__kdAsmBakeRole = false;
+            render();
+          } else {
+            try { _kdToast('✗ Project not found: ' + initialProject); } catch (e) {}
+            window.__kdInitialProject = null;
+            window.__kdAsmBakeRole = false;
+          }
         }
       }
     }
