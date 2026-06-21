@@ -2052,6 +2052,9 @@ async function _kdOpen3D(code) {
        overlay reads. No CSS filter; the contrast comes from the material+edges. */
     .kd3d-modal model-viewer.kd3d-mode-outline,
     .kd3d-modal model-viewer.kd3d-mode-outlineshade{background:#ffffff;--poster-color:#ffffff;filter:none}
+    /* Component Color (Fusion Shift+N) — light-grey bg so the per-leaf hues
+       pop without harsh contrast and edges still read at 70% opacity. */
+    .kd3d-modal model-viewer.kd3d-mode-compcolor{background:#f3f4f6;--poster-color:#f3f4f6;filter:none}
     /* Realistic + Explode: dark background like a viewer chrome, model-viewer's
        PBR + shadow does the rest. */
     .kd3d-modal model-viewer.kd3d-mode-realistic,
@@ -2120,27 +2123,38 @@ async function _kdOpen3D(code) {
     return;
   }
 
-  // FOUR view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง" + refinement passes):
+  // FIVE view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง" + refinement passes):
   //   outline      — "Shaded with Visible Edges" / Fusion isometric: flat WHITE
   //                  surface + crisp BLACK EdgesGeometry overlay on every
   //                  visible edge. No dashed/hidden pass. White background.
   //   outlineshade — Same black edge overlay BUT surface uses subtle PBR shading
-  //                  (slight metalness + roughness) so panels have depth. DEFAULT.
+  //                  (slight metalness + roughness) so panels have depth.
+  //   compcolor    — "Display Component Colors" (Fusion Shift+N): each per-leaf
+  //                  node painted a distinct deterministic colour from a name
+  //                  hash → golden-ratio hue → setHSL, soft Lambert-ish shading.
+  //                  Best at-a-glance part separation for assemblers. DEFAULT.
   //   realistic    — Astronaut-demo treatment: env="neutral" (model-viewer's
   //                  built-in), shadow=1, softness=0.5, exposure=1. Material
   //                  authored colors are RESTORED — no fake-chrome override.
   //   explode      — Push each per-leaf node outward via slider 0-100%, using
   //                  each unit's geometric centroid (trimesh-baked GLBs ship
   //                  node.position=0 with world-baked vertices).
-  // Persist mode + last explode % per device (kd_3d_mode_v4 / kd_3d_explode_v1).
-  // Migrates v3 (hidden/hiddenshade) and v2 (lines/linesshade) transparently.
-  const MODE_KEY = 'kd_3d_mode_v4';
+  // Visible-edge overlay (black, EdgesGeometry, 22°) is present in ALL five
+  // modes — opacity 1.0 in outline/outlineshade, 0.7 elsewhere so colour /
+  // PBR reflections still read while parts stay outlined (เอ๋ "realistic
+  // explode ให้เพิ่มเส้นเข้าไปด้วย").
+  // Persist mode + last explode % per device (kd_3d_mode_v5 / kd_3d_explode_v1).
+  // Migrates v4 (outline/outlineshade) + v3 (hidden/hiddenshade) + v2
+  // (lines/linesshade) transparently.
+  const MODE_KEY = 'kd_3d_mode_v5';
   const EXPLODE_KEY = 'kd_3d_explode_v1';
-  const VALID = ['outline', 'outlineshade', 'realistic', 'explode'];
+  const VALID = ['outline', 'outlineshade', 'compcolor', 'realistic', 'explode'];
   let mode = (() => {
     try {
       const m = localStorage.getItem(MODE_KEY);
       if (VALID.includes(m)) return m;
+      const v4 = localStorage.getItem('kd_3d_mode_v4');
+      if (v4 && VALID.includes(v4)) return v4;
       const v3 = localStorage.getItem('kd_3d_mode_v3');
       if (v3 === 'hidden') return 'outline';
       if (v3 === 'hiddenshade') return 'outlineshade';
@@ -2149,8 +2163,8 @@ async function _kdOpen3D(code) {
       if (v2 === 'lines') return 'outline';
       if (v2 === 'linesshade') return 'outlineshade';
       if (v2 === 'realistic' || v2 === 'explode') return v2;
-      return 'outlineshade';
-    } catch { return 'outlineshade'; }
+      return 'compcolor';
+    } catch { return 'compcolor'; }
   })();
   let explodePct = (() => {
     try { const v = parseInt(localStorage.getItem(EXPLODE_KEY) || '40', 10); return Math.max(0, Math.min(100, isNaN(v) ? 40 : v)); }
@@ -2167,7 +2181,8 @@ async function _kdOpen3D(code) {
   const initEnv = 'neutral';   // built-in for all four modes (Astronaut-demo default)
   body.innerHTML = `<div class="kd3d-modebar">
         ${modeBtn('outline', '📐', 'Outline', 'Fusion isometric look: flat white panels + crisp black edge lines on every visible edge.')}
-        ${modeBtn('outlineshade', '🎨', 'Outline + Shade', 'Black edges + subtle surface shading so panels have depth (default).')}
+        ${modeBtn('outlineshade', '🎨', 'Outline + Shade', 'Black edges + subtle surface shading so panels have depth.')}
+        ${modeBtn('compcolor', '🌈', 'Component Color', 'Fusion Shift+N look: each cabinet part painted a distinct deterministic colour for instant assembly read (default).')}
         ${modeBtn('realistic', '💎', 'Realistic', 'model-viewer Astronaut-demo treatment: neutral env IBL + soft shadow + exposure 1.')}
         ${modeBtn('explode', '💥', 'Explode', 'Spread each cabinet part outward by a percentage.')}
       </div>
@@ -2212,6 +2227,7 @@ async function _kdOpen3D(code) {
   // centroid-based explode we MUST go through the THREE side.
   let threeScene = null;          // THREE.Scene (mv[Symbol(scene)])
   let materialSnap = [];          // [{mat, color, metalness, roughness, wireframe, colorWrite}]
+  let meshOrigMat = [];           // [{mesh, mat: orig material(or array)}] — used to restore shared-mat refs after compcolor cloning
   let explodeRoot = null;         // THREE.Object3D whose children are explode units
   let explodeUnits = [];          // [{node, baseX/Y/Z (node.position), gx/y/z (geom centroid in node-local space)}]
   let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
@@ -2249,9 +2265,12 @@ async function _kdOpen3D(code) {
     threeScene = _getScene();
     if (!threeScene) return false;
     // Materials — snapshot so 'realistic' restores the GLB's authored look exactly.
-    materialSnap = [];
+    // Also remember each MESH's original material reference so compcolor (which
+    // clones per mesh to break shared-material colour collisions) can restore.
+    materialSnap = []; meshOrigMat = [];
     threeScene.traverse(n => {
       if (n.isMesh && n.material) {
+        meshOrigMat.push({ mesh: n, mat: Array.isArray(n.material) ? n.material.slice() : n.material });
         const mats = Array.isArray(n.material) ? n.material : [n.material];
         for (const m of mats) {
           materialSnap.push({
@@ -2314,11 +2333,13 @@ async function _kdOpen3D(code) {
     return true;
   };
 
-  // Build EdgesGeometry-based BLACK outline overlay for Outline modes. Each
+  // Build EdgesGeometry-based BLACK edge overlay for every mode that wants it
+  // (เอ๋ "realistic explode ให้เพิ่มเส้นเข้าไปด้วย" — all 5 modes use it). Each
   // mesh gets ONE LineSegments child (solid visible-edge); depthTest=true so
-  // it's drawn only where in front (no dashed hidden-edge pass — เอ๋ ref =
-  // Fusion's "Shaded with Visible Edges", visible edges only). The line
-  // inherits its parent mesh's transform automatically.
+  // it's drawn only where in front. Material is `transparent:true` from the
+  // start so opacity can be flipped per mode (1.0 for Outline, 0.7 elsewhere).
+  // The line inherits its parent mesh's transform automatically — including
+  // explode translations, which is the win there.
   let _edgesAttempted = false;
   const buildEdgeOverlays = async () => {
     if (_edgesAttempted) return;
@@ -2326,7 +2347,7 @@ async function _kdOpen3D(code) {
     if (!threeScene) return;
     let THREE;
     try { THREE = await _kd3dEnsureThree(); }
-    catch (e) { console.warn('[kd3d] THREE module failed to load — outline overlay disabled', e); return; }
+    catch (e) { console.warn('[kd3d] THREE module failed to load — edges disabled', e); return; }
     edgeOverlays = [];
     threeScene.traverse(n => {
       if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
@@ -2335,7 +2356,9 @@ async function _kdOpen3D(code) {
         // triangle-strip seams. (THREE default = 1°, way too noisy.)
         const eg = new THREE.EdgesGeometry(n.geometry, 22);
         const matVis = new THREE.LineBasicMaterial({
-          color: 0x111317, transparent: false, depthTest: true, depthWrite: false,
+          color: 0x111317,
+          transparent: true, opacity: 1.0,
+          depthTest: true, depthWrite: false,
         });
         const lineVis = new THREE.LineSegments(eg, matVis);
         lineVis.renderOrder = 2;
@@ -2349,9 +2372,83 @@ async function _kdOpen3D(code) {
   const setEdgesVisible = (show) => {
     for (const o of edgeOverlays) o.lineVis.visible = !!show;
   };
+  const setEdgesOpacity = (op) => {
+    for (const o of edgeOverlays) {
+      const m = o.lineVis.material;
+      if (m && typeof m.opacity === 'number') { m.opacity = op; m.needsUpdate = true; }
+    }
+  };
+
+  // Component Color (Fusion Shift+N): each per-leaf node gets a distinct,
+  // deterministic colour from a name hash → golden-ratio hue. Same leaf name →
+  // same hue across reloads, no per-load shuffle. All sub-meshes under a single
+  // leaf share the leaf's colour so multi-mesh parts read as one piece.
+  const _kd3dHashStr = (s) => {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return h >>> 0;
+  };
+  const _GOLDEN = 0.61803398875;
+  const applyComponentColors = () => {
+    if (!threeScene || !meshOrigMat.length) return;
+    // Fusion's trimesh-exported GLB uses ONE shared material across all 57 per-
+    // leaf meshes — setHSL on a shared instance overwrites itself on every
+    // iteration so every mesh ends up the same colour (the last one assigned).
+    // CLONE per mesh so each leaf actually gets its own colour. The cloned
+    // material has its own colour/PBR factors but reuses the same texture
+    // references → cheap, no GPU re-upload.
+    const colorByOwner = new Map();
+    for (let i = 0; i < meshOrigMat.length; i++) {
+      const mesh = meshOrigMat[i].mesh;
+      // Determine owner identity from the mesh name (or the nearest NAMED
+      // ancestor for nested GLBs).
+      let owner = mesh;
+      while (!owner.name && owner.parent && owner.parent !== threeScene) owner = owner.parent;
+      const ownerKey = (owner && owner.name) ? owner.name : ('mesh-' + i);
+      let hsl = colorByOwner.get(ownerKey);
+      if (!hsl) {
+        const seed = _kd3dHashStr(ownerKey);
+        const hue = ((seed * _GOLDEN) % 1 + 1) % 1;
+        hsl = { h: hue, s: 0.45, l: 0.62 };
+        colorByOwner.set(ownerKey, hsl);
+      }
+      const origMat = meshOrigMat[i].mat;
+      const newMat = Array.isArray(origMat)
+        ? origMat.map(m => (m && m.clone ? m.clone() : m))
+        : (origMat && origMat.clone ? origMat.clone() : origMat);
+      const mats = Array.isArray(newMat) ? newMat : [newMat];
+      for (const m of mats) {
+        try {
+          if (m.color && m.color.setHSL) m.color.setHSL(hsl.h, hsl.s, hsl.l);
+          if (m.emissive && m.emissive.setRGB) m.emissive.setRGB(0, 0, 0);
+          if (typeof m.emissiveIntensity === 'number') m.emissiveIntensity = 0;
+          if (typeof m.metalness === 'number') m.metalness = 0;
+          if (typeof m.roughness === 'number') m.roughness = 0.85;
+          m.wireframe = false;
+          m.needsUpdate = true;
+        } catch (e) {}
+      }
+      mesh.material = newMat;
+    }
+  };
+
+  // Restore each mesh's original material reference — undoes the per-mesh
+  // cloning applyComponentColors performs. Called from applyMode when leaving
+  // 'compcolor'. The original material's per-property snapshot (materialSnap)
+  // handles the colour/metalness restore — this just re-points mesh.material.
+  const restoreOriginalMaterials = () => {
+    for (const e of meshOrigMat) {
+      try { e.mesh.material = e.mat; } catch (err) {}
+    }
+  };
 
   const applyMaterials = (m) => {
     if (!materialSnap.length) return;
+    // Component Color has its own per-leaf logic — defer to it.
+    if (m === 'compcolor') { applyComponentColors(); return; }
+    // Leaving compcolor → restore each mesh's original material ref before
+    // editing the snap'd materials (safe no-op if we weren't in compcolor).
+    restoreOriginalMaterials();
     for (const s of materialSnap) {
       const mat = s.mat;
       try {
@@ -2416,9 +2513,9 @@ async function _kdOpen3D(code) {
     mode = next;
     try { localStorage.setItem(MODE_KEY, mode); } catch {}
     VALID.forEach(v => mv.classList.toggle('kd3d-mode-' + v, v === mode));
-    // model-viewer attrs per mode. All four use 'neutral' (built-in IBL),
-    // matching the Astronaut demo's lighting baseline; modes vary only on
-    // shadow + exposure + tone for the look they want.
+    // model-viewer attrs per mode. All use 'neutral' (built-in IBL), matching
+    // the Astronaut demo's lighting baseline; modes vary only on shadow,
+    // exposure, tone for the look they want.
     mv.setAttribute('environment-image', 'neutral');
     if (mode === 'outline') {
       mv.setAttribute('shadow-intensity', '0');
@@ -2430,10 +2527,15 @@ async function _kdOpen3D(code) {
       mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1.05');
       mv.setAttribute('tone-mapping', 'neutral');
+    } else if (mode === 'compcolor') {
+      // Soft front-shadow so the coloured panels read 3D without flattening
+      // the colours; exposure a touch over 1 to keep the HSL hues vivid.
+      mv.setAttribute('shadow-intensity', '0.45');
+      mv.setAttribute('shadow-softness', '0.5');
+      mv.setAttribute('exposure', '1.08');
+      mv.setAttribute('tone-mapping', 'neutral');
     } else if (mode === 'realistic') {
-      // Astronaut-demo treatment — exactly what model-viewer ships by default
-      // (เอ๋ benchmark): env="neutral", shadow=1, softness=0.5, exposure=1,
-      // tone="neutral". Materials stay authored (no fake-chrome override).
+      // Astronaut-demo treatment — exactly what model-viewer ships by default.
       mv.setAttribute('shadow-intensity', '1');
       mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1');
@@ -2445,12 +2547,14 @@ async function _kdOpen3D(code) {
       mv.setAttribute('tone-mapping', 'neutral');
     }
     applyMaterials(mode);
-    // Outline modes: build the black-edge overlay on first need, then show it.
-    if (mode === 'outline' || mode === 'outlineshade') {
-      buildEdgeOverlays().then(() => setEdgesVisible(true));
-    } else {
-      setEdgesVisible(false);
-    }
+    // Edges in EVERY mode (เอ๋ "realistic explode ให้เพิ่มเส้นเข้าไปด้วย"),
+    // fully-opaque for the pure CAD looks and semi-transparent elsewhere so
+    // PBR reflection / per-leaf colour still reads through.
+    buildEdgeOverlays().then(() => {
+      setEdgesVisible(true);
+      const op = (mode === 'outline' || mode === 'outlineshade') ? 1.0 : 0.7;
+      setEdgesOpacity(op);
+    });
     if (mode === 'explode') applyExplode(explodePct);
     else resetExplode();
     modal2 && modal2.classList.toggle('kd3d-modal-explode', mode === 'explode');
