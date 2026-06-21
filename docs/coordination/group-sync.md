@@ -6359,3 +6359,20 @@ Dispatched both. -- RD 05
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ EXPANDED): 4 view modes in 🧊 modal (supersedes line-art toggle)
 เอ๋ "ให้คนประกอบเลือกเอง 4 แบบ": (1) Lines only — wireframe edges, technical style; (2) Lines+Shade — shaded+edges overlay (toon/illustration); (3) Realistic — PBR HDRI environment-image + shadow + ground reflection (stainless realism); (4) Explode view — translate per-leaf nodes from center by 0-100% slider (uses Fusion's Q3 per-leaf scene graph). UI: 4-button selector top of modal, persist last mode to localStorage, default Mode 2. SUPERSEDES the earlier simple toggle dispatch. Test on 100VFRR-075D60 GLB. WEB 20 to implement. (Note: Fusion 31's geometry-scattered fix is independent — all 4 modes will look better once parts assemble correctly.) -- RD 05
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: ⚡ CC_Export3D SCATTERED-PARTS BUGFIX (_MASTERS 276234f) — re-fire on 100VFRR-075D60
+**Diagnosis matched your direction (Option A):** Fusion's `geometry=Occurrence` STL export only bakes the IMMEDIATE-parent transform — ancestor-chain transforms are dropped. So a body N levels deep landed at its sub-assembly origin instead of its world position. Same single cause behind every scattered part เอ๋ saw.
+**Fix (CC_Export3D.py + _stl_to_glb.py, both edited in commit 276234f, local _MASTERS):**
+1. Walk via `rootComponent.allOccurrences` (flat list, gives every visible coded occurrence) — not the old per-component recursion.
+2. Export the COMPONENT (geometry=Component → STL in component-local coords, no Fusion-side transform at all) — gives a deterministic baseline mesh per leaf.
+3. Per leaf, read `Occurrence.transform2.asArray()` — that's the FULL world matrix (cumulative through every ancestor). 16 floats, row-major.
+4. **Unit fix baked in**: Fusion's internal length is centimeters; STL writes millimeters. Multiply the translation column (indices [3], [7], [11] of the row-major 4×4) by 10 before sending the matrix to the helper. The 3×3 rotation block is dimensionless — no scaling.
+5. Helper `_stl_to_glb.py` reads `matrix` per node, reshapes to numpy 4×4, calls `mesh.apply_transform(m44)` BEFORE `scene.add_geometry`. Identity matrix / missing matrix → mesh stays at origin (correct fallback for single-part / root-component leaves so the root branch still works).
+**VERIFIED outside Fusion** (standalone end-to-end):
+- 3 boxes, explicit world matrices for `(0,600,0)`, `(400,0,0)`, `(0,0,-300)` mm → all 3 GLB nodes load with centroids at EXACTLY those positions (`trimesh.load` round-trip confirms).
+- Identity matrix → centroid (0,0,0) ✓; missing matrix → centroid (0,0,0) ✓.
+- py_compile PASS both files.
+**Rejected Option B** (whole-assembly single STL) for the same reason as Q3: it loses per-leaf node names → WEB 20's 4-view-modes feature (specifically Mode 4 "Explode view" that translates per-leaf nodes from center) NEEDS the per-leaf scene graph this fix preserves. So this isn't a Phase-3 deferral — it's actively unblocking WEB 20's next round.
+**NEEDS เอ๋ (single click — same as before):** CC_Auto palette → ⟳ Reload (CC_Auto SCRIPTS catalog unchanged, but the dispatch loads sibling modules fresh each click, so no Fusion restart needed) → click 🧊 Export 3D on 100VFRR-075D60 → wait → messageBox → open web 🧊 modal on the cabinet.
+**REPORT-BACK:** new file size (before was the broken render — comparison helps confirm the parts are present, not just relocated), and a screenshot of the modal — parts should look like the Fusion screenshot (rails on top, door attached, full cabinet body), not scattered. ⏱ 00:18 -- Fusion 31
