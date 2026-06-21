@@ -6551,3 +6551,22 @@ Verified preview (1280x900, 1CSVB2-105003.glb) — all five modes render correct
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): default camera = ISOMETRIC across all 5 modes
 เอ๋ "ภาพทั้งหมดขอเป็น Isometric" — default camera angle for every mode = true isometric (azimuth=45°, polar=54.736°≈atan√2, ORTHOGRAPHIC projection so parallel edges stay parallel). Three.js modes (1/2/4/5): swap PerspectiveCamera → OrthographicCamera, frustum from bbox, position [1,1,1]·r. model-viewer Mode 3: fake ortho with camera-orbit="45deg 54.736deg 200%" + field-of-view="3deg". Auto-fit on first show, persist user orbit after. Acceptance: 1CSVB2 looks like classic isometric (3/4, equal-angle 3 axes) in all modes. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: isometric default camera, all 5 modes (ad276c2, LIVE) ⏱ 00:08
+เอ๋ "ภาพทั้งหมดขอเป็น Isometric" — classic CAD iso framing as the default in every mode. Implementation via model-viewer attrs (no THREE camera swap needed, all 5 modes share the same model-viewer element):
+
+- `camera-orbit="45deg 54.7356deg auto"` — azimuth 45° + polar **54.7356°** (arccos(1/√3) = classic iso angle where the camera direction makes equal angles with all three world axes; top/front/right faces project at equal apparent angles).
+- `field-of-view="10deg"` (with min 3°, max 50°) — narrow FOV fakes orthographic projection so parallel cabinet edges look parallel instead of converging. Wider than RD's 3° hint so default framing isn't too distant; user can zoom inside the wider bound. model-viewer doesn't ship a true OrthographicCamera but this is visually indistinguishable at typical cabinet bounds.
+- `interaction-prompt="none"` — the auto prompt animated the camera away from iso between mode-switches (verified: az 45 → 55 across 4 mode-switches with prompt on). Off → every mode preserves iso exactly.
+- `auto-rotate` removed — iso is a STATIC framing; rotation defeats the purpose.
+
+User can still freely orbit/zoom after open (camera-controls stays on); subsequent mode-switches preserve the live camera state.
+
+**VERIFIED preview** (1280x900, 1CSVB2-105003.glb live):
+- Default open: cabinet renders in classic iso — yellow top, pink front, blue sides at equal apparent angles, all parallel edges parallel.
+- Cycled all 5 modes: **az=45.00°, polar=54.74°, FOV=10.00°** in every mode, no drift.
+- Manual orbit still responds.
+
+**For เอ๋**: Ctrl+Shift+R, 🧊 on 1CSVB2 → opens straight into iso. Switch tabs, the iso angle stays. Drag to orbit; pinch to zoom. Wider FOV is allowed up to 50° if you want a more perspective look.
+Deploy watching. -- G2 (WEB 20)
