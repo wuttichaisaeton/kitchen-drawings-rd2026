@@ -1976,11 +1976,32 @@ function _openConfigBrowser() {
 // export — pass code 'DEMO' or click with no GLB available + ?demo3d=1.
 const _KD3D_MV_CDN = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js';
 const _KD3D_DEMO_GLB = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+// THREE.js as an ES module — model-viewer bundles its own copy under a private
+// Symbol, but its classes are minified ($n, Ml, …) so we can't reach
+// EdgesGeometry / LineSegments / LineDashedMaterial by name. Loading our own
+// instance is fine: we only construct geometry/materials with it; the actual
+// render walk is still done by model-viewer's renderer (it traverses the scene
+// and renders any Object3D it finds, regardless of which THREE built it).
+const _KD3D_THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.module.js';
+// Workshop / aircraft-workshop HDRI from the modelviewer.dev shared assets —
+// gives stainless cabinets warm, directional bounce light (vs the flat
+// "neutral" preset). Used by Realistic mode.
+const _KD3D_HDRI_REALISTIC = 'https://modelviewer.dev/shared-assets/environments/aircraft_workshop_01_1k.hdr';
 
 function _kd3dGlbUrl(code) {
   // jsdelivr mirror of the kitchen-drawings-rd2026 repo — same pattern as
   // _githubPagesToJsdelivr. jsdelivr has CORS; GH Pages does not.
   return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}.glb`;
+}
+
+let _kd3dThreePromise = null;
+function _kd3dEnsureThree() {
+  if (_kd3dThreePromise) return _kd3dThreePromise;
+  _kd3dThreePromise = import(_KD3D_THREE_CDN).catch(err => {
+    _kd3dThreePromise = null;
+    throw err;
+  });
+  return _kd3dThreePromise;
 }
 
 let _kd3dMvPromise = null;
@@ -2102,18 +2123,33 @@ async function _kdOpen3D(code) {
     return;
   }
 
-  // FOUR view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง"):
-  //   lines       — pure wireframe / edges only (material.wireframe=true via THREE).
-  //   linesshade  — shaded surface + edge-emphasizing CSS contrast (DEFAULT).
-  //   realistic   — full PBR: shadows, ground reflection, neutral env IBL.
-  //   explode     — push each per-leaf node outward by a slider 0-100%.
-  // Persist mode + last explode % per device (kd_3d_mode_v2 / kd_3d_explode_v1).
-  const MODE_KEY = 'kd_3d_mode_v2';
+  // FOUR view modes (เอ๋ 2026-06-22 "ให้คนประกอบเลือกเอง" + refinement pass):
+  //   hidden      — Hidden Line: pure technical drawing (solid visible edges +
+  //                 dashed hidden edges via EdgesGeometry overlays). No fill.
+  //   hiddenshade — Hidden Line + Shade: same edge overlays on top of a
+  //                 flat-shaded white surface. DEFAULT.
+  //   realistic   — Full PBR with a workshop HDRI, shadows + soft-shadow
+  //                 contact, ACES tone-mapping — looks like a showroom render.
+  //   explode     — Push each per-leaf node outward by a slider 0-100%.
+  //                 Centroid-based: trimesh-exported GLBs bake transforms into
+  //                 vertices (node.position=0), so we use each unit's geometric
+  //                 bbox center, not node.position, for the spread vector.
+  // Persist mode + last explode % per device (kd_3d_mode_v3 / kd_3d_explode_v1).
+  // (v3 because the labels/IDs changed; v2 is migrated transparently.)
+  const MODE_KEY = 'kd_3d_mode_v3';
   const EXPLODE_KEY = 'kd_3d_explode_v1';
-  const VALID = ['lines', 'linesshade', 'realistic', 'explode'];
+  const VALID = ['hidden', 'hiddenshade', 'realistic', 'explode'];
   let mode = (() => {
-    try { const m = localStorage.getItem(MODE_KEY); return VALID.includes(m) ? m : 'linesshade'; }
-    catch { return 'linesshade'; }
+    try {
+      const m = localStorage.getItem(MODE_KEY);
+      if (VALID.includes(m)) return m;
+      // Migrate v2 ids → v3 ids so a returning worker keeps their choice.
+      const v2 = localStorage.getItem('kd_3d_mode_v2');
+      if (v2 === 'lines') return 'hidden';
+      if (v2 === 'linesshade') return 'hiddenshade';
+      if (v2 === 'realistic' || v2 === 'explode') return v2;
+      return 'hiddenshade';
+    } catch { return 'hiddenshade'; }
   })();
   let explodePct = (() => {
     try { const v = parseInt(localStorage.getItem(EXPLODE_KEY) || '40', 10); return Math.max(0, Math.min(100, isNaN(v) ? 40 : v)); }
@@ -2123,19 +2159,21 @@ async function _kdOpen3D(code) {
   const modeBtn = (id, ico, label, title) => `<button data-mode="${id}" class="${mode === id ? 'is-on' : ''}" title="${escapeHtml(title)}"><span class="kd3d-mode-ico">${ico}</span><span>${escapeHtml(label)}</span></button>`;
   // mv attrs for the INITIAL paint (so first-frame is correct even before load).
   // Per-mode attribute set is also re-applied in applyMode() on every switch.
-  const initShadow = (mode === 'realistic' || mode === 'explode') ? '1.0' : '0';
-  const initExp = (mode === 'realistic' || mode === 'explode') ? '1.0' : '1.3';
-  const initTone = (mode === 'realistic') ? 'aces' : 'neutral';
+  const initShadow = (mode === 'realistic') ? '1.0' : (mode === 'explode' ? '0.6' : '0');
+  const initExp = (mode === 'realistic') ? '1.4' : (mode === 'explode' ? '1.1' : '1.3');
+  const initTone = (mode === 'realistic' || mode === 'explode') ? 'aces' : 'neutral';
+  const initEnv = (mode === 'realistic') ? _KD3D_HDRI_REALISTIC : 'neutral';
   body.innerHTML = `<div class="kd3d-modebar">
-        ${modeBtn('lines', '📐', 'Lines', 'Pure wireframe / line art — no fill')}
-        ${modeBtn('linesshade', '🎨', 'Lines + Shade', 'Shaded surface + edge-emphasizing contrast (default)')}
-        ${modeBtn('realistic', '💎', 'Realistic', 'Full PBR — lighting, shadows, ground reflection')}
-        ${modeBtn('explode', '💥', 'Explode', 'Spread the cabinet apart by a percentage')}
+        ${modeBtn('hidden', '📐', 'Hidden Line', 'Technical drawing: solid lines for visible edges + dashed lines for hidden edges. No fill.')}
+        ${modeBtn('hiddenshade', '🎨', 'Hidden Line + Shade', 'Hidden-line overlay on top of a flat-shaded surface (default).')}
+        ${modeBtn('realistic', '💎', 'Realistic', 'Full PBR with a workshop HDRI + soft shadows + ACES tone-mapping.')}
+        ${modeBtn('explode', '💥', 'Explode', 'Spread each cabinet part outward by a percentage.')}
       </div>
       <div class="kd3d-explodebar">
         <span>Explode</span>
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
         <span class="kd3d-explode-val">${explodePct}%</span>
+        <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
       </div>
       <div class="kd3d-viewer">
         <model-viewer
@@ -2147,10 +2185,10 @@ async function _kdOpen3D(code) {
           auto-rotate-delay="2500"
           interaction-prompt="auto"
           shadow-intensity="${initShadow}"
-          shadow-softness="0.5"
+          shadow-softness="0.3"
           exposure="${initExp}"
           tone-mapping="${initTone}"
-          environment-image="neutral"
+          environment-image="${escapeHtml(initEnv)}"
           ar="false"
           reveal="auto"
         ></model-viewer>
@@ -2165,15 +2203,17 @@ async function _kdOpen3D(code) {
     showPlaceholder('Failed to load 3D model', 'The GLB at Drawings/3d/' + code + '.glb returned an error during load (possibly a stale CDN cache or corrupt file).');
   });
 
-  // ── THREE.js scene access ────────────────────────────────────────────────
+  // ── THREE.js scene access + per-mesh edge overlays ──────────────────────
   // model-viewer keeps its real THREE.Scene on a private Symbol-keyed prop.
-  // The wrapper API (mv.model.materials) only exposes PBR — not material.wireframe,
-  // not node positions — so for true wireframe + explode we need the THREE side.
+  // The wrapper API (mv.model.materials) only exposes PBR — not wireframe, not
+  // node positions, not arbitrary geometry — so for hidden-line overlays + true
+  // centroid-based explode we MUST go through the THREE side.
   let threeScene = null;          // THREE.Scene (mv[Symbol(scene)])
-  let materialSnap = [];          // [{mat, color: THREE.Color clone, metalness, roughness, wireframe}]
-  let explodeRoot = null;         // THREE.Object3D — parent whose children are the explode units
-  let explodeUnits = [];          // [{node, x, y, z}] — original positions (in explodeRoot's local space)
-  let explodeCenter = { x: 0, y: 0, z: 0 };
+  let materialSnap = [];          // [{mat, color, metalness, roughness, wireframe, colorWrite}]
+  let explodeRoot = null;         // THREE.Object3D whose children are explode units
+  let explodeUnits = [];          // [{node, baseX/Y/Z (node.position), gx/y/z (geom centroid in node-local space)}]
+  let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
+  let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
 
   const _getScene = () => {
     if (!mv) return null;
@@ -2183,11 +2223,30 @@ async function _kdOpen3D(code) {
     } catch (e) { return null; }
   };
 
+  // Compute the geometric centroid (bbox midpoint) of a node's mesh subtree
+  // *in the node's local space* — i.e. exactly what we need to add to its
+  // position to shift it outward. Critical for trimesh-baked GLBs where every
+  // node sits at position (0,0,0) but the geometry has real world coords.
+  const _localCentroid = (node) => {
+    let mnX=Infinity,mnY=Infinity,mnZ=Infinity, mxX=-Infinity,mxY=-Infinity,mxZ=-Infinity;
+    let count = 0;
+    node.traverse(n => {
+      if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch (e) {}
+      const bb = n.geometry.boundingBox;
+      if (!bb) return;
+      count++;
+      if (bb.min.x < mnX) mnX = bb.min.x; if (bb.min.y < mnY) mnY = bb.min.y; if (bb.min.z < mnZ) mnZ = bb.min.z;
+      if (bb.max.x > mxX) mxX = bb.max.x; if (bb.max.y > mxY) mxY = bb.max.y; if (bb.max.z > mxZ) mxZ = bb.max.z;
+    });
+    if (!count) return null;
+    return { x: (mnX + mxX) / 2, y: (mnY + mxY) / 2, z: (mnZ + mxZ) / 2 };
+  };
+
   const snapshotScene = () => {
     threeScene = _getScene();
     if (!threeScene) return false;
-    // Materials — snapshot color (THREE.Color), metalness/roughness/wireframe so
-    // 'realistic' can restore the GLB's authored look exactly.
+    // Materials — snapshot so 'realistic' restores the GLB's authored look exactly.
     materialSnap = [];
     threeScene.traverse(n => {
       if (n.isMesh && n.material) {
@@ -2199,37 +2258,124 @@ async function _kdOpen3D(code) {
             metalness: (typeof m.metalness === 'number') ? m.metalness : null,
             roughness: (typeof m.roughness === 'number') ? m.roughness : null,
             wireframe: !!m.wireframe,
+            colorWrite: m.colorWrite !== false,
           });
         }
       }
     });
-    // Explode root: deepest ancestor of all meshes that has ≥ 2 children, with
-    // ≥ 2 meshes in its subtree. Tie-break by highest direct-child count (more
-    // explode units = better visual). For a typical Fusion-exported cabinet
-    // (per-leaf nodes per Fusion 31 Q3), this lands on the cabinet wrapper.
-    let best = null, bestDepth = -1, bestKids = 0;
-    const depth = (n) => { let d = 0; let c = n; while (c && c.parent) { d++; c = c.parent; } return d; };
+    // Explode root: pick the candidate with the MOST direct children among nodes
+    // whose subtree contains ≥ 2 meshes — that's the natural "list of parts".
+    // (Earlier deepest-ancestor heuristic missed the right node in real GLBs
+    // where 'world' at depth 4 had 57 children but a deeper 'Target' at depth 2
+    // tied on depth-test but only had 2 kids.)
+    let best = null, bestKids = 0;
     threeScene.traverse(n => {
       if (!n.children || n.children.length < 2) return;
       let m = 0;
       n.traverse(d => { if (d.isMesh) m++; });
       if (m < 2) return;
-      const dp = depth(n);
-      if (dp > bestDepth || (dp === bestDepth && n.children.length > bestKids)) {
-        best = n; bestDepth = dp; bestKids = n.children.length;
-      }
+      if (n.children.length > bestKids) { best = n; bestKids = n.children.length; }
     });
+    // Fallback: if no node has ≥ 2 children with mesh content, treat individual
+    // meshes as units (each mesh is an explode unit; their parent becomes root).
+    if (!best) {
+      const meshes = [];
+      threeScene.traverse(n => { if (n.isMesh) meshes.push(n); });
+      if (meshes.length >= 2) {
+        // Use the first mesh's parent as the root and translate per-mesh.
+        best = meshes[0].parent || threeScene;
+      }
+    }
     explodeRoot = best;
+    explodeUnits = [];
     if (explodeRoot) {
-      explodeUnits = explodeRoot.children.map(ch => ({ node: ch, x: ch.position.x, y: ch.position.y, z: ch.position.z }));
+      for (const ch of explodeRoot.children) {
+        const ctr = _localCentroid(ch);
+        if (!ctr) continue;
+        explodeUnits.push({
+          node: ch,
+          baseX: ch.position.x, baseY: ch.position.y, baseZ: ch.position.z,
+          gx: ctr.x, gy: ctr.y, gz: ctr.z,
+        });
+      }
       let sx = 0, sy = 0, sz = 0;
-      for (const u of explodeUnits) { sx += u.x; sy += u.y; sz += u.z; }
+      for (const u of explodeUnits) { sx += u.gx; sy += u.gy; sz += u.gz; }
       const n = explodeUnits.length || 1;
       explodeCenter = { x: sx / n, y: sy / n, z: sz / n };
-    } else {
-      explodeUnits = [];
     }
+    // Surface the unit count to the explode bar so a worker (and เอ๋) can see
+    // why a single-mesh GLB doesn't spread (= it's a Fusion-side issue).
+    const info = body.querySelector('.kd3d-explode-info');
+    if (info) info.textContent = explodeUnits.length >= 2
+      ? `· ${explodeUnits.length} pieces`
+      : `· ${explodeUnits.length} piece (single-mesh GLB — needs per-leaf export)`;
     return true;
+  };
+
+  // Build EdgesGeometry-based line overlays for Hidden Line modes. Each mesh
+  // gets TWO LineSegments children: a solid 'lineVis' (depthTest=true → drawn
+  // only where in front, i.e. visible edges) and a dashed 'lineHid' (depthFunc
+  // = GreaterDepth → drawn only where occluded, i.e. hidden edges). Both
+  // inherit their parent mesh's transform automatically.
+  let _edgesAttempted = false;
+  const buildEdgeOverlays = async () => {
+    if (_edgesAttempted) return;
+    _edgesAttempted = true;
+    if (!threeScene) return;
+    let THREE;
+    try { THREE = await _kd3dEnsureThree(); }
+    catch (e) { console.warn('[kd3d] THREE module failed to load — Hidden Line falls back to wireframe-only', e); return; }
+    edgeOverlays = [];
+    threeScene.traverse(n => {
+      if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      try {
+        // 22° threshold = strong silhouette + holes/bends, skips meaningless
+        // triangle-strip seams. (THREE default = 1°, way too noisy.)
+        const eg = new THREE.EdgesGeometry(n.geometry, 22);
+        const matVis = new THREE.LineBasicMaterial({
+          color: 0xffffff, transparent: false, depthTest: true, depthWrite: false,
+        });
+        const lineVis = new THREE.LineSegments(eg, matVis);
+        lineVis.renderOrder = 2;
+        // Dashed hidden: depthFunc = THREE.GreaterDepth makes the lines render
+        // ONLY where they're BEHIND existing depth — i.e. the occluded portion.
+        const matHid = new THREE.LineDashedMaterial({
+          color: 0xc8d4e0, dashSize: 6, gapSize: 4,
+          transparent: true, opacity: 0.55,
+          depthTest: true, depthWrite: false,
+        });
+        matHid.depthFunc = THREE.GreaterDepth || 4;   // 4 = GREATER constant fallback
+        const lineHid = new THREE.LineSegments(eg, matHid);
+        lineHid.renderOrder = 1;
+        lineHid.computeLineDistances && lineHid.computeLineDistances();
+        // Both invisible until applyMode toggles them on.
+        lineVis.visible = false; lineHid.visible = false;
+        n.add(lineVis); n.add(lineHid);
+        edgeOverlays.push({ mesh: n, lineVis, lineHid });
+      } catch (e) {}
+    });
+  };
+
+  const setEdgesVisible = (showSolid, showDashed) => {
+    for (const o of edgeOverlays) {
+      o.lineVis.visible = !!showSolid;
+      o.lineHid.visible = !!showDashed;
+    }
+  };
+
+  // material.colorWrite=false lets the mesh keep writing to the DEPTH buffer
+  // (so the dashed-hidden pass can detect occlusion) while drawing nothing
+  // visible — exactly what Hidden Line mode wants. Pure 'hidden' mode flips
+  // this on every mesh; the other modes restore it.
+  const setMeshFillVisible = (showFill) => {
+    for (const s of materialSnap) {
+      const m = s.mat;
+      if (!m) continue;
+      try {
+        m.colorWrite = !!showFill;
+        m.needsUpdate = true;
+      } catch (e) {}
+    }
   };
 
   const applyMaterials = (m) => {
@@ -2237,18 +2383,28 @@ async function _kdOpen3D(code) {
     for (const s of materialSnap) {
       const mat = s.mat;
       try {
-        if (m === 'lines') {
-          mat.wireframe = true;
-          mat.color && mat.color.setRGB && mat.color.setRGB(0.94, 0.94, 0.94);
-          if (typeof mat.metalness === 'number') mat.metalness = 0;
-          if (typeof mat.roughness === 'number') mat.roughness = 1;
-        } else if (m === 'linesshade') {
+        if (m === 'hidden' || m === 'hiddenshade') {
+          // Flat near-white fill so the shaded surface reads as paper; matches
+          // technical-drawing convention. Hidden mode hides the fill via
+          // colorWrite (see setMeshFillVisible) but materials stay flat.
           mat.wireframe = false;
           mat.color && mat.color.setRGB && mat.color.setRGB(0.94, 0.94, 0.94);
           if (typeof mat.metalness === 'number') mat.metalness = 0;
           if (typeof mat.roughness === 'number') mat.roughness = 1;
+        } else if (m === 'realistic') {
+          // Stainless-steel PBR override (เอ๋: "ไม่สวยเลย ต้องการแสงเงาที่
+          // เหมือนจริง") — Fusion's trimesh-exported GLB ships with matte
+          // white defaults, which kill the HDRI reflection. Force metallic +
+          // low roughness so the workshop HDRI actually bounces off the surface
+          // like brushed steel. Original snapshot is still kept so any other
+          // mode restores it.
+          mat.wireframe = false;
+          if (mat.color && mat.color.setRGB) mat.color.setRGB(0.86, 0.87, 0.89);
+          if (typeof mat.metalness === 'number') mat.metalness = 0.85;
+          if (typeof mat.roughness === 'number') mat.roughness = 0.28;
         } else {
-          // realistic + explode — restore originals
+          // explode — restore the GLB's authored colors so the per-piece
+          // shapes are easy to distinguish at distance.
           mat.wireframe = false;
           if (s.color && mat.color && mat.color.copy) mat.color.copy(s.color);
           if (s.metalness != null && typeof mat.metalness === 'number') mat.metalness = s.metalness;
@@ -2261,60 +2417,67 @@ async function _kdOpen3D(code) {
 
   const applyExplode = (pct) => {
     if (!explodeUnits.length) return;
-    const factor = (pct / 100) * 1.5;   // 100% → push 1.5× the original offset
+    // 100% → push each unit so its geometric centroid is at 1.5× its original
+    // offset from the scene centroid. For trimesh-baked GLBs the node's
+    // position is irrelevant (it's (0,0,0)); the delta = (geom_centroid -
+    // scene_centroid) * factor moves each unit outward in WORLD coords by
+    // changing node.position.
+    const factor = (pct / 100) * 1.5;
     for (const u of explodeUnits) {
-      u.node.position.set(
-        u.x + (u.x - explodeCenter.x) * factor,
-        u.y + (u.y - explodeCenter.y) * factor,
-        u.z + (u.z - explodeCenter.z) * factor,
-      );
+      const dx = (u.gx - explodeCenter.x) * factor;
+      const dy = (u.gy - explodeCenter.y) * factor;
+      const dz = (u.gz - explodeCenter.z) * factor;
+      u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
     }
   };
   const resetExplode = () => {
-    for (const u of explodeUnits) u.node.position.set(u.x, u.y, u.z);
+    for (const u of explodeUnits) u.node.position.set(u.baseX, u.baseY, u.baseZ);
   };
 
   const applyMode = (next) => {
     if (!mv || !VALID.includes(next)) return;
     mode = next;
     try { localStorage.setItem(MODE_KEY, mode); } catch {}
-    // CSS class drives the filter.
     VALID.forEach(v => mv.classList.toggle('kd3d-mode-' + v, v === mode));
     // model-viewer attrs per mode.
-    if (mode === 'lines' || mode === 'linesshade') {
+    if (mode === 'hidden' || mode === 'hiddenshade') {
       mv.setAttribute('shadow-intensity', '0');
       mv.setAttribute('exposure', '1.3');
       mv.setAttribute('tone-mapping', 'neutral');
       mv.setAttribute('environment-image', 'neutral');
     } else if (mode === 'realistic') {
       mv.setAttribute('shadow-intensity', '1.0');
-      mv.setAttribute('shadow-softness', '0.5');
-      mv.setAttribute('exposure', '1.0');
+      mv.setAttribute('shadow-softness', '0.3');
+      mv.setAttribute('exposure', '1.4');
       mv.setAttribute('tone-mapping', 'aces');
-      mv.setAttribute('environment-image', 'neutral');
+      mv.setAttribute('environment-image', _KD3D_HDRI_REALISTIC);
     } else if (mode === 'explode') {
-      mv.setAttribute('shadow-intensity', '0.8');
-      mv.setAttribute('exposure', '1.0');
+      mv.setAttribute('shadow-intensity', '0.6');
+      mv.setAttribute('exposure', '1.1');
       mv.setAttribute('tone-mapping', 'aces');
       mv.setAttribute('environment-image', 'neutral');
     }
-    // THREE-side material updates (no-op if not loaded yet; load handler re-applies).
     applyMaterials(mode);
-    // Explode units: reset when leaving explode, apply on entry.
+    // Hidden Line modes: build overlays on first need, then show solid + dashed.
+    if (mode === 'hidden' || mode === 'hiddenshade') {
+      buildEdgeOverlays().then(() => {
+        // colorWrite ON for 'hiddenshade' (mesh visible), OFF for 'hidden' (only edges).
+        setMeshFillVisible(mode === 'hiddenshade');
+        setEdgesVisible(true, true);
+      });
+    } else {
+      setMeshFillVisible(true);
+      setEdgesVisible(false, false);
+    }
     if (mode === 'explode') applyExplode(explodePct);
     else resetExplode();
-    // Show / hide explode slider.
     modal2 && modal2.classList.toggle('kd3d-modal-explode', mode === 'explode');
-    // Mode-button highlight.
     body.querySelectorAll('.kd3d-modebar button').forEach(btn => {
       btn.classList.toggle('is-on', btn.getAttribute('data-mode') === mode);
     });
   };
 
-  // After the GLB loads, snapshot the scene + (re-)apply the current mode so
-  // material/wireframe/explode changes take effect now that mv[Symbol(scene)]
-  // has real geometry. Without this the initial mode would only have its CSS
-  // filter + mv-attribute effects, not the THREE-side ones.
+  // After the GLB loads, snapshot scene state + apply the current mode.
   if (mv) {
     mv.addEventListener('load', () => {
       if (snapshotScene()) applyMode(mode);
