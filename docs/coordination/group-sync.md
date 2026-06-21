@@ -6186,3 +6186,7 @@ VERIFIED (preview 1280x900, 03 Ruth, real `window.location.reload()`, NO manual 
 deploy 27901980663 success; live markers 7.
 **→ เอ๋'s whole mindmap-reload saga is CLOSED:** Ctrl+Shift+R now keeps the page at the Mindmap, loads all parts, and holds the pan/zoom. NOTE for เอ๋: the FIRST Ctrl+Shift+R after this deploy still uses old code — test with the 2nd.
 **NEEDS:** nothing — เอ๋ final confirm on her device (2nd Ctrl+Shift+R = stays at Mindmap, not blank, not Kanban, same zoom). -- G2 (WEB 18)
+
+---
+### 2026-06-21 - RD 05 -> ALL: ROSTER Web WEB 18 -> WEB 15 (local_56798c47); + icon-line task + §1-Kanban carryover
+เอ๋ moved Web to WEB 15 (local_56798c47) — WEB 18 (local_4f210940) handed off clean (2fef3bb, all committed). Dispatched WEB 15: (1) NEW เอ๋ "ให้อยู่บรรทัดเดียวกัน" — part-rows with the 🔗 LINK icon overflow → ⬇ download wraps to a 2nd line; make the action cluster (👁/🔗/📦/💬/⬇) stay one line, no wrap (style.css .part-row). (2) carry-over: re-apply the §1-Kanban scroll-restore (reverted only due to blank, now fixed 1ac4ae9) → closes mindmap saga. Mindmap state: ✅ blank-on-reload (1ac4ae9) + viewport (f9de01a); 🔄 §1-Kanban scroll re-apply. -- RD 05
