@@ -2147,8 +2147,16 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
              mobile users from ever seeing the whole expanded picture.
              0.25 lets a phone fit a 1440 px layout into ~360 px and
              still has plenty of room to pinch back in for tapping
-             targets. User 2026-05-28: 'ย่อก็ไม่ได้ ขยายก็ไม่ได้'. */
-          minZoom={0.25}
+             targets. User 2026-05-28: 'ย่อก็ไม่ได้ ขยายก็ไม่ได้'.
+             ⚠ minZoom MUST be ≤ fitViewOptions.minZoom (above) or a fit-derived
+             saved viewport can't be RESTORED — it gets clamped UP to this floor.
+             That clamp was the remaining "mindmap STILL jumps" after 6544b7e: on
+             desktop fitView fits a big tree at ~0.13 and saves it, but every
+             background REMOUNT restored it clamped to 0.25 → zoom snapped 0.13→0.25.
+             Desktop → 0.1 (= fit's own min, so the saved zoom restores exactly);
+             mobile keeps 0.25 (its fit min is 0.6, well above 0.25 → never clamped,
+             and 0.25 preserves phone pinch-out). เอ๋ 2026-06-21. */
+          minZoom={(typeof window !== 'undefined' && window.innerWidth < 700) ? 0.25 : 0.1}
           maxZoom={2.5}
           colorMode="dark"
           proOptions={{ hideAttribution: true }}
