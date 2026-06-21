@@ -2222,7 +2222,6 @@ async function _kdOpen3D(code) {
         <model-viewer
           class="kd3d-mode-${mode}"
           src="${escapeHtml(glbUrl)}"
-          camera-controls
           touch-action="pan-y"
           interaction-prompt="none"
           camera-orbit="20deg 70deg 105%"
@@ -2238,7 +2237,7 @@ async function _kdOpen3D(code) {
           reveal="auto"
         ></model-viewer>
       </div>
-      <div class="kd3d-foot">Drag to orbit · pinch / scroll to zoom · two-finger drag to pan</div>`;
+      <div class="kd3d-foot">Two fingers: pinch to zoom, drag to rotate · One finger: scroll the page · Mouse: drag to rotate, wheel to zoom</div>`;
   const mv = body.querySelector('model-viewer');
   const modal2 = body.closest('.kd3d-modal');
   if (mode === 'explode') modal2 && modal2.classList.add('kd3d-modal-explode');
@@ -2247,6 +2246,102 @@ async function _kdOpen3D(code) {
   mv && mv.addEventListener('error', () => {
     showPlaceholder('Failed to load 3D model', 'The GLB at Drawings/3d/' + code + '.glb returned an error during load (possibly a stale CDN cache or corrupt file).');
   });
+
+  // ── Custom gesture handlers (เอ๋ 2026-06-22 "ทำให้ใช้ 2 นิ้ว หมุน และ zoom ได้") ─
+  // model-viewer's default 1-finger=orbit conflicted with workshop iPads where
+  // a casual touch would yank the camera mid-scroll. Now: 2 fingers do BOTH
+  // pinch-zoom AND drag-rotate (DOLLY_ROTATE-style — one gesture for both),
+  // 1 finger does nothing (page scrolls naturally), mouse drag = orbit, wheel
+  // = zoom. Camera-controls is removed from the model-viewer attrs so its
+  // built-in handlers don't conflict with these custom ones.
+  if (mv) {
+    // Rotate uses cameraOrbit (theta/phi); zoom uses field-of-view because
+    // model-viewer's auto-bounds for `auto` radius lock the radius once the
+    // narrow ortho-fake FOV is set. Narrower FOV = zoomed in, wider = zoomed
+    // out, clamped to the 3°-50° bounds we already set on the element.
+    const _setOrbit = (theta, phi) => {
+      try { mv.cameraOrbit = `${theta}rad ${phi}rad auto`; } catch (e) {}
+    };
+    const _setFov = (fov) => {
+      const next = Math.max(3, Math.min(50, fov));
+      try { mv.fieldOfView = `${next}deg`; } catch (e) {}
+    };
+    const clampPhi = (p) => Math.max(0.1, Math.min(Math.PI - 0.1, p));
+
+    let twoF = null;
+    mv.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
+        const orbit = mv.getCameraOrbit();
+        twoF = {
+          cx: (t1.clientX + t2.clientX) / 2,
+          cy: (t1.clientY + t2.clientY) / 2,
+          dist: Math.sqrt(dx * dx + dy * dy),
+          theta: orbit.theta, phi: orbit.phi,
+          fov: mv.getFieldOfView(),
+        };
+      } else {
+        // 1 finger: leave alone so the browser handles page-scroll.
+        twoF = null;
+      }
+    }, { passive: false });
+    mv.addEventListener('touchmove', (e) => {
+      if (e.touches.length !== 2 || !twoF) return;
+      e.preventDefault();
+      const t1 = e.touches[0], t2 = e.touches[1];
+      const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const cx = (t1.clientX + t2.clientX) / 2, cy = (t1.clientY + t2.clientY) / 2;
+      const ROT = 0.006;
+      const newTheta = twoF.theta - (cx - twoF.cx) * ROT;
+      const newPhi = clampPhi(twoF.phi - (cy - twoF.cy) * ROT);
+      _setOrbit(newTheta, newPhi);
+      // pinch scale > 1 (fingers spread) → zoom in → smaller FOV.
+      const scale = dist / Math.max(20, twoF.dist);
+      _setFov(twoF.fov / Math.max(0.2, scale));
+    }, { passive: false });
+    mv.addEventListener('touchend', (e) => {
+      if (e.touches.length < 2) twoF = null;
+    }, { passive: false });
+
+    // Mouse — drag to orbit, wheel to zoom. Standard desktop UX.
+    let mouseDrag = null;
+    mv.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      const orbit = mv.getCameraOrbit();
+      mouseDrag = { x: e.clientX, y: e.clientY, theta: orbit.theta, phi: orbit.phi };
+    });
+    const onMove = (e) => {
+      if (!mouseDrag) return;
+      const ROT = 0.006;
+      const newTheta = mouseDrag.theta - (e.clientX - mouseDrag.x) * ROT;
+      const newPhi = clampPhi(mouseDrag.phi - (e.clientY - mouseDrag.y) * ROT);
+      _setOrbit(newTheta, newPhi);
+    };
+    const onUp = () => { mouseDrag = null; };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    // Cleanup window listeners when the modal closes — modal removal kills mv
+    // but the closures still hold refs. MutationObserver catches removal.
+    const detach = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    try {
+      const mo = new MutationObserver(() => {
+        if (!document.contains(modal2)) { mo.disconnect(); detach(); }
+      });
+      mo.observe(document.body, { childList: true, subtree: false });
+    } catch (e) {}
+
+    mv.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.12 : 0.89;
+      _setFov(mv.getFieldOfView() * factor);
+    }, { passive: false });
+  }
 
   // ── THREE.js scene access + per-mesh edge overlays ──────────────────────
   // model-viewer keeps its real THREE.Scene on a private Symbol-keyed prop.
