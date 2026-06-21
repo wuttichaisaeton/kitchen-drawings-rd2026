@@ -1,0 +1,33 @@
+CC_Assembly walk debug — 2026-06-22T06:51:41.378129
+Project: FN0FL2-080004
+Total occurrences visited: 23
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | FN1BLA-080000 v9:1 (FN1BLA-080000 v9)
+    1 | SM  |     | ALPF             | FN1BLA-120000:1 (FN1BLA-120000)
+    0 | SM  |     | ALPF             | FN0F00-080000 v3:1 (FN0F00-080000 v3)
+    0 |     |     |                  | FN2BNX-080000 v9:2 (FN2BNX-080000 v9)
+    1 | SM  |     | ALPF             | FN2BNX-080000:1 (FN2BNX-080000)
+    0 |     |     |                  | FN0FN3-080005:1 (FN0FN3-080005)
+    1 |     |     |                  | Leg-060 v3:1 (Leg-060 v3)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    1 |     |     |                  | Leg-060 v3:2 (Leg-060 v3)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    1 |     |     |                  | Leg-060 v3:3 (Leg-060 v3)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    1 |     |     |                  | Leg-060 v3:4 (Leg-060 v3)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    0 |     |     | ALPF             | FN3BLA-080000 v10:1 (FN3BLA-080000 v10)
