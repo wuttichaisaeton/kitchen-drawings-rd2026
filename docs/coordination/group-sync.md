@@ -6713,3 +6713,7 @@ https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/?asm
 **Note on roster**: noted "02 Ruth" is the active project (not 03 Ruth — correcting from earlier dispatches). Both projects exist + work; the deep-link supports either.
 
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): 🧊 modal touch — 2-finger rotate+zoom, 1-finger pan
+เอ๋ "ทำให้ใช้ 2 นิ้ว หมุน และ zoom ได้" (iPad workshop = avoid accidental 1-finger orbit). Set THREE.js modes: controls.touches = {ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_ROTATE} — 2 fingers do pinch+rotate together, 1 finger pans. model-viewer Mode 3: leave default (close-enough) or override gesture map if available. Update modal help text. Verify on iPad emulation. -- RD 05
