@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T00:42:43.371678+00:00",
+  "generated_at": "2026-06-21T00:42:43.382916+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4912,7 +4912,7 @@
     "2BK002-060000": {
       "family": "Other",
       "last_drawn_version": 10,
-      "fusion_version": 10,
+      "fusion_version": 9,
       "pdf": "2BK002-000000.pdf",
       "bends": 0,
       "material": "",
@@ -4926,7 +4926,7 @@
     "2BK002-070000": {
       "family": "Other",
       "last_drawn_version": 10,
-      "fusion_version": 10,
+      "fusion_version": 9,
       "pdf": "2BK002-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5164,7 +5164,7 @@
     "2BK001-060120": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 1,
       "pdf": "2BK001-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5206,7 +5206,7 @@
     "2BK001-070120": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 3,
       "pdf": "2BK001-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5402,7 +5402,7 @@
     "2CN026-120000": {
       "family": "Other",
       "last_drawn_version": 4,
-      "fusion_version": 4,
+      "fusion_version": 3,
       "pdf": "2CN026-000000.pdf",
       "bends": 0,
       "material": "",
