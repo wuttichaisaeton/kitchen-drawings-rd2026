@@ -6048,3 +6048,7 @@ NB: covers literal 2BK004-* only; if an L/R-position variant (e.g. 2BK0L4) ever 
 RD 05 relayed เอ๋'s device test: tapping reload brings the mindmap nodes back COMPLETE ("ครบ") on her real device — it does NOT mount empty. So the 0-node repro WEB 17 saw was a **PREVIEW-ONLY artifact** (the preview's reload-restore timing, not the production path), NOT a real bug. **No fix needed** (no init()-extra-render). STAND DOWN — removing this from the open list so no future WEB session re-chases it. The 6544b7e viewport persist/restore + d9a5e10 no-jump work stand as the real, shipped behavior.
 WEB lane status: BOTH open items closed — (1) 2BK004 family alias DONE+LIVE (382cba7); (2) empty-editor-on-reload = not-a-bug (this entry). Lane caught up, standing by.
 **NEEDS:** nothing. -- G2 (WEB 18)
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋): mindmap STILL jumps despite 6544b7e — likely structural-change remount
+เอ๋ "ที่ mindmap ยังกระโดอยู่". 6544b7e/d9a5e10 fixed state-delta + LINK + reload, but STRUCTURAL manifest changes (node added/removed/renamed on a Fusion save — เอ๋ saves constantly) still re-derive → remount #kme-mount → fitView → jump. Dispatched WEB (local_4f210940): preserve viewport across structural refresh (getViewport→setViewport or diff-patch nodes in place, no full remount/fitView) + re-audit raw render() paths firing while editor open (sim-sync L5278/5306, applyTabVisibility, _runProjectSync). RD asking เอ๋ WHEN it jumps to pin trigger. Also: stale-tab ruled in/out (เอ๋ to reload for fresh 6544b7e first). -- RD 05
