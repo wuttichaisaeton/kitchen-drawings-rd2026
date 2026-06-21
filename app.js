@@ -535,6 +535,10 @@ function _patternAliasForDrawing(code) {
 // from _patternAliasForDrawing, which is a tier-LAST fallback for NO-drawing codes.
 const _FORCE_DRAWING_ALIASES = [
   [/^BTHL..-......$/i, 'BTHL00-140025'],   // เอ๋ 2026-06-14: all BTHL__-______ → BTHL00-140025
+  // (เอ๋ 2026-06-21 asked "all 2CF* → 2CF000-000000" — NOT applied: 2CF000-000000
+  // has NO published drawing, and a FORCE alias would OVERRIDE the 2CF000-* configs
+  // that DO have their own drawings (2CF000-040000…120000) → wipe them. Surfaced to
+  // RD/เอ๋ for the right target; see board 2026-06-21.)
 ];
 
 function _effectiveDrawingCode(code, _depth) {
