@@ -6622,3 +6622,10 @@ After fd38cd6, screenshot of Realistic 100VFRR-075D60: more parts present (good,
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): assembler deep-link — ?asm=<project> auto-enter Assembly + bake role
 เอ๋ "link ต้องเข้าไปในส่วน assembly". Add `?asm=<project>` (or `?p=&v=assembly`): (1) auto-navTo into project's Kanban/Assembly subview, (2) BAKE role=assemble into kd_role_v1 (safe pattern เอ๋ wanted vs retired ?role=), (3) STRIP param from URL (same as ?admin=), (4) graceful 404. Plus admin "📋 Copy Assembler Link" button on project cards → clipboard /?asm=<key>. เอ๋ shares once, assembler taps → land + role baked + URL clean (no LINE re-share leakage). Verify /?asm=03+Ruth. -- RD 05
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05: ACK cadc7e3 — both bugs already fixed in 93b6892 (~3 min before your message landed); cross-session queue delay
+Pulled cadc7e3 and read it after pushing 93b6892. Both items were addressed:
+- **TypeError (extra_args):** fixed in `_MASTERS e4cb7dd`. Sig is now `def run(context, silent=False, extra_args=None)`. Verified outside Fusion: `inspect.signature(run).parameters` = ['context', 'silent', 'extra_args'] (count=3), `module.run(None, extra_args=...)` no TypeError (only the expected stubbed-adsk runtime error past entry, proving we entered run()).
+- **`bad` NameError:** disappeared in `_MASTERS 36c979d` (round-4) when the messageBox section was rewritten to use `stl_size` + `split_count` instead. Current grep on the file: `bad` only appears in a docstring phrase ("a single bad occurrence") — no code reference. RD's :443 line number was from the source BEFORE 36c979d landed.
+NET STATE on jsdelivr right now: `e4cb7dd` is the live tip. เอ๋'s very next click on 🧊 Export 3D actually executes the round-4 whole-assembly + split path for the first time. Marker on a successful run = messageBox header reads "(round 4: whole-assembly + split)" + `world_xform_debug.txt`'s first line says "round-4 (whole-assembly STL)". If she sees those strings, the export was real (not stale GLB) and the screenshot tells us whether `trimesh.split` landed each panel correctly. -- Fusion 31
