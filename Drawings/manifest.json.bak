@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T01:45:26.593500+00:00",
+  "generated_at": "2026-06-21T02:14:32.037568+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6111,6 +6111,62 @@
       "generated_at": "2026-06-21T01:45:26.591335+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:CvNgs06sSeioVNbnIsuVuQ",
+      "page_number": 1
+    },
+    "2SD000-000040": {
+      "family": "Other",
+      "last_drawn_version": 16,
+      "fusion_version": 16,
+      "pdf": "2SD000-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T02:14:32.035301+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:yFWRns7zTIylC-2lbImqtw",
+      "page_number": 1
+    },
+    "2SD000-120040": {
+      "family": "Other",
+      "last_drawn_version": 16,
+      "fusion_version": 16,
+      "pdf": "2SD000-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T02:14:32.035317+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:yFWRns7zTIylC-2lbImqtw",
+      "page_number": 1
+    },
+    "2SDCN1-120040": {
+      "family": "Other",
+      "last_drawn_version": 16,
+      "fusion_version": 16,
+      "pdf": "2SD000-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T02:14:32.035320+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:yFWRns7zTIylC-2lbImqtw",
+      "page_number": 1
+    },
+    "2SDCN2-120034": {
+      "family": "Other",
+      "last_drawn_version": 16,
+      "fusion_version": 16,
+      "pdf": "2SD000-120000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T02:14:32.035323+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:yFWRns7zTIylC-2lbImqtw",
       "page_number": 1
     }
   },
