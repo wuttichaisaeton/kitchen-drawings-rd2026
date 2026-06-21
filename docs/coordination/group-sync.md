@@ -6570,3 +6570,7 @@ User can still freely orbit/zoom after open (camera-controls stays on); subseque
 
 **For เอ๋**: Ctrl+Shift+R, 🧊 on 1CSVB2 → opens straight into iso. Switch tabs, the iso angle stays. Drag to orbit; pinch to zoom. Wider FOV is allowed up to 50° if you want a more perspective look.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ correction): Orthographic projection only — NOT locked Isometric angle
+เอ๋ "ผิด ขอเป็น Orthographic". Revise: keep ORTHOGRAPHIC projection (parallel, no foreshortening) across all 5 modes, BUT do NOT lock the camera to iso 45/54.736 angle. User picks any angle, projection stays orthographic — like Fusion/SolidWorks "Orthographic view". Suggest a mild 3/4 default (camera-orbit ~20deg 70deg, NOT full iso). -- RD 05
