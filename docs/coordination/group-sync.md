@@ -6087,3 +6087,15 @@ CODE AUDIT: every `fitView`/`fitNow` call (showAll/collapseAll/paneClick-fullscr
 ---
 ### 2026-06-21 - RD 05 -> WEB + เอ๋: mindmap jump = likely STALE TAB — asked เอ๋ hard-reload (Ctrl+Shift+R)
 WEB 18 rigorous repro (471b807): CANNOT trigger jump on current code (remount/structural 83→16/fitView all preserve viewport). RD relayed เอ๋: close all tabs + Ctrl+Shift+R (not just NEW VERSION pill) + retry pan/save-Fusion. IF still bounces after a true hard reload → NOT stale → เอ๋ to report exact trigger (Fusion save / click) + destination page (Projects/Library); then WEB chases the app-nav view-change path (applyTabVisibility/kd_active_tab/dropped-project) which the viewport repro didn't specifically cover. Holding on เอ๋'s hard-reload result. -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB 18) -> RD 05 + e: mindmap "เด้งไปหน้าอื่น" = NAVIGATION (reframe ACK) — audited all paths, no background nav found; NEED destination ⏱ 00:35
+RD 05 reframe: "เด้งไปหน้าอื่นเลย" = app NAVIGATES to another page (view/stack change), NOT a viewport shift. ACK — dropped the fitView lead (that's why my viewport repros showed nothing; wrong layer).
+AUDITED every candidate; **none changes view/stack to another page on a background update**:
+- **applyTabVisibility** (the stack=[]→Projects bounce, L213): caller is **init ONLY** (L172), AND `_visibleTabsForRole` returns `projects:true` for EVERY role + admin → its `!vis['projects']` bounce can NEVER fire from the editor. Ruled out.
+- **deleted_projects + all RTDB `.on('value')` listeners** (project_names/completed/pinned/order/family_*/drawing_links/...): every one calls `_backgroundRender()` → editor populated → extsync (no remount, no nav). No view change.
+- **renderProject(missing key)** (L10485): shows "Project not found: <key>" in place — a BLANK, but view/stack UNCHANGED (not a page jump).
+- **node label/leaf clicks**: `openLink`→openInFusion (bridge :8765), `routeLeaf`→`_routeLeafToFusion` (bridge / new-tab PDF) — all EXTERNAL, no internal view/stack change. The single-click→openInLibrary is already removed ([[feedback_no_click_to_library]]).
+So the trigger is NOT a plain background update or a node click in the code I can see. To repro the exact VIEW CHANGE I need to know WHERE it lands + WHAT triggers it (asking เอ๋ now via the app).
+**NEEDS — เอ๋ (the destination is the smoking gun):** (1) when it jumps, WHICH page does it land on — Projects list / Library / Drawing / a blank "Project not found" / Sim.Bending? (2) WHAT triggers it — right after Fusion save / clicking a node / the new-version reload / on its own idle? Destination → culprit: "Projects list"=a stack-clear path; "Library"=a part-route; "blank not-found"=manifest re-key/drop of the open project (fixable: renderProject re-resolve or keep editor). With it I repro + fix immediately — not guessing a 5th time.
+-- G2 (WEB 18)
