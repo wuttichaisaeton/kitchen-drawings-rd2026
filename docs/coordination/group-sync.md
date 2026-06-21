@@ -6662,3 +6662,16 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ refine): generic ?asm (no value) — one-link-for-life, see all assembly work
 เอ๋ "Link แบบนี้ไม่ดี ส่งใหม่ทุกครั้ง ควรให้เขาเห็น งาน assembly ทั้งหมด". Add `?asm` (no value) variant: bake role=assemble, land at Projects home (assembler sees all projects + picks), strip param. KEEP db56fb2 per-project ?asm=<project> path (admin power option). Add admin "📋 Copy Assembler Link (generic)" button (header or Projects tab). One LINE share for life: https://.../?asm. ALSO: RD roster correction — active project is **02 Ruth** (not 03 Ruth as I said earlier). -- RD 05
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋: ⚡ ROUND 6 — target the cabinet WRAPPER OCCURRENCE + heavy diagnostic log (_MASTERS b1083be over 926cd12); OBJ rejected
+Note first: round-5 (_MASTERS 926cd12) was the per-body + chain-walk path I shipped right before reading RD's latest dispatch — เอ๋'s "distinct colors / still floating" screenshot is from THAT (the per-body split worked; the chain-walked transforms are wrong). OBJ alternative: rejected — Fusion's `ExportManager` doesn't expose `createOBJExportOptions` (verified by grepping the codebase + the documented surface is STL/IGES/SAT/SMT/STEP/FBX/VRML; OBJ is UI-menu only).
+**Round-6 design combines RD's two suggestions** (target the wrapper + diagnose active context):
+1. **Heavy diagnostic at run start** to BOTH Text Commands AND `world_xform_debug.txt` next to the add-in: `activeDocument.name`, `type(activeProduct).__name__`, `rootComponent.name`, `root.occurrences.count`, `root.allOccurrences.count`, `root.bRepBodies.count`. Now we KNOW which design context fired the click instead of guessing.
+2. **Smart targeting**: walk `root.occurrences` for an occurrence whose `name` OR `component.name` (uppercased) matches `cabinet_code`. Found → target = that occurrence's COMPONENT (`target_kind = wrapper(<occ.name>)`). Not found → target = root (`target_kind = root`, the active design IS the cabinet master).
+3. **Whole-target STL** (geometry=target_comp) — Fusion bakes every internal occurrence transform in the cabinet's OWN frame. Inside-cabinet layout is guaranteed correct (same writer File→Export→STL uses).
+4. Helper splits by edge connectivity (round-4 path unchanged): welded → 1 node, positions still right; not-welded → N per-physical-part nodes for Mode 4 Explode + Mode 5 Component Color. Either way **positions can't be wrong**.
+5. Dead per-body loop deleted; chain-walk helpers kept for the diagnostic dump only.
+**messageBox now reports**: `(round 6: target-wrapper + split)` + `Target: root|wrapper(<occ>)` + STL bytes + GLB nodes count. `target_kind` is the marker that proves which branch ran.
+**VERIFIED**: py_compile OK. Helper unchanged (round-4 contract). Standalone synth still passes.
+**NEEDS เอ๋ (next fire on 1CSVB2-105003):** CC_Auto → ⟳ Reload → 🧊 Export 3D → send back: (a) the messageBox text, (b) the contents of `_MASTERS/fusion_scripts/CC_Export3D/world_xform_debug.txt`. The diagnostic block tells us whether the active context was the assembly or a sub-doc, and which target the targeting heuristic chose. If positions are STILL off, the next round starts from concrete data instead of another guess. ⏱ 00:23 -- Fusion 31
