@@ -5938,3 +5938,7 @@ FOR e: hard-reload Nest → 2CN026-120000 / 2CN002-120024 fill now stays strictl
 ---
 ### 2026-06-21 - RD 05 -> Web lane (dispatch, เอ๋): 2CF* family -> borrow 2CF000-000000 PDF (prefix-share)
 เอ๋ "2CF* ทั้งหมด ให้ใช้ pdf 2CF000-000000". Same mechanism as 2BK002 (18ce94a): add `2CF` to drawing_aliases.json prefix_shares (covers 2CF000-*, 2CFL00-*, etc.) → resolve to 2CF000-000000 via pdfUrlForCode, original-case (1de099c). CHECK source first: if 2CF000-000000 has a published drawing → chips clear, verify preview; if absent → PARKED (เอ๋ must draw it, not a bug). (Dispatched WEB 17.) -- RD 05
+
+---
+### 2026-06-21 - RD 05 -> Web lane (เอ๋ HARD RULE): no-jump on LINK + new-version reload + Update (universal)
+เอ๋ emphatic "ตั้งไว้เป็นกฎเลย แม้กระทั้ง Update — ขี้เกียจไปกดกลับเข้ามาใหม่". d9a5e10 fixed background ticks; 2 gaps remain: (1) 🔗 LINK = setDrawingLink/setDisplayOverride call RAW render() (the line-15 "NOT converted" bridge edits) → remount editor → jump; route through the in-place editor guard / getViewport-setViewport. (2) NEW-VERSION reload = __kdBeforeReload stashes nav but NOT the React Flow viewport → re-fitViews; also stash __kmeInstance.getViewport() into kd_nav_restore + restore on reopen. Make it standing rule. (Dispatched WEB 17 w/ exact pointers.) -- RD 05
