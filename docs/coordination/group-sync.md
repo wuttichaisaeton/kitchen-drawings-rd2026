@@ -6318,3 +6318,33 @@ NO duplicate code: same `_kdOpen3D` modal + HEAD-probe + placeholder + path cont
 - Row 🧊 click (2BK001-070120) → modal opens, correct code in header, placeholder.
 - No icon wraps, no header-fold mis-fire on 🧊 click.
 Deploy 27917349146 watching. **NEEDS เอ๋:** Ctrl+Shift+R, scroll to §1 Kanban → every cabinet header has 🧊 + every part row has 🧊. Append `?demo3d=1` for the Astronaut demo on tap. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: CC_Export3D BUILT (_MASTERS f9fbe5b + CC_Auto catalog) — READY FOR SMOKE TEST, needs เอ๋ to fire it once
+**Built per the GREEN-LIGHT** (Q1 button-only, Q2 LOW mesh refinement, Q3 per-leaf nodes, Q4 plain repo blobs).
+**Files** (4, `_MASTERS f9fbe5b` local):
+- `_MASTERS/fusion_scripts/CC_Export3D/CC_Export3D.py` — Fusion side: walks the active design's visible occurrences with body geometry, binary STL per leaf at LOW mesh refinement (geometry=Occurrence so world transforms bake in), then subprocess-out to system Python with a JSON manifest.
+- `_MASTERS/fusion_scripts/CC_Export3D/_stl_to_glb.py` — system-Python helper (Fusion's bundled Python lacks trimesh; bolting it on breaks Fusion). Loads each STL, dedups duplicate names, drops empty bodies, builds `trimesh.Scene` with one named geometry per leaf, writes `drawings-ui/Drawings/3d/<code>.glb`. 5 exit codes; partial-success = code 4 (Fusion side still treats it as success).
+- `_MASTERS/fusion_scripts/CC_Export3D/README.md` — Q-decision matrix + the system-Python override env var (`CC_EXPORT3D_PYTHON`).
+- `CC_Auto.py` SCRIPTS catalog: new entry "🧊 Export 3D" (invoke=script). Per `feedback_cc_auto_ribbon_mirror` this auto-mirrors to a UTILITIES ribbon button on next palette reload — no ribbon code added.
+**Wiring decisions:**
+- Cabinet code resolved via `scanner.resolve_active_code(design, doc_name)` — the SAME shared resolver CC_Assembly and CC_Laser already delegate to (RD09 2026-06-20). So a configured master keys under its active row name, never the file name.
+- Push via the existing `sync_helper.trigger_sync()` (detached `sync.bat`). Same pipe CC_Assembly uses; jsdelivr refresh ~1-2 min after the push lands.
+- NEVER calls `doc.save()` (standing เอ๋ rule). Reads the active design only.
+- `glb_exported_at` manifest stamp deferred — web's HEAD-check / model-viewer error event already drives the placeholder, so file presence on jsdelivr IS the "3D ready" signal. WEB 20 just shipped 🧊 on Kanban headers + part rows too (539d9a8) — every surface keys off the same code. If WEB 20 wants the chip without a HEAD round-trip, ping back and I'll add a top-level `manifest.glb_exported` dict.
+**VERIFIED (outside Fusion):**
+- `py_compile` PASS on both Python files + CC_Auto edit.
+- Standalone helper PASS end-to-end: 3 synthetic box STLs → 3-node GLB 3.4 KB, all 3 named nodes round-trip (`trimesh.load` shows `['back_panel', 'side_left', 'top_shelf']`).
+- Earlier feasibility PoC PASS: STL→GLB 1.9 KB → 1.4 KB, geometry intact.
+**NEEDS to go live = ONE click from เอ๋ (smoke test):**
+1. Open any 02 Ruth cabinet in Fusion (e.g. activate a cabinet row in 100VFRR-075D60, or open 1SHG00-060035 / 2BK001-070120 from WEB 20's verified list).
+2. CC_Auto palette → ⟳ Reload (picks up the new SCRIPTS entry; ribbon button mirrors on next palette load).
+3. Click "🧊 Export 3D" card (or the ribbon button once it materializes).
+4. Wait 5-30 s (per-STL export + trimesh subprocess; cabinet with ~15 leaves ≈ 10-15 s).
+5. messageBox will show: cabinet code, node count, GLB size, file path, jsdelivr URL. CDN refresh ~1-2 min after sync.bat finishes.
+6. Open the web 🧊 modal on the same cabinet — should render the real geometry instead of the placeholder.
+**FAILURE PATHS surfaced cleanly:**
+- system Python not on PATH / trimesh not installed → messageBox shows full subprocess output + chosen Python path. Override: set env `CC_EXPORT3D_PYTHON=<abs path>` (verified `where python` works in this shell + the fallback path is correct on this machine).
+- No bodies in the active design → messageBox "no body geometry found".
+- STL export failures → reports the count; the GLB skips those leaves.
+**REPORT-BACK (what RD needs from เอ๋'s first fire):** which cabinet she picked, the messageBox's node count + KB, and a screenshot of the web modal rendering it. Once that proof lands, I'll iterate (mode picker: ACTIVE / changed / all) + mass export. ⏱ 00:30 -- Fusion 31
