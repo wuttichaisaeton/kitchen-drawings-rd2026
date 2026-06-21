@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T00:53:16.205199+00:00",
+  "generated_at": "2026-06-21T01:05:23.194725+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -5803,6 +5803,48 @@
       "generated_at": "2026-06-21T00:53:16.203066+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:XuSDt5iEQ_aPHZnXLSNziw",
+      "page_number": 1
+    },
+    "2BK000-000000": {
+      "family": "Other",
+      "last_drawn_version": 2,
+      "fusion_version": 2,
+      "pdf": "2BK00-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T01:05:23.192211+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:HtdNinWsRyexsIfmcIjexw",
+      "page_number": 1
+    },
+    "2BK001-000001": {
+      "family": "Other",
+      "last_drawn_version": 2,
+      "fusion_version": 2,
+      "pdf": "2BK00-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T01:05:23.192226+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:HtdNinWsRyexsIfmcIjexw",
+      "page_number": 1
+    },
+    "2BK001-000002": {
+      "family": "Other",
+      "last_drawn_version": 2,
+      "fusion_version": 2,
+      "pdf": "2BK00-000000.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T01:05:23.192229+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:HtdNinWsRyexsIfmcIjexw",
       "page_number": 1
     }
   },
