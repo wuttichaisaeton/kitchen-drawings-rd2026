@@ -2140,6 +2140,26 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
           fitViewOptions={{ padding: 0.12, minZoom: (typeof window !== 'undefined' && window.innerWidth < 700) ? 0.6 : 0.1 }}
           defaultViewport={_vpGet(projectKey) || undefined}
           onMoveEnd={(_e, vp) => { if (projectKey && vp) { _vpCache[projectKey] = vp; _vpSave(projectKey, vp); } }}
+          /* Reload-restore fix (เอ๋ 2026-06-21, "Ctrl+Shift+R ต้องอยู่หน้าเดิม"):
+             on a COLD hard-reload the editor reopens with all nodes (ครบ) but the
+             viewport snapped to a fresh fitView (root tiny, kids scattered) instead
+             of where เอ๋ left it. The repopulate path (empty-first-mount → nodes
+             fill) can let React Flow's fitView WIN over the saved kme_vp before the
+             vp settles, so `fitView={!_vpGet}` alone isn't enough. onInit force-
+             applies the saved viewport AFTER init (and once more next frame, in case
+             a fit settles late) so a saved vp ALWAYS beats fitView; only the TRUE
+             first-ever open (no saved vp) is left to fitView. */
+          onInit={(inst) => {
+            try {
+              const vp = _vpGet(projectKey);
+              if (vp && inst && inst.setViewport) {
+                inst.setViewport(vp);
+                if (typeof requestAnimationFrame === 'function') {
+                  requestAnimationFrame(() => { try { inst.setViewport(vp); } catch (e) {} });
+                }
+              }
+            } catch (e) {}
+          }}
           /* minZoom needs to be loose enough that a phone can pinch
              out to see both variants (at ±720 in expanded checklist
              mode → 1440 px wide layout vs 375 px iPhone viewport).
