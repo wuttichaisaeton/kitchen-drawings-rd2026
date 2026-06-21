@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T02:14:32.037568+00:00",
+  "generated_at": "2026-06-21T03:44:43.399435+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6167,6 +6167,90 @@
       "generated_at": "2026-06-21T02:14:32.035323+00:00",
       "fusion_teams_url": null,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:yFWRns7zTIylC-2lbImqtw",
+      "page_number": 1
+    },
+    "2DN000-070000": {
+      "family": "Other",
+      "last_drawn_version": 26,
+      "fusion_version": 26,
+      "pdf": "2DN000-070043.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:44:43.397190+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
+      "page_number": 1
+    },
+    "2DN0D0-070000": {
+      "family": "Other",
+      "last_drawn_version": 26,
+      "fusion_version": 26,
+      "pdf": "2DN000-070043.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:44:43.397204+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
+      "page_number": 1
+    },
+    "2DNCL0-070043": {
+      "family": "Other",
+      "last_drawn_version": 26,
+      "fusion_version": 26,
+      "pdf": "2DN000-070043.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:44:43.397207+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
+      "page_number": 1
+    },
+    "2DNCL1-070000": {
+      "family": "Other",
+      "last_drawn_version": 26,
+      "fusion_version": 26,
+      "pdf": "2DN000-070043.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:44:43.397209+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
+      "page_number": 1
+    },
+    "2DNCL2-070000": {
+      "family": "Other",
+      "last_drawn_version": 26,
+      "fusion_version": 26,
+      "pdf": "2DN000-070043.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:44:43.397212+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
+      "page_number": 1
+    },
+    "2DNCR0-070043": {
+      "family": "Other",
+      "last_drawn_version": 26,
+      "fusion_version": 26,
+      "pdf": "2DN000-070043.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-21T03:44:43.397214+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:z_ULsG_uSGm-Nw3nBof97g",
       "page_number": 1
     }
   },
