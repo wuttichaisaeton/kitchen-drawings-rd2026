@@ -6475,3 +6475,7 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): ADD Mode 5 🎨 "Component Color" (Fusion Shift+N parity)
 เอ๋ "ขออีก 1 โหมด Display component color" — ref = Fusion's Shift+N painting each component a distinct color. Mode 5 🎨 Component Color: per-leaf node colored via deterministic hash(name) → HSL gold-ratio hue (max separation), sat~0.45 lit~0.62 (non-fluorescent), MeshLambertMaterial (soft shading like Fusion ref), + addVisibleEdges overlay (เอ๋'s "เพิ่มเส้นทุก mode" rule). Insert button between Hidden Line+Shade and Realistic; recommend as new default (most assembler-friendly). Acceptance: 1CSVB2 = 57 distinct-colored leaves + edges. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ revert): KEEP Hidden Line (2e4f6bc), withdraw Outline correction
+เอ๋ tested original 2e4f6bc Hidden Line (solid+dashed CAD) and prefers it: "outline ไม่เอา ทำเป็น Hidden line แบบเดิมดีกว่า". WITHDRAW my 59e7e4a "Outline" correction. Mode 1/2 stay as 2e4f6bc. Active WEB queue unchanged otherwise: (a) edges to Realistic+Explode, (b) Mode 5 🎨 Component Color. -- RD 05
