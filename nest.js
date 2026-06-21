@@ -3524,33 +3524,33 @@
       }
       if (close) ctx.closePath();
     };
-    if (polys.outer && polys.outer.length > 1) {
-      trace(polys.outer, true);
+    // Silhouette = the closed region we FILL (steel) + CLIP the grain hatch to.
+    // Normally the OUTER loop; but a layer-"0" DXF has a fragmented boundary that
+    // didn't stitch (degenerate 2-pt outer), so fill + hatch had nothing to bound
+    // to. Rebuild a CONVEX HULL of all cut points — the parts เอ๋ flagged
+    // (2CN002-120024 / 2CN026-120000) are convex rounded rectangles, so the hull
+    // == the outline and interior holes fall inside it — so BOTH the fill and the
+    // hatch stay INSIDE the shape, never spilling past it (เอ๋ 2026-06-21 'ทำให้
+    // เหมือนตัวอื่น — fill + hatch ไม่เกินรูปทรง'; matches 2CVH19's filled+hatched
+    // look). 18975c2 set the bbox; this gives the matching look.
+    const outerOk = polys.outer && polys.outer.length > 2 && _polyArea(polys.outer) > 1;
+    const sil = outerOk ? polys.outer : _convexHull([].concat(polys.outer || [], ...(polys.strokes || [])));
+    if (sil && sil.length > 2) {
+      trace(sil, true);
       ctx.fillStyle = STEEL; ctx.fill();
-    }
-    // Grain hatch — clipped to the silhouette so the lines read as grain on the
-    // metal. The preview is already rotated so V parts run vertically (grot=90),
-    // so screen-space H/V matches what the worker sees on the sheet (เอ๋
-    // 2026-05-31 'ทำ Hatch ขีดบางๆ จะได้รู้ Grain ทิศทางไหน'). Clip to the real
-    // OUTER loop when it's a proper closed polygon; a layer-"0" DXF has a
-    // DEGENERATE stitched outer (a stray 2-pt segment, zero area — its boundary
-    // didn't stitch), which would clip the hatch to nothing → fall back to the
-    // drawn bbox so the hatch still shows (เอ๋ 2026-06-21: 2CN002-120024 /
-    // 2CN026-120000 V had no hatch; same layer-"0" set as the bbox fix 18975c2).
-    // Runs independently of the outer block so a degenerate/absent outer can't
-    // suppress it. Always-horizontal, H/V only (post-revert behaviour).
-    if (part.grain === 'H' || part.grain === 'V') {
-      ctx.save();
-      var _noFill = true;   // true → bbox-clip + no steel behind → draw the hatch bolder so it's visible
-      if (polys.outer && polys.outer.length > 2 && _polyArea(polys.outer) > 1) {
-        trace(polys.outer, true); ctx.clip(); _noFill = false;
-      } else {
-        ctx.beginPath(); ctx.rect(offX, offY, drawW, drawH); ctx.clip();
+      // Grain hatch — H/V only, always-horizontal lines (post-revert), clipped to
+      // the silhouette so it reads as grain on the metal and never crosses the
+      // edge. The preview is rotated so V parts run vertically (grot=90).
+      if (part.grain === 'H' || part.grain === 'V') {
+        ctx.save(); trace(sil, true); ctx.clip();
+        _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr, false);
+        ctx.restore();
       }
-      _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr, _noFill);
-      ctx.restore();
     }
-    if (polys.outer && polys.outer.length > 1) {
+    // Crisp TRUE outline on top: stroke the real OUTER loop when it's proper. For
+    // a reconstructed (hull) silhouette we do NOT stroke the hull — that would cut
+    // across the rounded corners; the fragmented `strokes` below draw the real edge.
+    if (outerOk) {
       ctx.strokeStyle = colour; ctx.lineWidth = 2.2 * dpr; trace(polys.outer, true); ctx.stroke();
     }
     if (polys.strokes && polys.strokes.length > 1) {
@@ -4581,6 +4581,24 @@
       a += x1 * y2 - x2 * y1;
     }
     return Math.abs(a) / 2;
+  }
+  // Convex hull (Andrew's monotone chain) of a flat [[x,y],…] cloud. Used to
+  // rebuild a closed silhouette for layer-"0" parts whose fragmented boundary
+  // didn't stitch into an OUTER loop — so the part preview can FILL + clip the
+  // grain hatch to the real shape (the flagged 2CN parts are convex rounded
+  // rectangles → hull == outline; interior holes fall inside it). (เอ๋ 2026-06-21)
+  function _convexHull(pts) {
+    if (!Array.isArray(pts) || pts.length < 3) return Array.isArray(pts) ? pts.slice() : [];
+    const p = pts.filter(a => a && isFinite(a[0]) && isFinite(a[1])).map(a => [a[0], a[1]])
+      .sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (p.length < 3) return p;
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lower = [];
+    for (const q of p) { while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop(); lower.push(q); }
+    const upper = [];
+    for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop(); upper.push(q); }
+    lower.pop(); upper.pop();
+    return lower.concat(upper);
   }
   // "Looks weird" reasons for a selected part (empty array = nothing to flag).
   // Checks: no DXF · DXF parse error / degenerate outline · parsed bbox vs the
