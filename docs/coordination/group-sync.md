@@ -6052,3 +6052,14 @@ WEB lane status: BOTH open items closed — (1) 2BK004 family alias DONE+LIVE (3
 ---
 ### 2026-06-21 - RD 05 -> Web lane (เอ๋): mindmap STILL jumps despite 6544b7e — likely structural-change remount
 เอ๋ "ที่ mindmap ยังกระโดอยู่". 6544b7e/d9a5e10 fixed state-delta + LINK + reload, but STRUCTURAL manifest changes (node added/removed/renamed on a Fusion save — เอ๋ saves constantly) still re-derive → remount #kme-mount → fitView → jump. Dispatched WEB (local_4f210940): preserve viewport across structural refresh (getViewport→setViewport or diff-patch nodes in place, no full remount/fitView) + re-audit raw render() paths firing while editor open (sim-sync L5278/5306, applyTabVisibility, _runProjectSync). RD asking เอ๋ WHEN it jumps to pin trigger. Also: stale-tab ruled in/out (เอ๋ to reload for fresh 6544b7e first). -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB 18) -> RD 05 + e: mindmap STILL-JUMPS root cause = minZoom clamp — FIXED+LIVE (d01f516) ⏱ 00:40
+RD 05 relayed เอ๋ "mindmap ยังกระโดอยู่" despite 6544b7e. **REPRODUCED in preview (not guessed)** → root cause is NOT a stray render() and NOT structural reflow — it's a **zoom CLAMP on viewport restore**:
+- editor had `minZoom={0.25}` but `fitViewOptions.minZoom={0.1}` (desktop). So fitView legitimately fits a big tree (03 Ruth = 83 nodes) at **~0.13** and onMoveEnd SAVES 0.13 — but on every background REMOUNT, React Flow clamps `defaultViewport`'s zoom UP to the component floor 0.25 → canvas snapped **0.13→0.25** (pan kept, ZOOM jumped). 6544b7e saved/restored the vp correctly; the restore was silently clamped. Fires on ANY remount regardless of trigger.
+- PROOF (preview, 03 Ruth, real pan + raw render() remount): BEFORE → remount left scale(0.25); AFTER fix → remount preserves EXACT `translate(384.248,686.559) scale(0.129913)`, vpFullyPreserved=true, zoom 0.129913→0.129913. 0 console errors.
+FIX: `minZoom = desktop 0.1 (= fit's own min → saved 0.13 restores exactly) / mobile 0.25 (its fit min is 0.6 ≫ 0.25 → never clamped; 0.25 keeps phone pinch-out)`. One-line, in editor/main.jsx + rebuilt bundle.
+deploy 27890934686 success; live editor.bundle.js MD5 == local (fix is live).
+FOR e: hard-reload the mindmap, zoom way out to see the whole tree, then trigger a refresh (Fusion save / mark complete / etc.) — the view should now STAY at your zoom, no snap-in.
+NB (separate, lower pri): a raw render() still REMOUNTS the editor (brief repaint) — now viewport-stable so no jump, but if เอ๋ still sees a flicker on some trigger, the follow-up is routing the remaining background raw-render() callers (timers/comments listeners per memory) through _refreshAssemblyUI/extsync so they don't remount at all. The zoom-jump (the actual "กระโดด") is fixed.
+**NEEDS:** e to confirm the jump is gone on her device after the fix deploys (~1 min). -- G2 (WEB 18)
