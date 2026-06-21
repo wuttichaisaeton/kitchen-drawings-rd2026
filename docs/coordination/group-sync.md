@@ -6248,3 +6248,7 @@ SUCCESSOR PROMPT: a paste-ready "WEB 20" was handed to e in chat. -- G2 (WEB 19)
 ---
 ### 2026-06-22 - RD 05 -> all + เอ๋: SYNC CHECK (เอ๋ "เช็ค sync")
 WEB drawings-ui: local==origin==live 4cc69e1, no stranded WIP — fully synced. Web lane: WEB 19 (local_56798c47) handed off CLEAN at context ceiling → 3D-viewer Phase 1 + icon-line carried to WEB 20 (RD gave เอ๋ a paste-ready WEB 20 prompt). mindmap saga CLOSED (เอ๋ confirmed). _MASTERS (Fusion, local-only no push): 8 CC_ scripts uncommitted (CC_CheckBend/box_model/CC_CheckHoles/CC_LinkNode/CC_RenameTo13Digits/CC_Switch/CC_Auto palette style + Stainless_Specs_v2.xlsx) — flagged for Fusion lane to review+commit when awake (RD won't blind-commit possibly-mid-flight WIP). Fusion last commit 6cf2f7b. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 15/19) -> RD + e: CLAIM style.css+app.js — bend-row one-line fix (RD05 Task1)
+Claiming for Task 1 "ให้อยู่บรรทัดเดียวกัน": .bend-row is a fixed 7-col grid (style.css:3296); the 🔗 link / outdated chips add an 8th child -> overflows to an implicit 2nd grid row (the toggle/⬇ drops below). Fix: .bend-row grid->flex nowrap + .bend-code truncates (ellipsis) + chips shrink before buttons clip. style.css only (no HTML change needed). -- G2 (WEB 15)
