@@ -4310,11 +4310,15 @@ function _updateProgressPills(key) {
 
 function _refreshAssemblyUI() {
   const top = stack[stack.length - 1];
+  // MOUNT IN FLIGHT → skip entirely. A reload fires init-time RTDB listeners here while the
+  // editor's async mount (bundle+RTDB reads) is still pending; falling through to
+  // _backgroundRender→render() would rebuild ROOT and CLOBBER the in-flight #kme-mount → the
+  // blank-on-reload race. Let the mount finish (the watchdog repopulates if it ends empty).
+  if (top && top.kind === 'project' && (window.__kmeMountSeq || 0) !== (window.__kmeMountDone || 0)) return;
   // Require the editor to be POPULATED (has nodes), not just mounted: on a reload
-  // the editor can mount EMPTY (manifest not ready at first mount) — then this must
-  // fall through to _backgroundRender → render() to REPOPULATE it (and restore its
-  // viewport via _vpGet), instead of an extsync that delta-syncs nothing and leaves
-  // a blank canvas (เอ๋ 2026-06-21).
+  // the editor can mount EMPTY — then this must fall through to _backgroundRender →
+  // render() to REPOPULATE it (and restore its viewport via _vpGet), instead of an
+  // extsync that delta-syncs nothing and leaves a blank canvas (เอ๋ 2026-06-21).
   const editorLive = !!window.__kmeInstance && !!document.getElementById('kme-mount')
     && !!document.querySelector('.react-flow__node');
   if (top && top.kind === 'project' && editorLive) {
@@ -5289,6 +5293,11 @@ function _backgroundRender() {
     try { window.dispatchEvent(new Event('kme:extsync')); } catch {}
     return;
   }
+  // MOUNT IN FLIGHT → skip the rebuild. An async editor mount (bundle + RTDB reads) is
+  // pending; a render() here would destroy the in-flight #kme-mount and start a competing
+  // mount → the blank-on-reload race. Let it finish (the renderProject watchdog repopulates
+  // if the mount ends up empty). (เอ๋ 2026-06-21)
+  if (_top && _top.kind === 'project' && (window.__kmeMountSeq || 0) !== (window.__kmeMountDone || 0)) return;
   _bgRenderPending = false;
   const se = document.scrollingElement || document.documentElement;
   const y = window.scrollY || (se && se.scrollTop) || 0;
@@ -8839,21 +8848,31 @@ function _rtdbToRfNode(id, raw) {
 async function _loadCustomMindmap(projectKey) {
   const cached = _loadCustomMindmapLocal(projectKey);
   if (!window.firebaseDB) return cached;
-  try {
-    const snap = await window.firebaseDB
-      .ref('custom_mindmaps/' + projectKey).once('value');
+  const ref = window.firebaseDB.ref('custom_mindmaps/' + projectKey);
+  const _parse = (snap) => {
     const data = snap.val() || {};
     const nodes = data.nodes
       ? Object.entries(data.nodes).map(([id, raw]) => _rtdbToRfNode(id, raw))
       : [];
     const edges = data.edges
-      ? Object.entries(data.edges).map(([id, raw]) => ({
-          id, source: raw.source, target: raw.target,
-        }))
+      ? Object.entries(data.edges).map(([id, raw]) => ({ id, source: raw.source, target: raw.target }))
       : [];
     // Mirror to LS so next first-paint has data without a Firebase round trip.
     _saveCustomMindmapLocal(projectKey, { nodes, edges });
     return { nodes, edges };
+  };
+  try {
+    // Time-bound the read: on a COLD hard-reload the RTDB socket is still connecting and
+    // .once() PENDS forever (never resolves/rejects). The editor mount() AWAITS this, so a
+    // pend HANGS the mount → BLANK canvas (เอ๋ 2026-06-21 "จอว่าง"). Race a 1.5s timeout →
+    // fall back to the LS cache so mount() ALWAYS runs; mirror the live value when it lands.
+    const TO = Symbol('to');
+    const snap = await Promise.race([ ref.once('value'), new Promise(r => setTimeout(() => r(TO), 1500)) ]);
+    if (snap === TO) {
+      ref.once('value').then(s => { try { _parse(s); } catch (_) {} }).catch(() => {});
+      return cached;
+    }
+    return _parse(snap);
   } catch (e) {
     console.warn('[kme] load RTDB failed, using LS cache:', e);
     return cached;
@@ -9290,9 +9309,8 @@ async function _loadOverrides(projectKey) {
   // their default radial positions. RTDB read upgrades after.
   const lsCopy = _loadOverridesLocal(projectKey);
   if (!window.firebaseDB) return lsCopy;
-  try {
-    const snap = await window.firebaseDB
-      .ref(`custom_mindmaps/${projectKey}/overrides`).once('value');
+  const ref = window.firebaseDB.ref(`custom_mindmaps/${projectKey}/overrides`);
+  const _merge = (snap) => {
     const remote = snap.val() || {};
     // Remote wins for any key it has — but LS keeps in-flight drags that
     // haven't been flushed yet (those keys live only in LS until the
@@ -9300,6 +9318,17 @@ async function _loadOverrides(projectKey) {
     const merged = { ...lsCopy, ...remote };
     _saveOverridesLocal(projectKey, merged);
     return merged;
+  };
+  try {
+    // Same cold-socket timeout as _loadCustomMindmap — a pending .once() here would also
+    // hang the editor mount() that awaits it. Fall back to LS on timeout; mirror late value.
+    const TO = Symbol('to');
+    const snap = await Promise.race([ ref.once('value'), new Promise(r => setTimeout(() => r(TO), 1500)) ]);
+    if (snap === TO) {
+      ref.once('value').then(s => { try { _merge(s); } catch (_) {} }).catch(() => {});
+      return lsCopy;
+    }
+    return _merge(snap);
   } catch (e) {
     console.warn('[kme] load overrides failed:', e);
     return lsCopy;
@@ -10698,13 +10727,23 @@ function renderProject(key) {
   // Custom nodes (RTDB). Workshop iPad gets the same view but editing
   // is gated off via admin flag.
   _exposeKdApi();
+  // RACE GUARD (เอ๋ 2026-06-21 blank-on-reload): this mount is async (bundle fetch + RTDB
+  // reads). On a reload, init-time RTDB listeners fire _refreshAssemblyUI→_backgroundRender→
+  // render() DURING that window, which rebuilds ROOT (destroying the in-flight #kme-mount) and
+  // starts a SECOND mount → the two race → 0 nodes. A monotonic token makes only the LATEST
+  // render's mount win (stale continuations bail); __kmeMountDone lets _backgroundRender/
+  // _refreshAssemblyUI SKIP the destructive render while a mount is in flight (see those fns).
+  const _myMountSeq = (window.__kmeMountSeq = (window.__kmeMountSeq || 0) + 1);
+  const _finishMount = () => { if (_myMountSeq === window.__kmeMountSeq) window.__kmeMountDone = _myMountSeq; };
   ensureEditorBundle().then(async () => {
+    if (_myMountSeq !== window.__kmeMountSeq) return;          // superseded before we started — don't clobber
     const host = document.getElementById('kme-mount');
-    if (!host) return;
+    if (!host) { _finishMount(); return; }
     const [fresh, overrides] = await Promise.all([
       _loadCustomMindmap(key),
       _loadOverrides(key),
     ]);
+    if (_myMountSeq !== window.__kmeMountSeq) return;          // a newer render started during the reads — bail
     const bom = _buildBomNodes(project, visibleParts, key);
     const bomNodes = _applyOverrides(bom.nodes, overrides);
     // Custom nodes layer overrides too so renames live in one place.
@@ -10823,7 +10862,16 @@ function renderProject(key) {
         _saveCustomMindmap(key, customOnly);
       },
     });
+    _finishMount();
+    // Watchdog: if the mount didn't paint a node within ~2.5s (residual stall), repopulate
+    // ONCE (capped at 2) so the canvas can't sit blank. Resets the cap when it paints healthy.
+    setTimeout(() => {
+      if (_myMountSeq !== window.__kmeMountSeq || !document.getElementById('kme-mount')) return;
+      if (document.querySelector('.react-flow__node')) { window.__kmeMountRetry = 0; return; }
+      if ((window.__kmeMountRetry || 0) < 2) { window.__kmeMountRetry = (window.__kmeMountRetry || 0) + 1; try { render(); } catch (e) {} }
+    }, 2500);
   }).catch(err => {
+    _finishMount();   // never wedge the background-render skip if the mount failed
     const host = document.getElementById('kme-mount');
     if (host) host.innerHTML = '<p class="loading">Editor failed to load. Check console.</p>';
     console.error('[kme] bundle load failed', err);
