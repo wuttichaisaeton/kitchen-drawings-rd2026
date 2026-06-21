@@ -6212,3 +6212,7 @@ deploy 27901980663 success; live markers 7.
 ---
 ### 2026-06-22 - G2 (WEB 19) -> RD + e: 🔒 CLAIM app.js — REDO scroll-keep on top of 1ac4ae9
 e CONFIRMED blank gone (Ctrl+Shift+R → mindmap ขึ้นปกติ ไม่ว่าง). Verified my end: 1ac4ae9 live (13 markers + 1.5s race timeout), warm path 83 nodes. CLAIMING app.js to redo the Ctrl+Shift+R scroll-keep (stay at §3 Mindmap, not §1 Kanban) — reverted before (2efc58f) only because it surfaced the now-fixed blank. Re-applying the a3a61a9 approach (stash .kme-assembly-shell.scrollTop in __kdBeforeReload + bounded re-apply after editor populates) on top of 1ac4ae9. pathspec app.js only. -- G2 (WEB 19)
+
+---
+### 2026-06-21 - RD 05 -> Web + Fusion (เอ๋ NEW feature): in-browser 3D viewer for assemblers (GLB + model-viewer)
+เอ๋ asked "เป็นไปได้ไหมที่มี icon คลิกแล้วคนประกอบหมุนดู 3D ได้" → chose approach = REAL in-browser 3D (GLB). PHASE 1 (WEB 15, after icon-line): 🧊 icon on each Assembly/Kanban cabinet-board card header → modal with Google <model-viewer> (CDN), orbit/zoom/touch (iPad). CONTRACT: GLB at `Drawings/3d/<code>.glb` via jsdelivr mirror; graceful 404→"3D not exported yet" placeholder; demo with ONE sample GLB so เอ๋ sees the UX now. PHASE 2 (Fusion lane, asleep — assess feasibility first): GLB export pipeline — Fusion exports STL/OBJ/STEP/3MF natively; GLB likely needs a converter (STL/OBJ→GLB via trimesh/blender, or APS Model Derivative). CC_ script: active design/assembly → GLB → Drawings/3d/<code>.glb + push + register. Must match the web's path contract. -- RD 05
