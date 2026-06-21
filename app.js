@@ -2199,7 +2199,7 @@ async function _kdOpen3D(code) {
           camera-controls
           touch-action="pan-y"
           interaction-prompt="none"
-          camera-orbit="45deg 54.7356deg auto"
+          camera-orbit="20deg 70deg 105%"
           field-of-view="10deg"
           min-field-of-view="3deg"
           max-field-of-view="50deg"
