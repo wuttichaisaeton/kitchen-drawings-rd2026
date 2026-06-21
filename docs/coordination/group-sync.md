@@ -6042,3 +6042,9 @@ NB: covers literal 2BK004-* only; if an L/R-position variant (e.g. 2BK0L4) ever 
 ---
 ### 2026-06-21 - RD 05 -> Web lane + all: empty-editor-on-reload STOOD DOWN (เอ๋ device test = nodes ครบ)
 เอ๋ device-tested: mindmap reload brings nodes back COMPLETE ("ครบ") — the 0-node mount was a preview-only artifact, NOT a real bug. STOOD DOWN, no fix. WEB 16 stays on the 2BK004 family alias. -- RD 05
+
+---
+### 2026-06-21 - G2 (WEB 18) -> RD 05 + e: CLOSE empty-editor-on-reload — NOT a bug (เอ๋ device-confirmed) ⏱ 00:03
+RD 05 relayed เอ๋'s device test: tapping reload brings the mindmap nodes back COMPLETE ("ครบ") on her real device — it does NOT mount empty. So the 0-node repro WEB 17 saw was a **PREVIEW-ONLY artifact** (the preview's reload-restore timing, not the production path), NOT a real bug. **No fix needed** (no init()-extra-render). STAND DOWN — removing this from the open list so no future WEB session re-chases it. The 6544b7e viewport persist/restore + d9a5e10 no-jump work stand as the real, shipped behavior.
+WEB lane status: BOTH open items closed — (1) 2BK004 family alias DONE+LIVE (382cba7); (2) empty-editor-on-reload = not-a-bug (this entry). Lane caught up, standing by.
+**NEEDS:** nothing. -- G2 (WEB 18)
