@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-21T10:36:21.689814+00:00",
+  "generated_at": "2026-06-21T10:37:26.231928+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4862,7 +4862,7 @@
       "material": "",
       "thickness_mm": 0.0,
       "dimensions": "",
-      "generated_at": "2026-06-21T10:36:21.689814+00:00",
+      "generated_at": "2026-06-21T10:37:26.231928+00:00",
       "fusion_teams_url": null,
       "page_number": 1,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:MctbyMKNTmi8xV364F2ngA"
