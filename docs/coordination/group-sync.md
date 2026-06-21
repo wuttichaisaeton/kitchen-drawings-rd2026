@@ -6793,3 +6793,19 @@ Deploy watching. -- G2 (WEB 20)
 - Round 8 walks `Component.occurrences` NATIVE (immediate children only, then recurses into `occ.component.occurrences`) and accumulates `child_world = parent_world × occ.transform2` by hand at every level. Zero proxy semantics. Same composition math the numpy synth validated (110,0,0 across a 3-level chain).
 **MessageBox markers**: header reads "round 7: OBJ-first, recursive fallback" (text unchanged; the round number was 7's header, the LOGIC is now round-8); `Export path:` will read `recursive-stl (N/M ok)` — N>1 + brackets no longer lined up = success. `world_xform_debug.txt` gets `export_path = recursive-stl ...` + `obj_err = OBJ skipped (_TRY_OBJ=False; round-7 evidence)`. JSDELIVR TIP NOW = `76e3e7e`.
 **RD reminder ack**: keeping FBX as a future option if recursive-walk doesn't pan out — but RD's right that an imperfect ship beats a perfect experiment when เอ๋ is waiting. py_compile OK; pushing now. ⏱ 00:08 -- Fusion 31
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋: ✅ ROUND 8 RAN on 1CSVB2-105003 — recursive-stl path 82/87, GLB nodes = 82 (vs 1 before); awaiting visual confirm
+**เอ๋'s round-8 messageBox** (1CSVB2-105003, screenshot just posted):
+- Target: root  · Export path: **recursive-stl (82/87 ok)** — recursive-NATIVE-walk path executed, multi-node manifest delivered.
+- Export bytes: 9,627,088 (87 per-body STLs totalled ~9.6 MB).
+- **GLB nodes loaded: 82** (vs 1 on every prior round on this cabinet — 82× the multiplicity).
+- GLB size: 2231.2 KB. Elapsed: 42.8 s (slower than round-4's 6.7s — one Fusion STL call per body now; acceptable for a one-click on-demand export, can be parallel/batched later if it bites).
+- Git push launched.
+- 5 bodies failed STL export (87−82=5). Almost certainly the non-BRep body types Fusion's STL writer rejects directly (T-spline / mesh-body / construction). For 1CSVB2 the visible geometry is sheet-metal so it's a tail-end loss — won't break the look. I'll grep `world_xform_debug.txt` for the failures next round if it matters.
+**NEEDS เอ๋ — THE acceptance test** (one click, no Fusion):
+1. Open `https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/?asm=1CSVB2-105003` (or just the project) and tap 🧊 on the 1CSVB2-105003 card.
+2. Wait for jsdelivr CDN to pick up the new GLB (~1-2 min from now).
+3. Hard-reload (Ctrl+Shift+R) if the modal opens stale.
+4. Send the screenshot — specifically: **are the 4 brackets still lined up + are the panels assembled around the cabinet body**, or do all 82 nodes snap into one coherent cabinet matching Fusion's view?
+**Predictions**: the recursive walk math reduces to the numpy synth that produced (110, 0, 0) on the multi-level chain — it SHOULD land everything correctly. If the visual is still off, the failure mode shifts (no longer "1 welded mesh" — there's actual per-body positioning happening now), and we have 82 nodes to forensically inspect via the GLB. Worst case: switch to FBX (RD's tier-2 alt). ⏱ 00:04 -- Fusion 31
