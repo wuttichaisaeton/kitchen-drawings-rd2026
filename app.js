@@ -2200,7 +2200,7 @@ async function _kdOpen3D(code) {
   const modeBtn = (id, ico, label, title) => `<button data-mode="${id}" class="${mode === id ? 'is-on' : ''}" title="${escapeHtml(title)}"><span class="kd3d-mode-ico">${ico}</span><span>${escapeHtml(label)}</span></button>`;
   // mv attrs for the INITIAL paint (so first-frame is correct even before load).
   // Per-mode attribute set is also re-applied in applyMode() on every switch.
-  const initShadow = (mode === 'realistic') ? '1' : (mode === 'explode' ? '0.6' : '0');
+  const initShadow = (mode === 'realistic') ? '1' : '0';
   const initSoft = (mode === 'realistic') ? '0.5' : '0.3';
   const initExp = (mode === 'realistic') ? '1' : (mode === 'explode' ? '1.1' : '1');
   const initTone = (mode === 'realistic' || mode === 'explode') ? 'aces' : 'neutral';
@@ -2673,13 +2673,19 @@ async function _kdOpen3D(code) {
     // the Astronaut demo's lighting baseline; modes vary only on shadow,
     // exposure, tone for the look they want.
     mv.setAttribute('environment-image', 'neutral');
+    // shadow-intensity > 0 renders model-viewer's soft contact shadow on a
+    // textured plane — which on light backgrounds reads as a visible WHITE
+    // GROUND RECTANGLE under the cabinet (เอ๋ 2026-06-22 "เอา 4 เหลี่ยมนี้ออก,
+    // เข้าใจว่าเป็นพื้น แต่ไม่ควรมี"). Only Realistic keeps the shadow (where
+    // the dark BG hides the plane and the shadow itself adds the showroom
+    // contact cue).
     if (mode === 'hidden' || mode === 'hiddenshade') {
       mv.setAttribute('shadow-intensity', '0');
       mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1.3');
       mv.setAttribute('tone-mapping', 'neutral');
     } else if (mode === 'compcolor') {
-      mv.setAttribute('shadow-intensity', '0.45');
+      mv.setAttribute('shadow-intensity', '0');
       mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1.08');
       mv.setAttribute('tone-mapping', 'neutral');
@@ -2690,7 +2696,7 @@ async function _kdOpen3D(code) {
       mv.setAttribute('exposure', '1');
       mv.setAttribute('tone-mapping', 'neutral');
     } else if (mode === 'explode') {
-      mv.setAttribute('shadow-intensity', '0.6');
+      mv.setAttribute('shadow-intensity', '0');
       mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1');
       mv.setAttribute('tone-mapping', 'neutral');
