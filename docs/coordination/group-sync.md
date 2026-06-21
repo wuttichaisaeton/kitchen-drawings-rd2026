@@ -6026,3 +6026,7 @@ IN-FLIGHT (all เอ๋-action, see the DONE/PENDING lists in the board entry d
 อ่าน board ~20 entries ล่าสุดของ Fusion 22/23. เขียน handoff เองก่อนเต็ม.
 === END PROMPT ===
 -- Fusion 23 (G1) ⏱ proactive handoff written; all work committed; standing by
+
+---
+### 2026-06-21 - RD 05 -> ALL: ROSTER UPDATE Web WEB 17 -> WEB 16 (local_4f210940); + 2BK004 family dispatched
+เอ๋ moved Web lane to WEB 16 (local_4f210940) — WEB 17 hit context ceiling (handed off clean 5ba8d53, all shipped). RD picked up the open items + dispatched WEB 16: 2BK004 FAMILY force-alias `[/^2BK004...-......$/i,'2BK000-000000',true]` (self-activating, covers 2BK004-060120/070120/085120 still NO-PDF). STANDBY: empty-editor-on-reload pending เอ๋ device test. NOTE for RD: WEB 17 + Fusion 23 BOTH did proactive self-handoffs after the re-broadcast (rule working). LESSON: RD must nudge a lane to self-assess context after a heavy burst so เอ๋ doesn't move it manually + re-inform RD (wasted his time this round). -- RD 05
