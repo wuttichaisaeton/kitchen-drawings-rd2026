@@ -6159,3 +6159,19 @@ The "จอว่าง" was NOT my scroll fix (revert didn't help) — it's **e
 FIX (app.js only, no editor build): (a) time-bound both pre-mount reads (race `.once()` vs 1.5s → fall back to LS, mirror late value) so mount() ALWAYS runs; (b) monotonic mount token `__kmeMountSeq` — only the latest renderProject's mount wins, stale ones bail; (c) `__kmeMountDone` pending-flag — `_refreshAssemblyUI`/`_backgroundRender` SKIP the destructive render while a mount is in flight; (d) 2.5s watchdog (capped) re-renders once if still empty.
 VERIFIED (preview, 03 Ruth, 0 console err): reload now **SELF-populates 83 nodes from ms=0, NO manual rerender** (was 0 forever); with RTDB reads stubbed to pend forever (cold-socket sim) the editor STILL mounts at ~1.7s via the timeout→LS; fresh open still 83 (no regression). deploy 27900999293 success; live markers 9.
 **NEEDS — เอ๋:** Ctrl+Shift+R the mindmap now → should load the parts/mindmap (NOT blank). (Scroll-keep is reverted for now — I'll redo it cleanly on top of this once the blank is confirmed gone.) -- G2 (WEB 18)
+
+---
+### 2026-06-21 - G2 (WEB 18) -> RD 05 + e + next WEB session: HANDOFF (context ceiling)
+WEB 18 ran very long (2BK004 family alias 382cba7; the whole mindmap-jump saga; the BLANK-on-reload root-cause + fix). Self-handing-off per the hard rule before context fills.
+**WIP CLEAN:** git status clean; local==origin; no exclusive file claims held. Everything shipped+pushed.
+**SHIPPED + LIVE today (WEB 18):**
+- 2BK004 family force-alias → 2BK000-000000 (382cba7).
+- mindmap viewport restore on reload via editor `onInit` setViewport (f9de01a) — KEPT.
+- **BLANK mindmap on hard-reload — FIXED (1ac4ae9)** ← the big one. Root cause: editor mount() hangs behind two pre-mount Firebase `.once()` reads that PEND on a cold reload socket (+ a mount race). Fix = 1.5s timeout→LS on the reads + monotonic mount token + `__kmeMountDone` pending-skip in _refreshAssemblyUI/_backgroundRender + 2.5s watchdog. Verified: reload self-populates 83 nodes from ms=0.
+**REVERTED (intentionally):** the Ctrl+Shift+R SCROLL-keep (d208ae9 + a3a61a9 → reverted 2efc58f). It scrolled the page to the §3 Mindmap section, which exposed the blank (empty editor). It's a real want but must be REDONE on top of 1ac4ae9.
+**OPEN — for the successor:**
+  1. **Confirm with เอ๋ the blank is GONE** after 1ac4ae9 (Ctrl+Shift+R → mindmap loads, not blank). If her socket is slower than 1.5s, bump the timeout / add a retry.
+  2. **REDO scroll-keep** once blank confirmed: the Assembly page scrolls INSIDE `.kme-assembly-shell` (overflow container), NOT window — stash `.kme-assembly-shell`.scrollTop in `__kdBeforeReload` + restore it after the editor populates (wait for it to be tall enough; re-apply if a late render resets it). Now that the editor reliably populates, scroll-keep won't surface a blank.
+**KEY GOTCHAS this session (save time):** (a) preview default viewport is HUGE → `preview_resize 1280x900` for any scroll test. (b) `.kme-assembly-shell` is the scroll container, window.scrollY is always 0 on the assembly page. (c) any `await .once('value')` on first-paint is a cold-reload hang risk — race a timeout. (d) preview browser caches app.js → `preview_stop`+`start` for a clean load. (e) screenshot tool flaky → pixel/eval proofs.
+**SUCCESSOR PROMPT** = a paste-ready "WEB 19" was handed to เอ๋ in chat.
+-- WEB 18, signing off this lane.
