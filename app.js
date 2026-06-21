@@ -416,17 +416,29 @@ function _renderAdminRoleSwitcher() {
       params.delete('p');
       dirty = true;
     }
-    // Deep-link `?asm=<project>` = SHARED ASSEMBLER LINK (เอ๋ 2026-06-22 "link
-    // ต้องเข้าไปในส่วน assembly"). Lands a worker straight inside the project's
-    // Assembly view (the project page IS the Kanban+Checklist+Mindmap editor)
-    // AND bakes role=assemble onto this device so the role chip + tab gating
-    // are correct from now on. The URL is stripped post-apply (same dirty-flag
-    // pattern as ?admin=) so a re-share of the now-clean URL doesn't carry
-    // role/view info — the safe replacement for the retired ?role= flag that
-    // had leaked into LINE chats.
+    // Deep-link `?asm` = SHARED ASSEMBLER LINK (เอ๋ 2026-06-22 "link ต้องเข้าไป
+    // ในส่วน assembly" + "ควรให้เขาเห็น งาน assembly ทั้งหมด"). Two flavours
+    // depending on the value, both safe replacements for the retired ?role=:
+    //   `?asm` (no value) or `?asm=all` — GENERIC entry. Just bakes
+    //     role=assemble onto this device + lands on Projects home so the
+    //     assembler sees ALL projects (one LINE share for life — เอ๋'s ask).
+    //   `?asm=<project>` — PER-PROJECT entry. Bakes role + drops straight into
+    //     that project's Assembly view (Kanban+Checklist+Mindmap = the project
+    //     page).
+    // Either way the URL is stripped post-apply so a re-share doesn't carry
+    // role/view info.
     if (params.has('asm')) {
-      window.__kdInitialProject = params.get('asm') || '';
-      window.__kdAsmBakeRole = true;
+      const v = params.get('asm') || '';
+      if (v === '' || v.toLowerCase() === 'all') {
+        // Generic. Direct LS write — applyUrlFlags runs at script-init time
+        // before the DOM is fully ready, and setRole() has DOM side effects;
+        // the first render() reads kd_role_v1 from LS so we're correct without
+        // needing the badge re-paint here.
+        try { localStorage.setItem(LS_ROLE_KEY, 'assemble'); } catch {}
+      } else {
+        window.__kdInitialProject = v;
+        window.__kdAsmBakeRole = true;
+      }
       params.delete('asm');
       dirty = true;
     }
@@ -9297,7 +9309,45 @@ function renderProjectsHome() {
       ${doneOpen ? `<div class="project-list project-list-complete">${doneHtml}</div>` : ''}
     </div>` : '';
 
-  ROOT.innerHTML = `<div class="project-list">${html}</div>${completeSection}`;
+  // Admin-only "📋 Copy Assembler Link" header — เอ๋ 2026-06-22: the GENERIC
+  // link (`?asm`) is the one-shot LINE share — assembler taps once, bakes
+  // role=assemble, lands here on Projects, picks their cabinet themselves.
+  // Lives at the top of the projects list so it's discoverable but small.
+  // (Note: `adminMode` is declared inside cardHtml, not the outer scope —
+  // use isAdmin() directly here.)
+  const asmGenericBar = isAdmin()
+    ? `<div class="projects-adminbar" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 0 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;font-family:'Flux Architect',ui-monospace,monospace">
+         <button class="projects-adminbar-btn" id="asmlink-generic-btn" title="Copy the generic assembler link — share to LINE so workers can bake role + see ALL projects with one tap" style="background:#1c2530;color:#e6edf4;border:1px solid #2b3a4d;border-radius:6px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;letter-spacing:.3px">📋 Copy Assembler Link</button>
+         <span class="projects-adminbar-hint" style="font-size:11px;color:#9fb0c0;letter-spacing:.3px">One link for LINE — bakes role, shows all projects</span>
+       </div>`
+    : '';
+
+  ROOT.innerHTML = `${asmGenericBar}<div class="project-list">${html}</div>${completeSection}`;
+
+  // Global "Copy Assembler Link" — writes `<origin><path>?asm` (no value =
+  // generic entry) to clipboard. The applyUrlFlags handler bakes role +
+  // strips the param when the worker opens it.
+  ROOT.querySelector('#asmlink-generic-btn')?.addEventListener('click', async (ev) => {
+    ev.stopPropagation();
+    const url = window.location.origin + window.location.pathname + '?asm';
+    let ok = false;
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        ok = true;
+      }
+    } catch (e) {}
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url; ta.style.position = 'fixed'; ta.style.top = '-1000px';
+        document.body.appendChild(ta); ta.select();
+        ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) {}
+    }
+    _kdToast(ok ? '📋 Assembler link copied — paste to LINE' : '✗ Copy failed — long-press URL to copy manually');
+  });
 
   // 📦 folder open/close — shared state with the Nest picker.
   ROOT.querySelector('#kd-complete-toggle')?.addEventListener('click', _toggleCompleteFolder);
