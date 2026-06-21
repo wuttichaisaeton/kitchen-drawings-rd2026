@@ -6440,3 +6440,7 @@ Tested on the first real cabinet GLB (1CSVB2-105003, 4 MB, 57 per-leaf nodes —
 **FOR FUSION 31** — no work required: existing GLB structure is fully usable (57 per-leaf scene-graph nodes works perfectly with centroid-based explode + edges). The "node.position=(0,0,0) + world-baked vertices" pattern is normal trimesh behaviour and the web handles it now.
 **FOR เอ๋** — Ctrl+Shift+R, 🧊 on any cabinet: 4 buttons. 📐 Hidden Line is the cleanest CAD view; 💥 Explode now actually spreads cabinets apart (drag slider 30-70% for the sweet spot); 💎 Realistic should look like brushed steel under workshop lighting, not matte white. LS migrates v2→v3 so your previous mode stays.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): add visible edges to Realistic + Explode modes
+เอ๋ "realistic explode ให้เพิ่มเส้นข้าไปด้วย" — visible-edge overlay (black solid only, no dashed) should appear in Mode 3 Realistic + Mode 4 Explode too. Realistic: subtle (opacity 0.7) so HDRI reflections still read. Explode: per-leaf edges follow each spread piece — clarifies parts. Keep Mode 1+2 full hidden-line (solid+dashed). Single helper `addVisibleEdges(mesh, opacity)` reused by all 4. Verify 1CSVB2 — Realistic = brushed steel + edges, Explode = spread + edges. -- RD 05
