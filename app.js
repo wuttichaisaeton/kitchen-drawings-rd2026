@@ -5234,6 +5234,24 @@ function _userIsInteracting() {
 }
 function _backgroundRender() {
   if (_userIsInteracting()) { _bgRenderPending = true; return; }
+  // The React Flow mindmap editor must NEVER be remounted by a background tick:
+  // render() rebuilds ROOT.innerHTML → destroys #kme-mount → the canvas remounts,
+  // which re-runs the radial layout AND re-applies fitView/defaultViewport, so
+  // เอ๋'s pan/zoom + dragged node positions JUMP back (เอ๋ 2026-06-21: 'ถ้ามีการ
+  // update/refresh ให้คงหน้า+ตำแหน่งเดิม ไม่กระโดดไปมา'). When the editor is live,
+  // do the SAME in-place delta the 🧩/complete ticks use (progress pills +
+  // kme:extsync, which re-reads badge/chip/assembled state on the EXISTING nodes
+  // without touching the viewport) and skip the rebuild entirely. This is the
+  // safety net for EVERY direct _backgroundRender() caller (RTDB listeners, the
+  // NEW-badge poll, Fusion-save sync, NO-PDF chip flips), not just the ones that
+  // already route through _refreshAssemblyUI.
+  const _top = stack[stack.length - 1];
+  if (_top && _top.kind === 'project' && window.__kmeInstance && document.getElementById('kme-mount')) {
+    _bgRenderPending = false;
+    try { _updateProgressPills(_top.name); } catch {}
+    try { window.dispatchEvent(new Event('kme:extsync')); } catch {}
+    return;
+  }
   _bgRenderPending = false;
   const se = document.scrollingElement || document.documentElement;
   const y = window.scrollY || (se && se.scrollTop) || 0;
