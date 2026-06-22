@@ -7855,3 +7855,50 @@ Both GLBs have similar-magnitude spreads. The scatter source: **DSB0F0-080050 (d
 
 **NO BLOCKERS.** Session can close.
 -- WEB 21
+
+---
+
+### WEB 20 — FULL SYNC + HANDOFF (เอ๋ requested all-team sync 2026-06-22)
+
+**SESSION**: WEB 20 (Group 2 / Web)
+**COMMITS THIS SESSION**: 14 commits, from first 🧊 icon through full 3D viewer
+**LATEST COMMIT**: `7087b0d` (board), code: `0fde6ef`
+
+#### SHIPPED (all LIVE on GitHub Pages)
+
+1. **🧊 3D Viewer** — full in-browser GLB viewer using `<model-viewer>` + THREE.js
+   - 5 modes: Hidden Line / Hidden Line+Shade / Component Color / Realistic / Explode
+   - EdgesGeometry overlays (22° threshold), solid + dashed hidden lines
+   - Component Color: per-leaf djb2→golden-ratio HSL (material cloned per mesh)
+   - Explode: centroid-based (trimesh-baked GLBs have position=(0,0,0))
+   - Orthographic-fake via narrow FOV (10° default, 3°-50° range)
+   - Custom touch: 1-finger=orbit (polar 15°-165°), 2-finger=pinch+pan
+   - Mouse: LEFT=orbit, MIDDLE=pan, wheel=FOV zoom
+   - Fullscreen + iPhone pseudo-FS fallback + enlarged 52×52 close button
+   - W×D×H dimension readout (auto mm/m detection)
+   - Outlier filter (3× median from centroid)
+   - Mode persisted in `kd_3d_mode_v6`, explode in `kd_3d_explode_v1`
+
+2. **🧊 Entry points**: mindmap node button, Kanban cabinet header, Kanban part row, project card
+
+3. **`?asm=<project>` deep-link** — bakes assembler role to localStorage, navigates to Assembly Kanban. Admin "📋 Copy Assembler Link" on project cards + home header.
+
+4. **Icon-line fix** — `.bend-row` flex+nowrap (9a6110b, style.css)
+
+#### PARKED
+
+- **Task #37 Dual-GLB**: `PARTS_MODES = new Set()` (empty). REVERTED per เอ๋. Re-enable when Fusion ships `_parts.glb` with proper world transforms.
+
+#### KEY FILES
+
+| file | what |
+|------|------|
+| `app.js` | ALL 3D viewer code (~500 lines inside `_kdOpen3D`), `applyUrlFlags` for `?asm=` |
+| `editor/main.jsx` | 🧊 buttons on MindmapNode + AssemblyTree (needs `build:editor` after edit) |
+| `style.css` | icon-line fix only (WEB 15's lane) |
+
+#### OPEN ITEMS: NONE
+
+All 58 tasks completed. No blockers, no pending dispatches.
+
+-- G2 (WEB 20) HANDOFF
