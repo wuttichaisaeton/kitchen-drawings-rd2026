@@ -2026,6 +2026,78 @@ function _kd3dPartsGlbUrl(code) {
   return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}_parts.glb`;
 }
 
+// ── 🧊 outdated chip (WEB 21, 2026-06-22) ────────────────────────────────────
+// Round 14 (Fusion 31, 2026-06-22) rewrote main `.glb` as per-leaf assembled
+// (commit f555a1e landed 10:54 BKK = 03:54 UTC). Cabinets exported BEFORE
+// the cutoff are still the old welded single-node file (web Mode 5 looks
+// flat, Explode 0% can't separate leaves). The chip nudges เอ๋ to re-fire
+// 🧊 in CC_Auto on that cabinet — the chip disappears the moment the new
+// commit lands and the mtime probe refreshes.
+//
+// Mtime source: HEAD probe to GitHub Pages (CDN-fronted, CORS-open, sends
+// `Last-Modified` = file commit time). jsdelivr was the first choice but
+// strips Last-Modified on cache HITs, so the chip would stay null forever.
+// Lazy — only probes a code on first ask, caches per-tab in sessionStorage
+// so a project re-render doesn't refire N HEADs. On resolve, calls
+// `_backgroundRender()` so the chip materialises without yanking เอ๋'s
+// scroll / editor viewport.
+//
+// Cutoff: 10:40 BKK interpreted as Bangkok local (= 03:40 UTC), 14 min
+// before the r14 batch commit landed; the literal "10:40 UTC" the spec
+// requested would flag every just-exported r14 cabinet (commit time 03:54
+// UTC < 10:40 UTC), which defeats the purpose.
+const KD3D_R14_CUTOFF_MS = Date.parse('2026-06-22T03:40:00Z');   // 10:40 BKK
+const _KD3D_MTIME_LS_KEY = 'kd_glb3d_mtime_v2';                  // v2 = GH Pages probe (v1 cached jsdelivr "unknown")
+const _KD3D_GHPAGES_BASE = 'https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/Drawings/3d/';
+let _kd3dMtimeCache = (() => {
+  try { return JSON.parse(sessionStorage.getItem(_KD3D_MTIME_LS_KEY) || '{}') || {}; }
+  catch { return {}; }
+})();
+const _kd3dMtimeProbing = new Set();
+function _saveKd3dMtimeCache() {
+  try { sessionStorage.setItem(_KD3D_MTIME_LS_KEY, JSON.stringify(_kd3dMtimeCache)); } catch {}
+}
+function _probeKd3dMtime(code) {
+  if (!code || _kd3dMtimeProbing.has(code) || _kd3dMtimeCache[code]) return;
+  _kd3dMtimeProbing.add(code);
+  const url = _KD3D_GHPAGES_BASE + encodeURIComponent(code) + '.glb';
+  fetch(url, { method: 'HEAD', cache: 'no-store' })
+    .then(r => {
+      if (r.status === 404) {
+        _kd3dMtimeCache[code] = { missing: true };
+      } else if (r.ok) {
+        const lm = r.headers.get('last-modified');
+        const ms = lm ? Date.parse(lm) : NaN;
+        _kd3dMtimeCache[code] = isNaN(ms) ? { unknown: true } : { mtimeMs: ms };
+      } else {
+        _kd3dMtimeCache[code] = { unknown: true };
+      }
+    })
+    .catch(() => { _kd3dMtimeCache[code] = { unknown: true }; })
+    .finally(() => {
+      _kd3dMtimeProbing.delete(code);
+      _saveKd3dMtimeCache();
+      try { _backgroundRender(); } catch {}
+    });
+}
+// Tri-state: true (stale, .glb pre-cutoff), false (fresh), null (unknown —
+// missing GLB, in-flight probe, or no Last-Modified header). Schedules a probe
+// when the code is first asked about.
+function _glb3dStale(code) {
+  if (!code) return null;
+  const ent = _kd3dMtimeCache[code];
+  if (!ent) { _probeKd3dMtime(code); return null; }
+  if (!ent.mtimeMs) return null;          // missing / unknown → don't nag
+  return ent.mtimeMs < KD3D_R14_CUTOFF_MS;
+}
+function _glb3dStaleChip(code, opts) {
+  if (_glb3dStale(code) !== true) return '';
+  const cls = (opts && opts.clickable) ? 'sb-recheck sb-recheck-act' : 'sb-recheck';
+  const data = (opts && opts.clickable) ? ` data-code="${escapeHtml(code)}" data-act="glb3d"` : '';
+  const tip = `3D model (Drawings/3d/${code}.glb) was last exported before the ROUND 14 cutoff (2026-06-22 10:40 UTC) — re-fire 🧊 Export 3D in Fusion (CC_Auto) on this cabinet to refresh it.`;
+  return `<span class="${cls}"${data} title="${escapeHtml(tip)}">🧊 3D outdated</span>`;
+}
+
 let _kd3dThreePromise = null;
 function _kd3dEnsureThree() {
   if (_kd3dThreePromise) return _kd3dThreePromise;
@@ -8961,7 +9033,7 @@ function renderSimBendHome() {
         <div class="sb-section-head">New / changed cabinets to bend (${_freshCabs.length})
           <button class="sb-cabs-seen" title="Mark every cabinet seen for the bend role">Mark all seen</button></div>
         <div class="sb-fresh-cabs">${_freshCabs.map(([cab, i]) =>
-          `<span class="sb-fresh-cab ${i.status}" data-cab="${escapeHtml(cab || NO_CAB)}" title="double-click = seen">${escapeHtml(cab ? displayCodeFor(cab) : 'No cabinet / shared')} ${i.status === 'new' ? 'NEW' : '↻'}</span>`
+          `<span class="sb-fresh-cab ${i.status}" data-cab="${escapeHtml(cab || NO_CAB)}" title="double-click = seen">${escapeHtml(cab ? displayCodeFor(cab) : 'No cabinet / shared')} ${i.status === 'new' ? 'NEW' : '↻'}${cab ? _glb3dStaleChip(cab) : ''}</span>`
         ).join('')}</div>
       </div>` : '';
     COUNT_EL.textContent = `${verified.length}/${_simBendSync.total} verified`;
@@ -9922,6 +9994,10 @@ function renderProjectsHome() {
     // probe runs inside the modal so missing GLBs show a "Run CC_BatchExport3D"
     // placeholder rather than gating the button.
     const proj3dBtn = `<button class="project-3d-btn" data-3d-project="${escapeHtml(p.key)}" aria-label="View full-kitchen 3D" title="View the whole kitchen in 3D — opens ${escapeHtml(p.key)}.glb">🧊</button>`;
+    // WEB 21 2026-06-22: 🧊 outdated chip for whole-kitchen .glb (project key
+    // matches Drawings/3d/<projectKey>.glb). Chip stays absent on never-exported
+    // projects (missing GLB = null state, not stale).
+    const proj3dStaleChip = _glb3dStaleChip(p.key);
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -9929,7 +10005,7 @@ function renderProjectsHome() {
           <div class="project-name">${escapeHtml(p.name || p.key)}${newBadge}${statusBadge}</div>
           <div class="project-meta">${escapeHtml(updated)} · ${uniq} unique · ${totalQty} pcs · ${p.drawn_count}/${uniq} drawn</div>
           ${progressBars}
-          <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
+          <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}${proj3dStaleChip}</div>
         </div>
         ${pinBtn}
         ${proj3dBtn}
@@ -10627,6 +10703,13 @@ function _exposeKdApi() {
       try { return [...cabinetFreshnessAll('assemble', pk).values()].filter(i => i.status === 'new' || i.status === 'changed').length; }
       catch (e) { return 0; }
     },
+    // WEB 21 2026-06-22: 🧊 outdated chip for the mindmap variant-root nodes
+    // (cabinet-level). Tri-state — true means .glb was last exported before
+    // the ROUND 14 cutoff (2026-06-22 10:40 UTC); false = fresh; null =
+    // unknown (mtime probe still in flight, or no GLB at all). Probe lazily
+    // populates per-tab in sessionStorage and pulses _backgroundRender on
+    // resolve, so the chip appears in-place without a viewport jump.
+    glb3dStale: (code) => { try { return _glb3dStale(code); } catch (e) { return null; } },
     markAllCabinetsSeen: (pk) => { try { markAllCabinetsSeen('assemble', pk); render(); } catch (e) {} },
     // Admin "Edit Link": point a NO-PDF node at another code's drawing (live).
     isAdmin,
