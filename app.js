@@ -2928,6 +2928,9 @@ async function _kdOpen3D(code, opts) {
       let maxY = 0, centerX = 0, centerZ = 0, mc = 0;
       u.node.traverse(nd => {
         if (!nd.isMesh || !nd.geometry) return;
+        // Skip mis-placed/hidden bodies — don't label a part that isn't shown.
+        if (nd.userData && nd.userData.isOrphan) return;
+        if (!nd.visible) return;
         if (!nd.geometry.boundingBox) try { nd.geometry.computeBoundingBox(); } catch {}
         const bb = nd.geometry.boundingBox;
         if (!bb) return;
@@ -2936,7 +2939,8 @@ async function _kdOpen3D(code, opts) {
         centerX += (bb.min.x + bb.max.x) / 2;
         centerZ += (bb.min.z + bb.max.z) / 2;
       });
-      if (mc > 0) { centerX /= mc; centerZ /= mc; }
+      if (mc === 0) continue; // no visible body in this unit → no label
+      centerX /= mc; centerZ /= mc;
       labelInfos.push({ text, centerX, centerZ, y: maxY + labelH * 0.8, unit: u });
     }
     // Collision avoidance: bump overlapping labels upward
@@ -3228,16 +3232,23 @@ async function _kdOpen3D(code, opts) {
       dimsCached = true;
     }
 
-    // ── Outlier filter (RD 07 2026-06-22) ───────────────────────────────────
-    // Fusion 31's _parts.glb sometimes ships a few orphan leaf nodes parked at
-    // (0,0,0) instead of their assembled world transform (deep-nested
-    // occurrence bug). Those outliers blow up the auto-framing bbox so the
-    // main cluster looks tiny. Workaround: per-mesh centroids → median
-    // distance → meshes >3× median = orphan → camera fits the NON-orphan
-    // cluster. Orphans stay VISIBLE (so เอ๋ can see they exist) but don't
-    // drag the camera framing.
-    // Only runs on multi-leaf scenes (at least 4 meshes) so the main GLB
-    // (1-leaf assembled) and part view (filtered to 1 part) aren't affected.
+    // ── Robust outlier filter (RD 08 2026-06-22) ────────────────────────────
+    // Some project GLBs ship a few leaf nodes whose Fusion-export transform
+    // landed far from the assembled cluster (e.g. 1LLVO4-05000L: BXXTR0 ×4,
+    // BK1DN1, SD0SUP all 0.8-1.6m from a cabinet whose real envelope is only
+    // ~0.5-0.76m). At explode 0% those bodies show SCATTERED even though the
+    // explode math is correct — the GLB itself stores them mis-placed. The
+    // real fix is a Fusion re-export, but until then we HIDE the mis-placed
+    // bodies so the default assembled view reads as a clean cabinet.
+    //
+    // Detection is ROBUST (median-of-centroids center + MAD), not mean-based:
+    // a mean center is itself dragged out by the outliers, and the old
+    // ">3× median-distance" rule caught NOTHING here (median 503mm, 3× = 2391
+    // > the 1562mm furthest part). We use median-center, then flag a body when
+    // its distance exceeds medianDist + 2.5·MAD. GATED so a clean cabinet is
+    // untouched: only activates when a genuine far-outlier exists (max dist >
+    // 1.5× threshold) and never hides more than 25% of bodies.
+    // Hidden bodies remain in explodeUnits (toggleable in the browser panel).
     if (!partView && !_initialFitDone) {
       const meshList = [];
       threeScene.traverse(n => {
@@ -3253,24 +3264,37 @@ async function _kdOpen3D(code, opts) {
         });
       });
       if (meshList.length >= 4) {
-        let sx = 0, sy = 0, sz = 0;
-        for (const m of meshList) { sx += m.cx; sy += m.cy; sz += m.cz; }
-        const k = meshList.length;
-        const sceneCx = sx / k, sceneCy = sy / k, sceneCz = sz / k;
+        const _median = (arr) => {
+          const s = [...arr].sort((a, b) => a - b);
+          return s.length ? s[Math.floor(s.length / 2)] : 0;
+        };
+        // Robust center = component-wise median centroid (outlier-resistant).
+        const medCx = _median(meshList.map(m => m.cx));
+        const medCy = _median(meshList.map(m => m.cy));
+        const medCz = _median(meshList.map(m => m.cz));
         const dists = meshList.map(m => {
-          const dx = m.cx - sceneCx, dy = m.cy - sceneCy, dz = m.cz - sceneCz;
+          const dx = m.cx - medCx, dy = m.cy - medCy, dz = m.cz - medCz;
           return Math.sqrt(dx * dx + dy * dy + dz * dz);
         });
-        const sorted = [...dists].sort((a, b) => a - b);
-        const median = sorted[Math.floor(sorted.length / 2)] || 0;
+        const medD = _median(dists);
+        const mad = _median(dists.map(d => Math.abs(d - medD)));
+        const threshold = medD + 2.5 * mad;
+        const maxD = Math.max(...dists);
+        // Strays = parts beyond medianDist + 2.5·MAD. We do NOT hide them
+        // (hiding wrongly removes real cabinets from multi-cabinet projects
+        // like 02 Ruth, where every cabinet is a legit "outlier" from the
+        // kitchen-center). Strays are kept VISIBLE; they only inform camera
+        // framing — and only when the inlier cluster is cabinet-sized, so a
+        // whole-kitchen project is never cropped.
+        const active = medD > 0 && mad > 0 && maxD > 1.5 * threshold;
         _orphanCount = 0;
         let cnX = Infinity, cnY = Infinity, cnZ = Infinity;
         let cxX = -Infinity, cxY = -Infinity, cxZ = -Infinity;
         let cSumX = 0, cSumY = 0, cSumZ = 0, cN = 0;
         for (let i = 0; i < meshList.length; i++) {
-          const isOrphan = median > 0 && dists[i] > 3 * median;
-          meshList[i].mesh.userData.isOrphan = isOrphan;
-          if (isOrphan) { meshList[i].mesh.visible = false; _orphanCount++; continue; }
+          const isStray = active && dists[i] > threshold;
+          meshList[i].mesh.userData.isOrphan = isStray;  // tagged, NOT hidden
+          if (isStray) { _orphanCount++; continue; }
           const bb = meshList[i].bb;
           if (bb.min.x < cnX) cnX = bb.min.x; if (bb.min.y < cnY) cnY = bb.min.y; if (bb.min.z < cnZ) cnZ = bb.min.z;
           if (bb.max.x > cxX) cxX = bb.max.x; if (bb.max.y > cxY) cxY = bb.max.y; if (bb.max.z > cxZ) cxZ = bb.max.z;
@@ -3286,45 +3310,19 @@ async function _kdOpen3D(code, opts) {
             console.info(`[kd3d] ${reason}`);
           } catch (e) { console.warn('[kd3d] camera-fit failed', e); }
         };
-        if (_orphanCount > 0 && cN > 0) {
-          const tcx = cSumX / cN, tcy = cSumY / cN, tcz = cSumZ / cN;
-          const maxExt = Math.max(cxX - cnX, cxY - cnY, cxZ - cnZ);
-          _reframeTo(tcx, tcy, tcz, maxExt,
-            `outlier filter: ${_orphanCount}/${meshList.length} orphan(s) — camera fit to cluster`);
-        } else if (_orphanCount === 0 && meshList.length >= 8) {
-          const P85_IDX = Math.floor(sorted.length * 0.85) - 1;
-          const pThresh = sorted[Math.max(0, P85_IDX)];
-          let pnX = Infinity, pnY = Infinity, pnZ = Infinity;
-          let pxX = -Infinity, pxY = -Infinity, pxZ = -Infinity;
-          let pSumX = 0, pSumY = 0, pSumZ = 0, pN = 0;
-          for (let i = 0; i < meshList.length; i++) {
-            if (dists[i] <= pThresh) {
-              const pbb = meshList[i].bb;
-              if (pbb.min.x < pnX) pnX = pbb.min.x; if (pbb.min.y < pnY) pnY = pbb.min.y; if (pbb.min.z < pnZ) pnZ = pbb.min.z;
-              if (pbb.max.x > pxX) pxX = pbb.max.x; if (pbb.max.y > pxY) pxY = pbb.max.y; if (pbb.max.z > pxZ) pxZ = pbb.max.z;
-              pSumX += meshList[i].cx; pSumY += meshList[i].cy; pSumZ += meshList[i].cz; pN++;
-            }
-          }
-          if (pN > 0) {
-            const fullMax = Math.max(cxX - cnX, cxY - cnY, cxZ - cnZ);
-            const innerMax = Math.max(pxX - pnX, pxY - pnY, pxZ - pnZ);
-            if (innerMax > 0 && innerMax < 0.75 * fullMax) {
-              _reframeTo(pSumX / pN, pSumY / pN, pSumZ / pN, innerMax,
-                `percentile fit: inner 85% bbox ${Math.round(innerMax)}mm vs full ${Math.round(fullMax)}mm — camera tightened`);
-            }
-          }
+        const inlierExt = (cN > 0)
+          ? Math.max(cxX - cnX, cxY - cnY, cxZ - cnZ) : Infinity;
+        // Reframe to the inlier cluster ONLY when it is cabinet-sized (<1.5m):
+        // crops a single broken cabinet's stray bodies out of the default
+        // frame without touching whole-kitchen projects (inlier spans metres).
+        if (_orphanCount > 0 && cN > 0 && inlierExt < 1500) {
+          _reframeTo(cSumX / cN, cSumY / cN, cSumZ / cN, inlierExt,
+            `outlier filter: ${_orphanCount}/${meshList.length} stray body(ies) ` +
+            `(medD=${Math.round(medD)} MAD=${Math.round(mad)} thr=${Math.round(threshold)} ` +
+            `inlierExt=${Math.round(inlierExt)}) — camera fit to cabinet cluster`);
         }
         // One-shot per modal session (don't snap camera on every mode swap).
         _initialFitDone = true;
-        // Optional debug chip — surface the orphan count on the explode bar
-        // (reuses the existing slot so workers see it in mode 5).
-        const info = body.querySelector('.kd3d-explode-info');
-        if (info && _orphanCount > 0) {
-          const existing = info.textContent || '';
-          if (!existing.includes('orphan')) {
-            info.textContent = `${existing} · ⚠ ${_orphanCount} orphan${_orphanCount === 1 ? '' : 's'}`;
-          }
-        }
       }
     }
     if (_populateBrowserFn) _populateBrowserFn();
@@ -3604,26 +3602,16 @@ async function _kdOpen3D(code, opts) {
       }
     });
     if (mode === 'explode') {
-      const target = explodePct || 40;
+      // Default to ASSEMBLED (0%) on entering explode mode. The slider is the
+      // interactive control — the cabinet separates only as เอ๋ drags it out
+      // (เอ๋ "view เริ่มต้นทำไมยังแตกอยู่" — no auto-explode on open). Labels
+      // build once; applyExplode(0) seats every part at its assembled base.
       explodePct = 0;
       if (slider) slider.value = 0;
       if (sliderVal) sliderVal.textContent = '0%';
       applyExplode(0);
       _buildExplodeLabels();
-      const dur = 600;
-      const t0anim = performance.now();
-      const _animExplode = (now) => {
-        const t = Math.min((now - t0anim) / dur, 1);
-        const ease = t * (2 - t);
-        const pct = Math.round(ease * target);
-        explodePct = pct;
-        if (slider) slider.value = pct;
-        if (sliderVal) sliderVal.textContent = pct + '%';
-        applyExplode(pct);
-        if (t < 1) requestAnimationFrame(_animExplode);
-        else try { localStorage.setItem(EXPLODE_KEY, String(explodePct)); } catch {}
-      };
-      requestAnimationFrame(_animExplode);
+      try { localStorage.setItem(EXPLODE_KEY, '0'); } catch {}
     } else {
       resetExplode();
       _cleanupExplodeLabels();
