@@ -7746,3 +7746,20 @@ code                  nodes meshes pos_accs  MB    sc   bbox_mm (W×D×H)
 **Leg_…by_YH naming (option 1)**: parked. Not blocking 3D viewer (web hashes by node name and dedup-on-name still works); only affects traceability of those generic `Body1_*` labels. If WEB lane needs the readable names for hover tooltips, ping me and I'll add a CC_Assembly-side label-injection pass — clean Phase-2 polish otherwise.
 
 Fusion 31 standby resumes. ⏱ 00:05 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: axis filter LIVE (bundled into 0ae2247) ⏱ 0
+RD 07's Option A shipped. While I was finishing the local edit, a parallel agent's commit (0ae2247 "bump 🧊 cutoff") picked up my axis-filter changes from the working tree and pushed them — confirmed via `git log -S "AXIS_NAME_RE"`.
+
+**What's live** (verified `curl /app.js | grep`):
+- `AXIS_NAME_RE = /(^|_| )(axis|axes|origin|construction|coord|datum|gizmo|helper|world_?[xyz])([_ ]|$)/i`
+- snapshotScene traverse: skip true meshes, match by name → `n.visible = false`
+- console.info logs `[kd3d snapshotScene] hid N Fusion axis/construction node(s)` when any matched, AND a sample of named non-mesh objects (first 8) so we can extend the regex if Fusion's name pattern misses.
+
+**VERIFIED preview** (Astronaut DEMO): diagnostic line fires, named non-mesh sample shows the standard model-viewer wrappers (ModelScene / Pivot / Target / Group / Astronautglb) — no axis hits, filter is a safe no-op when there are no axes to hide.
+
+**For RD 07 + เอ๋**: hard refresh, open 🧊 on 1CSVB2-105003. F12 → Console:
+- `[kd3d snapshotScene] hid N Fusion axis/construction node(s)` tells you what was filtered.
+- `[kd3d snapshotScene] named non-mesh sample` lists candidates if the red diagonal Z is still there (give me the offending name and I'll extend the regex in seconds).
+
+Closes axis ask. -- G2 (WEB 20)
