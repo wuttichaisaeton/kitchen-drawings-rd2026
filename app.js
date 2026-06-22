@@ -2920,7 +2920,8 @@ async function _kdOpen3D(code, opts) {
     for (let i = 0; i < explodeUnits.length; i++) {
       const u = explodeUnits[i];
       const raw = u.node.name || '';
-      const text = _extractPartLabel(raw) || ('Part ' + (i + 1));
+      const text = _extractPartLabel(raw);
+      if (!text || !dxfsForMasterCode(text).length) continue;
 
       let maxY = 0, centerX = 0, centerZ = 0, mc = 0;
       u.node.traverse(nd => {
@@ -3245,7 +3246,7 @@ async function _kdOpen3D(code, opts) {
         for (let i = 0; i < meshList.length; i++) {
           const isOrphan = median > 0 && dists[i] > 3 * median;
           meshList[i].mesh.userData.isOrphan = isOrphan;
-          if (isOrphan) { _orphanCount++; continue; }
+          if (isOrphan) { meshList[i].mesh.visible = false; _orphanCount++; continue; }
           const bb = meshList[i].bb;
           if (bb.min.x < cnX) cnX = bb.min.x; if (bb.min.y < cnY) cnY = bb.min.y; if (bb.min.z < cnZ) cnZ = bb.min.z;
           if (bb.max.x > cxX) cxX = bb.max.x; if (bb.max.y > cxY) cxY = bb.max.y; if (bb.max.z > cxZ) cxZ = bb.max.z;
