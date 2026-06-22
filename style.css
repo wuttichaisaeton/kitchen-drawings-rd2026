@@ -5146,6 +5146,10 @@ html[data-theme="sketch"] .master-header .master-meta,
 html[data-theme="sketch"] .master-header .master-toggle {
   color: #000000 !important;
 }
+html[data-theme="sketch"] .kme-tree-done,
+html[data-theme="sketch"] .kme-tree-3d {
+  color: #000000 !important;
+}
 
 /* Modal boxes + backdrops — DOUBLED class to out-rank the blanket reset (the
    reset's :not() chain carries (b2,c5) specificity, so the single-class surface
@@ -6291,8 +6295,10 @@ html[data-theme="chalk"]  .kme-tree-col-head {
   background-color: var(--fam-head, #555) !important;
 }
 html[data-theme="sketch"] .kme-tree-col-head .kme-tree-col-name,
+html[data-theme="sketch"] .kme-tree-col-head .kme-tree-col-count {
+  color: #000 !important;
+}
 html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-name,
-html[data-theme="sketch"] .kme-tree-col-head .kme-tree-col-count,
 html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-count {
   color: #fff !important;
 }
