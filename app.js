@@ -3308,12 +3308,28 @@ async function _kdOpen3D(code, opts) {
             else if (hx == null || (Math.abs(pc.x - hx) < tol && Math.abs(pc.y - hy) < tol)) {
               cxs = pc.x; cys = pc.y;
               on = pc.x > -0.3 * vw && pc.x < 1.3 * vw && pc.y > -0.3 * vh && pc.y < 1.3 * vh;
-              if (on) {   // 8 AABB corners → screen-X extent (the silhouette edges)
-                const mn = box.min, mx = box.max; minX = Infinity; maxX = -Infinity;
-                for (const X of [mn.x, mx.x]) for (const Y of [mn.y, mx.y]) for (const Z of [mn.z, mx.z]) {
-                  const p = proj(X, Y, Z);
-                  if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+              if (on) {
+                // Project the 8 AABB corners, then intersect the box silhouette
+                // with the HORIZONTAL line at the centroid's screen-Y, so the
+                // arrow lands EXACTLY on the part's edge at mid-height (เอ๋
+                // "ลูกศรต้องชี้อยู่ที่เส้นขอบเท่านั้น") — not on a stray corner in
+                // empty space. If the line misses the box → no arrow ("ลูกศรเปล่า
+                // ไม่ต้องโชว์").
+                const mn = box.min, mx = box.max, cor = [];
+                for (let bi = 0; bi < 8; bi++) {
+                  cor.push(proj((bi & 1) ? mx.x : mn.x, (bi & 2) ? mx.y : mn.y, (bi & 4) ? mx.z : mn.z));
                 }
+                minX = Infinity; maxX = -Infinity;
+                for (let bi = 0; bi < 8; bi++) for (let b = 0; b < 3; b++) {
+                  if (bi & (1 << b)) continue;
+                  const a = cor[bi], d = cor[bi | (1 << b)], dy = d.y - a.y;
+                  if ((a.y <= cys && d.y >= cys) || (a.y >= cys && d.y <= cys)) {
+                    const t = Math.abs(dy) < 1e-6 ? 0 : (cys - a.y) / dy;
+                    const x = a.x + t * (d.x - a.x);
+                    if (x < minX) minX = x; if (x > maxX) maxX = x;
+                  }
+                }
+                if (minX === Infinity) on = false;   // scanline misses the box → no arrow
               }
               handled = true;
             }
@@ -3379,10 +3395,11 @@ async function _kdOpen3D(code, opts) {
       const rb = r.rowEl.getBoundingClientRect();
       const ry = rb.top + rb.height / 2 - vb.top;
       const rx = (r.side === 'R') ? (rb.left - vb.left) : (rb.right - vb.left);
-      // Only draw when the part edge is on the OUTER side of the label's inner
-      // edge — otherwise the horizontal leader would run back through the text
-      // (เอ๋ "เส้นชี้ห้ามทับตัวอักษร"). The label sits right beside such a part.
-      const outOK = (r.side === 'R') ? (r._tx < rx - 2) : (r._tx > rx + 2);
+      // Only draw when the part edge is clearly on the OUTER side of the label's
+      // inner edge — otherwise the horizontal leader would run back through the
+      // text, or be a stub bare-arrow (เอ๋ "เส้นชี้ห้ามทับตัวอักษร" + "ลูกศรเปล่า
+      // ไม่ต้องโชว์"). The label sits right beside such a part anyway.
+      const outOK = (r.side === 'R') ? (r._tx < rx - 8) : (r._tx > rx + 8);
       if (!outOK) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
       r.lineEl.setAttribute('stroke-opacity', '1');
       r.lineEl.setAttribute('x1', rx); r.lineEl.setAttribute('y1', ry);
