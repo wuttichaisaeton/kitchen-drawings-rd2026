@@ -2246,11 +2246,9 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-ovl-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
     .kd3d-modal .kd3d-ovl-leader{stroke-width:1.4;fill:none}
-    .kd3d-modal .kd3d-ovl-col{position:absolute;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:6px;max-width:42%;padding:10px 0}
-    .kd3d-modal .kd3d-ovl-col-left{left:0;align-items:flex-start}
-    .kd3d-modal .kd3d-ovl-col-right{right:0;align-items:flex-end}
-    .kd3d-modal .kd3d-ovl-row{display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:1px 8px;letter-spacing:.2px}
-    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{flex-direction:row}
+    .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:1px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease}
+    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-left{left:0}
+    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{right:0}
     .kd3d-modal .kd3d-ovl-qty{font-weight:700;font-size:16px}
     .kd3d-modal .kd3d-ovl-code{font-weight:400;font-size:13px}
     .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
@@ -3189,24 +3187,27 @@ async function _kdOpen3D(code, opts) {
     tri.setAttribute('d', 'M0,0 L7,3.5 L0,7 Z');
     tri.setAttribute('fill', labelFill);
     marker.appendChild(tri); defs.appendChild(marker); _ovlSvg.appendChild(defs);
-    _ovlColL = document.createElement('div'); _ovlColL.className = 'kd3d-ovl-col kd3d-ovl-col-left';
-    _ovlColR = document.createElement('div'); _ovlColR.className = 'kd3d-ovl-col kd3d-ovl-col-right';
+    // Rows are ABSOLUTELY positioned in the overlay (not flex columns) so the
+    // live layout pass can move each label up/down AND switch its side to follow
+    // its part — keeping leaders horizontal and never crossing (เอ๋ 2026-06-22:
+    // "Label อยู่กลาง Part, เส้นชี้ Horizontal, หมุนภาพแล้ววิ่งขึ้นลง ซ้ายขวา auto").
+    _ovlColL = _ovlColR = null;
     _ovlRoot.appendChild(_ovlSvg);
-    _ovlRoot.appendChild(_ovlColL);
-    _ovlRoot.appendChild(_ovlColR);
     (viewerBox || body).appendChild(_ovlRoot);
+    const _seedStep = 34;  // generous initial row spacing (เอ๋ "ห่างกว่านี้ได้")
 
     _ovlRows = [];
     let idx = 0;
-    const _mkRow = (a, colEl, side) => {
+    const _mkRow = (a, side, top0) => {
       const qty = String(countByCode.get(a.text) || 1);
       const row = document.createElement('div');
       row.className = 'kd3d-ovl-row kd3d-ovl-' + (side === 'L' ? 'left' : 'right');
+      row.style.top = top0 + 'px';
       // "N x CODE" — qty bold + slightly bigger, code regular.
       const qtyEl = document.createElement('span'); qtyEl.className = 'kd3d-ovl-qty'; qtyEl.textContent = qty;
       const codeEl = document.createElement('span'); codeEl.className = 'kd3d-ovl-code'; codeEl.textContent = ' x ' + a.text;
       row.appendChild(qtyEl); row.appendChild(codeEl);
-      colEl.appendChild(row);
+      _ovlRoot.appendChild(row);
       // Hotspot slot at the part's CURRENT centroid (assembled at build time).
       const hsId = 'kd' + (idx++);
       const c0 = _unitCurrentCentroid(a.unit, (explodePct / 100) * 1.5);
@@ -3227,8 +3228,8 @@ async function _kdOpen3D(code, opts) {
       _ovlSvg.appendChild(lineEl);
       _ovlRows.push({ code: a.text, qty, side, rowEl: row, lineEl, unit: a.unit, hsEl: hs });
     };
-    for (const a of leftRows)  _mkRow(a, _ovlColL, 'L');
-    for (const a of rightRows) _mkRow(a, _ovlColR, 'R');
+    leftRows.forEach((a, i)  => _mkRow(a, 'L', 14 + i * _seedStep));
+    rightRows.forEach((a, i) => _mkRow(a, 'R', 14 + i * _seedStep));
 
     // Hide overlay until explode > 5% (mirrors the old sprite gating).
     _ovlRoot.style.display = (explodePct > 5) ? '' : 'none';
@@ -3252,52 +3253,140 @@ async function _kdOpen3D(code, opts) {
     _ovlRaf = requestAnimationFrame(() => { _ovlRaf = 0; _updateExplodeLeaders(); });
   };
 
-  // Redraw every leader: from the fixed row's inner edge to the part's live
-  // hotspot screen point. The text rows DON'T move; only the SVG endpoints do.
-  // Right column → leader exits the row's LEFT edge; left column → RIGHT edge,
-  // so the line never crosses the text (เอ๋ "เส้นชี้ห้ามทับตัวอักษร").
+  // ── Overlay layout: auto side + vertical declutter (เอ๋ 2026-06-22) ────────
+  // IDEAL (เอ๋): each label sits at its part's MID-HEIGHT so the leader is a
+  // HORIZONTAL line; the label goes to the LEFT or RIGHT column depending on
+  // which side of the viewer the part is on; on orbit the labels run up/down +
+  // swap sides automatically. We seat each row at the part's screen-Y, choose
+  // side by the part's screen-X (hysteresis to stop edge flicker), then within
+  // each column SORT by screen-Y and PUSH ROWS APART (generous gap) so leaders
+  // never cross and labels never overlap.
+  const _OVL_GAP = 14;   // min blank space between stacked rows
+  const _OVL_PAD = 10;   // top/bottom inset inside the viewer
+  const _layoutOverlayRows = (vb) => {
+    const vw = vb.width, vh = vb.height, cx = vw / 2;
+    let rowH = 20;
+    for (const r of _ovlRows) { const h = r.rowEl.getBoundingClientRect().height; if (h) { rowH = h; break; } }
+    const step = rowH + _OVL_GAP;
+    const hyst = Math.max(10, vw * 0.02);   // small dead-band: side follows the part
+    const factor = (explodePct / 100) * 1.5;
+    // World-correct projection via model-viewer's THREE camera (handles every
+    // model/explode transform). Box3.setFromObject gives each part's CURRENT
+    // world AABB; we point the arrow at its NEAR silhouette edge (the side
+    // facing the label) at mid-height — เอ๋ "ลูกศรอยู่กลาง+ขอบของ Part". When no
+    // camera is exposed, fall back to the model-viewer hotspot (centroid only).
+    const cam = _ovlThree ? _findCamera() : null;
+    const box = cam ? new _ovlThree.Box3() : null;
+    const tmp = cam ? new _ovlThree.Vector3() : null;
+    const proj = (wx, wy, wz) => {
+      const v = new _ovlThree.Vector3(wx, wy, wz).project(cam);
+      return { x: (v.x * 0.5 + 0.5) * vw, y: (-v.y * 0.5 + 0.5) * vh, vis: v.z > -1 && v.z < 1 };
+    };
+    for (const r of _ovlRows) {
+      let on = false, cxs = null, cys = null, minX = null, maxX = null;
+      // Render-space anchor from the model-viewer hotspot (proven correct — this
+      // is what drew the leaders เอ๋ already accepted).
+      let hx = null, hy = null, hOn = false;
+      const hb = r.hsEl ? r.hsEl.getBoundingClientRect() : null;
+      if (hb && (hb.width || hb.height || hb.left || hb.top)) {
+        hx = hb.left + hb.width / 2 - vb.left;
+        hy = hb.top + hb.height / 2 - vb.top;
+        hOn = hx > -0.3 * vw && hx < 1.3 * vw && hy > -0.3 * vh && hy < 1.3 * vh;
+      }
+      // THREE projection adds the silhouette EDGE + a real behind-camera test —
+      // but only TRUST it when it AGREES with the hotspot (same render space);
+      // otherwise fall back to the hotspot centroid so we never regress.
+      let handled = false;
+      if (cam && r.unit && r.unit.node) {
+        try {
+          box.setFromObject(r.unit.node);
+          if (!box.isEmpty()) {
+            const c = box.getCenter(tmp);
+            const pc = proj(c.x, c.y, c.z);
+            const tol = Math.max(50, vw * 0.08);
+            if (!pc.vis) { on = false; handled = true; }   // behind camera → no leader
+            else if (hx == null || (Math.abs(pc.x - hx) < tol && Math.abs(pc.y - hy) < tol)) {
+              cxs = pc.x; cys = pc.y;
+              on = pc.x > -0.3 * vw && pc.x < 1.3 * vw && pc.y > -0.3 * vh && pc.y < 1.3 * vh;
+              if (on) {   // 8 AABB corners → screen-X extent (the silhouette edges)
+                const mn = box.min, mx = box.max; minX = Infinity; maxX = -Infinity;
+                for (const X of [mn.x, mx.x]) for (const Y of [mn.y, mx.y]) for (const Z of [mn.z, mx.z]) {
+                  const p = proj(X, Y, Z);
+                  if (p.x < minX) minX = p.x; if (p.x > maxX) maxX = p.x;
+                }
+              }
+              handled = true;
+            }
+          }
+        } catch {}
+      }
+      if (!handled) { cxs = hx; cys = hy; on = hOn; minX = maxX = hx; }   // hotspot centroid (no edge)
+      // Side from centroid X — fresh when the part (re)appears, else damped so it
+      // only flips when the part is clearly past centre (no cross-model leader).
+      if (on) {
+        if (!r._wasOn) r.side = (cxs < cx) ? 'L' : 'R';
+        else if (r.side === 'L' && cxs > cx + hyst) r.side = 'R';
+        else if (r.side === 'R' && cxs < cx - hyst) r.side = 'L';
+        else if (r.side !== 'L' && r.side !== 'R') r.side = (cxs < cx) ? 'L' : 'R';
+      }
+      r._wasOn = on; r._on = on; r._ty = on ? cys : null;
+      r._tx = on ? ((r.side === 'L') ? minX : maxX) : null;   // near edge facing the label
+    }
+    // 2) per side: lay out only VISIBLE rows. Sort by part-Y, seat at part
+    //    mid-height (→ horizontal leader), push apart so none overlap, clamp into
+    //    the viewer. Off-screen parts' labels are hidden (no orphan text).
+    for (const sideKey of ['L', 'R']) {
+      const col = _ovlRows.filter(r => r.side === sideKey && r._on && r._ty != null);
+      col.sort((a, b) => (a._ty - b._ty) || ((a._tx || 0) - (b._tx || 0)));
+      const n = col.length;
+      for (const r of col) r._top = Math.max(_OVL_PAD, Math.min(vh - rowH - _OVL_PAD, r._ty - rowH / 2));
+      const avail = vh - rowH - 2 * _OVL_PAD;
+      const fitStep = (n > 1) ? Math.min(step, avail / (n - 1)) : step;   // shrink only if truly crowded
+      for (let i = 1; i < n; i++) if (col[i]._top < col[i - 1]._top + fitStep) col[i]._top = col[i - 1]._top + fitStep;
+      const over = n ? (col[n - 1]._top + rowH + _OVL_PAD - vh) : 0;
+      if (over > 0) for (const r of col) r._top -= over;                  // uniform shift up (keeps spacing)
+      if (n && col[0]._top < _OVL_PAD) { const d = _OVL_PAD - col[0]._top; for (const r of col) r._top += d; }  // uniform shift down (no overlap reintroduced)
+      for (const r of col) {
+        r.rowEl.style.opacity = '1';
+        r.rowEl.style.top = r._top + 'px';
+        if (sideKey === 'L') { r.rowEl.style.left = '0px'; r.rowEl.style.right = ''; r.rowEl.classList.add('kd3d-ovl-left'); r.rowEl.classList.remove('kd3d-ovl-right'); }
+        else { r.rowEl.style.right = '0px'; r.rowEl.style.left = ''; r.rowEl.classList.add('kd3d-ovl-right'); r.rowEl.classList.remove('kd3d-ovl-left'); }
+      }
+    }
+    for (const r of _ovlRows) if (!r._on || r._ty == null) r.rowEl.style.opacity = '0';
+  };
+
+  // Redraw every leader: layout first (rows seat at part mid-height + may switch
+  // side), then draw from each row's inner edge (the side facing the model) to
+  // its part's live screen point — a horizontal line when nothing crowds it. A
+  // part that can't be pointed at (off-screen / behind camera) gets NO leader
+  // (เอ๋ "ชี้ไม่ได้ ไม่ต้องชี้"). Leader exits the edge AWAY from the text so it
+  // never crosses the label (เอ๋ "เส้นชี้ห้ามทับตัวอักษร").
   const _updateExplodeLeaders = () => {
     if (!_ovlRoot || !_ovlSvg) return;
     const viewer = body.querySelector('.kd3d-viewer');
     if (!viewer) return;
     const vb = viewer.getBoundingClientRect();
-    // Keep the SVG sized to the viewer.
     _ovlSvg.setAttribute('width', vb.width);
     _ovlSvg.setAttribute('height', vb.height);
     _ovlSvg.setAttribute('viewBox', `0 0 ${vb.width} ${vb.height}`);
     const visible = (explodePct > 5);
     _ovlRoot.style.display = visible ? '' : 'none';
     if (!visible) return;
-    for (const r of _ovlRows) {
-      const hb = r.hsEl ? r.hsEl.getBoundingClientRect() : null;
+    _layoutOverlayRows(vb);   // writes every row's top + side
+    for (const r of _ovlRows) {   // reads row rects (post-layout) + draws
+      if (!r._on || r._tx == null) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
       const rb = r.rowEl.getBoundingClientRect();
-      // Part end = hotspot centre (relative to viewer). model-viewer keeps the
-      // slot at width/height 0, so its rect centre is the projected point.
-      let px, py, onScreen = false;
-      if (hb && (hb.width || hb.height || hb.left || hb.top)) {
-        px = hb.left + hb.width / 2 - vb.left;
-        py = hb.top + hb.height / 2 - vb.top;
-        // model-viewer hides a hotspot behind the camera by translating it far
-        // off; clamp the "is it inside the viewer" check loosely.
-        onScreen = px > -2000 && px < vb.width + 2000 && py > -2000 && py < vb.height + 2000;
-      }
-      // Fallback: if the hotspot rect is unusable (model-viewer hasn't laid it
-      // out, or a browser collapsed the 0×0 box), project the part's live
-      // centroid through the THREE camera directly so the leader still draws.
-      if (!onScreen && _ovlThree && r.unit) {
-        try {
-          const factor = (explodePct / 100) * 1.5;
-          const p = _projectToViewer(_ovlThree, _unitCurrentCentroid(r.unit, factor));
-          if (p && p.vis) { px = p.x; py = p.y; onScreen = true; }
-        } catch {}
-      }
-      // Row inner edge (the side facing the model).
       const ry = rb.top + rb.height / 2 - vb.top;
       const rx = (r.side === 'R') ? (rb.left - vb.left) : (rb.right - vb.left);
-      if (!onScreen) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
+      // Only draw when the part edge is on the OUTER side of the label's inner
+      // edge — otherwise the horizontal leader would run back through the text
+      // (เอ๋ "เส้นชี้ห้ามทับตัวอักษร"). The label sits right beside such a part.
+      const outOK = (r.side === 'R') ? (r._tx < rx - 2) : (r._tx > rx + 2);
+      if (!outOK) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
       r.lineEl.setAttribute('stroke-opacity', '1');
       r.lineEl.setAttribute('x1', rx); r.lineEl.setAttribute('y1', ry);
-      r.lineEl.setAttribute('x2', px); r.lineEl.setAttribute('y2', py);
+      r.lineEl.setAttribute('x2', r._tx); r.lineEl.setAttribute('y2', r._ty);
     }
   };
 
