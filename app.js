@@ -3067,7 +3067,7 @@ async function _kdOpen3D(code, opts) {
       });
       if (mc === 0) continue; // no visible body in this unit → no label
       centerX /= mc; centerY /= mc; centerZ /= mc;
-      const y = maxY + labelH * 0.6;   // เอ๋ 2026-06-22: underline anchor (label extends UP from here via sprite.center=0,0)
+      const y = maxY + labelH * 1.1;   // เอ๋ 2026-06-22: label further OUT so every label has a leader
       const prev = byCode.get(text);
       if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerY, centerZ, y, top: maxY, unit: u });
     }
@@ -3114,17 +3114,17 @@ async function _kdOpen3D(code, opts) {
       const textW = qw + rw;
       const ulLW = Math.max(2, Math.round(fontSize * 0.10));
       canvas.width = Math.ceil(textW + pad * 2);
-      canvas.height = Math.ceil(qtyPx * 1.1 + ulLW + pad * 2);
-      const ulY = canvas.height - pad - ulLW / 2;       // underline near the bottom
-      const textCY = ulY - ulLW - qtyPx * 0.5;          // text centre just above the underline
+      canvas.height = Math.ceil(qtyPx * 1.15 + ulLW * 2);
+      const ulY = canvas.height - ulLW;                 // underline at the VERY bottom (= leader anchor)
+      const textCY = ulY - ulLW - qtyPx * 0.52;         // text centre just above the underline
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
       let tx = pad;
       ctx.font = qtyFont; ctx.fillStyle = labelFill; ctx.fillText(qtyPart, tx, textCY); tx += qw;
       ctx.font = codeFont; ctx.fillStyle = labelFill; ctx.fillText(restPart, tx, textCY);
-      // underline under the whole text (เอ๋: ขีดเส้นใต้ตัวอักษร)
-      ctx.beginPath(); ctx.moveTo(1, ulY); ctx.lineTo(pad + textW, ulY);
-      ctx.lineWidth = ulLW; ctx.strokeStyle = labelFill; ctx.lineCap = 'round'; ctx.stroke();
+      // underline from x=0 so its LEFT end = the sprite anchor = leader start (เอ๋: ต่อกับเส้นชี้)
+      ctx.beginPath(); ctx.moveTo(0, ulY); ctx.lineTo(pad + textW, ulY);
+      ctx.lineWidth = ulLW; ctx.strokeStyle = labelFill; ctx.lineCap = 'butt'; ctx.stroke();
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.minFilter = THREE.LinearFilter;
@@ -3135,11 +3135,11 @@ async function _kdOpen3D(code, opts) {
       });
       const sprite = new THREE.Sprite(mat);
       const aspect = canvas.width / canvas.height;
-      const gap = labelH * 0.9;   // horizontal gap from the part → DIAGONAL leader
-      sprite.center.set(0, 0);    // เอ๋: anchor = sprite LOWER-LEFT = underline's left end (camera-robust)
+      const gap = labelH * 1.2;   // horizontal gap from the part → DIAGONAL leader, room for all
+      // เอ๋: anchor sprite.position EXACTLY at the underline's LEFT end so the leader
+      // connects to the underline (center is in sprite-local UV → camera-robust).
+      sprite.center.set(0, (canvas.height - ulY) / canvas.height);
       sprite.scale.set(labelH * aspect, labelH, 1);
-      // lower-left corner (underline left end) sits up-and-right of the part; the
-      // text extends up-and-right from there, the leader drops down-left to the part.
       sprite.position.set(info.centerX + gap, info.y, info.centerZ);
       sprite.visible = explodePct > 5;
       sprite.renderOrder = 999;
@@ -3158,11 +3158,12 @@ async function _kdOpen3D(code, opts) {
       const start = new THREE.Vector3(sprite.position.x, sprite.position.y, sprite.position.z);
       const end = new THREE.Vector3(info.centerX, info.centerY, info.centerZ);
       const dirV = new THREE.Vector3().subVectors(end, start);
-      const len = dirV.length();
-      if (len > labelH * 0.2) {
-        const ndir = dirV.clone().normalize();
-        const r = modelRadius * 0.0007;
-        const headLen = Math.min(len * 0.22, modelRadius * 0.013);
+      const len = Math.max(dirV.length(), labelH * 0.4);
+      {   // เอ๋: EVERY label gets a leader (no skip); BIGGER arrowhead so it's visible
+        const ndir = (dirV.length() > 1e-6 ? dirV.clone().normalize() : new THREE.Vector3(0, -1, 0));
+        const r = modelRadius * 0.0009;
+        const headLen = Math.min(len * 0.32, modelRadius * 0.03);     // arrow length (was *0.013 → disappeared)
+        const headR = Math.max(r * 5, modelRadius * 0.006);           // arrow width — clearly visible
         const shaftLen = Math.max(len - headLen, modelRadius * 0.002);
         const leadMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
         const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), ndir);
@@ -3170,7 +3171,7 @@ async function _kdOpen3D(code, opts) {
         shaft.quaternion.copy(quat);
         shaft.position.copy(start.clone().addScaledVector(ndir, shaftLen / 2));
         shaft.renderOrder = 998;
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(r * 3.4, headLen, 14), leadMat);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(headR, headLen, 16), leadMat);
         cone.quaternion.copy(quat);
         cone.position.copy(end.clone().addScaledVector(ndir, -headLen / 2));  // filled tip at the part
         cone.renderOrder = 998;
