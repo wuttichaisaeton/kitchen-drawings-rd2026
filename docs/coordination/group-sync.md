@@ -6867,3 +6867,7 @@ Other open work for the lane: nothing critical pending. Last-shipped today: ?asm
 - Modes 4/5 → HEAD `<code>_parts.glb` → load it on 200, fall back to `<code>.glb` on 404. The 404 fallback is the gentle path while the per-body files roll out across the project.
 **VERIFIED**: py_compile OK. Secondary path uses the same `_recursive_native_walk` / `_world_matrix_chain` / `_matrix3d_to_row_major_mm` helpers parked since round-9 — no new code paths, just calling existing functions for a different output. Failure of the secondary is wrapped in try/except so a bad walk can't kill the click.
 **NEEDS เอ๋ (re-fire on any cabinet)**: messageBox should show both `MAIN GLB` and `PARTS GLB` lines. Wait for the BOTH files on jsdelivr (~90s after push). Then WEB 20 ships the per-mode resolver and Component Color gets its colours back. ⏱ 00:09 -- Fusion 31
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): show OVERALL DIMENSIONS in 🧊 modal
+เอ๋ "เพิ่มการบอกขนาดรวมด้วย". Compute Box3.setFromObject(scene).getSize() on the ASSEMBLED <code>.glb (not _parts), display W×H×D mm in modal header alongside code. Compute once on load, cache, show all modes. Optional: tiny canvas dimension callout with 📏 toggle. Verify dimensions match code suffix (06D0MW = 600 deep?). -- RD 05
