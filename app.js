@@ -2051,11 +2051,12 @@ function _kd3dPartsGlbUrl(code) {
 // `_backgroundRender()` so the chip materialises without yanking เอ๋'s
 // scroll / editor viewport.
 //
-// Cutoff: 10:40 BKK interpreted as Bangkok local (= 03:40 UTC), 14 min
-// before the r14 batch commit f555a1e landed at 03:54 UTC; the literal
-// "10:40 UTC" the spec requested would flag every just-exported r14 cabinet
-// (commit time 03:54 UTC < 10:40 UTC), defeating the purpose.
-const KD3D_R14_CUTOFF_MS = Date.parse('2026-06-22T03:40:00Z');   // 10:40 BKK
+// Cutoff: 11:00 ICT (= 04:00 UTC), 6 min after the r14 batch commit
+// f555a1e landed at 03:54 UTC and 3 min before `adfa22e` "Update drawings
+// 11:03". An earlier draft used 10:40 BKK / 03:40 UTC but เอ๋ bumped it
+// to 11:00 ICT so cabinets exported in the first wave of r14 still get
+// flagged if any drift since — re-fire 🧊 once more to clear them.
+const KD3D_R14_CUTOFF_MS = Date.parse('2026-06-22T04:00:00Z');   // 11:00 ICT
 const _KD3D_MTIME_LS_KEY = 'kd_glb3d_mtime_v3';                  // v3 = commits API (v1=jsdelivr, v2=ghpages — both broken for mtime)
 const _KD3D_COMMITS_API = 'https://api.github.com/repos/wuttichaisaeton/kitchen-drawings-rd2026/commits';
 let _kd3dMtimeCache = (() => {
@@ -2106,7 +2107,7 @@ function _glb3dStaleChip(code, opts) {
   if (_glb3dStale(code) !== true) return '';
   const cls = (opts && opts.clickable) ? 'sb-recheck sb-recheck-act' : 'sb-recheck';
   const data = (opts && opts.clickable) ? ` data-code="${escapeHtml(code)}" data-act="glb3d"` : '';
-  const tip = `3D model (Drawings/3d/${code}.glb) was last exported before the ROUND 14 cutoff (2026-06-22 10:40 UTC) — re-fire 🧊 Export 3D in Fusion (CC_Auto) on this cabinet to refresh it.`;
+  const tip = `3D model (Drawings/3d/${code}.glb) was last exported before the ROUND 14 cutoff (2026-06-22 11:00 ICT / 04:00 UTC) — re-fire 🧊 Export 3D in Fusion (CC_Auto) on this cabinet to refresh it.`;
   return `<span class="${cls}"${data} title="${escapeHtml(tip)}">🧊 3D outdated</span>`;
 }
 
@@ -2893,6 +2894,42 @@ async function _kdOpen3D(code, opts) {
       }
     });
     console.info(`[kd3d snapshotScene] deepMeshCount=${deepMeshCount} materialSnap=${materialSnap.length} explodeRoot=${explodeRoot?.name || '(unnamed)'} explodeRootChildren=${explodeRoot?.children?.length || 0} explodeUnits=${explodeUnits.length}`, sampleNames);
+
+    // Hide Fusion-imported axis/origin construction lines (RD 07 + เอ๋
+    // "ปรับแกน Z ของ Fusion ให้เหมือนแกน Z ของคุณ"). The "red diagonal Z" เอ๋
+    // sees is a Fusion construction axis exported as a LineSegments/Line/Mesh
+    // in the GLB. Match by name (axis-like keywords) and toggle visibility off.
+    // My own EdgesGeometry overlays are children of meshes (not the scene root)
+    // and have empty names, so they're not affected. Skip true meshes — only
+    // hide helpers / decorative lines matched by name.
+    const AXIS_NAME_RE = /(^|_| )(axis|axes|origin|construction|coord|datum|gizmo|helper|world_?[xyz])([_ ]|$)/i;
+    let axisHits = 0;
+    const axisSample = [];
+    threeScene.traverse(n => {
+      if (n.isMesh) return;
+      if (!n.name) return;
+      if (AXIS_NAME_RE.test(n.name)) {
+        n.visible = false;
+        axisHits++;
+        if (axisSample.length < 4) axisSample.push({ type: n.type, name: n.name });
+      }
+    });
+    if (axisHits > 0) {
+      console.info(`[kd3d snapshotScene] hid ${axisHits} Fusion axis/construction node(s)`, axisSample);
+    }
+    // Also log a sample of NAMED non-mesh objects so RD/เอ๋ can see what
+    // axis-like things are in the scene if the filter above doesn't catch
+    // the offender (Fusion might use a name pattern we don't know yet).
+    const nonMeshSample = [];
+    threeScene.traverse(n => {
+      if (n.isMesh) return;
+      if (!n.name) return;
+      if (nonMeshSample.length < 8) nonMeshSample.push({ type: n.type, name: n.name, visible: n.visible });
+    });
+    if (nonMeshSample.length) {
+      console.info('[kd3d snapshotScene] named non-mesh sample:', nonMeshSample);
+    }
+
     const info = body.querySelector('.kd3d-explode-info');
     if (info) {
       if (explodeUnits.length >= 2) {
