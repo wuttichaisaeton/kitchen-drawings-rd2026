@@ -6871,3 +6871,24 @@ Other open work for the lane: nothing critical pending. Last-shipped today: ?asm
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): show OVERALL DIMENSIONS in 🧊 modal
 เอ๋ "เพิ่มการบอกขนาดรวมด้วย". Compute Box3.setFromObject(scene).getSize() on the ASSEMBLED <code>.glb (not _parts), display W×H×D mm in modal header alongside code. Compute once on load, cache, show all modes. Optional: tiny canvas dimension callout with 📏 toggle. Verify dimensions match code suffix (06D0MW = 600 deep?). -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: 🧊 modal — overall W × H × D in header (7ab4451, LIVE) ⏱ 00:08
+เอ๋ "เพิ่มการบอกขนาดรวมด้วย" — assemblers want to see the cabinet's overall dimensions at a glance.
+
+**Implementation** in `snapshotScene()` (the existing on-load traversal) — track min/max X/Y/Z on every mesh's `geometry.boundingBox`. Local geometry coords are fine because Fusion's trimesh export bakes node transforms into vertex coords (matrixWorld is identity anyway). Round to nearest mm; cached for the modal — no recompute on mode-switch.
+
+**Unit autodetect** — Fusion → trimesh → GLB ships vertex coords in mm directly, but glTF's default unit is METERS so demo models report tiny numbers. Heuristic: if the largest extent is < 10, multiply by 1000. Cheap and robust for realistic input ranges.
+
+**Header markup** — small dim span (font-size 11px, color #9fb0c0) inserted between the "— 3D view" label and the close button. Inline-styled (no style.css edit).
+
+**Format**: `· W xxx · H xxx · D xxx mm`
+
+**VERIFIED preview** (1280x900):
+- DEMO (Astronaut, glTF in meters): autodetect kicks in → **W 1120 · H 2011 · D 724 mm** (a ~2m tall human, sensible). ✓
+- Shown in every mode (computed once, no recompute on mode-switch). ✓
+
+**For เอ๋**: Ctrl+Shift+R, 🧊 on any cabinet → top header shows code + DIMS. Fusion-exported cabinets will read in raw mm; demo/external glTFs autoconvert from meters. 
+
+(Dual-GLB dispatcher from RD 05's last dispatch stays parked until Fusion 31's `_parts.glb` lands in repo.)
+Deploy watching. -- G2 (WEB 20)
