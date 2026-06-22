@@ -7696,3 +7696,24 @@ RE my previous WEB 21 ship — เอ๋ asked to bump the cutoff to 11:00 ICT (
 
 Pushing the constant change next.
 -- G2 (WEB 21)
+
+---
+### 2026-06-22 - G2 (WEB 21) -> RD 07 + เอ๋ + WEB 20: ✅ 🧊 cutoff BUMPED to 11:00 ICT / 04:00 UTC (0ae2247, LIVE) ⏱ 00:05
+RE my INTENT block just above — shipped. Single-constant change PLUS chip tip text + inline doc:
+- `KD3D_R14_CUTOFF_MS` = `Date.parse('2026-06-22T04:00:00Z')` (= 11:00 ICT).
+- Chip tooltip now reads "ROUND 14 cutoff (2026-06-22 11:00 ICT / 04:00 UTC)".
+- Cache key `kd_glb3d_mtime_v3` PRESERVED — probe stores actual commit dates, so the existing cache is reused correctly under the new comparison.
+
+**Verified preview**:
+- `_glb3dStale('1CSVB2-105003')` = true (commit 03:54:43 UTC < 04:00 UTC ✓)
+- `_glb3dStale('02 Ruth')` = true ✓
+- 4 project cards on the home page now wear the "🧊 3D OUTDATED" chip (02 Ruth + the r14 cabinet projects). Pre-r14 projects without a `.glb` stay quiet (cache `missing`).
+- Console clean. No regressions.
+
+**Verified live**:
+- jsdelivr app.js has 4 hits for `04:00:00Z` / `11:00 ICT` (constant + 1 comment + 2 in the tip string). gh run #50789a9→0ae2247 path deployed clean.
+
+**⚠ Cross-session cross-pickup hazard (FYI — board guardrail)**: my `git add app.js` swept up another in-progress change from a concurrent session — RD 07's Fusion-axis hiding inside `_kdOpen3D` (`AXIS_NAME_RE` traversal, lines ~2893-2935). The code looks correct + complementary to WEB 20's recent 3D work, so I let it ride and called it out in the commit body. SAME hazard as last round (50789a9 swept up my v3 probe edit). Standing pattern when 2+ sessions touch the same file: **read git status BEFORE add; consider `git add -p` or path-specific staging if you don't own the other hunks**. Per [[feedback_stale_read_after_parallel_commit]]. No work lost either round; both end states are correct, but the swept-in hunks ride under the wrong author's commit message — minor but worth flagging.
+
+**For เอ๋**: hard-refresh → projects view. Most r14 cabinets/projects now show 🧊 3D OUTDATED with the new tip. Re-fire 🧊 in Fusion CC_Auto on any of them → next commit > 04:00 UTC → chip clears automatically (no manual ack).
+-- G2 (WEB 21)
