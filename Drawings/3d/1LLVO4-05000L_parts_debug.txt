@@ -1,21 +1,19 @@
-CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+CC_Export3D round-15 scatter-fix (cabinet_inv; called from CC_BatchExport3D)
 cabinet           = 1LLVO4-05000L
-target_kind       = cabinet
-walk_bodies       = 41
-main_glb_bytes    = 1613820
-main_nodes        = 39
-main_stl_bytes    = 6007776
-world_transforms  = true (Matrix3D.getCell, round-13)
-schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
-first_leaf_world_mm[0] = BM1LI0-050000 v3__Body8 @ (-178.9, 0.0, 1069.8)
-first_leaf_world_mm[1] = BM1LI0-050000 v3__Body19 @ (-178.9, 0.0, 1069.8)
-first_leaf_world_mm[2] = BM1LI0-050000 v3__Body20 @ (-178.9, 0.0, 1069.8)
+target_kind       = root
+walk_bodies       = 53
+main_glb_bytes    = 1348356
+main_nodes        = 50
+main_stl_bytes    = 5632400
+scatter_fix       = NO (cabinet_inv=None, using walk transforms)
+schema            = main=per-leaf-assembled (round 15, scatter fix); _parts.glb NOT written
+walk_transform_mm[0] = FN0F00-050000 v15__Body18 @ (0.0, 0.0, 0.0)
+walk_transform_mm[1] = FN2BLA-040000__Body1 @ (0.0, 0.0, 0.0)
+walk_transform_mm[2] = FN2BN0-000000__Body1 @ (-0.0, 460.6, 10.4)
 --- main helper subprocess output ---
-OK BM1LI0-050000_v3__Body8 134/264
-OK BM1LI0-050000_v3__Body16 2063/4222
-OK BM1LI0-050000_v3__Body21 9646/19288
-OK BM1LI0-050000_v3__Body22 3726/7448
+OK FN0F00-050000_v15__Body18 1736/3632
 OK FN2BLA-040000__Body1 1386/2880
+OK FN2BN0-000000__Body1 2125/4462
 OK Leg_-_080_mm._by_YH__Body1 3259/6534
 OK Leg_-_080_mm._by_YH__Cut 62/120
 OK Leg_-_080_mm._by_YH__Cut_1 62/120
@@ -24,31 +22,45 @@ OK Leg_-_080_mm._by_YH__Cut_2 62/120
 OK Body1 964/1928
 OK Body1_2 540/1076
 OK Body1_3 440/876
-OK Body1_4 964/1928
-OK Body1_5 540/1076
-OK Body1_6 440/876
 OK Leg_-_080_mm._by_YH__Body1_2 3259/6534
 OK Leg_-_080_mm._by_YH__Cut_4 62/120
 OK Leg_-_080_mm._by_YH__Cut_1_2 62/120
 OK Leg_-_080_mm._by_YH__Cut_3_2 62/120
 OK Leg_-_080_mm._by_YH__Cut_2_2 62/120
+OK Body1_4 964/1928
+OK Body1_5 540/1076
+OK Body1_6 440/876
+OK Leg_-_080_mm._by_YH__Body1_3 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_5 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_3 62/120
 OK Body1_7 964/1928
 OK Body1_8 540/1076
 OK Body1_9 440/876
+OK Body1_10 964/1928
+OK Body1_11 540/1076
+OK Body1_12 440/876
+OK FN3BLA-050000_v10__Body4 320/668
+OK FN3BLA-050000_v10__Body5 52/100
+OK FN3BLA-050000_v10__Body6 96/188
 OK BK1DN1-050000_v31__Body1 1536/3068
 OK BXXTR0-000000__Body1 556/1140
 OK BXXTR0-000000__Body1_2 556/1140
 OK BXXTR0-000000__Body1_3 556/1140
-OK TS2TRX-000000__Body1 180/372
-OK TS2TRX-000000__Body1_2 180/372
-OK TS2TRX-000000__Body1_3 180/372
-OK TS1BHH-050000_v11__Body3 1056/2200
-OK TS1BHH-050000_v11__Body3_2 1056/2200
-OK TS1BHH-050000_v11__Body3_3 1056/2200
+OK BXXTR0-000000__Body1_4 556/1140
 OK SD00NA-080000_v31__Body1 10154/21756
 OK SD0SUP-000000_v6__Body1 428/868
 OK SD00NA-080000_v31__Body1_2 10154/21756
 OK SD0SUP-000000_v6__Body1_2 428/868
 OK SD0SUP-000000_v6__Body1_3 428/868
-ORPHAN_SUMMARY median=586.2 threshold=1758.7 count=0/39
-GLB 1613820 39
+OK TS1BHH-050000_v11__Body3 1056/2200
+OK TS1BHH-050000_v11__Body3_2 1056/2200
+OK TS1BHH-050000_v11__Body3_3 1056/2200
+OK HingeW3-H0800_v4__Body38 160/316
+OK Door__Body1 160/316
+OK SH0S11-050035_v7__Body1 916/1836
+OK SH0S12-050000_v3__Body1 628/1260
+ORPHAN_SUMMARY median=472.9 threshold=1418.8 count=1/50
+ORPHAN BXXTR0-000000__Body1_4 dist=1556.6 (3.3x median)
+GLB 1348356 50
