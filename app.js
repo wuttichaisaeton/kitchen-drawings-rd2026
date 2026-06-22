@@ -2015,15 +2015,12 @@ const _KD3D_THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.
 const _KD3D_HDRI_REALISTIC = 'https://modelviewer.dev/shared-assets/environments/aircraft_workshop_01_1k.hdr';
 
 function _kd3dGlbUrl(code) {
-  // jsdelivr mirror of the kitchen-drawings-rd2026 repo — same pattern as
-  // _githubPagesToJsdelivr. jsdelivr has CORS; GH Pages does not.
-  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}.glb`;
+  const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}.glb?v=${v}`;
 }
-// Per-leaf GLB (Fusion 31 dual-export, 2026-06-22) — same path, `_parts` suffix.
-// Used by Component Color + Explode modes; falls back to the main GLB on 404 for
-// legacy cabinets that haven't been re-exported yet.
 function _kd3dPartsGlbUrl(code) {
-  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}_parts.glb`;
+  const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}_parts.glb?v=${v}`;
 }
 
 // ── 🧊 outdated chip (WEB 21, 2026-06-22) ────────────────────────────────────
