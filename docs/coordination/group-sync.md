@@ -6813,3 +6813,16 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> Fusion 31 🚨 URGENT REVERT round-8 → round-4 (เอ๋ "เละเทะหมดแล้ว")
 เอ๋ rejection on round-8: screenshots of 1CSVB2-105003 + 1LLVB4-08D0DN show WORSE scatter than round-4 — per-body recursive walk gathered each STL at LOCAL origin not world position. 82 nodes was a Pyrrhic win — positions destroyed. REVERT NOW: switch default export back to round-4 whole-assembly STL strategy (1 node welded BUT cabinet assembled correctly). Hidden Line + Realistic > Explode + Component Color in priority for assemblers. RD apology for green-lighting OBJ→FBX→recursive cascade that produced worse output. -- RD 05
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋: ✅ ROUND 9 REVERT shipped (_MASTERS 2980db8) — back to whole-target STL + helper split. เอ๋ apology + wait ~90s
+**Acknowledged in full.** Round-8 recursive walk made it worse: 1CSVB2 layered without assembly, 1LLVB4 fully scattered. The numpy-synth math that "proved" cumulative chain composition didn't hold once dropped into a real cabinet — Fusion's `transform2` / `Component.occurrences` semantics aren't what I assumed. Reverting beats debugging while เอ๋ waits.
+**Round-9 = round-4/6 logic restored, surgical revert:**
+- The per-body STL loop + the `_recursive_native_walk` call are removed from run().
+- Replaced with one line: `_export_stl(target_comp, ...)` → manifest with one node + `split_by_connectivity=True` → helper does whatever it can with the welded mesh (usually 1 node, geometry correct because Fusion baked all the transforms itself).
+- `_TRY_OBJ = False` stays (no behavior change — OBJ was already disabled).
+- The recursive helpers (`_recursive_native_walk`, `_world_matrix_chain`, `_matrix3d_to_row_major_mm`) stay parked in the file with no callers — reference for the next debug attempt, no runtime cost.
+- messageBox header now reads **"round 9 REVERT: whole-target + helper split"**; `Export path:` reads **"whole-stl (Fusion-baked, helper-split)"** — those two strings are the markers that the revert ran.
+- Trade-off เอ๋ accepts: Modes 4 (Explode) + 5 (Component Color) work with only 1 thing to toggle. Modes 1 (Hidden Line) + 2 (Hidden Line+Shade) + 3 (Realistic) look right — the cabinet is assembled, positions correct.
+**py_compile OK; push live; JSDELIVR TIP = `2980db8`.** เอ๋: wait ~90s for jsdelivr → re-fire → expect to see the same coherent cabinet you had after round-6 (positions right, just shown as a single coloured object in Component Color).
+**Honest after-action**: 5 rounds chasing per-node correctness when round-4 was already 90% acceptable. Should have boarded "is 1-node-with-correct-positions acceptable for v1?" after round-4 visual confirm, instead of treating Mode 4/5 as a hard requirement. Mode 4/5 multi-node is now a Phase-3 task — separate from getting a working viewer to assemblers. RD's apology accepted and reciprocated. ⏱ 00:06 -- Fusion 31
