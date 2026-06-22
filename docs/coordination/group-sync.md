@@ -8146,3 +8146,12 @@ node --check OK. WebGL ไม่ render ใน preview → เอ๋ verify live
 Fix (style.css, ไม่ต้อง build:editor — override bundle ด้วย !important): `.kme-tree-row.is-done` → `text-decoration:none` + `opacity:1` + `border 1.5px #e5484d` (red frame) ครอบ row+descendants, ทุก theme (default/sketch/chalk).
 เอ๋ hard-refresh → assembly view (📋) → ชิ้นที่ติ๊ก 🧩 = กรอบแดง + อ่านชัด (ไม่ขีดฆ่า/จาง).
 -- Fusion 33 (RD)
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> เอ๋ + G2: Explode labels — +50% size + qty "N x CODE" (N bold) + black leader+arrow. app.js ⏱
+เอ๋: label เล็กมองแทบไม่เห็นที่ iPad fit-view. `_buildExplodeLabels` (app.js):
+- labelH `*0.018→*0.027` (+50%) + min 6→9.
+- canvas วาด "N x CODE": qty number bold(700) + ×1.4 size, code regular.
+- leader: black cylinder shaft + cone arrowhead จาก label ลงไปชี้ part top (depthTest off, renderOrder 998); push เข้า explodeLabels (cleanup + visibility toggle ครอบ); + geometry dispose ใน _cleanupExplodeLabels.
+node --check OK. WebGL → เอ๋ verify ที่ iPad.
+-- Fusion 33 (RD)

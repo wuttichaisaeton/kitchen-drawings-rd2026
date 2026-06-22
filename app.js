@@ -2973,6 +2973,7 @@ async function _kdOpen3D(code, opts) {
     for (const lbl of explodeLabels) {
       try { lbl.sprite.parent?.remove(lbl.sprite); } catch {}
       try { lbl.sprite.material.map?.dispose(); lbl.sprite.material.dispose(); } catch {}
+      try { lbl.sprite.geometry?.dispose(); } catch {}
     }
     explodeLabels = [];
   };
@@ -2992,11 +2993,17 @@ async function _kdOpen3D(code, opts) {
         modelRadius = box.getSize(new THREE.Vector3()).length() / 2;
       } catch {}
     }
-    const labelH = Math.max(6, modelRadius * 0.018);
+    const labelH = Math.max(9, modelRadius * 0.027);   // เอ๋ 2026-06-22: +50% bigger (was *0.018) — readable at iPad fit-view
 
     // ONE label per unique part code. A code with several bodies (e.g.
     // BM1L0-050000 = Body8/21/22) otherwise stacks 3 identical labels at the
     // same spot (เอ๋ "ชื่อซ้ำ ทำไมมี 3 อัน"). Keep the topmost body per code.
+    // Quantity per code = how many scene nodes carry it (BXXTR0 x4 → "4").
+    const countByCode = new Map();
+    for (const cu of explodeUnits) {
+      const ct = _extractPartLabel(cu.node.name || '');
+      if (ct) countByCode.set(ct, (countByCode.get(ct) || 0) + 1);
+    }
     const byCode = new Map();
     for (let i = 0; i < explodeUnits.length; i++) {
       const u = explodeUnits[i];
@@ -3022,7 +3029,7 @@ async function _kdOpen3D(code, opts) {
       centerX /= mc; centerZ /= mc;
       const y = maxY + labelH * 0.8;
       const prev = byCode.get(text);
-      if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerZ, y, unit: u });
+      if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerZ, y, top: maxY, unit: u });
     }
     const labelInfos = [...byCode.values()];
     // Collision avoidance: bump overlapping labels upward
@@ -3046,28 +3053,38 @@ async function _kdOpen3D(code, opts) {
     }
 
     const fontSize = 36;
-    const pad = 6;
-    // Regular weight (เอ๋ "เป็น regular") — keep the app font, drop the bold.
-    const fface = '400 ' + fontSize + 'px "Flux Architect",ui-monospace,monospace';
+    const pad = 8;
+    // เอ๋ 2026-06-22: render "N x CODE" — the qty NUMBER bold + bigger, code regular.
+    const codeFont = '400 ' + fontSize + 'px "Flux Architect",ui-monospace,monospace';
+    const qtyFont  = '700 ' + Math.round(fontSize * 1.4) + 'px "Flux Architect",ui-monospace,monospace';
     const { fill: labelFill, stroke: labelStroke } = _labelColorsForMode();
-    try { await document.fonts.load(fface); } catch {}
+    try { await document.fonts.load(codeFont); } catch {}
+    try { await document.fonts.load(qtyFont); } catch {}
     for (const info of labelInfos) {
+      const qtyPart = String(countByCode.get(info.text) || 1);
+      const restPart = ' x ' + info.text;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      ctx.font = fface;
-      const tw = ctx.measureText(info.text).width;
-      canvas.width = Math.ceil(tw + pad * 2);
-      canvas.height = Math.ceil(fontSize * 1.4 + pad * 2);
+      ctx.font = qtyFont; const qw = ctx.measureText(qtyPart).width;
+      ctx.font = codeFont; const rw = ctx.measureText(restPart).width;
+      canvas.width = Math.ceil(qw + rw + pad * 2);
+      canvas.height = Math.ceil(fontSize * 1.6 + pad * 2);
 
-      ctx.font = fface;
       ctx.textBaseline = 'middle';
-      ctx.textAlign = 'center';
-      ctx.strokeStyle = labelStroke;
-      ctx.lineWidth = 4;
+      ctx.textAlign = 'left';
       ctx.lineJoin = 'round';
-      ctx.strokeText(info.text, canvas.width / 2, canvas.height / 2);
-      ctx.fillStyle = labelFill;
-      ctx.fillText(info.text, canvas.width / 2, canvas.height / 2);
+      ctx.lineWidth = 5;
+      const midY = canvas.height / 2;
+      let tx = pad;
+      // qty number — bold + bigger
+      ctx.font = qtyFont;
+      ctx.strokeStyle = labelStroke; ctx.strokeText(qtyPart, tx, midY);
+      ctx.fillStyle = labelFill; ctx.fillText(qtyPart, tx, midY);
+      tx += qw;
+      // " x CODE" — regular
+      ctx.font = codeFont;
+      ctx.strokeStyle = labelStroke; ctx.strokeText(restPart, tx, midY);
+      ctx.fillStyle = labelFill; ctx.fillText(restPart, tx, midY);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.minFilter = THREE.LinearFilter;
@@ -3084,6 +3101,31 @@ async function _kdOpen3D(code, opts) {
       sprite.renderOrder = 999;
       info.unit.node.add(sprite);
       explodeLabels.push({ sprite, unit: info.unit });
+
+      // เอ๋ 2026-06-22: leader line + black arrowhead from the label DOWN to the
+      // part it names (locate the part at iPad fit-view). Thin black cylinder
+      // shaft + cone tip; depthTest off so the leader stays visible through parts.
+      const topY = info.top;
+      const startY = info.y - labelH * 0.55;
+      const leadLen = startY - topY;
+      if (leadLen > labelH * 0.4) {
+        const r = Math.max(modelRadius * 0.0016, labelH * 0.05);
+        const headLen = Math.min(leadLen * 0.4, labelH * 1.2);
+        const shaftLen = Math.max(leadLen - headLen, labelH * 0.1);
+        const leadMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
+        const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, shaftLen, 8), leadMat);
+        shaft.position.set(info.centerX, topY + headLen + shaftLen / 2, info.centerZ);
+        shaft.renderOrder = 998;
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(r * 3.2, headLen, 12), leadMat);
+        cone.rotation.x = Math.PI;                  // tip points DOWN at the part
+        cone.position.set(info.centerX, topY + headLen / 2, info.centerZ);
+        cone.renderOrder = 998;
+        shaft.visible = cone.visible = explodePct > 5;
+        info.unit.node.add(shaft);
+        info.unit.node.add(cone);
+        explodeLabels.push({ sprite: shaft, unit: info.unit });
+        explodeLabels.push({ sprite: cone, unit: info.unit });
+      }
     }
     console.info('[kd3d] built', explodeLabels.length, 'explode labels');
   };
