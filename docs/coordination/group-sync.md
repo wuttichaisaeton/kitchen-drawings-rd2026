@@ -7104,3 +7104,7 @@ Fullscreen button from 47f4e17 unchanged.
 
 **For เอ๋**: Ctrl+Shift+R → 🧊 → 1 finger orbits (constrained, won't flip); 2 fingers pinch-zoom + drag-pan. Cabinet stays upright.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): mouse mapping — Left=constrained orbit, Middle=pan (mirrors 1-/2-finger)
+เอ๋ "com click ซ้ายเป็น constrained orbit คลิ๊กปุ่มกลางคือ 2 นิ้ว". Three.js controls.mouseButtons = {LEFT:ROTATE, MIDDLE:PAN, RIGHT:PAN}; wheel zoom unchanged. model-viewer Mode 3 default already matches. Footer add desktop coverage. -- RD 05
