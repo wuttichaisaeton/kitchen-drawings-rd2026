@@ -1,0 +1,20 @@
+CC_Export3D round-15 scatter-fix (cabinet_inv; called from CC_BatchExport3D)
+cabinet           = SH0001-190015
+target_kind       = cabinet
+walk_bodies       = 4
+main_glb_bytes    = 327308
+main_nodes        = 4
+main_stl_bytes    = 1058136
+scatter_fix       = cabinet_inv applied
+cabinet_inv_mm    = (-0.0, 3867.6, -1049.1)
+schema            = main=per-leaf-assembled (round 15, scatter fix); _parts.glb NOT written
+walk_transform_mm[0] = 2SHSH1-190015__Body1 @ (0.0, 0.0, 0.0) (IGNORED — using cabinet_inv)
+walk_transform_mm[1] = 2SHSH2-190015__Body1 @ (0.0, 0.0, 0.0) (IGNORED — using cabinet_inv)
+walk_transform_mm[2] = 2SHCV1-190015__Body1 @ (-1.5, 0.0, 0.0) (IGNORED — using cabinet_inv)
+--- main helper subprocess output ---
+OK 2SHSH1-190015__Body1 3912/7936
+OK 2SHSH2-190015__Body1 3544/7140
+OK 2SHCV1-190015__Body1 1480/3040
+OK 2SHCV1-190015__Body1_2 1480/3040
+ORPHAN_SUMMARY median=466.2 threshold=1398.5 count=0/4
+GLB 327308 4

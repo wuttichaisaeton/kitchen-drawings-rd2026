@@ -1,0 +1,65 @@
+CC_Export3D round-15 scatter-fix (cabinet_inv; called from CC_BatchExport3D)
+cabinet           = 03 Ruth
+target_kind       = project
+walk_bodies       = 58
+main_glb_bytes    = 2365640
+main_nodes        = 50
+main_stl_bytes    = 9275600
+scatter_fix       = NO (cabinet_inv=None, using walk transforms)
+schema            = main=per-leaf-assembled (round 15, scatter fix); _parts.glb NOT written
+walk_transform_mm[0] = 03 Ruth v5__Body2 @ (0.0, 0.0, 0.0)
+walk_transform_mm[1] = 2SDCN1-120040 v2__Body1 @ (-2686.2, 198.0, -2489.8)
+walk_transform_mm[2] = 2DNCR0-070043 v21__Body1 @ (2704.2, 0.0, 3063.8)
+--- main helper subprocess output ---
+OK 03_Ruth_v5__Body2 32/60
+OK 2SDCN1-120040_v2__Body1 3764/7824
+OK 2DNCR0-070043_v21__Body1 3044/6332
+OK 2SDCN1-120040_v2__Body1_2 3764/7824
+OK 2BK002-070000_v12__Body2 1124/2332
+OK 2BK002-070000_v12__Body2_2 1124/2332
+OK 2BK001-070120_v3__Body2 2160/4316
+OK 2BK200-000000__Body1 232/480
+OK 2BK200-000000__Body1_2 232/480
+OK 2BK200-000000__Body1_3 232/480
+OK 2BK200-000000__Body1_4 232/480
+OK 2UPLL0-070043_v12__Body1 3332/6904
+OK 2CFL00-070000_v3__Body1 756/1544
+OK 2CN026-120000_v4__Body2 2278/4680
+OK 2CN002-120024_v15__Body1 1798/3676
+OK 2DN000-060000_v9__Body1 2438/5044
+OK 2SDCN1-120040_v2__Body1_3 3764/7824
+OK 2BK002-060000_v12__Body2 966/2000
+OK 2BK002-060000_v12__Body2_2 966/2000
+OK 2BK001-060120_v1__Body2 2048/4092
+OK 2BK200-000000__Body1_5 232/480
+OK 2BK200-000000__Body1_6 232/480
+OK 2BK200-000000__Body1_7 232/480
+OK 2BK200-000000__Body1_8 232/480
+OK 2UP000-060000_v9__Body1 2724/5620
+OK 2CF000-060000_v3__Body1 608/1232
+OK SH0G00-020035__Body1 8/12
+OK SH0G00-020035__Body1_2 8/12
+OK GLASS1-070000_v4__Body1 32/60
+OK GLASS1-070000_v4__Body2 8/12
+OK GLASS1-070000_v4__Body3 16/28
+OK Shelf_Support_M5_by_SSD_v27__Male 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_2 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_3 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_4 3980/7956
+OK GLASS1-070000_v4__Body1_2 32/60
+OK GLASS1-070000_v4__Body2_2 8/12
+OK GLASS1-070000_v4__Body3_2 16/28
+OK Shelf_Support_M5_by_SSD_v27__Male_5 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_6 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_7 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_8 3980/7956
+OK 2CVH26-766LER_v10__Body1 4334/8848
+OK 2FCVN1-120030-Ruth_v2__Body1 2538/5180
+OK 2FCVN1-120020_v5__Body1 2416/4916
+OK 2SHSH1-190015__Body1 3912/7936
+OK 2SHSH2-190015__Body1 3544/7140
+OK 2SHCV1-190015__Body1 1480/3040
+OK 2SHCV1-190015__Body1_2 1480/3040
+OK 2WL002-000000__Body1 992/1980
+ORPHAN_SUMMARY median=2568.8 threshold=7706.4 count=0/50
+GLB 2365640 50
