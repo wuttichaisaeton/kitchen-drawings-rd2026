@@ -3295,14 +3295,18 @@ async function _kdOpen3D(code, opts) {
     // intersect the box silhouette with the horizontal line at the centroid
     // screen-Y → arrow lands on the part's NEAR edge at mid-height.
     for (const r of _ovlRows) {
-      let on = false, cxs = null, cys = null, minX = null, maxX = null;
+      let on = false, tight = false, cxs = null, cys = null, minX = null, maxX = null;
       const hb = r.hsEl ? r.hsEl.getBoundingClientRect() : null;
       if (hb && (hb.width || hb.height || hb.left || hb.top)) {
         cxs = hb.left + hb.width / 2 - vb.left;
         cys = hb.top + hb.height / 2 - vb.top;
-        // Real viewport only — a part exploded off-screen / behind the camera
-        // lands outside → no label, no mid-air leader (เอ๋ "ชี้กลางอากาศไม่ต้องโชว์").
-        on = cxs > -6 && cxs < vw + 6 && cys > -6 && cys < vh + 6;
+        // LABEL shows generously (it gets clamped into view) so every part is
+        // listed on every screen size — desktop (wide/short) explodes parts past
+        // the viewer height; a tight gate hid all labels there (เอ๋ "ที่คอมไม่เห็น
+        // label"). LEADER/arrow only when the part is really on-screen → still no
+        // mid-air arrow (เอ๋ "ชี้กลางอากาศไม่ต้องโชว์").
+        on = cxs > -vw && cxs < 2 * vw && cys > -vh && cys < 2 * vh;
+        tight = cxs > -6 && cxs < vw + 6 && cys > -6 && cys < vh + 6;
       }
       if (on && r.hsCorners && r.hsCorners.length === 8) {
         const cor = [];
@@ -3334,7 +3338,8 @@ async function _kdOpen3D(code, opts) {
         else if (r.side !== 'L' && r.side !== 'R') r.side = (cxs < cx) ? 'L' : 'R';
       }
       r._wasOn = on; r._on = on; r._ty = on ? cys : null;
-      r._tx = on ? ((r.side === 'L') ? minX : maxX) : null;   // near edge facing the label
+      // arrow only when the part is really on-screen (tight) → no mid-air arrow.
+      r._tx = (on && tight) ? ((r.side === 'L') ? minX : maxX) : null;   // near edge facing the label
     }
     // 2) per side: lay out only VISIBLE rows. Sort by part-Y, seat at part
     //    mid-height (→ horizontal leader), push apart so none overlap, clamp into
