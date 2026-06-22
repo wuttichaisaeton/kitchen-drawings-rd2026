@@ -6302,13 +6302,18 @@ html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-name,
 html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-count {
   color: #fff !important;
 }
-/* done rows: keep family colour but dim + strike. เอ๋ 2026-06-22: the RED frame
-   belongs on the PART in the 3D view (kd3d _highlightUnits draws a red box),
-   NOT on the list row — reverted the row border. */
-html[data-theme="sketch"] .kme-tree-col .kme-tree-row.is-done,
-html[data-theme="chalk"]  .kme-tree-col .kme-tree-row.is-done {
-  opacity: 0.55;
+/* เอ๋ 2026-06-22: ticked(assembled) row = a RED UNDERLINE on the code, NOT a
+   strike-through / dim / hide (the part stays fully visible). The 3D viewer
+   frames the SAME part in red. */
+.kme-tree-col .kme-tree-row.is-done { opacity: 1 !important; text-decoration: none !important; }
+.kme-tree-col .kme-tree-row.is-done .kme-tree-label {
+  text-decoration: underline !important;
+  text-decoration-color: #e5484d !important;
+  text-decoration-thickness: 2.5px;
+  text-underline-offset: 3px;
 }
+html[data-theme="sketch"] .kme-tree-col .kme-tree-row.is-done,
+html[data-theme="chalk"]  .kme-tree-col .kme-tree-row.is-done { opacity: 1 !important; }
 
 /* === Part@sheet locator popup (Cut List icon) - 2026-05-31 === */
 /* backgrounds use !important so the sketch/chalk *{background:transparent} */

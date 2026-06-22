@@ -2833,6 +2833,7 @@ async function _kdOpen3D(code, opts) {
   let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
   let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
   let explodeLabels = [];          // [{sprite, unit}] — per-explode-unit text label sprites
+  let _assembledFrames = [];       // เอ๋: red Box3Helper frames on parts marked assembled (ticked)
   let _populateBrowserFn = null;
   // Dual-GLB switcher state (Fusion 31 2026-06-22). The MAIN .glb is assembled
   // (1 node, fits Hidden Line / Realistic). The `_parts.glb` is per-leaf
@@ -2976,6 +2977,44 @@ async function _kdOpen3D(code, opts) {
       try { lbl.sprite.geometry?.dispose(); } catch {}
     }
     explodeLabels = [];
+  };
+
+  // เอ๋ 2026-06-22: outline every part whose code is marked ASSEMBLED (ticked in
+  // the Kanban) with a RED FRAME in the 3D view. The box is added to the part's
+  // node so it follows on explode. Matches a code across projects (the assembled
+  // state keys are "projectKey::code").
+  const _frameAssembledParts = async () => {
+    for (const f of _assembledFrames) {
+      try { f.parent?.remove(f); f.geometry?.dispose(); f.material?.dispose(); } catch {}
+    }
+    _assembledFrames = [];
+    if (!explodeUnits.length) return;
+    const asm = new Set();
+    try {
+      for (const k of loadAssembledSet()) { const i = k.indexOf('::'); asm.add(i >= 0 ? k.slice(i + 2) : k); }
+    } catch {}
+    if (!asm.size) return;
+    let THREE;
+    try { THREE = await _kd3dEnsureThree(); } catch { return; }
+    if (!THREE || !THREE.Box3Helper) return;
+    for (const u of explodeUnits) {
+      const code = _extractPartLabel(u.node.name || '');
+      if (!code || !asm.has(code)) continue;
+      const lb = new THREE.Box3();
+      let has = false;
+      u.node.traverse(nd => {
+        if (!nd.isMesh || !nd.geometry) return;
+        if (!nd.geometry.boundingBox) try { nd.geometry.computeBoundingBox(); } catch {}
+        if (nd.geometry.boundingBox) { lb.union(nd.geometry.boundingBox); has = true; }
+      });
+      if (!has || lb.isEmpty()) continue;
+      lb.expandByScalar(lb.getSize(new THREE.Vector3()).length() * 0.008 + 0.5);
+      const helper = new THREE.Box3Helper(lb, new THREE.Color(0xff0000));
+      if (helper.material) { helper.material.depthTest = false; helper.material.transparent = true; helper.material.depthWrite = false; }
+      helper.renderOrder = 1000;
+      u.node.add(helper);
+      _assembledFrames.push(helper);
+    }
   };
 
   const _buildExplodeLabels = async () => {
@@ -3777,7 +3816,7 @@ async function _kdOpen3D(code, opts) {
     mv.addEventListener('load', () => {
       _edgesAttempted = false;
       edgeOverlays = [];
-      if (snapshotScene()) applyMode(mode);
+      if (snapshotScene()) { applyMode(mode); _frameAssembledParts(); }
     });
   }
   // Track which src loaded so snapshotScene knows whether to update dims (main
