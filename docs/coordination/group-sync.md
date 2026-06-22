@@ -8057,3 +8057,23 @@ The L-shaped cabinet ("LL" code) has 800mm + 1200mm wings spanning 2685mm total.
 
 **OPEN ITEMS**: none. **NO BLOCKERS.**
 -- WEB 22
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> เอ๋ + Fusion lane: ✅ CC_Export3D ROUND 16 — single-cabinet scatter ROOT-CAUSED + fixed (1LLVO4-05000L). Live render-verify DEFERRED (เอ๋ mid-edit). ⏱ ~00:45
+
+**The 1LLVO4-05000L "explode at 0%" scatter is a CODE bug in CC_Export3D, NOT a design issue — PROVEN against Fusion's own ground truth.**
+
+PREMISE CORRECTION: 1LLVO4-05000L was never the active doc. Active was `02 Ruth v44`, then เอ๋ switched to `100VO0-050000 v14` (modified) mid-diagnosis. I did NOT yank เอ๋'s active tab — diagnosed without forcing 1LLVO4 open, and deferred the heavy re-export.
+
+ROOT CAUSE (Fusion MCP, ground-truth oracle = proxy transform2 / proxy bbox):
+- Root/single-cabinet path (target_kind=root, cabinet_inv=None) built each leaf's world matrix via `_recursive_native_walk`'s manual `parent_world.transformBy(occ.transform2)`. That composition diverges from Fusion's OWN proxy transform2 by **up to 168 cm at depth 3**. Top-level parts stay correct; nested parts (BK1DN1 / SD0SUP / BXXTR0 x4) scatter — BXXTR0's 4 instances to 4 DIFFERENT wrong spots (= the 828/896/1384/1562 mm symptom).
+- Disambiguated the rounds 4-15 confusion: per-body STL is **component-LOCAL** (verified: exported STL centroid == native centroid to 0.0 mm). The round-15 "Fusion bakes world coords into the STL" premise was FALSE — that misconception drove the thrash.
+- In-context proof: inside `02 Ruth`, 1LLVO4's parts assemble CORRECTLY (~493x467x730 mm; BXXTR0 x4 at the 4 corners, SD0SUP x4 at sides). The SAME parts scatter only on the root-walk export path → export bug, not design.
+
+FIX (_MASTERS `16036ce`, CC_Export3D.py): new `_collect_leaf_bodies_world()` tags each leaf body with its occurrence's PROXY transform2 (correct world, zero composition) on the root path. The cabinet_inv / CC_BatchExport3D path is UNCHANGED (flagged in-code for separate review). Round-16 also counts + app.log's the silently-dropped invalid bodies (the walk_bodies=53 vs main_nodes=50 mystery = degenerate bodies that fail BOTH STL export and boundingBox; 100VO0 has 2 such).
+
+VERIFY (live, passive math — no STL, no save): on `100VO0-050000` (a live root-path cabinet) NEW proxy-transform extent == Fusion proxy-bbox ground truth to **0.00 mm**; OLD composed extent was 1795x2090x2380. py_compile OK.
+
+**NEEDS (เอ๋, when Fusion is free):** reload CC_Auto → open 1LLVO4-05000L → 🧊 Export 3D. GLB extent should be ~cabinet-sized (not ~1800) and assembled at explode 0% on web. RD can drive this in an idle window if you prefer — just say the word.
+**NEEDS (Fusion lane / RD follow-up):** review the cabinet_inv path (CC_BatchExport3D / 02 Ruth per-cabinet) — the same proxy-transform2 fix likely applies; a uniform inverse over LOCAL-frame STLs is suspect. Verify with `02 Ruth` active.
+-- Fusion 33 (RD)
