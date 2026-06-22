@@ -3028,7 +3028,7 @@ async function _kdOpen3D(code, opts) {
       });
       if (mc === 0) continue; // no visible body in this unit → no label
       centerX /= mc; centerY /= mc; centerZ /= mc;
-      const y = maxY + labelH * 1.8;   // เอ๋ 2026-06-22: label further from the part → room for a leader on EVERY label
+      const y = maxY + labelH * 0.6;   // เอ๋ 2026-06-22: underline anchor (label extends UP from here via sprite.center=0,0)
       const prev = byCode.get(text);
       if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerY, centerZ, y, top: maxY, unit: u });
     }
@@ -3067,26 +3067,25 @@ async function _kdOpen3D(code, opts) {
       const restPart = ' x ' + info.text;
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      // เอ๋ 2026-06-22: the qty number sits inside a CIRCLE; the leader starts from
-      // that circle's centre. Layout = [circle(N)] [ x CODE]. No white outline.
+      // เอ๋ 2026-06-22: NO circle. Text "N x CODE" (qty bold) with an UNDERLINE; the
+      // leader starts from the underline's LEFT end (= sprite lower-left corner via
+      // sprite.center=(0,0)) so it's camera-robust + never overlaps the text.
       ctx.font = qtyFont; const qw = ctx.measureText(qtyPart).width;
-      const circleR = Math.max(qtyPx * 0.72, qw * 0.62 + qtyPx * 0.18);
-      const circleLW = Math.max(2, Math.round(qtyPx * 0.09));
       ctx.font = codeFont; const rw = ctx.measureText(restPart).width;
-      canvas.width = Math.ceil(pad + circleR * 2 + circleLW + rw + pad);
-      canvas.height = Math.ceil(Math.max(circleR * 2 + circleLW, fontSize * 1.6) + pad * 2);
-      const midY = canvas.height / 2;
-      const circleCx = pad + circleR + circleLW / 2;
-      // circle around the qty number
-      ctx.beginPath();
-      ctx.arc(circleCx, midY, circleR, 0, Math.PI * 2);
-      ctx.lineWidth = circleLW; ctx.strokeStyle = labelFill; ctx.stroke();
-      // qty number centred inside the circle (bold)
-      ctx.font = qtyFont; ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
-      ctx.fillStyle = labelFill; ctx.fillText(qtyPart, circleCx, midY);
-      // " x CODE" after the circle (regular)
-      ctx.font = codeFont; ctx.textAlign = 'left';
-      ctx.fillStyle = labelFill; ctx.fillText(restPart, circleCx + circleR + circleLW / 2, midY);
+      const textW = qw + rw;
+      const ulLW = Math.max(2, Math.round(fontSize * 0.10));
+      canvas.width = Math.ceil(textW + pad * 2);
+      canvas.height = Math.ceil(qtyPx * 1.1 + ulLW + pad * 2);
+      const ulY = canvas.height - pad - ulLW / 2;       // underline near the bottom
+      const textCY = ulY - ulLW - qtyPx * 0.5;          // text centre just above the underline
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'left';
+      let tx = pad;
+      ctx.font = qtyFont; ctx.fillStyle = labelFill; ctx.fillText(qtyPart, tx, textCY); tx += qw;
+      ctx.font = codeFont; ctx.fillStyle = labelFill; ctx.fillText(restPart, tx, textCY);
+      // underline under the whole text (เอ๋: ขีดเส้นใต้ตัวอักษร)
+      ctx.beginPath(); ctx.moveTo(1, ulY); ctx.lineTo(pad + textW, ulY);
+      ctx.lineWidth = ulLW; ctx.strokeStyle = labelFill; ctx.lineCap = 'round'; ctx.stroke();
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.minFilter = THREE.LinearFilter;
@@ -3097,12 +3096,12 @@ async function _kdOpen3D(code, opts) {
       });
       const sprite = new THREE.Sprite(mat);
       const aspect = canvas.width / canvas.height;
-      const halfW = (labelH * aspect) / 2;
-      const gap = labelH * 1.0;   // horizontal gap from the part → DIAGONAL leader (เอ๋ ref image)
+      const gap = labelH * 0.9;   // horizontal gap from the part → DIAGONAL leader
+      sprite.center.set(0, 0);    // เอ๋: anchor = sprite LOWER-LEFT = underline's left end (camera-robust)
       sprite.scale.set(labelH * aspect, labelH, 1);
-      // เอ๋ 2026-06-22: place the label up-AND-right of the part so a thin diagonal
-      // leader runs from the label's FRONT (left edge, the qty number) to the part.
-      sprite.position.set(info.centerX + halfW + gap, info.y, info.centerZ);
+      // lower-left corner (underline left end) sits up-and-right of the part; the
+      // text extends up-and-right from there, the leader drops down-left to the part.
+      sprite.position.set(info.centerX + gap, info.y, info.centerZ);
       sprite.visible = explodePct > 5;
       sprite.renderOrder = 999;
       info.unit.node.add(sprite);
@@ -3114,12 +3113,10 @@ async function _kdOpen3D(code, opts) {
       // เอ๋ 2026-06-22 (ref image): thin DIAGONAL black leader from the label's
       // FRONT (left edge / the qty number) to the part, with a filled arrowhead at
       // the part end. EVERY label gets one (no skip).
-      // leader starts at the CIRCLE centre (เอ๋) and ends at the part CENTROID
-      // (not the bbox top — that floated above long/tilted rails so the arrow
-      // landed in empty space = the red-X cases). circleCx → world via the
-      // sprite's billboard width.
-      const circleWorldX = sprite.position.x + ((circleCx - canvas.width / 2) / canvas.width) * (labelH * aspect);
-      const start = new THREE.Vector3(circleWorldX, info.y, info.centerZ);
+      // leader starts at the underline's LEFT end (= sprite.position, the lower-left
+      // corner — camera-robust) and ends at the part CENTROID (เอ๋; not bbox-top,
+      // which floated above long/tilted rails → arrow in empty space = the red-X).
+      const start = new THREE.Vector3(sprite.position.x, sprite.position.y, sprite.position.z);
       const end = new THREE.Vector3(info.centerX, info.centerY, info.centerZ);
       const dirV = new THREE.Vector3().subVectors(end, start);
       const len = dirV.length();
