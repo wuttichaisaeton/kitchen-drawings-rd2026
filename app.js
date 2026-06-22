@@ -3027,7 +3027,7 @@ async function _kdOpen3D(code, opts) {
       });
       if (mc === 0) continue; // no visible body in this unit → no label
       centerX /= mc; centerZ /= mc;
-      const y = maxY + labelH * 0.8;
+      const y = maxY + labelH * 1.8;   // เอ๋ 2026-06-22: label further from the part → room for a leader on EVERY label
       const prev = byCode.get(text);
       if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerZ, y, top: maxY, unit: u });
     }
@@ -3091,8 +3091,12 @@ async function _kdOpen3D(code, opts) {
       });
       const sprite = new THREE.Sprite(mat);
       const aspect = canvas.width / canvas.height;
+      const halfW = (labelH * aspect) / 2;
+      const gap = labelH * 1.0;   // horizontal gap from the part → DIAGONAL leader (เอ๋ ref image)
       sprite.scale.set(labelH * aspect, labelH, 1);
-      sprite.position.set(info.centerX, info.y, info.centerZ);
+      // เอ๋ 2026-06-22: place the label up-AND-right of the part so a thin diagonal
+      // leader runs from the label's FRONT (left edge, the qty number) to the part.
+      sprite.position.set(info.centerX + halfW + gap, info.y, info.centerZ);
       sprite.visible = explodePct > 5;
       sprite.renderOrder = 999;
       info.unit.node.add(sprite);
@@ -3101,20 +3105,27 @@ async function _kdOpen3D(code, opts) {
       // เอ๋ 2026-06-22: leader line + black arrowhead from the label DOWN to the
       // part it names (locate the part at iPad fit-view). Thin black cylinder
       // shaft + cone tip; depthTest off so the leader stays visible through parts.
-      const topY = info.top;
-      const startY = info.y - labelH * 0.55;
-      const leadLen = startY - topY;
-      if (leadLen > labelH * 0.3) {
-        const r = modelRadius * 0.0008;                                 // เอ๋ 2026-06-22: leader 50% thinner
-        const headLen = Math.min(leadLen * 0.3, modelRadius * 0.013);   // arrow 50% smaller
-        const shaftLen = Math.max(leadLen - headLen, modelRadius * 0.004);
+      // เอ๋ 2026-06-22 (ref image): thin DIAGONAL black leader from the label's
+      // FRONT (left edge / the qty number) to the part, with a filled arrowhead at
+      // the part end. EVERY label gets one (no skip).
+      const start = new THREE.Vector3(info.centerX + gap, info.y - labelH * 0.45, info.centerZ); // label front-bottom
+      const end = new THREE.Vector3(info.centerX, info.top, info.centerZ);                        // the part
+      const dirV = new THREE.Vector3().subVectors(end, start);
+      const len = dirV.length();
+      if (len > labelH * 0.2) {
+        const ndir = dirV.clone().normalize();
+        const r = modelRadius * 0.0007;
+        const headLen = Math.min(len * 0.22, modelRadius * 0.013);
+        const shaftLen = Math.max(len - headLen, modelRadius * 0.002);
         const leadMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
+        const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), ndir);
         const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, shaftLen, 8), leadMat);
-        shaft.position.set(info.centerX, topY + headLen + shaftLen / 2, info.centerZ);
+        shaft.quaternion.copy(quat);
+        shaft.position.copy(start.clone().addScaledVector(ndir, shaftLen / 2));
         shaft.renderOrder = 998;
-        const cone = new THREE.Mesh(new THREE.ConeGeometry(r * 3.2, headLen, 12), leadMat);
-        cone.rotation.x = Math.PI;                  // tip points DOWN at the part
-        cone.position.set(info.centerX, topY + headLen / 2, info.centerZ);
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(r * 3.4, headLen, 14), leadMat);
+        cone.quaternion.copy(quat);
+        cone.position.copy(end.clone().addScaledVector(ndir, -headLen / 2));  // filled tip at the part
         cone.renderOrder = 998;
         shaft.visible = cone.visible = explodePct > 5;
         info.unit.node.add(shaft);
