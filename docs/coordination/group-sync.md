@@ -8238,3 +8238,6 @@ Both iPad+desktop showed no labels. Blind gate/timing fixes were ALL wrong. Diag
 
 ### RD · 2026-06-23 · explode: click a PART = same as clicking its label (9d90ba9, browser-verified)
 เอ๋ "ในทางกลับกัน เมื่อคลิกที่ Part ให้แสดง effect ที่ part นั้น และ Label": the existing mv raycast-click now ISOLATES the clicked part + selects its label + zoom-fits — symmetric with label-click (replaced the old 3s amber highlight). Bug found+fixed live: the hit→node walk went up to the scene's top child = model-viewer's 'Pivot' wrapper (ModelScene>Pivot>Target>world>…) so _extractPartLabel got 'Pivot'→null→no-op; now walk from the hit mesh up to the FIRST node carrying a real part code + require a matching label row. Verified: click front panel → only DSV100-050080 shown, its label bold; click away → 111 back.
+
+### RD · 2026-06-23 · explode: no lone floating arrowheads (cd7abde, browser-verified)
+เอ๋ "ถ้ามีลูกศรอย่างเดียวไม่ต้องโชว์ มันทำให้งง" (circled stray arrows mid-model). Cause: suppressed leaders used stroke-opacity:0, but an SVG marker-end paints independently of the line stroke → the arrowhead stayed. Fix: all suppress paths now use lineEl.style.display='none' (hides line AND marker); draw path restores display:''. Verified live: 16 leaders, 14 shown with lines, 2 fully hidden (no orphan arrowheads in the render).
