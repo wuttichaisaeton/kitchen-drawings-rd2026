@@ -2125,32 +2125,52 @@ async function _kdOpen3D(code, opts) {
     /* FULLSCREEN sizing override (RD 07 2026-06-22: เอ๋ "full screen คือเต็มจอ
        ไม่ใช่ครึ่งจอ"). The inline width:94vw + max-height:88vh on the
        .kdstock-frame fight the browser's fullscreen layout — without these
-       :fullscreen rules the element stays capped at 880px wide / 88vh tall
-       inside an otherwise-fullscreen viewport, producing big black bands
-       outside it. !important wins over the inline styles. */
+       :fullscreen rules the element stays capped inside an otherwise-fullscreen
+       viewport, producing big black bands. !important wins over the inline
+       styles. position:fixed + top/left:0 forces the frame to actually fill
+       the fullscreen surface even when some browsers don't enforce position
+       on the fullscreen child (RD 07 diff). */
     .kd3d-modal .kdstock-frame:fullscreen,
     .kd3d-modal .kdstock-frame:-webkit-full-screen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
       width: 100vw !important;
       height: 100vh !important;
       max-width: none !important;
       max-height: none !important;
-      border-radius: 0 !important;
       margin: 0 !important;
       padding: 0 !important;
+      border-radius: 0 !important;
       box-sizing: border-box !important;
+      background: #0f1419 !important;
     }
-    /* The body is flex:column with the viewer flex:1; the .kd3d-viewer was
-       hard-capped at 60vh which would shrink it in fullscreen. Stretch in FS. */
-    .kd3d-modal .kdstock-frame:fullscreen .kd3d-viewer,
-    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-viewer {
-      height: auto !important;
-      flex: 1 1 auto !important;
-      min-height: 0 !important;
-    }
+    /* The body / viewer / model-viewer all need to stretch into the new
+       full-viewport frame. The .kd3d-viewer's inline height:60vh hard-caps
+       it in fullscreen — drop the cap; explicit 100%/100% on model-viewer. */
     .kd3d-modal .kdstock-frame:fullscreen .kd3d-body,
     .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-body {
       flex: 1 1 auto !important;
       min-height: 0 !important;
+    }
+    .kd3d-modal .kdstock-frame:fullscreen .kd3d-viewer,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-viewer {
+      height: auto !important;
+      max-height: none !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+    }
+    .kd3d-modal .kdstock-frame:fullscreen model-viewer,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen model-viewer {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .kd3d-modal .kdstock-frame:fullscreen .kd3d-modebar,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-modebar,
+    .kd3d-modal .kdstock-frame:fullscreen .kd3d-explodebar,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-explodebar {
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
   </style>`;
 
