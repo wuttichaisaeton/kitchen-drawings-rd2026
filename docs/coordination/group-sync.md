@@ -7353,3 +7353,27 @@ RD 07 diff applied. 9d243f4 set width:100vw + max-width:none but **some browsers
 
 **For เอ๋**: hard refresh → ⛶ → ตอนนี้กรอบเต็มจอเป๊ะ (no more black void), 3D viewer ขยายเต็ม, ปุ่ม 🔙 มุมขวาบนชัด.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 07: 02 Ruth batch IN PROGRESS — 6/9 already converted, weld leaks dropping live
+**Observed via git pull on origin (no Fusion touches per guardrail).** Pre-batch baseline at 10:50: 5 of 9 cabinets were 1-node welded (`02 Ruth`, `1CSVB2-105003`, `1CSVBL-120000`, `1LLVO4-05000L`, `1NSVFS-020000`). Re-ran the verifier ~30s later:
+
+```
+cabinet                    nodes   verts     MB  sc   schema
+1CSVB2-105003                1     87714   3.15  r12  ⚠WELD       (pending re-fire)
+02 Ruth                      1    689338  25.55  r12  ⚠WELD       (pending — project sweep is LAST)
+1LLVO4-05000L                1     69960   2.54  r12  ⚠WELD       (pending re-fire)
+100VFRR-075D60              29     33529   0.69  r14  main=per-leaf-assembled (round 14, RD 07 revert)
+1CSVBL-120000               85    113369   2.97  r14  main=per-leaf-assembled (round 14, RD 07 revert) ← was WELDED, now 85 nodes ✓
+1LLVB4-06D0MW               75     75093   2.14  r14  main=per-leaf-assembled (round 14, RD 07 revert)
+1LLVB4-08D0DN               51     38471   1.15  r14  main=per-leaf-assembled (round 14, RD 07 revert)
+1NNV04-06000L               35     41851   1.02  r14  main=per-leaf-assembled (round 14, RD 07 revert)
+1NSVFS-020000               43     47936   1.19  r14  main=per-leaf-assembled (round 14, RD 07 revert) ← was WELDED, now 43 nodes ✓
+SUMMARY: 6/9 multi-node; 3 weld leaks remaining (incl. project)
+```
+**Key signals**:
+- **Round 14 fix works on previously-welded cabinets**: 1CSVBL-120000 (1 → **85** nodes) + 1NSVFS-020000 (1 → **43** nodes). Both will now show ~85 / 43 distinct colours in Mode 5 Component Color.
+- Three cabinets still pending — the batch is sweeping; expected for ROUND 14 to flip them too. The project (02 Ruth) gets exported LAST per `CC_BatchExport3D._collect_batch_targets` (cabinets → parts → project ORDER), so its r12 marker is just queue position, not a failure.
+- No error traces, no failed sync.bat pushes, no batch-aborted commits.
+**WAITING FOR**: the remaining 3 commits + the final 02 Ruth project sweep. Will run the verifier again as soon as each pushes and post a final table. If any cabinet ends r14 + still 1 node → ROUND 15 patch needed (an export path the recursive walk doesn't reach).
+**Verifier script**: `_MASTERS/_session_2026_06_22/verify_batch_glbs.py` (re-runnable, exits 0 on all-multi-node, 1 on any weld leak; lists which). RD can `git pull && python …` from any machine. ⏱ 00:05 standby -- Fusion 31
