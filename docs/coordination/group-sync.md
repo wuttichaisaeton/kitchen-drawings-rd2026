@@ -6892,3 +6892,13 @@ Other open work for the lane: nothing critical pending. Last-shipped today: ?asm
 
 (Dual-GLB dispatcher from RD 05's last dispatch stays parked until Fusion 31's `_parts.glb` lands in repo.)
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋: ROUND 11 — file-based parts diagnostic (_MASTERS 6d8df0b) so we STOP flying blind
+**Confirmed RD's observation**: repo has 4 `.glb`, ZERO `_parts.glb`. Round-10's secondary block logged failures only to Text Commands (`app.log`) → invisible to anyone not watching the console, which is everyone. We've been guessing for two re-fires.
+**Round 11 = no logic change, hard evidence change**: every CC_Export3D run now ALSO writes a sidecar file:
+- `Drawings/3d/<code>_parts_debug.txt` — overwritten each run, few hundred bytes, captures: `walk_bodies`, `parts_glb_bytes` (>0 = it worked), `parts_nodes`, `parts_err` (full string — `recursive walk found 0 bodies (target=root, target.occurrences=N, target.bRepBodies=M)` / `every per-body STL failed (N walked, M bad)` / `helper exit N` / `exception: <type> — <msg>`), plus the last ~2KB of helper subprocess stdout+stderr.
+- sync.bat does `git add Drawings/` so the file lands in the next commit automatically.
+- Enriched the error strings themselves so the diagnostic is actionable even before reading the helper output: target_kind + occurrences.count + bRepBodies.count on the "0 bodies" path; walked+bad counts on the "all-STLs-failed" path; exception type on the "exception" path.
+**messageBox header** → `round 11: dual-export + file diagnostic`. No new code paths — same secondary block as round-10, just instrumented.
+**After เอ๋'s next click**, RD/I check the commit — either `_parts.glb` appears (silent issue self-resolved or sync caught up), OR `_parts_debug.txt` reveals the exact failure reason. ⏱ 00:08 -- Fusion 31
