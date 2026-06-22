@@ -2558,6 +2558,7 @@ async function _kdOpen3D(code, opts) {
         <model-viewer
           class="kd3d-mode-${mode}"
           src="${escapeHtml(glbUrl)}"
+          orientation="0deg -90deg 0deg"
           touch-action="none"
           interaction-prompt="none"
           camera-orbit="20deg 70deg 105%"
@@ -3103,27 +3104,43 @@ async function _kdOpen3D(code, opts) {
           if (bb.max.x > cxX) cxX = bb.max.x; if (bb.max.y > cxY) cxY = bb.max.y; if (bb.max.z > cxZ) cxZ = bb.max.z;
           cSumX += meshList[i].cx; cSumY += meshList[i].cy; cSumZ += meshList[i].cz; cN++;
         }
-        if (_orphanCount > 0 && cN > 0) {
-          // Frame the cluster: target = cluster centroid; radius derived from
-          // cluster's largest extent + current FOV. Preserve user's current
-          // orbit angles. Unit handling: model-viewer normalizes scene units to
-          // meters automatically based on glTF metadata, so we feed the
-          // coordinates directly with the `m` suffix.
-          const tcx = cSumX / cN, tcy = cSumY / cN, tcz = cSumZ / cN;
-          const cw = cxX - cnX, ch = cxY - cnY, cd = cxZ - cnZ;
-          const maxExt = Math.max(cw, ch, cd);
-          // Heuristic: if the GLB's coordinates are huge (Fusion mm) the
-          // scene was normalised by model-viewer; we still set target in
-          // the same units it reports via getCameraTarget(). Test once and
-          // verify on the live cabinet.
+        const _reframeTo = (tcx, tcy, tcz, maxExt, reason) => {
           try {
             mv.cameraTarget = `${tcx}m ${tcy}m ${tcz}m`;
             const fovRad = mv.getFieldOfView() * Math.PI / 180;
             const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.35);
             const orbit = mv.getCameraOrbit();
             mv.cameraOrbit = `${orbit.theta}rad ${orbit.phi}rad ${radius}m`;
-            console.info(`[kd3d] outlier filter: ${_orphanCount}/${meshList.length} orphan part(s) — camera fit to cluster (Fusion export bug, pending fix)`);
+            console.info(`[kd3d] ${reason}`);
           } catch (e) { console.warn('[kd3d] camera-fit failed', e); }
+        };
+        if (_orphanCount > 0 && cN > 0) {
+          const tcx = cSumX / cN, tcy = cSumY / cN, tcz = cSumZ / cN;
+          const maxExt = Math.max(cxX - cnX, cxY - cnY, cxZ - cnZ);
+          _reframeTo(tcx, tcy, tcz, maxExt,
+            `outlier filter: ${_orphanCount}/${meshList.length} orphan(s) — camera fit to cluster`);
+        } else if (_orphanCount === 0 && meshList.length >= 8) {
+          const P85_IDX = Math.floor(sorted.length * 0.85) - 1;
+          const pThresh = sorted[Math.max(0, P85_IDX)];
+          let pnX = Infinity, pnY = Infinity, pnZ = Infinity;
+          let pxX = -Infinity, pxY = -Infinity, pxZ = -Infinity;
+          let pSumX = 0, pSumY = 0, pSumZ = 0, pN = 0;
+          for (let i = 0; i < meshList.length; i++) {
+            if (dists[i] <= pThresh) {
+              const pbb = meshList[i].bb;
+              if (pbb.min.x < pnX) pnX = pbb.min.x; if (pbb.min.y < pnY) pnY = pbb.min.y; if (pbb.min.z < pnZ) pnZ = pbb.min.z;
+              if (pbb.max.x > pxX) pxX = pbb.max.x; if (pbb.max.y > pxY) pxY = pbb.max.y; if (pbb.max.z > pxZ) pxZ = pbb.max.z;
+              pSumX += meshList[i].cx; pSumY += meshList[i].cy; pSumZ += meshList[i].cz; pN++;
+            }
+          }
+          if (pN > 0) {
+            const fullMax = Math.max(cxX - cnX, cxY - cnY, cxZ - cnZ);
+            const innerMax = Math.max(pxX - pnX, pxY - pnY, pxZ - pnZ);
+            if (innerMax > 0 && innerMax < 0.75 * fullMax) {
+              _reframeTo(pSumX / pN, pSumY / pN, pSumZ / pN, innerMax,
+                `percentile fit: inner 85% bbox ${Math.round(innerMax)}mm vs full ${Math.round(fullMax)}mm — camera tightened`);
+            }
+          }
         }
         // One-shot per modal session (don't snap camera on every mode swap).
         _initialFitDone = true;
@@ -3422,12 +3439,8 @@ async function _kdOpen3D(code, opts) {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0xffffff, solidOpacity: 1.0, showDashed: true });
       } else if (mode === 'compcolor') {
-        // Component Color: NO edges so the per-leaf hashed colors read clean
-        // (RD 07 + เอ๋ 1CSVB2 "axis lines" — the only line objects were my
-        // 57 edge overlays, no Fusion-imported axes. Reading dark overlays
-        // on coloured panels as "two Z axes" — hide them in this mode).
         setMeshFillVisible(true);
-        setEdgesAllHidden();
+        setEdgesStyle({ solidColor: 0x000000, solidOpacity: 1.0, showDashed: false });
       } else {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0x111317, solidOpacity: 0.7, showDashed: false });

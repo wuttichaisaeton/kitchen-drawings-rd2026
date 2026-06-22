@@ -5060,9 +5060,9 @@ html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rg
 html[data-theme="sketch"] {
   --paper:    #efe7d6;
   --paper2:   #f7f2e7;
-  --ink:      #2a2620;
-  --ink-soft: #6f6757;
-  --pen:      #1b1815;
+  --ink:      #000000;
+  --ink-soft: #333333;
+  --pen:      #000000;
   --faint:    #c7bda6;
   --accent:   #b23a2b;
   --blue:     #2d557d;
