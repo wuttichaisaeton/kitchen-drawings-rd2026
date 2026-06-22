@@ -2196,11 +2196,11 @@ async function _kdOpen3D(code, opts) {
     html[data-theme="sketch"] .kd3d-modal model-viewer.kd3d-mode-hiddenshade{background:#efe7d6;--poster-color:#efe7d6}
     /* Component Color (Fusion Shift+N) — light-grey bg so the per-leaf hues
        pop without harsh contrast and edges still read at 70% opacity. */
-    .kd3d-modal model-viewer.kd3d-mode-compcolor{background:#f3f4f6;--poster-color:#f3f4f6;filter:none}
-    /* Realistic + Explode: dark background like a viewer chrome, model-viewer's
-       PBR + shadow does the rest. */
-    .kd3d-modal model-viewer.kd3d-mode-realistic,
-    .kd3d-modal model-viewer.kd3d-mode-explode{filter:none}
+    .kd3d-modal model-viewer.kd3d-mode-compcolor,
+    .kd3d-modal model-viewer.kd3d-mode-explode{background:#f3f4f6;--poster-color:#f3f4f6;filter:none}
+    /* Realistic: dark background like a viewer chrome, model-viewer's PBR does
+       the rest. (Explode moved to the light component-colour bg above — เอ๋.) */
+    .kd3d-modal model-viewer.kd3d-mode-realistic{filter:none}
     /* Mode picker — 4 buttons across the top of the modal body (visible the
        moment the modal opens, even before the GLB loads). */
     .kd3d-modal .kd3d-modebar{display:flex;align-items:center;gap:2px;padding:6px 8px;background:#0b0f14;border-bottom:1px solid #1c2530;font-family:"Flux Architect",ui-monospace,monospace}
@@ -2961,9 +2961,9 @@ async function _kdOpen3D(code, opts) {
   const _labelColorsForMode = () => {
     const isSketch = document.documentElement.getAttribute('data-theme') === 'sketch';
     let lightBg;
-    if (mode === 'compcolor') lightBg = true;
+    if (mode === 'compcolor' || mode === 'explode') lightBg = true;  // เอ๋: explode = component-colour look (light bg)
     else if (mode === 'hidden' || mode === 'hiddenshade') lightBg = isSketch;
-    else lightBg = false; // realistic / explode → dark
+    else lightBg = false; // realistic → dark
     return lightBg
       ? { fill: '#000000', stroke: '#ffffff' }
       : { fill: '#ffffff', stroke: '#0b0f14' };
@@ -3533,9 +3533,14 @@ async function _kdOpen3D(code, opts) {
       // collapsed 85 meshes onto a single "world" ancestor → all same colour.
       // Stopping at the immediate parent + per-mesh fallback guarantees each
       // mesh gets a distinct ownerKey when the structure is flat.
-      let ownerKey = (mesh.name && mesh.name.length) ? mesh.name
-        : (mesh.parent && mesh.parent.name && mesh.parent !== threeScene && mesh.parent.name.length) ? mesh.parent.name
-        : ('mesh-' + i);
+      // เอ๋ 2026-06-22: colour by PART CODE so identical parts share ONE colour
+      // (e.g. BXXTR0-000000 x4 → one colour, not four). _extractPartLabel strips
+      // the __Body / version suffix → bare code; fall back to the raw node/parent
+      // name when no code parses so those still get a (distinct) colour.
+      let ownerKey = _extractPartLabel(mesh.name)
+        || ((mesh.name && mesh.name.length) ? mesh.name
+          : (mesh.parent && mesh.parent.name && mesh.parent !== threeScene && mesh.parent.name.length) ? mesh.parent.name
+          : ('mesh-' + i));
       let hsl = colorByOwner.get(ownerKey);
       if (!hsl) {
         const seed = _kd3dHashStr(ownerKey);
@@ -3576,7 +3581,7 @@ async function _kdOpen3D(code, opts) {
   const applyMaterials = (m) => {
     if (!materialSnap.length) return;
     // Component Color has its own per-leaf logic — defer to it.
-    if (m === 'compcolor') { applyComponentColors(); return; }
+    if (m === 'compcolor' || m === 'explode') { applyComponentColors(); return; }  // เอ๋: explode uses the component-colour look
     // Leaving compcolor → restore each mesh's original material ref before
     // editing the snap'd materials (safe no-op if we weren't in compcolor).
     restoreOriginalMaterials();
@@ -3678,7 +3683,7 @@ async function _kdOpen3D(code, opts) {
       } else if (mode === 'hiddenshade') {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0x000000, solidOpacity: 1.0, showDashed: true });
-      } else if (mode === 'compcolor') {
+      } else if (mode === 'compcolor' || mode === 'explode') {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0x000000, solidOpacity: 1.0, showDashed: false });
       } else {

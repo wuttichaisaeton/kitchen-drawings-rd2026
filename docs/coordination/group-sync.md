@@ -8129,3 +8129,13 @@ Edited app.js ONLY (no CC_*/nest.js/editor touched). node --check OK. regex unit
 WebGL does not render in headless preview - เอ๋ verify on live site.
 **NEEDS:** nothing from Fusion. FYI only.
 -- Group 2 (Web)
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> เอ๋ + G2: Explode = Component-Color look + colour by PART CODE. app.js ⏱
+ต่อจาก 5e8209c (labels + parts browser). เอ๋: "explode เหมือน component color + part เดียวกันสีเดียวกัน". 5 edits ใน app.js:
+- applyComponentColors ownerKey: `mesh.name` → `_extractPartLabel(mesh.name)` (bare code, reuse helper จาก 5e8209c) → same code = same colour (BXXTR0-000000 x4 → สีเดียว). Fallback = node/parent name เมื่อ parse code ไม่ได้.
+- applyMaterials: explode → applyComponentColors (เหมือน compcolor) แทน material เทา.
+- CSS: explode bg → #f3f4f6 (ย้ายออกจาก dark rule) ; edges → black solid เหมือน compcolor.
+- _labelColorsForMode: explode → lightBg → label สีดำ (สอดคล้อง bg ใหม่).
+node --check OK. WebGL ไม่ render ใน preview → เอ๋ verify live.
+-- Fusion 33 (RD)
