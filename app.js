@@ -2916,6 +2916,34 @@ async function _kdOpen3D(code, opts) {
       for (const u of explodeUnits) { sx += u.gx; sy += u.gy; sz += u.gz; }
       const n = explodeUnits.length || 1;
       explodeCenter = { x: sx / n, y: sy / n, z: sz / n };
+      // Normalize baked-world-coordinate GLBs: CC_Export3D round-14 bakes
+      // assembly-world transforms into geometry vertices while leaving every
+      // node at (0,0,0). Detect and fix: move centroid into node.position,
+      // re-center model at origin.
+      if (explodeUnits.length >= 2) {
+        const allZero = explodeUnits.every(u => u.baseX === 0 && u.baseY === 0 && u.baseZ === 0);
+        if (allZero) {
+          const ox = explodeCenter.x, oy = explodeCenter.y, oz = explodeCenter.z;
+          for (const u of explodeUnits) {
+            const nx = u.gx - ox, ny = u.gy - oy, nz = u.gz - oz;
+            u.node.traverse(nd => {
+              if (!nd.isMesh || !nd.geometry?.attributes?.position) return;
+              const arr = nd.geometry.attributes.position.array;
+              for (let i = 0; i < arr.length; i += 3) {
+                arr[i] -= u.gx; arr[i + 1] -= u.gy; arr[i + 2] -= u.gz;
+              }
+              nd.geometry.attributes.position.needsUpdate = true;
+              if (nd.geometry.boundingBox) nd.geometry.computeBoundingBox();
+              if (nd.geometry.boundingSphere) nd.geometry.computeBoundingSphere();
+            });
+            u.node.position.set(nx, ny, nz);
+            u.baseX = nx; u.baseY = ny; u.baseZ = nz;
+            u.gx = nx; u.gy = ny; u.gz = nz;
+          }
+          explodeCenter = { x: 0, y: 0, z: 0 };
+          console.info('[kd3d] normalized baked-world coords —', explodeUnits.length, 'units re-centered');
+        }
+      }
     }
     // Count meshes via a fresh deep traverse — the diagnostic chip must
     // distinguish "GLB has only 1 mesh" (Fusion issue) from "GLB has many
