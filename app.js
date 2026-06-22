@@ -2360,7 +2360,7 @@ async function _kdOpen3D(code, opts) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fit" aria-label="Zoom to fit" title="Zoom to fit (frame whole model)" style="background:transparent;border:0;color:#9fb0c0;font-size:15px;cursor:pointer;padding:4px 8px;border-radius:4px">⊡</button><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
            <div class="kd3d-loading">Loading 3D model…</div>
          </div>
@@ -2864,6 +2864,40 @@ async function _kdOpen3D(code, opts) {
     } catch (e) { return null; }
   };
 
+  // Zoom-to-fit: frame every VISIBLE mesh (เอ๋ "เพิ่มปุ่ม zoom fit ทุก view").
+  // Works in all modes; recomputes the world bbox from the (world-baked)
+  // geometry so it adapts to whatever is currently shown.
+  const _fitCamera = () => {
+    const scene = threeScene || _getScene();
+    if (!scene || !mv) return;
+    let mnX = Infinity, mnY = Infinity, mnZ = Infinity;
+    let mxX = -Infinity, mxY = -Infinity, mxZ = -Infinity;
+    scene.traverse(n => {
+      if (!n.isMesh || !n.visible || n.isSprite) return;
+      if (!n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch {}
+      const bb = n.geometry.boundingBox;
+      if (!bb) return;
+      if (bb.min.x < mnX) mnX = bb.min.x; if (bb.min.y < mnY) mnY = bb.min.y; if (bb.min.z < mnZ) mnZ = bb.min.z;
+      if (bb.max.x > mxX) mxX = bb.max.x; if (bb.max.y > mxY) mxY = bb.max.y; if (bb.max.z > mxZ) mxZ = bb.max.z;
+    });
+    if (mnX === Infinity) return;
+    const cx = (mnX + mxX) / 2, cy = (mnY + mxY) / 2, cz = (mnZ + mxZ) / 2;
+    const maxExt = Math.max(mxX - mnX, mxY - mnY, mxZ - mnZ);
+    try {
+      mv.cameraTarget = `${cx}m ${cy}m ${cz}m`;
+      const fovRad = mv.getFieldOfView() * Math.PI / 180;
+      const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.4);
+      const orbit = mv.getCameraOrbit();
+      mv.cameraOrbit = `${orbit.theta}rad ${orbit.phi}rad ${radius}m`;
+      if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
+    } catch (e) { console.warn('[kd3d] fit failed', e); }
+  };
+  {
+    const fitBtn = modal.querySelector('.kd3d-fit');
+    if (fitBtn) fitBtn.addEventListener('click', (e) => { e.stopPropagation(); _fitCamera(); });
+  }
+
   // Compute the geometric centroid (bbox midpoint) of a node's mesh subtree
   // *in the node's local space* — i.e. exactly what we need to add to its
   // position to shift it outward. Critical for trimesh-baked GLBs where every
@@ -2918,7 +2952,10 @@ async function _kdOpen3D(code, opts) {
     }
     const labelH = Math.max(6, modelRadius * 0.018);
 
-    const labelInfos = [];
+    // ONE label per unique part code. A code with several bodies (e.g.
+    // BM1L0-050000 = Body8/21/22) otherwise stacks 3 identical labels at the
+    // same spot (เอ๋ "ชื่อซ้ำ ทำไมมี 3 อัน"). Keep the topmost body per code.
+    const byCode = new Map();
     for (let i = 0; i < explodeUnits.length; i++) {
       const u = explodeUnits[i];
       const raw = u.node.name || '';
@@ -2941,8 +2978,11 @@ async function _kdOpen3D(code, opts) {
       });
       if (mc === 0) continue; // no visible body in this unit → no label
       centerX /= mc; centerZ /= mc;
-      labelInfos.push({ text, centerX, centerZ, y: maxY + labelH * 0.8, unit: u });
+      const y = maxY + labelH * 0.8;
+      const prev = byCode.get(text);
+      if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerZ, y, unit: u });
     }
+    const labelInfos = [...byCode.values()];
     // Collision avoidance: bump overlapping labels upward
     const minSep = labelH * 1.2;
     for (let pass = 0; pass < 5; pass++) {
@@ -3668,8 +3708,10 @@ async function _kdOpen3D(code, opts) {
   const browserList = body.querySelector('.kd3d-browser-list');
   const browserToggle = body.querySelector('.kd3d-browser-toggle');
   let browserOpen = false;
+  // Default: ALL parts visible (เอ๋ "ยังไงก็ยังต้องโชว์อยู่"). Hidden state is
+  // session-only via the eye icon — never persisted, so a reload always shows
+  // every part (no more parts silently missing because a row was clicked once).
   let visState = {};
-  try { visState = JSON.parse(localStorage.getItem(VIS_KEY)) || {}; } catch {}
 
   if (browserToggle && browserPanel) {
     browserToggle.addEventListener('click', (e) => {
@@ -3693,17 +3735,27 @@ async function _kdOpen3D(code, opts) {
     for (const [label, units] of seen) {
       const hidden = visState[label] === false;
       const row = document.createElement('div');
-      row.className = 'kd3d-browser-row' + (hidden ? ' kd3d-hidden-part' : '');
-      row.innerHTML = '<span class="kd3d-eye">' + (hidden ? '◯' : '👁') + '</span>'
+      row.className = 'kd3d-browser-row' + (hidden ? ' kd3d-hidden-part' : '')
+        + (_selectedLabel === label ? ' kd3d-selected' : '');
+      row.innerHTML = '<span class="kd3d-eye" title="Show / hide this part">' + (hidden ? '◯' : '👁') + '</span>'
         + '<span class="kd3d-part-name">' + escapeHtml(label) + (units.length > 1 ? ' x' + units.length : '') + '</span>';
-      row.addEventListener('click', () => {
+      // Eye icon = optional session hide (NOT persisted). stopPropagation so it
+      // doesn't also trigger the row's highlight.
+      const eyeEl = row.querySelector('.kd3d-eye');
+      eyeEl.addEventListener('click', (e) => {
+        e.stopPropagation();
         const nowHidden = visState[label] !== false;
         visState[label] = nowHidden ? false : true;
-        for (const { unit } of units) unit.node.visible = nowHidden ? false : true;
-        row.classList.toggle('kd3d-hidden-part', !nowHidden ? false : true);
-        const eye = row.querySelector('.kd3d-eye');
-        if (eye) eye.textContent = nowHidden ? '◯' : '👁';
-        try { localStorage.setItem(VIS_KEY, JSON.stringify(visState)); } catch {}
+        for (const { unit } of units) unit.node.visible = !nowHidden;
+        row.classList.toggle('kd3d-hidden-part', nowHidden);
+        eyeEl.textContent = nowHidden ? '◯' : '👁';
+      });
+      // Row body = highlight / locate this part in light-red; it stays VISIBLE.
+      // Click again (or another row) clears it.
+      row.addEventListener('click', () => {
+        if (_selectedLabel === label) { _clearHighlight(); return; }
+        _clearHighlight();
+        _highlightCode(label, 0xE5484D, 0.5);
       });
       if (hidden) {
         for (const { unit } of units) unit.node.visible = false;
@@ -3717,7 +3769,7 @@ async function _kdOpen3D(code, opts) {
   if (showAllBtn) showAllBtn.addEventListener('click', () => {
     visState = {};
     for (const u of explodeUnits) u.node.visible = true;
-    try { localStorage.removeItem(VIS_KEY); } catch {}
+    _clearHighlight();           // also drop any light-red locate highlight
     _populateBrowserFn();
   });
   if (hideAllBtn) hideAllBtn.addEventListener('click', () => {
@@ -3726,22 +3778,50 @@ async function _kdOpen3D(code, opts) {
       visState[label] = false;
       u.node.visible = false;
     }
-    try { localStorage.setItem(VIS_KEY, JSON.stringify(visState)); } catch {}
-    _populateBrowserFn();
+    _populateBrowserFn();         // session-only (not persisted)
   });
 
-  // ── Click-to-identify (raycast → highlight part + scroll browser) ────
+  // ── Highlight / locate a part (shared by checklist + click-to-identify) ──
+  // Parts are NEVER hidden by highlighting (เอ๋ "ยังไงก็ยังต้องโชว์อยู่") —
+  // we only tint the emissive channel so the part glows in place.
   let _selectedLabel = null;
   let _highlightRestore = [];
-  const _clearHighlight = (THREE) => {
-    for (const { mesh, prevEmissive } of _highlightRestore) {
-      try { mesh.material.emissive?.copy(prevEmissive); } catch {}
+  const _clearHighlight = () => {
+    for (const { mesh, emissive, intensity } of _highlightRestore) {
+      try {
+        mesh.material.emissive?.copy(emissive);
+        if (typeof intensity === 'number') mesh.material.emissiveIntensity = intensity;
+      } catch {}
     }
     _highlightRestore = [];
-    if (browserList) {
-      browserList.querySelectorAll('.kd3d-selected').forEach(r => r.classList.remove('kd3d-selected'));
-    }
+    if (browserList) browserList.querySelectorAll('.kd3d-selected').forEach(r => r.classList.remove('kd3d-selected'));
     _selectedLabel = null;
+  };
+  // Tint every body of `label` (keeps them visible), mark + scroll its row.
+  const _highlightCode = (label, hex, intensity) => {
+    for (const u of explodeUnits) {
+      if (_extractPartLabel(u.node.name || '') !== label) continue;
+      u.node.traverse(nd => {
+        if (!nd.isMesh || !nd.material || !nd.material.emissive) return;
+        _highlightRestore.push({
+          mesh: nd,
+          emissive: nd.material.emissive.clone(),
+          intensity: nd.material.emissiveIntensity,
+        });
+        nd.material.emissive.setHex(hex);
+        nd.material.emissiveIntensity = intensity;
+      });
+    }
+    _selectedLabel = label;
+    if (browserList) {
+      browserList.querySelectorAll('.kd3d-browser-row').forEach(r => {
+        const nameEl = r.querySelector('.kd3d-part-name');
+        if (nameEl && nameEl.textContent.startsWith(label)) {
+          r.classList.add('kd3d-selected');
+          r.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      });
+    }
   };
   {
     let _pointerDownXY = null;
@@ -3753,7 +3833,6 @@ async function _kdOpen3D(code, opts) {
         if (dx * dx + dy * dy > 25) return;
       }
       const THREE = await _kd3dEnsureThree();
-      _clearHighlight(THREE);
       const cam = threeScene.camera;
       if (!cam) return;
       const rect = mv.getBoundingClientRect();
@@ -3762,36 +3841,19 @@ async function _kdOpen3D(code, opts) {
       const raycaster = new THREE.Raycaster();
       raycaster.setFromCamera(new THREE.Vector2(mx, my), cam);
       const hits = raycaster.intersectObjects(threeScene.children, true);
-      const hit = hits.find(h => h.object.isMesh && !h.object.isSprite);
+      const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
       if (!hit) return;
       let node = hit.object;
       while (node.parent && node.parent !== threeScene) node = node.parent;
       const label = _extractPartLabel(node.name || '');
       if (!label) return;
-      _selectedLabel = label;
-      node.traverse(nd => {
-        if (!nd.isMesh || !nd.material || !nd.material.emissive) return;
-        const prev = nd.material.emissive.clone();
-        _highlightRestore.push({ mesh: nd, prevEmissive: prev });
-        nd.material.emissive.setHex(0xF2A93B);
-        nd.material.emissiveIntensity = 0.35;
-      });
-      if (browserList) {
-        const rows = browserList.querySelectorAll('.kd3d-browser-row');
-        for (const row of rows) {
-          const nameEl = row.querySelector('.kd3d-part-name');
-          if (nameEl && nameEl.textContent.startsWith(label)) {
-            row.classList.add('kd3d-selected');
-            row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-            break;
-          }
-        }
-      }
+      _clearHighlight();
+      _highlightCode(label, 0xF2A93B, 0.35); // amber for click-to-identify
       if (!browserOpen && browserPanel && browserToggle) {
         browserOpen = true;
         browserPanel.classList.add('kd3d-browser-open');
       }
-      setTimeout(() => { if (_selectedLabel === label) _clearHighlight(THREE); }, 3000);
+      setTimeout(() => { if (_selectedLabel === label) _clearHighlight(); }, 3000);
     });
   }
 
