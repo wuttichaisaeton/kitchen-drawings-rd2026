@@ -2912,7 +2912,7 @@ async function _kdOpen3D(code, opts) {
         modelRadius = box.getSize(new THREE.Vector3()).length() / 2;
       } catch {}
     }
-    const labelH = Math.max(12, modelRadius * 0.035);
+    const labelH = Math.max(6, modelRadius * 0.018);
 
     for (let i = 0; i < explodeUnits.length; i++) {
       const u = explodeUnits[i];
@@ -2937,13 +2937,13 @@ async function _kdOpen3D(code, opts) {
       const fontSize = 36;
       const pad = 6;
       const fface = '"Flux Architect",ui-monospace,monospace';
-      try { await document.fonts.load('bold ' + fontSize + 'px ' + fface); } catch {}
-      ctx.font = 'bold ' + fontSize + 'px ' + fface;
+      try { await document.fonts.load(fontSize + 'px ' + fface); } catch {}
+      ctx.font = fontSize + 'px ' + fface;
       const tw = ctx.measureText(text).width;
       canvas.width = Math.ceil(tw + pad * 2);
       canvas.height = Math.ceil(fontSize * 1.4 + pad * 2);
 
-      ctx.font = 'bold ' + fontSize + 'px ' + fface;
+      ctx.font = fontSize + 'px ' + fface;
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'center';
       ctx.strokeStyle = '#0b0f14';
