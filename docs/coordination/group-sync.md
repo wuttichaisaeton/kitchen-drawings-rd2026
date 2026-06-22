@@ -7444,3 +7444,27 @@ verifier exit code: 0
 - iPhone: double-tap viewer = pseudo-fullscreen (CSS fills viewport since iPhone Safari lacks the API).
 - ⛶ button + 🔙 floating button also work as before.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - WEB 22 -> เอ๋ + RD 07: FTI000 ×3 unplaced — STAYS CLOSED (no code change) ⏱ 00:18
+WEB 22 spawned from a stale-MEMORY dispatch (MEMORY.md index still flagged `⏳ FTI000 ×3 unplaced debug ค้าง` from 06-11). Board state is actually CLOSED 2026-06-12 (722ea53, เอ๋ screenshot). Re-audited HEAD nest.js + 10-day board silence on FTI000 — verdict: **no bug, no nest.js change**. MEMORY.md flag flipped to ✅.
+
+**Evidence (HEAD live)**:
+- `node --check nest.js` clean.
+- `git show HEAD:nest.js | grep -nE 'looked && looked\.thickness'` = **3 force-override sites** (nest.js:924 primary `openProject`, nest.js:994 `_mergeProjectParts` multi-project path, nest.js:1117 manifest reload) + 1 modal display (nest.js:1493, not in run path). Each path: `if (looked && looked.thickness) { const t = parseFloat(...); if (!isNaN(t)) part.thickness = t; }` — unconditional override, exactly as f11073b shipped 2026-06-11.
+- `_runNesting` thickness gate (nest.js:3271-3367) groups pieces by `thickKey(p.thickness)`, filters stock per group, signals via banner suffix `(t=Xmm — no matching sheet stock)` when a group has zero stock — i.e. cause is always self-identifying.
+- Multi-project + cabinets_off subset: `_recomputeCabinetQtys` (nest.js:1219) drops qty BEFORE expansion at nest.js:3218; `qty=0` parts never enter `pieces`, so toggling cabinets off can only REMOVE unplaced, never introduce new ones. No FTI-specific path.
+- Last FTI commits all 2026-06-11/12: 250d7a8 (CC_Laser uploaded FTI000-183095.dxf), d842a9a (CC_Laser uploaded FTI000-145095-Ruth.dxf), 722ea53 (board close), 410f456 (WEB13 close), 459f83b (WEB13 cannot-repro). 10-day silence since.
+
+**FRAGILITY noted (for future repro, NOT shipped this turn — out of "nest.js ONLY" scope)**:
+- `grain.json` seed has **no FT*/FTI* rule** (patterns: *Tr*, BK*, BM*, DSB*, DVS*, DVX*, FN*/FN1-3*, SD*, *Sup*, SH*, TP*, TS*, X*). Live FT*=1.0 rule lives ONLY in RTDB `grain_rules` (เอ๋ edited via 🧬 modal). If anyone deletes that RTDB row → fresh-load fallback = DXF meta thickness. With today's uploaded DXFs (250d7a8/d842a9a) meta is correct (1mm) so the override is moot; but a future stale meta + missing RTDB rule = bucket-unplaced recurs.
+- DEFENSIVE OPTION (1 line, 1 file): add `{"pattern":"FT*","grain":"ANY","thickness":"1"}` to grain.json between DVX* and FN*. Outside this dispatch's scope ("nest.js ONLY"). เอ๋ call.
+
+**Failure-mode reference if FTI000 unplaced ever recurs** (banner tells you which):
+- Banner says `(t=Xmm — no matching sheet stock)` → thickness mismatch. Check 🧬 modal FT* rule + sheet stock thickness row.
+- Banner says only `N short` (no suffix) → SkylinePacker per-piece reject (bbox > every sheet). Check parsed bbox vs stock W/H — likely DXF parse bug, NOT thickness.
+- Part shows ⚠ NO-DXF row → bbox=null → skipped at nest.js:3221 (`!p.bbox && !p.manual` continue) — does NOT enter unplaced list. Different bug class.
+
+**No live re-repro possible from WEB 22's dev machine** (needs Firebase + 02 Ruth manifest + uploaded DXFs). Verdict purely from code review + board history. If เอ๋ is seeing FTI000 unplaced RIGHT NOW: post the banner text + the FT* row in 🧬 + the sheet stock screenshot → that triple identifies the cause in seconds.
+
+MEMORY.md updated (✅ replaces ⏳). No nest.js commit. No deploy. -- WEB 22
