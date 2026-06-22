@@ -7591,3 +7591,41 @@ RD/เอ๋ open browser DevTools → see exact counts immediately on any futur
 5. **If wrong**: console sample (first 6 meshes) tells me what the names/parents look like — if mesh names are empty AND parent names are empty too, model-viewer is collapsing the structure differently than the raw GLB.
 
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - WEB 22 -> เอ๋ + RD 07: FTI000 ×3 unplaced — LIVE-REPRODUCED, root cause = DXF data (not nest.js) ⏱ 00:42
+เอ๋ re-dispatched after my first-turn "case stays closed" — was right to push back. Drove the live app on localhost:3030 against the real RTDB + jsdelivr DXFs; reproduced the exact `FTI000 ×3 unplaced` symptom end-to-end. nest.js packer + thickness-override + cabinets_off paths are all correct; the brittleness lives in the **DXF data shape** + the **default grain rule keeping it hidden**.
+
+**LIVE TEST (admin · 02 Ruth + Bung 01 + 03 Ruth merged · default 4-row stock)**:
+
+| State | Result |
+|---|---|
+| Solo 02 Ruth, grain=H (RTDB FT* rule) | ✓ 311/311 placed (17 sheets); ZERO unplaced |
+| Multi-project +Bung 01 +03 Ruth, grain=H | ✓ 361/361 placed (19 sheets); ZERO unplaced |
+| Same multi-project, FTI grain forced to V | ✗ 358/361 — `⚠ 3 pieces couldn't be placed: FTI000-183095 ×1, FTI000-145095 ×1, FTI000-145095-Ruth ×1` (EXACT symptom) |
+| All 11 cabs OFF | "0 unique · 0 pcs · 0/0 DXF loaded · −11 cab" header → early-return at nest.js:3248, no banner, FTI cannot reach unplaced |
+
+**WHY** (data, not code):
+- All 3 FTI codes have valid DXFs (RTDB `uploaded_dxfs/FTI000-*`), all `thickness_mm=1`.
+- RTDB `grain_rules` row `{pattern:"FT*", grain:"H", thickness:"1.0"}` lives, applied by all 3 force-override paths.
+- Parsed bbox from each DXF (live `_extractPolygons` output, read off `.kdnest-part-w`/`-h` inputs): **1647×138 / 1647×138 / 2027×138 mm**.
+- Verified by `curl`ing FTI000-145095.dxf + Python parse: OUTER_PROFILES is **one closed LWPOLYLINE, 20 vertices, exact extents 1646.5×138.0 mm**. That IS the flat pattern. The code's "WWWHHH=145095" (= 1450×950) describes the **3D folded** part; the flat is a long thin strip with notches because FT* is a kick-trim that folds upright.
+- At H grain → rots [0,180] → footprint 1647×138 — fits 3050×1525, packs every sheet.
+- At V grain → rots [90,270] → footprint 138×1647 — H=1647 > 1525 (every sheet's H) → `SkylinePacker.place()` at nest.js:2084 hits `if (maxY + h > this.H) continue;` for every segment → returns `null` → counted as unplaced (the rectangle packers _nestMultiSheet drops in `r.unplaced` at nest.js:3367).
+- Banner suffix `(t=Xmm — no matching sheet stock)` is **absent** — confirms SkylinePacker per-piece reject (geometry), not thickness-bucket reject.
+
+**WHAT FIXED 2026-06-12** (722ea53 closure): not a nest.js change at all — เอ๋'s state then had ① grain rule = H + ② sheet stock with at least one row big enough horizontally. f11073b's thickness-override was for the OTHER unplaced symptom that hit CVIL00 on the same day (BOM `0.5` stale meta). The two cases share a board entry but have different mechanisms.
+
+**HARDENING — only #1 is in `nest.js ONLY` scope; flagging #2/#3 for เอ๋'s call**:
+1. **(IN SCOPE, NOT SHIPPED THIS TURN)** Banner could distinguish "geometry reject" from "thickness reject" — currently both look like "N short" with no suffix unless thickness mismatches. Could add `(part WxH — exceeds every sheet)` suffix on the per-code line when min(w,h) > min stock dim AND max(w,h) > max stock dim across rotations. Tiny patch around nest.js:4734-4744. Skipped this turn because the FAILURE is fully diagnosed; เอ๋'s call whether the louder banner is worth a separate ship.
+2. **(OUT — grain.json)** Seed has zero FT/FTI rules; RTDB FT*=H is the SINGLE point of failure. One line `{"pattern":"FT*","grain":"H","thickness":"1"}` defends future fresh-installs / RTDB resets.
+3. **(OUT — Fusion CC_Laser)** Nothing actually broken on the export side; DXF parses correctly. The Review banner's "DXF size ≈ 1647×138, code says ~1450×950" heuristic is the misleader (it doesn't know flat ≠ folded for FT* family) — could mask the FT* family from the bbox-vs-code check, but not nest.js's call.
+
+**REPRO RECIPE** (anyone, post-deploy):
+1. Open 02 Ruth in Nest as admin.
+2. + Project → add Bung 01 → + Project → add 03 Ruth.
+3. Click any FTI000-* row's grain glyph once (cycles ─→│). All 3 FTI codes need to be V.
+4. Run → exact symptom: `⚠ 3 pieces couldn't be placed: FTI000-183095 ×1, FTI000-145095 ×1, FTI000-145095-Ruth ×1`.
+5. Click any FTI row's glyph 3× more to cycle back to ─ → re-Run → 361/361 placed.
+
+**VERDICT**: nest.js needs no code change for this case. The Review banner is doing its job (flagging the 1647×138-vs-code mismatch); the failure path only fires when the data has truly oversized geometry against the active stock — which is the correct packer behavior. Brittle-by-config (grain rule) but not buggy. -- WEB 22
