@@ -3067,18 +3067,17 @@ async function _kdOpen3D(code, opts) {
       });
       if (mc === 0) continue; // no visible body in this unit → no label
       centerX /= mc; centerY /= mc; centerZ /= mc;
-      const y = maxY + labelH * 1.1;   // เอ๋ 2026-06-22: label further OUT so every label has a leader
-      // outward push (parent/explode frame) for the OUTSIDE layout + overlap test
-      let _dx = u.gx - (explodeCenter ? explodeCenter.x : 0);
-      let _dz = u.gz - (explodeCenter ? explodeCenter.z : 0);
-      if (Math.hypot(_dx, _dz) < 1e-3) { _dx = 1; _dz = 0; }
-      const _dl = Math.hypot(_dx, _dz) || 1; _dx /= _dl; _dz /= _dl;
-      const _push = modelRadius * 0.7;
-      const offLocal = new THREE.Vector3(_dx * _push, 0, _dz * _push);
+      const y = centerY;   // เอ๋ 2026-06-22: label at the part's HEIGHT (sideways), not above/below
+      // เอ๋: push the label to a fixed LEFT or RIGHT column (never up/down) — always
+      // on the left/right side of the view. colX = model centre ± ~0.85·radius.
+      const _cx = explodeCenter ? explodeCenter.x : 0;
+      const _side = (u.gx < _cx) ? -1 : 1;          // left or right
+      const _colX = _cx + _side * modelRadius * 0.85;
+      const offLocal = new THREE.Vector3(_colX - u.gx, 0, 0);
       try { offLocal.applyQuaternion(u.node.quaternion.clone().invert()); } catch {}
       const prev = byCode.get(text);
       if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerY, centerZ, y, top: maxY, unit: u,
-        offLocal, sideX: (_dx >= 0 ? 0 : 1), pgx: u.gx + _dx * _push, pgz: u.gz + _dz * _push });
+        offLocal, sideX: (_side > 0 ? 0 : 1), pgx: _colX, pgz: u.gz });
     }
     const labelInfos = [...byCode.values()];
     // Collision avoidance: bump overlapping labels upward
@@ -3140,7 +3139,7 @@ async function _kdOpen3D(code, opts) {
       tex.magFilter = THREE.LinearFilter;
       const mat = new THREE.SpriteMaterial({
         map: tex, transparent: true,
-        depthTest: false, depthWrite: false, sizeAttenuation: true,
+        depthTest: false, depthWrite: false, sizeAttenuation: false,   // เอ๋: CONSTANT screen size
       });
       const sprite = new THREE.Sprite(mat);
       const aspect = canvas.width / canvas.height;
@@ -3149,8 +3148,9 @@ async function _kdOpen3D(code, opts) {
       // is in the explode/parent frame; convert to node-local so the label follows
       // on explode. Anchor on the side facing the part so the leader exits cleanly.
       const offLocal = info.offLocal || new THREE.Vector3();
+      const screenH = 0.085;   // เอ๋: constant on-screen height (zoom-independent)
       sprite.center.set(info.sideX || 0, (canvas.height - ulY) / canvas.height);
-      sprite.scale.set(labelH * aspect, labelH, 1);
+      sprite.scale.set(screenH * aspect, screenH, 1);
       sprite.position.set(info.centerX + offLocal.x, info.y + offLocal.y, info.centerZ + offLocal.z);
       sprite.visible = explodePct > 5;
       sprite.renderOrder = 999;
