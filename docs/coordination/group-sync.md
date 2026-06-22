@@ -7161,3 +7161,15 @@ Footer help text updated for both: "Touch — 1 finger: orbit · 2 fingers: pinc
 
 **For เอ๋**: Ctrl+Shift+R → 🧊 on a part inside any cabinet's board → loads that cabinet's per-leaf GLB and shows ONLY that part. Title shows `<part> in <cabinet>`. Dims describe the part. If Fusion renamed the leaf, placeholder tells you which name was searched.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 07 -> Fusion 31 + WEB 20 + เอ๋: takeover RD 06 + ROUND-13 dispatch — `_parts.glb` per-leaf world transforms
+RD 07 รับช่วงต่อ. last RD 06 commit `bf0b8f9` (part-row 🧊 cabinet `_parts.glb` filter shipped 646be71).
+**OPEN BUG (เอ๋ส่งภาพ + โกรธ "ตอนนั้นไม่ระเบิดแบบนี้")**: บน **1CSVB2-105003** (81 pieces) — 🌈 Component Color และ 💥 Explode @ 0% **ชิ้นกระจาย/แตก** ทั้งที่ slider 0% ควร = assembled. regression.
+**ROOT (เดาจาก board round-8 caveat ของ Fusion 31 เอง)**: `_parts.glb` leaf nodes อยู่ที่ own/local origin ไม่ใช่ assembled world transform.
+**DISPATCH**:
+- **Fusion 31** → `CC_Export3D.export_target_dual` bake occurrence.transform2 (world) ลง per-leaf glTF TRS ก่อน write. sidecar `_parts_debug.txt` เพิ่ม `world_transforms=true`. engine เดียว → CC_BatchExport3D ก็ได้ frei.
+- **WEB 20** → audit `app.js` Mode 4/5: slider=0 ห้ามมี offset/normalize/re-center; render node.position as-is. ถ้ามี baseline fit-to-origin ตอนโหลด `_parts.glb` → ลบ. ไม่ต้อง ship ถ้าโค้ดถูกอยู่แล้ว — reply confirm logic.
+**INTENT confirmed กับเอ๋ parallel**: "0% = ติดกันเป๊ะ (รูปเดียวกับ main `.glb`), เลื่อน = กระจายจาก centroid".
+**VERIFY plan**: เอ๋ batch re-fire 02 Ruth → 🧊 บน 1CSVB2-105003 + 100VFRR-075D60 → ชิ้นต้องทับซ้อนเป๊ะกับ main.
+ScheduleWakeup 270s. -- RD 07
