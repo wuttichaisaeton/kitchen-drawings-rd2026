@@ -1,23 +1,29 @@
-CC_Export3D round-12 dual-export (engine extracted; called from CC_BatchExport3D)
-cabinet         = 100VFRR-075D60
-target_kind     = cabinet
-walk_bodies     = 29
-parts_glb_bytes = 722728
-parts_nodes     = 29
---- last helper subprocess output ---
-OK 080W-Insert_4_Hinges_v3__Body1 944/1908
-OK 080W-Insert_4_Hinges_v3__Body2 118/236
-OK 080W-Insert_4_Hinges_v3__Body4 1027/2050
-OK 080W-Insert_4_Hinges_v3__Box 160/316
-OK 080W-Insert_4_Hinges_v3__Body8 944/1908
-OK 080W-Insert_4_Hinges_v3__Body9 944/1908
-OK 080W-Insert_4_Hinges_v3__Body14 944/1908
-OK 080W-Insert_4_Hinges_v3__Body10 118/236
-OK 080W-Insert_4_Hinges_v3__Body11 118/236
-OK 080W-Insert_4_Hinges_v3__Body15 118/236
-OK 080W-Insert_4_Hinges_v3__Body12 1027/2050
-OK 080W-Insert_4_Hinges_v3__Body13 1027/2050
-OK 080W-Insert_4_Hinges_v3__Body16 1027/2050
+CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+cabinet           = 100VFRR-075D60
+target_kind       = cabinet
+walk_bodies       = 29
+main_glb_bytes    = 722672
+main_nodes        = 29
+main_stl_bytes    = 3372336
+world_transforms  = true (Matrix3D.getCell, round-13)
+schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
+first_leaf_world_mm[0] = 080W-Insert 4 Hinges v1__Body1 @ (741.0, -565.0, -82.0)
+first_leaf_world_mm[1] = 080W-Insert 4 Hinges v1__Body2 @ (741.0, -565.0, -82.0)
+first_leaf_world_mm[2] = 080W-Insert 4 Hinges v1__Body4 @ (741.0, -565.0, -82.0)
+--- main helper subprocess output ---
+OK 080W-Insert_4_Hinges_v1__Body1 944/1908
+OK 080W-Insert_4_Hinges_v1__Body2 118/236
+OK 080W-Insert_4_Hinges_v1__Body4 1027/2050
+OK 080W-Insert_4_Hinges_v1__Box 160/316
+OK 080W-Insert_4_Hinges_v1__Body8 944/1908
+OK 080W-Insert_4_Hinges_v1__Body9 944/1908
+OK 080W-Insert_4_Hinges_v1__Body14 944/1908
+OK 080W-Insert_4_Hinges_v1__Body10 118/236
+OK 080W-Insert_4_Hinges_v1__Body11 118/236
+OK 080W-Insert_4_Hinges_v1__Body15 118/236
+OK 080W-Insert_4_Hinges_v1__Body12 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body13 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body16 1027/2050
 OK Cup__Body5 3981/7978
 OK Cup__Body6 3981/7978
 OK Cup__Body7 3981/7978
@@ -34,4 +40,9 @@ OK DRW__Body1 160/316
 OK DSV2R4-060080_v6__Body2 1493/3062
 OK DSV100-060080_v6__Body4 1828/3652
 OK SD0HG1-000000__Body1 1832/3780
-GLB 722728 29
+ORPHAN_SUMMARY median=544.8 threshold=1634.3 count=4/29
+ORPHAN Cup__Body8 dist=2552.9 (4.7x median)
+ORPHAN Cup__Body7 dist=2456.3 (4.5x median)
+ORPHAN Cup__Body6 dist=2372.6 (4.4x median)
+ORPHAN Cup__Body5 dist=2303.2 (4.2x median)
+GLB 722672 29

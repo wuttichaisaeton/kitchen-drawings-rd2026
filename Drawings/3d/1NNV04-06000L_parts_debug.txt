@@ -1,10 +1,16 @@
-CC_Export3D round-12 dual-export (engine extracted; called from CC_BatchExport3D)
-cabinet         = 1NNV04-06000L
-target_kind     = cabinet
-walk_bodies     = 35
-parts_glb_bytes = 1068592
-parts_nodes     = 35
---- last helper subprocess output ---
+CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+cabinet           = 1NNV04-06000L
+target_kind       = cabinet
+walk_bodies       = 35
+main_glb_bytes    = 1068524
+main_nodes        = 35
+main_stl_bytes    = 4363840
+world_transforms  = true (Matrix3D.getCell, round-13)
+schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
+first_leaf_world_mm[0] = SD0SUP-000000 v6__Body1 @ (317.0, 281.0, 636.0)
+first_leaf_world_mm[1] = SD00NA-080000 v31__Body1 @ (318.0, -284.0, 382.0)
+first_leaf_world_mm[2] = SD0SUP-000000 v6__Body1 @ (-284.0, 281.0, -636.0)
+--- main helper subprocess output ---
 OK SD0SUP-000000_v6__Body1 428/868
 OK SD00NA-080000_v31__Body1 10154/21756
 OK SD0SUP-000000_v6__Body1_2 428/868
@@ -40,4 +46,10 @@ OK Body1_8 440/876
 OK Body1_9 1124/2248
 OK HingeW4-H0800_v4__Body38 160/316
 OK Door__Body1 160/316
-GLB 1068592 35
+ORPHAN_SUMMARY median=309.5 threshold=928.4 count=5/35
+ORPHAN TS2TRX-000000__Body1_4 dist=1355.8 (4.4x median)
+ORPHAN TS2TRX-000000__Body1_2 dist=1280.9 (4.1x median)
+ORPHAN TS2TRX-000000__Body1_3 dist=1215.0 (3.9x median)
+ORPHAN SD0SUP-000000_v6__Body1_3 dist=1149.2 (3.7x median)
+ORPHAN BK1DN1-060000_v31__Body1 dist=964.1 (3.1x median)
+GLB 1068524 35

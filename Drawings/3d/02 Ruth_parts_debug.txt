@@ -1,78 +1,67 @@
-CC_Export3D round-12 dual-export (engine extracted; called from CC_BatchExport3D)
-cabinet         = 02 Ruth
-target_kind     = project
-walk_bodies     = 161
-parts_glb_bytes = 3742860
-parts_nodes     = 151
---- last helper subprocess output ---
-0
-OK Leg_-_080_mm._by_YH__Cut_1_4 62/120
-OK Leg_-_080_mm._by_YH__Cut_3_4 62/120
-OK Leg_-_080_mm._by_YH__Cut_2_4 62/120
-OK Body1_18 366/728
-OK Body2_4 300/596
-OK Body1_19 440/876
-OK Body1_20 1124/2248
-OK Body1_21 366/728
-OK Body2_5 300/596
-OK Body1_22 440/876
-OK Body1_23 1124/2248
-OK Body1_24 366/728
-OK Body2_6 300/596
-OK Body1_25 440/876
-OK Body1_26 1124/2248
-OK HingeW4-H0800_v4__Body38 160/316
-OK Door__Body1 160/316
-OK DSV100-060080_v6__Body4 1828/3652
-OK SD0HG1-000000__Body1 1832/3780
-OK REF_-_TEKA_TFI3_130_D__Body1 236/468
-OK REF_-_TEKA_TFI3_130_D__Body2 8/12
-OK FN0F00-020000_v3__Body18 1520/3184
-OK Leg_-_080_mm._by_YH__Body1_5 3259/6534
-OK Leg_-_080_mm._by_YH__Cut_7 62/120
-OK Leg_-_080_mm._by_YH__Cut_1_5 62/120
-OK Leg_-_080_mm._by_YH__Cut_3_5 62/120
-OK Leg_-_080_mm._by_YH__Cut_2_5 62/120
-OK Body1_27 964/1928
-OK Body1_28 540/1076
-OK Body1_29 440/876
-OK Leg_-_080_mm._by_YH__Body1_6 3259/6534
-OK Leg_-_080_mm._by_YH__Cut_8 62/120
-OK Leg_-_080_mm._by_YH__Cut_1_6 62/120
-OK Leg_-_080_mm._by_YH__Cut_3_6 62/120
-OK Leg_-_080_mm._by_YH__Cut_2_6 62/120
-OK Body1_30 964/1928
-OK Body1_31 440/876
-OK Leg_-_080_mm._by_YH__Body1_7 3259/6534
-OK Leg_-_080_mm._by_YH__Cut_9 62/120
-OK Leg_-_080_mm._by_YH__Cut_1_7 62/120
-OK Leg_-_080_mm._by_YH__Cut_3_7 62/120
-OK Leg_-_080_mm._by_YH__Cut_2_7 62/120
-OK Body1_32 964/1928
-OK Body1_33 540/1076
-OK Body1_34 440/876
-OK Body1_35 964/1928
-OK Body1_36 540/1076
-OK Body1_37 440/876
-OK FN3BLA-020000_v2__Body4 192/404
-OK FN3BLA-020000_v2__Body5 52/100
-OK FN3BLA-020000_v2__Body6 61/118
-OK TS1BHH-020000_v7__Body3 744/1516
-OK TS1BHH-020000_v7__Body3_2 744/1516
-OK DSV2F0-020080_v3__Body2 710/1416
-OK 1DN__Body4 302/600
-OK 1DN__Body5 302/600
-OK 1DN__Body6 302/600
-OK 1DN__Body7 302/600
-OK 2DN__Body4 384/772
-OK 2DN__Body7 384/772
-OK 2DN__Body12 384/772
-OK 2DN__Body13 384/772
-OK FW150__Body1 1120/2276
-OK FW150__Body2 56/108
-OK FW150__Body3 56/108
-OK FW150__Body4 1120/2276
-OK FW150__Body5 56/108
-OK FW150__Body6 56/108
-OK Component23__Body1 8/12
-GLB 3742860 151
+CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+cabinet           = 02 Ruth
+target_kind       = project
+walk_bodies       = 279
+main_glb_bytes    = 8947480
+main_nodes        = 269
+main_stl_bytes    = 36754096
+world_transforms  = true (Matrix3D.getCell, round-13)
+schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
+first_leaf_world_mm[0] = FN0F00-080000 v2__Body18 @ (1050.0, -301.0, 118.0)
+first_leaf_world_mm[1] = FN1BLA-120000__Body1 @ (1050.0, -301.0, 118.0)
+first_leaf_world_mm[2] = Leg - 080 mm. by YH__Body1 @ (1156.3, 802.3, -18.0)
+--- main helper subprocess output ---
+y3 924/1924
+OK TS1BHH-036202_v3__Body3_2 924/1924
+OK TS1BHH-120092_v7__Body3 2408/5008
+OK SD0CN2-080000_v7__Body1 10322/22120
+OK SDRCN2-080000_v4__Body1 10202/21860
+OK BXXTR0-000000__Body1_9 556/1140
+OK BXXTR0-000000__Body1_10 556/1140
+OK BXXTR0-000000__Body1_11 556/1140
+OK BXXTR0-000000__Body1_12 556/1140
+OK SDLCN0-080003_v8__Body2 3290/6784
+OK TS2TRX-000000__Body1_5 180/372
+OK TS2TRX-000000__Body1_6 180/372
+OK TS2TRX-000000__Body1_7 180/372
+OK 080W-Insert_4_Hinges_v1__Body1_2 944/1908
+OK 080W-Insert_4_Hinges_v1__Body2_2 118/236
+OK 080W-Insert_4_Hinges_v1__Body4_2 1027/2050
+OK 080W-Insert_4_Hinges_v1__Box_2 160/316
+OK 080W-Insert_4_Hinges_v1__Body8_2 944/1908
+OK 080W-Insert_4_Hinges_v1__Body9_2 944/1908
+OK 080W-Insert_4_Hinges_v1__Body14_2 944/1908
+OK 080W-Insert_4_Hinges_v1__Body10_2 118/236
+OK 080W-Insert_4_Hinges_v1__Body11_2 118/236
+OK 080W-Insert_4_Hinges_v1__Body15_2 118/236
+OK 080W-Insert_4_Hinges_v1__Body12_2 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body13_2 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body16_2 1027/2050
+OK Cup__Body5_3 3981/7978
+OK Cup__Body6_3 3981/7978
+OK Cup__Body7_3 3981/7978
+OK Cup__Body8_3 3981/7978
+OK Component14__Body1_3 440/884
+OK Component14__Body2_3 440/884
+OK Component14__Body3_3 440/884
+OK Component14__Body4_3 440/884
+OK Component15__Body1_3 504/1012
+OK Component15__Body2_3 504/1012
+OK Component15__Body3_3 504/1012
+OK Component15__Body4_3 504/1012
+OK DRW__Body1_3 160/316
+OK CL__Body1 275/546
+OK Circle__Body1 546/1104
+OK Circle__Body2 546/1104
+OK BMSPFW-000001_v5__Body1 680/1416
+OK DSV100-045080_v6__Body4 1626/3248
+OK FTI000-145095-Ruth_v2__Body1 5272/11132
+OK CVIL00-205093_v10__Body1 4932/10224
+OK CVIL00-205093_v10__Body2 19684/39364
+OK CVIL00-205093_v10__Body3 10403/20802
+OK C1H101-093I30-Ruth_v4__Body1 2256/4596
+OK C10002-000000-Ruth_v3__Body2 172/360
+ORPHAN_SUMMARY median=1657.4 threshold=4972.3 count=2/269
+ORPHAN TS2TRX-000000__Body1_7 dist=5192.5 (3.1x median)
+ORPHAN TS2TRX-000000__Body1_6 dist=5115.2 (3.1x median)
+GLB 8947480 269
