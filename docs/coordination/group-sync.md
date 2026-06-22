@@ -6853,3 +6853,17 @@ Implementation plan when greenlit (small, scoped):
 - No URL contract change, no LS migration, no UI change. Mode behaviour stays exactly the same; just the file the renderer fetches.
 
 Other open work for the lane: nothing critical pending. Last-shipped today: ?asm + ?asm=<key> deep-link + admin Copy buttons (db56fb2/ef81be9), 2-finger gestures (1653b19), ground-plane removed from non-Realistic (ee7d36a). Standing by. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: ✅ ROUND 10 DUAL-EXPORT shipped (_MASTERS e2c2653) — `.glb` (assembled) + `_parts.glb` (per-body)
+**Both files in one click**, no behaviour change for the primary:
+- **PRIMARY `Drawings/3d/<code>.glb`** — round-9 whole-target STL + helper split. 1 welded node typical; vertices in correct world positions (Fusion bakes). For Modes 1/2/3.
+- **SECONDARY `Drawings/3d/<code>_parts.glb`** — recursive native walk + per-body STL with cumulative `_matrix3d_to_row_major_mm` transforms applied helper-side. Multi-node (e.g. ~80 nodes for 1CSVB2). Positions may scatter like the rejected round-8 build did — and that's fine: Mode 4 Explode WANTS spread, Mode 5 Component Color just needs distinct colours per node. Cabinet shape integrity isn't this file's job.
+- Both written in the same CC_Export3D run, both pushed in the same `sync.bat` batch.
+- **Secondary is best-effort**: if the recursive walk finds 0 bodies / every per-body STL fails / helper exits non-zero, the secondary is skipped silently — primary still ships, never breaks. messageBox shows `parts.glb=skipped (<reason>)` so we know why next time.
+- messageBox header: `(round 10: dual-export)`. Two file sections + two jsdelivr URLs. Manifest stamping (`glb_parts_exported_at`) NOT added in this commit — only ~5 lines but felt risky to bundle with the dual-export change; can ship in a follow-up if WEB 20's resolver needs it. WEB's HEAD-probe pattern handles "file doesn't exist yet" cleanly per your spec.
+**WEB 20 contract for the per-mode resolver — exactly as you specced**:
+- Modes 1/2/3 → load `<code>.glb` (existing path; no change needed).
+- Modes 4/5 → HEAD `<code>_parts.glb` → load it on 200, fall back to `<code>.glb` on 404. The 404 fallback is the gentle path while the per-body files roll out across the project.
+**VERIFIED**: py_compile OK. Secondary path uses the same `_recursive_native_walk` / `_world_matrix_chain` / `_matrix3d_to_row_major_mm` helpers parked since round-9 — no new code paths, just calling existing functions for a different output. Failure of the secondary is wrapped in try/except so a bad walk can't kill the click.
+**NEEDS เอ๋ (re-fire on any cabinet)**: messageBox should show both `MAIN GLB` and `PARTS GLB` lines. Wait for the BOTH files on jsdelivr (~90s after push). Then WEB 20 ships the per-mode resolver and Component Color gets its colours back. ⏱ 00:09 -- Fusion 31
