@@ -2,390 +2,10 @@
   "name": "02 Ruth",
   "status": "active",
   "created_at": "2026-06-08T09:23:07.576072+00:00",
-  "updated_at": "2026-06-20T21:39:07.511663+00:00",
-  "total_unique_parts": 137,
-  "total_qty": 326,
+  "updated_at": "2026-06-22T04:03:37.007130+00:00",
+  "total_unique_parts": 99,
+  "total_qty": 225,
   "parts": [
-    {
-      "code": "2BK000-000000",
-      "qty": 2,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:cpl55CpVTv-QBWbskYX2Gw"
-    },
-    {
-      "code": "2BK001-000001",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:FgAA1BTtTw2N2YYHIEnndA"
-    },
-    {
-      "code": "2BK001-000002",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:ocwuQnfLToCjq_4zyt8iVg"
-    },
-    {
-      "code": "2BK001-060120",
-      "qty": 4,
-      "family": "Other",
-      "parent_code": "2BK000-060120",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:sXf-AMtoTLu2FgujgOvnHQ"
-    },
-    {
-      "code": "2BK001-070120",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2BK000-070120",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
-    },
-    {
-      "code": "2BK001-070120",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
-    },
-    {
-      "code": "2BK001-070120",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2BK000-070120",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:JJVDd2qRSvKOKi8prYDlOA"
-    },
-    {
-      "code": "2BK002-060000",
-      "qty": 8,
-      "family": "Other",
-      "parent_code": "2BK000-060120",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:le3lMDvYQYCB4y01mq7e3A"
-    },
-    {
-      "code": "2BK002-070000",
-      "qty": 2,
-      "family": "Other",
-      "parent_code": "2BK000-070120",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
-    },
-    {
-      "code": "2BK002-070000",
-      "qty": 2,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
-    },
-    {
-      "code": "2BK002-070000",
-      "qty": 2,
-      "family": "Other",
-      "parent_code": "2BK000-070120",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:IPgYB157SsaA41CeThIQ7w"
-    },
-    {
-      "code": "2BK200-000000",
-      "qty": 4,
-      "family": "Other",
-      "parent_code": "2BK004-070120",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:EKFgQ__3TPOMNjTYsP96MA"
-    },
-    {
-      "code": "2BK200-000000",
-      "qty": 16,
-      "family": "Other",
-      "parent_code": "2BK004-060120",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:EKFgQ__3TPOMNjTYsP96MA"
-    },
-    {
-      "code": "2BK200-000000",
-      "qty": 4,
-      "family": "Other",
-      "parent_code": "2BK004-070120",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:EKFgQ__3TPOMNjTYsP96MA"
-    },
-    {
-      "code": "2CF000-060000",
-      "qty": 4,
-      "family": "Other",
-      "parent_code": "2FNL00-060000",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:wUmXR_jgTVKm6EfgC6eQ5Q"
-    },
-    {
-      "code": "2CF000-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:34xGLLuiT5GvJmENFXgn4g"
-    },
-    {
-      "code": "2CF000-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNLR0-070000",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:34xGLLuiT5GvJmENFXgn4g"
-    },
-    {
-      "code": "2CFL00-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:zerqqftnRAeMdRinVQftHA"
-    },
-    {
-      "code": "2CN002-120024",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:MkClCGBPQWORd48ODrctSA"
-    },
-    {
-      "code": "2CN026-120000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:CqMsJwXxTMOeJwIZCHV9xw"
-    },
-    {
-      "code": "2CVH19-346LL0-Ruth",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "F2",
-      "urn": "urn:adsk.wipprod:dm.lineage:rxkfNH7ZSzyBF_bftUK0Yw"
-    },
-    {
-      "code": "2CVH26-766LER",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "F2",
-      "urn": "urn:adsk.wipprod:dm.lineage:FRSILS5cTpCSKKLvYt6-jQ"
-    },
-    {
-      "code": "2DN000-060000",
-      "qty": 4,
-      "family": "Other",
-      "parent_code": "2FNL00-060000",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:9aZj97BISY2Fi2dfpsJ86A"
-    },
-    {
-      "code": "2DN000-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNLR0-070000",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:VVXeRCWQQCejMbVtpnaWQg"
-    },
-    {
-      "code": "2DNCL2-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:vgzv0QXESmqwF8RIjbitLg"
-    },
-    {
-      "code": "2DNCR0-070043",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:sOwq5J_YTw-8qjim0O_z8g"
-    },
-    {
-      "code": "2FCVN1-120020",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "F2",
-      "urn": "urn:adsk.wipprod:dm.lineage:KMKV8eUwQLuhUvD5ItEvyg"
-    },
-    {
-      "code": "2FCVN1-120030-Ruth",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "F2",
-      "urn": "urn:adsk.wipprod:dm.lineage:LSLBJ7ShSkeDQzezsj5aiQ"
-    },
-    {
-      "code": "2SD0C1-120026",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:fnZ5qfkwQsC-Lo_Y5YUtbQ"
-    },
-    {
-      "code": "2SD0C1-120040",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:s4oJmEzWSGaa3cIvZTV_Rw"
-    },
-    {
-      "code": "2SDCN1-120040",
-      "qty": 2,
-      "family": "Other",
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
-    },
-    {
-      "code": "2SDCN1-120040",
-      "qty": 8,
-      "family": "Other",
-      "parent_code": "2FNL00-060000",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
-    },
-    {
-      "code": "2SDCN1-120040",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNLR0-070000",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
-    },
-    {
-      "code": "2SDCN2-120034",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNLR0-070000",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:ferf1f9uRJC1vYO6a5C-Ag"
-    },
-    {
-      "code": "2SHCV1-190015",
-      "qty": 2,
-      "family": "Other",
-      "parent_code": "SH0001-190015",
-      "variant_root": "SH0001-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
-    },
-    {
-      "code": "2SHCV1-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0002-190015",
-      "variant_root": "SH0002-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
-    },
-    {
-      "code": "2SHCV2-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0002-190015",
-      "variant_root": "SH0002-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
-    },
-    {
-      "code": "2SHCV3-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0002-190015",
-      "variant_root": "SH0002-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
-    },
-    {
-      "code": "2SHSH1-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0001-190015",
-      "variant_root": "SH0001-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
-    },
-    {
-      "code": "2SHSH2-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0001-190015",
-      "variant_root": "SH0001-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:xpnkGIrRSia0qs9IYswVjA"
-    },
-    {
-      "code": "2SHSH3-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0002-190015",
-      "variant_root": "SH0002-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
-    },
-    {
-      "code": "2SHSH4-190015",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "SH0002-190015",
-      "variant_root": "SH0002-190015",
-      "urn": "urn:adsk.wipprod:dm.lineage:7IE5-8v5SPa4eUkNJ78elg"
-    },
-    {
-      "code": "2UP000-060000",
-      "qty": 4,
-      "family": "Other",
-      "parent_code": "2FNL00-060000",
-      "variant_root": "2FNL00-060000",
-      "urn": "urn:adsk.wipprod:dm.lineage:csuCkC1qSLSDp-jdSXtowA"
-    },
-    {
-      "code": "2UP000-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNLR0-070000",
-      "variant_root": "2FNLR0-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:lILrE2dfRHa40-YIpnJsKw"
-    },
-    {
-      "code": "2UPCN2-070000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FNCL2-070000",
-      "variant_root": "2FNCL2-070000",
-      "urn": "urn:adsk.wipprod:dm.lineage:Jco-Ak6hTiKCWGnWqsi-Og"
-    },
-    {
-      "code": "2UPLL0-070043",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043",
-      "urn": "urn:adsk.wipprod:dm.lineage:KQ7Fq3o-SLiVIOn9URHymg"
-    },
-    {
-      "code": "2WL001-000000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2WL000-000000",
-      "variant_root": "2WL000-000000",
-      "urn": "urn:adsk.wipprod:dm.lineage:tnUJQ111R8WQwV7NQ4jX7g"
-    },
-    {
-      "code": "2WL002-000000",
-      "qty": 1,
-      "family": "Other",
-      "parent_code": "2WL000-000000",
-      "variant_root": "2WL000-000000",
-      "urn": "urn:adsk.wipprod:dm.lineage:tnUJQ111R8WQwV7NQ4jX7g"
-    },
     {
       "code": "BK1DN1-020000",
       "qty": 1,
@@ -1440,7 +1060,7 @@
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "parent_code": "1LLVO4-05000L",
+      "parent_code": "HINGEW3-H0800",
       "variant_root": "1LLVO4-05000L"
     },
     {
@@ -1448,7 +1068,7 @@
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "parent_code": "1NNV04-06000L",
+      "parent_code": "HINGEW4-H0800",
       "variant_root": "1NNV04-06000L"
     },
     {
@@ -1524,108 +1144,12 @@
       "variant_root": "1LLVO4-05000L"
     },
     {
-      "code": "1SHG00-060035",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "1SHG00-060035"
-    },
-    {
       "code": "1SHS10-050035",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
       "parent_code": "1LLVO4-05000L",
       "variant_root": "1LLVO4-05000L"
-    },
-    {
-      "code": "2BK000-060120",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "2FNL00-060000",
-      "variant_root": "2FNL00-060000"
-    },
-    {
-      "code": "2BK000-070120",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "2FCLL0-070043",
-      "variant_root": "2FCLL0-070043"
-    },
-    {
-      "code": "2BK000-070120",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "2FNLR0-070000",
-      "variant_root": "2FNLR0-070000"
-    },
-    {
-      "code": "2BK004-060120",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "2BK000-060120",
-      "variant_root": "2FNL00-060000"
-    },
-    {
-      "code": "2BK004-070120",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "2BK000-070120",
-      "variant_root": "2FCLL0-070043"
-    },
-    {
-      "code": "2BK004-070120",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "2BK000-070120",
-      "variant_root": "2FNLR0-070000"
-    },
-    {
-      "code": "2FCLL0-070043",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "2FCLL0-070043"
-    },
-    {
-      "code": "2FNCL2-070000",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "2FNCL2-070000"
-    },
-    {
-      "code": "2FNL00-060000",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "2FNL00-060000"
-    },
-    {
-      "code": "2FNLR0-070000",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "2FNLR0-070000"
-    },
-    {
-      "code": "2WL000-000000",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "2WL000-000000"
     },
     {
       "code": "BK0DN0-020000",
@@ -1956,28 +1480,76 @@
       "variant_root": "1LLVB4-08D0DN"
     },
     {
-      "code": "GLASS1-070000",
+      "code": "HINGEW3-H0800",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "GLASS1-070000"
+      "parent_code": "1LLVO4-05000L",
+      "variant_root": "1LLVO4-05000L"
     },
     {
-      "code": "SH0001-190015",
+      "code": "HINGEW4-H0800",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "SH0001-190015"
+      "parent_code": "1NNV04-06000L",
+      "variant_root": "1NNV04-06000L"
     },
     {
-      "code": "SH0002-190015",
+      "code": "LEG-060",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true,
-      "parent_code": "F2",
-      "variant_root": "SH0002-190015"
+      "parent_code": "FCLL0C-120008",
+      "variant_root": "1CSVB2-105003"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FCLL0C-120007",
+      "variant_root": "1CSVBL-120000"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-060004",
+      "variant_root": "1LLVB4-06D0MW"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FN0FN3-080005",
+      "variant_root": "1LLVB4-08D0DN"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-050004",
+      "variant_root": "1LLVO4-05000L"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FN0FN2-060004",
+      "variant_root": "1NNV04-06000L"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FN0FL2-020004",
+      "variant_root": "1NSVFS-020000"
     },
     {
       "code": "SH0S10-050035",
@@ -2117,12 +1689,6 @@
     },
     {
       "code": "F1",
-      "qty": 0,
-      "family": "Other",
-      "is_wrapper": true
-    },
-    {
-      "code": "F2",
       "qty": 0,
       "family": "Other",
       "is_wrapper": true
