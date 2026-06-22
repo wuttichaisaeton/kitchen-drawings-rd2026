@@ -8197,3 +8197,14 @@ node --check OK. **Verify ไม่ได้ใน preview (model-viewer headles
 1. [Fusion lane] **1LLVO4-05000L export กระจาย** = Case A บั๊ก export (ดีไซน์ใน Fusion ประกอบถูก, GLB ออกมา 1659×2059×1906 vs ตู้ 500×570×764). CC_Auto เด้ง "4 LOOSE INSERT". memory project_3d_explode_scatter.md บอก round-16 fix มีแล้ว (_collect_leaf_bodies_world + proxy transform2) → **รอเอ๋ re-export 1LLVO4 ผ่าน 🧊 ตอน Fusion idle เพื่อ render-verify** (extent ≈ ตู้ + ครบ 53 body). Task #1.
 2. [เอ๋ verify] **เส้นชี้ explode** บน live/iPad (verify ใน preview ไม่ได้ — model-viewer headless). Task #2.
 3. [เอ๋ ✎ ถ้าต้องการ] ปุ่ม 📋 รายตู้ (copy assembler link per-card) ยังอยู่ 8 อัน — เอ๋ยังไม่สั่งลบ
+
+---
+### RD · 2026-06-22 · 3D explode labels — auto side + horizontal leaders to part edge (688b846, LIVE)
+**WHAT:** Rewrote explode-mode part-label placement in `app.js` (`_layoutOverlayRows` + `_updateExplodeLeaders`, rows now absolute not flex columns).
+- Label seats at its part's **mid-height** → leader is a **horizontal** line; label auto-picks **LEFT/RIGHT** by the part's screen-X (small hysteresis + fresh side on reappear); on orbit labels run up/down + swap sides.
+- **No crossing / no overlap:** per-side sort-by-part-Y + push-apart (uniform-shift overflow → provably no overlap); generous spacing.
+- **Arrow on part's NEAR silhouette EDGE at mid-height** (เอ๋ "ลูกศรอยู่กลาง+ขอบของ Part") via `Box3.setFromObject` world AABB → project 8 corners through model-viewer's THREE camera. **Cross-checked vs the proven hotspot centroid** → if projection space disagrees / no camera, falls back to centroid pointing (never regresses below the screenshot เอ๋ accepted).
+- Behind-camera parts → no leader; off-screen labels hidden; leader suppressed if part edge falls inside the label band (no text overlap). Removed top/left/right CSS transition (was reading mid-anim rects).
+**WHY:** เอ๋ rapid feedback 2026-06-22 — leaders were crossing/tangling; wanted labels to move up/down + side auto, horizontal leaders, arrow on edge.
+**VERIFY:** `node --check` OK; 3-lens adversarial static review (workflow) ran first, all major findings fixed; deploy watched to success, live app.js confirms marker. **Live 3D tracking = เอ๋ verifies on iPad (WebGL not testable headless).**
+**NEXT:** เอ๋ eyeball on 2FNLR0 / 1NNV04 explode → iterate if edge/side off.
