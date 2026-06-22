@@ -2257,6 +2257,46 @@ async function _kdOpen3D(code, opts) {
       width: 100% !important;
       box-sizing: border-box !important;
     }
+    /* Close button in fullscreen — bigger, contrast circle, away from the
+       iOS status bar (RD 07 + เอ๋ "ออกมาแล้วปุ่มปิดหน้าจอนี้ทำให้เห็นชัดเจน
+       หน่อย"). Applies in both real + pseudo fullscreen. The header-row
+       layout doesn't change in non-FS — only in FS does the close button
+       break out to a floating circle. */
+    .kd3d-modal .kdstock-frame:fullscreen .kdstock-close,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kdstock-close,
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kdstock-close {
+      position: fixed !important;
+      top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+      right: calc(env(safe-area-inset-right, 0px) + 14px) !important;
+      width: 52px !important;
+      height: 52px !important;
+      min-width: 52px !important;
+      min-height: 52px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      border: 1px solid #2b3340 !important;
+      border-radius: 50% !important;
+      background: rgba(15, 20, 25, 0.92) !important;
+      color: #ffffff !important;
+      font-size: 22px !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      cursor: pointer !important;
+      z-index: 2147483647 !important;
+      box-shadow: 0 6px 22px rgba(0,0,0,0.5) !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* The ⛶ fullscreen-toggle in the header is redundant in fullscreen
+       (the floating close button + double-tap both exit). Hide it so the
+       enlarged close has the top-right alone. */
+    .kd3d-modal .kdstock-frame:fullscreen .kd3d-fs,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-fs,
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kd3d-fs {
+      display: none !important;
+    }
     /* PSEUDO-FULLSCREEN fallback (RD 07 2026-06-22) for browsers that don't
        support the Fullscreen API (notably iPhone Safari). Mirrors the
        :fullscreen rules but driven by a class toggle. Double-tap on the
