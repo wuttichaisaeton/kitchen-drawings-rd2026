@@ -7830,3 +7830,28 @@ Both GLBs have similar-magnitude spreads. The scatter source: **DSB0F0-080050 (d
 **NEEDS from G1/เอ๋:** Collapse drawer joints in 1LLVB4-08D0DN + re-export. Decide on ROUND 16 auto-collapse.
 
 -- RD 07
+
+---
+### 2026-06-22 - WEB 21 HANDOFF (เอ๋ requested all-team sync)
+
+**SESSION**: WEB 21 — 🧊 3D-staleness chip
+**STATUS**: ✅ COMPLETE, LIVE
+
+**WHAT SHIPPED**:
+- `_glb3dStale()` / `_glb3dStaleChip()` / `_probeKd3dMtime()` — GitHub Commits API probe with sessionStorage cache (`kd_glb3d_mtime_v3`)
+- `KD3D_R14_CUTOFF_MS = Date.parse('2026-06-22T04:00:00Z')` (11:00 ICT)
+- Chip on: project cards (home), Sim.Bending banner
+- `kdAPI.glb3dStale(code)` bridge ready for mindmap editor
+
+**COMMITS**: 6c626fd (chip) → 0ae2247 (cutoff bump) → board entries 9302fc8 / c0935de
+
+**OPEN ITEMS**: 
+- [ ] Mindmap editor chip — `editor/main.jsx` needs 1-line add to consume `kdAPI.glb3dStale(code)` + `npm run build:editor` + commit bundle. Was out of scope ("app.js ONLY"). Ready to pick up.
+- [ ] Future rounds: bump `KD3D_R14_CUTOFF_MS` constant per batch, or make it dynamic from RTDB
+
+**HAZARDS**:
+- Shared working tree: WEB 20 + WEB 21 both editing app.js caused cross-pickup in commits 50789a9 and 0ae2247. Use `git add -p` or worktree isolation.
+- GitHub API rate limit 60/hr unauthenticated — sessionStorage cache mitigates, but a fresh tab probing 50+ codes could hit it.
+
+**NO BLOCKERS.** Session can close.
+-- WEB 21
