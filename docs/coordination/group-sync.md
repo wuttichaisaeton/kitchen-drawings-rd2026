@@ -7108,3 +7108,23 @@ Fullscreen button from 47f4e17 unchanged.
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): mouse mapping — Left=constrained orbit, Middle=pan (mirrors 1-/2-finger)
 เอ๋ "com click ซ้ายเป็น constrained orbit คลิ๊กปุ่มกลางคือ 2 นิ้ว". Three.js controls.mouseButtons = {LEFT:ROTATE, MIDDLE:PAN, RIGHT:PAN}; wheel zoom unchanged. model-viewer Mode 3 default already matches. Footer add desktop coverage. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: mouse mapping LEFT=orbit, MIDDLE=pan, wheel=zoom (d974bbb, LIVE) ⏱ 00:05
+เอ๋ "click ซ้ายเป็น constrained orbit คลิ๊กปุ่มกลางคือ 2 นิ้ว" — mouse mirrors the touch semantic:
+- LEFT (button 0) drag = constrained orbit (= 1-finger touch; polar clamp 15°-165° from 2824eea)
+- MIDDLE (button 1) drag = pan (= 2-finger drag pan; reuses _camBasis + _panScale)
+- WHEEL = zoom (unchanged; = 2-finger pinch on desktop)
+- RIGHT — browser default context menu (untouched per RD's "your call")
+
+mouseDown carries a `mode` field; mousemove dispatches accordingly. Middle button preventDefault's the browser auto-scroll cursor.
+
+Footer help text updated for both: "Touch — 1 finger: orbit · 2 fingers: pinch + pan · Mouse — Left: orbit · Middle: pan · Wheel: zoom".
+
+**VERIFIED preview** (1280x900, Astronaut DEMO):
+- Left drag +80/+30 px → az 20°→-7° (orbit ✓)
+- Middle drag +80/+30 px → cameraTarget.x 0 → -0.314 m (pan ✓)
+- Wheel deltaY=200 → FOV 10°→11.18° (×1.12 factor, zoom ✓)
+
+**For เอ๋**: Ctrl+Shift+R → 🧊 → left mouse rotates (constrained); middle mouse pans (= same as 2 fingers); wheel zooms (= same as pinch).
+-- G2 (WEB 20)
