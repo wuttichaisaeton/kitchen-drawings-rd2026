@@ -2972,6 +2972,34 @@ async function _kdOpen3D(code, opts) {
       if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
     } catch (e) { console.warn('[kd3d] fit failed', e); }
   };
+  // World-accurate fit for the click-to-isolate: frames the VISIBLE parts at
+  // their CURRENT exploded/isolated positions (setFromObject = true world incl.
+  // the explode offset), and respects ANCESTOR visibility so a hidden unit's
+  // meshes don't drag the frame back to the whole cabinet. Falls back to
+  // _fitCamera if THREE isn't captured.
+  const _fitVisibleWorld = () => {
+    const scene = threeScene || _getScene();
+    if (!scene || !mv || !_ovlThree) { _fitCamera(); return; }
+    const box = new _ovlThree.Box3(); let any = false;
+    scene.traverse(n => {
+      if (!n.isMesh || n.isSprite || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      let vis = true, p = n; while (p) { if (p.visible === false) { vis = false; break; } p = p.parent; }
+      if (!vis) return;
+      try { const b = new _ovlThree.Box3().setFromObject(n); if (!b.isEmpty()) { box.union(b); any = true; } } catch {}
+    });
+    if (!any || box.isEmpty()) { _fitCamera(); return; }
+    const c = box.getCenter(new _ovlThree.Vector3());
+    const size = box.getSize(new _ovlThree.Vector3());
+    const maxExt = Math.max(size.x, size.y, size.z);
+    try {
+      mv.cameraTarget = `${c.x}m ${c.y}m ${c.z}m`;
+      const fovRad = mv.getFieldOfView() * Math.PI / 180;
+      const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.4);
+      const orbit = mv.getCameraOrbit();
+      mv.cameraOrbit = `${orbit.theta}rad ${orbit.phi}rad ${radius}m`;
+      if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
+    } catch (e) {}
+  };
   {
     const fitBtn = modal.querySelector('.kd3d-fit');
     if (fitBtn) fitBtn.addEventListener('click', (e) => { e.stopPropagation(); _fitCamera(); });
@@ -3242,6 +3270,10 @@ async function _kdOpen3D(code, opts) {
         _poppedCode = (_poppedCode === a.text) ? null : a.text;
         _applyRowSelection();
         applyExplode(explodePct);
+        // เอ๋ 2026-06-23: zoom-fit auto — to the isolated part on select, back to
+        // the whole model on deselect (frames whatever is VISIBLE, at its real
+        // exploded position).
+        requestAnimationFrame(() => _fitVisibleWorld());
       });
       _ovlRoot.appendChild(row);
       // Hotspot slot at the part's CURRENT centroid (assembled at build time).
@@ -3436,13 +3468,13 @@ async function _kdOpen3D(code, opts) {
     _ovlRoot.style.display = visible ? '' : 'none';
     if (!visible) return;
     _layoutOverlayRows(vb);   // writes every row's top + side
+    // While a part is ISOLATED, hide ALL leaders+arrows — the other parts are
+    // gone so the leaders point at empty space and clutter (เอ๋ "ไม่ต้องโชว์เส้นชี้
+    // และลูกศร มันเกะกะ ชี้ไปก็ไม่ตรง"). Labels still show (selected bold, rest faded).
+    _ovlSvg.style.display = _poppedCode ? 'none' : '';
     for (const r of _ovlRows) {   // reads row rects (post-layout) + draws
-      // When a label is selected, the OTHER parts are hidden in 3D → fade their
-      // labels + drop their leaders so only the chosen part + its label stand out
-      // (background highlight is blocked by the theme, but opacity isn't).
-      const dimmed = _poppedCode && r.code !== _poppedCode;
-      if (_poppedCode && r._on) r.rowEl.style.opacity = dimmed ? '0.3' : '1';
-      if (!r._on || r._tx == null || dimmed) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
+      if (_poppedCode) { if (r._on) r.rowEl.style.opacity = (r.code === _poppedCode) ? '1' : '0.3'; continue; }
+      if (!r._on || r._tx == null) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
       const rb = r.rowEl.getBoundingClientRect();
       const ry = rb.top + rb.height / 2 - vb.top;
       const rx = (r.side === 'R') ? (rb.left - vb.left) : (rb.right - vb.left);
@@ -4020,18 +4052,15 @@ async function _kdOpen3D(code, opts) {
     const factor = (pct / 100) * 1.5;
     for (const u of explodeUnits) {
       // เอ๋ 2026-06-23: clicking a label ISOLATES its code's parts — every OTHER
-      // part is hidden, the selected one scales up + pops out. Reliable "this is
-      // the part" effect that's visible from any angle (a plain pop hid behind
-      // front panels; the theme also blocks label-background highlights). All are
-      // one-time transform/visibility changes so model-viewer re-renders them.
+      // part is hidden; the click handler then zoom-fits to what's left, so the
+      // chosen part fills the view (visible from any angle). Visibility is a
+      // one-time scene edit → needs queueRender (below).
       const sel = _poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode;
       u.node.visible = !_poppedCode || sel;
-      const f = sel ? factor + 1.1 : factor;
-      const dx = (u.gx - explodeCenter.x) * f;
-      const dy = (u.gy - explodeCenter.y) * f;
-      const dz = (u.gz - explodeCenter.z) * f;
+      const dx = (u.gx - explodeCenter.x) * factor;
+      const dy = (u.gy - explodeCenter.y) * factor;
+      const dz = (u.gz - explodeCenter.z) * factor;
       u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
-      if (u.node.scale) u.node.scale.setScalar(sel ? 1.18 : 1);
     }
     // Overlay: move each hotspot to the part's new centroid + toggle visibility.
     // (Leaders redraw on the camera-change the hotspot move triggers, and via
@@ -4352,6 +4381,15 @@ async function _kdOpen3D(code, opts) {
       if (_pointerDownXY) {
         const dx = e.clientX - _pointerDownXY[0], dy = e.clientY - _pointerDownXY[1];
         if (dx * dx + dy * dy > 25) return;
+      }
+      // เอ๋ 2026-06-23: while a part is ISOLATED, a click anywhere on the model
+      // (not a label — those stopPropagation) restores ALL parts + zoom-fits.
+      if (_poppedCode) {
+        _poppedCode = null;
+        _ovlRows.forEach(r => r.rowEl.classList.remove('kd3d-ovl-sel'));
+        applyExplode(explodePct);
+        requestAnimationFrame(() => _fitVisibleWorld());
+        return;
       }
       const THREE = await _kd3dEnsureThree();
       const cam = threeScene.camera;
