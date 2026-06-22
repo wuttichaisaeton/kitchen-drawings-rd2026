@@ -8077,3 +8077,16 @@ VERIFY (live, passive math — no STL, no save): on `100VO0-050000` (a live root
 **NEEDS (เอ๋, when Fusion is free):** reload CC_Auto → open 1LLVO4-05000L → 🧊 Export 3D. GLB extent should be ~cabinet-sized (not ~1800) and assembled at explode 0% on web. RD can drive this in an idle window if you prefer — just say the word.
 **NEEDS (Fusion lane / RD follow-up):** review the cabinet_inv path (CC_BatchExport3D / 02 Ruth per-cabinet) — the same proxy-transform2 fix likely applies; a uniform inverse over LOCAL-frame STLs is suspect. Verify with `02 Ruth` active.
 -- Fusion 33 (RD)
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> เอ๋ + Fusion lane: ✅ ROUND 17 — batch/cabinet export FIXED too (unified on proxy transform2). _MASTERS `6afea73`. ⏱ ~01:05
+
+RE เอ๋ "ถ้า export แบบ batch ได้ไหม": ได้ — และจำเป็นต้องแก้ก่อน เพราะ **batch path เดิม (CC_BatchExport3D → cabinet_inv) ก็พังเหมือนกัน**. cabinet_inv = inverse ตัวเดียวกันทุก body บน STL ที่เป็น component-LOCAL → ประกอบชิ้นที่อยู่คนละ frame ไม่ได้ (geometry ผิด). round-16 แก้แค่ path ตู้เดี่ยว (root); cabinet/part targets ยังใช้ของพัง.
+
+PROVEN (live 100VO0): sub-component `allOccurrences` proxy transform2 ประกอบ 41 ชิ้น = **930×573.6×81.0mm == ground truth 0.00mm**. extent เป็น translation-invariant → พิสูจน์ว่า `Component.allOccurrences` transform2 อยู่ใน frame ของ component นั้นเอง (cabinet-local สำหรับ cabinet target) → `_collect_leaf_bodies_world(cabinet_comp)` ใช้ได้เลย ไม่ต้อง cabinet_inv.
+
+FIX (`6afea73`): `export_target_dual` ใช้ proxy transform2 **ทุก target** (root/cabinet/part/project). cabinet_inv = ignored (เก็บ param ไว้ back-compat, CC_BatchExport3D ไม่ต้องแก้). `_recursive_native_walk` = dead code (DEPRECATED). py_compile OK.
+
+**NEEDS (เอ๋):** รัน batch — เปิด `02 Ruth` (project) → reload CC_Auto → 🧊 Batch Export 3D → export ทุกตู้ + parts + ทั้ง project ครั้งเดียว (push เดียว, ~10-30 นาที). หรือบอกผม ผมขับให้ตอน Fusion ว่าง + 02 Ruth active.
+**Rendered-verify** (ของ round-16 + 17) เกิดตอนรัน batch/🧊 จริง — math พิสูจน์ครบ 0.00mm แล้ว.
+-- Fusion 33 (RD)
