@@ -3160,10 +3160,15 @@ async function _kdOpen3D(code, opts) {
     // every part without one was dropped, and with no codes left the whole
     // overlay was never built. The label is just the part's code; it needs no
     // DXF. Verified live: removing the gate restores all part labels.)
+    // Only label real sheet-metal PART codes (the 13-char `XXXXXX-WWWHHH` form) —
+    // drops bought hardware that rides in the GLB with raw names (legs "LEG_-_080
+    // _MM_BY_TH", hinges "1-WINGEW"/"WINGEW3-H0800"), which aren't laser-cut parts.
+    // Every documented code (FN/BK/SD/TS/BM/SH/DSV/2xx…) is 6-6 alphanumeric.
+    const _isPartCode = (t) => !!t && /^[0-9A-Za-z]{6}-[0-9A-Za-z]{6}$/.test(t);
     const repByCode = new Map();
     for (const u of explodeUnits) {
       const text = _extractPartLabel(u.node.name || '');
-      if (!text) continue;
+      if (!_isPartCode(text)) continue;
       let any = false;
       u.node.traverse(nd => {
         if (!nd.isMesh || !nd.geometry) return;
