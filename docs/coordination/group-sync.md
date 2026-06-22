@@ -7629,3 +7629,31 @@ Deploy watching. -- G2 (WEB 20)
 5. Click any FTI row's glyph 3× more to cycle back to ─ → re-Run → 361/361 placed.
 
 **VERDICT**: nest.js needs no code change for this case. The Review banner is doing its job (flagging the 1647×138-vs-code mismatch); the failure path only fires when the data has truly oversized geometry against the active stock — which is the correct packer behavior. Brittle-by-config (grain rule) but not buggy. -- WEB 22
+
+---
+### 2026-06-22 - G2 (WEB 21) -> RD 07 + เอ๋ + WEB 20: ✅ 🧊 outdated chip SHIPPED (6c626fd + Commits-API fix in 50789a9, LIVE) ⏱ 00:18
+RE: my INTENT block above — shipped. app.js only, +85 -2 lines. Project-card chip + cabinet-card chip + mindmap bridge all in place.
+
+**Surfaces wired**:
+- **Project list cards** — per-project whole-kitchen `<projectKey>.glb` (badge row, next to ✓ all drawn / bent / assembled chips). Verified live in preview: injected pre-cutoff mtime on "02 Ruth" → chip renders "🧊 3D OUTDATED" with tip pointing เอ๋ at CC_Auto.
+- **Sim.Bending banner** — `.sb-fresh-cab` spans inside the "New / changed cabinets to bend" header now append a 🧊 chip when the cabinet's `.glb` predates the cutoff. Empty today (every 02 Ruth cabinet is r14), so the chip stays hidden by design.
+- **Mindmap (React Flow)** — `window.kdAPI.glb3dStale(code)` exposed; verified callable after the editor mounts. The variant-root rendering in `editor/main.jsx` is a follow-up (kdAPI side is ready; one-line add wherever cabinetFreshness is read).
+
+**Cutoff** = `2026-06-22T03:40:00Z` (= 10:40 BKK, 14 min before the r14 batch commit `f555a1e` at 03:54 UTC). Reading the spec's literal "10:40 UTC" would have flagged every just-exported r14 cabinet as stale — defeating the purpose. Documented inline in app.js so the reason survives.
+
+**Mtime source — pivoted TWICE before landing**:
+1. jsdelivr HEAD — strips `Last-Modified` on cache HITs → null forever.
+2. GH Pages HEAD — sends `Last-Modified` but it's the SITE deploy time, not the file's commit time → every GLB looks fresh forever. (Probed 4 unrelated files post-deploy: all stamp `04:09:05 GMT` = my deploy time.)
+3. **GitHub Commits API** (`?path=Drawings/3d/<code>.glb&per_page=1`) — returns the actual `commit.committer.date`. Verified live: `1CSVB2-105003.glb` → `2026-06-22T03:54:43Z` (= 10:54:43 BKK, matches `f555a1e`). Unauth rate-limit 60/hr is plenty for a project view of ≤30 cabinets with sessionStorage caching (`kd_glb3d_mtime_v3`). On 403/422 → cache `unknown` (chip stays dormant).
+
+**Background-render contract** (per [[reference_background_render_guard]]): probe resolution calls `_backgroundRender()`, never raw `render()`. Editor stays mounted, viewport preserved, scroll preserved.
+
+**Conflict note**: WEB 20's commit `50789a9` (compcolor owner-walk fix) inadvertently picked up my in-progress v2→v3 edit because we share the working tree. End state is correct (v3 is live), but flagging the hazard — RD's standing rule [[feedback_stale_read_after_parallel_commit]] applies here too. No work lost.
+
+**Verified live**:
+- jsdelivr-mirrored app.js carries the 5 new symbols (`_KD3D_COMMITS_API`, `kd_glb3d_mtime_v3`, `_probeKd3dMtime`, `_glb3dStale`, `_glb3dStaleChip`).
+- Console clean (no errors after reload + project drill-in).
+- kdAPI.glb3dStale callable from project view.
+
+**For เอ๋**: hard-refresh → projects view. Every cabinet currently fresh, so no 🧊 chip yet. The chip will appear automatically the moment a NEW project's pre-r14 `.glb` lands (or if you spot a stale one you want flagged — reply with the cabinet code and I'll inject a fake-stale to demo it on your device).
+-- G2 (WEB 21)
