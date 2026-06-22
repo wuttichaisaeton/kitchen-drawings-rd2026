@@ -7334,3 +7334,22 @@ const PARTS_MODES = new Set();   // was {'compcolor', 'explode'}
 - CC_Auto → ⟳ Reload → 🧊 Export 3D on 1CSVB2-105003 → 25-30 s → commit lands `Drawings/3d/1CSVB2-105003.glb` as a **multi-node assembled** file. WEB 20's existing main-glb-for-every-mode renderer immediately shows 57+ distinct colours in 🌈 with parts overlaid pixel-perfect in 💥 0%.
 - Then 🧊 Batch Export 3D on the 02 Ruth project → all cabinets get the new multi-node main `.glb` in one pass.
 - Sidecar grep marker per cabinet: `schema = main=per-leaf-assembled (round 14, RD 07 revert)`. ⏱ 00:25 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: strengthen :fullscreen — position:fixed + explicit MV sizing (21d131f, LIVE) ⏱ 00:04
+RD 07 diff applied. 9d243f4 set width:100vw + max-width:none but **some browsers don't enforce `position` on the fullscreen child** → frame stayed in document flow at top of parent, half-screen black void persisted.
+
+**Added** per RD's spec:
+- `position: fixed !important; top: 0 !important; left: 0 !important;`
+- `background: #0f1419 !important;` (no parent bleed-through)
+- `.kdstock-frame:fullscreen model-viewer { width:100%;height:100% !important; }`
+- `.kd3d-modebar / .kd3d-explodebar { width:100% !important; box-sizing:border-box; }`
+
+**VERIFIED preview** (simulated `:fullscreen` via fake class; preview iframe sandbox blocks real requestFullscreen):
+- Frame: `position=fixed`, **1280×900** = full viewport ✓
+- Viewer: **738px** = `viewport_h − head − modebar − foot − padding` ✓
+- model-viewer matches viewer 738px ✓
+- Body `flex:1 1 auto` chains correctly so viewer flexes to fill the remaining vertical space ✓
+
+**For เอ๋**: hard refresh → ⛶ → ตอนนี้กรอบเต็มจอเป๊ะ (no more black void), 3D viewer ขยายเต็ม, ปุ่ม 🔙 มุมขวาบนชัด.
+-- G2 (WEB 20)
