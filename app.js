@@ -3068,23 +3068,32 @@ async function _kdOpen3D(code, opts) {
       if (mc === 0) continue; // no visible body in this unit → no label
       centerX /= mc; centerY /= mc; centerZ /= mc;
       const y = maxY + labelH * 1.1;   // เอ๋ 2026-06-22: label further OUT so every label has a leader
+      // outward push (parent/explode frame) for the OUTSIDE layout + overlap test
+      let _dx = u.gx - (explodeCenter ? explodeCenter.x : 0);
+      let _dz = u.gz - (explodeCenter ? explodeCenter.z : 0);
+      if (Math.hypot(_dx, _dz) < 1e-3) { _dx = 1; _dz = 0; }
+      const _dl = Math.hypot(_dx, _dz) || 1; _dx /= _dl; _dz /= _dl;
+      const _push = modelRadius * 0.7;
+      const offLocal = new THREE.Vector3(_dx * _push, 0, _dz * _push);
+      try { offLocal.applyQuaternion(u.node.quaternion.clone().invert()); } catch {}
       const prev = byCode.get(text);
-      if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerY, centerZ, y, top: maxY, unit: u });
+      if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerY, centerZ, y, top: maxY, unit: u,
+        offLocal, sideX: (_dx >= 0 ? 0 : 1), pgx: u.gx + _dx * _push, pgz: u.gz + _dz * _push });
     }
     const labelInfos = [...byCode.values()];
     // Collision avoidance: bump overlapping labels upward
-    const minSep = labelH * 1.2;
-    for (let pass = 0; pass < 5; pass++) {
+    const minSep = labelH * 1.6;   // เอ๋: bigger gap so labels never overlap each other
+    for (let pass = 0; pass < 8; pass++) {
       let moved = false;
       for (let a = 0; a < labelInfos.length; a++) {
         for (let b = a + 1; b < labelInfos.length; b++) {
-          const dx = labelInfos[a].centerX - labelInfos[b].centerX;
-          const dz = labelInfos[a].centerZ - labelInfos[b].centerZ;
+          const dx = labelInfos[a].pgx - labelInfos[b].pgx;   // compare the PUSHED (outside) positions
+          const dz = labelInfos[a].pgz - labelInfos[b].pgz;
           const dy = Math.abs(labelInfos[a].y - labelInfos[b].y);
           const hDist = Math.sqrt(dx * dx + dz * dz);
-          if (hDist < minSep * 2 && dy < minSep) {
+          if (hDist < minSep * 1.6 && dy < minSep) {
             const upper = labelInfos[a].y >= labelInfos[b].y ? a : b;
-            labelInfos[upper].y += minSep - dy + minSep * 0.2;
+            labelInfos[upper].y += minSep - dy + minSep * 0.25;
             moved = true;
           }
         }
@@ -3139,16 +3148,8 @@ async function _kdOpen3D(code, opts) {
       // model centre — so it never overlaps a part. Direction (model centre → part)
       // is in the explode/parent frame; convert to node-local so the label follows
       // on explode. Anchor on the side facing the part so the leader exits cleanly.
-      const u = info.unit;
-      let dirx = u.gx - (explodeCenter ? explodeCenter.x : 0);
-      let dirz = u.gz - (explodeCenter ? explodeCenter.z : 0);
-      let dlen = Math.hypot(dirx, dirz);
-      if (dlen < 1e-3) { dirx = 1; dirz = 0; dlen = 1; }
-      dirx /= dlen; dirz /= dlen;
-      const pushDist = modelRadius * 0.7;
-      const offLocal = new THREE.Vector3(dirx * pushDist, 0, dirz * pushDist);
-      try { offLocal.applyQuaternion(u.node.quaternion.clone().invert()); } catch {}
-      sprite.center.set(dirx >= 0 ? 0 : 1, (canvas.height - ulY) / canvas.height);
+      const offLocal = info.offLocal || new THREE.Vector3();
+      sprite.center.set(info.sideX || 0, (canvas.height - ulY) / canvas.height);
       sprite.scale.set(labelH * aspect, labelH, 1);
       sprite.position.set(info.centerX + offLocal.x, info.y + offLocal.y, info.centerZ + offLocal.z);
       sprite.visible = explodePct > 5;
@@ -3171,9 +3172,9 @@ async function _kdOpen3D(code, opts) {
       const len = Math.max(dirV.length(), labelH * 0.4);
       {   // เอ๋: EVERY label gets a leader (no skip); BIGGER arrowhead so it's visible
         const ndir = (dirV.length() > 1e-6 ? dirV.clone().normalize() : new THREE.Vector3(0, -1, 0));
-        const r = modelRadius * 0.0009;
-        const headLen = Math.min(len * 0.32, modelRadius * 0.03);     // arrow length (was *0.013 → disappeared)
-        const headR = Math.max(r * 5, modelRadius * 0.006);           // arrow width — clearly visible
+        const r = modelRadius * 0.001;
+        const headLen = Math.max(modelRadius * 0.04, Math.min(len * 0.3, modelRadius * 0.06));   // เอ๋: arrow ALWAYS present + bigger
+        const headR = Math.max(r * 7, modelRadius * 0.015);                                      // wider, clearly visible arrowhead
         const shaftLen = Math.max(len - headLen, modelRadius * 0.002);
         const leadMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
         const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), ndir);
