@@ -1638,6 +1638,17 @@ function Editor({ projectKey, initialNodes, initialEdges, onChange, admin, deepL
     return () => el.classList.remove('kme-fs-on');
   }, [fullscreen]);
 
+  useEffect(() => {
+    const pane = document.querySelector('.react-flow__pane');
+    if (!pane) return;
+    const handler = (e) => {
+      if (e.target.closest('.react-flow__node')) return;
+      toggleFullscreen();
+    };
+    pane.addEventListener('dblclick', handler);
+    return () => pane.removeEventListener('dblclick', handler);
+  }, [toggleFullscreen]);
+
   // No-PDF filter sets: the count for the button label + the ids kept
   // VISIBLE when the filter is on (the project center + every node still
   // missing a PDF). Edges use noPdfKeptIds to drop any spoke that would

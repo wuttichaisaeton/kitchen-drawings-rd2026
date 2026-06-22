@@ -2180,6 +2180,8 @@ async function _kdOpen3D(code, opts) {
        2e4f6bc CAD look. No CSS filter; THREE-side material + edges do the work. */
     .kd3d-modal model-viewer.kd3d-mode-hidden,
     .kd3d-modal model-viewer.kd3d-mode-hiddenshade{filter:none}
+    html[data-theme="sketch"] .kd3d-modal model-viewer.kd3d-mode-hidden,
+    html[data-theme="sketch"] .kd3d-modal model-viewer.kd3d-mode-hiddenshade{background:#efe7d6;--poster-color:#efe7d6}
     /* Component Color (Fusion Shift+N) — light-grey bg so the per-leaf hues
        pop without harsh contrast and edges still read at 70% opacity. */
     .kd3d-modal model-viewer.kd3d-mode-compcolor{background:#f3f4f6;--poster-color:#f3f4f6;filter:none}
@@ -2204,6 +2206,21 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-placeholder .kd3d-ph-title{font-size:15px;color:#e6edf4}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-sub{font-size:12px;opacity:.7;max-width:380px;line-height:1.5}
     .kd3d-modal .kd3d-loading{flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#9fb0c0;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px}
+    .kd3d-modal .kd3d-viewarea{display:flex;flex:1 1 auto;min-height:0}
+    .kd3d-modal .kd3d-browser{width:0;overflow:hidden;background:#0b0f14;border-left:1px solid #1c2530;transition:width .2s ease;font-family:"Flux Architect",ui-monospace,monospace;font-size:11px;display:flex;flex-direction:column}
+    .kd3d-modal .kd3d-browser.kd3d-browser-open{width:220px}
+    .kd3d-modal .kd3d-browser-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid #1c2530;color:#9fb0c0;font-size:10px;letter-spacing:.4px;white-space:nowrap}
+    .kd3d-modal .kd3d-browser-head button{background:transparent;border:0;color:#9fb0c0;cursor:pointer;font:inherit;padding:2px 4px;border-radius:3px}
+    .kd3d-modal .kd3d-browser-head button:hover{background:#1c2530;color:#e6edf4}
+    .kd3d-modal .kd3d-browser-list{flex:1 1 auto;overflow-y:auto;overflow-x:hidden;padding:2px 0}
+    .kd3d-modal .kd3d-browser-row{display:flex;align-items:center;gap:4px;padding:3px 8px;cursor:pointer;white-space:nowrap;color:#c0cdd8}
+    .kd3d-modal .kd3d-browser-row:hover{background:#141a22}
+    .kd3d-modal .kd3d-browser-row .kd3d-eye{width:18px;text-align:center;font-size:12px;opacity:.7;flex:0 0 18px}
+    .kd3d-modal .kd3d-browser-row.kd3d-hidden-part .kd3d-eye{opacity:.3}
+    .kd3d-modal .kd3d-browser-row.kd3d-hidden-part .kd3d-part-name{opacity:.35;text-decoration:line-through}
+    .kd3d-modal .kd3d-browser-row .kd3d-part-name{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
+    .kd3d-modal .kd3d-browser-toggle{background:transparent;border:0;color:#9fb0c0;cursor:pointer;font-size:12px;padding:4px 6px;position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px}
+    .kd3d-modal .kd3d-browser-toggle:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
     /* FULLSCREEN sizing override (RD 07 2026-06-22: เอ๋ "full screen คือเต็มจอ
        ไม่ใช่ครึ่งจอ"). The inline width:94vw + max-height:88vh on the
        .kdstock-frame fight the browser's fullscreen layout — without these
@@ -2551,7 +2568,9 @@ async function _kdOpen3D(code, opts) {
         <span class="kd3d-explode-val">${explodePct}%</span>
         <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
       </div>
-      <div class="kd3d-viewer">
+      <div class="kd3d-viewarea">
+      <div class="kd3d-viewer" style="position:relative">
+        <button class="kd3d-browser-toggle" title="Toggle part browser">👁</button>
         <model-viewer
           class="kd3d-mode-${mode}"
           src="${escapeHtml(glbUrl)}"
@@ -2570,6 +2589,11 @@ async function _kdOpen3D(code, opts) {
           ar="false"
           reveal="auto"
         ></model-viewer>
+      </div>
+      <div class="kd3d-browser" id="kd3d-browser">
+        <div class="kd3d-browser-head"><span>PARTS</span><span style="flex:1"></span><button class="kd3d-showall" title="Show all">All</button><button class="kd3d-hideall" title="Hide all">None</button></div>
+        <div class="kd3d-browser-list"></div>
+      </div>
       </div>
       <div class="kd3d-foot">Touch — 1 finger: orbit · 2 fingers: pinch + pan · Mouse — Left: orbit · Middle: pan · Wheel: zoom</div>`;
   const mv = body.querySelector('model-viewer');
@@ -2785,6 +2809,8 @@ async function _kdOpen3D(code, opts) {
   let explodeUnits = [];          // [{node, baseX/Y/Z (node.position), gx/y/z (geom centroid in node-local space)}]
   let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
   let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
+  let explodeLabels = [];          // [{sprite, unit}] — per-explode-unit text label sprites
+  let _populateBrowserFn = null;
   // Dual-GLB switcher state (Fusion 31 2026-06-22). The MAIN .glb is assembled
   // (1 node, fits Hidden Line / Realistic). The `_parts.glb` is per-leaf
   // (multi-node, fits Component Color / Explode). The web probes for _parts on
@@ -2854,7 +2880,112 @@ async function _kdOpen3D(code, opts) {
     return { x: (mnX + mxX) / 2, y: (mnY + mxY) / 2, z: (mnZ + mxZ) / 2 };
   };
 
+  const _extractPartLabel = (name) => {
+    if (!name) return '';
+    const idx = name.indexOf('__');
+    let comp = idx >= 0 ? name.substring(0, idx) : name;
+    comp = comp.replace(/_v\d+$/, '');
+    if (comp.includes('-')) return comp;
+    return '';
+  };
+
+  const _cleanupExplodeLabels = () => {
+    for (const lbl of explodeLabels) {
+      try { lbl.sprite.parent?.remove(lbl.sprite); } catch {}
+      try { lbl.sprite.material.map?.dispose(); lbl.sprite.material.dispose(); } catch {}
+    }
+    explodeLabels = [];
+  };
+
+  const _buildExplodeLabels = async () => {
+    _cleanupExplodeLabels();
+    if (!explodeUnits.length) return;
+    let THREE;
+    try { THREE = await _kd3dEnsureThree(); }
+    catch { return; }
+    if (mode !== 'explode') return;
+
+    let modelRadius = 300;
+    if (threeScene) {
+      try {
+        const box = new THREE.Box3().setFromObject(threeScene);
+        modelRadius = box.getSize(new THREE.Vector3()).length() / 2;
+      } catch {}
+    }
+    const labelH = Math.max(12, modelRadius * 0.035);
+
+    for (let i = 0; i < explodeUnits.length; i++) {
+      const u = explodeUnits[i];
+      const raw = u.node.name || '';
+      const text = _extractPartLabel(raw) || ('Part ' + (i + 1));
+
+      let maxY = 0, centerX = 0, centerZ = 0, mc = 0;
+      u.node.traverse(nd => {
+        if (!nd.isMesh || !nd.geometry) return;
+        if (!nd.geometry.boundingBox) try { nd.geometry.computeBoundingBox(); } catch {}
+        const bb = nd.geometry.boundingBox;
+        if (!bb) return;
+        mc++;
+        if (bb.max.y > maxY) maxY = bb.max.y;
+        centerX += (bb.min.x + bb.max.x) / 2;
+        centerZ += (bb.min.z + bb.max.z) / 2;
+      });
+      if (mc > 0) { centerX /= mc; centerZ /= mc; }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const fontSize = 36;
+      const pad = 8;
+      ctx.font = 'bold ' + fontSize + 'px ui-monospace,monospace';
+      const tw = ctx.measureText(text).width;
+      canvas.width = Math.ceil(tw + pad * 2);
+      canvas.height = Math.ceil(fontSize * 1.3 + pad * 2);
+
+      ctx.fillStyle = 'rgba(11,15,20,0.82)';
+      const r = 6;
+      ctx.beginPath();
+      ctx.moveTo(r, 0);
+      ctx.lineTo(canvas.width - r, 0);
+      ctx.quadraticCurveTo(canvas.width, 0, canvas.width, r);
+      ctx.lineTo(canvas.width, canvas.height - r);
+      ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - r, canvas.height);
+      ctx.lineTo(r, canvas.height);
+      ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - r);
+      ctx.lineTo(0, r);
+      ctx.quadraticCurveTo(0, 0, r, 0);
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(242,169,59,0.5)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.font = 'bold ' + fontSize + 'px ui-monospace,monospace';
+      ctx.fillStyle = '#F2A93B';
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      const mat = new THREE.SpriteMaterial({
+        map: tex, transparent: true,
+        depthTest: false, depthWrite: false, sizeAttenuation: true,
+      });
+      const sprite = new THREE.Sprite(mat);
+      const aspect = canvas.width / canvas.height;
+      sprite.scale.set(labelH * aspect, labelH, 1);
+      sprite.position.set(centerX, maxY + labelH * 0.8, centerZ);
+      sprite.visible = explodePct > 5;
+      sprite.renderOrder = 999;
+      u.node.add(sprite);
+      explodeLabels.push({ sprite, unit: u });
+    }
+    console.info('[kd3d] built', explodeLabels.length, 'explode labels');
+  };
+
   const snapshotScene = () => {
+    _cleanupExplodeLabels();
     threeScene = _getScene();
     if (!threeScene) return false;
     // Materials — snapshot so 'realistic' restores the GLB's authored look exactly.
@@ -3180,6 +3311,7 @@ async function _kdOpen3D(code, opts) {
         }
       }
     }
+    if (_populateBrowserFn) _populateBrowserFn();
     return true;
   };
 
@@ -3381,11 +3513,6 @@ async function _kdOpen3D(code, opts) {
 
   const applyExplode = (pct) => {
     if (!explodeUnits.length) return;
-    // 100% → push each unit so its geometric centroid is at 1.5× its original
-    // offset from the scene centroid. For trimesh-baked GLBs the node's
-    // position is irrelevant (it's (0,0,0)); the delta = (geom_centroid -
-    // scene_centroid) * factor moves each unit outward in WORLD coords by
-    // changing node.position.
     const factor = (pct / 100) * 1.5;
     for (const u of explodeUnits) {
       const dx = (u.gx - explodeCenter.x) * factor;
@@ -3393,9 +3520,12 @@ async function _kdOpen3D(code, opts) {
       const dz = (u.gz - explodeCenter.z) * factor;
       u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
     }
+    const show = pct > 5;
+    for (const lbl of explodeLabels) lbl.sprite.visible = show;
   };
   const resetExplode = () => {
     for (const u of explodeUnits) u.node.position.set(u.baseX, u.baseY, u.baseZ);
+    for (const lbl of explodeLabels) lbl.sprite.visible = false;
   };
 
   const applyMode = (next) => {
@@ -3407,31 +3537,15 @@ async function _kdOpen3D(code, opts) {
     // the Astronaut demo's lighting baseline; modes vary only on shadow,
     // exposure, tone for the look they want.
     mv.setAttribute('environment-image', 'neutral');
-    // shadow-intensity > 0 renders model-viewer's soft contact shadow on a
-    // textured plane — which on light backgrounds reads as a visible WHITE
-    // GROUND RECTANGLE under the cabinet (เอ๋ 2026-06-22 "เอา 4 เหลี่ยมนี้ออก,
-    // เข้าใจว่าเป็นพื้น แต่ไม่ควรมี"). Only Realistic keeps the shadow (where
-    // the dark BG hides the plane and the shadow itself adds the showroom
-    // contact cue).
+    mv.setAttribute('shadow-intensity', '1');
+    mv.setAttribute('shadow-softness', '0.5');
     if (mode === 'hidden' || mode === 'hiddenshade') {
-      mv.setAttribute('shadow-intensity', '0');
-      mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1.3');
       mv.setAttribute('tone-mapping', 'neutral');
     } else if (mode === 'compcolor') {
-      mv.setAttribute('shadow-intensity', '0');
-      mv.setAttribute('shadow-softness', '0.5');
       mv.setAttribute('exposure', '1.08');
       mv.setAttribute('tone-mapping', 'neutral');
-    } else if (mode === 'realistic') {
-      // Astronaut-demo treatment — exactly what model-viewer ships by default.
-      mv.setAttribute('shadow-intensity', '1');
-      mv.setAttribute('shadow-softness', '0.5');
-      mv.setAttribute('exposure', '1');
-      mv.setAttribute('tone-mapping', 'neutral');
-    } else if (mode === 'explode') {
-      mv.setAttribute('shadow-intensity', '0');
-      mv.setAttribute('shadow-softness', '0.5');
+    } else {
       mv.setAttribute('exposure', '1');
       mv.setAttribute('tone-mapping', 'neutral');
     }
@@ -3473,8 +3587,31 @@ async function _kdOpen3D(code, opts) {
         setEdgesStyle({ solidColor: 0x111317, solidOpacity: 0.7, showDashed: false });
       }
     });
-    if (mode === 'explode') applyExplode(explodePct);
-    else resetExplode();
+    if (mode === 'explode') {
+      const target = explodePct || 40;
+      explodePct = 0;
+      if (slider) slider.value = 0;
+      if (sliderVal) sliderVal.textContent = '0%';
+      applyExplode(0);
+      _buildExplodeLabels();
+      const dur = 600;
+      const t0anim = performance.now();
+      const _animExplode = (now) => {
+        const t = Math.min((now - t0anim) / dur, 1);
+        const ease = t * (2 - t);
+        const pct = Math.round(ease * target);
+        explodePct = pct;
+        if (slider) slider.value = pct;
+        if (sliderVal) sliderVal.textContent = pct + '%';
+        applyExplode(pct);
+        if (t < 1) requestAnimationFrame(_animExplode);
+        else try { localStorage.setItem(EXPLODE_KEY, String(explodePct)); } catch {}
+      };
+      requestAnimationFrame(_animExplode);
+    } else {
+      resetExplode();
+      _cleanupExplodeLabels();
+    }
     modal2 && modal2.classList.toggle('kd3d-modal-explode', mode === 'explode');
     body.querySelectorAll('.kd3d-modebar button').forEach(btn => {
       btn.classList.toggle('is-on', btn.getAttribute('data-mode') === mode);
@@ -3521,6 +3658,73 @@ async function _kdOpen3D(code, opts) {
       try { localStorage.setItem(EXPLODE_KEY, String(explodePct)); } catch {}
     });
   }
+
+  const VIS_KEY = 'kd_3d_vis_v1_' + code;
+  const browserPanel = body.querySelector('#kd3d-browser');
+  const browserList = body.querySelector('.kd3d-browser-list');
+  const browserToggle = body.querySelector('.kd3d-browser-toggle');
+  let browserOpen = false;
+  let visState = {};
+  try { visState = JSON.parse(localStorage.getItem(VIS_KEY)) || {}; } catch {}
+
+  if (browserToggle && browserPanel) {
+    browserToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      browserOpen = !browserOpen;
+      browserPanel.classList.toggle('kd3d-browser-open', browserOpen);
+    });
+  }
+
+  _populateBrowserFn = () => {
+    if (!browserList) return;
+    browserList.innerHTML = '';
+    const seen = new Map();
+    for (let i = 0; i < explodeUnits.length; i++) {
+      const u = explodeUnits[i];
+      const raw = u.node.name || '';
+      const label = _extractPartLabel(raw) || ('Part ' + (i + 1));
+      if (!seen.has(label)) seen.set(label, []);
+      seen.get(label).push({ unit: u, idx: i });
+    }
+    for (const [label, units] of seen) {
+      const hidden = visState[label] === false;
+      const row = document.createElement('div');
+      row.className = 'kd3d-browser-row' + (hidden ? ' kd3d-hidden-part' : '');
+      row.innerHTML = '<span class="kd3d-eye">' + (hidden ? '◯' : '👁') + '</span>'
+        + '<span class="kd3d-part-name">' + escapeHtml(label) + (units.length > 1 ? ' x' + units.length : '') + '</span>';
+      row.addEventListener('click', () => {
+        const nowHidden = visState[label] !== false;
+        visState[label] = nowHidden ? false : true;
+        for (const { unit } of units) unit.node.visible = nowHidden ? false : true;
+        row.classList.toggle('kd3d-hidden-part', !nowHidden ? false : true);
+        const eye = row.querySelector('.kd3d-eye');
+        if (eye) eye.textContent = nowHidden ? '◯' : '👁';
+        try { localStorage.setItem(VIS_KEY, JSON.stringify(visState)); } catch {}
+      });
+      if (hidden) {
+        for (const { unit } of units) unit.node.visible = false;
+      }
+      browserList.appendChild(row);
+    }
+  };
+
+  const showAllBtn = body.querySelector('.kd3d-showall');
+  const hideAllBtn = body.querySelector('.kd3d-hideall');
+  if (showAllBtn) showAllBtn.addEventListener('click', () => {
+    visState = {};
+    for (const u of explodeUnits) u.node.visible = true;
+    try { localStorage.removeItem(VIS_KEY); } catch {}
+    _populateBrowserFn();
+  });
+  if (hideAllBtn) hideAllBtn.addEventListener('click', () => {
+    for (const u of explodeUnits) {
+      const label = _extractPartLabel(u.node.name || '') || 'Part';
+      visState[label] = false;
+      u.node.visible = false;
+    }
+    try { localStorage.setItem(VIS_KEY, JSON.stringify(visState)); } catch {}
+    _populateBrowserFn();
+  });
 }
 
 // Global handle for console / direct callers (เอ๋'s scripts also use this).
