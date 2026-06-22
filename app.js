@@ -2859,6 +2859,7 @@ async function _kdOpen3D(code, opts) {
   let _ovlRows = [];
   let _ovlRaf = 0;
   let _ovlCamHandler = null;
+  let _ovlThree = null;   // THREE instance captured at build for the leader-projection fallback
   let _assembledFrames = [];       // เอ๋: red Box3Helper frames on parts marked assembled (ticked)
   let _populateBrowserFn = null;
   // Dual-GLB switcher state (Fusion 31 2026-06-22). The MAIN .glb is assembled
@@ -3025,6 +3026,7 @@ async function _kdOpen3D(code, opts) {
     }
     if (_ovlRoot && _ovlRoot.parentNode) { try { _ovlRoot.parentNode.removeChild(_ovlRoot); } catch {} }
     _ovlRoot = _ovlSvg = _ovlColL = _ovlColR = null;
+    _ovlThree = null;
     _ovlRows = [];
   };
 
@@ -3116,6 +3118,7 @@ async function _kdOpen3D(code, opts) {
     try { THREE = await _kd3dEnsureThree(); }
     catch { return; }
     if (mode !== 'explode') return;
+    _ovlThree = THREE;   // captured for the leader-projection fallback
 
     // One ROW per unique part code; qty = how many scene nodes carry it.
     const countByCode = new Map();
@@ -3210,7 +3213,12 @@ async function _kdOpen3D(code, opts) {
       const hs = document.createElement('div');
       hs.setAttribute('slot', 'hotspot-' + hsId);
       hs.setAttribute('data-position', `${c0.x}m ${c0.y}m ${c0.z}m`);
-      hs.style.cssText = 'display:none;width:0;height:0;pointer-events:none';
+      // visibility:hidden (NOT display:none) — a display:none element returns an
+      // all-zero getBoundingClientRect, so the leader redraw saw every hotspot as
+      // off-screen and hid every leader (เอ๋ "เส้นชี้และลูกศรไปไหน"). With
+      // visibility:hidden the 0×0 box still carries model-viewer's projected
+      // transform, so its rect.left/top give the real part-end point.
+      hs.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
       if (mv) mv.appendChild(hs);
       const lineEl = document.createElementNS(svgNS, 'line');
       lineEl.setAttribute('class', 'kd3d-ovl-leader');
@@ -3265,15 +3273,23 @@ async function _kdOpen3D(code, opts) {
       const rb = r.rowEl.getBoundingClientRect();
       // Part end = hotspot centre (relative to viewer). model-viewer keeps the
       // slot at width/height 0, so its rect centre is the projected point.
-      let px, py, onScreen = true;
+      let px, py, onScreen = false;
       if (hb && (hb.width || hb.height || hb.left || hb.top)) {
         px = hb.left + hb.width / 2 - vb.left;
         py = hb.top + hb.height / 2 - vb.top;
         // model-viewer hides a hotspot behind the camera by translating it far
         // off; clamp the "is it inside the viewer" check loosely.
         onScreen = px > -2000 && px < vb.width + 2000 && py > -2000 && py < vb.height + 2000;
-      } else {
-        onScreen = false;
+      }
+      // Fallback: if the hotspot rect is unusable (model-viewer hasn't laid it
+      // out, or a browser collapsed the 0×0 box), project the part's live
+      // centroid through the THREE camera directly so the leader still draws.
+      if (!onScreen && _ovlThree && r.unit) {
+        try {
+          const factor = (explodePct / 100) * 1.5;
+          const p = _projectToViewer(_ovlThree, _unitCurrentCentroid(r.unit, factor));
+          if (p && p.vis) { px = p.x; py = p.y; onScreen = true; }
+        } catch {}
       }
       // Row inner edge (the side facing the model).
       const ry = rb.top + rb.height / 2 - vb.top;

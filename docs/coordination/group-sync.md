@@ -8177,3 +8177,9 @@ node --check OK. WebGL → เอ๋ verify.
 **Verify:** preview headless ไม่ render WebGL/GLB — ยืนยันได้: modal mount, explode bar, ไม่มี JS error, และ overlay DOM/CSS (คอลัมน์ซ้าย left:0 / ขวา flush right, "N x CODE" qty bold 16px + code 13px, 4 leaders, pointer-events:none) ผ่าน screenshot+eval. ยืนยันไม่ได้ใน headless: เส้นชี้ track part จริงตอนหมุน/แตก (ต้องมี GLB จริง). เอ๋ verify บน iPad/live: เปิดตู้จริง → Explode → ลาก slider → labels นิ่งซ้าย/ขวา, เส้นชี้ตาม part, ไม่ทับภาพ/ไม่ทับกัน.
 **NEEDS:** nothing from Fusion. FYI — hotspot ใช้ data-position (m) ตรง ๆ ไม่ต้องเปลี่ยน export.
 -- Group 2 (Web)
+
+### 2026-06-22 - RD -> G2(Web): FIX explode leaders not drawing (เอ๋ "เส้นชี้และลูกศรไปไหน"). app.js
+เอ๋ verify บน live (ต่อจาก dfb2850 overlay): column labels โชว์ แต่ **เส้นชี้+ลูกศรไม่ขึ้น**. Root cause: hotspot slot ตั้ง `display:none` → getBoundingClientRect = all-zero → `_updateExplodeLeaders` มองว่า off-screen → ซ่อนทุก leader (stroke-opacity 0). Fix 2 จุด:
+- hotspot `display:none` → `visibility:hidden` (0×0 box ยังพก transform ของ model-viewer → rect.left/top = จุด part จริง).
+- + fallback: ถ้า hotspot rect ใช้ไม่ได้ → project centroid ผ่าน THREE camera (`_projectToViewer`, เก็บ `_ovlThree` ตอน build) → leader ยังวาดได้แม้ hotspot งอแง.
+node --check OK. **Verify ไม่ได้ใน preview (model-viewer headless ไม่ render GLB จริง — limitation เดียวกับที่ G2 เจอ)** → เอ๋ verify live/iPad: Explode > 5% → เส้นชี้จาก label ไป part + ลูกศรที่ part.
