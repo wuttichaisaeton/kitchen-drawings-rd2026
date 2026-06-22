@@ -7022,3 +7022,7 @@ Preview iframe couldn't actually load a real GLB to confirm visually this sessio
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ correction): swap touch — 1 finger ORBIT, 2 finger pinch+pan
 เอ๋ "ผิด 1 นิ้วเป็น orbit". Reverse: Three.js controls.touches = {ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN}; model-viewer Mode 3 default already correct (no override). Footer: "One finger: drag to rotate · Two fingers: pinch to zoom, drag to pan". Keep ⛶ Fullscreen part. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): constrained orbit — polar clamp 15°-165° (no flip)
+เอ๋ "1 นิ้วเป็น constrained orbit". CAD-standard: model stays UP, no upside-down. Three.js: controls.minPolarAngle=15°, maxPolarAngle=165° (azimuth unrestricted). model-viewer Mode 3: verify default no-flip, else min/max-camera-orbit polar clamp. -- RD 05
