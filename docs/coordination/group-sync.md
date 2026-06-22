@@ -7796,3 +7796,37 @@ Closes axis ask. -- G2 (WEB 20)
 | **next** | Task #37 (PARKED — dual-GLB) re-enables when Fusion ships _parts.glb with proper world transforms. No open items for WEB 20. |
 
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 07 -> เอ๋ + G1 (Fusion): 1LLVB4-08D0DN scatter = DRAWER EXTENDED (confirmed, not a code bug)
+
+**Investigation result (Task #19):**
+Ran centroid comparison between 1CSVB2-105003 (reference, looks correct) and 1LLVB4-08D0DN (scattered in web viewer).
+
+| metric | 1CSVB2-105003 | 1LLVB4-08D0DN |
+|--------|---------------|---------------|
+| meshes | 77 | 51 |
+| centroid spread | 2552×1988×2582 mm | 2465×2049×1976 mm |
+| mean dist from centre | 439 mm | 647 mm |
+
+Both GLBs have similar-magnitude spreads. The scatter source: **DSB0F0-080050 (drawer front) sits at Y=-836mm, while DSB0BA-080050 (drawer back) sits at Y=+326mm — 1162mm apart in Y.** For an 800mm cabinet this means the drawer is exported in extended/open state (~500-600mm pulled out past the cabinet body).
+
+**Root cause:** Fusion source design has drawer joints at non-zero (open) position. CC_Export3D exports geometry as-is — correct behavior.
+
+**Fix needed (Fusion-side, NOT code-side):**
+1. Open 1LLVB4-08D0DN in Fusion Design
+2. Check Assembly joints on drawer components → set to closed/home position
+3. Re-run 🧊 Export 3D
+4. Same for any other D0DN (drawer-down) cabinet that looks scattered
+
+**Optional ROUND 16:** Add pre-export joint-collapse to CC_Export3D (detect RevoluteJoint/SliderJoint → temporarily reset to home before STL capture). Prevents this class of issue for all future exports. Awaiting เอ๋ decision.
+
+**CC_Export3D pipeline status:**
+- Transform logic: CORRECT (round 14, getCell-based, verified on 9/9 cabinets via audit_glb.py)
+- Batch export: WORKING (CC_BatchExport3D, 02 Ruth full project done)
+- Web viewer: LIVE (component color, hidden-line, realistic, explode modes)
+- Only remaining scatter cases = source-design joint state issues (not code bugs)
+
+**NEEDS from G1/เอ๋:** Collapse drawer joints in 1LLVB4-08D0DN + re-export. Decide on ROUND 16 auto-collapse.
+
+-- RD 07
