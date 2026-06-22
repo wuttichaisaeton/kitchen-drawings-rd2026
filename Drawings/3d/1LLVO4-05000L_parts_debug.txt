@@ -1,10 +1,10 @@
 CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
 cabinet           = 1LLVO4-05000L
 target_kind       = cabinet
-walk_bodies       = 36
-main_glb_bytes    = 1568636
-main_nodes        = 34
-main_stl_bytes    = 5656656
+walk_bodies       = 41
+main_glb_bytes    = 1613820
+main_nodes        = 39
+main_stl_bytes    = 6007776
 world_transforms  = true (Matrix3D.getCell, round-13)
 schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
 first_leaf_world_mm[0] = BM1LI0-050000 v3__Body8 @ (-178.9, 0.0, 1069.8)
@@ -27,6 +27,11 @@ OK Body1_3 440/876
 OK Body1_4 964/1928
 OK Body1_5 540/1076
 OK Body1_6 440/876
+OK Leg_-_080_mm._by_YH__Body1_2 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_2 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_2 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_2 62/120
 OK Body1_7 964/1928
 OK Body1_8 540/1076
 OK Body1_9 440/876
@@ -45,5 +50,5 @@ OK SD0SUP-000000_v6__Body1 428/868
 OK SD00NA-080000_v31__Body1_2 10154/21756
 OK SD0SUP-000000_v6__Body1_2 428/868
 OK SD0SUP-000000_v6__Body1_3 428/868
-ORPHAN_SUMMARY median=646.3 threshold=1938.8 count=0/34
-GLB 1568636 34
+ORPHAN_SUMMARY median=586.2 threshold=1758.7 count=0/39
+GLB 1613820 39

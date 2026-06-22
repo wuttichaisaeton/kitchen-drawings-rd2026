@@ -1,17 +1,42 @@
 CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
 cabinet           = 1CSVB2-105003
 target_kind       = cabinet
-walk_bodies       = 82
-main_glb_bytes    = 2532228
-main_nodes        = 77
-main_stl_bytes    = 10207368
+walk_bodies       = 86
+main_glb_bytes    = 2492408
+main_nodes        = 81
+main_stl_bytes    = 10488304
 world_transforms  = true (Matrix3D.getCell, round-13)
 schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
 first_leaf_world_mm[0] = SDLCN0-080003 v8__Body2 @ (483.0, 25.0, 383.0)
 first_leaf_world_mm[1] = Leg - 080 mm. by YH__Body1 @ (0.0, 0.0, 100.0)
 first_leaf_world_mm[2] = Leg - 080 mm. by YH__Cut @ (0.0, 0.0, 100.0)
 --- main helper subprocess output ---
-7 3981/7978
+LF10-105003_v11__Body1 2496/5228
+OK SDRCN2-080000_v4__Body1 10202/21860
+OK BM1LCL-105003_v10__Body8 100/196
+OK BM1LCL-105003_v10__Body16 2434/5044
+OK BM1LCL-105003_v10__Body21 8984/17964
+OK BM1LCL-105003_v10__Body22 3467/6930
+OK TS1BHH-095000_v9__Body3 2328/4872
+OK TS1BHH-095000_v9__Body3_2 2328/4872
+OK TS1BHH-105000_v9__Body3 2532/5300
+OK TS1BHH-105000_v9__Body3_2 2532/5300
+OK 080W-Insert_4_Hinges_v1__Body1 944/1908
+OK 080W-Insert_4_Hinges_v1__Body2 118/236
+OK 080W-Insert_4_Hinges_v1__Body4 1027/2050
+OK 080W-Insert_4_Hinges_v1__Box 160/316
+OK 080W-Insert_4_Hinges_v1__Body8 944/1908
+OK 080W-Insert_4_Hinges_v1__Body9 944/1908
+OK 080W-Insert_4_Hinges_v1__Body14 944/1908
+OK 080W-Insert_4_Hinges_v1__Body10 118/236
+OK 080W-Insert_4_Hinges_v1__Body11 118/236
+OK 080W-Insert_4_Hinges_v1__Body15 118/236
+OK 080W-Insert_4_Hinges_v1__Body12 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body13 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body16 1027/2050
+OK Cup__Body5 3981/7978
+OK Cup__Body6 3981/7978
+OK Cup__Body7 3981/7978
 OK Cup__Body8 3981/7978
 OK Component14__Body1 440/884
 OK Component14__Body2 440/884
@@ -25,34 +50,15 @@ OK DRW__Body1 160/316
 OK SD0CN0-080083_v7__Body1 3622/7560
 OK DSV2R3-045080_v4__Body2 1274/2604
 OK DSV100-045080_v6__Body4 1626/3248
-OK BXXTR0-000000__Body1 556/1140
-OK BXXTR0-000000__Body1_2 556/1140
-OK BXXTR0-000000__Body1_3 556/1140
-OK BXXTR0-000000__Body1_4 556/1140
-ORPHAN_SUMMARY median=152.7 threshold=458.2 count=25/77
-ORPHAN BXXTR0-000000__Body1_4 dist=2694.3 (17.6x median)
-ORPHAN BXXTR0-000000__Body1_2 dist=2419.4 (15.8x median)
-ORPHAN BXXTR0-000000__Body1_3 dist=2267.8 (14.8x median)
-ORPHAN BXXTR0-000000__Body1 dist=1955.1 (12.8x median)
-ORPHAN Cup__Body8 dist=1198.0 (7.8x median)
-ORPHAN Cup__Body7 dist=1144.0 (7.5x median)
-ORPHAN Cup__Body5 dist=1138.4 (7.5x median)
-ORPHAN Cup__Body6 dist=1123.5 (7.4x median)
-ORPHAN DSV2R3-045080_v4__Body2 dist=1027.2 (6.7x median)
-ORPHAN DSV100-045080_v6__Body4 dist=1019.4 (6.7x median)
-ORPHAN TS1BHH-105000_v9__Body3_2 dist=984.6 (6.4x median)
-ORPHAN TS1BHH-095000_v9__Body3 dist=874.0 (5.7x median)
-ORPHAN TS1BHH-105000_v9__Body3 dist=759.4 (5.0x median)
-ORPHAN SDLCN0-080003_v8__Body2 dist=706.1 (4.6x median)
-ORPHAN TS1BHH-095000_v9__Body3_2 dist=671.5 (4.4x median)
-ORPHAN BM1LCL-105003_v10__Body8 dist=606.9 (4.0x median)
-ORPHAN BM1LCL-105003_v10__Body21 dist=599.0 (3.9x median)
-ORPHAN BM1LCL-105003_v10__Body22 dist=596.3 (3.9x median)
-ORPHAN BM1LCL-105003_v10__Body16 dist=591.5 (3.9x median)
-ORPHAN 080W-Insert_4_Hinges_v1__Body1 dist=531.6 (3.5x median)
-ORPHAN 080W-Insert_4_Hinges_v1__Body2 dist=530.8 (3.5x median)
-ORPHAN 080W-Insert_4_Hinges_v1__Body4 dist=528.7 (3.5x median)
-ORPHAN Component14__Body1 dist=526.7 (3.4x median)
-ORPHAN Component15__Body1 dist=526.0 (3.4x median)
-ORPHAN SDRCN2-080000_v4__Body1 dist=524.6 (3.4x median)
-GLB 2532228 77
+ORPHAN_SUMMARY median=210.8 threshold=632.5 count=10/81
+ORPHAN Cup__Body8 dist=1161.3 (5.5x median)
+ORPHAN Cup__Body5 dist=1146.4 (5.4x median)
+ORPHAN Cup__Body7 dist=1121.2 (5.3x median)
+ORPHAN Cup__Body6 dist=1116.1 (5.3x median)
+ORPHAN DSV2R3-045080_v4__Body2 dist=1007.1 (4.8x median)
+ORPHAN DSV100-045080_v6__Body4 dist=998.5 (4.7x median)
+ORPHAN TS1BHH-105000_v9__Body3_2 dist=918.8 (4.4x median)
+ORPHAN TS1BHH-095000_v9__Body3 dist=817.8 (3.9x median)
+ORPHAN SDLCN0-080003_v8__Body2 dist=694.6 (3.3x median)
+ORPHAN TS1BHH-105000_v9__Body3 dist=683.8 (3.2x median)
+GLB 2492408 81

@@ -1,46 +1,17 @@
 CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
 cabinet           = 1LLVB4-06D0MW
 target_kind       = cabinet
-walk_bodies       = 79
-main_glb_bytes    = 2244824
-main_nodes        = 75
-main_stl_bytes    = 7723000
+walk_bodies       = 99
+main_glb_bytes    = 2865492
+main_nodes        = 93
+main_stl_bytes    = 9303412
 world_transforms  = true (Matrix3D.getCell, round-13)
 schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
 first_leaf_world_mm[0] = DSB0F0-060050 v4__Body3 @ (-948.1, 199.6, -255.7)
 first_leaf_world_mm[1] = DSB0BD-060050 v7__Body3 @ (-948.1, 437.6, -172.2)
 first_leaf_world_mm[2] = L__Cut-L (3) @ (-948.1, -37.0, -247.7)
 --- main helper subprocess output ---
-Rail_3 53/102
-OK Slide-L__Rail 384/764
-OK Slide-L__Back 208/432
-OK Slide-L__Rail_2 162/316
-OK Slide-L__Rail_4_1 98/192
-OK R__Cut-R_2 24/44
-OK R__Cut-R_3 24/44
-OK R__Cut-R 24/44
-OK R__Body 728/1512
-OK R__Cut-R_1 24/44
-OK Slide-R__Rail_1 46/88
-OK Slide-R__C-Side-R 232/476
-OK Slide-R__Bracket_1 196/396
-OK Slide-R__Back_1 208/432
-OK Slide-R__Rail_5 162/316
-OK Slide-R__Rail_6 384/764
-OK Slide-R__Rail_7 53/102
-OK Slide-R__Logo 624/1244
-OK Slide-R__Slide 243/486
-OK Slide-R__Rail_1_1 98/192
-OK DSV2B1-060040_v4__Body1 760/1540
-OK DSV100-060040_v2__Body4 1381/2758
-OK BXXTR0-000000__Body1 556/1140
-OK BXXTR0-000000__Body1_2 556/1140
-OK BXXTR0-000000__Body1_3 556/1140
-OK BXXTR0-000000__Body1_4 556/1140
-OK BK1DN1-0600MW_v3__Body1 1880/3796
-OK FN0F00-060000_v15__Body18 1802/3764
-OK FN2BLA-040000__Body1 1488/3084
-OK Leg_-_080_mm._by_YH__Body1 3259/6534
+Body1 3259/6534
 OK Leg_-_080_mm._by_YH__Cut 62/120
 OK Leg_-_080_mm._by_YH__Cut_1 62/120
 OK Leg_-_080_mm._by_YH__Cut_3 62/120
@@ -69,11 +40,33 @@ OK TS1BHH-060000_v11__Body3 1164/2416
 OK TS1BHH-060000_v11__Body3_2 1164/2416
 OK TS1BHH-060000_v11__Body3_3 1164/2416
 OK TS1BHH-060000_v11__Body3_4 1164/2416
+OK BM1LI0-060000_v3__Body8 122/240
+OK BM1LI0-060000_v3__Body16 2363/4846
+OK BM1LI0-060000_v3__Body21 11698/23392
+OK BM1LI0-060000_v3__Body22 4500/8996
 OK SHMWLI0-060000_v4__Body18 3108/6456
 OK SHMWLI0-060000_v4__Body19 4500/8996
 OK SHMWLI0-060000_v4__Body20 11698/23392
 OK SHMWLI0-060000_v4__Body22 564/1128
 OK SHMWLI0-060000_v4__Cover 84/164
-ORPHAN_SUMMARY median=549.1 threshold=1647.4 count=1/75
-ORPHAN BXXTR0-000000__Body1_4 dist=1863.1 (3.4x median)
-GLB 2244824 75
+OK EQM_-_SMEG_FMI425X_v5__Body1 96/192
+OK EQM_-_SMEG_FMI425X_v5__Body2 8/12
+OK EQM_-_SMEG_FMI425X_v5__Body3 68/132
+OK EQM_-_SMEG_FMI425X_v5__Body4 8/12
+OK EQM_-_SMEG_FMI425X_v5__Body5 8/12
+OK EQM_-_SMEG_FMI425X_v5__Body6 8/12
+OK EQM_-_SMEG_FMI425X_v5__Body7 8/12
+OK EQM_-_SMEG_FMI425X_v5__Body8 64/124
+OK EQM_-_SMEG_FMI425X_v5__Body9 26/48
+OK EQM_-_SMEG_FMI425X_v5__Body10 26/48
+OK EQM_-_SMEG_FMI425X_v5__Body11 66/128
+OK EQM_-_SMEG_FMI425X_v5__Body12 82/164
+OK EQM_-_SMEG_FMI425X_v5__Body13 26/48
+OK EQM_-_SMEG_FMI425X_v5__Body14 122/244
+OK EQM_-_SMEG_FMI425X_v5__Body15 26/48
+OK EQM_-_SMEG_FMI425X_v5__Body16 26/48
+OK EQM_-_SMEG_FMI425X_v5__Body17 108/212
+OK EQM_-_SMEG_FMI425X_v5__Body18 26/48
+OK EQM_-_SMEG_FMI425X_v5__Body19 444/884
+ORPHAN_SUMMARY median=558.4 threshold=1675.3 count=0/93
+GLB 2865492 93

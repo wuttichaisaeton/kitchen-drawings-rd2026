@@ -1,10 +1,10 @@
 CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
 cabinet           = 1NSVFS-020000
 target_kind       = cabinet
-walk_bodies       = 43
-main_glb_bytes    = 1250480
-main_nodes        = 43
-main_stl_bytes    = 4987612
+walk_bodies       = 48
+main_glb_bytes    = 1257904
+main_nodes        = 45
+main_stl_bytes    = 4975480
 world_transforms  = true (Matrix3D.getCell, round-13)
 schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
 first_leaf_world_mm[0] = FN0F00-020000 v2__Body18 @ (0.0, 0.0, 0.0)
@@ -27,11 +27,13 @@ OK Body1_6 440/876
 OK Body1_7 964/1928
 OK Body1_8 540/1076
 OK Body1_9 440/876
-OK SD0SUP-000000_v6__Body1 428/868
+OK FN3BLA-020000_v2__Body4 192/404
+OK FN3BLA-020000_v2__Body5 52/100
+OK FN3BLA-020000_v2__Body6 61/118
 OK SD00NA-080000_v31__Body1 10154/21756
 OK SD00NA-080000_v31__Body1_2 10154/21756
+OK SD0SUP-000000_v6__Body1 428/868
 OK SD0SUP-000000_v6__Body1_2 428/868
-OK SD0SUP-000000_v6__Body1_3 428/868
 OK BXXTR0-000000__Body1 556/1140
 OK BXXTR0-000000__Body1_2 556/1140
 OK BXXTR0-000000__Body1_3 556/1140
@@ -54,5 +56,5 @@ OK FW150__Body4 1120/2276
 OK FW150__Body5 56/108
 OK FW150__Body6 56/108
 OK Component23__Body1 8/12
-ORPHAN_SUMMARY median=580.1 threshold=1740.2 count=0/43
-GLB 1250480 43
+ORPHAN_SUMMARY median=579.5 threshold=1738.6 count=0/45
+GLB 1257904 45
