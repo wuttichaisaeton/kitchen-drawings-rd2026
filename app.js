@@ -3437,7 +3437,12 @@ async function _kdOpen3D(code, opts) {
     if (!visible) return;
     _layoutOverlayRows(vb);   // writes every row's top + side
     for (const r of _ovlRows) {   // reads row rects (post-layout) + draws
-      if (!r._on || r._tx == null) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
+      // When a label is selected, the OTHER parts are hidden in 3D → fade their
+      // labels + drop their leaders so only the chosen part + its label stand out
+      // (background highlight is blocked by the theme, but opacity isn't).
+      const dimmed = _poppedCode && r.code !== _poppedCode;
+      if (_poppedCode && r._on) r.rowEl.style.opacity = dimmed ? '0.3' : '1';
+      if (!r._on || r._tx == null || dimmed) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
       const rb = r.rowEl.getBoundingClientRect();
       const ry = rb.top + rb.height / 2 - vb.top;
       const rx = (r.side === 'R') ? (rb.left - vb.left) : (rb.right - vb.left);
@@ -4014,11 +4019,13 @@ async function _kdOpen3D(code, opts) {
     if (!explodeUnits.length) return;
     const factor = (pct / 100) * 1.5;
     for (const u of explodeUnits) {
-      // เอ๋ 2026-06-23: a clicked label makes its code's parts POP further out
-      // (extra outward offset) AND scale up — an unmistakable "this is the part"
-      // effect at any explode level (even 0% / assembled). Both are one-time
-      // transform changes so model-viewer re-renders them reliably.
+      // เอ๋ 2026-06-23: clicking a label ISOLATES its code's parts — every OTHER
+      // part is hidden, the selected one scales up + pops out. Reliable "this is
+      // the part" effect that's visible from any angle (a plain pop hid behind
+      // front panels; the theme also blocks label-background highlights). All are
+      // one-time transform/visibility changes so model-viewer re-renders them.
       const sel = _poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode;
+      u.node.visible = !_poppedCode || sel;
       const f = sel ? factor + 1.1 : factor;
       const dx = (u.gx - explodeCenter.x) * f;
       const dy = (u.gy - explodeCenter.y) * f;
@@ -4034,7 +4041,11 @@ async function _kdOpen3D(code, opts) {
   };
   const resetExplode = () => {
     _poppedCode = null;
-    for (const u of explodeUnits) u.node.position.set(u.baseX, u.baseY, u.baseZ);
+    for (const u of explodeUnits) {
+      u.node.position.set(u.baseX, u.baseY, u.baseZ);
+      if (u.node.scale) u.node.scale.setScalar(1);
+      u.node.visible = true;
+    }
     if (_ovlRoot) _ovlRoot.style.display = 'none';
   };
 
