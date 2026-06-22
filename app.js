@@ -2566,7 +2566,9 @@ async function _kdOpen3D(code, opts) {
   const modeBtn = (id, ico, label, title) => `<button data-mode="${id}" class="${mode === id ? 'is-on' : ''}" title="${escapeHtml(title)}"><span class="kd3d-mode-ico">${ico}</span><span>${escapeHtml(label)}</span></button>`;
   // mv attrs for the INITIAL paint (so first-frame is correct even before load).
   // Per-mode attribute set is also re-applied in applyMode() on every switch.
-  const initShadow = (mode === 'realistic') ? '1' : '0';
+  // เอ๋ 2026-06-22: remove floor/shadow entirely — cabinets floated ABOVE the
+  // model-viewer contact shadow ("ระดับพื้น ไม่อยู่ที่พื้น"), so no ground plane.
+  const initShadow = '0';
   const initSoft = (mode === 'realistic') ? '0.5' : '0.3';
   const initExp = (mode === 'realistic') ? '1' : (mode === 'explode' ? '1.1' : '1');
   const initTone = (mode === 'realistic' || mode === 'explode') ? 'aces' : 'neutral';
@@ -3603,8 +3605,9 @@ async function _kdOpen3D(code, opts) {
     // the Astronaut demo's lighting baseline; modes vary only on shadow,
     // exposure, tone for the look they want.
     mv.setAttribute('environment-image', 'neutral');
-    mv.setAttribute('shadow-intensity', mode === 'explode' ? '0' : '1');
-    mv.setAttribute('shadow-softness', mode === 'explode' ? '0' : '0.5');
+    // เอ๋ 2026-06-22: floor/shadow removed in ALL modes (was floating above it).
+    mv.setAttribute('shadow-intensity', '0');
+    mv.setAttribute('shadow-softness', '0');
     if (mode === 'hidden' || mode === 'hiddenshade') {
       mv.setAttribute('exposure', '1.3');
       mv.setAttribute('tone-mapping', 'neutral');

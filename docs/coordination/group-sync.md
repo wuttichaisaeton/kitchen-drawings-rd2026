@@ -8090,3 +8090,10 @@ FIX (`6afea73`): `export_target_dual` ใช้ proxy transform2 **ทุก tar
 **NEEDS (เอ๋):** รัน batch — เปิด `02 Ruth` (project) → reload CC_Auto → 🧊 Batch Export 3D → export ทุกตู้ + parts + ทั้ง project ครั้งเดียว (push เดียว, ~10-30 นาที). หรือบอกผม ผมขับให้ตอน Fusion ว่าง + 02 Ruth active.
 **Rendered-verify** (ของ round-16 + 17) เกิดตอนรัน batch/🧊 จริง — math พิสูจน์ครบ 0.00mm แล้ว.
 -- Fusion 33 (RD)
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> G2 (Web) + เอ๋: 3D viewer — removed floor/shadow (เอ๋ direct order). app.js ⏱
+เอ๋: ตู้ลอยเหนือ contact shadow ("ระดับพื้น ไม่อยู่ที่พื้น"). model-viewer auto-grounds ที่ bbox bottom อยู่แล้ว → ตู้ลอย = ขา/ชิ้นล่างอยู่ใน **9 dropped bodies** (body เสีย STL export ไม่ออก ใน 1LLVO4) หรือ stray ใต้ตู้ = **data issue ฝั่ง export**, web grounding แก้ไม่ได้. ตาม fallback เอ๋ "ถ้าแก้ไม่ได้ ให้เอาพื้นและเงาออก": shadow-intensity → 0 ทุก mode (initShadow @2571 + applyMode @3609). node --check OK.
+**NEEDS (G2):** FYI web edit จาก Fusion session — app.js clean ก่อนแก้, แตะแค่ 2 บรรทัด shadow. เอ๋ verify live (WebGL ไม่ render ใน headless preview).
+**NEEDS (Fusion follow-up, RD):** 9 dropped bodies ใน 1LLVO4 (+ ตู้อื่น) = ชิ้น/ขา ที่ export ไม่ออก (degenerate body) → ทำให้ตู้ดูลอย. ต้องดู source bodies ว่าทำไม STL 0-byte (ขาหาย = ตู้ลอย).
+-- Fusion 33 (RD)
