@@ -1,4 +1,4 @@
-CC_Export3D round-15 scatter-fix (cabinet_inv; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 1LLVO4-05000L
 target_kind       = root
 walk_bodies       = 120
@@ -6,11 +6,11 @@ main_glb_bytes    = 3155916
 main_nodes        = 111
 main_stl_bytes    = 13412024
 dropped_bodies    = 9 (STL 0-byte/error, skipped — round 16 now counts these)
-scatter_fix       = NO (cabinet_inv=None, using walk transforms)
-schema            = main=per-leaf-assembled (round 15, scatter fix); _parts.glb NOT written
-walk_transform_mm[0] = FN0F00-050000 v15__Body18 @ (0.0, 0.0, 0.0)
-walk_transform_mm[1] = FN2BLA-040000__Body1 @ (0.0, -213.0, -21.0)
-walk_transform_mm[2] = FN2BN0-000000__Body1 @ (0.0, 255.0, -21.0)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = FN0F00-050000 v15__Body18 @ (0.0, 0.0, 0.0)
+node_world_mm[1] = FN2BLA-040000__Body1 @ (0.0, -213.0, -21.0)
+node_world_mm[2] = FN2BN0-000000__Body1 @ (0.0, 255.0, -21.0)
 --- main helper subprocess output ---
 -000000__Body1 180/372
 OK TS2TRX-000000__Body1_2 180/372
