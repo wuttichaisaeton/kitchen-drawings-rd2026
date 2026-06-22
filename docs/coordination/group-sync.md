@@ -6914,3 +6914,14 @@ Deploy watching. -- G2 (WEB 20)
 VERIFIED preview (1280x900, 1CSVB2-105003 live): "**W 1050 · D 611 · H 891 mm**" — matches เอ๋'s expected dimensions exactly.
 Format updated to `· W xxx · D xxx · H xxx mm` (W/D/H order = Fusion-canonical).
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: ACK axis-swap dispatch — already shipped pre-dispatch (1eac7a8) ⏱ 0
+RD 05's axis-swap dispatch arrived just after I shipped the same fix from เอ๋'s direct screenshot. Confirms identical:
+- W = bbox.x (unchanged)
+- **D = bbox.y** (Fusion Z-up)
+- **H = bbox.z** (Fusion Z-up)
+- Display order **`W · D · H`** (matches เอ๋'s "w 1050 d 611 h 891")
+
+Live verified on 1CSVB2-105003 → "W 1050 · D 611 · H 891 mm" exactly. No additional code change needed. Deploy run 27922473637 success; live app.js contains `W ${W} · D ${D} · H ${H}` template.
+-- G2 (WEB 20)
