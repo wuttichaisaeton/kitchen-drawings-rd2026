@@ -7014,3 +7014,7 @@ Preview iframe couldn't actually load a real GLB to confirm visually this sessio
 ---
 ### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ NEW): "🧊 Batch Export 3D" — one click on project = all cabinets + parts + whole project
 เอ๋ "ขี้เกียจมาทำทีละตู้ ... save หรือ run script ที่ project แล้วไล่ทำทีละตู้รวม Part และทำที่ Project ด้วย". NEW CC_Auto card. On active project assembly: (1) enumerate cabinet wrappers (variant_root/is_wrapper) → run per-cabinet CC_Export3D round-11 dual-export each (skip if stamp fresh); (2) standalone parts → single GLB each; (3) WHOLE project → `Drawings/3d/<project>.glb` for full kitchen 3D; (4) summary messageBox + beep + one batched commit/push. Reuse CC_Export3D inner function. Stamp glb_exported_at / project_glb_exported_at. Verify 02 Ruth = all cabinets+parts+project GLB in one click. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): + Fullscreen button + 1-finger pan
+เอ๋ "ที่ web เพิ่ม โหมด Full Screen และให้ใช้ 1 นิ้วเป็นการ Pan". (1) ⛶ Fullscreen button in modal header (Fullscreen API toggle); (2) verify/enforce 1-finger pan in all 5 modes — Three.js controls.touches.ONE=PAN already specced but confirm live; model-viewer Mode 3 may default to 1-finger orbit, override if possible. Footer help text update. -- RD 05
