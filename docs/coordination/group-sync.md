@@ -7050,3 +7050,37 @@ Preview iframe couldn't actually load a real GLB to confirm visually this sessio
 
 **For เอ๋**: Ctrl+Shift+R → 🧊 → header now has ⛶ button (toggle browser fullscreen). 1-finger drag now pans the model in every mode. 2-finger gesture still does pinch-zoom + drag-rotate. Mouse + wheel still work on desktop.
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: ✅ ROUND 12 — CC_BatchExport3D shipped (_MASTERS fd4602f); one click on the project = every cabinet + parts + project GLB pair
+**เอ๋ direct order via RD**: "สร้าง script ให้ได้ไหม (ขี้เกียจมาทำทีละตู้) ผม save หรือ run script ที่ project แล้วไล่ทำให้ทีละตู้รวมถึง Part ด้วย และทำที่ Project ด้วย". Done.
+**Two-file change** (`_MASTERS fd4602f` local):
+1. **`CC_Export3D.py` REFACTORED** — pulled the per-target dual-export work out of `run()` into a callable function:
+   ```python
+   export_target_dual(app, ui, design, target_comp, cabinet_code,
+                      target_kind='wrapper',
+                      write_parts=True, silent=True) -> result_dict
+   ```
+   Doesn't fire sync.bat; doesn't show dialogs (silent=True default). Returns `{ok, code, target_kind, main_glb_path, main_glb_bytes, main_nodes, parts_glb_path, parts_glb_bytes, parts_nodes, parts_err, main_stl_bytes, elapsed, error}` for the caller to aggregate. Sidecar `_parts_debug.txt` still written inside the function. **single-fire behaviour unchanged** vs round-11 — same logic, the in-place inline became a function call.
+2. **`CC_BatchExport3D.py` NEW** + registered in CC_Auto SCRIPTS catalog as `🧊 Batch Export 3D`. Pipeline:
+   a. Walk active project's `root.occurrences` (and one level into any F-folder per the 02 Ruth v24 layout).
+   b. For each occurrence:
+      - coded + sub-occurrences → **CABINET** (dual export, `write_parts=True`)
+      - coded + bodies-only, no children → **PART** (single `.glb` only, `write_parts=False` — a lone body has nothing to split into per-node colours)
+      - F-folder → descend, don't export the folder itself
+   c. Always finish with **PROJECT** = root component (dual export). Result: `Drawings/3d/<project_key>.glb` is the full kitchen layout.
+   d. Calls `export_target_dual` per target. **ZERO sync per target** — fires `sync.bat` ONCE at the end → single batched git push.
+   e. Progress dialog while running (non-cancellable; long batches 10-30 min).
+   f. Summary messageBox: per-bucket bullets (CABINETS / PARTS / PROJECT) with size + node count + ✓/✗.
+   g. Standing rules respected: never calls `doc.save()`; `extra_args` kwarg present for CC_Auto.run_sibling contract; LOW mesh refinement; full try/except wrap; beep on done.
+**Code reuse pattern**: batch imports CC_Export3D via `spec_from_file_location` (CC_Laser Step-A) so a stale cached module from an earlier dispatch can't bind us. **NO duplicated export logic** — one engine, two callers (CC_Export3D for one cabinet, CC_BatchExport3D for the whole project).
+**VERIFIED outside Fusion**: py_compile both files + CC_Auto. Engine signature confirmed via stubbed-adsk import: `(app, ui, design, target_comp, cabinet_code, target_kind='wrapper', *, write_parts=True, silent=True)`. `_is_fgroup_name('F1:1')=True`, `_is_fgroup_name('FN0F00-110000')=False`. CC_Auto SCRIPTS catalog now has the new card.
+**NOT in this commit** (RD's explicit "bonus"): staleness skip via `glb_exported_at` stamp vs `model_version`. Always re-exports. The manifest schema field needs separate plumbing + WEB 20 agreement on key shape; easy follow-up once 02 Ruth proves the batch end-to-end.
+**FOR เอ๋ — try this on 02 Ruth**:
+1. Open the 02 Ruth project assembly (not a single cabinet doc).
+2. CC_Auto palette → ⟳ Reload (picks up the new SCRIPTS entry).
+3. Click `🧊 Batch Export 3D` card (also appears on UTILITIES ribbon via the auto-mirror).
+4. Wait 10-30 min — progress dialog ticks. Don't click anywhere in Fusion; cancellation isn't wired and a mid-batch interrupt leaves a partial GLB set.
+5. Summary messageBox at end shows every cabinet + part + project with sizes. ONE git push fires.
+6. Open the web 🧊 modal on any cabinet → that one's already there. Plus a new `02 Ruth.glb` for the whole-kitchen view (WEB 20 would need a new entry point if you want to surface "view whole project" on the project page — separate ask).
+⏱ 00:25 -- Fusion 31
