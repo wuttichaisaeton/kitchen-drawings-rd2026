@@ -1,11 +1,11 @@
 CC_Export3D round-12 dual-export (engine extracted; called from CC_BatchExport3D)
 cabinet         = 1LLVB4-06D0MW
-target_kind     = root
-walk_bodies     = 74
-parts_glb_bytes = 2134916
-parts_nodes     = 70
+target_kind     = cabinet
+walk_bodies     = 69
+parts_glb_bytes = 2182080
+parts_nodes     = 68
 --- last helper subprocess output ---
-88/2860
+OK DSB0F0-060050_v4__Body3 1388/2860
 OK DSB0BD-060050_v7__Body3 1130/2308
 OK L__Cut-L_3 24/44
 OK L__Cut-L 24/44
@@ -40,6 +40,7 @@ OK Slide-R__Rail_1_1 98/192
 OK DSV2B1-060040_v4__Body1 760/1540
 OK DSV100-060040_v2__Body4 1381/2758
 OK BK1DN1-0600MW_v3__Body1 1880/3796
+OK FN0F00-060000_v15__Body18 1802/3764
 OK FN2BLA-040000__Body1 1488/3084
 OK Leg_-_080_mm._by_YH__Body1 3259/6534
 OK Leg_-_080_mm._by_YH__Cut 62/120
@@ -58,9 +59,6 @@ OK Body1_7 366/728
 OK Body2_3 300/596
 OK Body1_8 440/876
 OK Body1_9 1124/2248
-OK FN3BLA-060000_v10__Body4 348/724
-OK FN3BLA-060000_v10__Body5 52/100
-OK FN3BLA-060000_v10__Body6 101/198
 OK SD0SUP-000000_v6__Body1 428/868
 OK SD00NA-080000_v31__Body1 10154/21756
 OK SD00NA-080000_v31__Body1_2 10154/21756
@@ -75,4 +73,4 @@ OK SHMWLI0-060000_v4__Body19 4500/8996
 OK SHMWLI0-060000_v4__Body20 11698/23392
 OK SHMWLI0-060000_v4__Body22 564/1128
 OK SHMWLI0-060000_v4__Cover 84/164
-GLB 2134916 70
+GLB 2182080 68

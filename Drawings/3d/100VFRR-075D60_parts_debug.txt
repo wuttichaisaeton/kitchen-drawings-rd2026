@@ -1,19 +1,10 @@
-CC_Export3D round-11 (dual-export + file diagnostic)
+CC_Export3D round-12 dual-export (engine extracted; called from CC_BatchExport3D)
 cabinet         = 100VFRR-075D60
-target_kind     = root
-walk_bodies     = 38
-parts_glb_bytes = 836392
-parts_nodes     = 38
+target_kind     = cabinet
+walk_bodies     = 29
+parts_glb_bytes = 722728
+parts_nodes     = 29
 --- last helper subprocess output ---
-OK TS2TRX-000000__Body1 180/372
-OK TS2TRX-000000__Body1_2 180/372
-OK TS2TRX-000000__Body1_3 180/372
-OK TS2TRX-000000__Body1_4 180/372
-OK TS1BHH-075000_v9__Body3 1934/4052
-OK TS1BHH-075000_v9__Body3_2 1934/4052
-OK TS1BHH-075000_v9__Body3_3 1934/4052
-OK TS1BHH-075000_v9__Body3_4 1934/4052
-OK DSV100-060080_v6__Body4 1828/3652
 OK 080W-Insert_4_Hinges_v3__Body1 944/1908
 OK 080W-Insert_4_Hinges_v3__Body2 118/236
 OK 080W-Insert_4_Hinges_v3__Body4 1027/2050
@@ -40,7 +31,7 @@ OK Component15__Body2 504/1012
 OK Component15__Body3 504/1012
 OK Component15__Body4 504/1012
 OK DRW__Body1 160/316
+OK DSV2R4-060080_v6__Body2 1493/3062
+OK DSV100-060080_v6__Body4 1828/3652
 OK SD0HG1-000000__Body1 1832/3780
-OK REF_-_TEKA_TFI3_130_D__Body1 236/468
-OK REF_-_TEKA_TFI3_130_D__Body2 8/12
-GLB 836392 38
+GLB 722728 29
