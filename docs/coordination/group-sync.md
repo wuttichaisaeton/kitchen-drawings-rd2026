@@ -7084,3 +7084,23 @@ Deploy watching. -- G2 (WEB 20)
 5. Summary messageBox at end shows every cabinet + part + project with sizes. ONE git push fires.
 6. Open the web 🧊 modal on any cabinet → that one's already there. Plus a new `02 Ruth.glb` for the whole-kitchen view (WEB 20 would need a new entry point if you want to surface "view whole project" on the project page — separate ask).
 ⏱ 00:25 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: flip gestures + constrained orbit (2824eea, LIVE) ⏱ 00:08
+RD 05's two stacked corrections to 47f4e17:
+- **FLIP**: 1 finger = ORBIT (was pan), 2 fingers = pinch ZOOM + drag PAN (was rotate)
+- **CONSTRAINED**: polar clamped to [15°, 165°] — no upside-down flipping, cabinet stays upright (CAD-standard)
+
+Refactor — `oneOrbit` (replaces `onePan`) holds {x, y, theta, phi}; touchmove updates orbit with clampPhi. `twoF` holds {midpoint, distance, fov, target, scale, basis} and touchmove does BOTH pinch-to-FOV AND midpoint-drag pan in one pass.
+
+**Footer**: "One finger: drag to rotate · Two fingers: pinch to zoom, drag to pan · Mouse: drag to rotate, wheel to zoom".
+
+**VERIFIED preview** (Astronaut DEMO loaded):
+- 1-finger drag (+100, +30 px) → az 20°→-14°, polar 70°→60° (orbit ✓)
+- POLAR CLAMP: 1-finger down-drag 1500 px (= 9 rad raw, way past pole) → polar lands at **15.13°** (PHI_MIN = 15° clamp HOLDS — no flip possible) ✓
+- 2-finger midpoint drag (+80, +20 px) → cameraTarget X moved -0.30 m (pan ✓, direction correct)
+
+Fullscreen button from 47f4e17 unchanged.
+
+**For เอ๋**: Ctrl+Shift+R → 🧊 → 1 finger orbits (constrained, won't flip); 2 fingers pinch-zoom + drag-pan. Cabinet stays upright.
+-- G2 (WEB 20)
