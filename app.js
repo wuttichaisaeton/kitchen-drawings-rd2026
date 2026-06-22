@@ -3221,12 +3221,32 @@ async function _kdOpen3D(code, opts) {
       // transform, so its rect.left/top give the real part-end point.
       hs.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
       if (mv) mv.appendChild(hs);
+      // 8 bbox-corner hotspots → let MODEL-VIEWER project the part's outline (its
+      // projection matches the render; our own THREE one drifted in scale). The
+      // layout reads these to land the arrow on the real silhouette edge.
+      const hsCorners = [];
+      let initCorners = null;
+      try {
+        if (_ovlThree && a.unit.node) {
+          const b0 = new _ovlThree.Box3().setFromObject(a.unit.node);
+          if (!b0.isEmpty()) { const mn = b0.min, mx = b0.max; initCorners = []; for (let bi = 0; bi < 8; bi++) initCorners.push([(bi & 1) ? mx.x : mn.x, (bi & 2) ? mx.y : mn.y, (bi & 4) ? mx.z : mn.z]); }
+        }
+      } catch {}
+      for (let i = 0; i < 8; i++) {
+        const hc = document.createElement('div');
+        hc.setAttribute('slot', 'hotspot-' + hsId + 'c' + i);
+        const p = initCorners ? initCorners[i] : [c0.x, c0.y, c0.z];
+        hc.setAttribute('data-position', `${p[0]}m ${p[1]}m ${p[2]}m`);
+        hc.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
+        if (mv) mv.appendChild(hc);
+        hsCorners.push(hc);
+      }
       const lineEl = document.createElementNS(svgNS, 'line');
       lineEl.setAttribute('class', 'kd3d-ovl-leader');
       lineEl.setAttribute('stroke', labelFill);
       lineEl.setAttribute('marker-end', `url(#${markerId})`);
       _ovlSvg.appendChild(lineEl);
-      _ovlRows.push({ code: a.text, qty, side, rowEl: row, lineEl, unit: a.unit, hsEl: hs });
+      _ovlRows.push({ code: a.text, qty, side, rowEl: row, lineEl, unit: a.unit, hsEl: hs, hsCorners });
     };
     leftRows.forEach((a, i)  => _mkRow(a, 'L', 14 + i * _seedStep));
     rightRows.forEach((a, i) => _mkRow(a, 'R', 14 + i * _seedStep));
@@ -3269,74 +3289,42 @@ async function _kdOpen3D(code, opts) {
     for (const r of _ovlRows) { const h = r.rowEl.getBoundingClientRect().height; if (h) { rowH = h; break; } }
     const step = rowH + _OVL_GAP;
     const hyst = Math.max(10, vw * 0.02);   // small dead-band: side follows the part
-    const factor = (explodePct / 100) * 1.5;
-    // World-correct projection via model-viewer's THREE camera (handles every
-    // model/explode transform). Box3.setFromObject gives each part's CURRENT
-    // world AABB; we point the arrow at its NEAR silhouette edge (the side
-    // facing the label) at mid-height — เอ๋ "ลูกศรอยู่กลาง+ขอบของ Part". When no
-    // camera is exposed, fall back to the model-viewer hotspot (centroid only).
-    const cam = _ovlThree ? _findCamera() : null;
-    const box = cam ? new _ovlThree.Box3() : null;
-    const tmp = cam ? new _ovlThree.Vector3() : null;
-    const proj = (wx, wy, wz) => {
-      const v = new _ovlThree.Vector3(wx, wy, wz).project(cam);
-      return { x: (v.x * 0.5 + 0.5) * vw, y: (-v.y * 0.5 + 0.5) * vh, vis: v.z > -1 && v.z < 1 };
-    };
+    // Edge via MODEL-VIEWER's OWN projection (matches the render exactly — our
+    // THREE camera drifted in scale and floated arrows in empty space). Read the
+    // centroid hotspot (Y + on-screen) and the 8 bbox-corner hotspots, then
+    // intersect the box silhouette with the horizontal line at the centroid
+    // screen-Y → arrow lands on the part's NEAR edge at mid-height.
     for (const r of _ovlRows) {
       let on = false, cxs = null, cys = null, minX = null, maxX = null;
-      // Render-space anchor from the model-viewer hotspot (proven correct — this
-      // is what drew the leaders เอ๋ already accepted).
-      let hx = null, hy = null, hOn = false;
       const hb = r.hsEl ? r.hsEl.getBoundingClientRect() : null;
       if (hb && (hb.width || hb.height || hb.left || hb.top)) {
-        hx = hb.left + hb.width / 2 - vb.left;
-        hy = hb.top + hb.height / 2 - vb.top;
-        hOn = hx > -0.3 * vw && hx < 1.3 * vw && hy > -0.3 * vh && hy < 1.3 * vh;
+        cxs = hb.left + hb.width / 2 - vb.left;
+        cys = hb.top + hb.height / 2 - vb.top;
+        // Real viewport only — a part exploded off-screen / behind the camera
+        // lands outside → no label, no mid-air leader (เอ๋ "ชี้กลางอากาศไม่ต้องโชว์").
+        on = cxs > -6 && cxs < vw + 6 && cys > -6 && cys < vh + 6;
       }
-      // THREE projection adds the silhouette EDGE + a real behind-camera test —
-      // but only TRUST it when it AGREES with the hotspot (same render space);
-      // otherwise fall back to the hotspot centroid so we never regress.
-      let handled = false;
-      if (cam && r.unit && r.unit.node) {
-        try {
-          box.setFromObject(r.unit.node);
-          if (!box.isEmpty()) {
-            const c = box.getCenter(tmp);
-            const pc = proj(c.x, c.y, c.z);
-            const tol = Math.max(50, vw * 0.08);
-            if (!pc.vis) { on = false; handled = true; }   // behind camera → no leader
-            else if (hx == null || (Math.abs(pc.x - hx) < tol && Math.abs(pc.y - hy) < tol)) {
-              cxs = pc.x; cys = pc.y;
-              on = pc.x > -0.3 * vw && pc.x < 1.3 * vw && pc.y > -0.3 * vh && pc.y < 1.3 * vh;
-              if (on) {
-                // Project the 8 AABB corners, then intersect the box silhouette
-                // with the HORIZONTAL line at the centroid's screen-Y, so the
-                // arrow lands EXACTLY on the part's edge at mid-height (เอ๋
-                // "ลูกศรต้องชี้อยู่ที่เส้นขอบเท่านั้น") — not on a stray corner in
-                // empty space. If the line misses the box → no arrow ("ลูกศรเปล่า
-                // ไม่ต้องโชว์").
-                const mn = box.min, mx = box.max, cor = [];
-                for (let bi = 0; bi < 8; bi++) {
-                  cor.push(proj((bi & 1) ? mx.x : mn.x, (bi & 2) ? mx.y : mn.y, (bi & 4) ? mx.z : mn.z));
-                }
-                minX = Infinity; maxX = -Infinity;
-                for (let bi = 0; bi < 8; bi++) for (let b = 0; b < 3; b++) {
-                  if (bi & (1 << b)) continue;
-                  const a = cor[bi], d = cor[bi | (1 << b)], dy = d.y - a.y;
-                  if ((a.y <= cys && d.y >= cys) || (a.y >= cys && d.y <= cys)) {
-                    const t = Math.abs(dy) < 1e-6 ? 0 : (cys - a.y) / dy;
-                    const x = a.x + t * (d.x - a.x);
-                    if (x < minX) minX = x; if (x > maxX) maxX = x;
-                  }
-                }
-                if (minX === Infinity) on = false;   // scanline misses the box → no arrow
-              }
-              handled = true;
-            }
+      if (on && r.hsCorners && r.hsCorners.length === 8) {
+        const cor = [];
+        for (let i = 0; i < 8; i++) {
+          const cb = r.hsCorners[i].getBoundingClientRect();
+          cor.push({ x: cb.left + cb.width / 2 - vb.left, y: cb.top + cb.height / 2 - vb.top });
+        }
+        // box silhouette ∩ horizontal line at the centroid screen-Y
+        minX = Infinity; maxX = -Infinity;
+        for (let bi = 0; bi < 8; bi++) for (let b = 0; b < 3; b++) {
+          if (bi & (1 << b)) continue;
+          const a = cor[bi], d = cor[bi | (1 << b)], dy = d.y - a.y;
+          if ((a.y <= cys && d.y >= cys) || (a.y >= cys && d.y <= cys)) {
+            const t = Math.abs(dy) < 1e-6 ? 0 : (cys - a.y) / dy;
+            const x = a.x + t * (d.x - a.x);
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
           }
-        } catch {}
+        }
+        if (minX === Infinity) { minX = maxX = cxs; }   // scanline missed → centroid
+      } else if (on) {
+        minX = maxX = cxs;   // no corner hotspots → centroid
       }
-      if (!handled) { cxs = hx; cys = hy; on = hOn; minX = maxX = hx; }   // hotspot centroid (no edge)
       // Side from centroid X — fresh when the part (re)appears, else damped so it
       // only flips when the part is clearly past centre (no cross-model leader).
       if (on) {
@@ -3415,8 +3403,25 @@ async function _kdOpen3D(code, opts) {
     const factor = (explodePct / 100) * 1.5;
     for (const r of _ovlRows) {
       if (!r.hsEl || !r.unit) continue;
-      const c = _unitCurrentCentroid(r.unit, factor);
-      r.hsEl.setAttribute('data-position', `${c.x}m ${c.y}m ${c.z}m`);
+      // Use the part's CURRENT world AABB (reflects the exploded node position)
+      // for both the centroid and the 8 corner hotspots, so model-viewer projects
+      // them exactly where the part renders.
+      let cx2 = null, cy2 = null, cz2 = null, corners = null;
+      if (_ovlThree && r.unit.node) {
+        try {
+          const b = new _ovlThree.Box3().setFromObject(r.unit.node);
+          if (!b.isEmpty()) {
+            const c = b.getCenter(new _ovlThree.Vector3()); cx2 = c.x; cy2 = c.y; cz2 = c.z;
+            const mn = b.min, mx = b.max; corners = [];
+            for (let bi = 0; bi < 8; bi++) corners.push([(bi & 1) ? mx.x : mn.x, (bi & 2) ? mx.y : mn.y, (bi & 4) ? mx.z : mn.z]);
+          }
+        } catch {}
+      }
+      if (cx2 == null) { const c = _unitCurrentCentroid(r.unit, factor); cx2 = c.x; cy2 = c.y; cz2 = c.z; }
+      r.hsEl.setAttribute('data-position', `${cx2}m ${cy2}m ${cz2}m`);
+      if (r.hsCorners && corners) {
+        for (let i = 0; i < 8; i++) r.hsCorners[i].setAttribute('data-position', `${corners[i][0]}m ${corners[i][1]}m ${corners[i][2]}m`);
+      }
     }
     _scheduleLeaderUpdate();
   };
