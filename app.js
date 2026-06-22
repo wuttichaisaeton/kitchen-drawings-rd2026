@@ -2115,7 +2115,7 @@ async function _kdOpen3D(code) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''} — 3D view<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''} — 3D view<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
            <div class="kd3d-loading">Loading 3D model…</div>
          </div>
@@ -2127,6 +2127,31 @@ async function _kdOpen3D(code) {
   modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
   modal.querySelector('.kdstock-close').addEventListener('click', close);
   document.addEventListener('keydown', onKey);
+
+  // Fullscreen button (เอ๋ 2026-06-22 "เพิ่ม โหมด Full Screen") — toggles the
+  // browser Fullscreen API on the modal frame. Hide if unsupported.
+  const fsBtn = modal.querySelector('.kd3d-fs');
+  const fsTarget = modal.querySelector('.kdstock-frame');
+  const canFs = !!(fsTarget && (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen));
+  if (!canFs && fsBtn) fsBtn.style.display = 'none';
+  if (canFs && fsBtn) {
+    fsBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      if (inFs) {
+        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      } else {
+        (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen).call(fsTarget);
+      }
+    });
+    // Reflect fullscreen state in the icon (subtle visual cue).
+    const onFsChange = () => {
+      const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+      fsBtn.title = inFs ? 'Exit fullscreen' : 'Fullscreen (toggle)';
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+  }
 
   const body = modal.querySelector('.kd3d-body');
   const showPlaceholder = (title, sub) => {
@@ -2228,7 +2253,7 @@ async function _kdOpen3D(code) {
         <model-viewer
           class="kd3d-mode-${mode}"
           src="${escapeHtml(glbUrl)}"
-          touch-action="pan-y"
+          touch-action="none"
           interaction-prompt="none"
           camera-orbit="20deg 70deg 105%"
           field-of-view="10deg"
@@ -2243,7 +2268,7 @@ async function _kdOpen3D(code) {
           reveal="auto"
         ></model-viewer>
       </div>
-      <div class="kd3d-foot">Two fingers: pinch to zoom, drag to rotate · One finger: scroll the page · Mouse: drag to rotate, wheel to zoom</div>`;
+      <div class="kd3d-foot">Two fingers: pinch to zoom + drag to rotate · One finger: pan · Mouse: drag to rotate, wheel to zoom</div>`;
   const mv = body.querySelector('model-viewer');
   const modal2 = body.closest('.kd3d-modal');
   if (mode === 'explode') modal2 && modal2.classList.add('kd3d-modal-explode');
@@ -2274,7 +2299,26 @@ async function _kdOpen3D(code) {
     };
     const clampPhi = (p) => Math.max(0.1, Math.min(Math.PI - 0.1, p));
 
+    // Camera right/up vectors in world space for the given orbit + the model-
+    // viewer-canonical convention (Y-up). Used by 1-finger pan to translate
+    // cameraTarget in screen space coordinates.
+    const _camBasis = (theta, phi) => ({
+      right: { x: Math.cos(theta), y: 0, z: -Math.sin(theta) },
+      up: {
+        x: -Math.sin(theta) * Math.cos(phi),
+        y: Math.sin(phi),
+        z: -Math.cos(theta) * Math.cos(phi),
+      },
+    });
+    // Pixels-to-world scale: the visible vertical field is 2·dist·tan(fov/2).
+    const _panScale = (orbit, fovDeg) => {
+      const fov = fovDeg * Math.PI / 180;
+      const fh = 2 * orbit.radius * Math.tan(fov / 2);
+      return fh / Math.max(1, mv.clientHeight);
+    };
+
     let twoF = null;
+    let onePan = null;
     mv.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
         e.preventDefault();
@@ -2288,28 +2332,54 @@ async function _kdOpen3D(code) {
           theta: orbit.theta, phi: orbit.phi,
           fov: mv.getFieldOfView(),
         };
-      } else {
-        // 1 finger: leave alone so the browser handles page-scroll.
+        onePan = null;
+      } else if (e.touches.length === 1) {
+        // 1 finger: PAN (เอ๋ 2026-06-22 "ให้ใช้ 1 นิ้วเป็นการ Pan"). Translate
+        // cameraTarget in camera-local right/up using the current orbit.
+        e.preventDefault();
+        const t = e.touches[0];
+        const orbit = mv.getCameraOrbit();
+        const tgt = mv.getCameraTarget();
+        onePan = {
+          x: t.clientX, y: t.clientY,
+          target: { x: tgt.x, y: tgt.y, z: tgt.z },
+          scale: _panScale(orbit, mv.getFieldOfView()),
+          basis: _camBasis(orbit.theta, orbit.phi),
+        };
         twoF = null;
       }
     }, { passive: false });
     mv.addEventListener('touchmove', (e) => {
-      if (e.touches.length !== 2 || !twoF) return;
-      e.preventDefault();
-      const t1 = e.touches[0], t2 = e.touches[1];
-      const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      const cx = (t1.clientX + t2.clientX) / 2, cy = (t1.clientY + t2.clientY) / 2;
-      const ROT = 0.006;
-      const newTheta = twoF.theta - (cx - twoF.cx) * ROT;
-      const newPhi = clampPhi(twoF.phi - (cy - twoF.cy) * ROT);
-      _setOrbit(newTheta, newPhi);
-      // pinch scale > 1 (fingers spread) → zoom in → smaller FOV.
-      const scale = dist / Math.max(20, twoF.dist);
-      _setFov(twoF.fov / Math.max(0.2, scale));
+      if (e.touches.length === 2 && twoF) {
+        e.preventDefault();
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const cx = (t1.clientX + t2.clientX) / 2, cy = (t1.clientY + t2.clientY) / 2;
+        const ROT = 0.006;
+        const newTheta = twoF.theta - (cx - twoF.cx) * ROT;
+        const newPhi = clampPhi(twoF.phi - (cy - twoF.cy) * ROT);
+        _setOrbit(newTheta, newPhi);
+        const scale = dist / Math.max(20, twoF.dist);
+        _setFov(twoF.fov / Math.max(0.2, scale));
+      } else if (e.touches.length === 1 && onePan) {
+        e.preventDefault();
+        const t = e.touches[0];
+        const dx = t.clientX - onePan.x, dy = t.clientY - onePan.y;
+        const s = onePan.scale;
+        const { right, up } = onePan.basis;
+        // Screen drag right → target moves LEFT (so the model appears to follow
+        // the finger). Screen drag DOWN → target moves UP (Y screen is inverted).
+        const T = onePan.target;
+        const nx = T.x - dx * s * right.x + dy * s * up.x;
+        const ny = T.y - dx * s * right.y + dy * s * up.y;
+        const nz = T.z - dx * s * right.z + dy * s * up.z;
+        try { mv.cameraTarget = `${nx}m ${ny}m ${nz}m`; } catch (e) {}
+      }
     }, { passive: false });
     mv.addEventListener('touchend', (e) => {
       if (e.touches.length < 2) twoF = null;
+      if (e.touches.length === 0) onePan = null;
     }, { passive: false });
 
     // Mouse — drag to orbit, wheel to zoom. Standard desktop UX.
