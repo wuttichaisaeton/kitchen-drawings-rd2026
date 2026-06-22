@@ -2935,34 +2935,22 @@ async function _kdOpen3D(code, opts) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       const fontSize = 36;
-      const pad = 8;
-      ctx.font = 'bold ' + fontSize + 'px ui-monospace,monospace';
+      const pad = 6;
+      const fface = '"Flux Architect",ui-monospace,monospace';
+      try { await document.fonts.load('bold ' + fontSize + 'px ' + fface); } catch {}
+      ctx.font = 'bold ' + fontSize + 'px ' + fface;
       const tw = ctx.measureText(text).width;
       canvas.width = Math.ceil(tw + pad * 2);
-      canvas.height = Math.ceil(fontSize * 1.3 + pad * 2);
+      canvas.height = Math.ceil(fontSize * 1.4 + pad * 2);
 
-      ctx.fillStyle = 'rgba(11,15,20,0.82)';
-      const r = 6;
-      ctx.beginPath();
-      ctx.moveTo(r, 0);
-      ctx.lineTo(canvas.width - r, 0);
-      ctx.quadraticCurveTo(canvas.width, 0, canvas.width, r);
-      ctx.lineTo(canvas.width, canvas.height - r);
-      ctx.quadraticCurveTo(canvas.width, canvas.height, canvas.width - r, canvas.height);
-      ctx.lineTo(r, canvas.height);
-      ctx.quadraticCurveTo(0, canvas.height, 0, canvas.height - r);
-      ctx.lineTo(0, r);
-      ctx.quadraticCurveTo(0, 0, r, 0);
-      ctx.fill();
-
-      ctx.strokeStyle = 'rgba(242,169,59,0.5)';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      ctx.font = 'bold ' + fontSize + 'px ui-monospace,monospace';
-      ctx.fillStyle = '#F2A93B';
+      ctx.font = 'bold ' + fontSize + 'px ' + fface;
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'center';
+      ctx.strokeStyle = '#0b0f14';
+      ctx.lineWidth = 4;
+      ctx.lineJoin = 'round';
+      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+      ctx.fillStyle = '#F2A93B';
       ctx.fillText(text, canvas.width / 2, canvas.height / 2);
 
       const tex = new THREE.CanvasTexture(canvas);
