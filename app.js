@@ -3299,32 +3299,10 @@ async function _kdOpen3D(code, opts) {
       // transform, so its rect.left/top give the real part-end point.
       hs.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
       if (mv) mv.appendChild(hs);
-      // 8 bbox-corner hotspots → let MODEL-VIEWER project the part's outline (its
-      // projection matches the render; our own THREE one drifted in scale). The
-      // layout reads these to land the arrow on the real silhouette edge.
-      const hsCorners = [];
-      let initCorners = null;
-      try {
-        if (_ovlThree && a.unit.node) {
-          const b0 = new _ovlThree.Box3().setFromObject(a.unit.node);
-          if (!b0.isEmpty()) { const mn = b0.min, mx = b0.max; initCorners = []; for (let bi = 0; bi < 8; bi++) initCorners.push([(bi & 1) ? mx.x : mn.x, (bi & 2) ? mx.y : mn.y, (bi & 4) ? mx.z : mn.z]); }
-        }
-      } catch {}
-      for (let i = 0; i < 8; i++) {
-        const hc = document.createElement('div');
-        hc.setAttribute('slot', 'hotspot-' + hsId + 'c' + i);
-        const p = initCorners ? initCorners[i] : [c0.x, c0.y, c0.z];
-        hc.setAttribute('data-position', `${p[0]}m ${p[1]}m ${p[2]}m`);
-        hc.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
-        if (mv) mv.appendChild(hc);
-        hsCorners.push(hc);
-      }
-      const lineEl = document.createElementNS(svgNS, 'line');
-      lineEl.setAttribute('class', 'kd3d-ovl-leader');
-      lineEl.setAttribute('stroke', labelFill);
-      lineEl.setAttribute('marker-end', `url(#${markerId})`);
-      _ovlSvg.appendChild(lineEl);
-      _ovlRows.push({ code: a.text, qty, side, rowEl: row, lineEl, unit: a.unit, hsEl: hs, hsCorners });
+      // Leaders removed (เอ๋ 2026-06-23) → no per-part bbox-corner hotspots and no
+      // SVG line. Just the 1 centroid hotspot per label (12 total, was 108 — much
+      // lighter on iPad too). The label is identified by clicking it / the part.
+      _ovlRows.push({ code: a.text, qty, side, rowEl: row, lineEl: null, unit: a.unit, hsEl: hs, hsCorners: null });
     };
     leftRows.forEach((a, i)  => _mkRow(a, 'L', 14 + i * _seedStep));
     rightRows.forEach((a, i) => _mkRow(a, 'R', 14 + i * _seedStep));
@@ -3379,62 +3357,31 @@ async function _kdOpen3D(code, opts) {
     const step = rowH + _OVL_GAP;
     const hyst = Math.max(10, vw * 0.02);   // small dead-band: side follows the part
     const factor = (explodePct / 100) * 1.5;
-    // Edge via MODEL-VIEWER's OWN projection (matches the render exactly — our
-    // THREE camera drifted in scale and floated arrows in empty space). Read the
-    // centroid hotspot (Y + on-screen) and the 8 bbox-corner hotspots, then
-    // intersect the box silhouette with the horizontal line at the centroid
-    // screen-Y → arrow lands on the part's NEAR edge at mid-height.
+    // Label position from the part's CENTROID hotspot (model-viewer projects it
+    // exactly where the part renders). Leaders were removed (เอ๋: pointed wrong),
+    // so we no longer need the per-part bbox-corner hotspots — just the centroid
+    // for the row's SIDE + screen-Y placement.
     for (const r of _ovlRows) {
-      let on = false, tight = false, cxs = null, cys = null, minX = null, maxX = null;
+      let on = false, cxs = null, cys = null;
       const hb = r.hsEl ? r.hsEl.getBoundingClientRect() : null;
       if (hb && (hb.width || hb.height || hb.left || hb.top)) {
         cxs = hb.left + hb.width / 2 - vb.left;
         cys = hb.top + hb.height / 2 - vb.top;
-        // LEADER/arrow only when the part is really on-screen (hotspot positioned)
-        // → no mid-air arrow (เอ๋ "ชี้กลางอากาศไม่ต้องโชว์").
-        tight = cxs > -6 && cxs < vw + 6 && cys > -6 && cys < vh + 6;
       } else if (_ovlThree && r.unit) {
-        // Hotspot not positioned yet — model-viewer hasn't laid it out (e.g. on
-        // DESKTOP, before any orbit fires camera-change, every hotspot reads 0,0).
-        // Seat the label by a THREE projection so it STILL SHOWS (เอ๋ "คอมยังไม่
-        // เห็น label"); no leader until the real hotspot resolves (settle poll).
+        // Hotspot not positioned yet (e.g. DESKTOP before any orbit fires
+        // camera-change) → seat the label by a THREE projection so it STILL SHOWS
+        // (เอ๋ "คอมยังไม่เห็น label"); the settle poll re-checks until it resolves.
         try { const p = _projectToViewer(_ovlThree, _unitCurrentCentroid(r.unit, factor)); if (p && p.vis) { cxs = p.x; cys = p.y; } } catch {}
       }
-      // LABEL shows generously (clamped into view) so every part is listed on any
-      // screen size / aspect (เอ๋ desktop wide-short hid them with a tight gate).
+      // LABEL shows generously (clamped into view) — every part listed on any aspect.
       if (cxs != null) on = cxs > -vw && cxs < 2 * vw && cys > -vh && cys < 2 * vh;
-      if (on && tight && r.hsCorners && r.hsCorners.length === 8) {
-        const cor = [];
-        for (let i = 0; i < 8; i++) {
-          const cb = r.hsCorners[i].getBoundingClientRect();
-          cor.push({ x: cb.left + cb.width / 2 - vb.left, y: cb.top + cb.height / 2 - vb.top });
-        }
-        // box silhouette ∩ horizontal line at the centroid screen-Y
-        minX = Infinity; maxX = -Infinity;
-        for (let bi = 0; bi < 8; bi++) for (let b = 0; b < 3; b++) {
-          if (bi & (1 << b)) continue;
-          const a = cor[bi], d = cor[bi | (1 << b)], dy = d.y - a.y;
-          if ((a.y <= cys && d.y >= cys) || (a.y >= cys && d.y <= cys)) {
-            const t = Math.abs(dy) < 1e-6 ? 0 : (cys - a.y) / dy;
-            const x = a.x + t * (d.x - a.x);
-            if (x < minX) minX = x; if (x > maxX) maxX = x;
-          }
-        }
-        if (minX === Infinity) { minX = maxX = cxs; }   // scanline missed → centroid
-      } else if (on) {
-        minX = maxX = cxs;   // no corner hotspots → centroid
-      }
-      // Side from centroid X — fresh when the part (re)appears, else damped so it
-      // only flips when the part is clearly past centre (no cross-model leader).
       if (on) {
         if (!r._wasOn) r.side = (cxs < cx) ? 'L' : 'R';
         else if (r.side === 'L' && cxs > cx + hyst) r.side = 'R';
         else if (r.side === 'R' && cxs < cx - hyst) r.side = 'L';
         else if (r.side !== 'L' && r.side !== 'R') r.side = (cxs < cx) ? 'L' : 'R';
       }
-      r._wasOn = on; r._on = on; r._ty = on ? cys : null;
-      // arrow only when the part is really on-screen (tight) → no mid-air arrow.
-      r._tx = (on && tight) ? ((r.side === 'L') ? minX : maxX) : null;   // near edge facing the label
+      r._wasOn = on; r._on = on; r._ty = on ? cys : null; r._tx = on ? cxs : null;
     }
     // 2) per side: lay out only VISIBLE rows. Sort by part-Y, seat at part
     //    mid-height (→ horizontal leader), push apart so none overlap, clamp into
@@ -3477,61 +3424,34 @@ async function _kdOpen3D(code, opts) {
     const visible = (explodePct > 5);
     _ovlRoot.style.display = visible ? '' : 'none';
     if (!visible) return;
-    _layoutOverlayRows(vb);   // writes every row's top + side
-    // While a part is ISOLATED, hide ALL leaders+arrows — the other parts are
-    // gone so the leaders point at empty space and clutter (เอ๋ "ไม่ต้องโชว์เส้นชี้
-    // และลูกศร มันเกะกะ ชี้ไปก็ไม่ตรง"). Labels still show (selected bold, rest faded).
-    _ovlSvg.style.display = _poppedCode ? 'none' : '';
-    for (const r of _ovlRows) {   // reads row rects (post-layout) + draws
-      // IMPORTANT: hide a suppressed leader with display:none, NOT stroke-opacity
-      // — an SVG marker (the arrowhead) paints independently of the line's stroke,
-      // so a transparent line still left a LONE ARROWHEAD floating (เอ๋ "ถ้ามีลูกศร
-      // อย่างเดียวไม่ต้องโชว์ มันทำให้งง").
-      if (_poppedCode) { if (r._on) r.rowEl.style.opacity = (r.code === _poppedCode) ? '1' : '0.3'; r.lineEl.style.display = 'none'; continue; }
-      if (!r._on || r._tx == null) { r.lineEl.style.display = 'none'; continue; }
-      const rb = r.rowEl.getBoundingClientRect();
-      const ry = rb.top + rb.height / 2 - vb.top;
-      const rx = (r.side === 'R') ? (rb.left - vb.left) : (rb.right - vb.left);
-      // Only draw when the part edge is clearly on the OUTER side of the label's
-      // inner edge — otherwise the horizontal leader would run back through the
-      // text, or be a stub bare-arrow (เอ๋ "เส้นชี้ห้ามทับตัวอักษร" + "ลูกศรเปล่า
-      // ไม่ต้องโชว์"). The label sits right beside such a part anyway.
-      const outOK = (r.side === 'R') ? (r._tx < rx - 8) : (r._tx > rx + 8);
-      if (!outOK) { r.lineEl.style.display = 'none'; continue; }
-      r.lineEl.style.display = '';
-      r.lineEl.setAttribute('stroke-opacity', '1');
-      r.lineEl.setAttribute('x1', rx); r.lineEl.setAttribute('y1', ry);
-      r.lineEl.setAttribute('x2', r._tx); r.lineEl.setAttribute('y2', r._ty);
+    _layoutOverlayRows(vb);   // positions the label rows (side + sorted by part-Y)
+    // LEADERS + ARROWS REMOVED (เอ๋ 2026-06-23: they pointed at the wrong part too
+    // often — "ชี้ไปก็ไม่ตรง" — so drop them). Parts are now identified by CLICKING
+    // a label (→ isolate + zoom-fit) or clicking the part (→ highlights its label).
+    // The label list stays; only the SVG is gone. Selection still dims the rest.
+    _ovlSvg.style.display = 'none';
+    for (const r of _ovlRows) {
+      if (r._on) r.rowEl.style.opacity = (!_poppedCode || r.code === _poppedCode) ? '1' : '0.3';
     }
   };
 
-  // Push each hotspot's data-position to the part's CURRENT centroid for the
-  // given explode pct (called from the slider). model-viewer re-projects on the
-  // next frame; camera-change then fires and redraws the leaders.
+  // Push each label's CENTROID hotspot to the part's CURRENT world centre (the
+  // exploded node position) so model-viewer reprojects it where the part renders
+  // and the label re-seats. (Leaders removed → no corner hotspots to update.)
   const _syncExplodeHotspots = () => {
     if (!_ovlRows.length) return;
     const factor = (explodePct / 100) * 1.5;
     for (const r of _ovlRows) {
       if (!r.hsEl || !r.unit) continue;
-      // Use the part's CURRENT world AABB (reflects the exploded node position)
-      // for both the centroid and the 8 corner hotspots, so model-viewer projects
-      // them exactly where the part renders.
-      let cx2 = null, cy2 = null, cz2 = null, corners = null;
+      let cx2 = null, cy2 = null, cz2 = null;
       if (_ovlThree && r.unit.node) {
         try {
           const b = new _ovlThree.Box3().setFromObject(r.unit.node);
-          if (!b.isEmpty()) {
-            const c = b.getCenter(new _ovlThree.Vector3()); cx2 = c.x; cy2 = c.y; cz2 = c.z;
-            const mn = b.min, mx = b.max; corners = [];
-            for (let bi = 0; bi < 8; bi++) corners.push([(bi & 1) ? mx.x : mn.x, (bi & 2) ? mx.y : mn.y, (bi & 4) ? mx.z : mn.z]);
-          }
+          if (!b.isEmpty()) { const c = b.getCenter(new _ovlThree.Vector3()); cx2 = c.x; cy2 = c.y; cz2 = c.z; }
         } catch {}
       }
       if (cx2 == null) { const c = _unitCurrentCentroid(r.unit, factor); cx2 = c.x; cy2 = c.y; cz2 = c.z; }
       r.hsEl.setAttribute('data-position', `${cx2}m ${cy2}m ${cz2}m`);
-      if (r.hsCorners && corners) {
-        for (let i = 0; i < 8; i++) r.hsCorners[i].setAttribute('data-position', `${corners[i][0]}m ${corners[i][1]}m ${corners[i][2]}m`);
-      }
     }
     _scheduleLeaderUpdate();
   };
