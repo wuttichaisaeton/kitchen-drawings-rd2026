@@ -2250,11 +2250,12 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-ovl-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
     .kd3d-modal .kd3d-ovl-leader{stroke-width:1.4;fill:none}
-    .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:2px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease,background .12s ease;pointer-events:auto;cursor:pointer;border-radius:5px}
+    .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:2px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease,background .12s ease;pointer-events:auto;cursor:pointer;border-radius:5px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-left{left:0}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{right:0}
     .kd3d-modal .kd3d-ovl-row:hover{background:rgba(127,127,127,.16)}
-    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel{background:rgba(242,169,59,.28);box-shadow:0 0 0 1.5px #f2a93b}
+    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel{background:#f2a93b;box-shadow:0 0 0 2px #f2a93b,0 0 10px 2px rgba(242,169,59,.6);color:#17202b;border-radius:5px}
+    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel .kd3d-ovl-check{color:#0f6b3f}
     .kd3d-modal .kd3d-ovl-qty{font-weight:700;font-size:16px}
     .kd3d-modal .kd3d-ovl-code{font-weight:400;font-size:13px}
     .kd3d-modal .kd3d-ovl-check{color:#2ec27e;font-weight:700;font-size:14px;margin-right:4px}
@@ -4013,14 +4014,17 @@ async function _kdOpen3D(code, opts) {
     if (!explodeUnits.length) return;
     const factor = (pct / 100) * 1.5;
     for (const u of explodeUnits) {
-      // เอ๋ 2026-06-23: a clicked label POPS its code's parts further out (extra
-      // outward offset) — an unmistakable "this is the part" effect at any
-      // explode level (even 0% / assembled).
-      const f = (_poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode) ? factor + 1.1 : factor;
+      // เอ๋ 2026-06-23: a clicked label makes its code's parts POP further out
+      // (extra outward offset) AND scale up — an unmistakable "this is the part"
+      // effect at any explode level (even 0% / assembled). Both are one-time
+      // transform changes so model-viewer re-renders them reliably.
+      const sel = _poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode;
+      const f = sel ? factor + 1.1 : factor;
       const dx = (u.gx - explodeCenter.x) * f;
       const dy = (u.gy - explodeCenter.y) * f;
       const dz = (u.gz - explodeCenter.z) * f;
       u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
+      if (u.node.scale) u.node.scale.setScalar(sel ? 1.18 : 1);
     }
     // Overlay: move each hotspot to the part's new centroid + toggle visibility.
     // (Leaders redraw on the camera-change the hotspot move triggers, and via
