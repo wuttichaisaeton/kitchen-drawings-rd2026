@@ -7132,3 +7132,32 @@ Footer help text updated for both: "Touch — 1 finger: orbit · 2 fingers: pinc
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): 3D part-row click — extract single node from cabinet's _parts.glb
 เอ๋ "3d part ยังไม่ load". Part-row 🧊 click resolves to non-existent `<part_code>.glb`. FIX (no Fusion change needed): on part-row 🧊, load parent CABINET's `<cabinet_code>_parts.glb` (already has 38/34 named nodes) → filter scene.children visible=false except node matching part code (substring/contains fallback); reframe bbox to single part. If no match → placeholder. If parent _parts.glb 404 → "cabinet not exported yet" placeholder. Pass {partCode, cabinetCode} from part-row click. Verify on a part in 100VFRR-075D60. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + Fusion 31 + เอ๋: part-row 🧊 loads cabinet _parts.glb + filters to the part (646be71, LIVE) ⏱ 00:15
+เอ๋ "3d part ยังไม่ load" — Fusion only writes per-cabinet GLBs, not per-part. The parent cabinet's `_parts.glb` already contains the part as one of its named leaf nodes; the modal now loads THAT and filters the scene to show only the matching mesh(es). No Fusion change needed.
+
+**API extension**: `kdAPI.open3D(code, opts)` accepts `{cabinetCode}`. When part code differs from cabinet code → **PART VIEW**:
+- glbUrl forced to `<cabinetCode>_parts.glb` (cabinet header view unchanged)
+- `_wantSrcFor` short-circuits to parts URL for every mode
+- `snapshotScene` hides every mesh whose name doesn't match `partCode` (exact first, substring fallback for Fusion's `<partCode>_v<N>__BodyN` naming)
+- bbox/dims recompute from VISIBLE meshes only → dims describe the PART
+- header reads `"<partCode> in <cabinetCode> — 3D view"`
+
+**Fallback placeholders**:
+- No matching node → "Part not in cabinet GLB" with the searched name + cabinet code
+- Cabinet `_parts.glb` 404 → "Cabinet not exported yet" pointing at CC_Export3D
+
+**editor/main.jsx** — part-row 🧊 onClick now passes `{cabinetCode}`. cabinetCode comes from a curried `renderRow(rw, code)` in the cards.map. Cabinet header 🧊 unchanged (stays single-arg → assembled main GLB).
+
+**VERIFIED preview** (1280x900, 1NSVFS-020000_parts.glb live):
+- `open3D('SD0SUP-000000', {cabinetCode:'1NSVFS-020000'})` →
+  - src = `1NSVFS-020000_parts.glb` ✓
+  - header = `"SD0SUP-000000 in 1NSVFS-020000 — 3D view · W 578 · D 87 · H 1502 mm"` ✓
+  - 34 total meshes → **4 visible** (SD0SUP body parts) + 30 hidden ✓
+  - dims = the PART's bbox (578×87×1502 — a tall narrow side panel) ✓
+- `open3D('NONEXISTENT-PART', {cabinetCode:'1NSVFS-020000'})` →
+  - Placeholder "Part not in cabinet GLB" with explanatory sub-text ✓
+
+**For เอ๋**: Ctrl+Shift+R → 🧊 on a part inside any cabinet's board → loads that cabinet's per-leaf GLB and shows ONLY that part. Title shows `<part> in <cabinet>`. Dims describe the part. If Fusion renamed the leaf, placeholder tells you which name was searched.
+Deploy watching. -- G2 (WEB 20)
