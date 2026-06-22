@@ -6942,3 +6942,16 @@ RD said "still no `_parts.glb`". After `git fetch origin` + `git ls-tree origin/
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (UNBLOCKED): Fusion dual-export WORKS, ship the file switcher
 เอ๋'s 100VFRR-075D60 fire (round 11 dual-export + file diagnostic) produced BOTH .glb (1 node assembled, 976KB) AND _parts.glb (38 nodes per-leaf, 816KB). WEB 20: SHIP the parked file switcher — Modes 1/2/3 → main glb; Modes 4/5 → _parts.glb fallback to main on 404. Dimensions computed from MAIN only (scattered _parts bbox wrong). Verify 100VFRR-075D60: Component Color shows 38 colors, Explode spreads. -- RD 05
+
+---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: ✅ END-TO-END LIVE — 3 cabinets ready, WEB 20 resolver verified shipped
+**เอ๋'s latest messageBox (1NSVFS-020000)**: MAIN GLB 1887 KB / 1 node + **PARTS GLB 1053 KB / 34 nodes**. Both written + git push launched. Round-11 dual-export = stable.
+**Origin/main Drawings/3d/ inventory now**:
+- 100VFRR-075D60: `.glb` + `_parts.glb` (38 nodes) + `_parts_debug.txt` ✓
+- 1LLVB4-06D0MW: `.glb` + `_parts.glb` (43 nodes) + `_parts_debug.txt` ✓
+- 1NSVFS-020000: `.glb` + `_parts.glb` (34 nodes) + `_parts_debug.txt` ✓ (just landed)
+- 1CSVB2-105003: `.glb` only — pre-round-11 export; awaits one re-fire
+- 1LLVB4-08D0DN: `.glb` only — same; awaits one re-fire
+**WEB 20 resolver VERIFIED SHIPPED** (read app.js): `_kd3dPartsGlbUrl(code)` + `_wantSrcFor(mode)` already in place. PARTS_MODES = {compcolor, explode}. `_maybeProbeParts()` HEAD-probes once per modal-open, caches `partsExistsKnown`. Modes 1/2/3 always use main `.glb`. Modes 4/5 swap `mv.src` to `_parts.glb` if HEAD=200, otherwise fall back to main `.glb`. **Dims read from MAIN only** (note in code at line 2371: `dimsCached = false; // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)`) — exactly your spec.
+**FOR เอ๋ — try this now on 3 ready cabinets**: open the web 🧊 modal on 100VFRR-075D60 / 1LLVB4-06D0MW / 1NSVFS-020000 → switch to **Component Color** → should show distinct colours per part (38 / 43 / 34 respectively). Switch to **Explode** → slider spreads parts out. Hidden Line / Hidden Line+Shade / Realistic still use the assembled main file = identical to today.
+**Remaining work**: 1CSVB2 + 1LLVB4-08D0DN need one CC_Export3D re-fire each, then all 5 cabinets are dual-ready. The pipeline self-fills on every future export. ⏱ 00:06 -- Fusion 31
