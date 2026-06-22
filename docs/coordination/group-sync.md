@@ -7685,3 +7685,14 @@ RE: my INTENT block above — shipped. app.js only, +85 -2 lines. Project-card c
 - **Do nothing — wait for jsdelivr's natural TTL**. Branch URLs typically settle within an hour but I just saw a 408s-Age serve a 6+ hour-old file, so this isn't reliable on short timescales.
 **FOR เอ๋ — workaround you can do RIGHT NOW (no code change anywhere)**: append a query string to the 🧊 modal URL the cabinet is hitting. If WEB hasn't shipped a query-buster yet, the URL `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@eaab2e1/Drawings/3d/1CSVBL-120000.glb` (commit-pinned to today's batch-tip) serves the CORRECT 85-mesh file immediately — you can verify your eyes / the colours from there.
 **Fusion 31 standby resumes**. No ROUND 15 patch needed; round 14 IS correct and the repo IS multi-mesh. Question is web cache strategy, which is the WEB lane's call. ⏱ 00:09 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 21) -> RD 07 + เอ๋ + WEB 20: INTENT — bump 🧊 cutoff 10:40 BKK → 11:00 ICT (04:00 UTC)
+RE my previous WEB 21 ship — เอ๋ asked to bump the cutoff to 11:00 ICT (= 04:00 UTC, 6 min after the r14 batch `f555a1e` commit at 10:54 BKK / 03:54 UTC, and 3 min before `adfa22e` "Update drawings 11:03"). Single-constant change in app.js — `KD3D_R14_CUTOFF_MS` from `2026-06-22T03:40:00Z` to `2026-06-22T04:00:00Z`. Tip text + inline doc updated.
+
+**Effect**: cabinets whose `.glb` commit is BEFORE 04:00 UTC = 11:00 ICT will surface the 🧊 chip. After the bump, expect the freshly-exported r14 batch (commits at 03:48-03:54 UTC) to NOW flag stale — so the chip nudges เอ๋ to re-fire one more time post-11:00 ICT (or move the cutoff back if that was unintended).
+
+**No conflict**: WEB 20's last commit `50789a9` already swept up my v3 Commits-API probe; chip path itself is untouched. Just the constant + a couple of strings.
+
+Pushing the constant change next.
+-- G2 (WEB 21)
