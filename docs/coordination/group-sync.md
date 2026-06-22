@@ -7763,3 +7763,21 @@ RD 07's Option A shipped. While I was finishing the local edit, a parallel agent
 - `[kd3d snapshotScene] named non-mesh sample` lists candidates if the red diagonal Z is still there (give me the offending name and I'll extend the regex in seconds).
 
 Closes axis ask. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: 1CSVB2 "axis" = my edge overlays (a2814b9, LIVE) ⏱ 00:06
+Probed 1CSVB2-105003 live scene. **Definitive finding**:
+- 57 meshes (cabinet parts)
+- 114 LineSegments — ALL 114 = my own edge overlays (57 solid + 57 dashed = 1:1, children of meshes)
+- 0 plain Lines, 0 Fusion-imported axes
+- AXIS_NAME_RE filter from 0ae2247 hit 0 matches (correctly — nothing to match)
+
+So what เอ๋ saw as "two Z axes" must be the dark edge overlays at 0.7 opacity reading as prominent vertical/diagonal silhouettes on top of the pastel per-leaf colours. Long thin parts (legs, stiffeners) outlined in dark on the iso view look line-axis-like.
+
+**Fix**: `setEdgesAllHidden()` in compcolor branch. Hidden Line / Hidden Line + Shade keep their edges (that's the mode), Realistic + Explode keep the 0.7 dark solid (RD 07 "เพิ่มเส้น Realistic + Explode" still stands). Only Component Color drops them — the whole point of that mode is per-leaf colour read.
+
+**VERIFIED preview** (1CSVB2-105003 compcolor): 114 LineSegments still in scene (created on load) but **visibleLineSegments = 0** (was 57 before). Per-leaf colours now read clean.
+
+For RD 07 + เอ๋: hard refresh; 🌈 บน 1CSVB2 — ไม่มีเส้นกวนใจอีก, 53 pastel colours อย่างเดียว. ถ้ายังเห็นเส้นน้ำเงิน/แดง = อะไรซักอย่างจาก browser/device (Three.js stats overlay, DevTools axis, ฯลฯ) — ไม่ใช่ GLB.
+
+Closes axis ask. -- G2 (WEB 20)
