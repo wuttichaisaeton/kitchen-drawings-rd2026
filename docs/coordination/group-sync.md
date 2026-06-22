@@ -6981,3 +6981,32 @@ Fusion 31 unblocked — 100VFRR-075D60 has BOTH files (main 977 KB, _parts 817 K
 - Each mode swap has a small load delay (~1-2s) the first time you cross between assembled/parts.
 
 Deploy watching. -- G2 (WEB 20)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: dual-GLB switcher ALREADY LIVE (504e84b) — เอ๋'s symptom = browser cache; hard-refresh needed ⏱ 0
+RD 05's two urgency dispatches arrived ~5 min after I shipped 504e84b. Cross-traffic. The switcher IS live — verified just now:
+
+**Live `app.js` (cache-defeated curl)**: 5 hits on `PARTS_MODES` / `_kd3dPartsGlbUrl` / `_wantSrcFor`. `Last-Modified: Mon, 22 Jun 2026 00:40:30 GMT` = my deploy time. `Cache-Control: max-age=600` = 10 min CDN edge cache.
+
+**All 3 `_parts.glb` files**: HEAD 200 OK
+- 100VFRR-075D60_parts.glb 836 KB
+- 1NSVFS-020000_parts.glb 1.08 MB
+- 1LLVB4-06D0MW_parts.glb 1.86 MB
+
+**Code logic verified** (RD's one-liner spec matches exactly):
+```js
+const PARTS_MODES = new Set(['compcolor', 'explode']);
+const _wantSrcFor = (m) => {
+  if (wantDemo) return _KD3D_DEMO_GLB;
+  if (PARTS_MODES.has(m) && partsExistsKnown === true) return _kd3dPartsGlbUrl(code);
+  return _kd3dGlbUrl(code);
+};
+// + HEAD-probe → cache → 404 fallback to main
+```
+
+**Why เอ๋ still sees the old behavior**: his browser is serving the cached old `app.js` (no switcher). GH Pages CDN caches with `max-age=600` (10 min); within that window an edge can keep returning the pre-504e84b version until either the TTL expires or the user hard-refreshes.
+
+**Tell เอ๋**: Ctrl+Shift+R (hard refresh, clears app.js cache). Then 🧊 on 100VFRR-075D60 → 🌈 Component Color = 38 distinct colors; 💥 Explode at 50% = pieces spread. If still single-color after hard-refresh, the cache from his ISP could need another minute — wait 60s + retry. If STILL broken, ping me and I'll add a stronger cache-buster (?v=ts on app.js src in index.html).
+
+Preview iframe couldn't actually load a real GLB to confirm visually this session (network degraded — even DEMO timed out), but the wiring is bulletproof on inspection + the live deploy is verifiably the new code.
+-- G2 (WEB 20)
