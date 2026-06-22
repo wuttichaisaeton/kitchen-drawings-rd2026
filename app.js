@@ -4037,6 +4037,11 @@ async function _kdOpen3D(code, opts) {
     // (Leaders redraw on the camera-change the hotspot move triggers, and via
     // _syncExplodeHotspots from the slider.)
     _syncExplodeHotspots();
+    // Force model-viewer to repaint — it renders on demand and does NOT notice
+    // direct THREE scene-graph edits (visibility/scale/position), so the isolate/
+    // pop effect was applied but never drawn until a camera move (เอ๋ "ไม่แสดง
+    // effect"). queueRender() schedules the repaint.
+    try { const sc = _getScene(); if (sc && typeof sc.queueRender === 'function') sc.queueRender(); } catch {}
     if (_ovlRoot) _ovlRoot.style.display = (pct > 5) ? '' : 'none';
   };
   const resetExplode = () => {
