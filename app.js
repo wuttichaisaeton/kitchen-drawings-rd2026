@@ -2172,6 +2172,44 @@ async function _kdOpen3D(code, opts) {
       width: 100% !important;
       box-sizing: border-box !important;
     }
+    /* PSEUDO-FULLSCREEN fallback (RD 07 2026-06-22) for browsers that don't
+       support the Fullscreen API (notably iPhone Safari). Mirrors the
+       :fullscreen rules but driven by a class toggle. Double-tap on the
+       model-viewer activates this when requestFullscreen() rejects. */
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: none !important;
+      max-height: none !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border-radius: 0 !important;
+      box-sizing: border-box !important;
+      background: #0f1419 !important;
+      z-index: 2147483646 !important;
+    }
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kd3d-body {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+    }
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kd3d-viewer {
+      height: auto !important;
+      max-height: none !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+    }
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame model-viewer {
+      width: 100% !important;
+      height: 100% !important;
+    }
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kd3d-modebar,
+    .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kd3d-explodebar {
+      width: 100% !important;
+      box-sizing: border-box !important;
+    }
   </style>`;
 
   const modal = document.createElement('div');
@@ -2217,24 +2255,64 @@ async function _kdOpen3D(code, opts) {
       try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
     });
   }
-  if (canFs && fsBtn) {
-    fsBtn.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      if (inFs) {
-        (document.exitFullscreen || document.webkitExitFullscreen).call(document);
-      } else {
-        (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen).call(fsTarget);
+  // Unified fullscreen toggle (RD 07 2026-06-22 — เอ๋ "คลิ๊กบนพื้นที่ว่างคุณ
+  // ก็เปิด full screen เดี๋ยวกว่า"). Tries the real Fullscreen API first; on
+  // failure (iPhone Safari doesn't expose it) drops to a CSS pseudo state via
+  // a class toggle on the modal. The two paths are interchangeable from the
+  // user's perspective.
+  const _isAnyFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement || modal.classList.contains('kd3d-pseudo-fs'));
+  const _enterPseudo = () => {
+    modal.classList.add('kd3d-pseudo-fs');
+    if (fsExitBtn) fsExitBtn.style.display = 'inline-block';
+    if (fsBtn) fsBtn.title = 'Exit fullscreen';
+  };
+  const _exitPseudo = () => {
+    modal.classList.remove('kd3d-pseudo-fs');
+    if (fsExitBtn) fsExitBtn.style.display = 'none';
+    if (fsBtn) fsBtn.title = 'Fullscreen (toggle)';
+  };
+  const _toggleFs = async () => {
+    if (_isAnyFs()) {
+      if (document.fullscreenElement || document.webkitFullscreenElement) {
+        try { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
       }
-    });
-    // Reflect fullscreen state in the icon + show/hide the floating exit button.
-    const onFsChange = () => {
-      const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
-      fsBtn.title = inFs ? 'Exit fullscreen' : 'Fullscreen (toggle)';
-      if (fsExitBtn) fsExitBtn.style.display = inFs ? 'inline-block' : 'none';
-    };
-    document.addEventListener('fullscreenchange', onFsChange);
-    document.addEventListener('webkitfullscreenchange', onFsChange);
+      _exitPseudo();
+      return;
+    }
+    if (canFs && fsTarget) {
+      try {
+        await (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen).call(fsTarget);
+        return;   // fullscreenchange handler updates UI
+      } catch (e) { /* fall through to pseudo */ }
+    }
+    _enterPseudo();
+  };
+  // De-bounce: dblclick + manual touch-end double-tap can both fire on the
+  // same gesture in some browsers. Guard with a 350ms window.
+  let _lastToggleAt = 0;
+  const _guardedToggle = () => {
+    const now = Date.now();
+    if (now - _lastToggleAt < 350) return;
+    _lastToggleAt = now;
+    _toggleFs();
+  };
+  // ⛶ button shares the same toggle.
+  if (fsBtn) {
+    fsBtn.addEventListener('click', (ev) => { ev.stopPropagation(); _guardedToggle(); });
+  }
+  // Reflect REAL fullscreen state in the UI (the pseudo path updates its own UI).
+  const _onFsChange = () => {
+    const inRealFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    if (fsBtn) fsBtn.title = (inRealFs || modal.classList.contains('kd3d-pseudo-fs')) ? 'Exit fullscreen' : 'Fullscreen (toggle)';
+    if (fsExitBtn) fsExitBtn.style.display = (inRealFs || modal.classList.contains('kd3d-pseudo-fs')) ? 'inline-block' : 'none';
+  };
+  document.addEventListener('fullscreenchange', _onFsChange);
+  document.addEventListener('webkitfullscreenchange', _onFsChange);
+  // Floating 🔙 exit also goes through the unified toggle (covers both real
+  // FS exit and pseudo-FS removal — the original implementation only handled
+  // real FS).
+  if (fsExitBtn) {
+    fsExitBtn.onclick = (ev) => { ev.stopPropagation(); _guardedToggle(); };
   }
   // Close handler must also remove the floating exit button when the modal closes.
   const _origClose = close;
@@ -2552,6 +2630,24 @@ async function _kdOpen3D(code, opts) {
       const factor = e.deltaY > 0 ? 1.12 : 0.89;
       _setFov(mv.getFieldOfView() * factor);
     }, { passive: false });
+
+    // Double-tap / double-click toggles fullscreen (RD 07 2026-06-22 — "คลิ๊ก
+    // บนพื้นที่ว่างคุณก็เปิด full screen เดี๋ยวกว่า"). dblclick covers desktop
+    // mouse + most modern touch browsers; iOS Safari's quirky tap delay also
+    // gets a manual touchend-timing fallback (350ms window). Both share the
+    // 350ms debounced _guardedToggle so the same gesture can't fire twice.
+    mv.addEventListener('dblclick', (e) => { e.preventDefault(); _guardedToggle(); });
+    let _lastTapEnd = 0;
+    mv.addEventListener('touchend', (e) => {
+      // Only act on a clean single-finger lift (no fingers left on screen).
+      if (e.touches.length !== 0 || e.changedTouches.length !== 1) return;
+      const now = Date.now();
+      const dt = now - _lastTapEnd;
+      // 30ms < dt < 320ms = double-tap window (avoid rapid spurious events,
+      // and slightly tighter than 350ms guard so manual + dblclick don't race).
+      if (dt > 30 && dt < 320) { _lastTapEnd = 0; _guardedToggle(); }
+      else { _lastTapEnd = now; }
+    });
   }
 
   // ── THREE.js scene access + per-mesh edge overlays ──────────────────────
