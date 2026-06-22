@@ -7931,3 +7931,84 @@ All 58 tasks completed. No blockers, no pending dispatches.
 **OPEN ITEMS**: None — hardening awaits เอ๋ decision
 **NO BLOCKERS.**
 -- WEB 22
+
+---
+### 2026-06-22 - RD 07 HANDOFF — 3D Viewer Scatter Bug
+
+**SESSION**: RD 07 — 3D viewer 🔴 scatter bug on 1LLVB4-08D0DN + Project 02 Ruth
+**STATUS**: ⚠ IN-PROGRESS — percentile-based camera fix WRITTEN but UNVERIFIED
+
+---
+
+## COMPLETED (shipped + deployed)
+
+1. **Close button visibility on iPad** — 52px fixed-position circle, z-index max. Commit `0fde6ef`. LIVE.
+2. **Axis alignment fix** — edge overlays hidden in Component Color mode (Fusion Z red vs Web Z blue confusion). Commit `a2814b9`. LIVE.
+3. **Dual-GLB revert** — `PARTS_MODES = new Set()` (empty). All modes use main `.glb`. Reverted per เอ๋.
+
+## 🔴 REMAINING: Scatter Bug on L-shaped cabinets
+
+### Root cause (CONFIRMED — not a Fusion export bug)
+
+The GLB positions ARE correct. Parts are in the cabinet's own coordinate frame. The scatter is a **camera framing problem**:
+
+- **1CSVB2-105003 (looks good)**: 81 meshes, median dist=211mm, 3x threshold=632mm → 10 outliers excluded → camera frames tight 71-part cluster → looks assembled.
+- **1LLVB4-08D0DN (looks scattered)**: 35 meshes, median dist=599mm, 3x threshold=1797mm → 0 outliers → camera frames entire 2685mm L-shape bbox → looks scattered/exploded.
+
+The L-shaped cabinet ("LL" code) has 800mm + 1200mm wings spanning 2685mm total. Parts distribute uniformly — NO single part exceeds 3x median distance, so the existing orphan filter does nothing.
+
+### Fix written (UNCOMMITTED, UNVERIFIED)
+
+**File**: `app.js` lines 3106-3143 (inside the outlier filter block after the 3x-median check)
+
+**What was added**:
+1. `_reframeTo()` helper — extracted camera-fit logic into reusable function
+2. **Percentile fallback** — when `_orphanCount === 0 && meshList.length >= 8`:
+   - Compute 85th-percentile distance threshold
+   - Build inner bbox from parts within threshold
+   - If inner bbox max dimension < 75% of full bbox max dimension → reframe camera to inner cluster
+   - This tightens the view for L-shapes without affecting compact cabinets
+
+**Code location**: search for `_reframeTo` in app.js (~line 3106)
+
+**Gate conditions**: `innerMax < 0.75 * fullMax` ensures it ONLY tightens when trimming the outer 15% by distance actually shrinks the bbox by 25%+. Compact cabinets pass through unchanged.
+
+### What the next session MUST do
+
+1. **Verify the edit compiles** — `node --check app.js` (won't catch runtime, but catches syntax)
+2. **Test on 1LLVB4-08D0DN** — open 3D viewer, check console for `[kd3d] percentile fit:` log line, verify the model looks assembled (not scattered)
+3. **Test on 1CSVB2-105003** — confirm the 3x-median orphan filter STILL works (should see `outlier filter: 10/81 orphan(s)` in console), model looks the same as before
+4. **Test on Project 02 Ruth** — multiple cabinets, verify no regression
+5. **If percentile gate (75%) is too conservative** (1LLVB4 still doesn't reframe): lower to `0.85 * fullMax` or even `0.95 * fullMax`. The key is that compact cabinets shouldn't be affected.
+6. **If percentile gate is too aggressive** (compact cabinets get weird zoom): raise to `0.60 * fullMax`
+7. **Commit + push + verify deploy**
+
+### Test data (debug files in repo)
+
+- `Drawings/3d/1LLVB4-08D0DN_parts_debug.txt` — 35 nodes, median=599, threshold=1797, 0 orphans
+- `Drawings/3d/1CSVB2-105003_parts_debug.txt` — 81 nodes, median=211, threshold=632, 10 orphans
+- CDN serves OLD committed GLBs (local re-exports NOT committed — intentional, awaiting this fix)
+
+### Other pending (lower priority)
+
+- **iPad Safari verify** — fullscreen + exit button works in CSS, needs real device test by เอ๋
+- **GLB re-export commit** — local `Drawings/3d/*.glb` files modified by Fusion batch export but NOT committed. Once scatter fix is verified, these should be committed too.
+
+### Key code map
+
+| Location | What |
+|----------|------|
+| `app.js:2560-2577` | model-viewer HTML template |
+| `app.js:2791-2812` | `PARTS_MODES = new Set()` — dual-GLB toggle (currently empty = all main) |
+| `app.js:2831-2857` | `_getScene()` + `_localCentroid()` |
+| `app.js:2859-2936` | `snapshotScene()` — explode setup |
+| `app.js:2940-2958` | Axis name filter (AXIS_NAME_RE) |
+| `app.js:3058-3143` | **Outlier filter + percentile fallback (THE FIX)** |
+| `app.js:3244-3289` | `applyComponentColors()` — per-mesh djb2 hash HSL |
+| `app.js:3337-3354` | `applyExplode(pct)` / `resetExplode()` |
+| `app.js:3356-3442` | `applyMode()` — mode switching |
+| `CC_Export3D.py:332-432` | Fusion walk + matrix fix (getCell column-major) |
+
+**NEEDS:** Next session verify + commit the app.js percentile fix, then test both cabinets.
+
+-- RD 07 HANDOFF
