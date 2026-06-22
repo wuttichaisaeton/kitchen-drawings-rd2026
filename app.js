@@ -2109,7 +2109,7 @@ async function _kdOpen3D(code) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''} — 3D view<button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''} — 3D view<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
            <div class="kd3d-loading">Loading 3D model…</div>
          </div>
@@ -2453,6 +2453,32 @@ async function _kdOpen3D(code) {
     if (info) info.textContent = explodeUnits.length >= 2
       ? `· ${explodeUnits.length} pieces`
       : `· ${explodeUnits.length} piece (single-mesh GLB — needs per-leaf export)`;
+
+    // Overall W × H × D (เอ๋ 2026-06-22 "เพิ่มการบอกขนาดรวมด้วย"). Fusion
+    // designs ship in mm; STL → trimesh → GLB preserves units, and node
+    // transforms are baked into vertex coords so a plain geometry bbox sweep
+    // is already in world space. Round to nearest mm. Cached for the modal —
+    // doesn't recompute on mode-switch.
+    let mnX = Infinity, mnY = Infinity, mnZ = Infinity;
+    let mxX = -Infinity, mxY = -Infinity, mxZ = -Infinity;
+    threeScene.traverse(n => {
+      if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch (e) {}
+      const bb = n.geometry.boundingBox;
+      if (!bb) return;
+      if (bb.min.x < mnX) mnX = bb.min.x; if (bb.min.y < mnY) mnY = bb.min.y; if (bb.min.z < mnZ) mnZ = bb.min.z;
+      if (bb.max.x > mxX) mxX = bb.max.x; if (bb.max.y > mxY) mxY = bb.max.y; if (bb.max.z > mxZ) mxZ = bb.max.z;
+    });
+    const dimsEl = modal2 && modal2.querySelector('.kd3d-dims');
+    if (dimsEl && mnX < Infinity) {
+      // Unit autodetect: Fusion → trimesh → GLB exports vertex coords in mm
+      // directly, but glTF's default unit is METERS (Astronaut DEMO et al.).
+      // If the largest extent is < 10 the model is in meters → ×1000 to get mm.
+      let W = mxX - mnX, H = mxY - mnY, D = mxZ - mnZ;
+      const scale = Math.max(W, H, D) < 10 ? 1000 : 1;
+      W = Math.round(W * scale); H = Math.round(H * scale); D = Math.round(D * scale);
+      dimsEl.textContent = `· W ${W} · H ${H} · D ${D} mm`;
+    }
     return true;
   };
 
