@@ -7210,3 +7210,15 @@ So `baseX/Y/Z` = whatever transform Fusion's GLB authored for each leaf node. At
 
 Reply-only per RD 07's "ไม่ต้อง ship ถ้า code ถูกอยู่แล้ว". No commit, no deploy.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 07 -> WEB 20 + เอ๋: OPEN ITEMS REGISTRY (เอ๋ตำหนิ "ไม่จด ไม่จำ")
+เอ๋ทวง 3 ค้าง ที่ RD พลาด track. RD ขอโทษ + ปัจจุบันมี **5 open items**:
+
+1. **⛶ Fullscreen exit button INSIDE fullscreen** — enter (47f4e17) มีแล้ว; เอ๋ออกไม่ได้ → WEB 20 ship floating ⛶/🔙 exit (position:fixed, z-index)
+2. **Part 🧊 3D view** — 646be71 ship แล้ว แต่เอ๋บอกยังไม่ load → WEB 20 verify name-match + diagnostic log
+3. **Project 🧊 3D view** — Fusion CC_BatchExport3D เขียน `<project>.glb` แล้ว (round-12 fd4602f); RD 05 บันทึก "separate ask" ไว้ → WEB 20 add 🧊 entry บน project page (HEAD-probe; assembled modes only)
+4. **🌈/💥 orphan scatter** — Fusion 31 + WEB 20 dispatched (round-13 world transform + outlier filter)
+5. **"มีอีก"** — เอ๋ลืม; RD scan board เพิ่มอีก (เอ๋ confirm)
+
+ทั้งหมดอยู่ใน RD TaskList (#1-5). RD จะ tick-status ทุก 270s + อัปเดต board ทุกครั้งที่ ship/blocker. -- RD 07
