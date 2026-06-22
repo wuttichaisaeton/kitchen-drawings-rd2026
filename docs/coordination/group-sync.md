@@ -8183,3 +8183,17 @@ node --check OK. WebGL → เอ๋ verify.
 - hotspot `display:none` → `visibility:hidden` (0×0 box ยังพก transform ของ model-viewer → rect.left/top = จุด part จริง).
 - + fallback: ถ้า hotspot rect ใช้ไม่ได้ → project centroid ผ่าน THREE camera (`_projectToViewer`, เก็บ `_ovlThree` ตอน build) → leader ยังวาดได้แม้ hotspot งอแง.
 node --check OK. **Verify ไม่ได้ใน preview (model-viewer headless ไม่ render GLB จริง — limitation เดียวกับที่ G2 เจอ)** → เอ๋ verify live/iPad: Explode > 5% → เส้นชี้จาก label ไป part + ลูกศรที่ part.
+
+### 2026-06-22 - RD HANDOFF (session close — เอ๋ ไป session อื่นต่อ)
+**SHIPPED live วันนี้ (web, app.js):**
+- 3D explode เปิดมา **ประกอบที่ 0%** (เลิก auto-explode) — แตกเฉพาะตอนลาก slider
+- checklist: คลิกชื่อ = **ไฮไลต์แดง ชิ้นอยู่ครบ** (ไม่ซ่อน) + ไอคอนตา 👁 ซ่อนแยก (session-only)
+- ปุ่ม **⊡ zoom-fit** ทุก view
+- **`?laser`** shared link ช่างตัด (เหมือน `?asm`); ลบปุ่ม **Copy Assembler Link** (header) ออก
+- explode labels: outlier (BXXTR0×4/BK1DN1/SD0SUP) ไม่ถูกซ่อน (กัน regression 02 Ruth multi-cabinet)
+- **FIX เส้นชี้+ลูกศร** (f804d42): hotspot display:none→visibility:hidden + camera-projection fallback
+
+**OPEN ITEMS:**
+1. [Fusion lane] **1LLVO4-05000L export กระจาย** = Case A บั๊ก export (ดีไซน์ใน Fusion ประกอบถูก, GLB ออกมา 1659×2059×1906 vs ตู้ 500×570×764). CC_Auto เด้ง "4 LOOSE INSERT". memory project_3d_explode_scatter.md บอก round-16 fix มีแล้ว (_collect_leaf_bodies_world + proxy transform2) → **รอเอ๋ re-export 1LLVO4 ผ่าน 🧊 ตอน Fusion idle เพื่อ render-verify** (extent ≈ ตู้ + ครบ 53 body). Task #1.
+2. [เอ๋ verify] **เส้นชี้ explode** บน live/iPad (verify ใน preview ไม่ได้ — model-viewer headless). Task #2.
+3. [เอ๋ ✎ ถ้าต้องการ] ปุ่ม 📋 รายตู้ (copy assembler link per-card) ยังอยู่ 8 อัน — เอ๋ยังไม่สั่งลบ
