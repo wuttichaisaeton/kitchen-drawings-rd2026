@@ -2221,6 +2221,9 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-browser-row .kd3d-part-name{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
     .kd3d-modal .kd3d-browser-toggle{background:transparent;border:0;color:#9fb0c0;cursor:pointer;font-size:12px;padding:4px 6px;position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px}
     .kd3d-modal .kd3d-browser-toggle:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
+    .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
+    .kd3d-modal .kd3d-3dx-btn:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
+    .kd3d-modal .kd3d-3dx-btn.is-on{color:#F2A93B;border-color:#F2A93B}
     /* FULLSCREEN sizing override (RD 07 2026-06-22: เอ๋ "full screen คือเต็มจอ
        ไม่ใช่ครึ่งจอ"). The inline width:94vw + max-height:88vh on the
        .kdstock-frame fight the browser's fullscreen layout — without these
@@ -3713,6 +3716,104 @@ async function _kdOpen3D(code, opts) {
     try { localStorage.setItem(VIS_KEY, JSON.stringify(visState)); } catch {}
     _populateBrowserFn();
   });
+
+  // ── 3Dconnexion SpaceMouse (WebHID) ──────────────────────────────────
+  if (typeof navigator !== 'undefined' && navigator.hid) {
+    let _3dxDev = null;
+    let _3dxTx = 0, _3dxTy = 0, _3dxTz = 0;
+    let _3dxRx = 0, _3dxRy = 0, _3dxRz = 0;
+    let _3dxRaf = 0;
+    const DEAD = 5;
+    const ORB_K = 0.0004, PAN_K = 0.00003, ZOOM_K = 0.0004;
+
+    const _3dxBtn = document.createElement('button');
+    _3dxBtn.className = 'kd3d-3dx-btn';
+    _3dxBtn.textContent = '3D';
+    _3dxBtn.title = 'Connect 3Dconnexion SpaceMouse';
+    const viewerDiv = body.querySelector('.kd3d-viewer');
+    if (viewerDiv) viewerDiv.appendChild(_3dxBtn);
+
+    const _3dxParse = (ev) => {
+      const d = ev.data;
+      if (ev.reportId === 1) {
+        _3dxTx = d.getInt16(0, true);
+        _3dxTy = d.getInt16(2, true);
+        _3dxTz = d.getInt16(4, true);
+      } else if (ev.reportId === 2) {
+        _3dxRx = d.getInt16(0, true);
+        _3dxRy = d.getInt16(2, true);
+        _3dxRz = d.getInt16(4, true);
+      }
+    };
+
+    const _3dxLoop = () => {
+      _3dxRaf = requestAnimationFrame(_3dxLoop);
+      if (!mv || !mv.isConnected) { cancelAnimationFrame(_3dxRaf); _3dxRaf = 0; return; }
+      const tx = Math.abs(_3dxTx) > DEAD ? _3dxTx : 0;
+      const ty = Math.abs(_3dxTy) > DEAD ? _3dxTy : 0;
+      const tz = Math.abs(_3dxTz) > DEAD ? _3dxTz : 0;
+      const rx = Math.abs(_3dxRx) > DEAD ? _3dxRx : 0;
+      const ry = Math.abs(_3dxRy) > DEAD ? _3dxRy : 0;
+      if (!tx && !ty && !tz && !rx && !ry) return;
+      try {
+        const orb = mv.getCameraOrbit();
+        const th = orb.theta - ry * ORB_K;
+        const ph = Math.max(0.01, Math.min(Math.PI - 0.01, orb.phi + rx * ORB_K));
+        const ra = Math.max(0.01, orb.radius * (1 - tz * ZOOM_K));
+        mv.setAttribute('camera-orbit', th + 'rad ' + ph + 'rad ' + ra + 'm');
+        if (tx || ty) {
+          const tgt = mv.getCameraTarget();
+          const sc = orb.radius * PAN_K;
+          const cosT = Math.cos(orb.theta), sinT = Math.sin(orb.theta);
+          tgt.x += (-tx * cosT) * sc;
+          tgt.z += (tx * sinT) * sc;
+          tgt.y += ty * sc;
+          mv.setAttribute('camera-target', tgt.x + 'm ' + tgt.y + 'm ' + tgt.z + 'm');
+        }
+      } catch {}
+    };
+
+    const _3dxOpen = async (dev) => {
+      try {
+        if (!dev.opened) await dev.open();
+        dev.addEventListener('inputreport', _3dxParse);
+        _3dxDev = dev;
+        _3dxBtn.classList.add('is-on');
+        _3dxBtn.title = dev.productName || '3Dconnexion connected';
+        if (!_3dxRaf) _3dxRaf = requestAnimationFrame(_3dxLoop);
+        console.info('[kd3d] 3Dconnexion connected:', dev.productName);
+      } catch (e) { console.warn('[kd3d] 3Dconnexion open failed:', e); }
+    };
+
+    _3dxBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      if (_3dxDev) return;
+      try {
+        const devs = await navigator.hid.requestDevice({
+          filters: [{ vendorId: 0x256F }, { vendorId: 0x046D }]
+        });
+        if (devs.length) await _3dxOpen(devs[0]);
+      } catch (e) { console.warn('[kd3d] 3Dconnexion request:', e); }
+    });
+
+    navigator.hid.addEventListener('disconnect', (ev) => {
+      if (_3dxDev && ev.device === _3dxDev) {
+        _3dxDev = null;
+        _3dxBtn.classList.remove('is-on');
+        _3dxBtn.title = 'Connect 3Dconnexion SpaceMouse';
+        if (_3dxRaf) { cancelAnimationFrame(_3dxRaf); _3dxRaf = 0; }
+        console.info('[kd3d] 3Dconnexion disconnected');
+      }
+    });
+
+    (async () => {
+      try {
+        const devs = await navigator.hid.getDevices();
+        const dev = devs.find(d => d.vendorId === 0x256F || d.vendorId === 0x046D);
+        if (dev) await _3dxOpen(dev);
+      } catch {}
+    })();
+  }
 }
 
 // Global handle for console / direct callers (เอ๋'s scripts also use this).
