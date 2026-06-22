@@ -8208,3 +8208,6 @@ node --check OK. **Verify ไม่ได้ใน preview (model-viewer headles
 **WHY:** เอ๋ rapid feedback 2026-06-22 — leaders were crossing/tangling; wanted labels to move up/down + side auto, horizontal leaders, arrow on edge.
 **VERIFY:** `node --check` OK; 3-lens adversarial static review (workflow) ran first, all major findings fixed; deploy watched to success, live app.js confirms marker. **Live 3D tracking = เอ๋ verifies on iPad (WebGL not testable headless).**
 **NEXT:** เอ๋ eyeball on 2FNLR0 / 1NNV04 explode → iterate if edge/side off.
+
+### RD · 2026-06-22 · explode arrow → on the part edge at mid-height (929dfd9, LIVE)
+เอ๋ "ลูกศรต้องชี้อยู่ที่เส้นขอบเท่านั้น และลูกศรเปล่าไม่ต้องโชว์": replaced AABB X-extent (stray corner floated in empty space) with **box-silhouette ∩ horizontal line at the centroid screen-Y** → arrow sits exactly on the part's near edge at mid-height; scanline-misses-box → no arrow; outer-edge guard 2→8px (no stub bare-arrows). node --check OK, deploy watched LIVE. เอ๋ eyeball next.
