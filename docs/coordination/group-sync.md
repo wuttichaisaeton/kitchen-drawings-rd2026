@@ -7262,3 +7262,30 @@ Deploy watching. -- G2 (WEB 20)
 - `first_leaf_world_mm[0..2] = <name> @ (X, Y, Z)` — eyeball sanity of the actual translations
 - `ORPHAN_SUMMARY count=…` in the helper-stdout block
 **FOR เอ๋**: CC_Auto → ⟳ Reload → 🧊 Export 3D on 1CSVB2-105003 → wait ~25 s → **next commit will land `_parts.glb` with parts overlaying the assembled main `.glb` exactly at Explode 0% / Component Color**. The 81 pieces should look like one solid cabinet at rest, only spreading when the explode slider moves. Then 🧊 Batch Export 3D on the 02 Ruth project to wipe + re-export every cabinet at once. Send screenshot or just paste the next commit's `_parts_debug.txt` → both prove the fix. ⏱ 00:11 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: REVERT modes 4/5 to main .glb (2f89b45, LIVE) ⏱ 00:06
+🔴 เอ๋ "ให้กลับไปตอนนั้น" — REVERTED to 856dc31 behaviour. SURGICAL one-liner:
+
+```js
+const PARTS_MODES = new Set();   // was {'compcolor', 'explode'}
+```
+
+`_wantSrcFor` for every mode now returns `_kd3dGlbUrl(code)` (main `.glb`). The dual-export swap machinery (HEAD-probe / partsExistsKnown / src-swap) becomes dead code but stays in place — file diff minimal, and Fusion's future per-leaf transform fix can re-enable cleanly by re-populating PARTS_MODES.
+
+**KEPT** (everything from a38fb14 + the entire ship list):
+- Part view via `opts.cabinetCode` → still loads `<cabinet>_parts.glb` + filters (separate path through the `if (partView)` early return — unchanged)
+- Project view via `opts.asProject` → loads `<projectKey>.glb` (bypasses PARTS_MODES, unchanged)
+- Outlier filter — stays, but a NO-OP on the main `.glb` (no scattered transforms = no orphans = filter doesn't trigger)
+- Fullscreen button + floating exit, mouse mapping, touch gestures, constrained orbit, dims header, edges in every mode — all intact
+
+**VERIFIED preview** (1CSVB2-105003 live, 1280x900):
+- Default mode (compcolor) → src = `1CSVB2-105003.glb` (NOT _parts) ✓
+- 57 meshes, **53 distinct colors** (matches 856dc31's 54 — same djb2+golden-ratio hash, same number of unique leaf names; 5 dupes are multi-mesh parts sharing leaf names, semantically correct) ✓
+- Switch to Explode + slider=0%:
+  - src still main `.glb` ✓
+  - **57/57 meshes at position (0,0,0)** → **fully assembled, ZERO scatter** ✓
+- Dims still "W 1050 · D 611 · H 891 mm" ✓
+
+**For เอ๋**: hard refresh → 🌈 บน 1CSVB2 จะเห็น 53 distinct colors เหมือนเดิม, 💥 0% = assembled เป๊ะ, drag slider = กระจาย. ขออภัยที่เสียเวลา.
+-- G2 (WEB 20)
