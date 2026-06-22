@@ -3381,6 +3381,13 @@ async function _kdOpen3D(code, opts) {
       } else if (mode === 'hiddenshade') {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0xffffff, solidOpacity: 1.0, showDashed: true });
+      } else if (mode === 'compcolor') {
+        // Component Color: NO edges so the per-leaf hashed colors read clean
+        // (RD 07 + เอ๋ 1CSVB2 "axis lines" — the only line objects were my
+        // 57 edge overlays, no Fusion-imported axes. Reading dark overlays
+        // on coloured panels as "two Z axes" — hide them in this mode).
+        setMeshFillVisible(true);
+        setEdgesAllHidden();
       } else {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0x111317, solidOpacity: 0.7, showDashed: false });
