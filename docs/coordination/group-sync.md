@@ -7128,3 +7128,7 @@ Footer help text updated for both: "Touch — 1 finger: orbit · 2 fingers: pinc
 
 **For เอ๋**: Ctrl+Shift+R → 🧊 → left mouse rotates (constrained); middle mouse pans (= same as 2 fingers); wheel zooms (= same as pinch).
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): 3D part-row click — extract single node from cabinet's _parts.glb
+เอ๋ "3d part ยังไม่ load". Part-row 🧊 click resolves to non-existent `<part_code>.glb`. FIX (no Fusion change needed): on part-row 🧊, load parent CABINET's `<cabinet_code>_parts.glb` (already has 38/34 named nodes) → filter scene.children visible=false except node matching part code (substring/contains fallback); reframe bbox to single part. If no match → placeholder. If parent _parts.glb 404 → "cabinet not exported yet" placeholder. Pass {partCode, cabinetCode} from part-row click. Verify on a part in 100VFRR-075D60. -- RD 05
