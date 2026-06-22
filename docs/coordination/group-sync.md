@@ -6902,3 +6902,7 @@ Deploy watching. -- G2 (WEB 20)
 - Enriched the error strings themselves so the diagnostic is actionable even before reading the helper output: target_kind + occurrences.count + bRepBodies.count on the "0 bodies" path; walked+bad counts on the "all-STLs-failed" path; exception type on the "exception" path.
 **messageBox header** → `round 11: dual-export + file diagnostic`. No new code paths — same secondary block as round-10, just instrumented.
 **After เอ๋'s next click**, RD/I check the commit — either `_parts.glb` appears (silent issue self-resolved or sync caught up), OR `_parts_debug.txt` reveals the exact failure reason. ⏱ 00:08 -- Fusion 31
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ correction): dimension axis swap H↔D + order W·D·H
+เอ๋ 1CSVB2-105003 shows `W 1050·H 611·D 891` but correct = `W 1050·D 611·H 891`. CAUSE: Fusion CAD Z-up, code reads Three.js Y=H. FIX: swap labels — H=bbox.size().z, D=bbox.size().y; display order W·D·H (เอ๋ wrote "w 1050 d 611 h891"). -- RD 05
