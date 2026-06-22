@@ -4360,67 +4360,97 @@
   // can round-trip it). Outer sheet border + each placement's outer
   // polygon, all on layer "0" for now (sufficient for laser cut).
   function _buildSheetDxf(sheet) {
-    // $ACADVER AC1015 (R2000) makes SPLINE / ELLIPSE / LWPOLYLINE-with-bulge
-    // formally valid in this minimal file — the true-entity path below emits
-    // those so curves stay vector (เอ๋ HARD RULE 'vector ทุกส่วน' 2026-06-12;
-    // laser operator: nested-sheet circles were faceted). Plain readers
-    // already tolerated the old header, but declaring the version is correct.
-    const lines = ['0','SECTION','2','HEADER','9','$ACADVER','1','AC1015',
-                   '9','$INSUNITS','70','4','0','ENDSEC',
-                   '0','SECTION','2','ENTITIES'];
+    // AC1015 (R2000) for SPLINE/ELLIPSE/LWPOLYLINE-with-bulge (เอ๋ HARD
+    // RULE 'vector ทุกส่วน' 2026-06-12). R2000 requires subclass markers
+    // (100 group codes) + entity handles + TABLES section; without them
+    // ezdxf / AutoCAD / strict readers reject the file.
+    let _h = 0x100;
+    function hx() { return (_h++).toString(16).toUpperCase(); }
+    const LAYERS = ['0','SHEET_BORDER','PART_LABELS','OUTER_PROFILES','INTERIOR_PROFILES'];
+    const lines = [
+      '0','SECTION','2','HEADER',
+      '9','$ACADVER','1','AC1015',
+      '9','$INSUNITS','70','4',
+      '9','$HANDSEED','5', 'FFFF',
+      '0','ENDSEC',
+      // TABLES — LTYPE + LAYER + STYLE (minimum for AC1015 validity)
+      '0','SECTION','2','TABLES',
+      '0','TABLE','2','LTYPE','5',hx(),'100','AcDbSymbolTable','70','1',
+      '0','LTYPE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLinetypeTableRecord',
+      '2','Continuous','70','0','3','Solid line','72','65','73','0','40','0.0',
+      '0','ENDTAB',
+      '0','TABLE','2','LAYER','5',hx(),'100','AcDbSymbolTable','70',String(LAYERS.length),
+    ];
+    for (const ln of LAYERS) {
+      lines.push('0','LAYER','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLayerDefinition',
+                 '2',ln,'70','0','62','7','6','Continuous');
+    }
+    lines.push('0','ENDTAB',
+      '0','TABLE','2','STYLE','5',hx(),'100','AcDbSymbolTable','70','1',
+      '0','STYLE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbTextStyleTableRecord',
+      '2','Standard','70','0','40','0','41','1','3','txt',
+      '0','ENDTAB',
+      '0','ENDSEC',
+      // BLOCKS — *Model_Space + *Paper_Space (required by strict readers)
+      '0','SECTION','2','BLOCKS',
+      '0','BLOCK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockBegin','2','*Model_Space','70','0',
+      '10','0','20','0','30','0','3','*Model_Space','1','',
+      '0','ENDBLK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockEnd',
+      '0','BLOCK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockBegin','2','*Paper_Space','70','0',
+      '10','0','20','0','30','0','3','*Paper_Space','1','',
+      '0','ENDBLK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockEnd',
+      '0','ENDSEC',
+      '0','SECTION','2','ENTITIES',
+    );
 
     function lwpolyline(pts, layer) {
       if (!pts || pts.length < 2) return;
-      lines.push('0','LWPOLYLINE','8', layer || '0',
-                 '90', String(pts.length), '70','1');
+      lines.push('0','LWPOLYLINE','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbPolyline','90', String(pts.length), '70','1');
       for (const [x, y] of pts) {
         lines.push('10', x.toFixed(3), '20', y.toFixed(3));
       }
     }
-    // Single-line TEXT, centred (72=1 horiz, 73=2 middle) on (x,y). The part-name
-    // labels go on their own PART_LABELS layer so the cutter can switch it off /
-    // not cut it — it's reference only (เอ๋ 2026-06-10 'มี layer ชื่อ part').
     function text(str, x, y, h, layer) {
       if (str == null || str === '') return;
-      lines.push('0','TEXT','8', layer || '0',
+      lines.push('0','TEXT','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbText',
                  '10', x.toFixed(3), '20', y.toFixed(3), '30','0',
                  '40', h.toFixed(3),
                  '1', String(str),
-                 '72','1','73','2',
-                 '11', x.toFixed(3), '21', y.toFixed(3), '31','0');
+                 '72','1',
+                 '11', x.toFixed(3), '21', y.toFixed(3), '31','0',
+                 '100','AcDbText','73','2');
     }
     // ── True-entity writers (vector output — เอ๋ 'vector ทุกส่วน') ──────
-    // Real DXF entities so a circle stays a CIRCLE, an arc an ARC, etc. —
-    // never a faceted polyline. The placement transform (rotation + offset,
-    // no mirror) is applied to each entity's defining geometry, NOT to a
-    // sampled point chain.
     function deg(rad) { let d = rad * 180 / Math.PI; d %= 360; if (d < 0) d += 360; return d; }
     function circle(cx, cy, r, layer) {
-      lines.push('0','CIRCLE','8', layer || '0',
+      lines.push('0','CIRCLE','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbCircle',
                  '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0', '40', r.toFixed(3));
     }
     function arc(cx, cy, r, sDeg, eDeg, layer) {
-      lines.push('0','ARC','8', layer || '0',
+      lines.push('0','ARC','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbCircle',
                  '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0', '40', r.toFixed(3),
+                 '100','AcDbArc',
                  '50', sDeg.toFixed(4), '51', eDeg.toFixed(4));
     }
     function line(x0, y0, x1, y1, layer) {
-      lines.push('0','LINE','8', layer || '0',
+      lines.push('0','LINE','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbLine',
                  '10', x0.toFixed(3), '20', y0.toFixed(3), '30','0',
                  '11', x1.toFixed(3), '21', y1.toFixed(3), '31','0');
     }
     function polyBulge(verts, closed, layer) {
       if (!verts || verts.length < 2) return;
-      lines.push('0','LWPOLYLINE','8', layer || '0',
-                 '90', String(verts.length), '70', closed ? '1' : '0');
+      lines.push('0','LWPOLYLINE','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbPolyline','90', String(verts.length), '70', closed ? '1' : '0');
       for (const v of verts) {
         lines.push('10', v.x.toFixed(3), '20', v.y.toFixed(3));
         if (Math.abs(v.bulge || 0) > 1e-9) lines.push('42', v.bulge.toFixed(6));
       }
     }
-    // Clamped-uniform knot vector — fallback when the source knots are
-    // missing/malformed so the emitted SPLINE is always spec-valid
-    // (length must be nCtrl + degree + 1).
     function clampedKnots(nCtrl, deg2) {
       const kn = [];
       for (let i = 0; i <= deg2; i++) kn.push(0);
@@ -4435,15 +4465,17 @@
       const nCtrl = ctrl.length, deg2 = degree || 3;
       const kn = (Array.isArray(knots) && knots.length === nCtrl + deg2 + 1)
         ? knots : clampedKnots(nCtrl, deg2);
-      const flag = 8 | (closed ? 1 : 0);   // 8 = planar
-      lines.push('0','SPLINE','8', layer || '0',
+      const flag = 8 | (closed ? 1 : 0);
+      lines.push('0','SPLINE','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbSpline',
                  '70', String(flag), '71', String(deg2),
                  '72', String(kn.length), '73', String(nCtrl), '74','0');
       for (const k of kn) lines.push('40', Number(k).toFixed(6));
       for (const p of ctrl) lines.push('10', p.x.toFixed(3), '20', p.y.toFixed(3), '30','0');
     }
     function ellipse(cx, cy, mx, my, ratio, sp, ep, layer) {
-      lines.push('0','ELLIPSE','8', layer || '0',
+      lines.push('0','ELLIPSE','5',hx(),'100','AcDbEntity','8', layer || '0',
+                 '100','AcDbEllipse',
                  '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0',
                  '11', mx.toFixed(3), '21', my.toFixed(3), '31','0',
                  '40', (ratio || 1).toFixed(6), '41', sp.toFixed(6), '42', ep.toFixed(6));
@@ -4533,7 +4565,9 @@
         }
       }
     }
-    lines.push('0','ENDSEC','0','EOF');
+    lines.push('0','ENDSEC',
+               '0','SECTION','2','OBJECTS','0','ENDSEC',
+               '0','EOF');
     return lines.join('\n');
   }
 
