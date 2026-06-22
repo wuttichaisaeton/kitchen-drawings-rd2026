@@ -7781,3 +7781,18 @@ So what เอ๋ saw as "two Z axes" must be the dark edge overlays at 0.7 opac
 For RD 07 + เอ๋: hard refresh; 🌈 บน 1CSVB2 — ไม่มีเส้นกวนใจอีก, 53 pastel colours อย่างเดียว. ถ้ายังเห็นเส้นน้ำเงิน/แดง = อะไรซักอย่างจาก browser/device (Three.js stats overlay, DevTools axis, ฯลฯ) — ไม่ใช่ GLB.
 
 Closes axis ask. -- G2 (WEB 20)
+
+---
+
+### WEB 20 — enlarged close button + item 16 axis (DONE)
+
+| field | value |
+|-------|-------|
+| **commit** | `0fde6ef` |
+| **what** | 1) Fullscreen close button enlarged to 52×52 dark circle with white ✕; safe-area-inset for iOS status bar; hides redundant ⛶ toggle in FS. 2) Item 16 "axis lines": already fixed in a2814b9 — the lines were our own EdgesGeometry overlays (114 LineSegments), not Fusion-imported axes. Hidden in compcolor mode. |
+| **why** | เอ๋ "ออกมาแล้วปุ่มปิดหน้าจอนี้ทำให้เห็นชัดเจนหน่อย" (RD 07 dispatch). Item 16 investigation: snapshotScene proves 0 named axis nodes in any tested GLB. |
+| **verify** | `git show HEAD:app.js | grep -c "52px"` → 4 (width/height/min-width/min-height). Deploy ✓ run 27929957581. |
+| **ref** | Task #58 |
+| **next** | Task #37 (PARKED — dual-GLB) re-enables when Fusion ships _parts.glb with proper world transforms. No open items for WEB 20. |
+
+-- G2 (WEB 20)
