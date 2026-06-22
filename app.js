@@ -2219,6 +2219,7 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-browser-row.kd3d-hidden-part .kd3d-eye{opacity:.3}
     .kd3d-modal .kd3d-browser-row.kd3d-hidden-part .kd3d-part-name{opacity:.35;text-decoration:line-through}
     .kd3d-modal .kd3d-browser-row .kd3d-part-name{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
+    .kd3d-modal .kd3d-browser-row.kd3d-selected{background:#F2A93B22;border-left:3px solid #F2A93B;color:#F2A93B}
     .kd3d-modal .kd3d-browser-toggle{background:transparent;border:0;color:#9fb0c0;cursor:pointer;font-size:12px;padding:4px 6px;position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px}
     .kd3d-modal .kd3d-browser-toggle:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
     .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
@@ -2917,6 +2918,7 @@ async function _kdOpen3D(code, opts) {
     }
     const labelH = Math.max(6, modelRadius * 0.018);
 
+    const labelInfos = [];
     for (let i = 0; i < explodeUnits.length; i++) {
       const u = explodeUnits[i];
       const raw = u.node.name || '';
@@ -2935,15 +2937,37 @@ async function _kdOpen3D(code, opts) {
         centerZ += (bb.min.z + bb.max.z) / 2;
       });
       if (mc > 0) { centerX /= mc; centerZ /= mc; }
+      labelInfos.push({ text, centerX, centerZ, y: maxY + labelH * 0.8, unit: u });
+    }
+    // Collision avoidance: bump overlapping labels upward
+    const minSep = labelH * 1.2;
+    for (let pass = 0; pass < 5; pass++) {
+      let moved = false;
+      for (let a = 0; a < labelInfos.length; a++) {
+        for (let b = a + 1; b < labelInfos.length; b++) {
+          const dx = labelInfos[a].centerX - labelInfos[b].centerX;
+          const dz = labelInfos[a].centerZ - labelInfos[b].centerZ;
+          const dy = Math.abs(labelInfos[a].y - labelInfos[b].y);
+          const hDist = Math.sqrt(dx * dx + dz * dz);
+          if (hDist < minSep * 2 && dy < minSep) {
+            const upper = labelInfos[a].y >= labelInfos[b].y ? a : b;
+            labelInfos[upper].y += minSep - dy + minSep * 0.2;
+            moved = true;
+          }
+        }
+      }
+      if (!moved) break;
+    }
 
+    const fontSize = 36;
+    const pad = 6;
+    const fface = '"Flux Architect",ui-monospace,monospace';
+    try { await document.fonts.load(fontSize + 'px ' + fface); } catch {}
+    for (const info of labelInfos) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      const fontSize = 36;
-      const pad = 6;
-      const fface = '"Flux Architect",ui-monospace,monospace';
-      try { await document.fonts.load(fontSize + 'px ' + fface); } catch {}
       ctx.font = fontSize + 'px ' + fface;
-      const tw = ctx.measureText(text).width;
+      const tw = ctx.measureText(info.text).width;
       canvas.width = Math.ceil(tw + pad * 2);
       canvas.height = Math.ceil(fontSize * 1.4 + pad * 2);
 
@@ -2953,9 +2977,9 @@ async function _kdOpen3D(code, opts) {
       ctx.strokeStyle = '#0b0f14';
       ctx.lineWidth = 4;
       ctx.lineJoin = 'round';
-      ctx.strokeText(text, canvas.width / 2, canvas.height / 2);
+      ctx.strokeText(info.text, canvas.width / 2, canvas.height / 2);
       ctx.fillStyle = '#F2A93B';
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+      ctx.fillText(info.text, canvas.width / 2, canvas.height / 2);
 
       const tex = new THREE.CanvasTexture(canvas);
       tex.minFilter = THREE.LinearFilter;
@@ -2967,11 +2991,11 @@ async function _kdOpen3D(code, opts) {
       const sprite = new THREE.Sprite(mat);
       const aspect = canvas.width / canvas.height;
       sprite.scale.set(labelH * aspect, labelH, 1);
-      sprite.position.set(centerX, maxY + labelH * 0.8, centerZ);
+      sprite.position.set(info.centerX, info.y, info.centerZ);
       sprite.visible = explodePct > 5;
       sprite.renderOrder = 999;
-      u.node.add(sprite);
-      explodeLabels.push({ sprite, unit: u });
+      info.unit.node.add(sprite);
+      explodeLabels.push({ sprite, unit: info.unit });
     }
     console.info('[kd3d] built', explodeLabels.length, 'explode labels');
   };
@@ -3529,8 +3553,8 @@ async function _kdOpen3D(code, opts) {
     // the Astronaut demo's lighting baseline; modes vary only on shadow,
     // exposure, tone for the look they want.
     mv.setAttribute('environment-image', 'neutral');
-    mv.setAttribute('shadow-intensity', '1');
-    mv.setAttribute('shadow-softness', '0.5');
+    mv.setAttribute('shadow-intensity', mode === 'explode' ? '0' : '1');
+    mv.setAttribute('shadow-softness', mode === 'explode' ? '0' : '0.5');
     if (mode === 'hidden' || mode === 'hiddenshade') {
       mv.setAttribute('exposure', '1.3');
       mv.setAttribute('tone-mapping', 'neutral');
@@ -3717,6 +3741,71 @@ async function _kdOpen3D(code, opts) {
     try { localStorage.setItem(VIS_KEY, JSON.stringify(visState)); } catch {}
     _populateBrowserFn();
   });
+
+  // ── Click-to-identify (raycast → highlight part + scroll browser) ────
+  let _selectedLabel = null;
+  let _highlightRestore = [];
+  const _clearHighlight = (THREE) => {
+    for (const { mesh, prevEmissive } of _highlightRestore) {
+      try { mesh.material.emissive?.copy(prevEmissive); } catch {}
+    }
+    _highlightRestore = [];
+    if (browserList) {
+      browserList.querySelectorAll('.kd3d-selected').forEach(r => r.classList.remove('kd3d-selected'));
+    }
+    _selectedLabel = null;
+  };
+  {
+    let _pointerDownXY = null;
+    mv.addEventListener('pointerdown', (e) => { _pointerDownXY = [e.clientX, e.clientY]; });
+    mv.addEventListener('click', async (e) => {
+      if (!threeScene || !explodeUnits.length) return;
+      if (_pointerDownXY) {
+        const dx = e.clientX - _pointerDownXY[0], dy = e.clientY - _pointerDownXY[1];
+        if (dx * dx + dy * dy > 25) return;
+      }
+      const THREE = await _kd3dEnsureThree();
+      _clearHighlight(THREE);
+      const cam = threeScene.camera;
+      if (!cam) return;
+      const rect = mv.getBoundingClientRect();
+      const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(new THREE.Vector2(mx, my), cam);
+      const hits = raycaster.intersectObjects(threeScene.children, true);
+      const hit = hits.find(h => h.object.isMesh && !h.object.isSprite);
+      if (!hit) return;
+      let node = hit.object;
+      while (node.parent && node.parent !== threeScene) node = node.parent;
+      const label = _extractPartLabel(node.name || '');
+      if (!label) return;
+      _selectedLabel = label;
+      node.traverse(nd => {
+        if (!nd.isMesh || !nd.material || !nd.material.emissive) return;
+        const prev = nd.material.emissive.clone();
+        _highlightRestore.push({ mesh: nd, prevEmissive: prev });
+        nd.material.emissive.setHex(0xF2A93B);
+        nd.material.emissiveIntensity = 0.35;
+      });
+      if (browserList) {
+        const rows = browserList.querySelectorAll('.kd3d-browser-row');
+        for (const row of rows) {
+          const nameEl = row.querySelector('.kd3d-part-name');
+          if (nameEl && nameEl.textContent.startsWith(label)) {
+            row.classList.add('kd3d-selected');
+            row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            break;
+          }
+        }
+      }
+      if (!browserOpen && browserPanel && browserToggle) {
+        browserOpen = true;
+        browserPanel.classList.add('kd3d-browser-open');
+      }
+      setTimeout(() => { if (_selectedLabel === label) _clearHighlight(THREE); }, 3000);
+    });
+  }
 
   // ── 3Dconnexion SpaceMouse (WebHID) ──────────────────────────────────
   if (typeof navigator !== 'undefined' && navigator.hid) {
