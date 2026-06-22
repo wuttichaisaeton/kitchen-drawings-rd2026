@@ -3291,8 +3291,19 @@ async function _kdOpen3D(code, opts) {
     window.addEventListener('resize', _ovlCamHandler);
     document.addEventListener('fullscreenchange', _ovlCamHandler);
     document.addEventListener('webkitfullscreenchange', _ovlCamHandler);
-    // First draw (defer one frame so model-viewer has positioned the hotspots).
+    // First draw + a SETTLE POLL: model-viewer positions the hotspots over the
+    // next render frames, and on DESKTOP there's no orbit to fire camera-change,
+    // so a single deferred draw can see every hotspot still at (0,0) and hide all
+    // labels FOREVER (เอ๋ "คอมยังไม่เห็น label"). Re-draw a few times until the
+    // labels resolve (the THREE-projection fallback shows them meanwhile).
     requestAnimationFrame(() => requestAnimationFrame(() => _updateExplodeLeaders()));
+    let _settleN = 0;
+    const _settle = () => {
+      if (!_ovlRoot) return;   // overlay torn down
+      _updateExplodeLeaders();
+      if (++_settleN < 16 && !_ovlRows.some(r => r._tx != null)) setTimeout(_settle, 130);
+    };
+    setTimeout(_settle, 90);
     console.info('[kd3d] overlay built —', _ovlRows.length, 'labels (L', leftRows.length, '/ R', rightRows.length, ')');
   };
 
@@ -3318,6 +3329,7 @@ async function _kdOpen3D(code, opts) {
     for (const r of _ovlRows) { const h = r.rowEl.getBoundingClientRect().height; if (h) { rowH = h; break; } }
     const step = rowH + _OVL_GAP;
     const hyst = Math.max(10, vw * 0.02);   // small dead-band: side follows the part
+    const factor = (explodePct / 100) * 1.5;
     // Edge via MODEL-VIEWER's OWN projection (matches the render exactly — our
     // THREE camera drifted in scale and floated arrows in empty space). Read the
     // centroid hotspot (Y + on-screen) and the 8 bbox-corner hotspots, then
@@ -3329,15 +3341,20 @@ async function _kdOpen3D(code, opts) {
       if (hb && (hb.width || hb.height || hb.left || hb.top)) {
         cxs = hb.left + hb.width / 2 - vb.left;
         cys = hb.top + hb.height / 2 - vb.top;
-        // LABEL shows generously (it gets clamped into view) so every part is
-        // listed on every screen size — desktop (wide/short) explodes parts past
-        // the viewer height; a tight gate hid all labels there (เอ๋ "ที่คอมไม่เห็น
-        // label"). LEADER/arrow only when the part is really on-screen → still no
-        // mid-air arrow (เอ๋ "ชี้กลางอากาศไม่ต้องโชว์").
-        on = cxs > -vw && cxs < 2 * vw && cys > -vh && cys < 2 * vh;
+        // LEADER/arrow only when the part is really on-screen (hotspot positioned)
+        // → no mid-air arrow (เอ๋ "ชี้กลางอากาศไม่ต้องโชว์").
         tight = cxs > -6 && cxs < vw + 6 && cys > -6 && cys < vh + 6;
+      } else if (_ovlThree && r.unit) {
+        // Hotspot not positioned yet — model-viewer hasn't laid it out (e.g. on
+        // DESKTOP, before any orbit fires camera-change, every hotspot reads 0,0).
+        // Seat the label by a THREE projection so it STILL SHOWS (เอ๋ "คอมยังไม่
+        // เห็น label"); no leader until the real hotspot resolves (settle poll).
+        try { const p = _projectToViewer(_ovlThree, _unitCurrentCentroid(r.unit, factor)); if (p && p.vis) { cxs = p.x; cys = p.y; } } catch {}
       }
-      if (on && r.hsCorners && r.hsCorners.length === 8) {
+      // LABEL shows generously (clamped into view) so every part is listed on any
+      // screen size / aspect (เอ๋ desktop wide-short hid them with a tight gate).
+      if (cxs != null) on = cxs > -vw && cxs < 2 * vw && cys > -vh && cys < 2 * vh;
+      if (on && tight && r.hsCorners && r.hsCorners.length === 8) {
         const cor = [];
         for (let i = 0; i < 8; i++) {
           const cb = r.hsCorners[i].getBoundingClientRect();
