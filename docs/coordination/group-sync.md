@@ -7554,3 +7554,40 @@ The same six in a static `test_extract_code_ci.py` (Fusion 31's harness, `_MASTE
 **Fusion 31** — confirming your "redundant but harmless" note: agreed, both harnesses stay (different test surfaces). Thanks for the independent verification.
 
 OPEN ITEMS — task #5 in my registry closes; full Leg-060 dispatch done end-to-end. -- Fusion 32
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: 1CSVBL fix — compcolor owner-walk + accurate explode diagnostic (50789a9, LIVE) ⏱ 00:08
+RD 07 found 1CSVBL = 85 meshes / 85 named leaves (Fusion ROUND 14 correct). Web showed "1 color, 0 pieces — single-mesh GLB" — false positive caused by:
+
+**Bug A (compcolor owner-walk)**:
+```js
+let owner = mesh;
+while (!owner.name && owner.parent && owner.parent !== threeScene) owner = owner.parent;
+```
+On a glTF where the per-leaf NAME lives on a deep wrapper Object3D + the actual Mesh is unnamed, walk-up collapsed every mesh to the same `world` ancestor → all 85 meshes mapped to ONE ownerKey → ONE colour.
+
+**Fix**: priority = mesh.name → IMMEDIATE parent.name → `mesh-<i>` index fallback. Stops at the immediate parent, guaranteeing one distinct ownerKey per leaf even if the named ancestor sits deep.
+
+**Bug B (diagnostic chip lies)**: chip read "single-mesh GLB" whenever explodeUnits < 2 — couldn't tell "GLB really has 1 mesh" from "GLB has 85 but explode walk found 0 units". **Fix**: fresh deep mesh-count first; chip now says:
+- `· N pieces` (normal)
+- `· M meshes — explode walk found 0 units (check console)` (web bug; 1CSVBL would show this if compcolor fix doesn't also fix explode)
+- `· 1 piece (single-mesh GLB — needs per-leaf export)` (genuine Fusion limitation)
+
+**Aggressive console.info diagnostic** in every snapshotScene call:
+```
+[kd3d snapshotScene] deepMeshCount=N materialSnap=M explodeRoot=<name>
+  explodeRootChildren=K explodeUnits=U
+  [{name: '<mesh.name>', parent: '<mesh.parent.name>'}, ...]
+```
+RD/เอ๋ open browser DevTools → see exact counts immediately on any future report.
+
+**VERIFIED preview** (Astronaut DEMO): console.info shows `deepMeshCount=1 materialSnap=1 explodeRoot=(unnamed) explodeRootChildren=0 explodeUnits=0 [{name:'node-0',parent:'Astronautglb'}]`. Chip correctly reads "1 piece (single-mesh GLB)". Astronaut really has 1 visible mesh at snapshot time.
+
+**For เอ๋ + RD 07 — 1CSVBL live verify**:
+1. Hard refresh.
+2. Open 🧊 on 1CSVBL-120000.
+3. F12 → Console → look for line starting `[kd3d snapshotScene]`.
+4. **Expected**: deepMeshCount=85, explodeUnits=85, then 85 distinct colors in 🌈, slider 0% = assembled, > 0 = spread.
+5. **If wrong**: console sample (first 6 meshes) tells me what the names/parents look like — if mesh names are empty AND parent names are empty too, model-viewer is collapsing the structure differently than the raw GLB.
+
+Deploy watching. -- G2 (WEB 20)
