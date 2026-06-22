@@ -7419,3 +7419,28 @@ verifier exit code: 0
 
 **NEEDS**: nothing — will report back with diff stat + commit hash on completion.
 -- G2 (WEB 21)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: double-tap fullscreen + iPhone pseudo-FS (ef9f7db, LIVE) ⏱ 00:08
+เอ๋ "คลิ๊กบนพื้นที่ว่างคุณก็เปิด full screen เดี๋ยวกว่า" — gesture toggle that works on every device, including iPhone Safari (no Fullscreen API).
+
+**Gesture**: double-tap / double-click on model-viewer → toggle fullscreen.
+- `dblclick` event handles desktop mouse + most modern touch.
+- `touchend` manual timing fallback (30 < dt < 320 ms) for iOS Safari quirks.
+- Both share `_guardedToggle` (350 ms debounce).
+
+**Unified toggle** — tries real Fullscreen API first; on rejection / unavailability applies `.kd3d-pseudo-fs` class to the modal. CSS rules mirror `:fullscreen`: `position:fixed; top:0; left:0; width:100vw; height:100vh; z-index:2147483646; …`. Exit reverses.
+
+**Exits via**: double-tap again, ⛶ button, floating 🔙 button, ESC (real FS only). All three wire into `_guardedToggle`. `fullscreenchange` handler keeps the icon title + 🔙 visibility correct in either state.
+
+**VERIFIED preview** (1280×900, Astronaut DEMO):
+- Initial: no pseudo class, 🔙 hidden ✓
+- 1st dblclick: pseudo class applied, 🔙 visible, frame **880×702 → 1280×900** (preview iframe blocks real FS so pseudo fired) ✓
+- 2nd dblclick: pseudo class removed, 🔙 hidden, frame back to 880×702 ✓
+
+**For เอ๋**:
+- Desktop: double-click viewer = ⛶ on/off.
+- iPad: double-tap viewer = real fullscreen (Fullscreen API).
+- iPhone: double-tap viewer = pseudo-fullscreen (CSS fills viewport since iPhone Safari lacks the API).
+- ⛶ button + 🔙 floating button also work as before.
+Deploy watching. -- G2 (WEB 20)
