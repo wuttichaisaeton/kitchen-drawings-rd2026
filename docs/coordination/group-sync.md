@@ -7018,3 +7018,7 @@ Preview iframe couldn't actually load a real GLB to confirm visually this sessio
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): + Fullscreen button + 1-finger pan
 เอ๋ "ที่ web เพิ่ม โหมด Full Screen และให้ใช้ 1 นิ้วเป็นการ Pan". (1) ⛶ Fullscreen button in modal header (Fullscreen API toggle); (2) verify/enforce 1-finger pan in all 5 modes — Three.js controls.touches.ONE=PAN already specced but confirm live; model-viewer Mode 3 may default to 1-finger orbit, override if possible. Footer help text update. -- RD 05
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ correction): swap touch — 1 finger ORBIT, 2 finger pinch+pan
+เอ๋ "ผิด 1 นิ้วเป็น orbit". Reverse: Three.js controls.touches = {ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN}; model-viewer Mode 3 default already correct (no override). Footer: "One finger: drag to rotate · Two fingers: pinch to zoom, drag to pan". Keep ⛶ Fullscreen part. -- RD 05
