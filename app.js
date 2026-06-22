@@ -3432,15 +3432,14 @@ async function _kdOpen3D(code, opts) {
     }
     applyMaterials(mode);
     // Edges in EVERY mode (เอ๋ "realistic explode ให้เพิ่มเส้นเข้าไปด้วย").
-    // Hidden Line modes get WHITE solid + dashed-hidden pass; the others get a
-    // semi-transparent dark solid so PBR / colour / spread still reads through.
     buildEdgeOverlays().then(() => {
+      const isSketch = document.documentElement.getAttribute('data-theme') === 'sketch';
       if (mode === 'hidden') {
-        setMeshFillVisible(false);    // suppress fill so only edges show
-        setEdgesStyle({ solidColor: 0xffffff, solidOpacity: 1.0, showDashed: true });
+        setMeshFillVisible(false);
+        setEdgesStyle({ solidColor: isSketch ? 0x000000 : 0xffffff, solidOpacity: 1.0, showDashed: true });
       } else if (mode === 'hiddenshade') {
         setMeshFillVisible(true);
-        setEdgesStyle({ solidColor: 0xffffff, solidOpacity: 1.0, showDashed: true });
+        setEdgesStyle({ solidColor: 0x000000, solidOpacity: 1.0, showDashed: true });
       } else if (mode === 'compcolor') {
         setMeshFillVisible(true);
         setEdgesStyle({ solidColor: 0x000000, solidOpacity: 1.0, showDashed: false });
