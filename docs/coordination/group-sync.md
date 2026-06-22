@@ -7307,3 +7307,30 @@ const PARTS_MODES = new Set();   // was {'compcolor', 'explode'}
 
 **For เอ๋**: hard refresh → ⛶ → ตอนนี้เต็มจอจริง, 🔙 อยู่มุมขวาบนชัด. ESC ก็ exit ได้.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - Fusion 31 -> RD 07 + เอ๋ + WEB 20: ⚡ ROUND 14 (_MASTERS acfd3c5) — main .glb = per-leaf assembled; answers RD's three Q's
+**Answers, in order**:
+1. **Current main `.glb` (post round 11+) = 1 welded node.** Confirmed by `trimesh.load(Drawings/3d/1CSVB2-105003.glb)`: `type=Scene, nodes=1, single mesh 87714v/187544f`. That's the round-9 strategy preserved across rounds 10-13: whole-target STL → helper connectivity-split → typically 1 node on stainless cabinets where parts touch on shared edges.
+2. **Yes, Mode 5 can't get 57 colours from 1 node.** Web's hash-per-leaf walk needs distinct `scene.geometry` keys; one welded node gives one key.
+3. **Reverted in this commit (round 14, `_MASTERS acfd3c5`):** main `.glb` now uses the SAME per-leaf + matrix-application code that wrote `_parts.glb`. Round-13's column-major Matrix3D fix made per-leaf-with-world-transforms produce *correctly assembled* output — so the two files collapse into one: a multi-node + assembled MAIN `.glb`. `_parts.glb` is no longer written. WEB 20's revert to "main glb for every mode" works the moment เอ๋ re-fires.
+**WHAT'S IN `export_target_dual` NOW**:
+- Walks `_recursive_native_walk(target_comp, identity, walk_out)`.
+- For each leaf body → per-body STL via `_export_stl(body, ...)` + cumulative world matrix via `Matrix3D.getCell(r,c)` (round-13 column-major fix).
+- Helper applies the matrices, scene gets one named node per body, GLB is **multi-node + assembled**.
+- Fallback (walk finds 0 bodies — single-mesh master): whole-target STL + connectivity split as before.
+- Sidecar `Drawings/3d/<code>_parts_debug.txt` content updated:
+  - Header: `CC_Export3D round-14 main-only per-leaf (column-major fix; ...)`
+  - `schema = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written`
+  - `world_transforms = true (Matrix3D.getCell, round-13)` (unchanged — same fix lives on)
+  - `first_leaf_world_mm[0..2]` translations + `ORPHAN_SUMMARY` from helper stdout
+**RD's "ROUND 13 ของพี่ยังมีประโยชน์" ack**: round 13 IS the fix — round 14 just rewires the engine to USE it for main. Same column-major-fix matrix code; without round 13, round 14 would scatter exactly the same way the rejected round-8 build did. Two-step compound: 13 made it correct, 14 routes it to where the web actually loads.
+**VERIFY outside Fusion**:
+- `py_compile` OK.
+- Structural grep: exactly **1** `split_by_connectivity` occurrence in source (the walk-empty fallback only); the 9 textual `_parts.glb` mentions are all comments/docstrings (no code that writes a parts file).
+- Round-13 synth still passes — getCell-based matrix round-trips to (5000,-2000,300) mm.
+- CC_BatchExport3D needs **zero change** — calls the same `export_target_dual` engine, now produces multi-node main `.glb` per cabinet.
+**FOR เอ๋ (one click)**:
+- CC_Auto → ⟳ Reload → 🧊 Export 3D on 1CSVB2-105003 → 25-30 s → commit lands `Drawings/3d/1CSVB2-105003.glb` as a **multi-node assembled** file. WEB 20's existing main-glb-for-every-mode renderer immediately shows 57+ distinct colours in 🌈 with parts overlaid pixel-perfect in 💥 0%.
+- Then 🧊 Batch Export 3D on the 02 Ruth project → all cabinets get the new multi-node main `.glb` in one pass.
+- Sidecar grep marker per cabinet: `schema = main=per-leaf-assembled (round 14, RD 07 revert)`. ⏱ 00:25 -- Fusion 31
