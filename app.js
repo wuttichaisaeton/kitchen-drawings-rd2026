@@ -3135,12 +3135,22 @@ async function _kdOpen3D(code, opts) {
       });
       const sprite = new THREE.Sprite(mat);
       const aspect = canvas.width / canvas.height;
-      const gap = labelH * 1.2;   // horizontal gap from the part → DIAGONAL leader, room for all
-      // เอ๋: anchor sprite.position EXACTLY at the underline's LEFT end so the leader
-      // connects to the underline (center is in sprite-local UV → camera-robust).
-      sprite.center.set(0, (canvas.height - ulY) / canvas.height);
+      // เอ๋ 2026-06-22: push the label OUTSIDE the model — horizontally, away from the
+      // model centre — so it never overlaps a part. Direction (model centre → part)
+      // is in the explode/parent frame; convert to node-local so the label follows
+      // on explode. Anchor on the side facing the part so the leader exits cleanly.
+      const u = info.unit;
+      let dirx = u.gx - (explodeCenter ? explodeCenter.x : 0);
+      let dirz = u.gz - (explodeCenter ? explodeCenter.z : 0);
+      let dlen = Math.hypot(dirx, dirz);
+      if (dlen < 1e-3) { dirx = 1; dirz = 0; dlen = 1; }
+      dirx /= dlen; dirz /= dlen;
+      const pushDist = modelRadius * 0.7;
+      const offLocal = new THREE.Vector3(dirx * pushDist, 0, dirz * pushDist);
+      try { offLocal.applyQuaternion(u.node.quaternion.clone().invert()); } catch {}
+      sprite.center.set(dirx >= 0 ? 0 : 1, (canvas.height - ulY) / canvas.height);
       sprite.scale.set(labelH * aspect, labelH, 1);
-      sprite.position.set(info.centerX + gap, info.y, info.centerZ);
+      sprite.position.set(info.centerX + offLocal.x, info.y + offLocal.y, info.centerZ + offLocal.z);
       sprite.visible = explodePct > 5;
       sprite.renderOrder = 999;
       info.unit.node.add(sprite);
