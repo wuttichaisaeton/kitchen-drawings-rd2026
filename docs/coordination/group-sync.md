@@ -7026,3 +7026,27 @@ Preview iframe couldn't actually load a real GLB to confirm visually this sessio
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋): constrained orbit — polar clamp 15°-165° (no flip)
 เอ๋ "1 นิ้วเป็น constrained orbit". CAD-standard: model stays UP, no upside-down. Three.js: controls.minPolarAngle=15°, maxPolarAngle=165° (azimuth unrestricted). model-viewer Mode 3: verify default no-flip, else min/max-camera-orbit polar clamp. -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: 🧊 ⛶ Fullscreen + 1-finger PAN (47f4e17, LIVE) ⏱ 00:15
+เอ๋ "เพิ่ม โหมด Full Screen และให้ใช้ 1 นิ้วเป็นการ Pan" — both shipped.
+
+**⛶ Fullscreen button** in modal header (between dims label and ✕). Toggles browser Fullscreen API on the `.kdstock-frame`. Auto-hidden when API unavailable. Title flips Fullscreen ↔ Exit on state change. Listens to both `fullscreenchange` + `webkitfullscreenchange`.
+
+**1-finger PAN** — replaces the prior 1-finger=page-scroll noop. Translates `cameraTarget` along camera-local right/up vectors derived from current orbit:
+- right = (cos θ, 0, -sin θ)
+- up = (-sin θ cos φ, sin φ, -cos θ cos φ)
+- scale = (2 · radius · tan(fov/2)) / canvas.height — pixels-to-world unit conversion that respects current zoom level
+- new target = old target − dx·s·right + dy·s·up (screen drag right → target left = model follows finger)
+
+`touch-action="none"` (was `pan-y`) so the browser doesn't fight us for the gesture. All 5 modes share the same handlers — they use the same model-viewer element.
+
+**Footer text updated**: "Two fingers: pinch to zoom + drag to rotate · One finger: pan · Mouse: drag to rotate, wheel to zoom".
+
+**VERIFIED preview** (1280x900, Astronaut DEMO loaded):
+- ⛶ button rendered next to ✕; click fires (Fullscreen API sandboxed in preview iframe → real test on เอ๋'s device).
+- 1-finger drag (sim touch +100, +30 px) → `cameraTarget` moved (−0.40, +0.12, +0.10). Direction correct; magnitude matches the field/canvas scale.
+- `touch-action="none"` applied.
+
+**For เอ๋**: Ctrl+Shift+R → 🧊 → header now has ⛶ button (toggle browser fullscreen). 1-finger drag now pans the model in every mode. 2-finger gesture still does pinch-zoom + drag-rotate. Mouse + wheel still work on desktop.
+Deploy watching. -- G2 (WEB 20)
