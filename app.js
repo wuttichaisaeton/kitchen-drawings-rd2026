@@ -2217,7 +2217,11 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-title{font-size:15px;color:#e6edf4}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-sub{font-size:12px;opacity:.7;max-width:380px;line-height:1.5}
-    .kd3d-modal .kd3d-loading{flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#9fb0c0;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px}
+    .kd3d-modal .kd3d-loading{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:#9fb0c0;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px}
+    .kd3d-modal .kd3d-spin{width:34px;height:34px;border-radius:50%;border:3px solid #2b3a4d;border-top-color:#f2a93b;animation:kd3dspin .8s linear infinite}
+    @keyframes kd3dspin{to{transform:rotate(360deg)}}
+    .kd3d-modal .kd3d-mv-loading{position:absolute;inset:0;z-index:6;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0b0f14;color:#9fb0c0;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px;transition:opacity .3s ease}
+    .kd3d-modal .kd3d-mv-loading.kd3d-hide{opacity:0;pointer-events:none}
     .kd3d-modal .kd3d-viewarea{display:flex;flex:1 1 auto;min-height:0}
     .kd3d-modal .kd3d-browser{width:0;overflow:hidden;background:#0b0f14;border-left:1px solid #1c2530;transition:width .2s ease;font-family:"Flux Architect",ui-monospace,monospace;font-size:11px;display:flex;flex-direction:column}
     .kd3d-modal .kd3d-browser.kd3d-browser-open{width:220px}
@@ -2391,7 +2395,7 @@ async function _kdOpen3D(code, opts) {
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
          <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fit" aria-label="Zoom to fit" title="Zoom to fit (frame whole model)" style="background:transparent;border:0;color:#9fb0c0;font-size:30px;cursor:pointer;padding:6px 12px;border-radius:6px">⊡</button><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
-           <div class="kd3d-loading">Loading 3D model…</div>
+           <div class="kd3d-loading"><div class="kd3d-spin"></div><div>Loading 3D…</div></div>
          </div>
        </div>`;
   document.body.appendChild(modal);
@@ -2624,6 +2628,7 @@ async function _kdOpen3D(code, opts) {
           ar="false"
           reveal="auto"
         ></model-viewer>
+        <div class="kd3d-mv-loading"><div class="kd3d-spin"></div><div class="kd3d-mv-loading-txt">Loading 3D…</div></div>
       </div>
       <div class="kd3d-browser" id="kd3d-browser">
         <div class="kd3d-browser-head"><span>PARTS</span><span style="flex:1"></span><button class="kd3d-showall" title="Show all">All</button><button class="kd3d-hideall" title="Hide all">None</button></div>
@@ -2639,6 +2644,30 @@ async function _kdOpen3D(code, opts) {
   mv && mv.addEventListener('error', () => {
     showPlaceholder('Failed to load 3D model', 'The GLB at Drawings/3d/' + code + '.glb returned an error during load (possibly a stale CDN cache or corrupt file).');
   });
+
+  // Loading overlay over the viewer — covers the GLB fetch/parse + first render
+  // so opening the 3D never looks frozen (เอ๋ iPad "กดเข้าดู 3d เหมือนไม่ตอบสนอง
+  // ...อย่างเช่นกำลัง load อยู่"). Shows a spinner + % until model-viewer fires
+  // 'load' (or progress hits 100% — some iOS builds are flaky on 'load').
+  const _mvLoading = body.querySelector('.kd3d-mv-loading');
+  const _hideMvLoading = () => {
+    if (_mvLoading && !_mvLoading.classList.contains('kd3d-hide')) {
+      _mvLoading.classList.add('kd3d-hide');
+      setTimeout(() => { try { _mvLoading.remove(); } catch {} }, 340);
+    }
+  };
+  if (mv) {
+    mv.addEventListener('load', _hideMvLoading, { once: true });
+    mv.addEventListener('progress', (e) => {
+      const p = (e.detail && typeof e.detail.totalProgress === 'number') ? e.detail.totalProgress : 0;
+      const t = _mvLoading && _mvLoading.querySelector('.kd3d-mv-loading-txt');
+      if (t) t.textContent = p >= 1 ? 'Preparing…' : ('Loading 3D… ' + Math.round(p * 100) + '%');
+      if (p >= 1) _hideMvLoading();
+    });
+    mv.addEventListener('error', _hideMvLoading, { once: true });
+    if (mv.loaded) _hideMvLoading();        // already cached → 'load' may have fired
+    setTimeout(_hideMvLoading, 15000);      // safety: never stick on a flaky event
+  }
 
   // ── Custom gesture handlers (เอ๋ 2026-06-22 "ทำให้ใช้ 2 นิ้ว หมุน และ zoom ได้") ─
   // model-viewer's default 1-finger=orbit conflicted with workshop iPads where
