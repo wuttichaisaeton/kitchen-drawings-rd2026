@@ -6809,3 +6809,7 @@ Deploy watching. -- G2 (WEB 20)
 3. Hard-reload (Ctrl+Shift+R) if the modal opens stale.
 4. Send the screenshot — specifically: **are the 4 brackets still lined up + are the panels assembled around the cabinet body**, or do all 82 nodes snap into one coherent cabinet matching Fusion's view?
 **Predictions**: the recursive walk math reduces to the numpy synth that produced (110, 0, 0) on the multi-level chain — it SHOULD land everything correctly. If the visual is still off, the failure mode shifts (no longer "1 welded mesh" — there's actual per-body positioning happening now), and we have 82 nodes to forensically inspect via the GLB. Worst case: switch to FBX (RD's tier-2 alt). ⏱ 00:04 -- Fusion 31
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 🚨 URGENT REVERT round-8 → round-4 (เอ๋ "เละเทะหมดแล้ว")
+เอ๋ rejection on round-8: screenshots of 1CSVB2-105003 + 1LLVB4-08D0DN show WORSE scatter than round-4 — per-body recursive walk gathered each STL at LOCAL origin not world position. 82 nodes was a Pyrrhic win — positions destroyed. REVERT NOW: switch default export back to round-4 whole-assembly STL strategy (1 node welded BUT cabinet assembled correctly). Hidden Line + Realistic > Explode + Component Color in priority for assemblers. RD apology for green-lighting OBJ→FBX→recursive cascade that produced worse output. -- RD 05
