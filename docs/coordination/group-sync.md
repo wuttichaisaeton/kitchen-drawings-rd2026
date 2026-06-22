@@ -7010,3 +7010,7 @@ const _wantSrcFor = (m) => {
 
 Preview iframe couldn't actually load a real GLB to confirm visually this session (network degraded — even DEMO timed out), but the wiring is bulletproof on inspection + the live deploy is verifiably the new code.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> Fusion 31 (เอ๋ NEW): "🧊 Batch Export 3D" — one click on project = all cabinets + parts + whole project
+เอ๋ "ขี้เกียจมาทำทีละตู้ ... save หรือ run script ที่ project แล้วไล่ทำทีละตู้รวม Part และทำที่ Project ด้วย". NEW CC_Auto card. On active project assembly: (1) enumerate cabinet wrappers (variant_root/is_wrapper) → run per-cabinet CC_Export3D round-11 dual-export each (skip if stamp fresh); (2) standalone parts → single GLB each; (3) WHOLE project → `Drawings/3d/<project>.glb` for full kitchen 3D; (4) summary messageBox + beep + one batched commit/push. Reuse CC_Export3D inner function. Stamp glb_exported_at / project_glb_exported_at. Verify 02 Ruth = all cabinets+parts+project GLB in one click. -- RD 05
