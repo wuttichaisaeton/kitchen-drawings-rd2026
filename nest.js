@@ -4360,130 +4360,161 @@
   // can round-trip it). Outer sheet border + each placement's outer
   // polygon, all on layer "0" for now (sufficient for laser cut).
   function _buildSheetDxf(sheet) {
-    // AC1015 (R2000) for SPLINE/ELLIPSE/LWPOLYLINE-with-bulge (เอ๋ HARD
-    // RULE 'vector ทุกส่วน' 2026-06-12). R2000 requires subclass markers
-    // (100 group codes) + entity handles + TABLES section; without them
-    // ezdxf / AutoCAD / strict readers reject the file.
-    let _h = 0x100;
-    function hx() { return (_h++).toString(16).toUpperCase(); }
-    const LAYERS = ['0','SHEET_BORDER','PART_LABELS','OUTER_PROFILES','INTERIOR_PROFILES'];
-    const lines = [
-      '0','SECTION','2','HEADER',
-      '9','$ACADVER','1','AC1015',
-      '9','$INSUNITS','70','4',
-      '9','$HANDSEED','5', 'FFFF',
-      '0','ENDSEC',
-      // TABLES — LTYPE + LAYER + STYLE (minimum for AC1015 validity)
-      '0','SECTION','2','TABLES',
-      '0','TABLE','2','LTYPE','5',hx(),'100','AcDbSymbolTable','70','1',
-      '0','LTYPE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLinetypeTableRecord',
-      '2','Continuous','70','0','3','Solid line','72','65','73','0','40','0.0',
-      '0','ENDTAB',
-      '0','TABLE','2','LAYER','5',hx(),'100','AcDbSymbolTable','70',String(LAYERS.length),
-    ];
-    for (const ln of LAYERS) {
-      lines.push('0','LAYER','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbLayerDefinition',
-                 '2',ln,'70','0','62','7','6','Continuous');
-    }
-    lines.push('0','ENDTAB',
-      '0','TABLE','2','STYLE','5',hx(),'100','AcDbSymbolTable','70','1',
-      '0','STYLE','5',hx(),'100','AcDbSymbolTableRecord','100','AcDbTextStyleTableRecord',
-      '2','Standard','70','0','40','0','41','1','3','txt',
-      '0','ENDTAB',
-      '0','ENDSEC',
-      // BLOCKS — *Model_Space + *Paper_Space (required by strict readers)
-      '0','SECTION','2','BLOCKS',
-      '0','BLOCK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockBegin','2','*Model_Space','70','0',
-      '10','0','20','0','30','0','3','*Model_Space','1','',
-      '0','ENDBLK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockEnd',
-      '0','BLOCK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockBegin','2','*Paper_Space','70','0',
-      '10','0','20','0','30','0','3','*Paper_Space','1','',
-      '0','ENDBLK','5',hx(),'100','AcDbEntity','8','0','100','AcDbBlockEnd',
-      '0','ENDSEC',
-      '0','SECTION','2','ENTITIES',
-    );
+    // DXF R12 (no $ACADVER). เอ๋'s laser/CAD reader opens R12-implicit files
+    // (TEST_A/B/C 2026-06-22) but mis-renders SPLINE/ELLIPSE as a straight
+    // line and rejects $ACADVER AC1015 entirely. So: stay R12, and emit ONLY
+    // R12-native entities — LINE / CIRCLE / ARC / LWPOLYLINE(+bulge). SPLINEs
+    // (degree-3 corner fillets in Fusion flat patterns) are arc-fitted into
+    // true ARCs — still vector + crisp (เอ๋ HARD RULE 'vector ทุกส่วน'), never
+    // faceted. The R2000/subclass attempt (f509334) made ezdxf happy but เอ๋'s
+    // reader unhappy — exact opposite — so it's reverted here.
+    const lines = ['0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
+                   '0','SECTION','2','ENTITIES'];
 
     function lwpolyline(pts, layer) {
       if (!pts || pts.length < 2) return;
-      lines.push('0','LWPOLYLINE','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbPolyline','90', String(pts.length), '70','1');
+      lines.push('0','LWPOLYLINE','8', layer || '0',
+                 '90', String(pts.length), '70','1');
       for (const [x, y] of pts) {
         lines.push('10', x.toFixed(3), '20', y.toFixed(3));
       }
     }
+    // Single-line TEXT, centred (72=1 horiz, 73=2 middle) on (x,y). Part-name
+    // labels live on PART_LABELS so the cutter can switch them off.
     function text(str, x, y, h, layer) {
       if (str == null || str === '') return;
-      lines.push('0','TEXT','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbText',
+      lines.push('0','TEXT','8', layer || '0',
                  '10', x.toFixed(3), '20', y.toFixed(3), '30','0',
                  '40', h.toFixed(3),
                  '1', String(str),
-                 '72','1',
-                 '11', x.toFixed(3), '21', y.toFixed(3), '31','0',
-                 '100','AcDbText','73','2');
+                 '72','1','73','2',
+                 '11', x.toFixed(3), '21', y.toFixed(3), '31','0');
     }
-    // ── True-entity writers (vector output — เอ๋ 'vector ทุกส่วน') ──────
+    // ── R12-native vector writers ──────────────────────────────────────
     function deg(rad) { let d = rad * 180 / Math.PI; d %= 360; if (d < 0) d += 360; return d; }
     function circle(cx, cy, r, layer) {
-      lines.push('0','CIRCLE','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbCircle',
+      lines.push('0','CIRCLE','8', layer || '0',
                  '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0', '40', r.toFixed(3));
     }
     function arc(cx, cy, r, sDeg, eDeg, layer) {
-      lines.push('0','ARC','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbCircle',
+      lines.push('0','ARC','8', layer || '0',
                  '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0', '40', r.toFixed(3),
-                 '100','AcDbArc',
                  '50', sDeg.toFixed(4), '51', eDeg.toFixed(4));
     }
     function line(x0, y0, x1, y1, layer) {
-      lines.push('0','LINE','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbLine',
+      lines.push('0','LINE','8', layer || '0',
                  '10', x0.toFixed(3), '20', y0.toFixed(3), '30','0',
                  '11', x1.toFixed(3), '21', y1.toFixed(3), '31','0');
     }
     function polyBulge(verts, closed, layer) {
       if (!verts || verts.length < 2) return;
-      lines.push('0','LWPOLYLINE','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbPolyline','90', String(verts.length), '70', closed ? '1' : '0');
+      lines.push('0','LWPOLYLINE','8', layer || '0',
+                 '90', String(verts.length), '70', closed ? '1' : '0');
       for (const v of verts) {
         lines.push('10', v.x.toFixed(3), '20', v.y.toFixed(3));
         if (Math.abs(v.bulge || 0) > 1e-9) lines.push('42', v.bulge.toFixed(6));
       }
     }
-    function clampedKnots(nCtrl, deg2) {
-      const kn = [];
-      for (let i = 0; i <= deg2; i++) kn.push(0);
-      const internal = nCtrl - deg2 - 1;
-      for (let i = 1; i <= internal; i++) kn.push(i);
-      const end = internal + 1;
-      for (let i = 0; i <= deg2; i++) kn.push(end);
-      return kn;
+    // ── Curve → ARC conversion (SPLINE/ELLIPSE are not R12; arc-fit keeps
+    //    them true-vector instead of faceting or breaking เอ๋'s reader) ────
+    // de Boor B-spline evaluation (ctrl = [[x,y],…]) — same maths as the
+    // parse-side bsplineFlatten; kept local so the writer is self-contained.
+    function bsplineSample(ctrl, deg2, knots, samples) {
+      const n = ctrl.length - 1;
+      if (n < deg2 || !Array.isArray(knots) || knots.length !== n + deg2 + 2) {
+        return ctrl.slice();   // malformed knots → control polygon (low-deg ≈ curve)
+      }
+      function evalAt(u) {
+        let s = deg2;
+        for (let i = deg2; i <= n; i++) {
+          if (u >= knots[i] && u < knots[i + 1]) { s = i; break; }
+          if (i === n) s = n;
+        }
+        const d = [];
+        for (let j = 0; j <= deg2; j++) d.push(ctrl[s - deg2 + j].slice());
+        for (let r = 1; r <= deg2; r++) {
+          for (let j = deg2; j >= r; j--) {
+            const idx = s - deg2 + j;
+            const den = knots[idx + deg2 - r + 1] - knots[idx];
+            const al = den > 1e-12 ? (u - knots[idx]) / den : 0;
+            d[j][0] = (1 - al) * d[j - 1][0] + al * d[j][0];
+            d[j][1] = (1 - al) * d[j - 1][1] + al * d[j][1];
+          }
+        }
+        return d[deg2];
+      }
+      const u0 = knots[deg2], u1 = knots[n + 1];
+      const M = Math.max(samples || 48, ctrl.length * 8);
+      const out = [];
+      for (let i = 0; i <= M; i++) {
+        try { out.push(evalAt(u0 + (u1 - u0) * (i / M))); } catch (_) { /* skip */ }
+      }
+      return out.length >= 2 ? out : ctrl.slice();
     }
-    function spline(ctrl, knots, degree, closed, layer) {
-      if (!ctrl || ctrl.length < 2) return;
-      const nCtrl = ctrl.length, deg2 = degree || 3;
-      const kn = (Array.isArray(knots) && knots.length === nCtrl + deg2 + 1)
-        ? knots : clampedKnots(nCtrl, deg2);
-      const flag = 8 | (closed ? 1 : 0);
-      lines.push('0','SPLINE','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbSpline',
-                 '70', String(flag), '71', String(deg2),
-                 '72', String(kn.length), '73', String(nCtrl), '74','0');
-      for (const k of kn) lines.push('40', Number(k).toFixed(6));
-      for (const p of ctrl) lines.push('10', p.x.toFixed(3), '20', p.y.toFixed(3), '30','0');
+    function ellipseSample(d, samples) {
+      // P(t) = C + cos t·major + sin t·(ratio·perp(major)), t∈[a0,a1].
+      const out = [];
+      const M = Math.max(samples || 64, 24);
+      let a0 = d.a0, a1 = d.a1;
+      if (a1 <= a0) a1 += 2 * Math.PI;
+      for (let i = 0; i <= M; i++) {
+        const t = a0 + (a1 - a0) * (i / M);
+        const c = Math.cos(t), s = Math.sin(t);
+        out.push([d.cx + c * d.mx - s * d.ratio * d.my,
+                  d.cy + c * d.my + s * d.ratio * d.mx]);
+      }
+      return out;
     }
-    function ellipse(cx, cy, mx, my, ratio, sp, ep, layer) {
-      lines.push('0','ELLIPSE','5',hx(),'100','AcDbEntity','8', layer || '0',
-                 '100','AcDbEllipse',
-                 '10', cx.toFixed(3), '20', cy.toFixed(3), '30','0',
-                 '11', mx.toFixed(3), '21', my.toFixed(3), '31','0',
-                 '40', (ratio || 1).toFixed(6), '41', sp.toFixed(6), '42', ep.toFixed(6));
+    // Circumcircle of 3 points; null if (near-)collinear.
+    function circleFrom3(A, B, C) {
+      const ax = A[0], ay = A[1], bx = B[0], by = B[1], cx = C[0], cy = C[1];
+      const dd = 2 * (ax * (by - cy) + bx * (cy - ay) + cx * (ay - by));
+      if (Math.abs(dd) < 1e-9) return null;
+      const a2 = ax * ax + ay * ay, b2 = bx * bx + by * by, c2 = cx * cx + cy * cy;
+      const ux = (a2 * (by - cy) + b2 * (cy - ay) + c2 * (ay - by)) / dd;
+      const uy = (a2 * (cx - bx) + b2 * (ax - cx) + c2 * (bx - ax)) / dd;
+      return { cx: ux, cy: uy, r: Math.hypot(ax - ux, ay - uy) };
+    }
+    // Greedy fit: emit true ARCs/LINEs for a sampled curve (already in sheet
+    // coords). Grow a run while one circle through endpoints+interior stays
+    // within tol of every sample; commit, restart. Collinear runs → LINE.
+    function emitFittedCurve(pts, layer, tol) {
+      const N = pts.length;
+      if (N < 2) return;
+      const t = tol || 0.05;
+      let i = 0;
+      while (i < N - 1) {
+        let jBest = -1, cBest = null;
+        for (let j = i + 2; j < N; j++) {
+          const c = circleFrom3(pts[i], pts[(i + j) >> 1], pts[j]);
+          if (!c || !(c.r < 1e7)) break;
+          let maxDev = 0;
+          for (let k = i; k <= j; k++) {
+            const dev = Math.abs(Math.hypot(pts[k][0] - c.cx, pts[k][1] - c.cy) - c.r);
+            if (dev > maxDev) { maxDev = dev; if (maxDev > t) break; }
+          }
+          if (maxDev <= t) { jBest = j; cBest = c; } else break;
+        }
+        if (cBest) {
+          const P0 = pts[i], P1 = pts[jBest], Pm = pts[(i + jBest) >> 1];
+          const TAU = 2 * Math.PI, nrm = a => ((a % TAU) + TAU) % TAU;
+          let a0 = Math.atan2(P0[1] - cBest.cy, P0[0] - cBest.cx);
+          let a1 = Math.atan2(P1[1] - cBest.cy, P1[0] - cBest.cx);
+          const am = Math.atan2(Pm[1] - cBest.cy, Pm[0] - cBest.cx);
+          // DXF ARC is CCW a0→a1; pick the order whose CCW sweep passes Pm.
+          if (nrm(am - a0) <= nrm(a1 - a0)) arc(cBest.cx, cBest.cy, cBest.r, deg(a0), deg(a1), layer);
+          else                              arc(cBest.cx, cBest.cy, cBest.r, deg(a1), deg(a0), layer);
+          i = jBest;
+        } else {
+          line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], layer);
+          i += 1;
+        }
+      }
     }
     // Place one normalised WCS descriptor onto the sheet: positions go
-    // through ``xf`` (the placement transform); direction vectors / sweep
-    // angles rotate by ``rotRad``. Pure rotation → bulge signs + arc/ellipse
-    // sweep sense are preserved (the transform never mirrors).
+    // through ``xf`` (the placement transform); sweep angles rotate by
+    // ``rotRad``. Pure rotation → bulge signs + arc sweep sense preserved
+    // (the transform never mirrors).
     function placeEntity(d, xf, rotRad, layer) {
       if (!d) return;
       if (d.kind === 'CIRCLE') {
@@ -4505,17 +4536,18 @@
         polyBulge(vs, d.closed, layer); return;
       }
       if (d.kind === 'SPLINE') {
+        // SPLINE is not R12 — sample the true curve (WCS), transform to sheet
+        // (rigid → arcs stay arcs), then arc-fit into R12-native ARCs/LINEs.
         const useCtrl = (d.ctrl && d.ctrl.length >= 2);
-        const src = useCtrl ? d.ctrl : d.fit;
-        const c2 = src.map(p => { const t = xf(p.x, p.y); return { x: t[0], y: t[1] }; });
-        spline(c2, useCtrl ? d.knots : null, d.degree, d.closed, layer); return;
+        const src = (useCtrl ? d.ctrl : d.fit).map(p => [p.x, p.y]);
+        const wcs = useCtrl ? bsplineSample(src, d.degree || 3, d.knots, 48) : src;
+        const sheetPts = wcs.map(([x, y]) => xf(x, y));
+        emitFittedCurve(sheetPts, layer, 0.05); return;
       }
       if (d.kind === 'ELLIPSE') {
-        const c = xf(d.cx, d.cy);
-        const cs = Math.cos(rotRad), sn = Math.sin(rotRad);
-        const mx2 = d.mx * cs - d.my * sn;
-        const my2 = d.mx * sn + d.my * cs;
-        ellipse(c[0], c[1], mx2, my2, d.ratio, d.a0, d.a1, layer); return;
+        // ELLIPSE is not R12 either — same sample → transform → arc-fit path.
+        const sheetPts = ellipseSample(d, 96).map(([x, y]) => xf(x, y));
+        emitFittedCurve(sheetPts, layer, 0.05); return;
       }
     }
     // Sheet outline
@@ -4565,9 +4597,7 @@
         }
       }
     }
-    lines.push('0','ENDSEC',
-               '0','SECTION','2','OBJECTS','0','ENDSEC',
-               '0','EOF');
+    lines.push('0','ENDSEC','0','EOF');
     return lines.join('\n');
   }
 
