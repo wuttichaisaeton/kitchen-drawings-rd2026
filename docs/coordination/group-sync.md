@@ -8033,3 +8033,27 @@ The L-shaped cabinet ("LL" code) has 800mm + 1200mm wings spanning 2685mm total.
 **NOTE**: Previously saved cutsheet DXFs in `CutSheets/` are ALSO invalid (same missing structure). Re-save nesting runs to get valid files. Old files cannot be retroactively fixed without re-running the nest.
 
 -- WEB 22
+
+---
+### 2026-06-22 - WEB 22 cutsheet DXF R12 fix (ground-truth confirmed)
+
+**SESSION**: WEB 22 — cutsheet "เปิดไม่ได้" (continued)
+**STATUS**: ✅ SHIPPED `dc19f17`, LIVE, เอ๋ confirmed opens
+
+**REAL ROOT CAUSE** (earlier f509334 was WRONG direction): เอ๋'s laser/CAD reader is **R12-ONLY**. It opens R12-implicit DXF but REJECTS `$ACADVER AC1015` entirely and mis-renders SPLINE as a straight line. The 2026-06-12 vector commit (25e495c) added AC1015 (needed for SPLINE/ELLIPSE) → broke เอ๋'s reader. f509334 (AC1015 + subclass) made ezdxf happy but was the EXACT OPPOSITE of what เอ๋'s reader needs.
+
+**FIX** (`_buildSheetDxf`):
+- Back to R12 (no $ACADVER / subclass / tables) — the format the reader accepts.
+- Only R12-native entities: LINE / CIRCLE / ARC / LWPOLYLINE(+bulge).
+- SPLINE + ELLIPSE arc-fitted → true ARCs (de Boor sample + greedy circumcircle, tol 0.05mm). Still vector + crisp (เอ๋ HARD RULE), never faceted.
+
+**VERIFIED**: quarter-circle SPLINE→1 ARC exact · S-curve→16 arcs max dev 0.042mm · arc direction correct 60/120/252/300° · real 03_Ruth sheet bbox diff 0.0mm, 46 SPLINEs→ARCs · **เอ๋ opened converted sheet on real reader, all fillets intact**.
+
+**⚠ LESSON for all web sessions**: ezdxf ≠ ground truth (gave OPPOSITE result), dxf.js (preview) too permissive to catch. Only reliable DXF-validity gate = เอ๋ opens the real file in the real program.
+
+**⚠ ACTION**: cutsheets saved before dc19f17 are still AC1015 (won't open) → re-run + re-save to regenerate as R12.
+
+**FOR FUSION (G1)**: if CC_Laser ever exports AC1015 DXF, same break on เอ๋'s reader — set R12 in the export setting.
+
+**OPEN ITEMS**: none. **NO BLOCKERS.**
+-- WEB 22
