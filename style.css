@@ -6302,10 +6302,22 @@ html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-name,
 html[data-theme="chalk"]  .kme-tree-col-head .kme-tree-col-count {
   color: #fff !important;
 }
-/* done rows: keep family colour but dim + strike (no green wash override). */
+/* done rows — เอ๋ 2026-06-22: ticked (assembled) parts must STILL SHOW clearly
+   and wear a RED FRAME, NOT a faded strike-through (which reads as "removed").
+   Overrides the editor bundle's base .is-done strike + the sketch/chalk dim.
+   Covers row + all descendants so no nested element stays struck. */
+.kme-tree-col .kme-tree-row.is-done {
+  opacity: 1 !important;
+  border: 1.5px solid #e5484d !important;
+  border-radius: 6px;
+}
+.kme-tree-col .kme-tree-row.is-done,
+.kme-tree-col .kme-tree-row.is-done * {
+  text-decoration: none !important;
+}
 html[data-theme="sketch"] .kme-tree-col .kme-tree-row.is-done,
 html[data-theme="chalk"]  .kme-tree-col .kme-tree-row.is-done {
-  opacity: 0.55;
+  opacity: 1 !important;
 }
 
 /* === Part@sheet locator popup (Cut List icon) - 2026-05-31 === */

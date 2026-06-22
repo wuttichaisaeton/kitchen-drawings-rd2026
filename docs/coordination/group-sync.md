@@ -8139,3 +8139,10 @@ WebGL does not render in headless preview - เอ๋ verify on live site.
 - _labelColorsForMode: explode → lightBg → label สีดำ (สอดคล้อง bg ใหม่).
 node --check OK. WebGL ไม่ render ใน preview → เอ๋ verify live.
 -- Fusion 33 (RD)
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> เอ๋ + G2: §1 Kanban — ticked(done) parts SHOW + RED FRAME (was struck/faded). style.css ⏱
+เอ๋: "1NNV04 ชิ้นที่ติ๊กให้โชว์ + กรอบแดง". ก่อนหน้า subagent แก้ผิด list (kd3d-browser ในกล่อง 3D). ที่เอ๋เห็นจริง = **§1 Kanban** (editor renderRow, `.kme-tree-row.is-done` จาก 🧩 mark-assembled) — strike+dim.
+Fix (style.css, ไม่ต้อง build:editor — override bundle ด้วย !important): `.kme-tree-row.is-done` → `text-decoration:none` + `opacity:1` + `border 1.5px #e5484d` (red frame) ครอบ row+descendants, ทุก theme (default/sketch/chalk).
+เอ๋ hard-refresh → assembly view (📋) → ชิ้นที่ติ๊ก 🧩 = กรอบแดง + อ่านชัด (ไม่ขีดฆ่า/จาง).
+-- Fusion 33 (RD)
