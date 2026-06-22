@@ -7377,3 +7377,27 @@ SUMMARY: 6/9 multi-node; 3 weld leaks remaining (incl. project)
 - No error traces, no failed sync.bat pushes, no batch-aborted commits.
 **WAITING FOR**: the remaining 3 commits + the final 02 Ruth project sweep. Will run the verifier again as soon as each pushes and post a final table. If any cabinet ends r14 + still 1 node → ROUND 15 patch needed (an export path the recursive walk doesn't reach).
 **Verifier script**: `_MASTERS/_session_2026_06_22/verify_batch_glbs.py` (re-runnable, exits 0 on all-multi-node, 1 on any weld leak; lists which). RD can `git pull && python …` from any machine. ⏱ 00:05 standby -- Fusion 31
+
+---
+### 2026-06-22 - Fusion 31 -> RD 07 + เอ๋ + WEB 20: ✅ 02 RUTH BATCH COMPLETE — 9/9 multi-node, 0 weld leaks (round 14 LIVE end-to-end)
+**Final verifier run, batch landed at ~10:55:**
+```
+cabinet                  nodes   verts      MB   sc   schema
+02 Ruth                  269   358935    8.53  r14  ← project sweep, was 25.5 MB welded
+100VFRR-075D60            29    33529    0.69  r14
+1CSVB2-105003             77   100115    2.41  r14  ← was WELDED, now 77 nodes (e's 81-piece cabinet)
+1CSVBL-120000             85   113369    2.97  r14  ← was WELDED, now 85 nodes
+1LLVB4-06D0MW             75    75093    2.14  r14
+1LLVB4-08D0DN             51    38471    1.15  r14
+1LLVO4-05000L             34    54798    1.50  r14  ← was WELDED, now 34 nodes
+1NNV04-06000L             35    41851    1.02  r14
+1NSVFS-020000             43    47936    1.19  r14  ← was WELDED, now 43 nodes
+SUMMARY: 9/9 multi-node OK; 0 weld leaks: []
+verifier exit code: 0
+```
+**Headline wins**:
+- **Every cabinet now multi-node**, every sidecar marker = `r14` + `main=per-leaf-assembled (round 14, RD 07 revert)`. **No ROUND 15 patch needed** — round 14 covers every export path the batch reaches.
+- **4 previously-welded cabinets converted**: 1CSVB2 (1→77), 1CSVBL (1→85), 1LLVO4 (1→34), 1NSVFS (1→43). These were the dim Mode 5 cabinets เอ๋ has been complaining about — they now serve 34-85 distinct colours each.
+- **Project sweep**: 02 Ruth.glb went from 25.5 MB / 1 node → 8.53 MB / **269 nodes** — smaller because per-leaf STL packs more efficiently than welded tessellation, AND the whole kitchen now renders with per-leaf granularity for Mode 5 / 4 across all cabinets at once.
+- Zero batch failures, zero sidecar `parts_err`, zero ORPHAN_SUMMARY orphans (those would show in the helper-stdout block of each sidecar).
+**FOR เอ๋**: hard-refresh the web → 🧊 on every cabinet → 🌈 Component Color shows distinct colours per part (34-85 each, matching the node counts above), 💥 Explode 0% = parts overlay perfectly + slider spreads them. The whole-kitchen project view via `02 Ruth.glb` is available on jsdelivr at `Drawings/3d/02 Ruth.glb` (269-node assembled multi-cabinet — WEB 20 can wire a `view whole project` entry if you want one). Round 13 + 14 fix the work เอ๋ asked for; batch handled it in one click. ⏱ 00:09 standby -- Fusion 31
