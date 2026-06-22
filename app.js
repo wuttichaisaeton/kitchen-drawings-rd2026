@@ -10631,45 +10631,11 @@ function renderProjectsHome() {
       ${doneOpen ? `<div class="project-list project-list-complete">${doneHtml}</div>` : ''}
     </div>` : '';
 
-  // Admin-only "📋 Copy Assembler Link" header — เอ๋ 2026-06-22: the GENERIC
-  // link (`?asm`) is the one-shot LINE share — assembler taps once, bakes
-  // role=assemble, lands here on Projects, picks their cabinet themselves.
-  // Lives at the top of the projects list so it's discoverable but small.
-  // (Note: `adminMode` is declared inside cardHtml, not the outer scope —
-  // use isAdmin() directly here.)
-  const asmGenericBar = isAdmin()
-    ? `<div class="projects-adminbar" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin:0 0 10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:8px;font-family:'Flux Architect',ui-monospace,monospace">
-         <button class="projects-adminbar-btn" id="asmlink-generic-btn" title="Copy the generic assembler link — share to LINE so workers can bake role + see ALL projects with one tap" style="background:#1c2530;color:#e6edf4;border:1px solid #2b3a4d;border-radius:6px;padding:6px 10px;font:inherit;font-size:12px;cursor:pointer;letter-spacing:.3px">📋 Copy Assembler Link</button>
-         <span class="projects-adminbar-hint" style="font-size:11px;color:#9fb0c0;letter-spacing:.3px">One link for LINE — bakes role, shows all projects</span>
-       </div>`
-    : '';
+  // (Removed: generic "📋 Copy Assembler Link" header bar — เอ๋ 2026-06-22
+  // "เอาปุ่ม Copy Assembler Link ออก". The ?asm deep-link still works for
+  // anyone holding it; only the in-app copy button is gone.)
 
-  ROOT.innerHTML = `${asmGenericBar}<div class="project-list">${html}</div>${completeSection}`;
-
-  // Global "Copy Assembler Link" — writes `<origin><path>?asm` (no value =
-  // generic entry) to clipboard. The applyUrlFlags handler bakes role +
-  // strips the param when the worker opens it.
-  ROOT.querySelector('#asmlink-generic-btn')?.addEventListener('click', async (ev) => {
-    ev.stopPropagation();
-    const url = window.location.origin + window.location.pathname + '?asm';
-    let ok = false;
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-        ok = true;
-      }
-    } catch (e) {}
-    if (!ok) {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = url; ta.style.position = 'fixed'; ta.style.top = '-1000px';
-        document.body.appendChild(ta); ta.select();
-        ok = document.execCommand('copy');
-        document.body.removeChild(ta);
-      } catch (e) {}
-    }
-    _kdToast(ok ? '📋 Assembler link copied — paste to LINE' : '✗ Copy failed — long-press URL to copy manually');
-  });
+  ROOT.innerHTML = `<div class="project-list">${html}</div>${completeSection}`;
 
   // 📦 folder open/close — shared state with the Nest picker.
   ROOT.querySelector('#kd-complete-toggle')?.addEventListener('click', _toggleCompleteFolder);
