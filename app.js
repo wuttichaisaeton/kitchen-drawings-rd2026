@@ -3175,6 +3175,9 @@ async function _kdOpen3D(code, opts) {
     edgeOverlays = [];
     threeScene.traverse(n => {
       if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      let underWorld = false;
+      for (let p = n.parent; p; p = p.parent) { if (p.name === 'world') { underWorld = true; break; } }
+      if (!underWorld) return;
       try {
         const eg = new THREE.EdgesGeometry(n.geometry, 22);
         const matVis = new THREE.LineBasicMaterial({

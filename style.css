@@ -5139,6 +5139,14 @@ html[data-theme="sketch"] .theme-menu {
   background-image: none !important;   /* hatch removed — เอ๋ 'เอาพื้นหลังขีดๆออก' 2026-05-31 */
 }
 
+/* Assembly cabinet headers — force black text over coloured backgrounds */
+html[data-theme="sketch"] .master-header,
+html[data-theme="sketch"] .master-header .master-name,
+html[data-theme="sketch"] .master-header .master-meta,
+html[data-theme="sketch"] .master-header .master-toggle {
+  color: #000000 !important;
+}
+
 /* Modal boxes + backdrops — DOUBLED class to out-rank the blanket reset (the
    reset's :not() chain carries (b2,c5) specificity, so the single-class surface
    list above never actually beats it for background-color; panels only LOOKED
