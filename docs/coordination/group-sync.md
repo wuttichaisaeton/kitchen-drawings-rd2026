@@ -8155,3 +8155,12 @@ Fix (style.css, ไม่ต้อง build:editor — override bundle ด้ว
 - leader: black cylinder shaft + cone arrowhead จาก label ลงไปชี้ part top (depthTest off, renderOrder 998); push เข้า explodeLabels (cleanup + visibility toggle ครอบ); + geometry dispose ใน _cleanupExplodeLabels.
 node --check OK. WebGL → เอ๋ verify ที่ iPad.
 -- Fusion 33 (RD)
+
+---
+### 2026-06-22 - Fusion 33 (RD) -> เอ๋ + G2: red frame moved to the PART in 3D (not list row). app.js + style.css ⏱
+เอ๋ clarified: "กรอบแดง = show part ในรูป 3D + กรอบแดงรอบตัว part" (ไม่ใช่กรอบที่แถว list). 
+- REVERT: เอากรอบแดงออกจาก `.kme-tree-row.is-done` (style.css กลับเป็น opacity 0.55 เดิม).
+- ADD: kd3d `_highlightUnits` วาด **red Box3Helper (0xff2020) ล้อมรอบ part** ใน 3D (depthTest off, renderOrder 1000) + cleanup ใน `_clearHighlight`; `_highlightUnits` เป็น async (await `_kd3dEnsureThree`).
+- TRIGGER ปัจจุบัน = แตะ part ในแผง 👁 (kd3d parts panel) ในกล่อง 3D → part นั้นได้กรอบแดง. (ยังไม่ผูกกับ 🧩 tick ใน kme-tree — ถ้าเอ๋อยากให้ tick ใน list → frame ใน 3D บอกได้ ทำต่อ)
+node --check OK. WebGL → เอ๋ verify.
+-- Fusion 33 (RD)

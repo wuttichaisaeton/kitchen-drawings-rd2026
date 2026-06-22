@@ -3883,6 +3883,7 @@ async function _kdOpen3D(code, opts) {
   // we only tint the emissive channel so the part glows in place.
   let _selectedLabel = null;
   let _highlightRestore = [];
+  let _highlightBoxes = [];   // เอ๋: red Box3Helper frame(s) around the selected part
   const _clearHighlight = () => {
     for (const { mesh, emissive, intensity } of _highlightRestore) {
       try {
@@ -3891,6 +3892,10 @@ async function _kdOpen3D(code, opts) {
       } catch {}
     }
     _highlightRestore = [];
+    for (const hb of _highlightBoxes) {
+      try { hb.parent?.remove(hb); hb.geometry?.dispose(); hb.material?.dispose(); } catch {}
+    }
+    _highlightBoxes = [];
     if (browserList) browserList.querySelectorAll('.kd3d-selected').forEach(r => r.classList.remove('kd3d-selected'));
     _selectedLabel = null;
   };
@@ -3899,7 +3904,7 @@ async function _kdOpen3D(code, opts) {
   // the code — is what fixes flagged "Part N" rows (เอ๋ 1NNV04-06000L): they had
   // an empty derived code, so the old "_extractPartLabel(node)===label" filter
   // matched nothing and ticking did nothing.
-  const _highlightUnits = (label, units, hex, intensity) => {
+  const _highlightUnits = async (label, units, hex, intensity) => {
     for (const { unit } of units) {
       unit.node.traverse(nd => {
         if (!nd.isMesh || !nd.material || !nd.material.emissive) return;
@@ -3922,6 +3927,28 @@ async function _kdOpen3D(code, opts) {
         }
       });
     }
+    // เอ๋ 2026-06-22: RED FRAME (box) around the selected part IN THE 3D view
+    // ("กรอบรอบรูปเป็นสีแดง") — NOT on the list row. Static world box at select
+    // time; re-tap the part after exploding to refresh its position.
+    try {
+      const THREE = await _kd3dEnsureThree();
+      if (THREE && threeScene && THREE.Box3Helper) {
+        const fbox = new THREE.Box3();
+        let has = false;
+        for (const { unit } of units) {
+          const b = new THREE.Box3().setFromObject(unit.node);
+          if (!b.isEmpty()) { fbox.union(b); has = true; }
+        }
+        if (has) {
+          fbox.expandByScalar(fbox.getSize(new THREE.Vector3()).length() * 0.012 + 1);
+          const helper = new THREE.Box3Helper(fbox, new THREE.Color(0xff2020));
+          if (helper.material) { helper.material.depthTest = false; helper.material.transparent = true; helper.material.depthWrite = false; }
+          helper.renderOrder = 1000;
+          threeScene.add(helper);
+          _highlightBoxes.push(helper);
+        }
+      }
+    } catch {}
   };
   // Click-to-identify (raycast) entry: resolve the units for a parsed code, then
   // tint them. Used by the in-scene click handler.
