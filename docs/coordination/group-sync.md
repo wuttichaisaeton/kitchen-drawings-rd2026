@@ -8164,3 +8164,16 @@ node --check OK. WebGL → เอ๋ verify ที่ iPad.
 - TRIGGER ปัจจุบัน = แตะ part ในแผง 👁 (kd3d parts panel) ในกล่อง 3D → part นั้นได้กรอบแดง. (ยังไม่ผูกกับ 🧩 tick ใน kme-tree — ถ้าเอ๋อยากให้ tick ใน list → frame ใน 3D บอกได้ ทำต่อ)
 node --check OK. WebGL → เอ๋ verify.
 -- Fusion 33 (RD)
+
+---
+### 2026-06-22 - Group 2 (Web) -> เอ๋ + Fusion 33: Explode labels REBUILT — 3D sprites → HTML+SVG overlay (still, edge-pinned, no overlap). app.js ⏱
+เอ๋: หลัง ~13 รอบของ label แบบ sprite ใน 3D — "ให้ตัวอักษรอยู่นิ่งซ้าย/ขวา ไม่ขยับตามภาพ" + "ห้ามตัวอักษรทับภาพ". ทิ้ง sprite ทั้งหมด เปลี่ยนเป็น overlay 2D ทับ model-viewer (commit dfb2850):
+- overlay `<div>` (pointer-events:none, z-index 3) ทับ .kd3d-viewer: คอลัมน์ text ซ้าย+ขวา (flex column) ปักขอบซ้าย/ขวา + 1 `<svg>` layer สำหรับเส้นชี้.
+- 1 row ต่อ 1 code = "N x CODE" (qty หนา/ใหญ่กว่า, code ปกติ) ขนาดคงที่บนจอ. rows ใน flex column ไม่ทับกันเอง = แก้ "label ทับกัน".
+- ซ้าย/ขวา + ลำดับ Y กำหนด **ครั้งเดียว** ตอนเข้า explode (project assembled centroid → screen, fallback = gx/gy split) → labels อยู่นิ่ง ไม่ re-sort ตอนหมุน/แตก.
+- part-end ของเส้นชี้ track ด้วย model-viewer **hotspot slot** (1 ต่อ code, data-position = centroid ปัจจุบันจาก applyExplode math: gx+(gx-center)*factor) → อ่าน getBoundingClientRect → SVG `<line>` จากขอบ row ด้านในไปจุด part + arrowhead (SVG marker) ที่ part. เส้นออกด้านที่หันเข้าโมเดล → ไม่ทับ text.
+- redraw บน `camera-change` + slider (RAF throttle) + resize/fullscreen; โชว์เฉพาะ explode > 5%; teardown ครบตอนปิด modal/เปลี่ยน mode (ลบ hotspot slots + listeners).
+แก้ app.js เท่านั้น (CSS overlay อยู่ใน STYLE block ของ app.js ตามที่ .kd3d-modal rules อยู่ — ไม่แตะ style.css). node --check OK. Deploy success (dfb2850, marker live บน Pages).
+**Verify:** preview headless ไม่ render WebGL/GLB — ยืนยันได้: modal mount, explode bar, ไม่มี JS error, และ overlay DOM/CSS (คอลัมน์ซ้าย left:0 / ขวา flush right, "N x CODE" qty bold 16px + code 13px, 4 leaders, pointer-events:none) ผ่าน screenshot+eval. ยืนยันไม่ได้ใน headless: เส้นชี้ track part จริงตอนหมุน/แตก (ต้องมี GLB จริง). เอ๋ verify บน iPad/live: เปิดตู้จริง → Explode → ลาก slider → labels นิ่งซ้าย/ขวา, เส้นชี้ตาม part, ไม่ทับภาพ/ไม่ทับกัน.
+**NEEDS:** nothing from Fusion. FYI — hotspot ใช้ data-position (m) ตรง ๆ ไม่ต้องเปลี่ยน export.
+-- Group 2 (Web)
