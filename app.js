@@ -2122,6 +2122,36 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-placeholder .kd3d-ph-title{font-size:15px;color:#e6edf4}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-sub{font-size:12px;opacity:.7;max-width:380px;line-height:1.5}
     .kd3d-modal .kd3d-loading{flex:1 1 auto;display:flex;align-items:center;justify-content:center;color:#9fb0c0;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px}
+    /* FULLSCREEN sizing override (RD 07 2026-06-22: เอ๋ "full screen คือเต็มจอ
+       ไม่ใช่ครึ่งจอ"). The inline width:94vw + max-height:88vh on the
+       .kdstock-frame fight the browser's fullscreen layout — without these
+       :fullscreen rules the element stays capped at 880px wide / 88vh tall
+       inside an otherwise-fullscreen viewport, producing big black bands
+       outside it. !important wins over the inline styles. */
+    .kd3d-modal .kdstock-frame:fullscreen,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+      max-width: none !important;
+      max-height: none !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      box-sizing: border-box !important;
+    }
+    /* The body is flex:column with the viewer flex:1; the .kd3d-viewer was
+       hard-capped at 60vh which would shrink it in fullscreen. Stretch in FS. */
+    .kd3d-modal .kdstock-frame:fullscreen .kd3d-viewer,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-viewer {
+      height: auto !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+    }
+    .kd3d-modal .kdstock-frame:fullscreen .kd3d-body,
+    .kd3d-modal .kdstock-frame:-webkit-full-screen .kd3d-body {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+    }
   </style>`;
 
   const modal = document.createElement('div');
