@@ -2530,7 +2530,15 @@ async function _kdOpen3D(code, opts) {
   let partsProbePromise = null;
   let currentLoadedSrc = null;    // last URL model-viewer fetched; gates dim-recompute
   let dimsCached = false;         // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)
-  const PARTS_MODES = new Set(['compcolor', 'explode']);
+  // REVERTED 2026-06-22 (RD 07 + เอ๋ "ให้กลับไปตอนนั้น"): the dual-export
+  // swap (504e84b) routed Component Color + Explode to `<code>_parts.glb`,
+  // but the round-11+ Fusion export has scattered/orphan node transforms
+  // that destroy the assembled look. Empty set = every mode now stays on
+  // the main `.glb` (state 856dc31 — verified 54/59 distinct colors in
+  // Component Color, slider=0 = assembled, slider>0 = spread). Part view
+  // and Project view still bypass this via opts.cabinetCode / opts.asProject
+  // straight through `_wantSrcFor`.
+  const PARTS_MODES = new Set();
   const _wantSrcFor = (m) => {
     if (wantDemo) return _KD3D_DEMO_GLB;
     // Part view ALWAYS uses the cabinet's _parts.glb (need per-leaf nodes to
