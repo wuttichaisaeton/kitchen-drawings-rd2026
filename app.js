@@ -3473,8 +3473,12 @@ async function _kdOpen3D(code, opts) {
     // และลูกศร มันเกะกะ ชี้ไปก็ไม่ตรง"). Labels still show (selected bold, rest faded).
     _ovlSvg.style.display = _poppedCode ? 'none' : '';
     for (const r of _ovlRows) {   // reads row rects (post-layout) + draws
-      if (_poppedCode) { if (r._on) r.rowEl.style.opacity = (r.code === _poppedCode) ? '1' : '0.3'; continue; }
-      if (!r._on || r._tx == null) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
+      // IMPORTANT: hide a suppressed leader with display:none, NOT stroke-opacity
+      // — an SVG marker (the arrowhead) paints independently of the line's stroke,
+      // so a transparent line still left a LONE ARROWHEAD floating (เอ๋ "ถ้ามีลูกศร
+      // อย่างเดียวไม่ต้องโชว์ มันทำให้งง").
+      if (_poppedCode) { if (r._on) r.rowEl.style.opacity = (r.code === _poppedCode) ? '1' : '0.3'; r.lineEl.style.display = 'none'; continue; }
+      if (!r._on || r._tx == null) { r.lineEl.style.display = 'none'; continue; }
       const rb = r.rowEl.getBoundingClientRect();
       const ry = rb.top + rb.height / 2 - vb.top;
       const rx = (r.side === 'R') ? (rb.left - vb.left) : (rb.right - vb.left);
@@ -3483,7 +3487,8 @@ async function _kdOpen3D(code, opts) {
       // text, or be a stub bare-arrow (เอ๋ "เส้นชี้ห้ามทับตัวอักษร" + "ลูกศรเปล่า
       // ไม่ต้องโชว์"). The label sits right beside such a part anyway.
       const outOK = (r.side === 'R') ? (r._tx < rx - 8) : (r._tx > rx + 8);
-      if (!outOK) { r.lineEl.setAttribute('stroke-opacity', '0'); continue; }
+      if (!outOK) { r.lineEl.style.display = 'none'; continue; }
+      r.lineEl.style.display = '';
       r.lineEl.setAttribute('stroke-opacity', '1');
       r.lineEl.setAttribute('x1', rx); r.lineEl.setAttribute('y1', ry);
       r.lineEl.setAttribute('x2', r._tx); r.lineEl.setAttribute('y2', r._ty);
