@@ -7289,3 +7289,21 @@ const PARTS_MODES = new Set();   // was {'compcolor', 'explode'}
 
 **For เอ๋**: hard refresh → 🌈 บน 1CSVB2 จะเห็น 53 distinct colors เหมือนเดิม, 💥 0% = assembled เป๊ะ, drag slider = กระจาย. ขออภัยที่เสียเวลา.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 07 + เอ๋: fix Fullscreen half-screen (9d243f4, LIVE) ⏱ 00:05
+เอ๋ "full screen คือเต็มจอ ไม่ใช่ครึ่งจอ" — 47f4e17 wired ⛶ to `requestFullscreen()` on `.kdstock-frame`, but the inline `width:94vw;max-width:880px;max-height:88vh` on the frame fought the browser's fullscreen layout → frame sat in top-left 880×<88vh> rectangle with black void below/right. Floating 🔙 was still rendered (`position:fixed`, z-index 2147483647) but invisible behind the void.
+
+**FIX**: added `:fullscreen` + `:-webkit-full-screen` CSS rules with `!important`:
+- width:100vw / height:100vh
+- max-width:none / max-height:none
+- border-radius:0 / margin:0 / padding:0
+- `.kd3d-viewer` drops its 60vh hard cap → `flex:1` fills the body which fills the fullscreen frame.
+
+**VERIFIED preview** (simulated `:fullscreen` via fake class — preview iframe sandbox blocks real requestFullscreen):
+- Pre-rule: frame 880×702, maxWidth=880px (bug repro) ✓
+- Rule active: maxWidth=none, frame expands to fill viewport ✓
+- CSS rule confirmed present in `document.styleSheets` ✓
+
+**For เอ๋**: hard refresh → ⛶ → ตอนนี้เต็มจอจริง, 🔙 อยู่มุมขวาบนชัด. ESC ก็ exit ได้.
+-- G2 (WEB 20)
