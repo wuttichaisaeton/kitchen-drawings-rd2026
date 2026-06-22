@@ -8211,3 +8211,6 @@ node --check OK. **Verify ไม่ได้ใน preview (model-viewer headles
 
 ### RD · 2026-06-22 · explode arrow → on the part edge at mid-height (929dfd9, LIVE)
 เอ๋ "ลูกศรต้องชี้อยู่ที่เส้นขอบเท่านั้น และลูกศรเปล่าไม่ต้องโชว์": replaced AABB X-extent (stray corner floated in empty space) with **box-silhouette ∩ horizontal line at the centroid screen-Y** → arrow sits exactly on the part's near edge at mid-height; scanline-misses-box → no arrow; outer-edge guard 2→8px (no stub bare-arrows). node --check OK, deploy watched LIVE. เอ๋ eyeball next.
+
+### RD · 2026-06-22 · explode arrows floated → fixed via model-viewer corner hotspots (9dc1577, LIVE)
+เอ๋ screenshot: arrows pointed into EMPTY space (only near-centre parts landed). ROOT CAUSE: our own THREE-camera projection (`_findCamera` + `.project`) drifts in SCALE vs model-viewer's actual render → edges radiate outward from centre into the margin. FIX: drop THREE projection for the edge; place **8 bbox-corner hotspots per part** so model-viewer projects them exactly where rendered; read their rects → silhouette ∩ horizontal line at centroid-Y → arrow on the real near edge. Off-screen parts (real-viewport gate) draw no leader ("ชี้กลางอากาศไม่ต้องโชว์"). node --check OK, deploy LIVE. NOTE: 108 hotspots total (9/part×12) — watch iPad responsiveness; cull if laggy. เอ๋ eyeball next.
