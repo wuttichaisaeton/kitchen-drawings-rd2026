@@ -2034,21 +2034,30 @@ function _kd3dPartsGlbUrl(code) {
 // 🧊 in CC_Auto on that cabinet — the chip disappears the moment the new
 // commit lands and the mtime probe refreshes.
 //
-// Mtime source: HEAD probe to GitHub Pages (CDN-fronted, CORS-open, sends
-// `Last-Modified` = file commit time). jsdelivr was the first choice but
-// strips Last-Modified on cache HITs, so the chip would stay null forever.
+// Mtime source: GitHub Commits API
+// (`/repos/:owner/:repo/commits?path=Drawings/3d/<code>.glb&per_page=1`).
+// GH Pages was the first try (one HEAD per file, CORS-open) but every file's
+// Last-Modified comes back as the most recent SITE deploy time, not the
+// file's own commit time → all GLBs look fresh forever. jsdelivr was the
+// second try but its CDN strips Last-Modified on cache HITs. The Commits API
+// returns the actual commit date (the timestamp we want to compare against
+// the round cutoff) and is unauth-rate-limited to 60 req/hr — fine for a
+// project view with ≤30 cabinets, especially with sessionStorage caching.
+// On rate-limit (403) we cache `unknown` so the chip stays dormant rather
+// than nagging incorrectly.
+//
 // Lazy — only probes a code on first ask, caches per-tab in sessionStorage
-// so a project re-render doesn't refire N HEADs. On resolve, calls
+// so a project re-render doesn't refire N requests. On resolve, calls
 // `_backgroundRender()` so the chip materialises without yanking เอ๋'s
 // scroll / editor viewport.
 //
 // Cutoff: 10:40 BKK interpreted as Bangkok local (= 03:40 UTC), 14 min
-// before the r14 batch commit landed; the literal "10:40 UTC" the spec
-// requested would flag every just-exported r14 cabinet (commit time 03:54
-// UTC < 10:40 UTC), which defeats the purpose.
+// before the r14 batch commit f555a1e landed at 03:54 UTC; the literal
+// "10:40 UTC" the spec requested would flag every just-exported r14 cabinet
+// (commit time 03:54 UTC < 10:40 UTC), defeating the purpose.
 const KD3D_R14_CUTOFF_MS = Date.parse('2026-06-22T03:40:00Z');   // 10:40 BKK
-const _KD3D_MTIME_LS_KEY = 'kd_glb3d_mtime_v2';                  // v2 = GH Pages probe (v1 cached jsdelivr "unknown")
-const _KD3D_GHPAGES_BASE = 'https://wuttichaisaeton.github.io/kitchen-drawings-rd2026/Drawings/3d/';
+const _KD3D_MTIME_LS_KEY = 'kd_glb3d_mtime_v3';                  // v3 = commits API (v1=jsdelivr, v2=ghpages — both broken for mtime)
+const _KD3D_COMMITS_API = 'https://api.github.com/repos/wuttichaisaeton/kitchen-drawings-rd2026/commits';
 let _kd3dMtimeCache = (() => {
   try { return JSON.parse(sessionStorage.getItem(_KD3D_MTIME_LS_KEY) || '{}') || {}; }
   catch { return {}; }
@@ -2060,18 +2069,21 @@ function _saveKd3dMtimeCache() {
 function _probeKd3dMtime(code) {
   if (!code || _kd3dMtimeProbing.has(code) || _kd3dMtimeCache[code]) return;
   _kd3dMtimeProbing.add(code);
-  const url = _KD3D_GHPAGES_BASE + encodeURIComponent(code) + '.glb';
-  fetch(url, { method: 'HEAD', cache: 'no-store' })
-    .then(r => {
-      if (r.status === 404) {
-        _kd3dMtimeCache[code] = { missing: true };
-      } else if (r.ok) {
-        const lm = r.headers.get('last-modified');
-        const ms = lm ? Date.parse(lm) : NaN;
-        _kd3dMtimeCache[code] = isNaN(ms) ? { unknown: true } : { mtimeMs: ms };
-      } else {
+  const path = 'Drawings/3d/' + code + '.glb';
+  const url = `${_KD3D_COMMITS_API}?path=${encodeURIComponent(path)}&per_page=1`;
+  fetch(url, { headers: { Accept: 'application/vnd.github+json' } })
+    .then(r => r.ok ? r.json().then(j => ({ ok: true, j })) : { ok: false, status: r.status })
+    .then(res => {
+      if (!res.ok) {
+        // 403 = rate-limited; 404 / 422 = unknown — never nag.
         _kd3dMtimeCache[code] = { unknown: true };
+        return;
       }
+      const top = Array.isArray(res.j) ? res.j[0] : null;
+      const date = top && top.commit && top.commit.committer && top.commit.committer.date;
+      if (!date) { _kd3dMtimeCache[code] = { missing: true }; return; }
+      const ms = Date.parse(date);
+      _kd3dMtimeCache[code] = isNaN(ms) ? { unknown: true } : { mtimeMs: ms };
     })
     .catch(() => { _kd3dMtimeCache[code] = { unknown: true }; })
     .finally(() => {
@@ -2866,12 +2878,32 @@ async function _kdOpen3D(code, opts) {
       const n = explodeUnits.length || 1;
       explodeCenter = { x: sx / n, y: sy / n, z: sz / n };
     }
-    // Surface the unit count to the explode bar so a worker (and เอ๋) can see
-    // why a single-mesh GLB doesn't spread (= it's a Fusion-side issue).
+    // Count meshes via a fresh deep traverse — the diagnostic chip must
+    // distinguish "GLB has only 1 mesh" (Fusion issue) from "GLB has many
+    // meshes but the explode walk found 0 units" (web bug). RD 07 hit the
+    // false-positive on 1CSVBL-120000 (85 meshes, web reported "0 piece —
+    // single-mesh GLB"). Diagnostic console line surfaces every relevant
+    // count so a future report has actionable data immediately.
+    let deepMeshCount = 0;
+    const sampleNames = [];
+    threeScene.traverse(n => {
+      if (n.isMesh) {
+        deepMeshCount++;
+        if (sampleNames.length < 6) sampleNames.push({ name: n.name, parent: n.parent?.name });
+      }
+    });
+    console.info(`[kd3d snapshotScene] deepMeshCount=${deepMeshCount} materialSnap=${materialSnap.length} explodeRoot=${explodeRoot?.name || '(unnamed)'} explodeRootChildren=${explodeRoot?.children?.length || 0} explodeUnits=${explodeUnits.length}`, sampleNames);
     const info = body.querySelector('.kd3d-explode-info');
-    if (info) info.textContent = explodeUnits.length >= 2
-      ? `· ${explodeUnits.length} pieces`
-      : `· ${explodeUnits.length} piece (single-mesh GLB — needs per-leaf export)`;
+    if (info) {
+      if (explodeUnits.length >= 2) {
+        info.textContent = `· ${explodeUnits.length} pieces`;
+      } else if (deepMeshCount >= 2) {
+        // Mesh count says multi-leaf but explode walk failed — web bug.
+        info.textContent = `· ${deepMeshCount} meshes — explode walk found 0 units (check console)`;
+      } else {
+        info.textContent = `· ${explodeUnits.length} piece (single-mesh GLB — needs per-leaf export)`;
+      }
+    }
 
     // PART VIEW filter (เอ๋ "3d part ยังไม่ load"): hide every mesh in the
     // cabinet's _parts.glb except the one(s) whose name matches the part
@@ -3143,11 +3175,15 @@ async function _kdOpen3D(code, opts) {
     const colorByOwner = new Map();
     for (let i = 0; i < meshOrigMat.length; i++) {
       const mesh = meshOrigMat[i].mesh;
-      // Determine owner identity from the mesh name (or the nearest NAMED
-      // ancestor for nested GLBs).
-      let owner = mesh;
-      while (!owner.name && owner.parent && owner.parent !== threeScene) owner = owner.parent;
-      const ownerKey = (owner && owner.name) ? owner.name : ('mesh-' + i);
+      // Owner identity priority (RD 07 2026-06-22 fix): check the mesh's OWN
+      // name first; if empty, the IMMEDIATE parent's name; otherwise a unique
+      // mesh-index fallback. The earlier "walk up to nearest named ancestor"
+      // collapsed 85 meshes onto a single "world" ancestor → all same colour.
+      // Stopping at the immediate parent + per-mesh fallback guarantees each
+      // mesh gets a distinct ownerKey when the structure is flat.
+      let ownerKey = (mesh.name && mesh.name.length) ? mesh.name
+        : (mesh.parent && mesh.parent.name && mesh.parent !== threeScene && mesh.parent.name.length) ? mesh.parent.name
+        : ('mesh-' + i);
       let hsl = colorByOwner.get(ownerKey);
       if (!hsl) {
         const seed = _kd3dHashStr(ownerKey);
