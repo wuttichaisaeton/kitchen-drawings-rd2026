@@ -2250,11 +2250,14 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-ovl-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
     .kd3d-modal .kd3d-ovl-leader{stroke-width:1.4;fill:none}
-    .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:1px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease}
+    .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:2px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease,background .12s ease;pointer-events:auto;cursor:pointer;border-radius:5px}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-left{left:0}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{right:0}
+    .kd3d-modal .kd3d-ovl-row:hover{background:rgba(127,127,127,.16)}
+    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel{background:rgba(242,169,59,.28);box-shadow:0 0 0 1.5px #f2a93b}
     .kd3d-modal .kd3d-ovl-qty{font-weight:700;font-size:16px}
     .kd3d-modal .kd3d-ovl-code{font-weight:400;font-size:13px}
+    .kd3d-modal .kd3d-ovl-check{color:#2ec27e;font-weight:700;font-size:14px;margin-right:4px}
     .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
     .kd3d-modal .kd3d-3dx-btn:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
     .kd3d-modal .kd3d-3dx-btn.is-on{color:#F2A93B;border-color:#F2A93B}
@@ -2884,6 +2887,7 @@ async function _kdOpen3D(code, opts) {
   //   _ovlCamHandler — the camera-change listener (so we can detach on cleanup)
   let _ovlRoot = null, _ovlSvg = null, _ovlColL = null, _ovlColR = null;
   let _ovlRows = [];
+  let _poppedCode = null;          // เอ๋ 2026-06-23: click a label → that code's parts pop out (effect)
   let _ovlRaf = 0;
   let _ovlCamHandler = null;
   let _ovlThree = null;   // THREE instance captured at build for the leader-projection fallback
@@ -3055,44 +3059,23 @@ async function _kdOpen3D(code, opts) {
     _ovlRoot = _ovlSvg = _ovlColL = _ovlColR = null;
     _ovlThree = null;
     _ovlRows = [];
+    _poppedCode = null;
   };
 
-  // เอ๋ 2026-06-22: outline every part whose code is marked ASSEMBLED (ticked in
-  // the Kanban) with a RED FRAME in the 3D view. The box is added to the part's
-  // node so it follows on explode. Matches a code across projects (the assembled
-  // state keys are "projectKey::code").
+  // เอ๋ 2026-06-23: the RED FRAME on assembled parts is gone — assembled parts
+  // now get a green ✓ on their label instead (see _assembledCodeSet + _mkRow).
+  // This just clears any leftover frame helpers from an older build.
   const _frameAssembledParts = async () => {
     for (const f of _assembledFrames) {
       try { f.parent?.remove(f); f.geometry?.dispose(); f.material?.dispose(); } catch {}
     }
     _assembledFrames = [];
-    if (!explodeUnits.length) return;
+  };
+  // Codes marked ASSEMBLED (ticked in the Kanban). Keys are "projectKey::code".
+  const _assembledCodeSet = () => {
     const asm = new Set();
-    try {
-      for (const k of loadAssembledSet()) { const i = k.indexOf('::'); asm.add(i >= 0 ? k.slice(i + 2) : k); }
-    } catch {}
-    if (!asm.size) return;
-    let THREE;
-    try { THREE = await _kd3dEnsureThree(); } catch { return; }
-    if (!THREE || !THREE.Box3Helper) return;
-    for (const u of explodeUnits) {
-      const code = _extractPartLabel(u.node.name || '');
-      if (!code || !asm.has(code)) continue;
-      const lb = new THREE.Box3();
-      let has = false;
-      u.node.traverse(nd => {
-        if (!nd.isMesh || !nd.geometry) return;
-        if (!nd.geometry.boundingBox) try { nd.geometry.computeBoundingBox(); } catch {}
-        if (nd.geometry.boundingBox) { lb.union(nd.geometry.boundingBox); has = true; }
-      });
-      if (!has || lb.isEmpty()) continue;
-      lb.expandByScalar(lb.getSize(new THREE.Vector3()).length() * 0.008 + 0.5);
-      const helper = new THREE.Box3Helper(lb, new THREE.Color(0xff0000));
-      if (helper.material) { helper.material.depthTest = false; helper.material.transparent = true; helper.material.depthWrite = false; }
-      helper.renderOrder = 1000;
-      u.node.add(helper);
-      _assembledFrames.push(helper);
-    }
+    try { for (const k of loadAssembledSet()) { const i = k.indexOf('::'); asm.add(i >= 0 ? k.slice(i + 2) : k); } } catch {}
+    return asm;
   };
 
   // ── Explode-label OVERLAY: live part-centroid in the explode parent frame ──
@@ -3236,15 +3219,29 @@ async function _kdOpen3D(code, opts) {
 
     _ovlRows = [];
     let idx = 0;
+    const asmSet = _assembledCodeSet();   // ticked-assembled codes → green ✓ (was red frame)
+    const _applyRowSelection = () => {
+      for (const rr of _ovlRows) rr.rowEl.classList.toggle('kd3d-ovl-sel', _poppedCode === rr.code);
+    };
     const _mkRow = (a, side, top0) => {
       const qty = String(countByCode.get(a.text) || 1);
       const row = document.createElement('div');
       row.className = 'kd3d-ovl-row kd3d-ovl-' + (side === 'L' ? 'left' : 'right');
+      if (_poppedCode === a.text) row.classList.add('kd3d-ovl-sel');
       row.style.top = top0 + 'px';
+      // ✓ when this code is marked ASSEMBLED (replaces the old red frame, เอ๋ 2026-06-23).
+      if (asmSet.has(a.text)) { const ck = document.createElement('span'); ck.className = 'kd3d-ovl-check'; ck.textContent = '✓'; row.appendChild(ck); }
       // "N x CODE" — qty bold + slightly bigger, code regular.
       const qtyEl = document.createElement('span'); qtyEl.className = 'kd3d-ovl-qty'; qtyEl.textContent = qty;
       const codeEl = document.createElement('span'); codeEl.className = 'kd3d-ovl-code'; codeEl.textContent = ' x ' + a.text;
       row.appendChild(qtyEl); row.appendChild(codeEl);
+      // Click → pop this code's parts out (effect) + highlight the row; click again resets.
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        _poppedCode = (_poppedCode === a.text) ? null : a.text;
+        _applyRowSelection();
+        applyExplode(explodePct);
+      });
       _ovlRoot.appendChild(row);
       // Hotspot slot at the part's CURRENT centroid (assembled at build time).
       const hsId = 'kd' + (idx++);
@@ -4016,9 +4013,13 @@ async function _kdOpen3D(code, opts) {
     if (!explodeUnits.length) return;
     const factor = (pct / 100) * 1.5;
     for (const u of explodeUnits) {
-      const dx = (u.gx - explodeCenter.x) * factor;
-      const dy = (u.gy - explodeCenter.y) * factor;
-      const dz = (u.gz - explodeCenter.z) * factor;
+      // เอ๋ 2026-06-23: a clicked label POPS its code's parts further out (extra
+      // outward offset) — an unmistakable "this is the part" effect at any
+      // explode level (even 0% / assembled).
+      const f = (_poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode) ? factor + 1.1 : factor;
+      const dx = (u.gx - explodeCenter.x) * f;
+      const dy = (u.gy - explodeCenter.y) * f;
+      const dz = (u.gz - explodeCenter.z) * f;
       u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
     }
     // Overlay: move each hotspot to the part's new centroid + toggle visibility.
@@ -4028,6 +4029,7 @@ async function _kdOpen3D(code, opts) {
     if (_ovlRoot) _ovlRoot.style.display = (pct > 5) ? '' : 'none';
   };
   const resetExplode = () => {
+    _poppedCode = null;
     for (const u of explodeUnits) u.node.position.set(u.baseX, u.baseY, u.baseZ);
     if (_ovlRoot) _ovlRoot.style.display = 'none';
   };
