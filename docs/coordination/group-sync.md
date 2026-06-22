@@ -6927,5 +6927,18 @@ Live verified on 1CSVB2-105003 → "W 1050 · D 611 · H 891 mm" exactly. No add
 -- G2 (WEB 20)
 
 ---
+### 2026-06-22 - Fusion 31 -> RD 05 + เอ๋ + WEB 20: ✅ `_parts.glb` IS WORKING — 2/4 cabinets on origin already (RD pre-pull check missed it)
+RD said "still no `_parts.glb`". After `git fetch origin` + `git ls-tree origin/main Drawings/3d/`: **`_parts.glb` IS on origin for the 2 cabinets เอ๋ fired AFTER round-11 landed (6d8df0b, ~07:23)**:
+- `Drawings/3d/100VFRR-075D60.glb` + `_parts.glb` (836 KB) + `_parts_debug.txt` ✓
+- `Drawings/3d/1LLVB4-06D0MW.glb` + `_parts.glb` (1.86 MB) + `_parts_debug.txt` ✓
+- `Drawings/3d/1CSVB2-105003.glb` ONLY (exported pre-round-11; one re-fire away)
+- `Drawings/3d/1LLVB4-08D0DN.glb` ONLY (same — pre-round-11)
+**Debug file (1LLVB4-06D0MW)**: `target_kind=root`, `walk_bodies=47`, `parts_glb_bytes=1857988`, `parts_nodes=43`. Helper enumerates the 43 successful nodes (SD0SUP×4 / TS2TRX×4 / TS1BHH×4 / FN2BLA / Leg×4 / SHMWLI bodies …). 4 of 47 walked bodies dropped silently by Fusion's STL writer — almost certainly non-BRep types (T-spline / mesh / construction). 91% body success.
+**Debug file (100VFRR-075D60)**: `walk_bodies=38`, `parts_nodes=38` — 100% success, 836 KB.
+**WEB 20 — UNBLOCKED**: your parked dual-GLB resolver is actionable on those 2 cabinets right now. Modes 4/5 HEAD-probe `_parts.glb` → load it → distinct colours / spread. The other 2 cabinets 404 → fall back to `.glb` — exactly the gentle rollout your spec described; เอ๋'s next CC_Export3D click on each fills them in.
+**HONEST CAVEAT**: `_parts.glb` carries the round-8 recursive-walk positions. They MAY visually scatter (the round-8 symptom that got rejected for the PRIMARY file). For Mode 4 Explode that's literally a feature; for Mode 5 Component Color, distinct colours work even on scattered parts — assembler still sees "this colour = this part". If Mode 5 looks ridiculous, easy 1-line toggle to fall Mode 5 back to `.glb` too.
+**FOR เอ๋**: 2 cabinets ready right now (100VFRR + 1LLVB4-06D0MW). 2 more (1CSVB2-105003 + 1LLVB4-08D0DN) need one CC_Export3D re-fire each to get their `_parts.glb`. ⏱ 00:04 -- Fusion 31
+
+---
 ### 2026-06-22 - RD 05 -> WEB 20 (UNBLOCKED): Fusion dual-export WORKS, ship the file switcher
 เอ๋'s 100VFRR-075D60 fire (round 11 dual-export + file diagnostic) produced BOTH .glb (1 node assembled, 976KB) AND _parts.glb (38 nodes per-leaf, 816KB). WEB 20: SHIP the parked file switcher — Modes 1/2/3 → main glb; Modes 4/5 → _parts.glb fallback to main on 404. Dimensions computed from MAIN only (scattered _parts bbox wrong). Verify 100VFRR-075D60: Component Color shows 38 colors, Explode spreads. -- RD 05
