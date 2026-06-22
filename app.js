@@ -2268,7 +2268,7 @@ async function _kdOpen3D(code) {
           reveal="auto"
         ></model-viewer>
       </div>
-      <div class="kd3d-foot">Two fingers: pinch to zoom + drag to rotate · One finger: pan · Mouse: drag to rotate, wheel to zoom</div>`;
+      <div class="kd3d-foot">One finger: drag to rotate · Two fingers: pinch to zoom, drag to pan · Mouse: drag to rotate, wheel to zoom</div>`;
   const mv = body.querySelector('model-viewer');
   const modal2 = body.closest('.kd3d-modal');
   if (mode === 'explode') modal2 && modal2.classList.add('kd3d-modal-explode');
@@ -2297,10 +2297,15 @@ async function _kdOpen3D(code) {
       const next = Math.max(3, Math.min(50, fov));
       try { mv.fieldOfView = `${next}deg`; } catch (e) {}
     };
-    const clampPhi = (p) => Math.max(0.1, Math.min(Math.PI - 0.1, p));
+    // Constrained polar clamp — keeps the model upright (CAD convention,
+    // เอ๋ "constrained orbit"): clamp φ to [15°, 165°] so the camera can
+    // never look straight down or invert through the top/bottom poles.
+    const PHI_MIN = 15 * Math.PI / 180;
+    const PHI_MAX = (180 - 15) * Math.PI / 180;
+    const clampPhi = (p) => Math.max(PHI_MIN, Math.min(PHI_MAX, p));
 
     // Camera right/up vectors in world space for the given orbit + the model-
-    // viewer-canonical convention (Y-up). Used by 1-finger pan to translate
+    // viewer-canonical convention (Y-up). Used by 2-finger pan to translate
     // cameraTarget in screen space coordinates.
     const _camBasis = (theta, phi) => ({
       right: { x: Math.cos(theta), y: 0, z: -Math.sin(theta) },
@@ -2317,35 +2322,34 @@ async function _kdOpen3D(code) {
       return fh / Math.max(1, mv.clientHeight);
     };
 
+    // Touch model (เอ๋ 2026-06-22 final):
+    //   1 finger  = constrained ORBIT (polar clamped 15°-165° so no flip)
+    //   2 fingers = pinch ZOOM + drag PAN (cameraTarget shifts on midpoint move)
+    // Mouse drag = orbit; wheel = zoom (unchanged).
     let twoF = null;
-    let onePan = null;
+    let oneOrbit = null;
     mv.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
         e.preventDefault();
         const t1 = e.touches[0], t2 = e.touches[1];
         const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
         const orbit = mv.getCameraOrbit();
+        const tgt = mv.getCameraTarget();
         twoF = {
           cx: (t1.clientX + t2.clientX) / 2,
           cy: (t1.clientY + t2.clientY) / 2,
           dist: Math.sqrt(dx * dx + dy * dy),
-          theta: orbit.theta, phi: orbit.phi,
           fov: mv.getFieldOfView(),
-        };
-        onePan = null;
-      } else if (e.touches.length === 1) {
-        // 1 finger: PAN (เอ๋ 2026-06-22 "ให้ใช้ 1 นิ้วเป็นการ Pan"). Translate
-        // cameraTarget in camera-local right/up using the current orbit.
-        e.preventDefault();
-        const t = e.touches[0];
-        const orbit = mv.getCameraOrbit();
-        const tgt = mv.getCameraTarget();
-        onePan = {
-          x: t.clientX, y: t.clientY,
           target: { x: tgt.x, y: tgt.y, z: tgt.z },
           scale: _panScale(orbit, mv.getFieldOfView()),
           basis: _camBasis(orbit.theta, orbit.phi),
         };
+        oneOrbit = null;
+      } else if (e.touches.length === 1) {
+        e.preventDefault();
+        const t = e.touches[0];
+        const orbit = mv.getCameraOrbit();
+        oneOrbit = { x: t.clientX, y: t.clientY, theta: orbit.theta, phi: orbit.phi };
         twoF = null;
       }
     }, { passive: false });
@@ -2356,30 +2360,31 @@ async function _kdOpen3D(code) {
         const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const cx = (t1.clientX + t2.clientX) / 2, cy = (t1.clientY + t2.clientY) / 2;
-        const ROT = 0.006;
-        const newTheta = twoF.theta - (cx - twoF.cx) * ROT;
-        const newPhi = clampPhi(twoF.phi - (cy - twoF.cy) * ROT);
-        _setOrbit(newTheta, newPhi);
+        // PINCH → zoom via FOV (consistent with the ortho-fake design).
         const scale = dist / Math.max(20, twoF.dist);
         _setFov(twoF.fov / Math.max(0.2, scale));
-      } else if (e.touches.length === 1 && onePan) {
+        // MIDPOINT drag → pan cameraTarget. Drag right → target left so the
+        // model appears to follow the fingers.
+        const moveDX = cx - twoF.cx, moveDY = cy - twoF.cy;
+        const s = twoF.scale;
+        const { right, up } = twoF.basis;
+        const T = twoF.target;
+        const nx = T.x - moveDX * s * right.x + moveDY * s * up.x;
+        const ny = T.y - moveDX * s * right.y + moveDY * s * up.y;
+        const nz = T.z - moveDX * s * right.z + moveDY * s * up.z;
+        try { mv.cameraTarget = `${nx}m ${ny}m ${nz}m`; } catch (e) {}
+      } else if (e.touches.length === 1 && oneOrbit) {
         e.preventDefault();
         const t = e.touches[0];
-        const dx = t.clientX - onePan.x, dy = t.clientY - onePan.y;
-        const s = onePan.scale;
-        const { right, up } = onePan.basis;
-        // Screen drag right → target moves LEFT (so the model appears to follow
-        // the finger). Screen drag DOWN → target moves UP (Y screen is inverted).
-        const T = onePan.target;
-        const nx = T.x - dx * s * right.x + dy * s * up.x;
-        const ny = T.y - dx * s * right.y + dy * s * up.y;
-        const nz = T.z - dx * s * right.z + dy * s * up.z;
-        try { mv.cameraTarget = `${nx}m ${ny}m ${nz}m`; } catch (e) {}
+        const ROT = 0.006;
+        const newTheta = oneOrbit.theta - (t.clientX - oneOrbit.x) * ROT;
+        const newPhi = clampPhi(oneOrbit.phi - (t.clientY - oneOrbit.y) * ROT);
+        _setOrbit(newTheta, newPhi);
       }
     }, { passive: false });
     mv.addEventListener('touchend', (e) => {
       if (e.touches.length < 2) twoF = null;
-      if (e.touches.length === 0) onePan = null;
+      if (e.touches.length === 0) oneOrbit = null;
     }, { passive: false });
 
     // Mouse — drag to orbit, wheel to zoom. Standard desktop UX.
