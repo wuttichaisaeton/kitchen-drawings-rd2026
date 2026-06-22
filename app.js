@@ -442,6 +442,18 @@ function _renderAdminRoleSwitcher() {
       params.delete('asm');
       dirty = true;
     }
+    // Deep-link `?laser` = SHARED LASER LINK (เอ๋ 2026-06-22 "ขอ link สำหรับ
+    // ช่างตัด Laser"). Mirrors ?asm: bakes role=laser onto this device (one
+    // LINE share for life) so the cutter lands with the Nest tab visible.
+    // `?laser` / `?laser=all` = generic (lands on Projects, sees all);
+    // `?laser=<project>` = drops straight into that project. URL stripped after.
+    if (params.has('laser')) {
+      const v = params.get('laser') || '';
+      try { localStorage.setItem(LS_ROLE_KEY, 'laser'); } catch {}
+      if (v !== '' && v.toLowerCase() !== 'all') window.__kdInitialProject = v;
+      params.delete('laser');
+      dirty = true;
+    }
     if (dirty) {
       const qs = params.toString();
       const cleanUrl = window.location.origin + window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
