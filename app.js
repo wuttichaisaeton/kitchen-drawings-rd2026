@@ -4402,10 +4402,13 @@ async function _kdOpen3D(code, opts) {
       const hits = raycaster.intersectObjects(threeScene.children, true);
       const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
       if (!hit) return;
-      let node = hit.object;
-      while (node.parent && node.parent !== threeScene) node = node.parent;
-      const label = _extractPartLabel(node.name || '');
-      if (!label) return;
+      // Walk UP from the hit mesh to the first node carrying a real part code.
+      // (model-viewer wraps the model in ModelScene>Pivot>Target>world>…, so
+      // walking to the scene's top child gave "Pivot" → no label. The code lives
+      // on the part / its meshes, deeper in the tree.)
+      let label = null, n = hit.object;
+      while (n && n !== threeScene) { const l = _extractPartLabel(n.name || ''); if (l) { label = l; break; } n = n.parent; }
+      if (!label || !_ovlRows.some(r => r.code === label)) return;   // labelled parts only
       // เอ๋ 2026-06-23 (reverse of clicking a label): clicking a PART in the 3D
       // ISOLATES it, highlights its label, and zoom-fits — the same effect, driven
       // from the 3D side. Click again / click away restores (handled at the top).
