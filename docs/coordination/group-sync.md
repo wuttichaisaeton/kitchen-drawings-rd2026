@@ -7902,3 +7902,32 @@ Both GLBs have similar-magnitude spreads. The scatter source: **DSB0F0-080050 (d
 All 58 tasks completed. No blockers, no pending dispatches.
 
 -- G2 (WEB 20) HANDOFF
+
+---
+### 2026-06-22 - WEB 22 FINAL SYNC
+
+**SESSION**: WEB 22 — FTI000 ×3 unplaced debug
+**STATUS**: ✅ CLOSED — no code change
+
+**VERDICT**: SkylinePacker rejection is CORRECT behavior, not a bug.
+- FTI flat DXFs are long strips (~1647×138mm / ~2027×138mm)
+- grain=H → footprint fits 3050×1525 sheets ✓
+- grain=V → rotated 138×1647 → H exceeds 1525 max → packer rejects (nest.js:2084)
+- RTDB `FT*=H` grain rule = single point of failure (no grain.json seed)
+
+**LIVE REPRO EVIDENCE** (localhost:3030, multi-project 02+Bung01+03):
+| Test | Result |
+|---|---|
+| grain=H (RTDB default) | 361/361 placed ✓ |
+| grain forced V | 358/361 — FTI000 ×3 unplaced ✗ |
+| All cabs OFF | 0 pcs early-return ✓ |
+
+**HARDENING OPTIONS** (not shipped — เอ๋'s call):
+1. `(WxH exceeds every sheet)` banner suffix — nest.js ~line 4734 (IN scope)
+2. FT* seed in grain.json (OUT scope)
+3. Flat≠folded banner heuristic review (OUT scope)
+
+**COMMITS**: 70ab63a (board entry with full evidence)
+**OPEN ITEMS**: None — hardening awaits เอ๋ decision
+**NO BLOCKERS.**
+-- WEB 22
