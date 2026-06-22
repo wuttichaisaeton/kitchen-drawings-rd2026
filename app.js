@@ -2019,6 +2019,12 @@ function _kd3dGlbUrl(code) {
   // _githubPagesToJsdelivr. jsdelivr has CORS; GH Pages does not.
   return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}.glb`;
 }
+// Per-leaf GLB (Fusion 31 dual-export, 2026-06-22) — same path, `_parts` suffix.
+// Used by Component Color + Explode modes; falls back to the main GLB on 404 for
+// legacy cabinets that haven't been re-exported yet.
+function _kd3dPartsGlbUrl(code) {
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}_parts.glb`;
+}
 
 let _kd3dThreePromise = null;
 function _kd3dEnsureThree() {
@@ -2355,6 +2361,29 @@ async function _kdOpen3D(code) {
   let explodeUnits = [];          // [{node, baseX/Y/Z (node.position), gx/y/z (geom centroid in node-local space)}]
   let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
   let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
+  // Dual-GLB switcher state (Fusion 31 2026-06-22). The MAIN .glb is assembled
+  // (1 node, fits Hidden Line / Realistic). The `_parts.glb` is per-leaf
+  // (multi-node, fits Component Color / Explode). The web probes for _parts on
+  // first need; falls back to main on 404 for legacy cabinets.
+  let partsExistsKnown = wantDemo ? false : null;   // null=unprobed, true/false=cached
+  let partsProbePromise = null;
+  let currentLoadedSrc = null;    // last URL model-viewer fetched; gates dim-recompute
+  let dimsCached = false;         // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)
+  const PARTS_MODES = new Set(['compcolor', 'explode']);
+  const _wantSrcFor = (m) => {
+    if (wantDemo) return _KD3D_DEMO_GLB;
+    if (PARTS_MODES.has(m) && partsExistsKnown === true) return _kd3dPartsGlbUrl(code);
+    return _kd3dGlbUrl(code);
+  };
+  const _maybeProbeParts = async () => {
+    if (wantDemo || partsExistsKnown !== null) return partsExistsKnown;
+    if (partsProbePromise) return partsProbePromise;
+    partsProbePromise = _kd3dGlbExists(_kd3dPartsGlbUrl(code)).then(ok => {
+      partsExistsKnown = !!ok;
+      return ok;
+    });
+    return partsProbePromise;
+  };
 
   const _getScene = () => {
     if (!mv) return null;
@@ -2470,7 +2499,11 @@ async function _kdOpen3D(code) {
       if (bb.max.x > mxX) mxX = bb.max.x; if (bb.max.y > mxY) mxY = bb.max.y; if (bb.max.z > mxZ) mxZ = bb.max.z;
     });
     const dimsEl = modal2 && modal2.querySelector('.kd3d-dims');
-    if (dimsEl && mnX < Infinity) {
+    // Dims must come from the ASSEMBLED .glb only — a `_parts.glb` scatter
+    // gives wrong overall extents. Skip the recompute on parts loads + skip
+    // re-computing once cached. (cachedDims persists across mode swaps.)
+    const isPartsLoad = !!currentLoadedSrc && /_parts\.glb(\?|$)/.test(currentLoadedSrc);
+    if (dimsEl && !dimsCached && !isPartsLoad && mnX < Infinity) {
       // Axis mapping: Fusion exports Z-up (STL → trimesh → GLB), so the GLB's
       // axes are X=width, Y=depth, Z=height. (เอ๋ caught the swap 2026-06-22:
       // "บอกระยะผิด ต้อง w 1050 d 611 h 891" on 1CSVB2 = 1050×611×891 cabinet.)
@@ -2480,6 +2513,7 @@ async function _kdOpen3D(code) {
       const scale = Math.max(W, D, H) < 10 ? 1000 : 1;
       W = Math.round(W * scale); D = Math.round(D * scale); H = Math.round(H * scale);
       dimsEl.textContent = `· W ${W} · D ${D} · H ${H} mm`;
+      dimsCached = true;
     }
     return true;
   };
@@ -2729,6 +2763,26 @@ async function _kdOpen3D(code) {
       mv.setAttribute('exposure', '1');
       mv.setAttribute('tone-mapping', 'neutral');
     }
+    // Dual-GLB src swap (Fusion 31 2026-06-22). Modes 4/5 want `_parts.glb`
+    // (per-leaf for distinct colours + visible explode); modes 1/2/3 want the
+    // assembled `.glb`. Probe parts on first need; fall back to main on 404.
+    // The 'load' listener (below) re-runs snapshotScene + applyMode when src
+    // changes, so this function returns early after queuing a swap — the
+    // remaining state writes will happen on the post-load re-entry.
+    const wantSrc = _wantSrcFor(mode);
+    if (PARTS_MODES.has(mode) && partsExistsKnown === null) {
+      _maybeProbeParts().then(() => {
+        const next = _wantSrcFor(mode);
+        if (next !== currentLoadedSrc) { currentLoadedSrc = next; mv.src = next; }
+        else applyMode(mode);
+      });
+      return;
+    }
+    if (wantSrc !== currentLoadedSrc) {
+      currentLoadedSrc = wantSrc;
+      mv.src = wantSrc;
+      return;
+    }
     applyMaterials(mode);
     // Edges in EVERY mode (เอ๋ "realistic explode ให้เพิ่มเส้นเข้าไปด้วย").
     // Hidden Line modes get WHITE solid + dashed-hidden pass; the others get a
@@ -2753,12 +2807,21 @@ async function _kdOpen3D(code) {
     });
   };
 
-  // After the GLB loads, snapshot scene state + apply the current mode.
+  // After EACH GLB load (initial + every src swap for the dual-GLB switcher),
+  // re-snapshot the scene + re-apply the current mode. _edgesAttempted needs
+  // resetting so the overlay rebuilds against the new geometry; ditto for the
+  // material clone snapshot in compcolor mode.
   if (mv) {
     mv.addEventListener('load', () => {
+      _edgesAttempted = false;
+      edgeOverlays = [];
       if (snapshotScene()) applyMode(mode);
-    }, { once: true });
+    });
   }
+  // Track which src loaded so snapshotScene knows whether to update dims (main
+  // only — never from _parts). The initial src in the HTML is the assembled
+  // main URL, so the first load is the dims-eligible one.
+  if (mv) currentLoadedSrc = mv.src || _wantSrcFor(mode);
 
   // Wire mode buttons.
   body.querySelectorAll('.kd3d-modebar button').forEach(btn => {
