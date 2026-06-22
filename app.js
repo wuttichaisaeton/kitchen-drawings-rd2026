@@ -4406,13 +4406,13 @@ async function _kdOpen3D(code, opts) {
       while (node.parent && node.parent !== threeScene) node = node.parent;
       const label = _extractPartLabel(node.name || '');
       if (!label) return;
-      _clearHighlight();
-      _highlightCode(label, 0xF2A93B, 0.35); // amber for click-to-identify
-      if (!browserOpen && browserPanel && browserToggle) {
-        browserOpen = true;
-        browserPanel.classList.add('kd3d-browser-open');
-      }
-      setTimeout(() => { if (_selectedLabel === label) _clearHighlight(); }, 3000);
+      // เอ๋ 2026-06-23 (reverse of clicking a label): clicking a PART in the 3D
+      // ISOLATES it, highlights its label, and zoom-fits — the same effect, driven
+      // from the 3D side. Click again / click away restores (handled at the top).
+      _poppedCode = label;
+      _ovlRows.forEach(r => r.rowEl.classList.toggle('kd3d-ovl-sel', r.code === label));
+      applyExplode(explodePct);
+      requestAnimationFrame(() => _fitVisibleWorld());
     });
   }
 
