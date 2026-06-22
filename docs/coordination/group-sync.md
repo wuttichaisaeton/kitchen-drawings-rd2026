@@ -8012,3 +8012,24 @@ The L-shaped cabinet ("LL" code) has 800mm + 1200mm wings spanning 2685mm total.
 **NEEDS:** Next session verify + commit the app.js percentile fix, then test both cabinets.
 
 -- RD 07 HANDOFF
+
+---
+### 2026-06-22 - WEB 22 cutsheet DXF fix
+
+**SESSION**: WEB 22 — cutsheet DXF "เปิดไม่ได้"
+**STATUS**: ✅ SHIPPED `f509334`
+
+**ROOT CAUSE**: `_buildSheetDxf` (nest.js:4362) declared `$ACADVER AC1015` (R2000) for vector entities but emitted R12-style format — no subclass markers (100 group codes), no entity handles, no TABLES/BLOCKS sections. Strict DXF readers (ezdxf, AutoCAD, laser software) rejected with `missing 'AcDbPolyline' subclass`.
+
+**FIX**: Added to `_buildSheetDxf`:
+- Entity handles (`5` group code, auto-incrementing hex)
+- `100 AcDbEntity` + type-specific subclass on every entity (AcDbPolyline, AcDbCircle, AcDbArc, AcDbLine, AcDbSpline, AcDbEllipse, AcDbText ×2)
+- TABLES section (LTYPE Continuous, 5 LAYERs, STYLE Standard)
+- BLOCKS section (*Model_Space, *Paper_Space)
+- OBJECTS section (empty, required for AC1015)
+
+**VERIFIED**: ezdxf.readfile() on live-generated DXF → SUCCESS, all 6 entity types parsed, 5 layers recognized.
+
+**NOTE**: Previously saved cutsheet DXFs in `CutSheets/` are ALSO invalid (same missing structure). Re-save nesting runs to get valid files. Old files cannot be retroactively fixed without re-running the nest.
+
+-- WEB 22
