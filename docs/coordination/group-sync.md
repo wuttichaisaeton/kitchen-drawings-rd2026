@@ -8217,3 +8217,6 @@ node --check OK. **Verify ไม่ได้ใน preview (model-viewer headles
 
 ### RD · 2026-06-23 · explode labels missing on desktop → decoupled label/arrow gates (5457ac0, LIVE)
 เอ๋: labels showed on iPad but NOT desktop. Cause: the tight real-viewport gate (-6..vw+6) — on a wide/short desktop viewer the exploded parts project past the viewer height so the centroid falls out of the box → _on=false → every label hidden. FIX: LABEL now uses a generous gate (-vw..2vw) + clamps into view (lists every part on any aspect); LEADER/arrow keeps the tight gate (still no mid-air arrows). node --check OK, deploy LIVE. If desktop STILL shows none → cause is model-viewer not positioning hotspots there → add THREE-projection label fallback next.
+
+### RD · 2026-06-23 · 3D viewer loading indicator (59df48d, LIVE)
+เอ๋ iPad: opening the 3D felt unresponsive (blank viewer while GLB fetched/parsed). Added: animated spinner replacing static "Loading…" text + a loading overlay (spinner + live % from model-viewer 'progress') over the viewer until 'load' fires (fade-out), with cached-check + 15s safety fallback. node --check OK, deploy LIVE. WATCH: the 108 corner-hotspots (9dc1577) may lag explode-orbit on iPad — if so, cut corner count.
