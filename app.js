@@ -2268,7 +2268,7 @@ async function _kdOpen3D(code) {
           reveal="auto"
         ></model-viewer>
       </div>
-      <div class="kd3d-foot">One finger: drag to rotate · Two fingers: pinch to zoom, drag to pan · Mouse: drag to rotate, wheel to zoom</div>`;
+      <div class="kd3d-foot">Touch — 1 finger: orbit · 2 fingers: pinch + pan · Mouse — Left: orbit · Middle: pan · Wheel: zoom</div>`;
   const mv = body.querySelector('model-viewer');
   const modal2 = body.closest('.kd3d-modal');
   if (mode === 'explode') modal2 && modal2.classList.add('kd3d-modal-explode');
@@ -2387,19 +2387,47 @@ async function _kdOpen3D(code) {
       if (e.touches.length === 0) oneOrbit = null;
     }, { passive: false });
 
-    // Mouse — drag to orbit, wheel to zoom. Standard desktop UX.
-    let mouseDrag = null;
+    // Mouse — mirrors the touch semantics (เอ๋ 2026-06-22 "click ซ้ายเป็น
+    // constrained orbit คลิ๊กปุ่มกลางคือ 2 นิ้ว"):
+    //   LEFT (button 0)  drag = constrained orbit (= 1-finger touch)
+    //   MIDDLE (button 1) drag = pan (= 2-finger drag pan)
+    //   WHEEL = zoom (= 2-finger pinch)
+    // Right click intentionally left to browser default.
+    let mouseDrag = null;    // { mode: 'orbit'|'pan', ... }
     mv.addEventListener('mousedown', (e) => {
-      if (e.button !== 0) return;
-      const orbit = mv.getCameraOrbit();
-      mouseDrag = { x: e.clientX, y: e.clientY, theta: orbit.theta, phi: orbit.phi };
+      if (e.button === 0) {
+        const orbit = mv.getCameraOrbit();
+        mouseDrag = { mode: 'orbit', x: e.clientX, y: e.clientY, theta: orbit.theta, phi: orbit.phi };
+      } else if (e.button === 1) {
+        // Stop the browser's middle-click auto-scroll start.
+        e.preventDefault();
+        const orbit = mv.getCameraOrbit();
+        const tgt = mv.getCameraTarget();
+        mouseDrag = {
+          mode: 'pan', x: e.clientX, y: e.clientY,
+          target: { x: tgt.x, y: tgt.y, z: tgt.z },
+          scale: _panScale(orbit, mv.getFieldOfView()),
+          basis: _camBasis(orbit.theta, orbit.phi),
+        };
+      }
     });
     const onMove = (e) => {
       if (!mouseDrag) return;
-      const ROT = 0.006;
-      const newTheta = mouseDrag.theta - (e.clientX - mouseDrag.x) * ROT;
-      const newPhi = clampPhi(mouseDrag.phi - (e.clientY - mouseDrag.y) * ROT);
-      _setOrbit(newTheta, newPhi);
+      if (mouseDrag.mode === 'orbit') {
+        const ROT = 0.006;
+        const newTheta = mouseDrag.theta - (e.clientX - mouseDrag.x) * ROT;
+        const newPhi = clampPhi(mouseDrag.phi - (e.clientY - mouseDrag.y) * ROT);
+        _setOrbit(newTheta, newPhi);
+      } else if (mouseDrag.mode === 'pan') {
+        const dx = e.clientX - mouseDrag.x, dy = e.clientY - mouseDrag.y;
+        const s = mouseDrag.scale;
+        const { right, up } = mouseDrag.basis;
+        const T = mouseDrag.target;
+        const nx = T.x - dx * s * right.x + dy * s * up.x;
+        const ny = T.y - dx * s * right.y + dy * s * up.y;
+        const nz = T.z - dx * s * right.z + dy * s * up.z;
+        try { mv.cameraTarget = `${nx}m ${ny}m ${nz}m`; } catch (err) {}
+      }
     };
     const onUp = () => { mouseDrag = null; };
     window.addEventListener('mousemove', onMove);
