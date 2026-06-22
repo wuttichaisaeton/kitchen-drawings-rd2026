@@ -8220,3 +8220,6 @@ node --check OK. **Verify ไม่ได้ใน preview (model-viewer headles
 
 ### RD · 2026-06-23 · 3D viewer loading indicator (59df48d, LIVE)
 เอ๋ iPad: opening the 3D felt unresponsive (blank viewer while GLB fetched/parsed). Added: animated spinner replacing static "Loading…" text + a loading overlay (spinner + live % from model-viewer 'progress') over the viewer until 'load' fires (fade-out), with cached-check + 15s safety fallback. node --check OK, deploy LIVE. WATCH: the 108 corner-hotspots (9dc1577) may lag explode-orbit on iPad — if so, cut corner count.
+
+### RD · 2026-06-23 · explode labels missing on DESKTOP → real root cause (e0b8d0e, LIVE)
+Not the gate. The overlay is built on explode-mode ENTRY with a STATIC camera; the brand-new hotspots aren't positioned within the 2-RAF first draw, and with no orbit no camera-change fires to redraw → labels stay hidden forever. iPad only worked because เอ๋ orbits. FIX: (1) SETTLE POLL — redraw every 130ms (≤16×) after build until hotspots resolve, no orbit needed; (2) THREE-projection FALLBACK seats the label when its hotspot rect is still 0,0 so it shows immediately (no leader till the hotspot resolves); corner-scanline edge gated on hotspot-positioned. node --check OK, deploy LIVE. เอ๋ desktop verify next.
