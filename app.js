@@ -2993,7 +2993,7 @@ async function _kdOpen3D(code, opts) {
         modelRadius = box.getSize(new THREE.Vector3()).length() / 2;
       } catch {}
     }
-    const labelH = Math.max(9, modelRadius * 0.027);   // เอ๋ 2026-06-22: +50% bigger (was *0.018) — readable at iPad fit-view
+    const labelH = Math.max(13, modelRadius * 0.040);   // เอ๋ 2026-06-22: text +50% again — readable at iPad fit-view
 
     // ONE label per unique part code. A code with several bodies (e.g.
     // BM1L0-050000 = Body8/21/22) otherwise stacks 3 identical labels at the
@@ -3072,18 +3072,14 @@ async function _kdOpen3D(code, opts) {
 
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'left';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 5;
       const midY = canvas.height / 2;
       let tx = pad;
-      // qty number — bold + bigger
+      // qty number — bold + bigger; เอ๋ 2026-06-22: NO white outline (fill only).
       ctx.font = qtyFont;
-      ctx.strokeStyle = labelStroke; ctx.strokeText(qtyPart, tx, midY);
       ctx.fillStyle = labelFill; ctx.fillText(qtyPart, tx, midY);
       tx += qw;
       // " x CODE" — regular
       ctx.font = codeFont;
-      ctx.strokeStyle = labelStroke; ctx.strokeText(restPart, tx, midY);
       ctx.fillStyle = labelFill; ctx.fillText(restPart, tx, midY);
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -3108,10 +3104,10 @@ async function _kdOpen3D(code, opts) {
       const topY = info.top;
       const startY = info.y - labelH * 0.55;
       const leadLen = startY - topY;
-      if (leadLen > labelH * 0.4) {
-        const r = Math.max(modelRadius * 0.0016, labelH * 0.05);
-        const headLen = Math.min(leadLen * 0.4, labelH * 1.2);
-        const shaftLen = Math.max(leadLen - headLen, labelH * 0.1);
+      if (leadLen > labelH * 0.3) {
+        const r = modelRadius * 0.0008;                                 // เอ๋ 2026-06-22: leader 50% thinner
+        const headLen = Math.min(leadLen * 0.3, modelRadius * 0.013);   // arrow 50% smaller
+        const shaftLen = Math.max(leadLen - headLen, modelRadius * 0.004);
         const leadMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
         const shaft = new THREE.Mesh(new THREE.CylinderGeometry(r, r, shaftLen, 8), leadMat);
         shaft.position.set(info.centerX, topY + headLen + shaftLen / 2, info.centerZ);
