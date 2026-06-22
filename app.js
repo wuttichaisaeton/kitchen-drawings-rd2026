@@ -3422,6 +3422,23 @@ async function _kdOpen3D(code, opts) {
     const viewer = body.querySelector('.kd3d-viewer');
     if (!viewer) return;
     const vb = viewer.getBoundingClientRect();
+    // ── TEMP DEBUG HUD (เอ๋ no-labels diagnosis — remove once root cause found) ──
+    try {
+      let dbg = viewer.querySelector('.kd3d-dbg');
+      if (!dbg) {
+        dbg = document.createElement('div'); dbg.className = 'kd3d-dbg';
+        dbg.style.cssText = 'position:absolute;left:4px;top:4px;z-index:30;background:rgba(0,0,0,.78);color:#5f5;font:10px/1.35 monospace;padding:4px 6px;white-space:pre;pointer-events:none;max-width:80%;border-radius:4px';
+        viewer.appendChild(dbg);
+      }
+      const nOn = _ovlRows.filter(r => r._on).length, nTx = _ovlRows.filter(r => r._tx != null).length;
+      const r0 = _ovlRows[0], hb0 = r0 && r0.hsEl ? r0.hsEl.getBoundingClientRect() : null;
+      let camOk = false; try { camOk = !!_findCamera(); } catch {}
+      dbg.textContent =
+        `pct=${explodePct} vis=${explodePct > 5} rows=${_ovlRows.length} on=${nOn} tx=${nTx}\n` +
+        `vw=${Math.round(vb.width)} vh=${Math.round(vb.height)} three=${!!_ovlThree} cam=${camOk}\n` +
+        (hb0 ? `hs0 l=${Math.round(hb0.left)} t=${Math.round(hb0.top)} w=${hb0.width.toFixed(1)} h=${hb0.height.toFixed(1)}` : 'hs0=null') +
+        (r0 ? ` ty0=${r0._ty == null ? 'null' : Math.round(r0._ty)} op=${r0.rowEl.style.opacity || '1'}` : '');
+    } catch (e) {}
     _ovlSvg.setAttribute('width', vb.width);
     _ovlSvg.setAttribute('height', vb.height);
     _ovlSvg.setAttribute('viewBox', `0 0 ${vb.width} ${vb.height}`);
