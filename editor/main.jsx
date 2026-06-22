@@ -1039,7 +1039,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
   // A part row inside a card body — a REAL part (leaf). Containers are trimmed
   // out (เอ๋ 2026-06-09) so the body is a FLAT parts list: no chevron, no depth
   // indent — just code + qty + 💬 + 📄 + done.
-  const renderRow = ({ id, node }) => {
+  const renderRow = ({ id, node }, cabinetCode) => {
     const code = node.data?.code || node.data?.label || '';   // immutable code for logic
     const display = node.data?.label || code;                 // display name (rename-aware)
     const qty = node.data?.qty;
@@ -1059,14 +1059,17 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
         {hasPdf && (
           <button className="kme-tree-pdf" onClick={() => _openPdfForCode(code)} title="Open PDF">📄</button>
         )}
-        {/* 🧊 3D viewer — เอ๋ 2026-06-22 "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย". Reuses
-            .kme-tree-pdf styling (34×34 button) so the action cluster stays
-            uniform; reuses api.open3D from Phase 1 — same modal + placeholder. */}
+        {/* 🧊 3D viewer — เอ๋ 2026-06-22 "อยากให้ 🧊 มาอยู่ที่ Kanban ด้วย".
+            For a part row we pass {cabinetCode} so the modal loads the PARENT
+            cabinet's <cabinetCode>_parts.glb and filters to the matching mesh
+            node (Fusion only exports per-cabinet + project, not per-part — เอ๋
+            "3d part ยังไม่ load"). The cabinet header 🧊 keeps the single-arg
+            call for the assembled view. */}
         {api.open3D && code && (
           <button
             className="kme-tree-pdf kme-tree-3d"
-            onClick={(e) => { e.stopPropagation(); api.open3D(code); }}
-            title="View 3D model"
+            onClick={(e) => { e.stopPropagation(); api.open3D(code, { cabinetCode }); }}
+            title="View 3D model — this part inside the cabinet"
           >🧊</button>
         )}
         <button
@@ -1126,7 +1129,7 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
               </div>
               {!folded && (
                 <div className="kme-tree-col-body">
-                  {card.leafRows.map(renderRow)}
+                  {card.leafRows.map(rw => renderRow(rw, code))}
                   {card.leafCount === 0 && (
                     <div className="kme-tree-empty" style={{ padding: '6px 8px', fontSize: '11px' }}>single part — no sub-components</div>
                   )}

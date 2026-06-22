@@ -2064,16 +2064,26 @@ async function _kd3dGlbExists(url) {
 // Open the 3D viewer modal for a part code. Reuses the .kdstock-modal /
 // .kdstock-frame shell (3-theme safe, opaque). All extra styling inline so
 // style.css isn't touched (WEB 15's lane). Closes on backdrop click, ✕, Esc.
-async function _kdOpen3D(code) {
+async function _kdOpen3D(code, opts) {
   if (!code) return;
   // Replace any existing instance (one viewer at a time).
   document.querySelectorAll('.kd3d-modal').forEach(m => m.remove());
+  // Part view (เอ๋ 2026-06-22 "3d part ยังไม่ load"): the part-row 🧊 passes
+  // {cabinetCode} alongside the part code. The modal then loads the PARENT
+  // cabinet's `<cabinetCode>_parts.glb` and filters the scene to show only
+  // the matching mesh — Fusion doesn't write per-part GLBs, but the
+  // _parts.glb already contains the part as one of its named leaves.
+  const partView = !!(opts && opts.cabinetCode && opts.cabinetCode !== code);
+  const cabinetCode = partView ? opts.cabinetCode : code;
+  const partCode = partView ? code : null;
   const display = (typeof displayCodeFor === 'function') ? displayCodeFor(code) : code;
   // Demo mode: a) ?demo3d=1 query flag forces the sample GLB; b) literal
   // code 'DEMO' shows it (used by the editor's hidden debug entry). Real
   // codes still go to the jsdelivr URL.
   const wantDemo = code === 'DEMO' || /[?&]demo3d=1\b/.test(location.search);
-  const glbUrl = wantDemo ? _KD3D_DEMO_GLB : _kd3dGlbUrl(code);
+  const glbUrl = wantDemo
+    ? _KD3D_DEMO_GLB
+    : partView ? _kd3dPartsGlbUrl(cabinetCode) : _kd3dGlbUrl(code);
 
   const STYLE = `<style>
     .kd3d-modal .kd3d-body{padding:0;background:#0f1419;display:flex;flex-direction:column;min-height:0}
@@ -2115,7 +2125,7 @@ async function _kdOpen3D(code) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''} — 3D view<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
            <div class="kd3d-loading">Loading 3D model…</div>
          </div>
@@ -2168,7 +2178,13 @@ async function _kdOpen3D(code) {
   if (!wantDemo) {
     const exists = await _kd3dGlbExists(glbUrl);
     if (!exists) {
-      showPlaceholder('3D not exported yet', `No GLB found at Drawings/3d/${code}.glb. The Fusion lane will export it (Phase 2). Append ?demo3d=1 to the URL to preview the viewer with a sample model.`);
+      if (partView) {
+        showPlaceholder('Cabinet not exported yet',
+          `No per-leaf GLB at Drawings/3d/${cabinetCode}_parts.glb. Run CC_Export3D on ${cabinetCode} in Fusion to enable part-level 3D, or 🧊 the cabinet header to see the assembled view.`);
+      } else {
+        showPlaceholder('3D not exported yet',
+          `No GLB found at Drawings/3d/${code}.glb. The Fusion lane will export it (Phase 2). Append ?demo3d=1 to the URL to preview the viewer with a sample model.`);
+      }
       return;
     }
   }
@@ -2468,13 +2484,16 @@ async function _kdOpen3D(code) {
   // (1 node, fits Hidden Line / Realistic). The `_parts.glb` is per-leaf
   // (multi-node, fits Component Color / Explode). The web probes for _parts on
   // first need; falls back to main on 404 for legacy cabinets.
-  let partsExistsKnown = wantDemo ? false : null;   // null=unprobed, true/false=cached
+  let partsExistsKnown = wantDemo ? false : (partView ? true : null);
   let partsProbePromise = null;
   let currentLoadedSrc = null;    // last URL model-viewer fetched; gates dim-recompute
   let dimsCached = false;         // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)
   const PARTS_MODES = new Set(['compcolor', 'explode']);
   const _wantSrcFor = (m) => {
     if (wantDemo) return _KD3D_DEMO_GLB;
+    // Part view ALWAYS uses the cabinet's _parts.glb (need per-leaf nodes to
+    // filter by part code; the main .glb has only 1 collapsed node).
+    if (partView) return _kd3dPartsGlbUrl(cabinetCode);
     if (PARTS_MODES.has(m) && partsExistsKnown === true) return _kd3dPartsGlbUrl(code);
     return _kd3dGlbUrl(code);
   };
@@ -2586,6 +2605,34 @@ async function _kdOpen3D(code) {
       ? `· ${explodeUnits.length} pieces`
       : `· ${explodeUnits.length} piece (single-mesh GLB — needs per-leaf export)`;
 
+    // PART VIEW filter (เอ๋ "3d part ยังไม่ load"): hide every mesh in the
+    // cabinet's _parts.glb except the one(s) whose name matches the part
+    // code. Exact-name match first (Fusion's per-leaf node names usually ARE
+    // the part code), substring fallback. Recompute dims from visible only.
+    if (partView && partCode) {
+      let exactMatches = 0, substringMatches = 0;
+      threeScene.traverse(n => {
+        if (!n.isMesh) return;
+        if (n.name === partCode) exactMatches++;
+        else if (n.name && n.name.includes(partCode)) substringMatches++;
+      });
+      const useSubstring = exactMatches === 0 && substringMatches > 0;
+      let kept = 0;
+      threeScene.traverse(n => {
+        if (!n.isMesh) return;
+        const hit = useSubstring
+          ? (n.name && n.name.includes(partCode))
+          : (n.name === partCode);
+        n.visible = !!hit;
+        if (hit) kept++;
+      });
+      if (kept === 0) {
+        showPlaceholder('Part not in cabinet GLB',
+          `No node named "${partCode}" inside ${cabinetCode}_parts.glb. Fusion may have used a different name — re-export the cabinet, or 🧊 the cabinet header to see the assembled view.`);
+        return false;
+      }
+    }
+
     // Overall W × H × D (เอ๋ 2026-06-22 "เพิ่มการบอกขนาดรวมด้วย"). Fusion
     // designs ship in mm; STL → trimesh → GLB preserves units, and node
     // transforms are baked into vertex coords so a plain geometry bbox sweep
@@ -2595,6 +2642,9 @@ async function _kdOpen3D(code) {
     let mxX = -Infinity, mxY = -Infinity, mxZ = -Infinity;
     threeScene.traverse(n => {
       if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      // In part view, count only the visible mesh(es) so dims describe the
+      // selected part, not the whole cabinet's _parts scatter.
+      if (partView && !n.visible) return;
       if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch (e) {}
       const bb = n.geometry.boundingBox;
       if (!bb) return;
@@ -2604,9 +2654,11 @@ async function _kdOpen3D(code) {
     const dimsEl = modal2 && modal2.querySelector('.kd3d-dims');
     // Dims must come from the ASSEMBLED .glb only — a `_parts.glb` scatter
     // gives wrong overall extents. Skip the recompute on parts loads + skip
-    // re-computing once cached. (cachedDims persists across mode swaps.)
+    // re-computing once cached. Exception: in PART view we DO want dims from
+    // _parts.glb because we already filtered to a single mesh (so its bbox is
+    // the part's real bbox, not the scattered cabinet).
     const isPartsLoad = !!currentLoadedSrc && /_parts\.glb(\?|$)/.test(currentLoadedSrc);
-    if (dimsEl && !dimsCached && !isPartsLoad && mnX < Infinity) {
+    if (dimsEl && !dimsCached && (!isPartsLoad || partView) && mnX < Infinity) {
       // Axis mapping: Fusion exports Z-up (STL → trimesh → GLB), so the GLB's
       // axes are X=width, Y=depth, Z=height. (เอ๋ caught the swap 2026-06-22:
       // "บอกระยะผิด ต้อง w 1050 d 611 h 891" on 1CSVB2 = 1050×611×891 cabinet.)
@@ -10350,7 +10402,9 @@ function _exposeKdApi() {
     // 3D viewer (เอ๋ 2026-06-22 Phase 1). The editor mindmap cabinet/leaf
     // calls this from its 🧊 button. Loads model-viewer lazily + a GLB from
     // jsdelivr Drawings/3d/<code>.glb; 404 → placeholder. Workshop-safe.
-    open3D: _kdOpen3D,
+    // PART VIEW: pass {cabinetCode} when calling from a part row so the modal
+    // loads the cabinet's _parts.glb and filters to the matching mesh.
+    open3D: (c, opts) => _kdOpen3D(c, opts),
   };
 }
 
