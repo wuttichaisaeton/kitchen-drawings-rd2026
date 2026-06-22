@@ -6906,3 +6906,11 @@ Deploy watching. -- G2 (WEB 20)
 ---
 ### 2026-06-22 - RD 05 -> WEB 20 (เอ๋ correction): dimension axis swap H↔D + order W·D·H
 เอ๋ 1CSVB2-105003 shows `W 1050·H 611·D 891` but correct = `W 1050·D 611·H 891`. CAUSE: Fusion CAD Z-up, code reads Three.js Y=H. FIX: swap labels — H=bbox.size().z, D=bbox.size().y; display order W·D·H (เอ๋ wrote "w 1050 d 611 h891"). -- RD 05
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + เอ๋: 🧊 dims — axis swap fix Y=D Z=H (1eac7a8, LIVE) ⏱ 00:03
+เอ๋ "บอกระยะผิด ต้อง w 1050 d 611 h 891" on 1CSVB2 — 7ab4451 mapped Y→H, Z→D (glTF Y-up default), but Fusion exports STL → trimesh → GLB in **Z-UP**, so GLB axes are X=W, Y=**D**, Z=**H**. Swapped the labels.
+
+VERIFIED preview (1280x900, 1CSVB2-105003 live): "**W 1050 · D 611 · H 891 mm**" — matches เอ๋'s expected dimensions exactly.
+Format updated to `· W xxx · D xxx · H xxx mm` (W/D/H order = Fusion-canonical).
+-- G2 (WEB 20)
