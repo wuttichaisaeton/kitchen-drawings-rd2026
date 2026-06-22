@@ -2471,13 +2471,15 @@ async function _kdOpen3D(code) {
     });
     const dimsEl = modal2 && modal2.querySelector('.kd3d-dims');
     if (dimsEl && mnX < Infinity) {
-      // Unit autodetect: Fusion → trimesh → GLB exports vertex coords in mm
-      // directly, but glTF's default unit is METERS (Astronaut DEMO et al.).
-      // If the largest extent is < 10 the model is in meters → ×1000 to get mm.
-      let W = mxX - mnX, H = mxY - mnY, D = mxZ - mnZ;
-      const scale = Math.max(W, H, D) < 10 ? 1000 : 1;
-      W = Math.round(W * scale); H = Math.round(H * scale); D = Math.round(D * scale);
-      dimsEl.textContent = `· W ${W} · H ${H} · D ${D} mm`;
+      // Axis mapping: Fusion exports Z-up (STL → trimesh → GLB), so the GLB's
+      // axes are X=width, Y=depth, Z=height. (เอ๋ caught the swap 2026-06-22:
+      // "บอกระยะผิด ต้อง w 1050 d 611 h 891" on 1CSVB2 = 1050×611×891 cabinet.)
+      // Unit autodetect: Fusion ships mm directly, but glTF's default unit is
+      // METERS (Astronaut DEMO et al.) — if the largest extent is < 10, ×1000.
+      let W = mxX - mnX, D = mxY - mnY, H = mxZ - mnZ;
+      const scale = Math.max(W, D, H) < 10 ? 1000 : 1;
+      W = Math.round(W * scale); D = Math.round(D * scale); H = Math.round(H * scale);
+      dimsEl.textContent = `· W ${W} · D ${D} · H ${H} mm`;
     }
     return true;
   };
