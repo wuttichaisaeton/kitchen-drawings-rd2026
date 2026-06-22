@@ -2076,6 +2076,10 @@ async function _kdOpen3D(code, opts) {
   const partView = !!(opts && opts.cabinetCode && opts.cabinetCode !== code);
   const cabinetCode = partView ? opts.cabinetCode : code;
   const partCode = partView ? code : null;
+  // Project view (RD 07 2026-06-22): the project-page 🧊 opens a "Full Kitchen"
+  // GLB written by CC_BatchExport3D at `Drawings/3d/<projectKey>.glb`. Just a
+  // label flag — the GLB path is the same as a per-cabinet main GLB.
+  const projectView = !!(opts && opts.asProject) && !partView;
   const display = (typeof displayCodeFor === 'function') ? displayCodeFor(code) : code;
   // Demo mode: a) ?demo3d=1 query flag forces the sample GLB; b) literal
   // code 'DEMO' shows it (used by the editor's hidden debug entry). Real
@@ -2125,7 +2129,7 @@ async function _kdOpen3D(code, opts) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
            <div class="kd3d-loading">Loading 3D model…</div>
          </div>
@@ -2144,6 +2148,25 @@ async function _kdOpen3D(code, opts) {
   const fsTarget = modal.querySelector('.kdstock-frame');
   const canFs = !!(fsTarget && (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen));
   if (!canFs && fsBtn) fsBtn.style.display = 'none';
+  // Floating exit button (RD 07 2026-06-22 "เมื่อกดเข้า fullscreen ขอปุ่ม back")
+  // — when in fullscreen the modal header sits inside the fullscreened
+  // .kdstock-frame, but workers asked for a more discoverable always-on-top
+  // back affordance. Render a fixed-position chip at top-right that only
+  // shows when document.fullscreenElement is set.
+  let fsExitBtn = null;
+  if (canFs) {
+    fsExitBtn = document.createElement('button');
+    fsExitBtn.className = 'kd3d-fs-exit';
+    fsExitBtn.setAttribute('aria-label', 'Exit fullscreen');
+    fsExitBtn.title = 'Exit fullscreen';
+    fsExitBtn.innerHTML = '🔙 Exit fullscreen';
+    fsExitBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:2147483647;display:none;background:rgba(15,20,25,0.92);color:#e6edf4;border:1px solid #2b3340;border-radius:8px;padding:8px 14px;font-family:"Flux Architect",ui-monospace,monospace;font-size:13px;letter-spacing:.3px;cursor:pointer;box-shadow:0 6px 22px rgba(0,0,0,0.5)';
+    document.body.appendChild(fsExitBtn);
+    fsExitBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) {}
+    });
+  }
   if (canFs && fsBtn) {
     fsBtn.addEventListener('click', (ev) => {
       ev.stopPropagation();
@@ -2154,14 +2177,24 @@ async function _kdOpen3D(code, opts) {
         (fsTarget.requestFullscreen || fsTarget.webkitRequestFullscreen).call(fsTarget);
       }
     });
-    // Reflect fullscreen state in the icon (subtle visual cue).
+    // Reflect fullscreen state in the icon + show/hide the floating exit button.
     const onFsChange = () => {
       const inFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
       fsBtn.title = inFs ? 'Exit fullscreen' : 'Fullscreen (toggle)';
+      if (fsExitBtn) fsExitBtn.style.display = inFs ? 'inline-block' : 'none';
     };
     document.addEventListener('fullscreenchange', onFsChange);
     document.addEventListener('webkitfullscreenchange', onFsChange);
   }
+  // Close handler must also remove the floating exit button when the modal closes.
+  const _origClose = close;
+  // (close already removes the modal; we just need to also remove fsExitBtn)
+  // Replace by augmenting via a separate observer.
+  const _cleanupFs = () => { if (fsExitBtn && fsExitBtn.parentNode) fsExitBtn.parentNode.removeChild(fsExitBtn); };
+  try {
+    const mo = new MutationObserver(() => { if (!document.contains(modal)) { mo.disconnect(); _cleanupFs(); } });
+    mo.observe(document.body, { childList: true, subtree: false });
+  } catch (e) {}
 
   const body = modal.querySelector('.kd3d-body');
   const showPlaceholder = (title, sub) => {
@@ -2181,6 +2214,9 @@ async function _kdOpen3D(code, opts) {
       if (partView) {
         showPlaceholder('Cabinet not exported yet',
           `No per-leaf GLB at Drawings/3d/${cabinetCode}_parts.glb. Run CC_Export3D on ${cabinetCode} in Fusion to enable part-level 3D, or 🧊 the cabinet header to see the assembled view.`);
+      } else if (projectView) {
+        showPlaceholder('Project not exported yet',
+          `No whole-kitchen GLB at Drawings/3d/${code}.glb. Run CC_BatchExport3D for project "${code}" in Fusion to enable this view.`);
       } else {
         showPlaceholder('3D not exported yet',
           `No GLB found at Drawings/3d/${code}.glb. The Fusion lane will export it (Phase 2). Append ?demo3d=1 to the URL to preview the viewer with a sample model.`);
@@ -2485,6 +2521,12 @@ async function _kdOpen3D(code, opts) {
   // (multi-node, fits Component Color / Explode). The web probes for _parts on
   // first need; falls back to main on 404 for legacy cabinets.
   let partsExistsKnown = wantDemo ? false : (partView ? true : null);
+  // Initial camera-fit guard for the outlier-filter mitigation (RD 07 2026-06-22):
+  // 1CSVB2's _parts.glb has 5-6 orphan leaves at the world origin from a Fusion
+  // deep-nested-occurrence export bug. The fit-to-cluster runs once per modal
+  // open so the user's manual pan/zoom isn't reset on subsequent mode swaps.
+  let _initialFitDone = false;
+  let _orphanCount = 0;
   let partsProbePromise = null;
   let currentLoadedSrc = null;    // last URL model-viewer fetched; gates dim-recompute
   let dimsCached = false;         // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)
@@ -2610,9 +2652,12 @@ async function _kdOpen3D(code, opts) {
     // code. Exact-name match first (Fusion's per-leaf node names usually ARE
     // the part code), substring fallback. Recompute dims from visible only.
     if (partView && partCode) {
-      let exactMatches = 0, substringMatches = 0;
+      let exactMatches = 0, substringMatches = 0, totalMeshes = 0;
+      const sampleNames = [];
       threeScene.traverse(n => {
         if (!n.isMesh) return;
+        totalMeshes++;
+        if (sampleNames.length < 6) sampleNames.push(n.name);
         if (n.name === partCode) exactMatches++;
         else if (n.name && n.name.includes(partCode)) substringMatches++;
       });
@@ -2626,9 +2671,13 @@ async function _kdOpen3D(code, opts) {
         n.visible = !!hit;
         if (hit) kept++;
       });
+      // RD 07 diagnostic — surface the match counts to the console so anyone
+      // debugging "part 🧊 not loading" can see immediately whether the
+      // cabinetCode arrived, the names look right, and how many matched.
+      console.info(`[kd3d part-row] cab=${cabinetCode} part=${partCode} matched=${kept}/${totalMeshes} (exact=${exactMatches}, substring=${substringMatches}, mode=${useSubstring ? 'substring' : 'exact'}) sample=`, sampleNames);
       if (kept === 0) {
         showPlaceholder('Part not in cabinet GLB',
-          `No node named "${partCode}" inside ${cabinetCode}_parts.glb. Fusion may have used a different name — re-export the cabinet, or 🧊 the cabinet header to see the assembled view.`);
+          `No node named "${partCode}" inside ${cabinetCode}_parts.glb (${totalMeshes} meshes total). Fusion may have used a different name — re-export the cabinet, or 🧊 the cabinet header to see the assembled view.`);
         return false;
       }
     }
@@ -2669,6 +2718,90 @@ async function _kdOpen3D(code, opts) {
       W = Math.round(W * scale); D = Math.round(D * scale); H = Math.round(H * scale);
       dimsEl.textContent = `· W ${W} · D ${D} · H ${H} mm`;
       dimsCached = true;
+    }
+
+    // ── Outlier filter (RD 07 2026-06-22) ───────────────────────────────────
+    // Fusion 31's _parts.glb sometimes ships a few orphan leaf nodes parked at
+    // (0,0,0) instead of their assembled world transform (deep-nested
+    // occurrence bug). Those outliers blow up the auto-framing bbox so the
+    // main cluster looks tiny. Workaround: per-mesh centroids → median
+    // distance → meshes >3× median = orphan → camera fits the NON-orphan
+    // cluster. Orphans stay VISIBLE (so เอ๋ can see they exist) but don't
+    // drag the camera framing.
+    // Only runs on multi-leaf scenes (at least 4 meshes) so the main GLB
+    // (1-leaf assembled) and part view (filtered to 1 part) aren't affected.
+    if (!partView && !_initialFitDone) {
+      const meshList = [];
+      threeScene.traverse(n => {
+        if (!n.isMesh || !n.visible) return;
+        if (!n.geometry || !n.geometry.boundingBox) return;
+        const bb = n.geometry.boundingBox;
+        meshList.push({
+          mesh: n,
+          cx: (bb.min.x + bb.max.x) / 2,
+          cy: (bb.min.y + bb.max.y) / 2,
+          cz: (bb.min.z + bb.max.z) / 2,
+          bb,
+        });
+      });
+      if (meshList.length >= 4) {
+        let sx = 0, sy = 0, sz = 0;
+        for (const m of meshList) { sx += m.cx; sy += m.cy; sz += m.cz; }
+        const k = meshList.length;
+        const sceneCx = sx / k, sceneCy = sy / k, sceneCz = sz / k;
+        const dists = meshList.map(m => {
+          const dx = m.cx - sceneCx, dy = m.cy - sceneCy, dz = m.cz - sceneCz;
+          return Math.sqrt(dx * dx + dy * dy + dz * dz);
+        });
+        const sorted = [...dists].sort((a, b) => a - b);
+        const median = sorted[Math.floor(sorted.length / 2)] || 0;
+        _orphanCount = 0;
+        let cnX = Infinity, cnY = Infinity, cnZ = Infinity;
+        let cxX = -Infinity, cxY = -Infinity, cxZ = -Infinity;
+        let cSumX = 0, cSumY = 0, cSumZ = 0, cN = 0;
+        for (let i = 0; i < meshList.length; i++) {
+          const isOrphan = median > 0 && dists[i] > 3 * median;
+          meshList[i].mesh.userData.isOrphan = isOrphan;
+          if (isOrphan) { _orphanCount++; continue; }
+          const bb = meshList[i].bb;
+          if (bb.min.x < cnX) cnX = bb.min.x; if (bb.min.y < cnY) cnY = bb.min.y; if (bb.min.z < cnZ) cnZ = bb.min.z;
+          if (bb.max.x > cxX) cxX = bb.max.x; if (bb.max.y > cxY) cxY = bb.max.y; if (bb.max.z > cxZ) cxZ = bb.max.z;
+          cSumX += meshList[i].cx; cSumY += meshList[i].cy; cSumZ += meshList[i].cz; cN++;
+        }
+        if (_orphanCount > 0 && cN > 0) {
+          // Frame the cluster: target = cluster centroid; radius derived from
+          // cluster's largest extent + current FOV. Preserve user's current
+          // orbit angles. Unit handling: model-viewer normalizes scene units to
+          // meters automatically based on glTF metadata, so we feed the
+          // coordinates directly with the `m` suffix.
+          const tcx = cSumX / cN, tcy = cSumY / cN, tcz = cSumZ / cN;
+          const cw = cxX - cnX, ch = cxY - cnY, cd = cxZ - cnZ;
+          const maxExt = Math.max(cw, ch, cd);
+          // Heuristic: if the GLB's coordinates are huge (Fusion mm) the
+          // scene was normalised by model-viewer; we still set target in
+          // the same units it reports via getCameraTarget(). Test once and
+          // verify on the live cabinet.
+          try {
+            mv.cameraTarget = `${tcx}m ${tcy}m ${tcz}m`;
+            const fovRad = mv.getFieldOfView() * Math.PI / 180;
+            const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.35);
+            const orbit = mv.getCameraOrbit();
+            mv.cameraOrbit = `${orbit.theta}rad ${orbit.phi}rad ${radius}m`;
+            console.info(`[kd3d] outlier filter: ${_orphanCount}/${meshList.length} orphan part(s) — camera fit to cluster (Fusion export bug, pending fix)`);
+          } catch (e) { console.warn('[kd3d] camera-fit failed', e); }
+        }
+        // One-shot per modal session (don't snap camera on every mode swap).
+        _initialFitDone = true;
+        // Optional debug chip — surface the orphan count on the explode bar
+        // (reuses the existing slot so workers see it in mode 5).
+        const info = body.querySelector('.kd3d-explode-info');
+        if (info && _orphanCount > 0) {
+          const existing = info.textContent || '';
+          if (!existing.includes('orphan')) {
+            info.textContent = `${existing} · ⚠ ${_orphanCount} orphan${_orphanCount === 1 ? '' : 's'}`;
+          }
+        }
+      }
     }
     return true;
   };
@@ -9629,6 +9762,12 @@ function renderProjectsHome() {
     const asmLinkBtn = adminMode
       ? `<button class="project-asmlink-btn" data-asmlink-project="${escapeHtml(p.key)}" aria-label="Copy assembler link" title="Copy assembler link — share via LINE so the worker lands straight in this project's Assembly view">📋</button>`
       : '';
+    // 🧊 Full-Kitchen 3D (RD 07 2026-06-22) — opens the project's whole-kitchen
+    // GLB written by CC_BatchExport3D at Drawings/3d/<projectKey>.glb. Visible
+    // when the user could plausibly want it (admin OR assemble role); HEAD-
+    // probe runs inside the modal so missing GLBs show a "Run CC_BatchExport3D"
+    // placeholder rather than gating the button.
+    const proj3dBtn = `<button class="project-3d-btn" data-3d-project="${escapeHtml(p.key)}" aria-label="View full-kitchen 3D" title="View the whole kitchen in 3D — opens ${escapeHtml(p.key)}.glb">🧊</button>`;
     return `
       <div class="${cls}" data-project="${escapeHtml(p.key)}">
         ${dragHandle}
@@ -9639,6 +9778,7 @@ function renderProjectsHome() {
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}</div>
         </div>
         ${pinBtn}
+        ${proj3dBtn}
         ${asmLinkBtn}
         ${completeBtn}
         ${renameBtn}
@@ -9743,10 +9883,23 @@ function renderProjectsHome() {
     });
   });
 
-  // Card click → drill into project (but ignore clicks on pin, drag, rename, delete, or asmlink).
+  // 🧊 Full-Kitchen 3D — opens <projectKey>.glb in the modal. The opener
+  // HEAD-probes the URL and shows a "Run CC_BatchExport3D" placeholder for
+  // missing GLBs, so we never need to gate the button itself.
+  ROOT.querySelectorAll('[data-3d-project]').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const key = btn.dataset['3dProject'] || btn.getAttribute('data-3d-project');
+      if (key && typeof _kdOpen3D === 'function') {
+        _kdOpen3D(key, { asProject: true });
+      }
+    });
+  });
+
+  // Card click → drill into project (but ignore clicks on pin, drag, rename, delete, asmlink, or 3d).
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn, .project-asmlink-btn')) return;
+      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn, .project-asmlink-btn, .project-3d-btn')) return;
       markProjectSeen('proj', el.dataset.project);   // opening clears this surface's NEW badge
       navTo({ kind: 'project', name: el.dataset.project });
     });
