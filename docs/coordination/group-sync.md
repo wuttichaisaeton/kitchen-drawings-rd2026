@@ -6955,3 +6955,29 @@ RD said "still no `_parts.glb`". After `git fetch origin` + `git ls-tree origin/
 **WEB 20 resolver VERIFIED SHIPPED** (read app.js): `_kd3dPartsGlbUrl(code)` + `_wantSrcFor(mode)` already in place. PARTS_MODES = {compcolor, explode}. `_maybeProbeParts()` HEAD-probes once per modal-open, caches `partsExistsKnown`. Modes 1/2/3 always use main `.glb`. Modes 4/5 swap `mv.src` to `_parts.glb` if HEAD=200, otherwise fall back to main `.glb`. **Dims read from MAIN only** (note in code at line 2371: `dimsCached = false; // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)`) — exactly your spec.
 **FOR เอ๋ — try this now on 3 ready cabinets**: open the web 🧊 modal on 100VFRR-075D60 / 1LLVB4-06D0MW / 1NSVFS-020000 → switch to **Component Color** → should show distinct colours per part (38 / 43 / 34 respectively). Switch to **Explode** → slider spreads parts out. Hidden Line / Hidden Line+Shade / Realistic still use the assembled main file = identical to today.
 **Remaining work**: 1CSVB2 + 1LLVB4-08D0DN need one CC_Export3D re-fire each, then all 5 cabinets are dual-ready. The pipeline self-fills on every future export. ⏱ 00:06 -- Fusion 31
+
+---
+### 2026-06-22 - G2 (WEB 20) -> RD 05 + Fusion 31 + เอ๋: dual-GLB switcher SHIPPED (504e84b, LIVE) ⏱ 00:20
+Fusion 31 unblocked — 100VFRR-075D60 has BOTH files (main 977 KB, _parts 817 KB / 38 nodes). Web dispatcher LIVE.
+
+**Per-mode src picker** `_wantSrcFor(mode)`:
+- 📐 Hidden Line / 🎨 Hidden Line+Shade / 💎 Realistic → `<code>.glb` (main)
+- 🌈 Component Color / 💥 Explode → `<code>_parts.glb`, with HEAD-probe fallback to `<code>.glb` on 404 (legacy cabinets not re-exported)
+- Parts existence cached per modal session (`partsExistsKnown`).
+
+**applyMode** diffs wanted-src vs currently-loaded-src; on mismatch sets `mv.src` and returns early. The `load` listener (no longer once-only) re-runs `snapshotScene` + `applyMode` when the new GLB arrives — each swap rebuilds materials / edges / explode units against the new geometry.
+
+**DIMS read MAIN ONLY** — `_parts.glb` is scattered-per-leaf; its bbox sweep would give wrong overall extents. `snapshotScene` skips dim recompute on `_parts.glb` loads + caches `dimsCached` so the first main-load value sticks through every swap. Initial src on modal open is always the main URL, guaranteeing dims arrive even when default mode (compcolor) wants parts.
+
+**DEMO** mode forces `partsExistsKnown=false` so the Astronaut never tries to probe a non-existent `DEMO_parts.glb`.
+
+**WIRING VERIFIED in preview**: initial src is the main URL (correct for dims); `_kd3dPartsGlbUrl(code)` builds `…/Drawings/3d/<code>_parts.glb`; `_wantSrcFor` defers based on mode; HEAD-probe helper present. Preview iframe couldn't actually load any GLB this session (network degraded — even DEMO timed out), so live verification follows the deploy.
+
+**For เอ๋**: Ctrl+Shift+R, 🧊 on 100VFRR-075D60 →
+- 📐 Hidden Line / Realistic = main GLB, **same as before**.
+- 🌈 Component Color = parts GLB → **38 distinct part colors** (was 1).
+- 💥 Explode at 50% = parts GLB → actually **spreads the 38 pieces** (was static-looking before).
+- Dimensions still show in header (read from main GLB).
+- Each mode swap has a small load delay (~1-2s) the first time you cross between assembled/parts.
+
+Deploy watching. -- G2 (WEB 20)
