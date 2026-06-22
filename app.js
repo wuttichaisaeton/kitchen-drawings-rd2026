@@ -2744,7 +2744,7 @@ async function _kdOpen3D(code, opts) {
         e.preventDefault();
         const t = e.touches[0];
         const orbit = mv.getCameraOrbit();
-        oneOrbit = { x: t.clientX, y: t.clientY, theta: orbit.theta, phi: orbit.phi };
+        oneOrbit = { x: t.clientX, y: t.clientY, theta: orbit.theta, phi: orbit.phi, moved: false };
         twoF = null;
       }
     }, { passive: false });
@@ -2771,6 +2771,7 @@ async function _kdOpen3D(code, opts) {
       } else if (e.touches.length === 1 && oneOrbit) {
         e.preventDefault();
         const t = e.touches[0];
+        if (Math.abs(t.clientX - oneOrbit.x) > 8 || Math.abs(t.clientY - oneOrbit.y) > 8) oneOrbit.moved = true;
         const ROT = 0.006;
         const newTheta = oneOrbit.theta - (t.clientX - oneOrbit.x) * ROT;
         const newPhi = clampPhi(oneOrbit.phi - (t.clientY - oneOrbit.y) * ROT);
@@ -2779,7 +2780,16 @@ async function _kdOpen3D(code, opts) {
     }, { passive: false });
     mv.addEventListener('touchend', (e) => {
       if (e.touches.length < 2) twoF = null;
-      if (e.touches.length === 0) oneOrbit = null;
+      if (e.touches.length === 0) {
+        // A 1-finger TAP (no orbit movement) selects/isolates the part under the
+        // finger — touchstart's preventDefault killed the synthetic 'click', so
+        // we drive the pick from here (เอ๋ "ที่ ipad ไม่ค่อย interactive").
+        if (oneOrbit && !oneOrbit.moved) {
+          const ct = (e.changedTouches && e.changedTouches[0]) || null;
+          if (ct && typeof _pickAndIsolate === 'function') _pickAndIsolate(ct.clientX, ct.clientY);
+        }
+        oneOrbit = null;
+      }
     }, { passive: false });
 
     // Mouse — mirrors the touch semantics (เอ๋ 2026-06-22 "click ซ้ายเป็น
@@ -4378,49 +4388,59 @@ async function _kdOpen3D(code, opts) {
     }
     _highlightUnits(label, units, hex, intensity);
   };
+  // Shared "tap/click a PART → isolate it" — used by the mouse 'click' AND the
+  // iPad TAP. On touch, touchstart's preventDefault (needed for orbit) suppresses
+  // the synthetic 'click', so iPad was non-interactive (เอ๋ "ที่ ipad ไม่ค่อย
+  // interactive") — the touch handlers now detect a tap themselves and call this.
+  // Debounced so a touch+click pair for one tap can't double-toggle.
+  let _lastPick = 0;
+  const _pickAndIsolate = async (clientX, clientY) => {
+    if (!threeScene || !explodeUnits.length) return;
+    const now = (typeof performance !== 'undefined' && performance.now) ? performance.now() : 0;
+    if (now && now - _lastPick < 280) return;
+    _lastPick = now;
+    // While a part is ISOLATED, a tap/click anywhere (not a label — those
+    // stopPropagation) restores ALL parts + zoom-fits.
+    if (_poppedCode) {
+      _poppedCode = null;
+      _ovlRows.forEach(r => r.rowEl.classList.remove('kd3d-ovl-sel'));
+      applyExplode(explodePct);
+      requestAnimationFrame(() => _fitVisibleWorld());
+      return;
+    }
+    let THREE; try { THREE = await _kd3dEnsureThree(); } catch { return; }
+    const cam = threeScene.camera;
+    if (!cam) return;
+    const rect = mv.getBoundingClientRect();
+    const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const my = -((clientY - rect.top) / rect.height) * 2 + 1;
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(mx, my), cam);
+    const hits = raycaster.intersectObjects(threeScene.children, true);
+    const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
+    if (!hit) return;
+    // Walk UP from the hit mesh to the first node carrying a real part code.
+    // (model-viewer wraps the model in ModelScene>Pivot>Target>world>…, so walking
+    // to the scene's top child gave "Pivot" → no label. The code lives deeper.)
+    let label = null, nd = hit.object;
+    while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { label = l; break; } nd = nd.parent; }
+    if (!label || !_ovlRows.some(r => r.code === label)) return;   // labelled parts only
+    // เอ๋ 2026-06-23 (reverse of clicking a label): tap/click a PART → isolate it,
+    // highlight its label, zoom-fit. Tap again / tap away restores (handled above).
+    _poppedCode = label;
+    _ovlRows.forEach(r => r.rowEl.classList.toggle('kd3d-ovl-sel', r.code === label));
+    applyExplode(explodePct);
+    requestAnimationFrame(() => _fitVisibleWorld());
+  };
   {
     let _pointerDownXY = null;
     mv.addEventListener('pointerdown', (e) => { _pointerDownXY = [e.clientX, e.clientY]; });
-    mv.addEventListener('click', async (e) => {
-      if (!threeScene || !explodeUnits.length) return;
+    mv.addEventListener('click', (e) => {
       if (_pointerDownXY) {
         const dx = e.clientX - _pointerDownXY[0], dy = e.clientY - _pointerDownXY[1];
-        if (dx * dx + dy * dy > 25) return;
+        if (dx * dx + dy * dy > 25) return;   // was a drag (orbit) → not a click
       }
-      // เอ๋ 2026-06-23: while a part is ISOLATED, a click anywhere on the model
-      // (not a label — those stopPropagation) restores ALL parts + zoom-fits.
-      if (_poppedCode) {
-        _poppedCode = null;
-        _ovlRows.forEach(r => r.rowEl.classList.remove('kd3d-ovl-sel'));
-        applyExplode(explodePct);
-        requestAnimationFrame(() => _fitVisibleWorld());
-        return;
-      }
-      const THREE = await _kd3dEnsureThree();
-      const cam = threeScene.camera;
-      if (!cam) return;
-      const rect = mv.getBoundingClientRect();
-      const mx = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      const my = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      const raycaster = new THREE.Raycaster();
-      raycaster.setFromCamera(new THREE.Vector2(mx, my), cam);
-      const hits = raycaster.intersectObjects(threeScene.children, true);
-      const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
-      if (!hit) return;
-      // Walk UP from the hit mesh to the first node carrying a real part code.
-      // (model-viewer wraps the model in ModelScene>Pivot>Target>world>…, so
-      // walking to the scene's top child gave "Pivot" → no label. The code lives
-      // on the part / its meshes, deeper in the tree.)
-      let label = null, n = hit.object;
-      while (n && n !== threeScene) { const l = _extractPartLabel(n.name || ''); if (l) { label = l; break; } n = n.parent; }
-      if (!label || !_ovlRows.some(r => r.code === label)) return;   // labelled parts only
-      // เอ๋ 2026-06-23 (reverse of clicking a label): clicking a PART in the 3D
-      // ISOLATES it, highlights its label, and zoom-fits — the same effect, driven
-      // from the 3D side. Click again / click away restores (handled at the top).
-      _poppedCode = label;
-      _ovlRows.forEach(r => r.rowEl.classList.toggle('kd3d-ovl-sel', r.code === label));
-      applyExplode(explodePct);
-      requestAnimationFrame(() => _fitVisibleWorld());
+      _pickAndIsolate(e.clientX, e.clientY);
     });
   }
 
