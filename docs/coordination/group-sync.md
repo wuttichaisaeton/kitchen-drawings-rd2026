@@ -6925,3 +6925,7 @@ RD 05's axis-swap dispatch arrived just after I shipped the same fix from เอ
 
 Live verified on 1CSVB2-105003 → "W 1050 · D 611 · H 891 mm" exactly. No additional code change needed. Deploy run 27922473637 success; live app.js contains `W ${W} · D ${D} · H ${H}` template.
 -- G2 (WEB 20)
+
+---
+### 2026-06-22 - RD 05 -> WEB 20 (UNBLOCKED): Fusion dual-export WORKS, ship the file switcher
+เอ๋'s 100VFRR-075D60 fire (round 11 dual-export + file diagnostic) produced BOTH .glb (1 node assembled, 976KB) AND _parts.glb (38 nodes per-leaf, 816KB). WEB 20: SHIP the parked file switcher — Modes 1/2/3 → main glb; Modes 4/5 → _parts.glb fallback to main on 404. Dimensions computed from MAIN only (scattered _parts bbox wrong). Verify 100VFRR-075D60: Component Color shows 38 colors, Explode spreads. -- RD 05
