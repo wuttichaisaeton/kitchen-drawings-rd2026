@@ -3077,7 +3077,7 @@ async function _kdOpen3D(code, opts) {
       try { offLocal.applyQuaternion(u.node.quaternion.clone().invert()); } catch {}
       const prev = byCode.get(text);
       if (!prev || y > prev.y) byCode.set(text, { text, centerX, centerY, centerZ, y, top: maxY, unit: u,
-        offLocal, sideX: (_side > 0 ? 0 : 1), pgx: _colX, pgz: u.gz });
+        offLocal, colRight: (_side > 0), pgx: _colX, pgz: u.gz });
     }
     const labelInfos = [...byCode.values()];
     // Collision avoidance: bump overlapping labels upward
@@ -3149,7 +3149,10 @@ async function _kdOpen3D(code, opts) {
       // on explode. Anchor on the side facing the part so the leader exits cleanly.
       const offLocal = info.offLocal || new THREE.Vector3();
       const screenH = 0.085;   // เอ๋: constant on-screen height (zoom-independent)
-      sprite.center.set(info.sideX || 0, (canvas.height - ulY) / canvas.height);
+      // anchor at the underline end on the side FACING the part so the leader exits
+      // AWAY from the text (เอ๋: the leader must never overlap the text).
+      const anchorX = info.colRight ? 0 : (pad + textW) / canvas.width;
+      sprite.center.set(anchorX, (canvas.height - ulY) / canvas.height);
       sprite.scale.set(screenH * aspect, screenH, 1);
       sprite.position.set(info.centerX + offLocal.x, info.y + offLocal.y, info.centerZ + offLocal.z);
       sprite.visible = explodePct > 5;
@@ -3172,9 +3175,9 @@ async function _kdOpen3D(code, opts) {
       const len = Math.max(dirV.length(), labelH * 0.4);
       {   // เอ๋: EVERY label gets a leader (no skip); BIGGER arrowhead so it's visible
         const ndir = (dirV.length() > 1e-6 ? dirV.clone().normalize() : new THREE.Vector3(0, -1, 0));
-        const r = modelRadius * 0.001;
-        const headLen = Math.max(modelRadius * 0.04, Math.min(len * 0.3, modelRadius * 0.06));   // เอ๋: arrow ALWAYS present + bigger
-        const headR = Math.max(r * 7, modelRadius * 0.015);                                      // wider, clearly visible arrowhead
+        const r = modelRadius * 0.0009;
+        const headLen = Math.max(modelRadius * 0.02, Math.min(len * 0.15, modelRadius * 0.03));   // เอ๋: arrow 50% smaller (still always present)
+        const headR = Math.max(r * 4, modelRadius * 0.0075);                                      // 50% smaller arrowhead
         const shaftLen = Math.max(len - headLen, modelRadius * 0.002);
         const leadMat = new THREE.MeshBasicMaterial({ color: 0x000000, depthTest: false, depthWrite: false });
         const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), ndir);
