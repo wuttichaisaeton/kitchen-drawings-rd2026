@@ -8097,3 +8097,35 @@ FIX (`6afea73`): `export_target_dual` ใช้ proxy transform2 **ทุก tar
 **NEEDS (G2):** FYI web edit จาก Fusion session — app.js clean ก่อนแก้, แตะแค่ 2 บรรทัด shadow. เอ๋ verify live (WebGL ไม่ render ใน headless preview).
 **NEEDS (Fusion follow-up, RD):** 9 dropped bodies ใน 1LLVO4 (+ ตู้อื่น) = ชิ้น/ขา ที่ export ไม่ออก (degenerate body) → ทำให้ตู้ดูลอย. ต้องดู source bodies ว่าทำไม STL 0-byte (ขาหาย = ตู้ลอย).
 -- Fusion 33 (RD)
+
+---
+
+## [2026-06-22 18:20] Group 2 (Web) -> เอ๋ + Fusion 33
+STATUS: 3D viewer (app.js kd3d) - part-label colour/weight + parts-browser unmatched-part fix. DONE.
+
+TASK A (labels): label text now follows the mode background - BLACK on light bg
+(compcolor; sketch-theme hidden/hiddenshade), WHITE on dark bg (realistic/explode/
+dark hidden). Weight = regular (was bold gold #F2A93B). New helper `_labelColorsForMode()`
+(app.js ~2950) drives `ctx.fillStyle`/`strokeStyle` in the sprite-canvas builder
+(app.js ~3035-3060). Labels rebuild via `applyMode` -> `_buildExplodeLabels`, so a
+mode switch regenerates them with the right colour.
+
+TASK B (parts browser - 1NNV04-06000L): ROOT CAUSE = matcher, not missing geometry
+(GLB has all 32 nodes). `_extractPartLabel` (a) only stripped `_v13` not the ` v13`
+SPACE version-suffix Fusion bakes into node names, and (b) returned '' for any node
+whose component has no '-'. Those '' nodes fell back to a synthetic "Part N" label,
+but the highlighter filtered by `_extractPartLabel(node)===label` -> '' never equals
+"Part N" -> clicking/ticking the row did NOTHING. Fix:
+ - `_extractPartLabel` strips `[ _]v\d+$` (space OR underscore, case-insensitive) so
+   `FN2BNX-060000 v13__Body3` -> `FN2BNX-060000`; rows now consolidate all
+   `<code>__...` nodes (incl. _2/_3 dups + instanced xN) into one row.
+ - Highlight is now by NODE IDENTITY: new `_highlightUnits(label, units, ...)` tints
+   the row's own scene nodes, so flagged "Part N" rows highlight too. `_highlightCode`
+   kept as a thin resolver for the raycast click-to-identify path.
+ - Un-parseable rows get a RED frame (`.kd3d-unmatched` = border:1px solid #e5484d).
+   They stay VISIBLE + clickable per เอ๋ "ที่ถูกติ๊กแล้วโชว์ด้วย แต่ให้เป็นกรอบเป็นสีแดง".
+
+Edited app.js ONLY (no CC_*/nest.js/editor touched). node --check OK. regex unit-tested.
+WebGL does not render in headless preview - เอ๋ verify on live site.
+**NEEDS:** nothing from Fusion. FYI only.
+-- Group 2 (Web)

@@ -2232,6 +2232,11 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-browser-row.kd3d-hidden-part .kd3d-part-name{opacity:.35;text-decoration:line-through}
     .kd3d-modal .kd3d-browser-row .kd3d-part-name{flex:1 1 auto;overflow:hidden;text-overflow:ellipsis}
     .kd3d-modal .kd3d-browser-row.kd3d-selected{background:#F2A93B22;border-left:3px solid #F2A93B;color:#F2A93B}
+    /* Unmatched/flagged part (เอ๋ 1NNV04-06000L): the code couldn't be parsed
+       from the node name so the row can't bind to a known code. It STILL shows
+       + is clickable (highlights its bodies), but gets a red frame so เอ๋ can
+       spot which parts are flagged. */
+    .kd3d-modal .kd3d-browser-row.kd3d-unmatched{border:1px solid #e5484d;border-radius:4px;margin:1px 4px}
     .kd3d-modal .kd3d-browser-toggle{background:transparent;border:0;color:#9fb0c0;cursor:pointer;font-size:12px;padding:4px 6px;position:absolute;right:4px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px}
     .kd3d-modal .kd3d-browser-toggle:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
     .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
@@ -2934,11 +2939,34 @@ async function _kdOpen3D(code, opts) {
 
   const _extractPartLabel = (name) => {
     if (!name) return '';
+    // Node names are "<component>__<body>" (e.g. "BXXTR0-000000__Body1_2",
+    // "FN2BNX-060000 v13__Body3"). Take the component, then strip a trailing
+    // Fusion version stamp in EITHER form: "_v13" or " v13" (เอ๋ 1NNV04-06000L —
+    // GLB has every body but the " v13" space-suffix kept the code from matching
+    // a browser row, so ticking it highlighted nothing). Returning the bare code
+    // lets a row map to ALL "<code>__…" nodes (incl. instanced ×N + _2/_3 dups).
     const idx = name.indexOf('__');
     let comp = idx >= 0 ? name.substring(0, idx) : name;
-    comp = comp.replace(/_v\d+$/, '');
+    comp = comp.replace(/[ _]v\d+$/i, '').trim();
     if (comp.includes('-')) return comp;
     return '';
+  };
+
+  // Label text colour follows the CURRENT mode's background (เอ๋: black text on
+  // a light bg, white text on a dark bg, regular weight). Mode→bg facts mirror
+  // the per-mode CSS above: compcolor = light #f3f4f6; hidden/hiddenshade = dark
+  // #0b0f14 EXCEPT under the sketch theme (light #efe7d6); realistic/explode =
+  // dark #0b0f14. On a light bg we use a white outline (and vice-versa) so the
+  // text stays legible against either model colour.
+  const _labelColorsForMode = () => {
+    const isSketch = document.documentElement.getAttribute('data-theme') === 'sketch';
+    let lightBg;
+    if (mode === 'compcolor') lightBg = true;
+    else if (mode === 'hidden' || mode === 'hiddenshade') lightBg = isSketch;
+    else lightBg = false; // realistic / explode → dark
+    return lightBg
+      ? { fill: '#000000', stroke: '#ffffff' }
+      : { fill: '#ffffff', stroke: '#0b0f14' };
   };
 
   const _cleanupExplodeLabels = () => {
@@ -3019,24 +3047,26 @@ async function _kdOpen3D(code, opts) {
 
     const fontSize = 36;
     const pad = 6;
-    const fface = '"Flux Architect",ui-monospace,monospace';
-    try { await document.fonts.load(fontSize + 'px ' + fface); } catch {}
+    // Regular weight (เอ๋ "เป็น regular") — keep the app font, drop the bold.
+    const fface = '400 ' + fontSize + 'px "Flux Architect",ui-monospace,monospace';
+    const { fill: labelFill, stroke: labelStroke } = _labelColorsForMode();
+    try { await document.fonts.load(fface); } catch {}
     for (const info of labelInfos) {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      ctx.font = fontSize + 'px ' + fface;
+      ctx.font = fface;
       const tw = ctx.measureText(info.text).width;
       canvas.width = Math.ceil(tw + pad * 2);
       canvas.height = Math.ceil(fontSize * 1.4 + pad * 2);
 
-      ctx.font = fontSize + 'px ' + fface;
+      ctx.font = fface;
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'center';
-      ctx.strokeStyle = '#0b0f14';
+      ctx.strokeStyle = labelStroke;
       ctx.lineWidth = 4;
       ctx.lineJoin = 'round';
       ctx.strokeText(info.text, canvas.width / 2, canvas.height / 2);
-      ctx.fillStyle = '#F2A93B';
+      ctx.fillStyle = labelFill;
       ctx.fillText(info.text, canvas.width / 2, canvas.height / 2);
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -3739,19 +3769,27 @@ async function _kdOpen3D(code, opts) {
   _populateBrowserFn = () => {
     if (!browserList) return;
     browserList.innerHTML = '';
+    // Group units by their part code. A node whose code can't be parsed from the
+    // name (no '-' after stripping the '__body'/' v13' suffixes) gets a synthetic
+    // "Part N" label AND is flagged — it still shows + highlights (by node
+    // identity, not by re-deriving the code), but the row wears a red frame.
     const seen = new Map();
     for (let i = 0; i < explodeUnits.length; i++) {
       const u = explodeUnits[i];
       const raw = u.node.name || '';
-      const label = _extractPartLabel(raw) || ('Part ' + (i + 1));
-      if (!seen.has(label)) seen.set(label, []);
-      seen.get(label).push({ unit: u, idx: i });
+      const code = _extractPartLabel(raw);
+      const flagged = !code;
+      const label = code || ('Part ' + (i + 1));
+      if (!seen.has(label)) seen.set(label, { units: [], flagged });
+      seen.get(label).units.push({ unit: u, idx: i });
     }
-    for (const [label, units] of seen) {
+    for (const [label, group] of seen) {
+      const units = group.units;
       const hidden = visState[label] === false;
       const row = document.createElement('div');
       row.className = 'kd3d-browser-row' + (hidden ? ' kd3d-hidden-part' : '')
-        + (_selectedLabel === label ? ' kd3d-selected' : '');
+        + (_selectedLabel === label ? ' kd3d-selected' : '')
+        + (group.flagged ? ' kd3d-unmatched' : '');
       row.innerHTML = '<span class="kd3d-eye" title="Show / hide this part">' + (hidden ? '◯' : '👁') + '</span>'
         + '<span class="kd3d-part-name">' + escapeHtml(label) + (units.length > 1 ? ' x' + units.length : '') + '</span>';
       // Eye icon = optional session hide (NOT persisted). stopPropagation so it
@@ -3766,11 +3804,12 @@ async function _kdOpen3D(code, opts) {
         eyeEl.textContent = nowHidden ? '◯' : '👁';
       });
       // Row body = highlight / locate this part in light-red; it stays VISIBLE.
-      // Click again (or another row) clears it.
+      // Highlight by the row's OWN scene nodes (not by re-deriving the code) so
+      // flagged "Part N" rows highlight correctly too. Click again clears it.
       row.addEventListener('click', () => {
         if (_selectedLabel === label) { _clearHighlight(); return; }
         _clearHighlight();
-        _highlightCode(label, 0xE5484D, 0.5);
+        _highlightUnits(label, units, 0xE5484D, 0.5);
       });
       if (hidden) {
         for (const { unit } of units) unit.node.visible = false;
@@ -3812,11 +3851,14 @@ async function _kdOpen3D(code, opts) {
     if (browserList) browserList.querySelectorAll('.kd3d-selected').forEach(r => r.classList.remove('kd3d-selected'));
     _selectedLabel = null;
   };
-  // Tint every body of `label` (keeps them visible), mark + scroll its row.
-  const _highlightCode = (label, hex, intensity) => {
-    for (const u of explodeUnits) {
-      if (_extractPartLabel(u.node.name || '') !== label) continue;
-      u.node.traverse(nd => {
+  // Tint a given set of explode units (keeps them visible), mark + scroll their
+  // row. Highlighting by node identity (the `units` list) — NOT by re-deriving
+  // the code — is what fixes flagged "Part N" rows (เอ๋ 1NNV04-06000L): they had
+  // an empty derived code, so the old "_extractPartLabel(node)===label" filter
+  // matched nothing and ticking did nothing.
+  const _highlightUnits = (label, units, hex, intensity) => {
+    for (const { unit } of units) {
+      unit.node.traverse(nd => {
         if (!nd.isMesh || !nd.material || !nd.material.emissive) return;
         _highlightRestore.push({
           mesh: nd,
@@ -3837,6 +3879,15 @@ async function _kdOpen3D(code, opts) {
         }
       });
     }
+  };
+  // Click-to-identify (raycast) entry: resolve the units for a parsed code, then
+  // tint them. Used by the in-scene click handler.
+  const _highlightCode = (label, hex, intensity) => {
+    const units = [];
+    for (const u of explodeUnits) {
+      if (_extractPartLabel(u.node.name || '') === label) units.push({ unit: u });
+    }
+    _highlightUnits(label, units, hex, intensity);
   };
   {
     let _pointerDownXY = null;
