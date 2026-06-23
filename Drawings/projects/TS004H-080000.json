@@ -2,15 +2,21 @@
   "name": "TS004H-080000",
   "status": "active",
   "created_at": "2026-06-23T09:26:21.815699+00:00",
-  "updated_at": "2026-06-23T09:26:21.815699+00:00",
-  "total_unique_parts": 2,
+  "updated_at": "2026-06-23T09:46:11.756556+00:00",
+  "total_unique_parts": 3,
   "total_qty": 8,
   "parts": [
     {
       "code": "TS1BHH-080000",
-      "qty": 4,
+      "qty": 3,
       "family": "Top Sup",
       "urn": "urn:adsk.wipprod:dm.lineage:i8NRkqxjRoWzza-oYOeIQw"
+    },
+    {
+      "code": "TS1BHH-080000-Ruth",
+      "qty": 1,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:IldDci7CQpqg6fykYgHgNQ"
     },
     {
       "code": "TS2TRX-000000",
