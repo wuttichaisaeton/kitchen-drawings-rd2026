@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T10:47:57.090436+00:00",
+  "generated_at": "2026-06-23T11:47:35.553839+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -17064,6 +17064,63 @@
           "family": "Other",
           "is_wrapper": true,
           "variant_root": "LEG-060"
+        }
+      ]
+    },
+    "FN0FL2-070004": {
+      "name": "FN0FL2-070004",
+      "status": "active",
+      "created_at": "2026-06-23T11:47:35.551182+00:00",
+      "updated_at": "2026-06-23T11:47:35.551182+00:00",
+      "total_unique_parts": 4,
+      "total_qty": 4,
+      "parts": [
+        {
+          "code": "FN0F00-070000",
+          "qty": 1,
+          "family": "Floor",
+          "parent_code": "FN0FL2-070004",
+          "variant_root": "FN0FL2-070004",
+          "urn": "urn:adsk.wipprod:dm.lineage:yhlU4s0ZS7ab9KYa7t5D1Q"
+        },
+        {
+          "code": "FN2BLA-070000",
+          "qty": 1,
+          "family": "Floor",
+          "parent_code": "FN0FL2-070004",
+          "variant_root": "FN0FL2-070004",
+          "urn": "urn:adsk.wipprod:dm.lineage:sbQVLPccSJCJ7hn-xuyjnQ"
+        },
+        {
+          "code": "FN2BNX-070000",
+          "qty": 1,
+          "family": "Floor",
+          "parent_code": "FN0FL2-070004",
+          "variant_root": "FN0FL2-070004",
+          "urn": "urn:adsk.wipprod:dm.lineage:adXw6KfwQ_WCBhSCW3YPzA"
+        },
+        {
+          "code": "FN3BLA-070000",
+          "qty": 1,
+          "family": "Floor",
+          "parent_code": "FN0FL2-070004",
+          "variant_root": "FN0FL2-070004",
+          "urn": "urn:adsk.wipprod:dm.lineage:PZcFenVlQ0ip2kUFnVb3Mg"
+        },
+        {
+          "code": "FN0FL2-070004",
+          "qty": 0,
+          "family": "Floor",
+          "is_wrapper": true,
+          "variant_root": "FN0FL2-070004"
+        },
+        {
+          "code": "LEG-060",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "FN0FL2-070004",
+          "variant_root": "FN0FL2-070004"
         }
       ]
     }
