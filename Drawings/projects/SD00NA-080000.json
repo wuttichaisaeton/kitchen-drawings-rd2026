@@ -1,0 +1,22 @@
+{
+  "name": "SD00NA-080000",
+  "status": "active",
+  "created_at": "2026-06-23T08:24:04.532829+00:00",
+  "updated_at": "2026-06-23T08:24:04.532829+00:00",
+  "total_unique_parts": 2,
+  "total_qty": 6,
+  "parts": [
+    {
+      "code": "SD00NA-080000",
+      "qty": 2,
+      "family": "Side Panel",
+      "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
+    },
+    {
+      "code": "SD0SUP-000000",
+      "qty": 4,
+      "family": "Side Panel",
+      "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+    }
+  ]
+}

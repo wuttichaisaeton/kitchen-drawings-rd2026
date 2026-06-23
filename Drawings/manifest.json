@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T08:21:05.292353+00:00",
+  "generated_at": "2026-06-23T08:24:04.547077+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -16245,6 +16245,28 @@
           "is_wrapper": true,
           "parent_code": "TS002H-040000",
           "variant_root": "TS002H-040000"
+        }
+      ]
+    },
+    "SD00NA-080000": {
+      "name": "SD00NA-080000",
+      "status": "active",
+      "created_at": "2026-06-23T08:24:04.532829+00:00",
+      "updated_at": "2026-06-23T08:24:04.532829+00:00",
+      "total_unique_parts": 2,
+      "total_qty": 6,
+      "parts": [
+        {
+          "code": "SD00NA-080000",
+          "qty": 2,
+          "family": "Side Panel",
+          "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
+        },
+        {
+          "code": "SD0SUP-000000",
+          "qty": 4,
+          "family": "Side Panel",
+          "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
         }
       ]
     }
