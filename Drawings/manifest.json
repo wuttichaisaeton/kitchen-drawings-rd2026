@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T08:39:24.246783+00:00",
+  "generated_at": "2026-06-23T08:58:10.617286+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3945,8 +3945,8 @@
     },
     "SH0S11-080035": {
       "family": "Other",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 7,
+      "fusion_version": 7,
       "pdf": "SH0S11-000000.pdf",
       "bends": 0,
       "material": "",
@@ -16289,6 +16289,46 @@
           "qty": 4,
           "family": "Side Panel",
           "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+        }
+      ]
+    },
+    "1SHS10-080035": {
+      "name": "1SHS10-080035",
+      "status": "active",
+      "created_at": "2026-06-23T08:58:10.602662+00:00",
+      "updated_at": "2026-06-23T08:58:10.602662+00:00",
+      "total_unique_parts": 2,
+      "total_qty": 2,
+      "parts": [
+        {
+          "code": "SH0S11-080035",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "SH0S10-080035",
+          "variant_root": "SH0S10-080035",
+          "urn": "urn:adsk.wipprod:dm.lineage:xgnUwEZzSVyMmmLyxjjFyg"
+        },
+        {
+          "code": "SH0S12-080000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "SH0S10-080035",
+          "variant_root": "SH0S10-080035",
+          "urn": "urn:adsk.wipprod:dm.lineage:0zKN-EYKSAeeKy1IoC15Uw"
+        },
+        {
+          "code": "1SHG00-080035",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "1SHG00-080035"
+        },
+        {
+          "code": "SH0S10-080035",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "SH0S10-080035"
         }
       ]
     }
