@@ -8300,3 +8300,23 @@ NOTE: merge fetches every part PDF so big projects take ~20s — the placeholder
 VERIFIED live in Chrome: 03 Ruth bend list = 38 rows each 🧊 (26px), Fusion still SVG → distinct=true; project cards = 6 buttons on one row (width 209<264, no wrap). node --check OK, deploy success, both app.js + style.css markers live.
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- RD (web)
+
+---
+### 2026-06-23 - Fusion (RD) -> เอ๋ + G2(Web): ✅ 02 Ruth FULL batch 3D export — round-17 VERIFIED live. ⏱ ~00:25
+เอ๋ direct order (เลือกจาก 4 ตัวเลือก): "02 Ruth batch ทั้งโปรเจกต์". Drove CC_BatchExport3D via Fusion MCP (activate 02 Ruth v44 → run silent=True so progress dialog shows but no blocking messageBox). **9 targets in ~15 min (07:34→07:48):** 8 cabinets + whole project.
+
+**VERIFIED before claiming (3 layers, not count-alone):**
+- **Engine source** = round-17 confirmed in CC_Export3D.py:620 — `export_target_dual` → `_collect_leaf_bodies_world` (proxy transform2 every target); `cabinet_inv` IGNORED, `_recursive_native_walk` dead. Not just a board claim — read the source.
+- **Transforms** (sidecars): 1LLVO4-05000L = 111 nodes, `BM1LI0 @ (0,-284,764)` → Z=764=cab height, ไม่ใช่ scatter ~1800 เดิม. 1LLVB4-08D0DN (RD07 L-shape) = 157 nodes cabinet-local. Project 02 Ruth = 903 nodes ที่ layout positions (FN1BLA @ X=1050 ใน project frame vs -0,-213 ใน cabinet frame → แต่ละ target ใช้ frame ตัวเอง ถูกต้อง). ORPHAN count=0 ทุกตู้.
+- **Push+Deploy+Live**: commit `dc7740d` (sync.bat), origin/main 0-0 in sync; Pages deploy `27994336811` success 27s; live HEAD บน github.io/...3d/1LLVO4-05000L.glb = HTTP200 Content-Length 3155956 byte-exact.
+
+GLBs: 1LLVB4-08D0DN 3.95M / 1LLVB4-06D0MW 3.25M / 1NNV04-06000L 2.47M / 100VFRR-075D60 0.89M / 1NSVFS-020000 1.92M / 1CSVBL-120000 4.09M / 1CSVB2-105003 3.46M / 1LLVO4-05000L 3.16M / 02 Ruth(project) 24.7M.
+
+**RENDERED layer = เอ๋ eyeball** (WebGL ไม่ render headless): เปิด 1LLVO4-05000L + 1LLVB4-08D0DN บนเว็บ 3D viewer → ควรประกอบที่ explode 0% ไม่กระจาย. นี่คือ render-verify ที่ค้างใน Task #1 (project_3d_explode_scatter.md).
+
+**OPEN ITEMS (Fusion lane):**
+1. **dropped_bodies = degenerate bodies** (STL 0-byte → ขา/ชิ้นหาย → ตู้ลอย): 1LLVO4=9, 1LLVB4-08D0DN=5, project total=41. ต้องดู source bodies ว่าทำไม STL ออกไม่ได้ (board "9 dropped bodies" CONFIRMED). แยกจาก batch นี้.
+2. **03 Ruth batch ยังไม่ทำ** — bend-list "View in 3D" (Task #17) ต้องการ 03 Ruth cabinets' `<cab>_parts.glb` (2FNCL2-070000 ฯลฯ). 03 Ruth v7 เปิดอยู่ — รันได้เมื่อเอ๋สั่ง.
+
+**NEEDS (เอ๋):** eyeball 1LLVO4/1LLVB4 บน live 3D (ปิด tab เก่าก่อน กัน stale). บอกได้ถ้าจะให้รัน 03 Ruth batch ต่อ.
+-- Fusion (RD)
