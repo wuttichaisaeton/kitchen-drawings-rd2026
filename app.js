@@ -4601,17 +4601,23 @@ function _wireBendList(parts, projectKey) {
       _routeLeafToFusion({ code: p.code, urn: p.urn || null }, { fusionOnly: true });
     });
   });
-  // 🧊 View this part in 3D (web) — resolve the leaf's owning cabinet (variant_root
-  // / parent climb) and open the PART view (its cabinet's _parts.glb, isolated);
-  // a standalone/unknown part falls back to its own GLB (→ placeholder if none).
-  const _bendByCode = new Map((parts || []).map(x => [x.code, x]));
+  // 🧊 View this part in 3D (web) — find the leaf's owning cabinet from the FULL
+  // project manifest (_cabinetCodeQty resolves cabinets WITH wrappers, so it's
+  // reliable where a leaf-only climb isn't — verified 2BK000-000000 → 2FNCL2-070000)
+  // and open the cabinet's _parts.glb isolated to the part; unknown parts fall back
+  // to their own GLB (→ "not exported" placeholder, which is informative).
+  const _codeToCab = new Map();
+  try {
+    for (const [cab, codeQty] of _cabinetCodeQty(projectKey)) {
+      if (!cab || cab === NO_CAB) continue;
+      for (const c of codeQty.keys()) if (!_codeToCab.has(c)) _codeToCab.set(c, cab);
+    }
+  } catch {}
   ROOT.querySelectorAll('.bend-3d-btn').forEach(btn => {
     btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
       const code = btn.dataset.code;
-      const p = _bendPartByCode.get(code) || _bendByCode.get(code) || { code };
-      let cab = '';
-      try { cab = _resolveCabinet(p, _bendByCode) || ''; } catch {}
+      const cab = _codeToCab.get(code) || '';
       if (cab && cab !== code) _kdOpen3D(code, { cabinetCode: cab });
       else _kdOpen3D(code);
     });
