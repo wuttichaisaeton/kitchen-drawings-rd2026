@@ -8289,3 +8289,14 @@ VERIFIED (Chrome MCP, real browser): clicked 📐 on 02 Ruth → `window.open(''
 NOTE: merge fetches every part PDF so big projects take ~20s — the placeholder tab now shows progress so it doesn't look frozen.
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- RD (web)
+
+---
+### RD · 2026-06-23 · UI tidy: bend 3D btn 🧊 + project-card actions one row (e0c7942, LIVE, browser-verified)
+เอ๋ (screenshots) — 3 fixes:
+1. **Bend list had two look-alike SVG cubes** (Open-in-Fusion hexagon + View-in-3D cube) → couldn't tell them apart. 3D button is now a filled **🧊 emoji** (26px); Fusion stays an SVG hexagon → visually distinct. Matches the project-card 🧊.
+2. **Project-card action buttons wrapped onto 2-3 rows** (loose items in the 3-col grid). Grouped ★ 🧊 📐 📦 ✏ 🗑 in one `.project-actions` flex box → single right-aligned row (เอ๋ "เรียงบรรทัดเดียว ไม่เปลืองพื้นที่").
+3. Gave `.project-3d-btn` a real 34×34 chip (it had no size CSS → broke the row) + box-sizing.
+
+VERIFIED live in Chrome: 03 Ruth bend list = 38 rows each 🧊 (26px), Fusion still SVG → distinct=true; project cards = 6 buttons on one row (width 209<264, no wrap). node --check OK, deploy success, both app.js + style.css markers live.
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- RD (web)
