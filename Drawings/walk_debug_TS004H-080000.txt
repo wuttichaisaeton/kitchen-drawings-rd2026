@@ -1,0 +1,19 @@
+CC_Assembly walk debug — 2026-06-23T16:26:21.815276
+Project: TS004H-080000
+Total occurrences visited: 9
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | TS2TR4-080000 v9:1 (TS2TR4-080000 v9)
+    1 | SM  |     | ALPF             | TS2TRX-000000:1 (TS2TRX-000000)
+    1 | SM  |     | ALPF             | TS2TRX-000000:2 (TS2TRX-000000)
+    1 | SM  |     | ALPF             | TS2TRX-000000:3 (TS2TRX-000000)
+    1 | SM  |     | ALPF             | TS2TRX-000000:4 (TS2TRX-000000)
+    0 | SM  |     | ALPF             | TS1BHH-080000 v3:1 (TS1BHH-080000 v3)
+    0 | SM  |     | ALPF             | TS1BHH-080000 v3:2 (TS1BHH-080000 v3)
+    0 | SM  |     | ALPF             | TS1BHH-080000 v3:3 (TS1BHH-080000 v3)
+    0 | SM  |     | ALPF             | TS1BHH-080000 v3:4 (TS1BHH-080000 v3)
