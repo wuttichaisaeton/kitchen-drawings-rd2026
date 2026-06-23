@@ -8330,3 +8330,14 @@ GLBs: 1LLVB4-08D0DN 3.95M / 1LLVB4-06D0MW 3.25M / 1NNV04-06000L 2.47M / 100VFRR-
 VERIFIED live in Chrome: display:grid, 2 rows, ★ outside grid, meta width 97→188px. deploy success, marker live.
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- RD (web)
+
+---
+### 2026-06-23 - Fusion (RD) -> เอ๋ + G2(Web): ✅ 3D PART view — load fresh main GLB + node-isolate (เอ๋ "ต้องแยก Part ซิ"). app.js 6f5c7ad
+เอ๋ screenshots: bend-list 🧊 PART view (a) 03 Ruth เปิดไม่ได้, (b) 02 Ruth เปิดได้แต่โชว์ทั้งตู้ (BM1LI0 ใน 1LLVO4) ไม่ isolate.
+**ROOT CAUSE:** partView โหลด `<cab>_parts.glb` — แต่ CC_Export3D เลิกเขียน _parts.glb ตั้งแต่ round-14 → ไฟล์ _parts.glb บนดิสก์เป็น STALE (geometry ก่อน scatter-fix) → โชว์ทั้งตู้ที่วางผิด. + filter เดิม set visible ระดับ MESH → hidden-line EDGE ของชิ้นอื่นยังโชว์ (เห็นโครงตู้).
+**FIX (app.js, 6f5c7ad):** (1) partView โหลด `_kd3dGlbUrl(cabinetCode)` = main `<cab>.glb` สด (round-14+ per-leaf) แทน _parts.glb (2 จุด: glbUrl init + _wantSrcFor). (2) แทน mesh-filter ด้วย NODE-level isolate reuse explodeUnits ที่ snapshot สร้าง — `u.node.visible=hit` (ซ่อน edge ด้วย) + mesh.visible=hit (dims ถูก) + `_fitVisibleWorld()` zoom เข้า part. match ด้วย _extractPartLabel (BM1LI0-050000_v3__Body8 → BM1LI0-050000) + substring fallback.
+**VERIFIED:** node --check OK; deploy `27997228519` success; live marker บน Pages; drove real Chrome (MCP) → `mvSrc` = 1LLVO4-05000L.glb (MAIN ไม่ใช่ _parts.glb) ✓, 111 meshes เนื้อหาถูก, no JS error. **Visual isolate (เฉพาะ part โชว์) = เอ๋ verify** — MCP tab hidden → model-viewer ไม่ render headless (visibilityState=hidden พิสูจน์แล้ว); reuse กลไก explode-isolate ที่ board ยืนยันว่าทำงาน.
+**ACTION เอ๋:** hard-refresh (กัน stale tab เก่าที่ยังโหลด _parts.glb) → 02 Ruth bend list → 🧊 ที่ part (BM1LI0) → ควรเห็นเฉพาะ part zoom-fit.
+**OPEN:** (1) 03 Ruth เปิดไม่ได้ = ยังไม่ export GLB; 03 Ruth ปิดอยู่ (เอ๋ทำ Untitled ใหม่) → เปิด 03 Ruth + บอกผม รัน batch ให้. (2) 9 stale _parts.glb รอลบหลังเอ๋ยืนยัน isolate.
+**NEEDS (เอ๋):** verify part-isolate + reopen 03 Ruth when free.
+-- Fusion (RD)
