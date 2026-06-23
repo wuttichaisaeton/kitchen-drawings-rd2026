@@ -11108,13 +11108,9 @@ function renderProjectsHome() {
         ? `<button class="project-complete-btn on" data-uncomplete-project="${escapeHtml(p.key)}" aria-label="Restore project" title="Move back to the active list">↩</button>`
         : `<button class="project-complete-btn" data-complete-project="${escapeHtml(p.key)}" aria-label="Mark complete" title="Move to the Complete folder">📦</button>`)
       : '';
-    // 📋 Copy assembler link (เอ๋ 2026-06-22): admin one-click copies
-    // `…/?asm=<projectKey>` → paste to LINE → assembler taps it once = lands
-    // straight in this project's Kanban + role=assemble baked on their device.
-    // Future taps on the now-clean URL still work (role stays in LS).
-    const asmLinkBtn = adminMode
-      ? `<button class="project-asmlink-btn" data-asmlink-project="${escapeHtml(p.key)}" aria-label="Copy assembler link" title="Copy assembler link — share via LINE so the worker lands straight in this project's Assembly view">📋</button>`
-      : '';
+    // 📐 View project PDF (เอ๋ 2026-06-23): assembler + admin can merge
+    // all part drawings into one navigable PDF and open it in a new tab.
+    const projectPdfBtn = `<button class="project-pdf-btn" data-pdf-project="${escapeHtml(p.key)}" aria-label="View all drawings" title="Merge all part drawings into one PDF and open it">📐</button>`;
     // 🧊 Full-Kitchen 3D (RD 07 2026-06-22) — opens the project's whole-kitchen
     // GLB written by CC_BatchExport3D at Drawings/3d/<projectKey>.glb. Visible
     // when the user could plausibly want it (admin OR assemble role); HEAD-
@@ -11136,7 +11132,7 @@ function renderProjectsHome() {
         </div>
         ${pinBtn}
         ${proj3dBtn}
-        ${asmLinkBtn}
+        ${projectPdfBtn}
         ${completeBtn}
         ${renameBtn}
         ${deleteBtn}
@@ -11177,32 +11173,12 @@ function renderProjectsHome() {
     });
   });
 
-  // 📋 Copy assembler link — admin-only. Writes `…/?asm=<key>` to clipboard;
-  // worker pastes into LINE → assembler taps = lands in Assembly + role baked.
-  ROOT.querySelectorAll('[data-asmlink-project]').forEach(btn => {
-    btn.addEventListener('click', async (ev) => {
+  // 📐 View project PDF — merges all part drawings into one navigable PDF.
+  ROOT.querySelectorAll('[data-pdf-project]').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      const key = btn.dataset.asmlinkProject;
-      const url = window.location.origin + window.location.pathname + '?asm=' + encodeURIComponent(key);
-      let ok = false;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(url);
-          ok = true;
-        }
-      } catch (e) {}
-      if (!ok) {
-        // Fallback for browsers that block async clipboard outside a secure
-        // context — use a hidden textarea + execCommand('copy').
-        try {
-          const ta = document.createElement('textarea');
-          ta.value = url; ta.style.position = 'fixed'; ta.style.top = '-1000px';
-          document.body.appendChild(ta); ta.select();
-          ok = document.execCommand('copy');
-          document.body.removeChild(ta);
-        } catch (e) {}
-      }
-      _kdToast(ok ? '📋 Assembler link copied' : '✗ Copy failed — long-press URL to copy manually');
+      const key = btn.dataset.pdfProject;
+      if (key) buildAllProjectPdf(key);
     });
   });
 
@@ -11222,7 +11198,7 @@ function renderProjectsHome() {
   // Card click → drill into project (but ignore clicks on pin, drag, rename, delete, asmlink, or 3d).
   ROOT.querySelectorAll('.project-card').forEach(el => {
     el.addEventListener('click', (ev) => {
-      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn, .project-asmlink-btn, .project-3d-btn')) return;
+      if (ev.target.closest('.pin-btn, .drag-handle, .project-delete-btn, .project-rename-btn, .project-complete-btn, .project-pdf-btn, .project-3d-btn')) return;
       markProjectSeen('proj', el.dataset.project);   // opening clears this surface's NEW badge
       navTo({ kind: 'project', name: el.dataset.project });
     });

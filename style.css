@@ -507,6 +507,37 @@ h1 {
   border-color: #F2A93B;
 }
 
+/* 📐 View project PDF — same chip style, blue accent. */
+.project-pdf-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-size: 18px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.project-pdf-btn:hover {
+  color: #4a90e2;
+  border-color: rgba(74, 144, 226, 0.4);
+  background: rgba(74, 144, 226, 0.08);
+}
+.project-pdf-btn:active {
+  transform: scale(0.9);
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+}
+
 /* ── Sortable.js dragging visuals ── */
 .project-card-ghost {
   opacity: 0.3;
