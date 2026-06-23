@@ -2,21 +2,23 @@
   "name": "10WVON-08OLOR",
   "status": "active",
   "created_at": "2026-05-27T04:46:37.494667+00:00",
-  "updated_at": "2026-05-27T22:12:59.683456+00:00",
-  "total_unique_parts": 10,
-  "total_qty": 22,
+  "updated_at": "2026-06-23T08:19:13.085209+00:00",
+  "total_unique_parts": 12,
+  "total_qty": 26,
   "parts": [
     {
       "code": "BK1DN1-080000",
       "qty": 1,
       "family": "Back-Down",
       "parent_code": "BK0DN0-080000",
+      "variant_root": "BK0DN0-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:hKkiNHBmQNaJ9HM1pN8DUQ"
     },
     {
       "code": "BM1NO0-080000",
       "qty": 1,
       "family": "Beam",
+      "variant_root": "BM1NO0-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:s8Uxjx8JQfqZ9TolJ5gkHw"
     },
     {
@@ -24,6 +26,7 @@
       "qty": 4,
       "family": "Other",
       "parent_code": "BK2TR1-080000",
+      "variant_root": "BK0DN0-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:Ara0SuvHTMi5vUIvrh2CkQ"
     },
     {
@@ -31,19 +34,22 @@
       "qty": 1,
       "family": "Floor",
       "parent_code": "FN0FN3-080005",
+      "variant_root": "FN0FN3-080005",
       "urn": "urn:adsk.wipprod:dm.lineage:MT9vB7GkSFGNlv9DEWgCQw"
     },
     {
-      "code": "FN2BNX-120000",
-      "qty": 1,
+      "code": "FN2BNX-080000",
+      "qty": 3,
       "family": "Floor",
-      "parent_code": "FN2BNX-080000",
+      "parent_code": "FN0FN3-080005",
+      "variant_root": "FN0FN3-080005",
       "urn": "urn:adsk.wipprod:dm.lineage:pwaJNYI6QdWG4uKebGRYYw"
     },
     {
       "code": "SD00NA-080000",
       "qty": 2,
       "family": "Side Panel",
+      "variant_root": "SD00NA-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:U0U9ZkbARFeVHqPYxi085w"
     },
     {
@@ -51,13 +57,31 @@
       "qty": 4,
       "family": "Side Panel",
       "parent_code": "SD00NA-080000",
+      "variant_root": "SD00NA-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
+    },
+    {
+      "code": "SH0S11-080046",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "SH0S10-080046",
+      "variant_root": "SH0S10-080046",
+      "urn": "urn:adsk.wipprod:dm.lineage:YDYumfxURhqjSGPMNr42Kg"
+    },
+    {
+      "code": "SH0S12-080000",
+      "qty": 1,
+      "family": "Other",
+      "parent_code": "SH0S10-080046",
+      "variant_root": "SH0S10-080046",
+      "urn": "urn:adsk.wipprod:dm.lineage:0zKN-EYKSAeeKy1IoC15Uw"
     },
     {
       "code": "TS0BV0-000000",
       "qty": 2,
       "family": "Top Sup",
       "parent_code": "TS002H-080000",
+      "variant_root": "TS002H-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
     },
     {
@@ -65,6 +89,7 @@
       "qty": 2,
       "family": "Top Sup",
       "parent_code": "TS002H-080000",
+      "variant_root": "TS002H-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:i8NRkqxjRoWzza-oYOeIQw"
     },
     {
@@ -72,7 +97,83 @@
       "qty": 4,
       "family": "Top Sup",
       "parent_code": "TS2TR4-080000",
+      "variant_root": "TS002H-080000",
       "urn": "urn:adsk.wipprod:dm.lineage:28VLFffKTye7RPik2IVLIA"
+    },
+    {
+      "code": "1-HingeW",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "HINGEW2-H080",
+      "variant_root": "HINGEW2-H080"
+    },
+    {
+      "code": "1SHG00-080035",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "SH0S10-080046",
+      "variant_root": "SH0S10-080046"
+    },
+    {
+      "code": "BK0DN0-080000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "variant_root": "BK0DN0-080000"
+    },
+    {
+      "code": "BK2TR1-080000",
+      "qty": 0,
+      "family": "Back-Down",
+      "is_wrapper": true,
+      "parent_code": "BK0DN0-080000",
+      "variant_root": "BK0DN0-080000"
+    },
+    {
+      "code": "FN0FN3-080005",
+      "qty": 0,
+      "family": "Floor",
+      "is_wrapper": true,
+      "variant_root": "FN0FN3-080005"
+    },
+    {
+      "code": "HINGEW2-H080",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "HINGEW2-H080"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "parent_code": "FN0FN3-080005",
+      "variant_root": "FN0FN3-080005"
+    },
+    {
+      "code": "SH0S10-080046",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "SH0S10-080046"
+    },
+    {
+      "code": "TS002H-080000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS002H-080000"
+    },
+    {
+      "code": "TS2TR4-080000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "parent_code": "TS002H-080000",
+      "variant_root": "TS002H-080000"
     }
   ]
 }
