@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T22:34:00.784773+00:00",
+  "generated_at": "2026-06-23T22:43:22.253937+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -17201,6 +17201,55 @@
           "is_wrapper": true,
           "parent_code": "TS004H-070000",
           "variant_root": "TS004H-070000"
+        }
+      ]
+    },
+    "TS002H-120000": {
+      "name": "TS002H-120000",
+      "status": "active",
+      "created_at": "2026-06-23T22:43:22.239870+00:00",
+      "updated_at": "2026-06-23T22:43:22.239870+00:00",
+      "total_unique_parts": 3,
+      "total_qty": 8,
+      "parts": [
+        {
+          "code": "TS0BV0-000000",
+          "qty": 2,
+          "family": "Top Sup",
+          "parent_code": "TS002H-120000",
+          "variant_root": "TS002H-120000",
+          "urn": "urn:adsk.wipprod:dm.lineage:kqncXo-uRH2T7bLiWVCanw"
+        },
+        {
+          "code": "TS1BHH-120000",
+          "qty": 2,
+          "family": "Top Sup",
+          "parent_code": "TS002H-120000",
+          "variant_root": "TS002H-120000",
+          "urn": "urn:adsk.wipprod:dm.lineage:bdrkOWi7RAKqSCOzOvBHJQ"
+        },
+        {
+          "code": "TS2TRX-000000",
+          "qty": 4,
+          "family": "Top Sup",
+          "parent_code": "TS2TR4-120000",
+          "variant_root": "TS002H-120000",
+          "urn": "urn:adsk.wipprod:dm.lineage:4eHNpXzITB2vArQENtyEag"
+        },
+        {
+          "code": "TS002H-120000",
+          "qty": 0,
+          "family": "Top Sup",
+          "is_wrapper": true,
+          "variant_root": "TS002H-120000"
+        },
+        {
+          "code": "TS2TR4-120000",
+          "qty": 0,
+          "family": "Top Sup",
+          "is_wrapper": true,
+          "parent_code": "TS002H-120000",
+          "variant_root": "TS002H-120000"
         }
       ]
     }
