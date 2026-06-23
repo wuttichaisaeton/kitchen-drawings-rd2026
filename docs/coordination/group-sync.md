@@ -8271,3 +8271,21 @@ Each bend row got a steel-blue isometric-cube button (distinct from the amber Op
 1. model-viewer renders ON DEMAND — call `scene.queueRender()` after editing the THREE scene or it won't repaint. 2. world→screen MUST use model-viewer hotspots (`slot=hotspot-X data-position`), not our own `_findCamera` (scale-drifts). 3. iPad tap ≠ 'click' (touchstart preventDefault) — detect the tap yourself. 4. raycast hit→part: walk to the first node with a part code, not the scene top child (= "Pivot"). 5. the theme forces `background:transparent !important` on overlay rows — use opacity for highlights. 6. **METHOD: when blind reasoning fails twice, drive the real browser (Chrome MCP) and inspect — don't keep guessing.**
 
 ### OPEN (TaskList): #17 export _parts.glb for 03 Ruth's 8 cabinets · #14 Batch Export 3D on 02 Ruth (CC_Export3D round-17 ready) · #12 9 dropped/degenerate bodies in 1LLVO4.
+
+---
+### RD · 2026-06-23 · Project PDF (📐) → VIEW in tab, not download (c3d926b, LIVE, browser-verified)
+เอ๋ asked: per-cabinet "copy assembler link" buttons → replace with a "view my own PDF" button (02/03 Ruth), **and the PDF must OPEN (view), not download**.
+
+FINDINGS:
+- The per-cabinet copy-assembler buttons are **already gone** (removed earlier; not in app.js, editor, or live UI — checked project cards in Chrome: only ★/🧊/📐/📦/✏/🗑). Nothing left to remove.
+- The existing 📐 "View project PDF" on each project card already merges all drawings — but it **downloaded** instead of viewing.
+
+ROOT CAUSE: `buildAllProjectPdf` called `window.open(blobUrl)` AFTER the async fetch/merge/save → outside the click gesture → browser blocks the popup → falls back to the `<a download>` branch. That's why เอ๋ saw a download.
+
+FIX (c3d926b): open a blank tab **synchronously inside the click gesture** (with a "Building <project> PDF…" placeholder), then set `viewWin.location = blobUrl` once the merge is done → browser PDF viewer renders inline. Covers BOTH the project-card 📐 and the project-detail 📑 All PDF (one shared fn). Download kept only if the tab was closed/blocked.
+
+VERIFIED (Chrome MCP, real browser): clicked 📐 on 02 Ruth → `window.open('',_blank)` fires in-gesture, tab navigates to `blob:…` (VIEW), `downloadCalls=[]` (zero downloads). node --check OK, deploy watched to success, live app.js has the marker.
+
+NOTE: merge fetches every part PDF so big projects take ~20s — the placeholder tab now shows progress so it doesn't look frozen.
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- RD (web)
