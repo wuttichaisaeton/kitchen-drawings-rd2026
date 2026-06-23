@@ -6529,10 +6529,22 @@ async function buildAllProjectPdf(projectKey) {
   } else {
     const win = window.open(objUrl, '_blank');
     if (!win) {
-      const a = document.createElement('a');
-      a.href = objUrl;
-      a.download = `${projectKey}-all.pdf`;
-      document.body.appendChild(a); a.click(); a.remove();
+      // Popup blocked — show inline fullscreen iframe overlay (never download)
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column';
+      const bar = document.createElement('div');
+      bar.style.cssText = 'display:flex;justify-content:flex-end;padding:8px 12px';
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'background:#333;color:#fff;border:1px solid #555;border-radius:4px;font-size:20px;cursor:pointer;padding:4px 12px';
+      closeBtn.onclick = () => { overlay.remove(); URL.revokeObjectURL(objUrl); };
+      bar.appendChild(closeBtn);
+      overlay.appendChild(bar);
+      const frame = document.createElement('iframe');
+      frame.src = objUrl;
+      frame.style.cssText = 'flex:1;border:none;width:100%';
+      overlay.appendChild(frame);
+      document.body.appendChild(overlay);
     }
   }
   if (fail > 0) {
