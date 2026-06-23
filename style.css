@@ -3404,6 +3404,23 @@ button.cut-status:focus-visible {
 }
 .bend-fusion-btn:hover { background: rgba(242, 169, 59, 0.2); color: #F2A93B; }
 .bend-fusion-btn svg { width: 26px; height: 26px; display: block; }
+/* View this part in 3D in the WEB viewer (เอ๋ 2026-06-23) — steel-blue to set it
+   apart from the amber Open-in-Fusion button next to it. */
+.bend-3d-btn {
+  background: rgba(91, 141, 187, 0.08);
+  border: 1px solid rgba(91, 141, 187, 0.42);
+  color: #8fb3d6;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.bend-3d-btn:hover { background: rgba(91, 141, 187, 0.22); color: #5d8dbb; }
+.bend-3d-btn svg { width: 26px; height: 26px; display: block; }
 /* Sim.Bending card variant — compact chip in the sb-card head action cluster
    (next to ⭐/✕). margin-left:auto pulls the Fusion+⭐+✕ cluster right; the
    fav button's own inline margin-left:auto then collapses to 0 (first auto
@@ -3504,6 +3521,7 @@ button.cut-status:focus-visible {
 @media (max-width: 480px) {
   .bend-row { gap: 6px; padding: 12px 8px; }
   .bend-row .bend-view-btn,
+  .bend-row .bend-3d-btn,
   .bend-row .bend-fusion-btn,
   .bend-row .bend-toggle,
   .bend-row .comment-btn {
@@ -3511,7 +3529,8 @@ button.cut-status:focus-visible {
     height: 46px;
     font-size: 20px;
   }
-  .bend-row .bend-fusion-btn svg { width: 23px; height: 23px; }
+  .bend-row .bend-fusion-btn svg,
+  .bend-row .bend-3d-btn svg { width: 23px; height: 23px; }
   .bend-qty { min-width: 32px; font-size: 18px; padding: 0 2px; }
   .bend-code { font-size: 15px; }
 }

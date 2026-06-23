@@ -4503,6 +4503,11 @@ function _renderBendList(parts, projectKey) {
     // because the 👁 button next door is already the PDF affordance; a dead
     // bridge must say so, not silently open a PDF (same rule as the nest ⚠).
     const fusionBtn = `<button class="bend-fusion-btn" data-code="${escapeHtml(p.code)}" aria-label="Open in Fusion" title="Open this part in Fusion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.2 7.4 V16.6 L12 21.2 L3.8 16.6 V7.4 Z"/><path d="M3.8 7.4 L12 12 L20.2 7.4"/><line x1="12" y1="12" x2="12" y2="21.2"/></svg></button>`;
+    // 🧊 View this part in 3D in the WEB viewer (เอ๋ 2026-06-23 "ที่ bend list ให้
+    // เพิ่มปุ่มที่สามารถดู 3D แต่ละ part ได้"). Opens _kdOpen3D in PART mode (loads the
+    // owning cabinet's _parts.glb + isolates this leaf). Isometric-cube glyph to
+    // tell it apart from the amber Open-in-Fusion hexagon beside it.
+    const open3dBtn = `<button class="bend-3d-btn" data-code="${escapeHtml(p.code)}" aria-label="View part in 3D" title="View this part in 3D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.5 7.4 L12 12 L3.5 7.4 Z"/><path d="M3.5 7.4 V16.6 L12 21.2 V12"/><path d="M20.5 7.4 V16.6 L12 21.2"/></svg></button>`;
     // 💬 comments — reuse the shared per-part comment system (same as the
     // BOM row). Comments are global per part code (comments/<code>), so a
     // note left in bending is the same thread the assembler/admin sees.
@@ -4535,6 +4540,7 @@ function _renderBendList(parts, projectKey) {
         ${_bendRecheckChip(p.code, null, { clickable: true })}
         ${_outdatedChips(p.code, { clickable: true })}
         ${viewBtn}
+        ${open3dBtn}
         ${fusionBtn}
         <button class="comment-btn ${comments.length ? 'has-comments' : ''}" data-code="${escapeHtml(p.code)}" aria-label="Comments" title="Comments">💬${cBadgeHtml}</button>
         <button class="bend-toggle ${bent ? 'on' : ''}" data-code="${escapeHtml(p.code)}" aria-label="${bent ? 'Mark not bent' : 'Mark bent'}" title="${bent ? 'Mark not bent' : 'Mark bent'}">
@@ -4593,6 +4599,21 @@ function _wireBendList(parts, projectKey) {
       ev.stopPropagation();
       const p = _bendPartByCode.get(btn.dataset.code) || { code: btn.dataset.code };
       _routeLeafToFusion({ code: p.code, urn: p.urn || null }, { fusionOnly: true });
+    });
+  });
+  // 🧊 View this part in 3D (web) — resolve the leaf's owning cabinet (variant_root
+  // / parent climb) and open the PART view (its cabinet's _parts.glb, isolated);
+  // a standalone/unknown part falls back to its own GLB (→ placeholder if none).
+  const _bendByCode = new Map((parts || []).map(x => [x.code, x]));
+  ROOT.querySelectorAll('.bend-3d-btn').forEach(btn => {
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const code = btn.dataset.code;
+      const p = _bendPartByCode.get(code) || _bendByCode.get(code) || { code };
+      let cab = '';
+      try { cab = _resolveCabinet(p, _bendByCode) || ''; } catch {}
+      if (cab && cab !== code) _kdOpen3D(code, { cabinetCode: cab });
+      else _kdOpen3D(code);
     });
   });
   // Outdated / re-check chips are wired GLOBALLY via _wireOutdatedChipDelegation
