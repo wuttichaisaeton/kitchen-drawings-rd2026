@@ -1,50 +1,85 @@
-CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 1NNV04-06000L
 target_kind       = cabinet
-walk_bodies       = 32
-main_glb_bytes    = 1108616
-main_nodes        = 32
-main_stl_bytes    = 4442288
-world_transforms  = true (Matrix3D.getCell, round-13)
-schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
-first_leaf_world_mm[0] = SD0SUP-000000 v6__Body1 @ (317.0, 281.0, 636.0)
-first_leaf_world_mm[1] = SD00NA-080000 v31__Body1 @ (318.0, -284.0, 382.0)
-first_leaf_world_mm[2] = SD0SUP-000000 v6__Body1 @ (-284.0, 281.0, -636.0)
+walk_bodies       = 120
+main_glb_bytes    = 2470916
+main_nodes        = 115
+main_stl_bytes    = 11783360
+dropped_bodies    = 5 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = SD0SUP-000000 v6__Body1 @ (283.0, 281.0, 128.0)
+node_world_mm[1] = SD00NA-080000 v31__Body1 @ (282.0, -284.0, 382.0)
+node_world_mm[2] = SD0SUP-000000 v6__Body1 @ (284.0, 281.0, 636.0)
 --- main helper subprocess output ---
-OK SD0SUP-000000_v6__Body1 428/868
-OK SD00NA-080000_v31__Body1 10154/21756
-OK SD0SUP-000000_v6__Body1_2 428/868
-OK SD00NA-080000_v31__Body1_2 10154/21756
-OK SD0SUP-000000_v6__Body1_3 428/868
-OK SD0SUP-000000_v6__Body1_4 428/868
-OK BK1DN1-060000_v31__Body1 1640/3276
-OK TS1BHH-060000_v11__Body3 1164/2416
-OK TS1BHH-060000_v11__Body3_2 1164/2416
-OK TS1BHH-060000_v11__Body3_3 1164/2416
-OK TS1BHH-060000_v11__Body3_4 1164/2416
-OK FN2BN0-000000__Body1 2298/4816
-OK Leg_-_080_mm._by_YH__Body1 3259/6534
-OK Leg_-_080_mm._by_YH__Cut 62/120
-OK Leg_-_080_mm._by_YH__Cut_1 62/120
-OK Leg_-_080_mm._by_YH__Cut_3 62/120
-OK Leg_-_080_mm._by_YH__Cut_2 62/120
-OK Body1 366/728
-OK Body2 300/596
-OK Body1_2 440/876
-OK Body1_3 1124/2248
-OK Body1_4 366/728
-OK Body2_2 300/596
-OK Body1_5 440/876
-OK Body1_6 1124/2248
-OK Body1_7 366/728
-OK Body2_3 300/596
+3 300/596
 OK Body1_8 440/876
 OK Body1_9 1124/2248
-OK HingeW4-H0800_v4__Body38 160/316
+OK Leg_-_080_mm._by_YH__Body1_4 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_6 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_4 62/120
+OK Body1_10 366/728
+OK Body2_4 300/596
+OK Body1_11 440/876
+OK Body1_12 1124/2248
+OK BM1NO0-060000_v3__Body16 1534/3160
 OK Door__Body1 160/316
+OK Cup_1___Cup 7237/14490
+OK Cup_1___cut 60/116
+OK Cup_1___cut_2 60/116
+OK Cup_1___cut_1 226/448
+OK Cup_1___cut-Hal 60/116
+OK Cup_1___cut-Hal_1 60/116
+OK Cup_1___Cup_1 7237/14490
+OK Cup_1___Cup_2 7237/14490
+OK Cup_1___Cup_3 7237/14490
+OK Cup_1___cut_3 60/116
+OK Cup_1___cut_4 60/116
+OK Cup_1___cut_5 60/116
+OK Cup_1___cut_2_1 60/116
+OK Cup_1___cut_2_2 60/116
+OK Cup_1___cut_2_3 60/116
+OK Cup_1___cut_1_1 226/448
+OK Cup_1___cut_1_2 226/448
+OK Cup_1___cut_1_3 226/448
+OK Cup_1___cut-Hal_2 60/116
+OK Cup_1___cut-Hal_3 60/116
+OK Cup_1___cut-Hal_4 60/116
+OK Cup_1___cut-Hal_1_1 60/116
+OK Cup_1___cut-Hal_1_2 60/116
+OK Cup_1___cut-Hal_1_3 60/116
+OK B_1___B 504/1012
+OK B_1___B_1 504/1012
+OK B_1___B_2 504/1012
+OK B_1___B_3 504/1012
+OK A_1___A 440/884
+OK A_1___A_1 440/884
+OK A_1___A_2 440/884
+OK A_1___A_3 440/884
+OK 1-HingeW_v2__Body1 1724/3464
+OK 1-HingeW_v2__cut 58/112
+OK 1-HingeW_v2__cut_1 58/112
+OK 1-HingeW_v2__Body4 311/622
+OK 1-HingeW_v2__Body5 1667/3330
+OK 1-HingeW_v2__Body39 1724/3464
+OK 1-HingeW_v2__Body44 1724/3464
+OK 1-HingeW_v2__Body49 1724/3464
+OK 1-HingeW_v2__cut_2 58/112
+OK 1-HingeW_v2__cut_3 58/112
+OK 1-HingeW_v2__cut_4 58/112
+OK 1-HingeW_v2__cut_1_1 58/112
+OK 1-HingeW_v2__cut_1_2 58/112
+OK 1-HingeW_v2__cut_1_3 58/112
+OK 1-HingeW_v2__Body42 311/622
+OK 1-HingeW_v2__Body47 311/622
+OK 1-HingeW_v2__Body52 311/622
+OK 1-HingeW_v2__Body43 1667/3330
+OK 1-HingeW_v2__Body48 1667/3330
+OK 1-HingeW_v2__Body53 1667/3330
+OK HingeW4-H0800_v4__Body38 160/316
+OK DSV100-060080_v6__Body4 1828/3652
 OK DSV2L4-060080_v6__Body2 1493/3062
-ORPHAN_SUMMARY median=311.8 threshold=935.4 count=3/32
-ORPHAN SD0SUP-000000_v6__Body1_3 dist=1121.6 (3.6x median)
-ORPHAN BK1DN1-060000_v31__Body1 dist=1015.4 (3.3x median)
-ORPHAN DSV2L4-060080_v6__Body2 dist=978.4 (3.1x median)
-GLB 1108616 32
+ORPHAN_SUMMARY median=447.6 threshold=1342.9 count=0/115
+GLB 2470916 115

@@ -1,29 +1,17 @@
-CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 100VFRR-075D60
 target_kind       = cabinet
-walk_bodies       = 29
-main_glb_bytes    = 722672
-main_nodes        = 29
-main_stl_bytes    = 3372336
-world_transforms  = true (Matrix3D.getCell, round-13)
-schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
-first_leaf_world_mm[0] = 080W-Insert 4 Hinges v1__Body1 @ (741.0, -565.0, -82.0)
-first_leaf_world_mm[1] = 080W-Insert 4 Hinges v1__Body2 @ (741.0, -565.0, -82.0)
-first_leaf_world_mm[2] = 080W-Insert 4 Hinges v1__Body4 @ (741.0, -565.0, -82.0)
+walk_bodies       = 41
+main_glb_bytes    = 893076
+main_nodes        = 41
+main_stl_bytes    = 4283344
+dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = Cup__Body5 @ (1246.5, -506.5, -162.0)
+node_world_mm[1] = Cup__Body6 @ (1246.5, -506.5, -162.0)
+node_world_mm[2] = Cup__Body7 @ (1246.5, -506.5, -162.0)
 --- main helper subprocess output ---
-OK 080W-Insert_4_Hinges_v1__Body1 944/1908
-OK 080W-Insert_4_Hinges_v1__Body2 118/236
-OK 080W-Insert_4_Hinges_v1__Body4 1027/2050
-OK 080W-Insert_4_Hinges_v1__Box 160/316
-OK 080W-Insert_4_Hinges_v1__Body8 944/1908
-OK 080W-Insert_4_Hinges_v1__Body9 944/1908
-OK 080W-Insert_4_Hinges_v1__Body14 944/1908
-OK 080W-Insert_4_Hinges_v1__Body10 118/236
-OK 080W-Insert_4_Hinges_v1__Body11 118/236
-OK 080W-Insert_4_Hinges_v1__Body15 118/236
-OK 080W-Insert_4_Hinges_v1__Body12 1027/2050
-OK 080W-Insert_4_Hinges_v1__Body13 1027/2050
-OK 080W-Insert_4_Hinges_v1__Body16 1027/2050
 OK Cup__Body5 3981/7978
 OK Cup__Body6 3981/7978
 OK Cup__Body7 3981/7978
@@ -37,12 +25,33 @@ OK Component15__Body2 504/1012
 OK Component15__Body3 504/1012
 OK Component15__Body4 504/1012
 OK DRW__Body1 160/316
+OK 080W-Insert_4_Hinges_v1__Body1 944/1908
+OK 080W-Insert_4_Hinges_v1__Body2 118/236
+OK 080W-Insert_4_Hinges_v1__Body4 1027/2050
+OK 080W-Insert_4_Hinges_v1__Box 160/316
+OK 080W-Insert_4_Hinges_v1__Body8 944/1908
+OK 080W-Insert_4_Hinges_v1__Body9 944/1908
+OK 080W-Insert_4_Hinges_v1__Body14 944/1908
+OK 080W-Insert_4_Hinges_v1__Body10 118/236
+OK 080W-Insert_4_Hinges_v1__Body11 118/236
+OK 080W-Insert_4_Hinges_v1__Body15 118/236
+OK 080W-Insert_4_Hinges_v1__Body12 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body13 1027/2050
+OK 080W-Insert_4_Hinges_v1__Body16 1027/2050
 OK DSV2R4-060080_v6__Body2 1493/3062
 OK DSV100-060080_v6__Body4 1828/3652
+OK TS2TRX-000000__Body1 180/372
+OK TS2TRX-000000__Body1_2 180/372
+OK TS2TRX-000000__Body1_3 180/372
+OK TS2TRX-000000__Body1_4 180/372
+OK TS1BHH-075000_v9__Body3 1934/4052
+OK TS1BHH-075000_v9__Body3_2 1934/4052
+OK TS1BHH-075000_v9__Body3_3 1934/4052
+OK TS1BHH-075000_v9__Body3_4 1934/4052
 OK SD0HG1-000000__Body1 1832/3780
-ORPHAN_SUMMARY median=544.8 threshold=1634.3 count=4/29
-ORPHAN Cup__Body8 dist=2552.9 (4.7x median)
-ORPHAN Cup__Body7 dist=2456.3 (4.5x median)
-ORPHAN Cup__Body6 dist=2372.6 (4.4x median)
-ORPHAN Cup__Body5 dist=2303.2 (4.2x median)
-GLB 722672 29
+OK REF_-_TEKA_TFI3_130_D__Body1 236/468
+OK REF_-_TEKA_TFI3_130_D__Body2 8/12
+OK Component1__Body1 8/12
+OK Component1__Body2 8/12
+ORPHAN_SUMMARY median=267.2 threshold=801.5 count=0/41
+GLB 893076 41

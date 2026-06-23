@@ -1,29 +1,29 @@
 CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 1LLVO4-05000L
-target_kind       = root
+target_kind       = cabinet
 walk_bodies       = 120
-main_glb_bytes    = 3155916
+main_glb_bytes    = 3155956
 main_nodes        = 111
 main_stl_bytes    = 13412024
 dropped_bodies    = 9 (STL 0-byte/error, skipped — round 16 now counts these)
 transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
 schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
-node_world_mm[0] = FN0F00-050000 v15__Body18 @ (0.0, 0.0, 0.0)
-node_world_mm[1] = FN2BLA-040000__Body1 @ (0.0, -213.0, -21.0)
-node_world_mm[2] = FN2BN0-000000__Body1 @ (0.0, 255.0, -21.0)
+node_world_mm[0] = BM1LI0-050000 v3__Body8 @ (-0.0, -284.0, 764.0)
+node_world_mm[1] = BM1LI0-050000 v3__Body19 @ (-0.0, -284.0, 764.0)
+node_world_mm[2] = BM1LI0-050000 v3__Body20 @ (-0.0, -284.0, 764.0)
 --- main helper subprocess output ---
--000000__Body1 180/372
-OK TS2TRX-000000__Body1_2 180/372
-OK TS2TRX-000000__Body1_3 180/372
+y1_3 180/372
 OK TS2TRX-000000__Body1_4 180/372
 OK TS1BHH-050000_v11__Body3 1056/2200
 OK TS1BHH-050000_v11__Body3_2 1056/2200
 OK TS1BHH-050000_v11__Body3_3 1056/2200
 OK TS1BHH-050000_v11__Body3_4 1056/2200
-OK BM1LI0-050000_v3__Body8 134/264
-OK BM1LI0-050000_v3__Body16 2063/4222
-OK BM1LI0-050000_v3__Body21 9646/19288
-OK BM1LI0-050000_v3__Body22 3726/7448
+OK SD0SUP-000000_v6__Body1 428/868
+OK SD00NA-080000_v31__Body1 10154/21756
+OK SD0SUP-000000_v6__Body1_2 428/868
+OK SD00NA-080000_v31__Body1_2 10154/21756
+OK SD0SUP-000000_v6__Body1_3 428/868
+OK SD0SUP-000000_v6__Body1_4 428/868
 OK Door__Body1 160/316
 OK Cup_1___Cup 7237/14490
 OK Cup_1___cut 60/116
@@ -75,4 +75,4 @@ OK SH0G00-020035__Body1 8/12
 OK SH0S11-050035_v7__Body1 916/1836
 OK SH0S12-050000_v3__Body1 628/1260
 ORPHAN_SUMMARY median=440.8 threshold=1322.5 count=0/111
-GLB 3155916 111
+GLB 3155956 111

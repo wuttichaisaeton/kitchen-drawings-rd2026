@@ -1,68 +1,76 @@
-CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 02 Ruth
 target_kind       = project
-walk_bodies       = 185
-main_glb_bytes    = 7051628
-main_nodes        = 177
-main_stl_bytes    = 27752368
-world_transforms  = true (Matrix3D.getCell, round-13)
-schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
-first_leaf_world_mm[0] = FN0F00-080000 v2__Body18 @ (1050.0, -301.0, 118.0)
-first_leaf_world_mm[1] = FN1BLA-120000__Body1 @ (1050.0, -301.0, 118.0)
-first_leaf_world_mm[2] = Leg - 080 mm. by YH__Body1 @ (1156.3, 802.3, -18.0)
+walk_bodies       = 944
+main_glb_bytes    = 24737952
+main_nodes        = 903
+main_stl_bytes    = 107718352
+dropped_bodies    = 41 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = FN0F00-080000 v2__Body18 @ (1050.0, -301.0, 118.0)
+node_world_mm[1] = FN1BLA-120000__Body1 @ (1050.0, -514.0, 97.0)
+node_world_mm[2] = FN2BNX-080000__Body1 @ (1050.0, -46.0, 97.0)
 --- main helper subprocess output ---
-__Body16 1987/4014
-OK BM1LI0-020000_v2__Body21 3610/7216
-OK BM1LI0-020000_v2__Body22 1392/2780
-OK SDRCN2-080000_v4__Body1 10202/21860
-OK BM1LCL-105003_v10__Body8 100/196
-OK BM1LCL-105003_v10__Body16 2434/5044
-OK BM1LCL-105003_v10__Body21 8984/17964
-OK BM1LCL-105003_v10__Body22 3467/6930
-OK TS2TRX-000000__Body1 180/372
-OK TS2TRX-000000__Body1_2 180/372
-OK TS2TRX-000000__Body1_3 180/372
-OK TS2TRX-000000__Body1_4 180/372
-OK TS1BHH-095000_v9__Body3 2328/4872
-OK TS1BHH-105000_v9__Body3 2532/5300
-OK TS1BHH-105000_v9__Body3_2 2532/5300
-OK 080W-Insert_4_Hinges_v1__Body1 944/1908
-OK 080W-Insert_4_Hinges_v1__Body2 118/236
-OK 080W-Insert_4_Hinges_v1__Body4 1027/2050
-OK 080W-Insert_4_Hinges_v1__Box 160/316
-OK 080W-Insert_4_Hinges_v1__Body8 944/1908
-OK 080W-Insert_4_Hinges_v1__Body9 944/1908
-OK 080W-Insert_4_Hinges_v1__Body14 944/1908
-OK 080W-Insert_4_Hinges_v1__Body10 118/236
-OK 080W-Insert_4_Hinges_v1__Body11 118/236
-OK 080W-Insert_4_Hinges_v1__Body15 118/236
-OK 080W-Insert_4_Hinges_v1__Body12 1027/2050
-OK 080W-Insert_4_Hinges_v1__Body13 1027/2050
-OK 080W-Insert_4_Hinges_v1__Body16 1027/2050
-OK Cup__Body5 3981/7978
-OK Cup__Body6 3981/7978
-OK Cup__Body7 3981/7978
-OK Cup__Body8 3981/7978
-OK Component14__Body1 440/884
-OK Component14__Body2 440/884
-OK Component14__Body3 440/884
-OK Component14__Body4 440/884
-OK Component15__Body1 504/1012
-OK Component15__Body2 504/1012
-OK Component15__Body3 504/1012
-OK Component15__Body4 504/1012
-OK DRW__Body1 160/316
-OK CL__Body1 275/546
-OK Circle__Body1 546/1104
-OK Circle__Body2 546/1104
-OK BMSPFW-000001_v5__Body1 680/1416
-OK DSV2R3-045080_v4__Body2 1274/2604
-OK DSV100-045080_v6__Body4 1626/3248
+_2 160/316
+OK Cup_1___Cup_4 7237/14490
+OK Cup_1___cut_6 60/116
+OK Cup_1___cut_2_4 60/116
+OK Cup_1___cut_1_4 226/448
+OK Cup_1___cut-Hal_5 60/116
+OK Cup_1___cut-Hal_1_4 60/116
+OK Cup_1___Cup_1_2 7237/14490
+OK Cup_1___Cup_2_2 7237/14490
+OK Cup_1___cut_3_2 60/116
+OK Cup_1___cut_4_2 60/116
+OK Cup_1___cut_2_1_2 60/116
+OK Cup_1___cut_2_2_2 60/116
+OK Cup_1___cut_1_1_2 226/448
+OK Cup_1___cut_1_2_2 226/448
+OK Cup_1___cut-Hal_2_2 60/116
+OK Cup_1___cut-Hal_3_2 60/116
+OK Cup_1___cut-Hal_1_1_2 60/116
+OK Cup_1___cut-Hal_1_2_2 60/116
+OK B_1___B_4 504/1012
+OK B_1___B_1_2 504/1012
+OK B_1___B_2_2 504/1012
+OK A_1___A_4 440/884
+OK A_1___A_1_2 440/884
+OK A_1___A_2_2 440/884
+OK 1-HingeW_v2__Body1_2 1724/3464
+OK 1-HingeW_v2__cut_5 58/112
+OK 1-HingeW_v2__cut_1_4 58/112
+OK 1-HingeW_v2__Body4_2 311/622
+OK 1-HingeW_v2__Body5_2 1667/3330
+OK 1-HingeW_v2__Body39_2 1724/3464
+OK 1-HingeW_v2__Body44_2 1724/3464
+OK 1-HingeW_v2__cut_2_2 58/112
+OK 1-HingeW_v2__cut_3_2 58/112
+OK 1-HingeW_v2__cut_1_1_2 58/112
+OK 1-HingeW_v2__cut_1_2_2 58/112
+OK 1-HingeW_v2__Body42_2 311/622
+OK 1-HingeW_v2__Body47_2 311/622
+OK 1-HingeW_v2__Body43_2 1667/3330
+OK 1-HingeW_v2__Body48_2 1667/3330
+OK HingeW3-H0800_v4__Body38 160/316
+OK DSV2L3-050080_v4__Body2 1307/2670
+OK DSV100-050080_v5__Body4 1691/3378
+OK Shelf_Support_M5_by_SSD_v27__Male 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_2 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_3 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male_4 3980/7956
+OK SH0G00-020035__Body1 8/12
+OK SH0S11-050035_v7__Body1 916/1836
+OK SH0S12-050000_v3__Body1 628/1260
+OK BTHL00-140100_v6__Body1 6142/12568
+OK BTHL00-140100_v6__Body2 18358/36712
+OK BTHL00-140100_v6__Body3 9407/18810
 OK BTHL00-170100_v4__Body1 5530/11180
 OK BTHL00-170100_v4__Body2 18966/37928
 OK BTHL00-170100_v4__Body3 9865/19726
-ORPHAN_SUMMARY median=1468.9 threshold=4406.8 count=3/177
-ORPHAN TS2TRX-000000__Body1_4 dist=5162.2 (3.5x median)
-ORPHAN TS2TRX-000000__Body1_3 dist=5119.0 (3.5x median)
-ORPHAN TS2TRX-000000__Body1_2 dist=4669.8 (3.2x median)
-GLB 7051628 177
+OK BTHLSR-140000_v2__Body1 5105/10322
+OK BTHLSR-140000_v2__Body2 18358/36712
+OK BTHLSR-140000_v2__Body3 9407/18810
+OK MR__Body1 94/188
+ORPHAN_SUMMARY median=1067.1 threshold=3201.4 count=0/903
+GLB 24737952 903

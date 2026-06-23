@@ -1,35 +1,62 @@
-CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 1CSVBL-120000
 target_kind       = cabinet
-walk_bodies       = 99
-main_glb_bytes    = 3155608
-main_nodes        = 93
-main_stl_bytes    = 12120212
-world_transforms  = true (Matrix3D.getCell, round-13)
-schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
-first_leaf_world_mm[0] = SD0CN0-080083 v14__Body1 @ (-0.0, -0.0, -17.0)
-first_leaf_world_mm[1] = BM1LCL-120000 v7__Body8 @ (0.0, 25.0, 765.0)
-first_leaf_world_mm[2] = BM1LCL-120000 v7__Body19 @ (0.0, 25.0, 765.0)
+walk_bodies       = 134
+main_glb_bytes    = 4094500
+main_nodes        = 128
+main_stl_bytes    = 15536952
+dropped_bodies    = 6 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = SD0CN0-080083 v14__Body1 @ (-0.0, -0.0, -17.0)
+node_world_mm[1] = BM1LCL-120000 v7__Body8 @ (0.0, 25.0, 765.0)
+node_world_mm[2] = BM1LCL-120000 v7__Body19 @ (0.0, 25.0, 765.0)
 --- main helper subprocess output ---
-8 540/1076
+34
+OK Leg_-_080_mm._by_YH__Cut_5 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_3 62/120
+OK Body1_7 964/1928
+OK Body1_8 540/1076
 OK Body1_9 440/876
+OK Leg_-_080_mm._by_YH__Body1_4 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_6 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_4 62/120
 OK Body1_10 964/1928
 OK Body1_11 540/1076
 OK Body1_12 440/876
-OK Leg_-_080_mm._by_YH__Body1_2 3259/6534
-OK Leg_-_080_mm._by_YH__Cut_4 62/120
-OK Leg_-_080_mm._by_YH__Cut_1_2 62/120
-OK Leg_-_080_mm._by_YH__Cut_3_2 62/120
-OK Leg_-_080_mm._by_YH__Cut_2_2 62/120
+OK Leg_-_080_mm._by_YH__Body1_5 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_7 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_5 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_5 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_5 62/120
 OK Body1_13 964/1928
 OK Body1_14 540/1076
 OK Body1_15 440/876
+OK Leg_-_080_mm._by_YH__Body1_6 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_8 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_6 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_6 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_6 62/120
 OK Body1_16 964/1928
 OK Body1_17 540/1076
 OK Body1_18 440/876
+OK Leg_-_080_mm._by_YH__Body1_7 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_9 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_7 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_7 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_7 62/120
 OK Body1_19 964/1928
 OK Body1_20 540/1076
 OK Body1_21 440/876
+OK Leg_-_080_mm._by_YH__Body1_8 3259/6534
+OK Leg_-_080_mm._by_YH__Cut_10 62/120
+OK Leg_-_080_mm._by_YH__Cut_1_8 62/120
+OK Leg_-_080_mm._by_YH__Cut_3_8 62/120
+OK Leg_-_080_mm._by_YH__Cut_2_8 62/120
 OK Body1_22 964/1928
 OK Body1_23 540/1076
 OK Body1_24 440/876
@@ -37,29 +64,13 @@ OK FN3BLA-060000_v10__Body4 348/724
 OK FN3BLA-060000_v10__Body5 52/100
 OK FN3BLA-060000_v10__Body6 101/198
 OK FN2BLA-040000__Body1 2510/5192
+OK FN2BN0-000000__Body1 3252/6764
+OK FN2BN0-000000__Body1_2 3176/6608
+OK FCLF1C-120000_v3__Body1 2768/5776
 OK BXXTR0-000000__Body1 556/1140
 OK BXXTR0-000000__Body1_2 556/1140
 OK BXXTR0-000000__Body1_3 556/1140
-ORPHAN_SUMMARY median=260.7 threshold=782.2 count=21/93
-ORPHAN TS1TR0-000000_v1__Body1_5 dist=2197.0 (8.4x median)
-ORPHAN BXXTR0-000000__Body1_3 dist=2050.6 (7.9x median)
-ORPHAN DSV2R4-060080_v6__Body2 dist=2011.9 (7.7x median)
-ORPHAN DSV100-060080_v6__Body4 dist=1997.9 (7.7x median)
-ORPHAN TS1TR0-000000_v1__Body1_6 dist=1852.5 (7.1x median)
-ORPHAN TS1BHH-036202_v1__Body3 dist=1740.9 (6.7x median)
-ORPHAN TS1TR0-000000_v1__Body1_4 dist=1718.5 (6.6x median)
-ORPHAN BXXTR0-000000__Body1_2 dist=1555.5 (6.0x median)
-ORPHAN BXXTR0-000000__Body1 dist=1553.1 (6.0x median)
-ORPHAN TS1TR0-000000_v1__Body1_3 dist=1320.3 (5.1x median)
-ORPHAN Cup__Body5 dist=1258.6 (4.8x median)
-ORPHAN TS0BVH-0000UN_v6__Body3_2 dist=1256.7 (4.8x median)
-ORPHAN Cup__Body8 dist=1241.7 (4.8x median)
-ORPHAN TS1BHH-082092_v1__Body3 dist=1229.9 (4.7x median)
-ORPHAN Cup__Body6 dist=1220.6 (4.7x median)
-ORPHAN Cup__Body7 dist=1214.9 (4.7x median)
-ORPHAN TS1TR0-000000_v1__Body1_2 dist=1197.9 (4.6x median)
-ORPHAN TS0BVH-0000UN_v6__Body3 dist=1179.3 (4.5x median)
-ORPHAN TS1TR0-000000_v1__Body1 dist=962.8 (3.7x median)
-ORPHAN TS0BV0-053400_v8__Body3 dist=960.6 (3.7x median)
-ORPHAN TS1BHH-082002_v1__Body3 dist=809.8 (3.1x median)
-GLB 3155608 93
+OK BXXTR0-000000__Body1_4 556/1140
+OK BKDNC1-120002__Body1 2954/5904
+ORPHAN_SUMMARY median=444.1 threshold=1332.3 count=0/128
+GLB 4094500 128

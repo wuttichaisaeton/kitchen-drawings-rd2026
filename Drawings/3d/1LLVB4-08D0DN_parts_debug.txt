@@ -1,50 +1,81 @@
-CC_Export3D round-14 main-only per-leaf (column-major fix; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 1LLVB4-08D0DN
 target_kind       = cabinet
-walk_bodies       = 38
-main_glb_bytes    = 1211424
-main_nodes        = 35
-main_stl_bytes    = 4940240
-world_transforms  = true (Matrix3D.getCell, round-13)
-schema            = main=per-leaf-assembled (round 14, RD 07 revert); _parts.glb NOT written
-first_leaf_world_mm[0] = FN0F00-080000 v2__Body18 @ (0.0, 0.0, 0.0)
-first_leaf_world_mm[1] = FN1BLA-120000__Body1 @ (0.0, 0.0, 0.0)
-first_leaf_world_mm[2] = Leg - 080 mm. by YH__Body1 @ (106.3, 501.3, 100.0)
+walk_bodies       = 162
+main_glb_bytes    = 3953592
+main_nodes        = 157
+main_stl_bytes    = 14358788
+dropped_bodies    = 5 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = FN0F00-080000 v2__Body18 @ (0.0, 0.0, 0.0)
+node_world_mm[1] = FN1BLA-120000__Body1 @ (-0.0, -213.0, -21.0)
+node_world_mm[2] = FN2BNX-080000__Body1 @ (0.0, 255.0, -21.0)
 --- main helper subprocess output ---
-OK FN0F00-080000_v2__Body18 1954/4076
-OK FN1BLA-120000__Body1 2040/4244
-OK Leg_-_080_mm._by_YH__Body1 3259/6534
-OK Leg_-_080_mm._by_YH__Cut 62/120
-OK Leg_-_080_mm._by_YH__Cut_1 62/120
-OK Leg_-_080_mm._by_YH__Cut_3 62/120
-OK Leg_-_080_mm._by_YH__Cut_2 62/120
-OK Body1 964/1928
-OK Body1_2 540/1076
-OK Body1_3 440/876
-OK Body1_4 964/1928
-OK Body1_5 540/1076
-OK Body1_6 440/876
-OK Body1_7 964/1928
-OK Body1_8 540/1076
-OK Body1_9 440/876
-OK FN3BLA-080000_v10__Body4 400/828
-OK FN3BLA-080000_v10__Body5 52/100
-OK FN3BLA-080000_v10__Body6 122/240
-OK BXXTR0-000000__Body1 556/1140
-OK BXXTR0-000000__Body1_2 556/1140
-OK BXXTR0-000000__Body1_3 556/1140
-OK BXXTR0-000000__Body1_4 556/1140
-OK DSV2B1-080040_v4__Body1 864/1748
-OK DSV100-080040_v1__Body4 1643/3282
+de-L__Rail_4_1_2 98/192
+OK L__Cut-L_3_2 24/44
+OK L__Cut-L_4 24/44
+OK L__Cut-L_1_2 24/44
+OK L__Cut-L_2_2 24/44
+OK L__Body_2 728/1512
+OK Slide-R__Rail_1_2 46/88
+OK Slide-R__C-Side-R_2 232/476
+OK Slide-R__Bracket_1_2 196/396
+OK Slide-R__Back_1_2 208/432
+OK Slide-R__Rail_5_2 162/316
+OK Slide-R__Rail_6_2 384/764
+OK Slide-R__Rail_7_2 53/102
+OK Slide-R__Logo_2 624/1244
+OK Slide-R__Slide_2 243/486
+OK Slide-R__Rail_1_1_2 98/192
+OK R__Cut-R_2_2 24/44
+OK R__Cut-R_3_2 24/44
+OK R__Cut-R_4 24/44
+OK R__Body_2 728/1512
+OK R__Cut-R_1_2 24/44
 OK DSV2B3-080040_v4__Body1 864/1748
 OK DSV100-080040_v1__Body4_2 1643/3282
-OK SD00NA-080000_v31__Body1 10154/21756
-OK SD00NA-080000_v31__Body1_2 10154/21756
+OK Slide-L__C-Side-L_3 224/460
+OK Slide-L__Logo_3 624/1244
+OK Slide-L__Bracket_3 188/380
+OK Slide-L__Slide_3 243/486
+OK Slide-L__Body11 300/612
+OK L__Cut-L_3_3 24/44
+OK L__Cut-L_5 24/44
+OK L__Cut-L_1_3 24/44
+OK L__Cut-L_2_3 24/44
+OK L__Body_3 728/1512
+OK Slide-R__C-Side-R_3 224/460
+OK Slide-R__Bracket_1_3 188/380
+OK Slide-R__Logo_3 624/1244
+OK Slide-R__Slide_3 243/486
+OK Slide-R__Body13 300/612
+OK R__Cut-R_2_3 24/44
+OK R__Cut-R_3_3 24/44
+OK R__Cut-R_5 24/44
+OK R__Body_3 728/1512
+OK R__Cut-R_1_3 24/44
+OK DSB0F0-080050_v4__Body3_3 1496/3076
+OK DSB0BA-080050_v7__Body3 1008/2040
+OK DST100-000010__Body1 1404/2856
+OK DST200-000010__Body1 488/972
 OK SD0SUP-000000_v6__Body1 428/868
+OK SD00NA-080000_v31__Body1 10154/21756
 OK SD0SUP-000000_v6__Body1_2 428/868
+OK SD00NA-080000_v31__Body1_2 10154/21756
+OK SD0SUP-000000_v6__Body1_3 428/868
+OK SD0SUP-000000_v6__Body1_4 428/868
+OK BM2LI0-080000_v11__Body11 1624/3276
+OK BM2LI0-080000_v11__Body14 15760/31516
+OK BM2LI0-080000_v11__Body15 6072/12140
+OK BM2LI0-080000_v11__Body16 104/204
+OK TS2TRX-000000__Body1 180/372
+OK TS2TRX-000000__Body1_2 180/372
+OK TS2TRX-000000__Body1_3 180/372
+OK TS2TRX-000000__Body1_4 180/372
 OK TS1BHH-080000_v3__Body3 1304/2684
 OK TS1BHH-080000_v3__Body3_2 1304/2684
 OK TS1BHH-080000_v3__Body3_3 1304/2684
 OK TS1BHH-080000_v3__Body3_4 1304/2684
-ORPHAN_SUMMARY median=598.9 threshold=1796.7 count=0/35
-GLB 1211424 35
+ORPHAN_SUMMARY median=496.6 threshold=1489.7 count=0/157
+GLB 3953592 157
