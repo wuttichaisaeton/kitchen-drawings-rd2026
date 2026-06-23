@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T08:19:13.099769+00:00",
+  "generated_at": "2026-06-23T08:21:05.292353+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -7541,7 +7541,7 @@
       "name": "10WVON-08OLOR",
       "status": "active",
       "created_at": "2026-05-27T04:46:37.494667+00:00",
-      "updated_at": "2026-06-23T08:19:13.085209+00:00",
+      "updated_at": "2026-06-23T08:21:05.277028+00:00",
       "total_unique_parts": 12,
       "total_qty": 26,
       "parts": [

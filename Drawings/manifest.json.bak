@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T08:19:13.087755+00:00",
+  "generated_at": "2026-06-23T08:21:05.279596+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -2357,8 +2357,8 @@
     },
     "BM1NO0-080000": {
       "family": "Beam",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 4,
+      "fusion_version": 4,
       "pdf": "BM1000-000000.pdf",
       "bends": 0,
       "material": "",
@@ -4205,8 +4205,8 @@
     },
     "SH0S11-080046": {
       "family": "Other",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 1,
+      "fusion_version": 1,
       "pdf": "SH0S11-000000.pdf",
       "bends": 0,
       "material": "",
@@ -4401,8 +4401,8 @@
     },
     "SH0S12-080000": {
       "family": "Other",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 5,
+      "fusion_version": 5,
       "pdf": "SH0S12-000000.pdf",
       "bends": 0,
       "material": "",
@@ -7541,7 +7541,7 @@
       "name": "10WVON-08OLOR",
       "status": "active",
       "created_at": "2026-05-27T04:46:37.494667+00:00",
-      "updated_at": "2026-06-23T08:19:13.085209+00:00",
+      "updated_at": "2026-06-23T08:21:05.277028+00:00",
       "total_unique_parts": 12,
       "total_qty": 26,
       "parts": [
