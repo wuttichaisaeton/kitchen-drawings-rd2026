@@ -4505,9 +4505,11 @@ function _renderBendList(parts, projectKey) {
     const fusionBtn = `<button class="bend-fusion-btn" data-code="${escapeHtml(p.code)}" aria-label="Open in Fusion" title="Open this part in Fusion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.2 7.4 V16.6 L12 21.2 L3.8 16.6 V7.4 Z"/><path d="M3.8 7.4 L12 12 L20.2 7.4"/><line x1="12" y1="12" x2="12" y2="21.2"/></svg></button>`;
     // 🧊 View this part in 3D in the WEB viewer (เอ๋ 2026-06-23 "ที่ bend list ให้
     // เพิ่มปุ่มที่สามารถดู 3D แต่ละ part ได้"). Opens _kdOpen3D in PART mode (loads the
-    // owning cabinet's _parts.glb + isolates this leaf). Isometric-cube glyph to
-    // tell it apart from the amber Open-in-Fusion hexagon beside it.
-    const open3dBtn = `<button class="bend-3d-btn" data-code="${escapeHtml(p.code)}" aria-label="View part in 3D" title="View this part in 3D"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.5 7.4 L12 12 L3.5 7.4 Z"/><path d="M3.5 7.4 V16.6 L12 21.2 V12"/><path d="M20.5 7.4 V16.6 L12 21.2"/></svg></button>`;
+    // owning cabinet's _parts.glb + isolates this leaf). FILLED 🧊 glyph (เอ๋
+    // 2026-06-23 "แก้ไขปุ่มดู 3D ให้เป็นแบบนี้ 🧊") — the old steel-blue SVG cube
+    // looked identical to the amber SVG hexagon next door; the filled ice-cube
+    // reads instantly as "3D" and matches the project card's 🧊 button.
+    const open3dBtn = `<button class="bend-3d-btn" data-code="${escapeHtml(p.code)}" aria-label="View part in 3D" title="View this part in 3D">🧊</button>`;
     // 💬 comments — reuse the shared per-part comment system (same as the
     // BOM row). Comments are global per part code (comments/<code>), so a
     // note left in bending is the same thread the assembler/admin sees.
@@ -11153,12 +11155,7 @@ function renderProjectsHome() {
           ${progressBars}
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}${proj3dStaleChip}</div>
         </div>
-        ${pinBtn}
-        ${proj3dBtn}
-        ${projectPdfBtn}
-        ${completeBtn}
-        ${renameBtn}
-        ${deleteBtn}
+        <div class="project-actions">${pinBtn}${proj3dBtn}${projectPdfBtn}${completeBtn}${renameBtn}${deleteBtn}</div>
       </div>`;
   };
   const html = items.map(cardHtml).join('');

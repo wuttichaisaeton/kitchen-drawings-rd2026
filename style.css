@@ -371,6 +371,20 @@ h1 {
 
 .project-body { min-width: 0; }
 
+/* Action buttons (★ 🧊 📐 📦 ✏ 🗑) on ONE row, not wrapped (เอ๋ 2026-06-23
+   "ทำปุ่มให้เรียงกันบรรทัดเดียว จะได้ไม่เปลืองพื้นที่"). They used to be loose
+   grid items so the 3-col card grid wrapped them onto 2-3 rows; grouping them
+   in one flex box keeps them in a single right-aligned cluster (col 3). */
+.project-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+/* border-box so every chip is a true 34px tall — the pin's border was pushing
+   it to 37 and nudging its centre off the row. */
+.project-actions > button { box-sizing: border-box; height: 34px; }
+
 .project-card.completed {
   opacity: 0.5;
   border-style: dashed;
@@ -537,6 +551,32 @@ h1 {
   color: #fff;
   border-color: #4a90e2;
 }
+
+/* 🧊 Full-kitchen 3D — same 34×34 chip as the others so the action row lines
+   up evenly (it had NO dedicated size before → broke the single-row layout). */
+.project-3d-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #555;
+  font-size: 18px;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 4px;
+  touch-action: manipulation;
+  transition: all 0.15s;
+}
+.project-3d-btn:hover {
+  border-color: rgba(74, 144, 226, 0.4);
+  background: rgba(74, 144, 226, 0.08);
+}
+.project-3d-btn:active { transform: scale(0.9); }
 
 /* ── Sortable.js dragging visuals ── */
 .project-card-ghost {
@@ -3449,6 +3489,8 @@ button.cut-status:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 26px;   /* 🧊 emoji glyph — filled, reads as "3D" at a glance */
+  line-height: 1;
 }
 .bend-3d-btn:hover { background: rgba(91, 141, 187, 0.22); color: #5d8dbb; }
 .bend-3d-btn svg { width: 26px; height: 26px; display: block; }
