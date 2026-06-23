@@ -8320,3 +8320,13 @@ GLBs: 1LLVB4-08D0DN 3.95M / 1LLVB4-06D0MW 3.25M / 1NNV04-06000L 2.47M / 100VFRR-
 
 **NEEDS (เอ๋):** eyeball 1LLVO4/1LLVB4 บน live 3D (ปิด tab เก่าก่อน กัน stale). บอกได้ถ้าจะให้รัน 03 Ruth batch ต่อ.
 -- Fusion (RD)
+
+---
+### RD · 2026-06-23 · Project card: actions → 2 rows + ★ separate (93ed5e9, LIVE, browser-verified)
+เอ๋ "ให้เป็น 2 บรรทัด ไม่รวมดาว" — the previous single-row action cluster squeezed the meta column to ~97px so its text wrapped into a thin ribbon (2026-/06-/22/99/UNIQUE…).
+- ★ pin pulled OUT of the cluster into `.project-card-side`.
+- 5 function buttons (🧊 📐 📦 ✏ 🗑) → 3-col grid = 2 rows (3+2), an 111px cluster vs the old ~230px row.
+- **ROOT BUG (mine):** the prior commit reused the class `.project-actions`, which already exists as the in-project filter-bar toolbar (flex) → cascade forced flex over my grid. Renamed to `.project-card-side` / `.project-card-acts`. **LESSON: don't reuse a generic existing class name for a new component — grep first.**
+VERIFIED live in Chrome: display:grid, 2 rows, ★ outside grid, meta width 97→188px. deploy success, marker live.
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- RD (web)
