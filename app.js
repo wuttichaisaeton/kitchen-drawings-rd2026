@@ -2641,8 +2641,7 @@ async function _kdOpen3D(code, opts) {
         <div class="kd3d-browser-head"><span>PARTS</span><span style="flex:1"></span><button class="kd3d-showall" title="Show all">All</button><button class="kd3d-hideall" title="Hide all">None</button></div>
         <div class="kd3d-browser-list"></div>
       </div>
-      </div>
-      <div class="kd3d-foot">Touch — 1 finger: orbit · 2 fingers: pinch + pan · Mouse — Left: orbit · Middle: pan · Wheel: zoom</div>`;
+      </div>`;
   const mv = body.querySelector('model-viewer');
   const modal2 = body.closest('.kd3d-modal');
   if (mode === 'explode') modal2 && modal2.classList.add('kd3d-modal-explode');
