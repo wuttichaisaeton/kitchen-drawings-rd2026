@@ -375,15 +375,30 @@ h1 {
    "ทำปุ่มให้เรียงกันบรรทัดเดียว จะได้ไม่เปลืองพื้นที่"). They used to be loose
    grid items so the 3-col card grid wrapped them onto 2-3 rows; grouping them
    in one flex box keeps them in a single right-aligned cluster (col 3). */
-.project-actions {
+/* ★ pin sits OUTSIDE the function-button grid (เอ๋ 2026-06-23 "ไม่รวมดาว").
+   NOTE: distinct names from the pre-existing .project-actions toolbar class
+   (used by the in-project filter bar) — reusing it collided and forced flex. */
+.project-card-side {
   display: flex;
   align-items: center;
+  gap: 8px;
   flex-shrink: 0;
-  white-space: nowrap;
 }
-/* border-box so every chip is a true 34px tall — the pin's border was pushing
-   it to 37 and nudging its centre off the row. */
-.project-actions > button { box-sizing: border-box; height: 34px; }
+/* Function buttons in a 3-col grid → 2 rows (เอ๋ 2026-06-23 "ให้เป็น 2 บรรทัด").
+   One long single row was squeezing the meta column into a thin wrapping
+   ribbon; two short rows keep the cluster narrow so the text column stays wide. */
+.project-card-acts {
+  display: grid;
+  grid-template-columns: repeat(3, 34px);
+  gap: 4px;
+  flex-shrink: 0;
+}
+.project-card-acts > button {
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  margin: 0;
+}
 
 .project-card.completed {
   opacity: 0.5;

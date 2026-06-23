@@ -11155,7 +11155,7 @@ function renderProjectsHome() {
           ${progressBars}
           <div class="project-badges">${drawingBadge}${bentBadge}${assembledBadge}${proj3dStaleChip}</div>
         </div>
-        <div class="project-actions">${pinBtn}${proj3dBtn}${projectPdfBtn}${completeBtn}${renameBtn}${deleteBtn}</div>
+        <div class="project-card-side">${pinBtn}<div class="project-card-acts">${proj3dBtn}${projectPdfBtn}${completeBtn}${renameBtn}${deleteBtn}</div></div>
       </div>`;
   };
   const html = items.map(cardHtml).join('');
