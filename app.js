@@ -6399,6 +6399,23 @@ async function buildAllProjectPdf(projectKey) {
     return;
   }
 
+  // Open the viewer tab NOW — synchronously, still inside the click gesture
+  // — so the browser doesn't block it as a popup after the async merge
+  // below (the old code opened the tab AFTER awaits → blocked → fell back to
+  // DOWNLOAD). เอ๋ 2026-06-23 "ให้เปิดดู PDF ไม่ใช่ Download": a pre-opened
+  // blank tab, navigated to the blob once ready, VIEWS the PDF inline.
+  let viewWin = window.open('', '_blank');
+  if (viewWin) {
+    try {
+      viewWin.document.write(
+        `<title>${escapeHtml(projectKey)} — Drawings</title>` +
+        `<body style="margin:0;background:#1b2430;color:#9fb0c3;` +
+        `font:15px system-ui;display:flex;align-items:center;` +
+        `justify-content:center;height:100vh">` +
+        `Building ${escapeHtml(projectKey)} PDF…</body>`);
+    } catch (_) { /* ignore — some browsers guard document.write on blank */ }
+  }
+
   const btn = document.getElementById('all-pdf-btn');
   const origLabel = btn ? btn.textContent : '';
   const setLabel = (s) => { if (btn) btn.textContent = s; };
@@ -6466,13 +6483,19 @@ async function buildAllProjectPdf(projectKey) {
   if (btn) { btn.disabled = false; }
   setLabel(origLabel);
 
-  const win = window.open(objUrl, '_blank');
-  if (!win) {
-    // Popup blocked — fall back to download
-    const a = document.createElement('a');
-    a.href = objUrl;
-    a.download = `${projectKey}-all.pdf`;
-    document.body.appendChild(a); a.click(); a.remove();
+  // VIEW (not download): send the pre-opened tab to the blob URL — the
+  // browser's built-in PDF viewer renders it inline. Fallbacks only if that
+  // tab is gone: a fresh open, then (last resort) a download.
+  if (viewWin && !viewWin.closed) {
+    viewWin.location = objUrl;
+  } else {
+    const win = window.open(objUrl, '_blank');
+    if (!win) {
+      const a = document.createElement('a');
+      a.href = objUrl;
+      a.download = `${projectKey}-all.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+    }
   }
   if (fail > 0) {
     setTimeout(() => alert(`Done — ${done - fail} merged, ${fail} failed (see console).`), 200);
