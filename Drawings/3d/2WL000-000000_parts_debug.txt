@@ -1,15 +1,15 @@
-CC_Export3D round-15 scatter-fix (cabinet_inv; called from CC_BatchExport3D)
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 2WL000-000000
 target_kind       = cabinet
 walk_bodies       = 2
 main_glb_bytes    = 55196
 main_nodes        = 2
 main_stl_bytes    = 148968
-scatter_fix       = cabinet_inv applied
-cabinet_inv_mm    = (0.0, 0.0, 0.0)
-schema            = main=per-leaf-assembled (round 15, scatter fix); _parts.glb NOT written
-walk_transform_mm[0] = 2WL001-000000__Body1 @ (0.0, 0.0, 0.0) (IGNORED — using cabinet_inv)
-walk_transform_mm[1] = 2WL002-000000__Body1 @ (0.0, 0.0, 0.0) (IGNORED — using cabinet_inv)
+dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = 2WL001-000000__Body1 @ (0.0, 0.0, 0.0)
+node_world_mm[1] = 2WL002-000000__Body1 @ (0.0, 0.0, 0.0)
 --- main helper subprocess output ---
 OK 2WL001-000000__Body1 500/996
 OK 2WL002-000000__Body1 992/1980
