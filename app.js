@@ -6393,6 +6393,144 @@ async function deleteUploadedPdf(code) {
 // memory bounded for large projects; the button shows current/total
 // while fetching so workshop sees progress.
 
+// ── All-PDF cache (IndexedDB) ─────────────────────────────────────
+// เก็บ merged PDF blob ลง IndexedDB คีย์ด้วย projectKey:fingerprint.
+// คลิกครั้งถัดไป (ตู้/แบบไม่เปลี่ยน) → เปิดทันทีจาก cache ไม่ต้อง fetch+merge.
+// ทุก call ห่อ try/catch — ถ้า storage พังต้อง fall back ไป build สด เสมอ.
+const _ALLPDF_DB = 'kd_allpdf_cache';
+const _ALLPDF_STORE = 'pdfs';
+const _ALLPDF_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function _openAllPdfCache() {
+  return new Promise((resolve, reject) => {
+    let req;
+    try { req = indexedDB.open(_ALLPDF_DB, 1); }
+    catch (e) { reject(e); return; }
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(_ALLPDF_STORE)) {
+        db.createObjectStore(_ALLPDF_STORE); // keyPath = explicit key string
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function _getCachedAllPdf(key) {
+  try {
+    const db = await _openAllPdfCache();
+    return await new Promise((resolve) => {
+      const tx = db.transaction(_ALLPDF_STORE, 'readonly');
+      const req = tx.objectStore(_ALLPDF_STORE).get(key);
+      req.onsuccess = () => {
+        const entry = req.result;
+        if (!entry || !entry.blob) { resolve(null); return; }
+        if (entry.expiresAt && Date.now() > entry.expiresAt) {
+          _deleteCachedAllPdf(key); // fire and forget
+          resolve(null); return;
+        }
+        resolve(entry.blob);
+      };
+      req.onerror = () => resolve(null);
+    });
+  } catch (_) { return null; }
+}
+
+async function _setCachedAllPdf(key, blob) {
+  try {
+    const db = await _openAllPdfCache();
+    await new Promise((resolve) => {
+      const tx = db.transaction(_ALLPDF_STORE, 'readwrite');
+      tx.objectStore(_ALLPDF_STORE).put({
+        blob,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + _ALLPDF_TTL_MS,
+      }, key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+      tx.onabort = () => resolve();
+    });
+  } catch (_) { /* best-effort */ }
+}
+
+async function _deleteCachedAllPdf(key) {
+  try {
+    const db = await _openAllPdfCache();
+    const tx = db.transaction(_ALLPDF_STORE, 'readwrite');
+    tx.objectStore(_ALLPDF_STORE).delete(key);
+  } catch (_) { /* ignore */ }
+}
+
+async function _sha256Hex(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash))
+    .map(x => x.toString(16).padStart(2, '0')).join('');
+}
+
+// Fingerprint — ต้องเปลี่ยน "เฉพาะ" เมื่อแบบของโปรเจกต์นี้เปลี่ยน, และคงที่ตลอดไม่งั้น
+// cache จะ miss ทุกครั้ง. เลือก signal ดังนี้ (เหตุผลกำกับว่าทำไมถึงพอ):
+//   • projectKey                         — แยก cache ต่อโปรเจกต์
+//   • project.updated_at                 — เปลี่ยนเมื่อ "ชุดชิ้น/qty" ของโปรเจกต์เปลี่ยน
+//   • per item (เรียงตาม code): code | qty | item.url | entry.generated_at | last_drawn_version
+//       - code/qty       → เพิ่ม/ลบ/เปลี่ยนจำนวน
+//       - item.url       → relink/อัปโหลด PDF ใหม่ (url เปลี่ยนแม้ entry ไม่ขยับ)
+//       - entry.generated_at → ตัวจริงที่จับ "แบบนี้ถูก re-export" (per-drawing timestamp)
+//       - last_drawn_version → future-proof (วันนี้ Fusion stamp 0/0 ยัง dormant)
+// *** ห้ามใส่ manifest.generated_at เด็ดขาด *** — มันคือ timestamp ของ manifest.json ทั้งก้อน
+// (global) ที่ขยับทุกครั้งที่ scan/export โปรเจกต์ "ใด ๆ" → fingerprint จะเปลี่ยนตลอด
+// แล้ว cache แทบ hit ไม่ได้เลย. per-drawing entry.generated_at ครอบคลุม re-export อยู่แล้ว.
+// เรียง per-item ก่อน hash → สลับลำดับ BOM อย่างเดียวไม่ bust (ลำดับจริงเก็บแยกตอน merge).
+async function _buildAllPdfFingerprint(projectKey, items, project) {
+  const head = [
+    projectKey,
+    (project && project.updated_at) || '',
+  ];
+  const itemSigs = items.map((item) => {
+    const eff = _effectiveDrawingCode(item.code);
+    const entry = ((manifest && manifest.auto_generated) || {})[eff] || {};
+    return [
+      item.code,
+      item.kind === 'part' ? String(item.qty || 1) : '-',
+      item.url || '',
+      entry.generated_at || '',
+      String(entry.last_drawn_version || 0),
+    ].join('~');
+  }).sort();
+  return _sha256Hex(head.concat(itemSigs).join('|'));
+}
+
+// เปิด viewer สำหรับ merged-PDF blob — ใช้ทั้ง cache-hit และ build สด.
+// ส่ง pre-opened blank tab ไปที่ blob URL; fallback = เปิด tab ใหม่; ที่สุด =
+// iframe overlay เต็มจอ. logic เดิมยกมาทั้งดุ้น ห้ามแก้กลไก viewer.
+function _openMergedPdfInViewer(blob, viewWin) {
+  const objUrl = URL.createObjectURL(blob);
+  if (viewWin && !viewWin.closed) {
+    viewWin.location = objUrl;
+  } else {
+    const win = window.open(objUrl, '_blank');
+    if (!win) {
+      // Popup blocked — show inline fullscreen iframe overlay (never download)
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column';
+      const bar = document.createElement('div');
+      bar.style.cssText = 'display:flex;justify-content:flex-end;padding:8px 12px';
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = '✕';
+      closeBtn.style.cssText = 'background:#333;color:#fff;border:1px solid #555;border-radius:4px;font-size:20px;cursor:pointer;padding:4px 12px';
+      closeBtn.onclick = () => { overlay.remove(); URL.revokeObjectURL(objUrl); };
+      bar.appendChild(closeBtn);
+      overlay.appendChild(bar);
+      const frame = document.createElement('iframe');
+      frame.src = objUrl;
+      frame.style.cssText = 'flex:1;border:none;width:100%';
+      overlay.appendChild(frame);
+      document.body.appendChild(overlay);
+    }
+  }
+}
+
 async function buildAllProjectPdf(projectKey) {
   if (!window.PDFLib) {
     alert('PDF library not loaded yet — wait a moment and try again.');
@@ -6454,6 +6592,21 @@ async function buildAllProjectPdf(projectKey) {
     } catch (_) { /* ignore — some browsers guard document.write on blank */ }
   }
 
+  // ── CACHE-FIRST ─ ถ้า fingerprint ตรง cache → เปิด blob เดิมทันที ─────
+  // ห่อทั้งก้อนใน try/catch: cache พัง = build สดตามปกติ ไม่กระทบ flow.
+  let fingerprint = '';
+  try {
+    fingerprint = await _buildAllPdfFingerprint(projectKey, items, project);
+    const cacheKey = projectKey + ':' + fingerprint;
+    const cachedBlob = await _getCachedAllPdf(cacheKey);
+    if (cachedBlob) {
+      _openMergedPdfInViewer(cachedBlob, viewWin);
+      return; // instant — no fetch/merge needed
+    }
+  } catch (e) {
+    console.warn('[all-pdf] cache lookup failed, building live:', e);
+  }
+
   const btn = document.getElementById('all-pdf-btn');
   const origLabel = btn ? btn.textContent : '';
   const setLabel = (s) => { if (btn) btn.textContent = s; };
@@ -6467,15 +6620,45 @@ async function buildAllProjectPdf(projectKey) {
   merged.setSubject(`Generated from drawings-ui · ${partCount} parts` +
     (projectUrl ? ' + master' : ''));
 
+  // ── FETCH PARALLEL (bounded ~8), MERGE IN BOM ORDER ─────────────────
+  // เดิม fetch ทีละชิ้น (for…await) → build แรกช้าตามจำนวนชิ้น. ตอนนี้ยิง fetch
+  // พร้อมกันสูงสุด 8 เส้น, เก็บผลลง array ตามตำแหน่งเดิม (BOM order) แล้วค่อย merge
+  // ตามลำดับนั้น → หน้าใน PDF เรียงเหมือนเดิมเป๊ะ, progress "⏳ x/total" เดินตามจริง.
   let done = 0, fail = 0;
-  for (const item of items) {
+  const results = new Array(items.length).fill(null); // ordered: index = BOM position
+  const CONCURRENCY = 8;
+  let next = 0;
+  async function worker() {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      const item = items[i];
+      try {
+        // Cache-bust slightly so we don't get a stale CDN copy right after an
+        // upload, but keep it cheap (browser caches still help across pages).
+        const src = await fetch(item.url, { cache: 'no-cache' });
+        if (!src.ok) throw new Error(`HTTP ${src.status}`);
+        results[i] = await src.arrayBuffer();
+      } catch (e) {
+        console.warn(`[all-pdf] failed ${item.kind} ${item.code}:`, e);
+        results[i] = null;
+        fail++;
+      }
+      done++;
+      setLabel(`⏳ ${done}/${items.length}…`);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, items.length) }, worker)
+  );
+
+  // Merge sequentially in original BOM order (PDFDocument mutation isn't
+  // concurrency-safe — only the network fetches above run in parallel).
+  for (let i = 0; i < items.length; i++) {
+    const bytes = results[i];
+    if (!bytes) continue; // a fetch failed — already counted in `fail`
+    const item = items[i];
     try {
-      // Cache-bust the URL slightly so we don't get a stale CDN copy
-      // right after an upload, but keep it cheap (browser caches still
-      // help across pages).
-      const src = await fetch(item.url, { cache: 'no-cache' });
-      if (!src.ok) throw new Error(`HTTP ${src.status}`);
-      const bytes = await src.arrayBuffer();
       const srcDoc = await PDFDocument.load(bytes, { ignoreEncryption: true });
       const pages = await merged.copyPages(srcDoc, srcDoc.getPageIndices());
 
@@ -6506,47 +6689,29 @@ async function buildAllProjectPdf(projectKey) {
         }
       }
     } catch (e) {
-      console.warn(`[all-pdf] failed ${item.kind} ${item.code}:`, e);
+      console.warn(`[all-pdf] merge failed ${item.kind} ${item.code}:`, e);
       fail++;
     }
-    done++;
-    setLabel(`⏳ ${done}/${items.length}…`);
   }
 
   setLabel('💾 Saving…');
   const pdfBytes = await merged.save();
   const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-  const objUrl = URL.createObjectURL(blob);
 
   if (btn) { btn.disabled = false; }
   setLabel(origLabel);
 
-  // VIEW (not download): send the pre-opened tab to the blob URL — the
-  // browser's built-in PDF viewer renders it inline. Fallbacks only if that
-  // tab is gone: a fresh open, then (last resort) a download.
-  if (viewWin && !viewWin.closed) {
-    viewWin.location = objUrl;
-  } else {
-    const win = window.open(objUrl, '_blank');
-    if (!win) {
-      // Popup blocked — show inline fullscreen iframe overlay (never download)
-      const overlay = document.createElement('div');
-      overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.85);display:flex;flex-direction:column';
-      const bar = document.createElement('div');
-      bar.style.cssText = 'display:flex;justify-content:flex-end;padding:8px 12px';
-      const closeBtn = document.createElement('button');
-      closeBtn.textContent = '✕';
-      closeBtn.style.cssText = 'background:#333;color:#fff;border:1px solid #555;border-radius:4px;font-size:20px;cursor:pointer;padding:4px 12px';
-      closeBtn.onclick = () => { overlay.remove(); URL.revokeObjectURL(objUrl); };
-      bar.appendChild(closeBtn);
-      overlay.appendChild(bar);
-      const frame = document.createElement('iframe');
-      frame.src = objUrl;
-      frame.style.cssText = 'flex:1;border:none;width:100%';
-      overlay.appendChild(frame);
-      document.body.appendChild(overlay);
-    }
+  // เก็บลง cache เฉพาะตอน build "สำเร็จครบ" (ไม่มีชิ้นพัง) — ไม่งั้นจะ cache
+  // เอกสารที่ขาดหน้าไว้ค้าง. มี fingerprint ที่คำนวณไว้ตอน cache-first lookup.
+  // best-effort ทั้งหมด: เขียน cache พัง ไม่กระทบการเปิด PDF.
+  if (fail === 0 && fingerprint) {
+    try { await _setCachedAllPdf(projectKey + ':' + fingerprint, blob); } catch (_) {}
   }
+
+  // VIEW (not download): reuse the same viewer helper as the cache-hit path —
+  // sends the pre-opened tab to the blob URL (browser PDF viewer renders inline);
+  // fallbacks are a fresh tab, then a fullscreen iframe overlay. Never a download.
+  _openMergedPdfInViewer(blob, viewWin);
   if (fail > 0) {
     setTimeout(() => alert(`Done — ${done - fail} merged, ${fail} failed (see console).`), 200);
   }
