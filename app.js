@@ -2902,6 +2902,11 @@ async function _kdOpen3D(code, opts) {
   let _ovlRoot = null, _ovlSvg = null, _ovlColL = null, _ovlColR = null;
   let _ovlRows = [];
   let _poppedCode = null;          // เอ๋ 2026-06-23: click a label → that code's parts pop out (effect)
+  // partView: the single part code to keep isolated (bend-list 🧊). Unlike
+  // _poppedCode this PERSISTS across applyMode()/resetExplode() — those blanket-
+  // show every unit, so without a persistent flag a mode switch un-hid the rest
+  // of the cabinet (เอ๋ 2026-06-23 "hard refresh แล้วยังโชว์ทั้งตู้").
+  let _partIsolateCode = (partView && partCode) ? partCode : null;
   let _ovlRaf = 0;
   let _ovlCamHandler = null;
   let _ovlThree = null;   // THREE instance captured at build for the leader-projection fallback
@@ -4021,6 +4026,28 @@ async function _kdOpen3D(code, opts) {
     if (_ovlRoot) _ovlRoot.style.display = 'none';
   };
 
+  // partView isolate (bend-list 🧊): hide every unit whose code isn't the target
+  // part. Called at the END of applyMode() — AFTER resetExplode()/applyExplode()
+  // blanket-show every unit — so a render-mode switch can't un-hide the rest of
+  // the cabinet. NODE-level visibility hides each other part's fill AND its
+  // hidden-line edges. Match by code (BM1LI0-050000_v3__Body8 → BM1LI0-050000),
+  // substring fallback. Returns kept-unit count.
+  const _applyPartIsolate = () => {
+    if (!_partIsolateCode || !explodeUnits.length) return 0;
+    const pc = _partIsolateCode;
+    const hit = (nm) => !!nm && (_extractPartLabel(nm) === pc || nm.includes(pc));
+    let kept = 0;
+    for (const u of explodeUnits) {
+      let h = hit(u.node.name);
+      if (!h) u.node.traverse(d => { if (!h && hit(d.name)) h = true; });
+      u.node.visible = !!h;
+      u.node.traverse(d => { if (d.isMesh) d.visible = !!h; });
+      if (h) kept++;
+    }
+    try { const sc = _getScene(); if (sc && typeof sc.queueRender === 'function') sc.queueRender(); } catch {}
+    return kept;
+  };
+
   const applyMode = (next) => {
     if (!mv || !VALID.includes(next)) return;
     mode = next;
@@ -4100,6 +4127,13 @@ async function _kdOpen3D(code, opts) {
     body.querySelectorAll('.kd3d-modebar button').forEach(btn => {
       btn.classList.toggle('is-on', btn.getAttribute('data-mode') === mode);
     });
+    // partView: resetExplode/applyExplode above just re-showed every unit — re-
+    // hide all but the target part, then frame it. Runs on the post-load
+    // applyMode AND every mode switch, so the isolate sticks (เอ๋ "ต้องแยก Part").
+    if (_partIsolateCode) {
+      _applyPartIsolate();
+      requestAnimationFrame(() => { try { _fitVisibleWorld(); } catch (e) {} });
+    }
   };
 
   // After EACH GLB load (initial + every src swap for the dual-GLB switcher),
