@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-23T00:01:25.349399+00:00",
+  "generated_at": "2026-06-23T00:02:09.345168+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6980,6 +6980,20 @@
       "fusion_teams_url": null,
       "page_number": 1,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:MctbyMKNTmi8xV364F2ngA"
+    },
+    "03 Ruth": {
+      "family": "Other",
+      "last_drawn_version": 5,
+      "fusion_version": 5,
+      "pdf": "03 Ruth.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-23T00:02:09.345168+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:JCDMSQrSQLKJoV7uj_TdzQ"
     }
   },
   "manual_uploads": [],
