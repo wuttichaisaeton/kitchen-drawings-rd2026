@@ -2162,11 +2162,14 @@ async function _kdOpen3D(code, opts) {
   if (!code) return;
   // Replace any existing instance (one viewer at a time).
   document.querySelectorAll('.kd3d-modal').forEach(m => m.remove());
-  // Part view (เอ๋ 2026-06-22 "3d part ยังไม่ load"): the part-row 🧊 passes
-  // {cabinetCode} alongside the part code. The modal then loads the PARENT
-  // cabinet's `<cabinetCode>_parts.glb` and filters the scene to show only
-  // the matching mesh — Fusion doesn't write per-part GLBs, but the
-  // _parts.glb already contains the part as one of its named leaves.
+  // Part view (เอ๋ 2026-06-22 "3d part ยังไม่ load" → 2026-06-23 "ต้องแยก Part ซิ"):
+  // the part-row 🧊 passes {cabinetCode} alongside the part code. The modal loads
+  // the parent cabinet's FRESH main `<cabinetCode>.glb` (round-14+ is per-leaf
+  // assembled — one named node per body) and ISOLATES the matching part. NOTE: we
+  // deliberately do NOT load `<cabinetCode>_parts.glb` anymore — CC_Export3D
+  // stopped writing it at round-14, so the on-disk _parts.glb are STALE (pre
+  // scatter-fix geometry) and made part view show the whole, wrongly-placed
+  // cabinet. Isolation is node-level so the other parts' hidden-line edges hide too.
   const partView = !!(opts && opts.cabinetCode && opts.cabinetCode !== code);
   const cabinetCode = partView ? opts.cabinetCode : code;
   const partCode = partView ? code : null;
@@ -2181,7 +2184,7 @@ async function _kdOpen3D(code, opts) {
   const wantDemo = code === 'DEMO' || /[?&]demo3d=1\b/.test(location.search);
   const glbUrl = wantDemo
     ? _KD3D_DEMO_GLB
-    : partView ? _kd3dPartsGlbUrl(cabinetCode) : _kd3dGlbUrl(code);
+    : partView ? _kd3dGlbUrl(cabinetCode) : _kd3dGlbUrl(code);
 
   const STYLE = `<style>
     .kd3d-modal .kd3d-body{padding:0;background:#0f1419;display:flex;flex-direction:column;min-height:0}
@@ -2929,9 +2932,10 @@ async function _kdOpen3D(code, opts) {
   const PARTS_MODES = new Set();
   const _wantSrcFor = (m) => {
     if (wantDemo) return _KD3D_DEMO_GLB;
-    // Part view ALWAYS uses the cabinet's _parts.glb (need per-leaf nodes to
-    // filter by part code; the main .glb has only 1 collapsed node).
-    if (partView) return _kd3dPartsGlbUrl(cabinetCode);
+    // Part view loads the cabinet's FRESH main .glb (round-14+ is per-leaf:
+    // one named node per body, so we can isolate the part). The old _parts.glb
+    // is no longer written by Fusion → stale → never load it.
+    if (partView) return _kd3dGlbUrl(cabinetCode);
     if (PARTS_MODES.has(m) && partsExistsKnown === true) return _kd3dPartsGlbUrl(code);
     return _kd3dGlbUrl(code);
   };
@@ -3611,39 +3615,38 @@ async function _kdOpen3D(code, opts) {
       }
     }
 
-    // PART VIEW filter (เอ๋ "3d part ยังไม่ load"): hide every mesh in the
-    // cabinet's _parts.glb except the one(s) whose name matches the part
-    // code. Exact-name match first (Fusion's per-leaf node names usually ARE
-    // the part code), substring fallback. Recompute dims from visible only.
+    // PART VIEW isolate (เอ๋ 2026-06-23 "ต้องแยก Part ซิ"): we loaded the
+    // cabinet's FRESH main <code>.glb above; now hide every leaf NODE except the
+    // matching part. NODE-level (not mesh-level) so the hidden-line EDGE overlay
+    // of the other parts hides too — the old mesh-only filter left the whole
+    // cabinet drawn as edges. Reuses the explodeUnits the snapshot just built +
+    // _fitVisibleWorld to frame the lone part. Match by part code via
+    // _extractPartLabel (BM1LI0-050000_v3__Body8 → BM1LI0-050000); substring
+    // fallback for odd node names.
     if (partView && partCode) {
-      let exactMatches = 0, substringMatches = 0, totalMeshes = 0;
-      const sampleNames = [];
-      threeScene.traverse(n => {
-        if (!n.isMesh) return;
-        totalMeshes++;
-        if (sampleNames.length < 6) sampleNames.push(n.name);
-        if (n.name === partCode) exactMatches++;
-        else if (n.name && n.name.includes(partCode)) substringMatches++;
-      });
-      const useSubstring = exactMatches === 0 && substringMatches > 0;
+      const _hit = (nm) => !!nm && (_extractPartLabel(nm) === partCode || nm.includes(partCode));
       let kept = 0;
-      threeScene.traverse(n => {
-        if (!n.isMesh) return;
-        const hit = useSubstring
-          ? (n.name && n.name.includes(partCode))
-          : (n.name === partCode);
-        n.visible = !!hit;
+      for (const u of explodeUnits) {
+        let hit = _hit(u.node.name);
+        if (!hit) u.node.traverse(d => { if (!hit && _hit(d.name)) hit = true; });
+        u.node.visible = !!hit;
+        // Also set mesh-level .visible so the dims sweep below (which tests
+        // n.visible) measures only the isolated part, not the whole cabinet.
+        u.node.traverse(d => { if (d.isMesh) d.visible = !!hit; });
         if (hit) kept++;
-      });
-      // RD 07 diagnostic — surface the match counts to the console so anyone
-      // debugging "part 🧊 not loading" can see immediately whether the
-      // cabinetCode arrived, the names look right, and how many matched.
-      console.info(`[kd3d part-row] cab=${cabinetCode} part=${partCode} matched=${kept}/${totalMeshes} (exact=${exactMatches}, substring=${substringMatches}, mode=${useSubstring ? 'substring' : 'exact'}) sample=`, sampleNames);
+      }
+      console.info(`[kd3d part-row] cab=${cabinetCode} part=${partCode} kept=${kept}/${explodeUnits.length} units (main glb, node-isolate)`);
       if (kept === 0) {
-        showPlaceholder('Part not in cabinet GLB',
-          `No node named "${partCode}" inside ${cabinetCode}_parts.glb (${totalMeshes} meshes total). Fusion may have used a different name — re-export the cabinet, or 🧊 the cabinet header to see the assembled view.`);
+        showPlaceholder('Part not in cabinet 3D',
+          `No node for "${partCode}" inside ${cabinetCode}.glb (${explodeUnits.length} parts). Re-export the cabinet (🧊), or open the cabinet header (🧊 on the master) for the assembled view.`);
         return false;
       }
+      // Keep the isolate consistent if the user later enters Explode mode, force a
+      // repaint (model-viewer renders on-demand, ignores direct scene edits), and
+      // zoom-fit to the lone visible part once the scene settles.
+      _poppedCode = partCode;
+      try { const sc = _getScene(); if (sc && typeof sc.queueRender === 'function') sc.queueRender(); } catch {}
+      requestAnimationFrame(() => { try { _fitVisibleWorld(); } catch (e) {} });
     }
 
     // Overall W × H × D (เอ๋ 2026-06-22 "เพิ่มการบอกขนาดรวมด้วย"). Fusion
@@ -4505,7 +4508,7 @@ function _renderBendList(parts, projectKey) {
     const fusionBtn = `<button class="bend-fusion-btn" data-code="${escapeHtml(p.code)}" aria-label="Open in Fusion" title="Open this part in Fusion"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.8 L20.2 7.4 V16.6 L12 21.2 L3.8 16.6 V7.4 Z"/><path d="M3.8 7.4 L12 12 L20.2 7.4"/><line x1="12" y1="12" x2="12" y2="21.2"/></svg></button>`;
     // 🧊 View this part in 3D in the WEB viewer (เอ๋ 2026-06-23 "ที่ bend list ให้
     // เพิ่มปุ่มที่สามารถดู 3D แต่ละ part ได้"). Opens _kdOpen3D in PART mode (loads the
-    // owning cabinet's _parts.glb + isolates this leaf). FILLED 🧊 glyph (เอ๋
+    // owning cabinet's fresh main .glb + node-isolates this leaf). FILLED 🧊 glyph (เอ๋
     // 2026-06-23 "แก้ไขปุ่มดู 3D ให้เป็นแบบนี้ 🧊") — the old steel-blue SVG cube
     // looked identical to the amber SVG hexagon next door; the filled ice-cube
     // reads instantly as "3D" and matches the project card's 🧊 button.
