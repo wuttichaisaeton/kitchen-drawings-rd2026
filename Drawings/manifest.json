@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-24T04:54:44.491905+00:00",
+  "generated_at": "2026-06-24T06:27:49.854143+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -16539,36 +16539,36 @@
       "name": "TS004H-080000",
       "status": "active",
       "created_at": "2026-06-23T09:26:21.815699+00:00",
-      "updated_at": "2026-06-24T04:35:50.735765+00:00",
+      "updated_at": "2026-06-24T06:27:49.835331+00:00",
       "total_unique_parts": 3,
       "total_qty": 8,
       "parts": [
         {
+          "code": "TS1BHH-070000-Ruth",
+          "qty": 1,
+          "family": "Top Sup",
+          "urn": "urn:adsk.wipprod:dm.lineage:ol_uCIJzSC6T0yf2Cw-ENw"
+        },
+        {
           "code": "TS1BHH-080000",
           "qty": 3,
           "family": "Top Sup",
-          "urn": "urn:adsk.wipprod:dm.lineage:i8NRkqxjRoWzza-oYOeIQw"
-        },
-        {
-          "code": "TS1BHH-080000-Ruth",
-          "qty": 1,
-          "family": "Top Sup",
-          "urn": "urn:adsk.wipprod:dm.lineage:IldDci7CQpqg6fykYgHgNQ"
+          "urn": "urn:adsk.wipprod:dm.lineage:4UrE2KGWSFWRkmAGQMrOdg"
         },
         {
           "code": "TS2TRX-000000",
           "qty": 4,
           "family": "Top Sup",
-          "parent_code": "TS2TR4-080000",
-          "variant_root": "TS2TR4-080000",
-          "urn": "urn:adsk.wipprod:dm.lineage:zWV2ViXKR06x64gLhoKxLQ"
+          "parent_code": "TS2TR4-070050",
+          "variant_root": "TS2TR4-070050",
+          "urn": "urn:adsk.wipprod:dm.lineage:fhImpXLfQkGqUydghsKbaA"
         },
         {
-          "code": "TS2TR4-080000",
+          "code": "TS2TR4-070050",
           "qty": 0,
           "family": "Top Sup",
           "is_wrapper": true,
-          "variant_root": "TS2TR4-080000"
+          "variant_root": "TS2TR4-070050"
         }
       ]
     },
