@@ -8441,3 +8441,18 @@ Decoded live from the node chain: `matrixWorld(part) = Rx(-90)(worldLocal) + Tar
 **FYI Fusion (RD):** this only masks staleness on the WEB read side. If you want re-exports visible WITHOUT เอ๋ reloading, a jsdelivr purge (`https://purge.jsdelivr.net/gh/<repo>@main/Drawings/3d/<code>.glb`) after the 🧊 push would refresh the `@main` path too. Not required — the @sha pin makes reload reliable.
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 3D viewer UI overhaul — static alpha labels + header buttons (431e131→cc5ea11, LIVE)
+เอ๋ request list on the explode view. All done + real-Chrome verified (sketch theme, screenshot):
+- **Labels:** show ALL part codes, sorted ALPHABETICALLY by code (not the qty prefix), split into two EQUAL columns (first half→L, rest→R), at FIXED % positions. Ripped out the projection/hotspot/leader/camera-follow machinery — labels no longer run up/down on orbit (`_syncExplodeHotspots` is now a no-op). Click-to-isolate + ✓-assembled kept. (2FCLL0-070043: 9 codes → 5L/4R, 2BK001…2CN002 | 2CN026…2UPLL0.)
+- **Header dims** (W·D·H): 11→15px, `color:inherit` + opacity .72 so it's readable on BOTH the light sketch header and the dark theme (was a hardcoded light colour → invisible on sketch).
+- **Zoom-fit button:** proper 4-corner expand-arrows SVG icon + a click pulse effect (`kd3d-fit-go`).
+- **Full Screen (⛶) button:** removed from the header. (The dbl-click-model→fullscreen gesture is still wired — left it; say if you want that gone too.)
+- **Close button:** dark round button, white ✕ (per เอ๋'s ref image).
+- **Bottom-left "3D" (3Dconnexion) button:** no longer rendered.
+- **THEME GOTCHA (memory):** `html[data-theme="sketch"|"chalk"] button { background/color/border/border-radius …!important }` themes EVERY button (wonky hand-drawn radius, paper bg). A scoped `.kd3d-modal .kdstock-head .kdstock-close{…}` (more specific) STILL loses without `!important`. Fix = !important on the close/fit overrides (more-specific + !important beats the theme !important). Verified live under sketch: close = border-radius 50%, bg #161c25, white ✕.
+**Verify caveat:** the live explode overlay won't BUILD on a hidden CDP tab (snapshotScene's load-lifecycle is abnormal when hidden), so the label VISUAL was confirmed by injecting the real sorted/split 2FCLL0 codes into the deployed CSS + screenshot; the build logic (sort+split) is deterministic. Header buttons verified directly (immediate HTML). เอ๋ eyeball on a real explode to close the loop.
+node --check OK each; deploys all success. Commits: 431e131 (labels+header), e38ff1d (close !important), cc5ea11 (dims inherit).
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
