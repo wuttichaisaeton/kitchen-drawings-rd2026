@@ -3004,26 +3004,47 @@ async function _kdOpen3D(code, opts) {
     } catch (e) { console.warn('[kd3d] fit failed', e); }
   };
   // World-accurate fit for the click-to-isolate: frames the VISIBLE parts at
-  // their CURRENT exploded/isolated positions (setFromObject = true world incl.
-  // the explode offset), and respects ANCESTOR visibility so a hidden unit's
-  // meshes don't drag the frame back to the whole cabinet. Falls back to
-  // _fitCamera if THREE isn't captured.
+  // their CURRENT exploded/isolated positions, keeping the orbit angle.
+  //
+  // ⚠ MUST NOT use Box3.setFromObject here. model-viewer sets matrixAutoUpdate=
+  // false on every GLB node and commits a moved node's transform into matrixWorld
+  // only on its OWN lazy render. applyExplode sets node.position synchronously, but
+  // this fit runs on the next rAF — BEFORE that render — so setFromObject (which
+  // calls updateWorldMatrix, and with matrixAutoUpdate=false SKIPS updateMatrix →
+  // keeps the stale local matrix) returns the ASSEMBLED world box and the camera
+  // framed the wrong spot (~750mm off; เอ๋ "กดที่ Label/Part Zoom fit ผิด part").
+  //
+  // Instead build each visible unit's world AABB WITHOUT any matrix read:
+  //   centre = _unitCurrentCentroid(u, factor)  — pure math, the SAME value the
+  //            hotspots use (proven render-correct); cameraTarget is in this exact
+  //            model frame (verified live on real Chrome: model-viewer's goalTarget
+  //            == -cameraTarget == -boundingBox.centre), so the unit's centre maps
+  //            to the orbit pivot → dead screen-centre.
+  //   half   = _unitGeomSize(u) / 2 — geometry extents, rotation-free (parts are
+  //            axis-aligned in these baked GLBs) so the size is offset-invariant.
+  // Holds for both GLB layouts (nodes-at-0 baked-world AND snapshot-normalized).
+  // Falls back to _fitCamera when there are no explode units.
   const _fitVisibleWorld = () => {
-    const scene = threeScene || _getScene();
-    if (!scene || !mv || !_ovlThree) { _fitCamera(); return; }
-    const box = new _ovlThree.Box3(); let any = false;
-    scene.traverse(n => {
-      if (!n.isMesh || n.isSprite || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
-      let vis = true, p = n; while (p) { if (p.visible === false) { vis = false; break; } p = p.parent; }
-      if (!vis) return;
-      try { const b = new _ovlThree.Box3().setFromObject(n); if (!b.isEmpty()) { box.union(b); any = true; } } catch {}
-    });
-    if (!any || box.isEmpty()) { _fitCamera(); return; }
-    const c = box.getCenter(new _ovlThree.Vector3());
-    const size = box.getSize(new _ovlThree.Vector3());
-    const maxExt = Math.max(size.x, size.y, size.z);
+    if (!mv || !explodeUnits.length) { _fitCamera(); return; }
+    const factor = (explodePct / 100) * 1.5;
+    let mnX = Infinity, mnY = Infinity, mnZ = Infinity;
+    let mxX = -Infinity, mxY = -Infinity, mxZ = -Infinity;
+    let any = false;
+    for (const u of explodeUnits) {
+      if (!u.node || u.node.visible === false) continue;   // frame only what's shown
+      const c = _unitCurrentCentroid(u, factor);
+      const s = _unitGeomSize(u);
+      if (!s) continue;
+      const hx = s.x / 2, hy = s.y / 2, hz = s.z / 2;
+      if (c.x - hx < mnX) mnX = c.x - hx; if (c.y - hy < mnY) mnY = c.y - hy; if (c.z - hz < mnZ) mnZ = c.z - hz;
+      if (c.x + hx > mxX) mxX = c.x + hx; if (c.y + hy > mxY) mxY = c.y + hy; if (c.z + hz > mxZ) mxZ = c.z + hz;
+      any = true;
+    }
+    if (!any) { _fitCamera(); return; }
+    const cx = (mnX + mxX) / 2, cy = (mnY + mxY) / 2, cz = (mnZ + mxZ) / 2;
+    const maxExt = Math.max(mxX - mnX, mxY - mnY, mxZ - mnZ);
     try {
-      mv.cameraTarget = `${c.x}m ${c.y}m ${c.z}m`;
+      mv.cameraTarget = `${cx}m ${cy}m ${cz}m`;
       const fovRad = mv.getFieldOfView() * Math.PI / 180;
       const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.4);
       const orbit = mv.getCameraOrbit();
@@ -3147,6 +3168,30 @@ async function _kdOpen3D(code, opts) {
     y: u.gy + (u.gy - explodeCenter.y) * factor,
     z: u.gz + (u.gz - explodeCenter.z) * factor,
   });
+
+  // Geometry extents (W×H×D) of a unit's mesh subtree in its LOCAL/baked frame.
+  // Parts are axis-aligned in these GLBs (no per-node rotation), so this size is
+  // the unit's true world size at ANY explode offset — letting _fitVisibleWorld
+  // build a world AABB (centre = _unitCurrentCentroid, half = size/2) with NO
+  // matrixWorld read (model-viewer's matrixAutoUpdate=false makes setFromObject
+  // return stale assembled boxes — see _fitVisibleWorld). Skips tagged orphans.
+  const _unitGeomSize = (u) => {
+    let mnX = Infinity, mnY = Infinity, mnZ = Infinity;
+    let mxX = -Infinity, mxY = -Infinity, mxZ = -Infinity;
+    let any = false;
+    u.node.traverse(n => {
+      if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
+      if (n.userData && n.userData.isOrphan) return;
+      if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch (e) {}
+      const bb = n.geometry.boundingBox;
+      if (!bb) return;
+      if (bb.min.x < mnX) mnX = bb.min.x; if (bb.min.y < mnY) mnY = bb.min.y; if (bb.min.z < mnZ) mnZ = bb.min.z;
+      if (bb.max.x > mxX) mxX = bb.max.x; if (bb.max.y > mxY) mxY = bb.max.y; if (bb.max.z > mxZ) mxZ = bb.max.z;
+      any = true;
+    });
+    if (!any) return null;
+    return { x: mxX - mnX, y: mxY - mnY, z: mxZ - mnZ };
+  };
 
   // Project a world point to viewer pixel coords via the model-viewer THREE
   // camera (fallback path + the build-time side/Y decision). Returns {x,y,vis}
