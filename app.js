@@ -3044,7 +3044,10 @@ async function _kdOpen3D(code, opts) {
   };
   {
     const fitBtn = modal.querySelector('.kd3d-fit');
-    if (fitBtn) fitBtn.addEventListener('click', (e) => { e.stopPropagation(); _fitCamera(); });
+    // Use the axis-correct, matrix-free fit (frames whatever's visible — whole
+    // model, or the isolated part). _fitCamera (the old world-local bbox path)
+    // still has the missing Rx(-90) cameraTarget swap, so it mis-aimed.
+    if (fitBtn) fitBtn.addEventListener('click', (e) => { e.stopPropagation(); _fitVisibleWorld(); });
   }
 
   // Compute the geometric centroid (bbox midpoint) of a node's mesh subtree
@@ -4187,11 +4190,27 @@ async function _kdOpen3D(code, opts) {
   // re-snapshot the scene + re-apply the current mode. _edgesAttempted needs
   // resetting so the overlay rebuilds against the new geometry; ditto for the
   // material clone snapshot in compcolor mode.
+  let _didInitialFit = false;
   if (mv) {
     mv.addEventListener('load', () => {
       _edgesAttempted = false;
       edgeOverlays = [];
-      if (snapshotScene()) { applyMode(mode); _frameAssembledParts(); }
+      if (snapshotScene()) {
+        applyMode(mode);
+        _frameAssembledParts();
+        // เอ๋ 2026-06-24: auto zoom-fit on FIRST open. A clean cabinet (no stray
+        // bodies) gets NO reframe from snapshotScene's outlier filter, so it
+        // stayed at the HTML default camera → model off-centre / too big (เอ๋
+        // screenshot 2FNCL2). _fitVisibleWorld (axis-correct + matrix-free) frames
+        // the whole assembled model. Once only — don't yank the view on background
+        // staleness reloads; skip when a part is pre-isolated (applyMode fit it);
+        // skip whole-kitchen PROJECT view (model-viewer's own frame is fine there
+        // and the outlier filter could wrongly drop a far cabinet from the fit).
+        if (!_didInitialFit && !_partIsolateCode && !projectView) {
+          _didInitialFit = true;
+          requestAnimationFrame(() => { try { _fitVisibleWorld(); } catch (e) {} });
+        }
+      }
     });
   }
   // Track which src loaded so snapshotScene knows whether to update dims (main
