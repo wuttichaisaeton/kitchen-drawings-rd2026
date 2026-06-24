@@ -8496,3 +8496,11 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **Full fix = updateMatrix() (local matrix) + explodeRoot.updateMatrixWorld(true) (→ matrixWorld) after every position change.** Memory corrected ([[reference_modelviewer_projection]]).
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · ✅ PILE CONFIRMED FIXED (เอ๋ screenshot) + close ✕ → bottom-right (bebc453, LIVE)
+**PILE RESOLVED — confirmed on เอ๋'s real browser:** her screenshot of 2FCLL0-070043 @0% now shows a CLEAN assembled cabinet (no centre-stack). The matrixWorld fix (updateMatrix + explodeRoot.updateMatrixWorld(true), b0ba6bc) works end-to-end on the real model-viewer render. Closes the multi-round pile saga.
+**This change (bebc453):** the top-right close ✕ (dark circle) was overlapping the 3-line W/D/H dims on mobile (เอ๋ "ให้เอ็กซ์ย้ายมาอยู่ขวาล่าง"). Removed it from the header; added a floating ✕ at the viewer's bottom-RIGHT — mirrors the zoom-fit button at bottom-left (both 42px dark circles). modal.querySelector('.kdstock-close') still finds it → backdrop/Esc/✕ close all work.
+**VERIFIED (real Chrome, sketch theme):** computed close-float = position:absolute right:10px bottom:10px border-radius:50% bg #161c25 (beats theme); fit-float left:10px bottom:10px; header has no ✕; deployed app.js has close-float in viewer template + CSS, header ✕ removed (curl ×1 each). node --check OK; deploy success. (Live viewer render of the float couldn't be screenshotted — model-viewer stalls building on a hidden CDP tab — but CSS computed-position + เอ๋'s working tab confirm it.)
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
