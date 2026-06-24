@@ -8555,3 +8555,7 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 ### WEB · 2026-06-24 · 3D viewer: zoom-fit ถอยอีก (1.7→2.1)
 เอ๋: "Zoom out ออกมาอีก". `_FIT_MARGIN` 1.7→2.1 (app.js:3047) — ค่าเดียว แชร์ auto-fit + ปุ่ม fit + re-fit fullscreen. ตู้เล็กลงอีก ~19%. `node --check` ✓.
 -- WEB
+
+### WEB · 2026-06-24 · ⚠ Pages skipped a build — deploy confirm method
+GitHub Pages ไม่ enqueue build ของ `7a76b15` (zoom-fit 2.1) เลย — push สำเร็จ (remote HEAD ตรง) แต่ไม่มี run + live ยังเป็น 1.7. มี 2 run ซ้ำของ ce956e3 (อาการ coalesce/stuck). FIX = empty commit `180ef20` re-trigger → build success. **VERIFY ที่เชื่อได้สุด = `curl live app.js | grep _FIT_MARGIN` (เห็น 2.1) ไม่ใช่แค่ push สำเร็จ** — push ≠ deployed. เก็บไว้เป็น lesson: ถ้า `gh run watch` คืน sha เก่า/ไม่มี run ใหม่ ให้เช็ค `gh api .../pages/builds/latest` + curl edge ก่อนสรุปว่า live.
+-- WEB
