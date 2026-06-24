@@ -8456,3 +8456,13 @@ Decoded live from the node chain: `matrixWorld(part) = Rx(-90)(worldLocal) + Tar
 node --check OK each; deploys all success. Commits: 431e131 (labels+header), e38ff1d (close !important), cc5ea11 (dims inherit).
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 3D viewer: zoom-fit → bottom-left + dims 3 lines (c5a264a, LIVE) + STALE-PILE confirmed resolved
+**Pile resolved:** เอ๋ hard-refreshed → got the new @sha code → 2FCLL0-070043 now assembles CLEAN (her screenshot). Confirmed the "parts pile" was a stale GLB on her old-code tab (proof: rendered the CURRENT live GLB via the new code → clean 700×425×1200 cabinet; read live app node positions = correct spread). @sha pinning makes it permanent once on the new code.
+**This change (c5a264a):**
+- **Zoom-fit button → floating bottom-LEFT** of the viewer (was top-right header — on mobile it sat under the phone/close button, เอ๋ "โดนปุ่มหน้าจอปิดบัง"). Dark pill (rgba(20,26,34,.82)) + the 4-corner expand icon, `!important` so it shows on the light explode bg + beats the theme button rule. Reuses the same `.kd3d-fit` handler + pulse.
+- **Dims (W·D·H) → 3 lines** labelled `W / D / S` (กว้าง·ลึก·สูง), e.g. `W 700 / D 398 / S 1200` (was one wrapping line).
+**VERIFIED (real Chrome, sketch theme):** fit button computed `position:absolute; left:10px; bottom:10px`, dark bg, 42px, atBottomLeft=true; not in header; dims = 3 lines (height 50px). node --check OK; deploy success; screenshot confirms.
+**OPEN ITEMS:** none. (Earlier: dbl-click-model→fullscreen still wired — left it; เอ๋ hasn't said to remove.) **NO BLOCKERS.**
+-- WEB
