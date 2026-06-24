@@ -1,0 +1,16 @@
+CC_Assembly walk debug — 2026-06-24T15:47:49.052341
+Project: 1NSVB0-060050
+Total occurrences visited: 6
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | Steel            | Component1:1 (Component1)
+    0 | SM  |     | Steel            | Component2:1 (Component2)
+    0 | SM  |     | Steel            | Component3:1 (Component3)
+    0 |     |     |                  | TP0010-060000:1 (TP0010-060000)
+    1 | SM  |     | Steel            | TP0011-060000:1 (TP0011-060000)
+    1 | SM  |     | ALPF             | TP0012-060000 v3:1 (TP0012-060000 v3)
