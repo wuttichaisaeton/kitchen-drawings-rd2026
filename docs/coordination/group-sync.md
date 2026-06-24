@@ -8476,3 +8476,14 @@ node --check OK each; deploys all success. Commits: 431e131 (labels+header), e38
 ### WEB · 2026-06-24 · 3D explode slider thumb 28→40px (e686d3f, LIVE)
 เอ๋ "กดไม่ค่อยติด". Thumb 28→40px round + 44px hit row + 12px track (both -webkit- & -moz-). Verified live (sketch): input height 44px, live CSS thumb width:40px, screenshot shows the bigger amber thumb; same screenshot also confirms dims=3 lines W/D/H, fit button bottom-left, cabinet renders clean (no pile). node --check OK; deploy success. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 🎯 REAL root cause of "parts pile in centre" FOUND + FIXED (29dbc3a, LIVE)
+เอ๋ frustrated — pile kept coming back on the latest code. **My earlier "stale GLB cache" diagnosis was WRONG.** Found the true cause on real Chrome with a decisive test.
+**ROOT CAUSE:** model-viewer sets `node.matrixAutoUpdate=false` on the GLB nodes AFTER its first render (a VISIBLE tab). snapshotScene's normalization recenters each part's geometry to origin and sets `node.position` — but with matrixAutoUpdate=false a bare `position.set` NEVER reaches `matrixWorld` (THREE skips updateMatrix), so every part renders at the SAME matrixWorld point = pile. Intermittent ("ในบางครั้ง") = whether matrixAutoUpdate was already flipped when snapshotScene ran. On a HIDDEN tab it never flips (stays true) so the pile doesn't reproduce there — which is why my standalone renders looked clean and I mis-blamed cache.
+**DECISIVE TEST (real Chrome):** with matrixAutoUpdate=false, moving 6 nodes to distinct positions → matrixWorld ALL identical (-350,-574,185). Calling `updateMatrix()` per node → matrixWorld spreads (-350,-150,50,250,450,650). Then full normalization + matrixAutoUpdate=false + the fix → matrixWorld = 14 UNIQUE positions, envelope 700×425×1200, rendered = clean cabinet.
+**FIX (29dbc3a):** `node.updateMatrix()` after EVERY `node.position.set` — snapshotScene normalize, applyExplode, resetExplode — + `matrixAutoUpdate=true` on each unit as insurance. Deterministic, not a race.
+**ALSO:** close button `margin-left:auto` → pinned far-RIGHT (เอ๋ "ปิดหน้าจอ ให้อยู่มุมขวา" — it sat mid-header on wide/mobile). Verified top-right.
+**Note:** the @sha GLB pin (7968568) is still a good improvement (kills genuinely-stale CDN GLBs) but it was NOT what fixed the pile — this matrix fix is. Memory corrected ([[reference_modelviewer_projection]] + [[reference_pages_cache_busting]]).
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
