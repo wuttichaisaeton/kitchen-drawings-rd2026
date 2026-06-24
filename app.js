@@ -2046,13 +2046,22 @@ function _kd3dGlbRef() { return window.__KD_GLB_REF || 'main'; }
       .catch(() => {});
   } catch {}
 })();
+// `&o=<open nonce>` (bumped per _kdOpen3D call) makes each OPEN a unique URL so
+// model-viewer's CachingGLTFLoader can't reuse the previously-PARSED scene. That
+// matters because snapshotScene normalization recenters the GLB's geometry in
+// place, and model-viewer's cache shares geometry across instances → the 2nd open
+// of the same cabinet got the already-recentered geometry → every part collapsed
+// to the origin = "1st open correct, 2nd open piles" (เอ๋ 2026-06-24). Fresh URL =
+// fresh parse = pristine geometry every open. (@sha keeps it the right commit.)
 function _kd3dGlbUrl(code) {
   const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
-  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}.glb?v=${v}`;
+  const o = window.__KD_OPEN_NONCE || 0;
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}.glb?v=${v}&o=${o}`;
 }
 function _kd3dPartsGlbUrl(code) {
   const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
-  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}_parts.glb?v=${v}`;
+  const o = window.__KD_OPEN_NONCE || 0;
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}_parts.glb?v=${v}&o=${o}`;
 }
 
 // ── 🧊 outdated chip (WEB 21, 2026-06-22) ────────────────────────────────────
@@ -2180,6 +2189,10 @@ async function _kd3dGlbExists(url) {
 // style.css isn't touched (WEB 15's lane). Closes on backdrop click, ✕, Esc.
 async function _kdOpen3D(code, opts) {
   if (!code) return;
+  // เอ๋ 2026-06-24: bump the per-OPEN nonce so this open's GLB URL is unique →
+  // model-viewer parses the GLB FRESH (no reuse of a previously-mutated cached
+  // scene → fixes "1st open correct, 2nd open piles"). See _kd3dGlbUrl.
+  window.__KD_OPEN_NONCE = (window.__KD_OPEN_NONCE || 0) + 1;
   // Replace any existing instance (one viewer at a time).
   document.querySelectorAll('.kd3d-modal').forEach(m => m.remove());
   // Part view (เอ๋ 2026-06-22 "3d part ยังไม่ load" → 2026-06-23 "ต้องแยก Part ซิ"):
@@ -3540,6 +3553,10 @@ async function _kdOpen3D(code, opts) {
             const nx = u.gx - ox, ny = u.gy - oy, nz = u.gz - oz;
             u.node.traverse(nd => {
               if (!nd.isMesh || !nd.geometry?.attributes?.position) return;
+              // Clone before mutating: model-viewer's cache shares geometry across
+              // instances; recentering verts in place would corrupt the cached copy
+              // and pile the NEXT open (เอ๋ "อย่าเอา cache เดิมมาใช้"). Mutate our own copy.
+              nd.geometry = nd.geometry.clone();
               const arr = nd.geometry.attributes.position.array;
               for (let i = 0; i < arr.length; i += 3) {
                 arr[i] -= u.gx; arr[i + 1] -= u.gy; arr[i + 2] -= u.gz;
