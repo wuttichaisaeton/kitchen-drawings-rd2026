@@ -2257,7 +2257,12 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-left{left:0}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{right:0}
     .kd3d-modal .kd3d-ovl-row:hover{background:rgba(127,127,127,.16)}
-    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel{background:#f2a93b;box-shadow:0 0 0 2px #f2a93b,0 0 10px 2px rgba(242,169,59,.6);color:#17202b;border-radius:5px}
+    /* Selected label (click label OR click part → same effect). The amber
+       BACKGROUND/box-shadow alone were invisible — chalk/sketch themes' :where
+       reset kills overlay background, box-shadow AND text-shadow (verified
+       2026-06-23). Only OUTLINE + TRANSFORM + FONT-WEIGHT survive every theme,
+       so those carry the effect; the bg/shadows are a bonus on dark themes. */
+    .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel{background:#f2a93b;color:#17202b;font-weight:800;outline:3px solid #f2a93b;outline-offset:2px;box-shadow:0 0 0 3px #f2a93b,0 0 14px 4px rgba(242,169,59,.75);text-shadow:0 0 7px rgba(242,169,59,.85);transform:scale(1.1);transform-origin:center;border-radius:5px;z-index:5}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-sel .kd3d-ovl-check{color:#0f6b3f}
     .kd3d-modal .kd3d-ovl-qty{font-weight:700;font-size:16px}
     .kd3d-modal .kd3d-ovl-code{font-weight:400;font-size:13px}
