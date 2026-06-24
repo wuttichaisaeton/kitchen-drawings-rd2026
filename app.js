@@ -3674,8 +3674,8 @@ async function _kdOpen3D(code, opts) {
       let W = mxX - mnX, D = mxY - mnY, H = mxZ - mnZ;
       const scale = Math.max(W, D, H) < 10 ? 1000 : 1;
       W = Math.round(W * scale); D = Math.round(D * scale); H = Math.round(H * scale);
-      // เอ๋ 2026-06-24: dims on 3 lines, labelled W / D / S (กว้าง·ลึก·สูง).
-      dimsEl.innerHTML = `W ${W}<br>D ${D}<br>S ${H}`;
+      // เอ๋ 2026-06-24: dims on 3 lines, one per dimension — W / D / H.
+      dimsEl.innerHTML = `W ${W}<br>D ${D}<br>H ${H}`;
       dimsCached = true;
     }
 
