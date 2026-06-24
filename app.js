@@ -2577,34 +2577,18 @@ async function _kdOpen3D(code, opts) {
   // Migrates v5 (outline/outlineshade) + earlier keys transparently.
   const MODE_KEY = 'kd_3d_mode_v6';
   const EXPLODE_KEY = 'kd_3d_explode_v1';
-  const VALID = ['hidden', 'hiddenshade', 'compcolor', 'realistic', 'explode'];
-  let mode = (() => {
-    try {
-      const m = localStorage.getItem(MODE_KEY);
-      if (VALID.includes(m)) return m;
-      const v5 = localStorage.getItem('kd_3d_mode_v5');
-      if (v5 === 'outline') return 'hidden';
-      if (v5 === 'outlineshade') return 'hiddenshade';
-      if (v5 && VALID.includes(v5)) return v5;
-      const v4 = localStorage.getItem('kd_3d_mode_v4');
-      if (v4 === 'outline') return 'hidden';
-      if (v4 === 'outlineshade') return 'hiddenshade';
-      if (v4 && VALID.includes(v4)) return v4;
-      const v3 = localStorage.getItem('kd_3d_mode_v3');
-      if (v3 && VALID.includes(v3)) return v3;
-      const v2 = localStorage.getItem('kd_3d_mode_v2');
-      if (v2 === 'lines') return 'hidden';
-      if (v2 === 'linesshade') return 'hiddenshade';
-      if (v2 === 'realistic' || v2 === 'explode') return v2;
-      return 'compcolor';
-    } catch { return 'compcolor'; }
-  })();
+  // เอ๋ 2026-06-24: เหลือ style เดียว = Explode. เอาปุ่ม Hidden Line / Hidden Line
+  // + Shade / Component Color / Realistic ออก + ซ่อนแถบปุ่มทั้งแถบ (เหลือ style
+  // เดียวแล้ว ไม่ต้องมีให้สลับ). mode ล็อกที่ 'explode' เสมอ; VALID มีตัวเดียวเพื่อ
+  // กัน applyMode สลับไปโหมดอื่น (โค้ดโหมดอื่นใน applyMode/applyMaterials เป็น dead
+  // path ไม่ถูกเรียกอีก). 3D view เปิดมาเป็น explode ตรง ๆ.
+  const VALID = ['explode'];
+  let mode = 'explode';
   let explodePct = (() => {
     try { const v = parseInt(localStorage.getItem(EXPLODE_KEY) || '40', 10); return Math.max(0, Math.min(100, isNaN(v) ? 40 : v)); }
     catch { return 40; }
   })();
 
-  const modeBtn = (id, ico, label, title) => `<button data-mode="${id}" class="${mode === id ? 'is-on' : ''}" title="${escapeHtml(title)}"><span class="kd3d-mode-ico">${ico}</span><span>${escapeHtml(label)}</span></button>`;
   // mv attrs for the INITIAL paint (so first-frame is correct even before load).
   // Per-mode attribute set is also re-applied in applyMode() on every switch.
   // เอ๋ 2026-06-22: remove floor/shadow entirely — cabinets floated ABOVE the
@@ -2614,13 +2598,7 @@ async function _kdOpen3D(code, opts) {
   const initExp = (mode === 'realistic') ? '1' : (mode === 'explode' ? '1.1' : '1');
   const initTone = (mode === 'realistic' || mode === 'explode') ? 'aces' : 'neutral';
   const initEnv = 'neutral';   // built-in for all four modes (Astronaut-demo default)
-  body.innerHTML = `<div class="kd3d-modebar">
-        ${modeBtn('hidden', '📐', 'Hidden Line', 'CAD technical drawing: solid lines for visible edges + dashed lines for hidden edges. No fill.')}
-        ${modeBtn('hiddenshade', '🎨', 'Hidden Line + Shade', 'Hidden-line overlay on top of a flat-shaded surface.')}
-        ${modeBtn('compcolor', '🌈', 'Component Color', 'Fusion Shift+N look: each cabinet part painted a distinct deterministic colour for instant assembly read (default).')}
-        ${modeBtn('realistic', '💎', 'Realistic', 'model-viewer Astronaut-demo treatment: neutral env IBL + soft shadow + exposure 1.')}
-        ${modeBtn('explode', '💥', 'Explode', 'Spread each cabinet part outward by a percentage.')}
-      </div>
+  body.innerHTML = `
       <div class="kd3d-explodebar">
         <span>Explode</span>
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
