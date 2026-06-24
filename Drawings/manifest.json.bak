@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-24T01:28:06.340527+00:00",
+  "generated_at": "2026-06-24T01:57:30.514860+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -303,8 +303,8 @@
     },
     "DSB0BA-070050": {
       "family": "Back-Down",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 7,
+      "fusion_version": 7,
       "pdf": "DSB0B0-000050.pdf",
       "bends": 0,
       "material": "",
@@ -17670,7 +17670,7 @@
       "name": "DSV0B0-070023-Ruth",
       "status": "active",
       "created_at": "2026-06-24T01:28:06.337455+00:00",
-      "updated_at": "2026-06-24T01:28:06.337455+00:00",
+      "updated_at": "2026-06-24T01:57:30.511298+00:00",
       "total_unique_parts": 4,
       "total_qty": 4,
       "parts": [
@@ -17700,7 +17700,7 @@
           "code": "DSV2B3-070023-Ruth",
           "qty": 1,
           "family": "Drawer",
-          "urn": "urn:adsk.wipprod:dm.lineage:qbAtk2rBSAaLc_Fzt5fxhA"
+          "urn": "urn:adsk.wipprod:dm.lineage:QpdkyHwRRFGmYDb1-WkdQg"
         },
         {
           "code": "DSB0FA-000000",
