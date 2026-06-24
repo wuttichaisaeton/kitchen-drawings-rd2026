@@ -46,6 +46,23 @@ async function openInFusion(urn, fallbackUrl) {
   return { ok: false };
 }
 
+// Press feedback for the 3D buttons. On iPad the GLB takes a beat to fetch,
+// so a tap felt like nothing happened — เอ๋ 2026-06-23 "กดแล้วไม่ค่อยติด หรือ
+// ให้รอ ไม่รู้เลย ให้มีอะไรบอกหน่อย". This: (1) shows an instant spinner on the
+// tapped button (CSS .is-loading) so the press clearly registers, (2) debounces
+// re-taps while loading, (3) clears after the modal has had time to open (the
+// modal then shows its own loading bar). Clicking still works on desktop.
+function fire3D(e, run) {
+  if (e) e.stopPropagation();
+  const btn = e && e.currentTarget;
+  if (btn) {
+    if (btn.classList.contains('is-loading')) return;   // ignore double-tap
+    btn.classList.add('is-loading');
+    setTimeout(() => { try { btn.classList.remove('is-loading'); } catch (_) {} }, 1600);
+  }
+  run();
+}
+
 // ── Project center node ─────────────────────────────────────────────
 // Circle with 3D cubes icon + PROJECT label INSIDE the circle + project
 // code below. Click opens the project's master PDF (same as the SVG
@@ -655,8 +672,8 @@ function MindmapNode({ id, data, selected }) {
           {code && api.open3D && (
             <button
               className="kme-mini kme-3d nodrag nopan"
-              onClick={(e) => { e.stopPropagation(); api.open3D(code); }}
-              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); e.nativeEvent.stopImmediatePropagation(); api.open3D(code); } }}
+              onClick={(e) => fire3D(e, () => api.open3D(code))}
+              onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.nativeEvent.stopImmediatePropagation(); fire3D(e, () => api.open3D(code)); } }}
               title="View 3D model"
             >🧊</button>
           )}
@@ -1068,13 +1085,15 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
         {api.open3D && code && (
           <button
             className="kme-tree-pdf kme-tree-3d"
-            onClick={(e) => { e.stopPropagation(); api.open3D(code, { cabinetCode }); }}
+            onClick={(e) => fire3D(e, () => api.open3D(code, { cabinetCode }))}
+            onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); fire3D(e, () => api.open3D(code, { cabinetCode })); } }}
             title="View 3D model — this part inside the cabinet"
           >🧊</button>
         )}
         <button
           className={'kme-tree-done' + (done ? ' is-on' : '')}
           onClick={() => markDone(code)}
+          onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); markDone(code); } }}
           title={done ? 'Mark not assembled' : 'Mark assembled'}
         >🧩</button>
       </div>
@@ -1117,13 +1136,15 @@ function AssemblyTree({ nodes, edges, projectKey, admin, nonce,
                 {api.open3D && code && (
                   <button
                     className="kme-tree-pdf kme-tree-3d"
-                    onClick={(e) => { e.stopPropagation(); api.open3D(code); }}
+                    onClick={(e) => fire3D(e, () => api.open3D(code))}
+                    onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); fire3D(e, () => api.open3D(code)); } }}
                     title="View 3D model — this cabinet"
                   >🧊</button>
                 )}
                 <button
                   className={'kme-tree-done' + (done ? ' is-on' : '')}
                   onClick={(e) => markDone(code, e)}
+                  onPointerDown={(e) => { if (e.pointerType === 'touch') { e.preventDefault(); e.stopPropagation(); markDone(code, e); } }}
                   title={done ? 'Mark not assembled' : 'Mark assembled'}
                 >🧩</button>
               </div>

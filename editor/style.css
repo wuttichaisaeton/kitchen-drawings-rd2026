@@ -1266,6 +1266,27 @@ html.kme-fs-on .kme-assembly-shell .kme-sec-kanban .kme-root.kme-map-max,
 .kme-tree-pdf:hover, .kme-tree-done:hover { background: #243349; }
 .kme-tree-done.is-on { background: #1f6f47; border-color: #3fb950; }
 
+/* iPad press feedback for the action buttons (เอ๋ 2026-06-23 "กดแล้วไม่ค่อยติด
+   ... ให้มีอะไรบอกหน่อย"). touch-action stops the 300ms tap delay + double-tap
+   zoom; :active gives an instant pressed look the moment a finger lands. */
+.kme-tree-pdf, .kme-tree-done, .kme-3d {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+.kme-tree-pdf:active, .kme-tree-done:active, .kme-3d:active { transform: scale(0.86); }
+/* 3D button: spinner while the GLB loads, so a tap clearly registers + a
+   re-tap is ignored (fire3D adds .is-loading). The 🧊 is hidden (font-size:0)
+   and a spinning amber ring shows in its place. */
+.kme-tree-3d.is-loading, .kme-3d.is-loading { font-size: 0; pointer-events: none; }
+.kme-tree-3d.is-loading::after, .kme-3d.is-loading::after {
+  content: ''; position: absolute; inset: 0; margin: auto;
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(242, 169, 59, 0.3); border-top-color: #f2a93b;
+  animation: kme3dspin 0.6s linear infinite;
+}
+@keyframes kme3dspin { to { transform: rotate(360deg); } }
+
 /* §1 = ONE expandable assembly tree (เอ๋ 2026-06-08 'ทำแบบ Expand — อะไรประกอบเป็นอะไร').
    Drill from top-level assemblies (is-assembly, bold + faint fill) down to their parts;
    a collapsed assembly shows a 🧩 N "parts" badge. Family colour = the left stripe. */
