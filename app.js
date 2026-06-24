@@ -2303,7 +2303,7 @@ async function _kdOpen3D(code, opts) {
     /* !important so the dark-circle close + clean fit icon survive the sketch/chalk
        theme's html[data-theme] button !important override (our more-specific
        selector + !important wins). */
-    .kd3d-modal .kdstock-head .kdstock-close{display:inline-flex !important;align-items:center;justify-content:center;width:36px !important;height:36px !important;min-width:36px;border-radius:50% !important;background:#161c25 !important;color:#fff !important;border:1px solid #2b3340 !important;font-size:17px;line-height:1;cursor:pointer;margin-left:8px;padding:0 !important;box-shadow:0 2px 8px rgba(0,0,0,.35) !important;transition:background .12s ease,transform .12s ease,box-shadow .12s ease}
+    .kd3d-modal .kdstock-head .kdstock-close{display:inline-flex !important;align-items:center;justify-content:center;width:36px !important;height:36px !important;min-width:36px;border-radius:50% !important;background:#161c25 !important;color:#fff !important;border:1px solid #2b3340 !important;font-size:17px;line-height:1;cursor:pointer;margin-left:auto !important;padding:0 !important;box-shadow:0 2px 8px rgba(0,0,0,.35) !important;transition:background .12s ease,transform .12s ease,box-shadow .12s ease}
     .kd3d-modal .kdstock-head .kdstock-close:hover{background:#0b0f14 !important;transform:scale(1.08);box-shadow:0 3px 12px rgba(0,0,0,.5) !important}
     .kd3d-modal .kdstock-head .kdstock-close:active{transform:scale(.94)}
     .kd3d-modal .kd3d-fit{display:inline-flex !important;align-items:center;justify-content:center;background:transparent !important;border:1px solid transparent !important;cursor:pointer;padding:6px !important;border-radius:8px !important;box-shadow:none !important;transition:color .12s ease,background .12s ease,transform .12s ease}
@@ -3506,6 +3506,11 @@ async function _kdOpen3D(code, opts) {
       for (const ch of explodeRoot.children) {
         const ctr = _localCentroid(ch);
         if (!ctr) continue;
+        // Insurance vs the "parts pile" matrix bug: keep each unit's matrix in sync
+        // with its position automatically (model-viewer flips this false post-render
+        // → a moved node's transform never reaches matrixWorld; we also updateMatrix()
+        // explicitly after every position.set, so this is belt-and-suspenders).
+        ch.matrixAutoUpdate = true;
         explodeUnits.push({
           node: ch,
           baseX: ch.position.x, baseY: ch.position.y, baseZ: ch.position.z,
@@ -3537,6 +3542,7 @@ async function _kdOpen3D(code, opts) {
               if (nd.geometry.boundingSphere) nd.geometry.computeBoundingSphere();
             });
             u.node.position.set(nx, ny, nz);
+            u.node.updateMatrix();   // see applyExplode: force matrix (matrixAutoUpdate=false).
             u.baseX = nx; u.baseY = ny; u.baseZ = nz;
             u.gx = nx; u.gy = ny; u.gz = nz;
           }
@@ -3993,6 +3999,7 @@ async function _kdOpen3D(code, opts) {
       const dy = (u.gy - explodeCenter.y) * factor;
       const dz = (u.gz - explodeCenter.z) * factor;
       u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
+      u.node.updateMatrix();   // ⚠ REQUIRED: model-viewer sets matrixAutoUpdate=false after its first render (on a visible tab), so a bare position.set never reaches matrixWorld → every part renders at the same spot = "parts pile in the centre" (เอ๋ 2026-06-24). updateMatrix() forces the matrix from the new position. Proven on real Chrome.
     }
     // Overlay: move each hotspot to the part's new centroid + toggle visibility.
     // (Leaders redraw on the camera-change the hotspot move triggers, and via
@@ -4009,6 +4016,7 @@ async function _kdOpen3D(code, opts) {
     _poppedCode = null;
     for (const u of explodeUnits) {
       u.node.position.set(u.baseX, u.baseY, u.baseZ);
+      u.node.updateMatrix();   // see applyExplode: matrixAutoUpdate=false → must force the matrix.
       if (u.node.scale) u.node.scale.setScalar(1);
       u.node.visible = true;
     }
