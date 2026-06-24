@@ -2485,7 +2485,13 @@ async function _kdOpen3D(code, opts) {
   const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
-  modal.querySelector('.kdstock-close').addEventListener('click', close);
+  // ⚠ The 3D modal's close ✕ now lives in the VIEWER template (bottom-right float),
+  // which is built LATER (after `await _kd3dEnsureModelViewer()` + body.innerHTML).
+  // It does NOT exist yet here → optional-chain so we don't crash (a bare
+  // .addEventListener on null aborted _kdOpen3D → stuck on "Loading 3D…"). The real
+  // wiring happens after the viewer is built (see the fit-button block). Backdrop +
+  // Esc already close from here.
+  modal.querySelector('.kdstock-close')?.addEventListener('click', close);
   document.addEventListener('keydown', onKey);
 
   // Fullscreen button (เอ๋ 2026-06-22 "เพิ่ม โหมด Full Screen") — toggles the
@@ -3118,6 +3124,9 @@ async function _kdOpen3D(code, opts) {
       setTimeout(() => { try { fitBtn.classList.remove('kd3d-fit-go'); } catch (e) {} }, 520);
       _fitVisibleWorld();
     });
+    // Wire the floating close ✕ HERE (it's in the viewer template, built by now —
+    // the early setup couldn't wire it because it didn't exist yet).
+    modal.querySelector('.kdstock-close')?.addEventListener('click', close);
   }
 
   // Compute the geometric centroid (bbox midpoint) of a node's mesh subtree
