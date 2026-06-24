@@ -2298,11 +2298,14 @@ async function _kdOpen3D(code, opts) {
     /* เอ๋ 2026-06-24 header polish: close = dark round button (white ✕, per her ref
        image); fit = 4-corner expand-arrows icon with a click pulse; fullscreen
        button removed. */
-    .kd3d-modal .kdstock-head .kdstock-close{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;border-radius:50%;background:#161c25;color:#fff;border:1px solid #2b3340;font-size:17px;line-height:1;cursor:pointer;margin-left:8px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.35);transition:background .12s ease,transform .12s ease,box-shadow .12s ease}
-    .kd3d-modal .kdstock-head .kdstock-close:hover{background:#0b0f14;transform:scale(1.08);box-shadow:0 3px 12px rgba(0,0,0,.5)}
+    /* !important so the dark-circle close + clean fit icon survive the sketch/chalk
+       theme's html[data-theme] button !important override (our more-specific
+       selector + !important wins). */
+    .kd3d-modal .kdstock-head .kdstock-close{display:inline-flex !important;align-items:center;justify-content:center;width:36px !important;height:36px !important;min-width:36px;border-radius:50% !important;background:#161c25 !important;color:#fff !important;border:1px solid #2b3340 !important;font-size:17px;line-height:1;cursor:pointer;margin-left:8px;padding:0 !important;box-shadow:0 2px 8px rgba(0,0,0,.35) !important;transition:background .12s ease,transform .12s ease,box-shadow .12s ease}
+    .kd3d-modal .kdstock-head .kdstock-close:hover{background:#0b0f14 !important;transform:scale(1.08);box-shadow:0 3px 12px rgba(0,0,0,.5) !important}
     .kd3d-modal .kdstock-head .kdstock-close:active{transform:scale(.94)}
-    .kd3d-modal .kd3d-fit{display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:#9fb0c0;cursor:pointer;padding:6px;border-radius:8px;transition:color .12s ease,background .12s ease}
-    .kd3d-modal .kd3d-fit:hover{color:#F2A93B;background:rgba(242,169,59,.12)}
+    .kd3d-modal .kd3d-fit{display:inline-flex !important;align-items:center;justify-content:center;background:transparent !important;border:1px solid transparent !important;cursor:pointer;padding:6px !important;border-radius:8px !important;box-shadow:none !important;transition:color .12s ease,background .12s ease,transform .12s ease}
+    .kd3d-modal .kd3d-fit:hover{color:#F2A93B !important;background:rgba(242,169,59,.14) !important}
     .kd3d-modal .kd3d-fit svg{display:block;width:24px;height:24px}
     .kd3d-modal .kd3d-fit.kd3d-fit-go{animation:kd3dFitPulse .5s ease}
     @keyframes kd3dFitPulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,169,59,.6);color:#F2A93B}40%{transform:scale(1.22);box-shadow:0 0 0 8px rgba(242,169,59,0);color:#F2A93B}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,169,59,0)}}
