@@ -3043,8 +3043,20 @@ async function _kdOpen3D(code, opts) {
     if (!any) { _fitCamera(); return; }
     const cx = (mnX + mxX) / 2, cy = (mnY + mxY) / 2, cz = (mnZ + mxZ) / 2;
     const maxExt = Math.max(mxX - mnX, mxY - mnY, mxZ - mnZ);
+    // ⚠ FRAME FIX (เอ๋ "กดที่ Label/Part Zoom fit ผิด part" — root cause found on
+    // real Chrome 2026-06-24): cx/cy/cz are in the GLB's world-LOCAL frame (Z-up,
+    // the frame of node.position + geometry, = where the hotspots live). But
+    // model-viewer's cameraTarget is expressed in its own Y-up viewer frame.
+    // model-viewer inserts a -90° X rotation (Z-up GLB → Y-up scene) ABOVE the
+    // model root, so cameraTarget = Rx(-90°)·(world-local): (x,y,z) → (x, z, -y).
+    // Proven live: feeding the raw world-local centre framed the part ~hundreds of
+    // mm off (NDC y≈-1.2, off the bottom); rotating it lands the part dead-centre
+    // (render-camera projects the part to NDC 0,0). Rotation preserves extents, so
+    // maxExt/radius are unchanged. (Prior note "cameraTarget == -boundingBox.centre"
+    // was right that goalTarget == -cameraTarget but MISSED this axis swap.)
+    const tx = cx, ty = cz, tz = -cy;
     try {
-      mv.cameraTarget = `${cx}m ${cy}m ${cz}m`;
+      mv.cameraTarget = `${tx}m ${ty}m ${tz}m`;
       const fovRad = mv.getFieldOfView() * Math.PI / 180;
       const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.4);
       const orbit = mv.getCameraOrbit();
