@@ -8513,3 +8513,11 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **Trade-off:** re-fetch+re-parse per open (jsdelivr edge-cached @sha path → fast). Correctness > the small reload cost (เอ๋'s call).
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 🔧 HOTFIX "Loading 3D… ไม่ขึ้น" — my own regression from moving close ✕ to the viewer (ff8d0c7)
+เอ๋: 3D view stuck on "Loading 3D…" forever. **My regression (bebc453):** I moved the close ✕ into the VIEWER template (bottom-right), but the close-handler `modal.querySelector('.kdstock-close').addEventListener('click', close)` runs in the EARLY modal setup — BEFORE the viewer template is built (it's built after `await _kd3dEnsureModelViewer()` + body.innerHTML). So `.kdstock-close` was null there → `null.addEventListener` threw → _kdOpen3D aborted before building the viewer → stuck. (GLB=200, model-viewer CDN loads — both fine; my earlier bebc453 "verify" used an INJECTED element, which bypassed this real-flow crash → lesson: verify the actual open flow, not injected DOM.)
+**FIX (ff8d0c7):** optional-chain the early handler (`?.` → no crash; backdrop+Esc still close from there) + wire the floating close AFTER the viewer builds (next to the fit-button wiring). 
+**VERIFIED on the real flow (real Chrome):** open 2FNCL2 → errs=[] (no null crash), bodyHasViewer=true (viewer DOM built, was the 105-char Loading placeholder), model-viewer defined+present, close ✕ at bottom-right. node --check OK; deploy 28088666955 success. (Model pixel-render is hidden-CDP-tab-gated; builds + renders on เอ๋'s visible tab.)
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
