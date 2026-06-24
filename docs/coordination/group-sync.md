@@ -8430,3 +8430,14 @@ Decoded live from the node chain: `matrixWorld(part) = Rx(-90)(worldLocal) + Tar
 **LESSON applied:** standalone render is valid ONLY for the rotation-invariant fill/radius check; centering correctness comes from the real-mv-camera proof, NOT standalone (that's what made my earlier c953a95 claim false).
 **OPEN ITEMS:** none new (side-note _fitCamera axis-swap now CLOSED via button repoint). **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · "Part กองกลาง" = STALE GLB → fix: pin 3D URLs to commit SHA (7968568, LIVE)
+เอ๋ (screenshot 2FCLL0-070043 @0%): "ในบางครั้ง Part มารวมกันอยู่ตรงกลาง แก้ไขด้วย".
+**NOT a geometry/web-math bug — proven:** scanned ALL 20 cabinet GLBs (local parse, world transforms applied) → every one's parts spread to a proper envelope (2FCLL0-070043 spreadDiag 1413mm; only single-mesh GLBs flag a false "0 spread"). Raw GLB + faithful `snapshotScene` normalization replication both render a CLEAN cabinet. explode/isolate is stateless (derives from immutable baseX). So the pile = a STALE GLB.
+**ROOT CAUSE:** `_kd3dGlbUrl` used jsdelivr `@main` + `?v=Date.now()/60000`. jsdelivr caches the `@main` PATH for hours; `?v=` only busts the BROWSER, not jsdelivr's path cache → after a re-export (🧊) jsdelivr keeps serving the OLD mis-assembled GLB until its CDN refreshes. เอ๋ confirmed a hard-refresh fixed it (= stale, self-heals).
+**FIX (7968568):** pin GLB + parts-GLB URLs to the latest **main commit SHA** (`@<sha>`) — immutable on jsdelivr → a re-export shows the instant เอ๋ reloads, zero CDN lag. SHA fetched once per page load via commits/main; **deliberately NOT cached in sessionStorage** (it survives reloads incl. hard-refresh → would re-pin the OLD sha and reintroduce the bug). Falls back to `@main` until resolved / on rate-limit → 3D never blocks.
+**VERIFIED (real Chrome, live):** deployed app.js has `_kd3dGlbRef()`/`_kd3dInitGlbRef`, URLs use `@${_kd3dGlbRef()}`; runtime `window.__KD_GLB_REF` = valid 40-hex SHA (7968568da8…); `_kd3dGlbUrl('2FCLL0-070043')` → `@7968568da8…`; `@<sha>` GLB → HTTP200 valid spread=1413; `@main` fallback → 200. node --check OK; deploy 28076208170 success.
+**FYI Fusion (RD):** this only masks staleness on the WEB read side. If you want re-exports visible WITHOUT เอ๋ reloading, a jsdelivr purge (`https://purge.jsdelivr.net/gh/<repo>@main/Drawings/3d/<code>.glb`) after the 🧊 push would refresh the `@main` path too. Not required — the @sha pin makes reload reliable.
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
