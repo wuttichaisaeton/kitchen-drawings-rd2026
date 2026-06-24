@@ -8412,3 +8412,11 @@ Decoded live from the node chain: `matrixWorld(part) = Rx(-90)(worldLocal) + Tar
 **SIDE NOTE for whoever picks this up:** `_fitCamera` (the manual fit-button + fallback) sets cameraTarget from a world-local bbox centre too and has the SAME missing `Rx(-90)` — the whole-model centre sits near the rotation axis so it's only mildly off, but worth the same `(x,z,-y)` fix if เอ๋ reports the fit BUTTON mis-aims. Also worth investigating separately: the explode-mode entry GLB-reload thrash (staleness poll re-setting `src` repeatedly → model-viewer never finishes loading → blank canvas) — hit it ~3× this session.
 **OPEN ITEMS:** (1) _fitCamera same axis-swap (low priority, only if fit-button mis-aims). (2) explode-entry GLB-reload thrash (separate bug, intermittent blank canvas). **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 3D view = explode-only, mode bar removed (e05448d, LIVE, DOM-verified)
+เอ๋ (screenshot, 2FNCL2 viewer): "เอา 4 style นี้ออก ให้เหลือแต่ explode แต่ไม่ต้องโชว์ปุ่มเพราะเหลือ style เดียวแล้ว".
+**CHANGE (e05448d):** dropped the `.kd3d-modebar` toolbar entirely (Hidden Line / Hidden Line+Shade / Component Color / Realistic / Explode buttons) + the `modeBtn` helper; `mode` locked to `'explode'`, `VALID=['explode']`. 3D modal now opens straight into Explode (title bar -> Explode slider -> viewer). Other modes' code in `applyMode`/`applyMaterials` is now an unreachable dead path (left in place — harmless, low-risk).
+**VERIFIED on real Chrome (live):** deployed app.js has no `kd3d-modebar`/`modeBtn`, `VALID=['explode']`; opened 1LLVO4-05000L -> `.kd3d-modebar` els=0, buttons=0, explode slider=1, model-viewer class=`kd3d-mode-explode`, 0 JS errors; HTML screenshot shows the button row gone. node --check OK; deploy 28074174709 success.
+**OPEN ITEMS:** none new. **NO BLOCKERS.**
+-- WEB
