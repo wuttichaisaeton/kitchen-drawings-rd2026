@@ -8538,3 +8538,9 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **FIX:** rule fullscreen เปลี่ยน top→bottom — `top:auto; bottom:calc(env(safe-area-inset-bottom,0)+14px); right:calc(env(safe-area-inset-right,0)+14px)` → ขวาล่างทั้ง 2 โหมด, เคลียร์ iOS home indicator. CSS-only.
 **VERIFY:** `node --check` ✓ (CSS อยู่ใน JS template literal) · grep ✓ app.js:2402-2403. Pixel = รอเอ๋แตะ iPhone — pseudo-fs reproduce เฉพาะเครื่องจริง (desktop preview ไม่ render model-viewer + ไม่เข้า pseudo-fs). committed herewith; deploy watch ต่อ.
 -- WEB
+
+### WEB · 2026-06-24 · 3D viewer: zoom-fit ถอยออกหน่อย (1.4→1.7)
+เอ๋: "ระยะ zoom fit ให้เหมือน zoom out ออกมาหน่อย".
+**FIX:** fit radius = `(maxExt/2)/tan(fov/2) * margin`. เดิม margin=1.4 (model เกือบเต็มเฟรม). ดึงเป็นค่าคงที่ `_FIT_MARGIN=1.7` (app.js:3030) แชร์ทั้ง `_fitCamera` + `_fitVisibleWorld` → auto-fit-on-open และปุ่ม fit ระยะตรงกัน. 1.4→1.7 = model เล็กลง ~18% (radius ไกลขึ้น 21%) = มี breathing room.
+**VERIFY:** `node --check` ✓ · grep ✓ ทั้ง 2 radius lines ใช้ `_FIT_MARGIN` (app.js:3054/3115) ไม่เหลือ `*1.4`. Pixel = รอเอ๋ดูบนเครื่อง (background tab ไม่ render model-viewer). ปรับเพิ่ม/ลดได้ที่ const เดียว.
+-- WEB

@@ -3023,6 +3023,11 @@ async function _kdOpen3D(code, opts) {
     } catch (e) { return null; }
   };
 
+  // Margin factor on the fit radius (bigger = camera farther = more breathing
+  // room). เอ๋ 2026-06-24 "ระยะ zoom fit ให้เหมือน zoom out ออกมาหน่อย" → 1.4→1.7.
+  // Shared by BOTH fit paths (_fitCamera + _fitVisibleWorld) so the auto-fit on
+  // open and the manual fit button frame at the same distance.
+  const _FIT_MARGIN = 1.7;
   // Zoom-to-fit: frame every VISIBLE mesh (เอ๋ "เพิ่มปุ่ม zoom fit ทุก view").
   // Works in all modes; recomputes the world bbox from the (world-baked)
   // geometry so it adapts to whatever is currently shown.
@@ -3046,7 +3051,7 @@ async function _kdOpen3D(code, opts) {
     try {
       mv.cameraTarget = `${cx}m ${cy}m ${cz}m`;
       const fovRad = mv.getFieldOfView() * Math.PI / 180;
-      const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.4);
+      const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * _FIT_MARGIN);
       const orbit = mv.getCameraOrbit();
       mv.cameraOrbit = `${orbit.theta}rad ${orbit.phi}rad ${radius}m`;
       if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
@@ -3107,7 +3112,7 @@ async function _kdOpen3D(code, opts) {
     try {
       mv.cameraTarget = `${tx}m ${ty}m ${tz}m`;
       const fovRad = mv.getFieldOfView() * Math.PI / 180;
-      const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * 1.4);
+      const radius = Math.max(0.1, (maxExt / 2) / Math.tan(fovRad / 2) * _FIT_MARGIN);
       const orbit = mv.getCameraOrbit();
       mv.cameraOrbit = `${orbit.theta}rad ${orbit.phi}rad ${radius}m`;
       if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
