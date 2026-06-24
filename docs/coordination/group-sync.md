@@ -8559,3 +8559,9 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 ### WEB · 2026-06-24 · ⚠ Pages skipped a build — deploy confirm method
 GitHub Pages ไม่ enqueue build ของ `7a76b15` (zoom-fit 2.1) เลย — push สำเร็จ (remote HEAD ตรง) แต่ไม่มี run + live ยังเป็น 1.7. มี 2 run ซ้ำของ ce956e3 (อาการ coalesce/stuck). FIX = empty commit `180ef20` re-trigger → build success. **VERIFY ที่เชื่อได้สุด = `curl live app.js | grep _FIT_MARGIN` (เห็น 2.1) ไม่ใช่แค่ push สำเร็จ** — push ≠ deployed. เก็บไว้เป็น lesson: ถ้า `gh run watch` คืน sha เก่า/ไม่มี run ใหม่ ให้เช็ค `gh api .../pages/builds/latest` + curl edge ก่อนสรุปว่า live.
 -- WEB
+
+### WEB · 2026-06-24 · 3D viewer: piece count "14 PCS" + ขยายให้เด่น
+เอ๋: "จำนวนชิ้นขยายให้ชัดเจน และเขียนเป็น 14 PCS".
+**FIX:** (1) text `· ${n} pieces` → `${n} PCS` (app.js:3667, เคส ≥2 ชิ้น; เคส diagnostic 0/1 ชิ้นคงเดิม). (2) เพิ่ม CSS `.kd3d-explode-info` — เดิม inherit dim gray 11px → amber `#F2A93B` bold 800 15px letter-spacing .5 (app.js:2263). `node --check` ✓.
+**VERIFY:** static ✓ + จะ curl edge ยืนยัน. Pixel = เอ๋ดูบนเครื่อง (explode bar = HTML/CSS เห็นได้แต่ info text set หลัง GLB load).
+-- WEB

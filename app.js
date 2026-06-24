@@ -2258,6 +2258,9 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-explodebar input[type=range]::-moz-range-track{height:12px;border-radius:6px;background:#2b3340}
     .kd3d-modal .kd3d-explodebar input[type=range]::-moz-range-thumb{width:40px;height:40px;border-radius:50%;background:#f2a93b;border:3px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.55);cursor:pointer}
     .kd3d-modal .kd3d-explodebar .kd3d-explode-val{flex:0 0 36px;text-align:right;color:#e6edf4;font-weight:600}
+    /* เอ๋ 2026-06-24 "จำนวนชิ้นขยายให้ชัดเจน + เขียนเป็น 14 PCS" — piece count
+       was dim 11px gray (inherited); make it the prominent amber callout. */
+    .kd3d-modal .kd3d-explodebar .kd3d-explode-info{flex:0 0 auto;white-space:nowrap;color:#F2A93B;font-weight:800;font-size:15px;letter-spacing:.5px}
     .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
     .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
@@ -3661,7 +3664,7 @@ async function _kdOpen3D(code, opts) {
     const info = body.querySelector('.kd3d-explode-info');
     if (info) {
       if (explodeUnits.length >= 2) {
-        info.textContent = `· ${explodeUnits.length} pieces`;
+        info.textContent = `${explodeUnits.length} PCS`;   // เอ๋ 2026-06-24: "14 PCS", enlarged+amber via CSS
       } else if (deepMeshCount >= 2) {
         // Mesh count says multi-leaf but explode walk failed — web bug.
         info.textContent = `· ${deepMeshCount} meshes — explode walk found 0 units (check console)`;
