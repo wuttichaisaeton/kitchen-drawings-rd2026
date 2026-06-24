@@ -2295,6 +2295,17 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-ovl-qty{font-weight:700;font-size:16px}
     .kd3d-modal .kd3d-ovl-code{font-weight:400;font-size:13px}
     .kd3d-modal .kd3d-ovl-check{color:#2ec27e;font-weight:700;font-size:14px;margin-right:4px}
+    /* เอ๋ 2026-06-24 header polish: close = dark round button (white ✕, per her ref
+       image); fit = 4-corner expand-arrows icon with a click pulse; fullscreen
+       button removed. */
+    .kd3d-modal .kdstock-head .kdstock-close{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;min-width:36px;border-radius:50%;background:#161c25;color:#fff;border:1px solid #2b3340;font-size:17px;line-height:1;cursor:pointer;margin-left:8px;padding:0;box-shadow:0 2px 8px rgba(0,0,0,.35);transition:background .12s ease,transform .12s ease,box-shadow .12s ease}
+    .kd3d-modal .kdstock-head .kdstock-close:hover{background:#0b0f14;transform:scale(1.08);box-shadow:0 3px 12px rgba(0,0,0,.5)}
+    .kd3d-modal .kdstock-head .kdstock-close:active{transform:scale(.94)}
+    .kd3d-modal .kd3d-fit{display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid transparent;color:#9fb0c0;cursor:pointer;padding:6px;border-radius:8px;transition:color .12s ease,background .12s ease}
+    .kd3d-modal .kd3d-fit:hover{color:#F2A93B;background:rgba(242,169,59,.12)}
+    .kd3d-modal .kd3d-fit svg{display:block;width:24px;height:24px}
+    .kd3d-modal .kd3d-fit.kd3d-fit-go{animation:kd3dFitPulse .5s ease}
+    @keyframes kd3dFitPulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,169,59,.6);color:#F2A93B}40%{transform:scale(1.22);box-shadow:0 0 0 8px rgba(242,169,59,0);color:#F2A93B}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,169,59,0)}}
     .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
     .kd3d-modal .kd3d-3dx-btn:hover{background:rgba(28,37,48,0.8);color:#e6edf4}
     .kd3d-modal .kd3d-3dx-btn.is-on{color:#F2A93B;border-color:#F2A93B}
@@ -2433,7 +2444,7 @@ async function _kdOpen3D(code, opts) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="font-size:11px;color:#9fb0c0;font-weight:500;margin-left:10px;letter-spacing:.3px"></span><button class="kd3d-fit" aria-label="Zoom to fit" title="Zoom to fit (frame whole model)" style="background:transparent;border:0;color:#9fb0c0;font-size:30px;cursor:pointer;padding:6px 12px;border-radius:6px">⊡</button><button class="kd3d-fs" aria-label="Fullscreen" title="Fullscreen (toggle)" style="background:transparent;border:0;color:#9fb0c0;font-size:14px;cursor:pointer;padding:4px 8px;margin-right:2px;border-radius:4px">⛶</button><button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="font-size:15px;color:#c4d0dc;font-weight:600;margin-left:10px;letter-spacing:.4px"></span><button class="kd3d-fit" aria-label="Zoom to fit" title="Zoom to fit (frame whole model)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="8 3 3 3 3 8"/><polyline points="16 3 21 3 21 8"/><polyline points="8 21 3 21 3 16"/><polyline points="16 21 21 21 21 16"/><line x1="3" y1="3" x2="9.5" y2="9.5"/><line x1="21" y1="3" x2="14.5" y2="9.5"/><line x1="3" y1="21" x2="9.5" y2="14.5"/><line x1="21" y1="21" x2="14.5" y2="14.5"/></svg></button><button class="kdstock-close" aria-label="Close">✕</button></div>
          <div class="kd3d-body">
            <div class="kd3d-loading"><div class="kd3d-spin"></div><div>Loading 3D…</div></div>
          </div>
@@ -3067,7 +3078,13 @@ async function _kdOpen3D(code, opts) {
     // Use the axis-correct, matrix-free fit (frames whatever's visible — whole
     // model, or the isolated part). _fitCamera (the old world-local bbox path)
     // still has the missing Rx(-90) cameraTarget swap, so it mis-aimed.
-    if (fitBtn) fitBtn.addEventListener('click', (e) => { e.stopPropagation(); _fitVisibleWorld(); });
+    if (fitBtn) fitBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // click pulse (เอ๋ "ทำ effect") — re-trigger reliably on repeated clicks.
+      fitBtn.classList.remove('kd3d-fit-go'); void fitBtn.offsetWidth; fitBtn.classList.add('kd3d-fit-go');
+      setTimeout(() => { try { fitBtn.classList.remove('kd3d-fit-go'); } catch (e) {} }, 520);
+      _fitVisibleWorld();
+    });
   }
 
   // Compute the geometric centroid (bbox midpoint) of a node's mesh subtree
@@ -3241,12 +3258,7 @@ async function _kdOpen3D(code, opts) {
   // camera move (เอ๋ "ตัวอักษรอยู่นิ่ง ไม่ขยับตามภาพ").
   const _buildExplodeLabels = async () => {
     _cleanupExplodeLabels();
-    if (!explodeUnits.length) return;
-    let THREE;
-    try { THREE = await _kd3dEnsureThree(); }
-    catch { return; }
-    if (mode !== 'explode') return;
-    _ovlThree = THREE;   // captured for the leader-projection fallback
+    if (!explodeUnits.length || mode !== 'explode') return;
 
     // One ROW per unique part code; qty = how many scene nodes carry it.
     const countByCode = new Map();
@@ -3254,163 +3266,68 @@ async function _kdOpen3D(code, opts) {
       const ct = _extractPartLabel(cu.node.name || '');
       if (ct) countByCode.set(ct, (countByCode.get(ct) || 0) + 1);
     }
-    // Pick ONE representative unit per code (the unit whose assembled centroid Y
-    // is highest — keeps a stable, deterministic anchor). Skip units with no
-    // visible body. (ROOT CAUSE of "no labels anywhere" 2026-06-23: this used to
-    // also require `dxfsForMasterCode(text).length` — i.e. an UPLOADED DXF — so
-    // every part without one was dropped, and with no codes left the whole
-    // overlay was never built. The label is just the part's code; it needs no
-    // DXF. Verified live: removing the gate restores all part labels.)
-    // Only label real sheet-metal PART codes (the 13-char `XXXXXX-WWWHHH` form) —
-    // drops bought hardware that rides in the GLB with raw names (legs "LEG_-_080
-    // _MM_BY_TH", hinges "1-WINGEW"/"WINGEW3-H0800"), which aren't laser-cut parts.
-    // Every documented code (FN/BK/SD/TS/BM/SH/DSV/2xx…) is 6-6 alphanumeric.
+    // เอ๋ 2026-06-24: show ALL real part codes, sorted ALPHABETICALLY by the code
+    // (NOT by the qty prefix), split into two EQUAL columns. Only the 13-char
+    // XXXXXX-WWWHHH form (drops raw GLB hardware names like legs/hinges). A code
+    // qualifies if it has ≥1 visible non-orphan body.
     const _isPartCode = (t) => !!t && /^[0-9A-Za-z]{6}-[0-9A-Za-z]{6}$/.test(t);
-    const repByCode = new Map();
+    const codeSet = new Set();
     for (const u of explodeUnits) {
       const text = _extractPartLabel(u.node.name || '');
       if (!_isPartCode(text)) continue;
       let any = false;
-      u.node.traverse(nd => {
-        if (!nd.isMesh || !nd.geometry) return;
-        if (nd.userData && nd.userData.isOrphan) return;
-        if (!nd.visible) return;
-        any = true;
-      });
-      if (!any) continue;
-      const prev = repByCode.get(text);
-      if (!prev || u.gy > prev.gy) repByCode.set(text, u);
+      u.node.traverse(nd => { if (nd.isMesh && nd.geometry && !(nd.userData && nd.userData.isOrphan)) any = true; });
+      if (any) codeSet.add(text);
     }
-    const codes = [...repByCode.keys()];
+    const codes = [...codeSet].sort((a, b) => a.localeCompare(b));
     if (!codes.length) return;
+    // EQUAL split: first half (alphabetical) → LEFT column, the rest → RIGHT.
+    const half = Math.ceil(codes.length / 2);
+    const cols = { L: codes.slice(0, half), R: codes.slice(half) };
 
-    // ONE-TIME side (left/right) + vertical order assignment from the ASSEMBLED
-    // (0%) projected screen position, so rows stay STILL afterwards. Project at
-    // factor=0 (assembled) — that's the state we enter explode in.
-    const assign = codes.map(text => {
-      const u = repByCode.get(text);
-      const p = _projectToViewer(THREE, _unitCurrentCentroid(u, 0));
-      return { text, unit: u, sx: p.x, sy: p.y, vis: p.vis };
-    });
-    const viewerBox = body.querySelector('.kd3d-viewer');
-    const vw = viewerBox ? viewerBox.getBoundingClientRect().width : 1;
-    const midX = vw / 2;
-    // Fallback when projection unavailable (headless / pre-layout): split by the
-    // assembled centroid X around the model centre, top-to-bottom by gy desc.
-    const haveProj = assign.some(a => a.vis);
-    for (const a of assign) {
-      if (haveProj) a.side = (a.sx < midX) ? 'L' : 'R';
-      else a.side = (a.unit.gx < (explodeCenter ? explodeCenter.x : 0)) ? 'L' : 'R';
-    }
-    const orderKey = haveProj ? (a => a.sy) : (a => -a.unit.gy);  // screen-Y asc, or height desc
-    const leftRows  = assign.filter(a => a.side === 'L').sort((p, q) => orderKey(p) - orderKey(q));
-    const rightRows = assign.filter(a => a.side === 'R').sort((p, q) => orderKey(p) - orderKey(q));
-
-    // ── Overlay DOM ──────────────────────────────────────────────────────
+    // ── Overlay DOM (STATIC legend) ──────────────────────────────────────
     const { fill: labelFill } = _labelColorsForMode();
     _ovlRoot = document.createElement('div');
     _ovlRoot.className = 'kd3d-overlay';
     _ovlRoot.style.color = labelFill;
-    const svgNS = 'http://www.w3.org/2000/svg';
-    _ovlSvg = document.createElementNS(svgNS, 'svg');
-    _ovlSvg.setAttribute('class', 'kd3d-ovl-svg');
-    // arrowhead marker (small filled triangle at the part end)
-    const defs = document.createElementNS(svgNS, 'defs');
-    const marker = document.createElementNS(svgNS, 'marker');
-    const markerId = 'kd3d-arrow-' + Math.random().toString(36).slice(2, 7);
-    marker.setAttribute('id', markerId);
-    marker.setAttribute('markerWidth', '7'); marker.setAttribute('markerHeight', '7');
-    marker.setAttribute('refX', '6'); marker.setAttribute('refY', '3.5');
-    marker.setAttribute('orient', 'auto'); marker.setAttribute('markerUnits', 'userSpaceOnUse');
-    const tri = document.createElementNS(svgNS, 'path');
-    tri.setAttribute('d', 'M0,0 L7,3.5 L0,7 Z');
-    tri.setAttribute('fill', labelFill);
-    marker.appendChild(tri); defs.appendChild(marker); _ovlSvg.appendChild(defs);
-    // Rows are ABSOLUTELY positioned in the overlay (not flex columns) so the
-    // live layout pass can move each label up/down AND switch its side to follow
-    // its part — keeping leaders horizontal and never crossing (เอ๋ 2026-06-22:
-    // "Label อยู่กลาง Part, เส้นชี้ Horizontal, หมุนภาพแล้ววิ่งขึ้นลง ซ้ายขวา auto").
-    _ovlColL = _ovlColR = null;
-    _ovlRoot.appendChild(_ovlSvg);
-    (viewerBox || body).appendChild(_ovlRoot);
-    const _seedStep = 34;  // generous initial row spacing (เอ๋ "ห่างกว่านี้ได้")
+    (body.querySelector('.kd3d-viewer') || body).appendChild(_ovlRoot);
 
     _ovlRows = [];
-    let idx = 0;
-    const asmSet = _assembledCodeSet();   // ticked-assembled codes → green ✓ (was red frame)
+    const asmSet = _assembledCodeSet();   // ticked-assembled codes → green ✓
     const _applyRowSelection = () => {
       for (const rr of _ovlRows) rr.rowEl.classList.toggle('kd3d-ovl-sel', _poppedCode === rr.code);
     };
-    const _mkRow = (a, side, top0) => {
-      const qty = String(countByCode.get(a.text) || 1);
+    const _mkRow = (code, side, topPct) => {
+      const qty = String(countByCode.get(code) || 1);
       const row = document.createElement('div');
       row.className = 'kd3d-ovl-row kd3d-ovl-' + (side === 'L' ? 'left' : 'right');
-      if (_poppedCode === a.text) row.classList.add('kd3d-ovl-sel');
-      row.style.top = top0 + 'px';
-      // ✓ when this code is marked ASSEMBLED (replaces the old red frame, เอ๋ 2026-06-23).
-      if (asmSet.has(a.text)) { const ck = document.createElement('span'); ck.className = 'kd3d-ovl-check'; ck.textContent = '✓'; row.appendChild(ck); }
-      // "N x CODE" — qty bold + slightly bigger, code regular.
+      if (_poppedCode === code) row.classList.add('kd3d-ovl-sel');
+      row.style.top = topPct + '%';
+      if (asmSet.has(code)) { const ck = document.createElement('span'); ck.className = 'kd3d-ovl-check'; ck.textContent = '✓'; row.appendChild(ck); }
+      // "N x CODE" — qty bold, code regular.
       const qtyEl = document.createElement('span'); qtyEl.className = 'kd3d-ovl-qty'; qtyEl.textContent = qty;
-      const codeEl = document.createElement('span'); codeEl.className = 'kd3d-ovl-code'; codeEl.textContent = ' x ' + a.text;
+      const codeEl = document.createElement('span'); codeEl.className = 'kd3d-ovl-code'; codeEl.textContent = ' x ' + code;
       row.appendChild(qtyEl); row.appendChild(codeEl);
-      // Click → pop this code's parts out (effect) + highlight the row; click again resets.
+      // Click → isolate this code's parts + zoom-fit; click again restores all.
       row.addEventListener('click', (e) => {
         e.stopPropagation();
-        _poppedCode = (_poppedCode === a.text) ? null : a.text;
+        _poppedCode = (_poppedCode === code) ? null : code;
         _applyRowSelection();
         applyExplode(explodePct);
-        // เอ๋ 2026-06-23: zoom-fit auto — to the isolated part on select, back to
-        // the whole model on deselect (frames whatever is VISIBLE, at its real
-        // exploded position).
         requestAnimationFrame(() => _fitVisibleWorld());
       });
       _ovlRoot.appendChild(row);
-      // Hotspot slot at the part's CURRENT centroid (assembled at build time).
-      const hsId = 'kd' + (idx++);
-      const c0 = _unitCurrentCentroid(a.unit, (explodePct / 100) * 1.5);
-      const hs = document.createElement('div');
-      hs.setAttribute('slot', 'hotspot-' + hsId);
-      hs.setAttribute('data-position', `${c0.x}m ${c0.y}m ${c0.z}m`);
-      // visibility:hidden (NOT display:none) — a display:none element returns an
-      // all-zero getBoundingClientRect, so the leader redraw saw every hotspot as
-      // off-screen and hid every leader (เอ๋ "เส้นชี้และลูกศรไปไหน"). With
-      // visibility:hidden the 0×0 box still carries model-viewer's projected
-      // transform, so its rect.left/top give the real part-end point.
-      hs.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
-      if (mv) mv.appendChild(hs);
-      // Leaders removed (เอ๋ 2026-06-23) → no per-part bbox-corner hotspots and no
-      // SVG line. Just the 1 centroid hotspot per label (12 total, was 108 — much
-      // lighter on iPad too). The label is identified by clicking it / the part.
-      _ovlRows.push({ code: a.text, qty, side, rowEl: row, lineEl: null, unit: a.unit, hsEl: hs, hsCorners: null });
+      _ovlRows.push({ code, qty, side, rowEl: row });
     };
-    leftRows.forEach((a, i)  => _mkRow(a, 'L', 14 + i * _seedStep));
-    rightRows.forEach((a, i) => _mkRow(a, 'R', 14 + i * _seedStep));
-
-    // Hide overlay until explode > 5% (mirrors the old sprite gating).
+    // Each column listed top→bottom at FIXED % positions (evenly spread 6%→86%).
+    // STATIC — no projection, no camera-follow; labels don't run up/down on orbit.
+    for (const side of ['L', 'R']) {
+      const list = cols[side], n = list.length;
+      list.forEach((code, i) => _mkRow(code, side, n > 1 ? (6 + i * (80 / (n - 1))) : 46));
+    }
+    // Hidden until explode > 5% (mirrors the old gating).
     _ovlRoot.style.display = (explodePct > 5) ? '' : 'none';
-
-    // Redraw leaders on every camera move (model-viewer fires camera-change on
-    // orbit AND on its own re-layout of hotspots). RAF-throttled. Also redraw on
-    // window resize / fullscreen toggle (viewer box changes → SVG must resize).
-    _ovlCamHandler = () => _scheduleLeaderUpdate();
-    if (mv) mv.addEventListener('camera-change', _ovlCamHandler);
-    window.addEventListener('resize', _ovlCamHandler);
-    document.addEventListener('fullscreenchange', _ovlCamHandler);
-    document.addEventListener('webkitfullscreenchange', _ovlCamHandler);
-    // First draw + a SETTLE POLL: model-viewer positions the hotspots over the
-    // next render frames, and on DESKTOP there's no orbit to fire camera-change,
-    // so a single deferred draw can see every hotspot still at (0,0) and hide all
-    // labels FOREVER (เอ๋ "คอมยังไม่เห็น label"). Re-draw a few times until the
-    // labels resolve (the THREE-projection fallback shows them meanwhile).
-    requestAnimationFrame(() => requestAnimationFrame(() => _updateExplodeLeaders()));
-    let _settleN = 0;
-    const _settle = () => {
-      if (!_ovlRoot) return;   // overlay torn down
-      _updateExplodeLeaders();
-      if (++_settleN < 16 && !_ovlRows.some(r => r._tx != null)) setTimeout(_settle, 130);
-    };
-    setTimeout(_settle, 90);
-    console.info('[kd3d] overlay built —', _ovlRows.length, 'labels (L', leftRows.length, '/ R', rightRows.length, ')');
+    console.info('[kd3d] overlay built —', _ovlRows.length, 'static labels (L', cols.L.length, '/ R', cols.R.length, ')');
   };
 
   // RAF-throttled scheduler for leader redraws.
@@ -3518,21 +3435,9 @@ async function _kdOpen3D(code, opts) {
   // exploded node position) so model-viewer reprojects it where the part renders
   // and the label re-seats. (Leaders removed → no corner hotspots to update.)
   const _syncExplodeHotspots = () => {
-    if (!_ovlRows.length) return;
-    const factor = (explodePct / 100) * 1.5;
-    for (const r of _ovlRows) {
-      if (!r.hsEl || !r.unit) continue;
-      let cx2 = null, cy2 = null, cz2 = null;
-      if (_ovlThree && r.unit.node) {
-        try {
-          const b = new _ovlThree.Box3().setFromObject(r.unit.node);
-          if (!b.isEmpty()) { const c = b.getCenter(new _ovlThree.Vector3()); cx2 = c.x; cy2 = c.y; cz2 = c.z; }
-        } catch {}
-      }
-      if (cx2 == null) { const c = _unitCurrentCentroid(r.unit, factor); cx2 = c.x; cy2 = c.y; cz2 = c.z; }
-      r.hsEl.setAttribute('data-position', `${cx2}m ${cy2}m ${cz2}m`);
-    }
-    _scheduleLeaderUpdate();
+    // เอ๋ 2026-06-24: explode labels are now a STATIC alphabetical legend (two
+    // equal columns, fixed positions — no hotspots, no leaders, no camera-follow).
+    // Nothing to re-sync on explode/orbit; the old per-frame reflow is gone.
   };
 
   const snapshotScene = () => {
@@ -4500,8 +4405,9 @@ async function _kdOpen3D(code, opts) {
     _3dxBtn.className = 'kd3d-3dx-btn';
     _3dxBtn.textContent = '3D';
     _3dxBtn.title = 'Connect 3Dconnexion SpaceMouse';
-    const viewerDiv = body.querySelector('.kd3d-viewer');
-    if (viewerDiv) viewerDiv.appendChild(_3dxBtn);
+    // เอ๋ 2026-06-24: the bottom-left "3D" (3Dconnexion connect) button is removed
+    // — NOT appended to the DOM. The HID auto-connect below still works silently
+    // if a SpaceMouse is already paired; there's simply no visible button.
 
     const _3dxParse = (ev) => {
       const d = ev.data;
