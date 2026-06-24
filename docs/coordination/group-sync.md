@@ -8466,3 +8466,8 @@ node --check OK each; deploys all success. Commits: 431e131 (labels+header), e38
 **VERIFIED (real Chrome, sketch theme):** fit button computed `position:absolute; left:10px; bottom:10px`, dark bg, 42px, atBottomLeft=true; not in header; dims = 3 lines (height 50px). node --check OK; deploy success; screenshot confirms.
 **OPEN ITEMS:** none. (Earlier: dbl-click-model→fullscreen still wired — left it; เอ๋ hasn't said to remove.) **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 3D dims label fix: third line H (not S) (eb6fa67, LIVE)
+เอ๋ corrected the prior 3-line dims: wants `W / D / H` (not W/D/S). Changed the 3rd label S→H. Live app.js confirmed (curl): `W ${W}<br>D ${D}<br>H ${H}`. node --check OK; deploy success. **NO BLOCKERS.**
+-- WEB
