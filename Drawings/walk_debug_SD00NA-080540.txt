@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-24T09:53:58.287547
+CC_Assembly walk debug — 2026-06-24T10:30:49.324043
 Project: SD00NA-080540
 Total occurrences visited: 6
 CAM-ALPF tagged components: 0
@@ -9,8 +9,8 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 |     |     | ALPF             | SD0SUP-000000 v6:1 (SD0SUP-000000 v6)
-    0 |     |     | ALPF             | SD00NA-080540 v6:2 (SD00NA-080540 v6)
+    0 |     |     | ALPF             | SD00NA-080540 v9:2 (SD00NA-080540 v9)
     0 |     |     | ALPF             | SD0SUP-000000 v6:2 (SD0SUP-000000 v6)
-    0 |     |     | ALPF             | SD00NA-080540 v6:1 (SD00NA-080540 v6)
+    0 |     |     | ALPF             | SD00NA-080540 v9:1 (SD00NA-080540 v9)
     0 |     |     | ALPF             | SD0SUP-000000 v6:3 (SD0SUP-000000 v6)
     0 |     |     | ALPF             | SD0SUP-000000 v6:4 (SD0SUP-000000 v6)
