@@ -2026,13 +2026,33 @@ const _KD3D_THREE_CDN = 'https://cdn.jsdelivr.net/npm/three@0.166.1/build/three.
 // "neutral" preset). Used by Realistic mode.
 const _KD3D_HDRI_REALISTIC = 'https://modelviewer.dev/shared-assets/environments/aircraft_workshop_01_1k.hdr';
 
+// 3D GLB cache-busting (เอ๋ 2026-06-24 "Part มารวมกันอยู่ตรงกลาง"): the pile was
+// a STALE GLB. jsdelivr caches `@main` paths for hours and `?v=` only busts the
+// BROWSER, not jsdelivr's PATH cache — so a re-exported GLB kept serving the old
+// (mis-assembled) geometry until the CDN refreshed. Fix: pin to the latest main
+// commit SHA (`@<sha>`), which is IMMUTABLE → jsdelivr always serves that exact
+// commit fresh, so a re-export shows the instant เอ๋ reloads. Falls back to
+// `@main` until the SHA resolves / if the API is unavailable — never blocks 3D.
+function _kd3dGlbRef() { return window.__KD_GLB_REF || 'main'; }
+(function _kd3dInitGlbRef() {
+  // Fetch the LATEST main SHA on every page load — deliberately NOT cached in
+  // sessionStorage: it survives reloads (incl. hard-refresh), so a stale cached
+  // SHA would re-pin to the OLD commit and reintroduce the very staleness this
+  // fixes. One commits/main call per load; on rate-limit/offline → stays 'main'.
+  try {
+    fetch('https://api.github.com/repos/wuttichaisaeton/kitchen-drawings-rd2026/commits/main', { headers: { 'Accept': 'application/vnd.github+json' } })
+      .then(r => r.ok ? r.json() : null)
+      .then(j => { const sha = j && j.sha; if (sha && /^[0-9a-f]{40}$/.test(sha)) window.__KD_GLB_REF = sha; })
+      .catch(() => {});
+  } catch {}
+})();
 function _kd3dGlbUrl(code) {
   const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
-  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}.glb?v=${v}`;
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}.glb?v=${v}`;
 }
 function _kd3dPartsGlbUrl(code) {
   const v = window.__KD_CACHE_V || Math.floor(Date.now() / 60000);
-  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@main/Drawings/3d/${encodeURIComponent(code)}_parts.glb?v=${v}`;
+  return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}_parts.glb?v=${v}`;
 }
 
 // ── 🧊 outdated chip (WEB 21, 2026-06-22) ────────────────────────────────────
