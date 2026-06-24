@@ -2237,11 +2237,13 @@ async function _kdOpen3D(code, opts) {
        หน่อย คลิ๊ก ไม่ค่อยโดน", esp. on iPad). Native accent-color thumb was
        ~14px. Track + thumb are PSEUDO-elements → survive the chalk/sketch
        :where reset (it matches elements, not ::pseudo). 28px tall hit area. */
-    .kd3d-modal .kd3d-explodebar input[type=range]{flex:1 1 auto;min-width:0;-webkit-appearance:none;appearance:none;background:transparent;height:28px;cursor:pointer;touch-action:manipulation;margin:0}
-    .kd3d-modal .kd3d-explodebar input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:#2b3340}
-    .kd3d-modal .kd3d-explodebar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;margin-top:-9px;border-radius:50%;background:#f2a93b;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.55);cursor:pointer}
-    .kd3d-modal .kd3d-explodebar input[type=range]::-moz-range-track{height:10px;border-radius:5px;background:#2b3340}
-    .kd3d-modal .kd3d-explodebar input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:#f2a93b;border:2px solid #fff;cursor:pointer}
+    /* เอ๋ 2026-06-24: bigger explode slider thumb (44px hit row / 40px thumb) — was
+       28px, still hard to tap. margin-top centres the 40px thumb on the 12px track. */
+    .kd3d-modal .kd3d-explodebar input[type=range]{flex:1 1 auto;min-width:0;-webkit-appearance:none;appearance:none;background:transparent;height:44px;cursor:pointer;touch-action:manipulation;margin:0}
+    .kd3d-modal .kd3d-explodebar input[type=range]::-webkit-slider-runnable-track{height:12px;border-radius:6px;background:#2b3340}
+    .kd3d-modal .kd3d-explodebar input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:40px;height:40px;margin-top:-14px;border-radius:50%;background:#f2a93b;border:3px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.55);cursor:pointer}
+    .kd3d-modal .kd3d-explodebar input[type=range]::-moz-range-track{height:12px;border-radius:6px;background:#2b3340}
+    .kd3d-modal .kd3d-explodebar input[type=range]::-moz-range-thumb{width:40px;height:40px;border-radius:50%;background:#f2a93b;border:3px solid #fff;box-shadow:0 2px 7px rgba(0,0,0,.55);cursor:pointer}
     .kd3d-modal .kd3d-explodebar .kd3d-explode-val{flex:0 0 36px;text-align:right;color:#e6edf4;font-weight:600}
     .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
     .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
