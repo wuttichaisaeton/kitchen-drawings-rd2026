@@ -8504,3 +8504,12 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **VERIFIED (real Chrome, sketch theme):** computed close-float = position:absolute right:10px bottom:10px border-radius:50% bg #161c25 (beats theme); fit-float left:10px bottom:10px; header has no ✕; deployed app.js has close-float in viewer template + CSS, header ✕ removed (curl ×1 each). node --check OK; deploy success. (Live viewer render of the float couldn't be screenshotted — model-viewer stalls building on a hidden CDP tab — but CSS computed-position + เอ๋'s working tab confirm it.)
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 🎯 "2nd open piles" root cause = model-viewer parse-cache reuse → fresh-per-open (c8c09d4, LIVE)
+เอ๋ nailed it: "กดครั้งแรกถูก ครั้งที่ 2 part มารวมกัน ... อย่าเอา cache เดิมมาใช้." TRUE cause: model-viewer's CachingGLTFLoader caches the PARSED scene by URL and shares geometry across instances; snapshotScene normalization recenters the geometry verts IN PLACE → the 1st open mutates the cache-shared geometry → the 2nd open of the same cabinet gets already-recentered geometry → all parts collapse to origin = pile. (My @sha pin made URLs stable, which is what let the cache hit on re-open — masking it as "intermittent" before.)
+**FIX (c8c09d4):** (1) per-OPEN nonce `window.__KD_OPEN_NONCE` (bumped at the top of `_kdOpen3D`) appended as `&o=` in `_kd3dGlbUrl`/`_kd3dPartsGlbUrl` → every open is a unique URL → model-viewer parses FRESH (provably no cache reuse). (2) clone geometry before recentering in snapshotScene so the cache is never corrupted even if hit.
+**VERIFIED (real Chrome):** 3 consecutive opens → nonce 4/5/6, 3 UNIQUE GLB URLs (cache-key differs → fresh parse each), @sha still present. This is provable (cache keyed by URL) — doesn't need reproducing the render. node --check OK; deploy success.
+**Trade-off:** re-fetch+re-parse per open (jsdelivr edge-cached @sha path → fast). Correctness > the small reload cost (เอ๋'s call).
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
