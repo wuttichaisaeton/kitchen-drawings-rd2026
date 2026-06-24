@@ -8420,3 +8420,13 @@ Decoded live from the node chain: `matrixWorld(part) = Rx(-90)(worldLocal) + Tar
 **VERIFIED on real Chrome (live):** deployed app.js has no `kd3d-modebar`/`modeBtn`, `VALID=['explode']`; opened 1LLVO4-05000L -> `.kd3d-modebar` els=0, buttons=0, explode slider=1, model-viewer class=`kd3d-mode-explode`, 0 JS errors; HTML screenshot shows the button row gone. node --check OK; deploy 28074174709 success.
 **OPEN ITEMS:** none new. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 3D auto zoom-fit on FIRST open (cb90ee9, LIVE)
+เอ๋ (screenshot 2FNCL2): เปิด 3D ครั้งแรกโมเดลไม่ fit — ตู้ใหญ่หลุดมุมซ้ายล่าง เห็นแค่มุมเดียว. "ก็ให้ zoom fit เลย".
+**ROOT:** clean cabinet (no stray bodies) got NO reframe from snapshotScene's outlier filter; worse, for snapshot-NORMALIZED GLBs our geometry-recenter (runs AFTER load) invalidates model-viewer's own auto-frame (camera still targets the pre-recenter centre) → model opens shifted/oversized.
+**FIX (cb90ee9):** on the FIRST GLB load (after snapshotScene+applyMode) call `_fitVisibleWorld()` once — axis-correct (df0cec4 Rx(-90)) + matrix-free, frames the whole assembled model. One-shot `_didInitialFit` (won't yank the view on background staleness reloads); skipped for pre-isolated partView + whole-kitchen projectView (model-viewer's own frame is fine there + avoids the outlier filter dropping a far cabinet). Also repointed the manual fit button `_fitCamera`→`_fitVisibleWorld` (kills the same axis-swap on the button — closes the side-note open item).
+**VERIFIED:** node --check OK; deploy 28074336089 success; live app.js has `_didInitialFit` + the `!projectView` guard + fit-button→`_fitVisibleWorld` (curl-confirmed). Whole-model framing render (standalone of live 2FNCL2 GLB, 12pc, exact fit formula): centre NDC (0,0), 80% height-fill / 55% width, **no clipping** — centred + filling. Centering itself reuses the df0cec4 real-mv-camera-proven `_fitVisibleWorld` mechanism (same fn, all-units set). เอ๋ one-tap to close the loop: hard-refresh → open any single cabinet 🧊 → should open already fit/centred (no manual fit needed).
+**LESSON applied:** standalone render is valid ONLY for the rotation-invariant fill/radius check; centering correctness comes from the real-mv-camera proof, NOT standalone (that's what made my earlier c953a95 claim false).
+**OPEN ITEMS:** none new (side-note _fitCamera axis-swap now CLOSED via button repoint). **NO BLOCKERS.**
+-- WEB
