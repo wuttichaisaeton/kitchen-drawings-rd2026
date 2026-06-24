@@ -3041,10 +3041,10 @@ async function _kdOpen3D(code, opts) {
   };
 
   // Margin factor on the fit radius (bigger = camera farther = more breathing
-  // room). เอ๋ 2026-06-24 "ระยะ zoom fit ให้เหมือน zoom out ออกมาหน่อย" → 1.4→1.7.
+  // room). เอ๋ 2026-06-24 "zoom out ออกมาหน่อย" → 1.4→1.7, then "ออกมาอีก" → 2.1.
   // Shared by BOTH fit paths (_fitCamera + _fitVisibleWorld) so the auto-fit on
   // open and the manual fit button frame at the same distance.
-  const _FIT_MARGIN = 1.7;
+  const _FIT_MARGIN = 2.1;
   // Zoom-to-fit: frame every VISIBLE mesh (เอ๋ "เพิ่มปุ่ม zoom fit ทุก view").
   // Works in all modes; recomputes the world bbox from the (world-baked)
   // geometry so it adapts to whatever is currently shown.

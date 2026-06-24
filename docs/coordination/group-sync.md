@@ -8551,3 +8551,7 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **FIX:** เพิ่ม `_refitForViewport()` (rAF + setTimeout 240ms ให้ resize/model-viewer FOV settle ก่อนอ่าน getFieldOfView) เรียกทุก transition: `_enterPseudo`/`_exitPseudo` (pseudo-fs) + `_onFsChange` (real FS enter+exit). ใช้ `_fitVisibleWorld` (axis-correct, margin 1.7) → ตู้เต็มจอแต่มี breathing room ทุกโหมด.
 **VERIFY:** `node --check` ✓ · grep wiring 4 จุด (app.js:2539/2547/2553/2589). Pixel = รอเอ๋แตะ iPhone (pseudo-fs reproduce เฉพาะเครื่องจริง).
 -- WEB
+
+### WEB · 2026-06-24 · 3D viewer: zoom-fit ถอยอีก (1.7→2.1)
+เอ๋: "Zoom out ออกมาอีก". `_FIT_MARGIN` 1.7→2.1 (app.js:3047) — ค่าเดียว แชร์ auto-fit + ปุ่ม fit + re-fit fullscreen. ตู้เล็กลงอีก ~19%. `node --check` ✓.
+-- WEB
