@@ -2765,12 +2765,18 @@ async function _kdOpen3D(code, opts) {
   // = zoom. Camera-controls is removed from the model-viewer attrs so its
   // built-in handlers don't conflict with these custom ones.
   if (mv) {
-    // Rotate uses cameraOrbit (theta/phi); zoom uses field-of-view because
-    // model-viewer's auto-bounds for `auto` radius lock the radius once the
-    // narrow ortho-fake FOV is set. Narrower FOV = zoomed in, wider = zoomed
-    // out, clamped to the 3°-50° bounds we already set on the element.
+    // Rotate uses cameraOrbit (theta/phi) and PINS the current radius — NOT
+    // `auto`. Passing `auto` made model-viewer re-frame to its OWN default
+    // (tighter) fit on the first orbit, so the model snapped bigger the moment
+    // you dragged — เอ๋ 2026-06-24 "ขนาดตอนเริ่มต้น OK แต่พอคลิ๊ก orbit ขยายใหญ่
+    // ทันที". Reading the live radius keeps whatever the zoom-fit (margin 2.6)
+    // or a manual FOV zoom established. Zoom is still done via field-of-view
+    // (narrower = in, wider = out, clamped 3°-50°); radius never changes here.
     const _setOrbit = (theta, phi) => {
-      try { mv.cameraOrbit = `${theta}rad ${phi}rad auto`; } catch (e) {}
+      try {
+        const r = mv.getCameraOrbit().radius;
+        mv.cameraOrbit = `${theta}rad ${phi}rad ${r}m`;
+      } catch (e) {}
     };
     const _setFov = (fov) => {
       const next = Math.max(3, Math.min(50, fov));
