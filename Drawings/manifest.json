@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-24T04:35:50.754470+00:00",
+  "generated_at": "2026-06-24T04:54:37.754387+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -17755,6 +17755,22 @@
           "family": "Floor",
           "is_wrapper": true,
           "variant_root": "DSB0FA-070000"
+        }
+      ]
+    },
+    "TS2TR4-070050": {
+      "name": "TS2TR4-070050",
+      "status": "active",
+      "created_at": "2026-06-24T04:54:37.734890+00:00",
+      "updated_at": "2026-06-24T04:54:37.734890+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 4,
+      "parts": [
+        {
+          "code": "TS2TRX-000000",
+          "qty": 4,
+          "family": "Top Sup",
+          "urn": "urn:adsk.wipprod:dm.lineage:f-qcY3JKTcaWx-DvjbXOWw"
         }
       ]
     }
