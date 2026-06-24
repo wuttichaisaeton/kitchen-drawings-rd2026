@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-24T09:12:20.581242+00:00",
+  "generated_at": "2026-06-24T09:27:55.054634+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1604,7 +1604,7 @@
     "FN2BNX-080000": {
       "family": "Floor",
       "last_drawn_version": 9,
-      "fusion_version": 9,
+      "fusion_version": 10,
       "pdf": "FN0B00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -18482,6 +18482,22 @@
           "qty": 4,
           "family": "Top Sup",
           "urn": "urn:adsk.wipprod:dm.lineage:f-qcY3JKTcaWx-DvjbXOWw"
+        }
+      ]
+    },
+    "FN2BNX-120000": {
+      "name": "FN2BNX-120000",
+      "status": "active",
+      "created_at": "2026-06-24T09:27:55.034147+00:00",
+      "updated_at": "2026-06-24T09:27:55.034147+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "FN2BNX-080000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:l4N8ZS57RX2vF2cMIDYTxw"
         }
       ]
     }
