@@ -8373,3 +8373,17 @@ FIX: custom slider — 28px round amber thumb (white ring + shadow) on a 10px da
 VERIFIED live in Chrome: appearance:none + height 28px in default+chalk; screenshot shows the large amber thumb on the track. deploy success, marker live.
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- RD (web)
+
+---
+### RD · 2026-06-23 · Editor 🧊/🧩 iPad touch + 3D loading spinner SHIPPED (240faf0, LIVE) · zoom-fit REVERTED (deep model-viewer issue)
+**SHIPPED (240faf0, browser-verified, deploy success):** เอ๋ "บน ipad กดแล้วไม่ค่อยติด หรือให้รอ ไม่รู้เลย" — the kme-tree 🧊 + 🧩 buttons had only onClick (no touch handler), so iPad taps were eaten. Added onPointerDown touch handlers to all three 🧊 + both 🧩 buttons (preventDefault + stopPropagation, no double-fire/parent-fold) + touch-action:manipulation + :active. fire3D() shows a spinner on the tapped 🧊 (GLB load takes a beat) + debounces re-taps; spinner is a ::pseudo so it survives the chalk/sketch reset. 3-lens adversarial review → 0 issues. **เอ๋ real-iPad confirm pending.**
+
+**REVERTED — zoom-fit on label/part click (เอ๋ "เวลากดที่ Label หรือ Part ให้ Zoom fit auto"):** the existing fit frames the wrong spot (part off-centre/off-screen). Spent a long debug; root cause is a model-viewer internals problem I could not crack reliably in-session — documenting for a fresh focused session:
+- model-viewer sets `matrixAutoUpdate=false` on GLB nodes and commits a moved node's transform into matrixWorld only on its OWN lazy render. applyExplode sets node.position synchronously, but the rAF fit runs BEFORE that render → reads the ASSEMBLED matrices → frames the assembled spot (~750mm off).
+- `_fitVisibleWorld` uses `Box3.setFromObject`, which calls updateWorldMatrix and REVERTS matrixWorld to the stale local matrix → always assembled.
+- `_fitCamera` used the LOCAL geometry bbox (ignored the explode offset entirely).
+- Tried: updateMatrix-all + updateMatrixWorld(true) (model-viewer overwrites on render), fixed delays 130/280ms (render timing varies, unreliable), poll-until-stable (fits at the assembled pose because matrices are "stable" before the first render), and `_unitCurrentCentroid` (the hotspot value — but it put the part OFF-SCREEN, coordinate-space mismatch).
+- **Verify caveat:** preview's headless model-viewer DID load the GLB (scene+camera reachable) BUT my raw 8-corner measure returned a CONSTANT centre regardless of which part was isolated — i.e. the preview matrices are unreliable for this. **This must be debugged on REAL Chrome via Chrome MCP, not headless preview.**
+- **Most promising next approach:** force a model-viewer render before measuring (nudge camera by an epsilon then restore, or find model-viewer's sync render/`updateFraming`), THEN raw-read matrixWorld 8-corner of visible meshes (NOT setFromObject) for the centre, keep current orbit angle, set radius from bbox.
+**OPEN ITEM:** zoom-fit-on-isolate (needs a fresh session on real Chrome). app.js reverted to 8b8b569 (no regression).
+-- RD (web)
