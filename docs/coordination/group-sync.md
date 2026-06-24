@@ -8471,3 +8471,8 @@ node --check OK each; deploys all success. Commits: 431e131 (labels+header), e38
 ### WEB · 2026-06-24 · 3D dims label fix: third line H (not S) (eb6fa67, LIVE)
 เอ๋ corrected the prior 3-line dims: wants `W / D / H` (not W/D/S). Changed the 3rd label S→H. Live app.js confirmed (curl): `W ${W}<br>D ${D}<br>H ${H}`. node --check OK; deploy success. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 3D explode slider thumb 28→40px (e686d3f, LIVE)
+เอ๋ "กดไม่ค่อยติด". Thumb 28→40px round + 44px hit row + 12px track (both -webkit- & -moz-). Verified live (sketch): input height 44px, live CSS thumb width:40px, screenshot shows the bigger amber thumb; same screenshot also confirms dims=3 lines W/D/H, fit button bottom-left, cabinet renders clean (no pile). node --check OK; deploy success. **NO BLOCKERS.**
+-- WEB
