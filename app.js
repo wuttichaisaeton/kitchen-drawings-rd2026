@@ -3999,8 +3999,15 @@ async function _kdOpen3D(code, opts) {
       const dy = (u.gy - explodeCenter.y) * factor;
       const dz = (u.gz - explodeCenter.z) * factor;
       u.node.position.set(u.baseX + dx, u.baseY + dy, u.baseZ + dz);
-      u.node.updateMatrix();   // ⚠ REQUIRED: model-viewer sets matrixAutoUpdate=false after its first render (on a visible tab), so a bare position.set never reaches matrixWorld → every part renders at the same spot = "parts pile in the centre" (เอ๋ 2026-06-24). updateMatrix() forces the matrix from the new position. Proven on real Chrome.
+      u.node.updateMatrix();   // fixes each node's LOCAL matrix (matrixAutoUpdate=false eats a bare position.set)
     }
+    // ⚠ THE piece that actually un-piles: updateMatrix() above sets the LOCAL matrix,
+    // but matrixWorld (what model-viewer RENDERS) only recomputes via updateMatrixWorld
+    // — model-viewer's own render does NOT propagate our edits (proven live on real
+    // Chrome: local matrix spread correctly yet matrixWorld stayed all-identical =
+    // every part stacked at one spot, เอ๋ "Part รวมกันอยู่ตรงกลาง"). Force it on the
+    // explode subtree so the parts render at their real positions.
+    try { if (explodeRoot) explodeRoot.updateMatrixWorld(true); } catch (e) {}
     // Overlay: move each hotspot to the part's new centroid + toggle visibility.
     // (Leaders redraw on the camera-change the hotspot move triggers, and via
     // _syncExplodeHotspots from the slider.)
@@ -4020,6 +4027,7 @@ async function _kdOpen3D(code, opts) {
       if (u.node.scale) u.node.scale.setScalar(1);
       u.node.visible = true;
     }
+    try { if (explodeRoot) explodeRoot.updateMatrixWorld(true); } catch (e) {}
     if (_ovlRoot) _ovlRoot.style.display = 'none';
   };
 
