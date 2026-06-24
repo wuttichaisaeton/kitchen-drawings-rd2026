@@ -2526,15 +2526,31 @@ async function _kdOpen3D(code, opts) {
   // a class toggle on the modal. The two paths are interchangeable from the
   // user's perspective.
   const _isAnyFs = () => !!(document.fullscreenElement || document.webkitFullscreenElement || modal.classList.contains('kd3d-pseudo-fs'));
+  // Re-frame for the CURRENT viewport on every fullscreen transition. The
+  // open-time auto-fit was computed for the small normal frame; fullscreen
+  // (real or pseudo) resizes the model-viewer container, so without a re-fit
+  // the model looks too tight/cropped in fullscreen and too small after exit
+  // (เอ๋ 2026-06-24 "อยากดูเต็มอยู่เลย" — fullscreen ตู้เต็มเฟรมไม่มี margin).
+  // DEFERRED: the resize + model-viewer's own FOV/aspect recompute must land
+  // before _fitVisibleWorld reads getFieldOfView()/getCameraOrbit(); a bare rAF
+  // is too early for the real-FS resize, so a short timeout does the real work
+  // (rAF gives a fast first approximation). _fitVisibleWorld is defined later in
+  // this closure but only invoked here at event time — no TDZ.
+  const _refitForViewport = () => {
+    requestAnimationFrame(() => { try { _fitVisibleWorld(); } catch (e) {} });
+    setTimeout(() => { try { _fitVisibleWorld(); } catch (e) {} }, 240);
+  };
   const _enterPseudo = () => {
     modal.classList.add('kd3d-pseudo-fs');
     if (fsExitBtn) fsExitBtn.style.display = 'inline-block';
     if (fsBtn) fsBtn.title = 'Exit fullscreen';
+    _refitForViewport();
   };
   const _exitPseudo = () => {
     modal.classList.remove('kd3d-pseudo-fs');
     if (fsExitBtn) fsExitBtn.style.display = 'none';
     if (fsBtn) fsBtn.title = 'Fullscreen (toggle)';
+    _refitForViewport();
   };
   const _toggleFs = async () => {
     if (_isAnyFs()) {
@@ -2570,6 +2586,7 @@ async function _kdOpen3D(code, opts) {
     const inRealFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
     if (fsBtn) fsBtn.title = (inRealFs || modal.classList.contains('kd3d-pseudo-fs')) ? 'Exit fullscreen' : 'Fullscreen (toggle)';
     if (fsExitBtn) fsExitBtn.style.display = (inRealFs || modal.classList.contains('kd3d-pseudo-fs')) ? 'inline-block' : 'none';
+    _refitForViewport();   // real-FS enter AND exit both resize the viewport
   };
   document.addEventListener('fullscreenchange', _onFsChange);
   document.addEventListener('webkitfullscreenchange', _onFsChange);

@@ -8544,3 +8544,10 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **FIX:** fit radius = `(maxExt/2)/tan(fov/2) * margin`. เดิม margin=1.4 (model เกือบเต็มเฟรม). ดึงเป็นค่าคงที่ `_FIT_MARGIN=1.7` (app.js:3030) แชร์ทั้ง `_fitCamera` + `_fitVisibleWorld` → auto-fit-on-open และปุ่ม fit ระยะตรงกัน. 1.4→1.7 = model เล็กลง ~18% (radius ไกลขึ้น 21%) = มี breathing room.
 **VERIFY:** `node --check` ✓ · grep ✓ ทั้ง 2 radius lines ใช้ `_FIT_MARGIN` (app.js:3054/3115) ไม่เหลือ `*1.4`. Pixel = รอเอ๋ดูบนเครื่อง (background tab ไม่ render model-viewer). ปรับเพิ่ม/ลดได้ที่ const เดียว.
 -- WEB
+
+### WEB · 2026-06-24 · 3D viewer: re-fit ตอน toggle fullscreen (เอ๋ "อยากดูเต็มอยู่เลย")
+เอ๋ screenshot fullscreen: ปุ่ม ✕ ขวาล่างแล้ว ✓ แต่ตู้เต็มเฟรมตึงๆ ไม่มี margin (1.7 ไม่ติด).
+**ROOT:** auto-fit รันแค่ตอนเปิด (คำนวณ radius จาก normal viewport). เข้า fullscreen → container ใหญ่ขึ้น/aspect เปลี่ยน แต่ไม่ re-fit → ตู้ดูใหญ่ตึง; ออก fullscreen ก็ค้าง radius ของ fullscreen → ดูเล็ก.
+**FIX:** เพิ่ม `_refitForViewport()` (rAF + setTimeout 240ms ให้ resize/model-viewer FOV settle ก่อนอ่าน getFieldOfView) เรียกทุก transition: `_enterPseudo`/`_exitPseudo` (pseudo-fs) + `_onFsChange` (real FS enter+exit). ใช้ `_fitVisibleWorld` (axis-correct, margin 1.7) → ตู้เต็มจอแต่มี breathing room ทุกโหมด.
+**VERIFY:** `node --check` ✓ · grep wiring 4 จุด (app.js:2539/2547/2553/2589). Pixel = รอเอ๋แตะ iPhone (pseudo-fs reproduce เฉพาะเครื่องจริง).
+-- WEB
