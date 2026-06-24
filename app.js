@@ -2316,6 +2316,12 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-viewer .kd3d-fit-float:hover{background:rgba(20,26,34,.96) !important;color:#F2A93B !important}
     .kd3d-modal .kd3d-viewer .kd3d-fit-float:active{transform:scale(.94)}
     .kd3d-modal .kd3d-viewer .kd3d-fit-float svg{width:26px;height:26px}
+    /* เอ๋ 2026-06-24: close ✕ moved to a floating button bottom-RIGHT (was top-right
+       header, overlapped the W/D/H dims on mobile). Dark circle, mirrors the fit
+       button bottom-left. !important beats the theme button override. */
+    .kd3d-modal .kd3d-viewer .kd3d-close-float{position:absolute !important;right:10px;bottom:10px;top:auto;left:auto;z-index:5;display:inline-flex !important;align-items:center;justify-content:center;width:42px !important;height:42px !important;min-width:42px;border-radius:50% !important;background:#161c25 !important;color:#fff !important;border:1px solid #2b3340 !important;font-size:19px;line-height:1;cursor:pointer;padding:0 !important;margin:0 !important;box-shadow:0 2px 9px rgba(0,0,0,.4) !important;transition:background .12s ease,transform .12s ease}
+    .kd3d-modal .kd3d-viewer .kd3d-close-float:hover{background:#0b0f14 !important;transform:scale(1.08)}
+    .kd3d-modal .kd3d-viewer .kd3d-close-float:active{transform:scale(.94)}
     .kd3d-modal .kd3d-fit.kd3d-fit-go{animation:kd3dFitPulse .5s ease}
     @keyframes kd3dFitPulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,169,59,.6);color:#F2A93B}40%{transform:scale(1.22);box-shadow:0 0 0 8px rgba(242,169,59,0);color:#F2A93B}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(242,169,59,0)}}
     .kd3d-modal .kd3d-3dx-btn{background:transparent;border:1px solid #2b3340;color:#9fb0c0;cursor:pointer;font:600 10px "Flux Architect",ui-monospace,monospace;padding:3px 7px;position:absolute;left:6px;top:50%;transform:translateY(-50%);z-index:2;border-radius:4px;letter-spacing:.3px}
@@ -2456,7 +2462,7 @@ async function _kdOpen3D(code, opts) {
   modal.innerHTML = STYLE
     + '<div class="kdstock-backdrop"></div>'
     + `<div class="kdstock-frame" role="dialog" aria-label="3D viewer" style="max-width:880px;width:94vw;max-height:88vh;display:flex;flex-direction:column">
-         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="display:inline-block;vertical-align:middle;font-size:14px;color:inherit;opacity:.72;font-weight:600;margin-left:12px;letter-spacing:.4px;line-height:1.2;text-align:left"></span><button class="kdstock-close" aria-label="Close">✕</button></div>
+         <div class="kdstock-head">${projectView ? `Project: ${escapeHtml(display)} — Full Kitchen 3D` : `${escapeHtml(display)}${wantDemo ? ' <span style="font-size:10px;color:#f2a93b;font-weight:700;margin-left:8px">DEMO</span>' : ''}${partView ? ` <span style="font-size:10px;color:#9fb0c0;font-weight:500;margin-left:6px;letter-spacing:.3px">in ${escapeHtml(cabinetCode)}</span>` : ''} — 3D view`}<span class="kd3d-dims" style="display:inline-block;vertical-align:middle;font-size:14px;color:inherit;opacity:.72;font-weight:600;margin-left:12px;letter-spacing:.4px;line-height:1.2;text-align:left"></span></div>
          <div class="kd3d-body">
            <div class="kd3d-loading"><div class="kd3d-spin"></div><div>Loading 3D…</div></div>
          </div>
@@ -2652,6 +2658,7 @@ async function _kdOpen3D(code, opts) {
       <div class="kd3d-viewer" style="position:relative">
         <button class="kd3d-browser-toggle" title="Toggle part browser">👁</button>
         <button class="kd3d-fit kd3d-fit-float" aria-label="Zoom to fit" title="Zoom to fit (frame whole model)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="8 3 3 3 3 8"/><polyline points="16 3 21 3 21 8"/><polyline points="8 21 3 21 3 16"/><polyline points="16 21 21 21 21 16"/><line x1="3" y1="3" x2="9.5" y2="9.5"/><line x1="21" y1="3" x2="14.5" y2="9.5"/><line x1="3" y1="21" x2="9.5" y2="14.5"/><line x1="21" y1="21" x2="14.5" y2="14.5"/></svg></button>
+        <button class="kdstock-close kd3d-close-float" aria-label="Close">✕</button>
         <model-viewer
           class="kd3d-mode-${mode}"
           src="${escapeHtml(glbUrl)}"
