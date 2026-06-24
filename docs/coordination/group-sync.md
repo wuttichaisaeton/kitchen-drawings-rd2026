@@ -8487,3 +8487,12 @@ node --check OK each; deploys all success. Commits: 431e131 (labels+header), e38
 **Note:** the @sha GLB pin (7968568) is still a good improvement (kills genuinely-stale CDN GLBs) but it was NOT what fixed the pile — this matrix fix is. Memory corrected ([[reference_modelviewer_projection]] + [[reference_pages_cache_busting]]).
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- WEB
+
+---
+### WEB · 2026-06-24 · 🎯 pile FULLY FIXED — needed updateMatrixWorld too (b0ba6bc, end-to-end verified)
+Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw the pile). Diagnosed on the DEPLOYED code via dispatched-load under matrixAutoUpdate=false: each node's LOCAL matrix was correct (elements[12] spread -318/23/364) BUT `matrixWorld` (what renders) stayed all-identical (-350,-574,185) = pile — model-viewer's render does NOT propagate our matrix edits to matrixWorld.
+**THE missing piece:** `explodeRoot.updateMatrixWorld(true)` after the position loops (applyExplode + resetExplode). Forcing it on the live piled state → matrixWorld 14 unique, envelope 682×1174×393.
+**END-TO-END VERIFIED on deployed b0ba6bc:** dispatched the real load handler under matrixAutoUpdate=false → snapshotScene+applyExplode ran → matrixWorld = 14 unique spread + rendered a CLEAN cabinet. (Before: 1 identical = pile.)
+**Full fix = updateMatrix() (local matrix) + explodeRoot.updateMatrixWorld(true) (→ matrixWorld) after every position change.** Memory corrected ([[reference_modelviewer_projection]]).
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- WEB
