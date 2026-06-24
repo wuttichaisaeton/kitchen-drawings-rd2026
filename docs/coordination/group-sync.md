@@ -8365,3 +8365,11 @@ VERIFIED: computed `.kd3d-ovl-sel` across the 3 themes → outline 2.67px + weig
 Memory updated ([[reference_web_themes]]): reset also kills text-shadow + transform, not just box-shadow.
 **OPEN ITEMS:** none. **NO BLOCKERS.**
 -- RD (web)
+
+---
+### RD · 2026-06-23 · 3D explode slider: big 28px thumb (8b8b569, LIVE, screenshot-verified)
+เอ๋ "ปุ่มนี้ ให้ใหญ่หน่อย คลิ๊ก ไม่ค่อยโดน" (the explode slider handle, esp. iPad). The native accent-color thumb was ~14px.
+FIX: custom slider — 28px round amber thumb (white ring + shadow) on a 10px dark track; input height 28px = tall hit area; touch-action:manipulation. Track + thumb are PSEUDO-elements (::-webkit-slider-thumb / -runnable-track / ::-moz-range-*) → survive the chalk/sketch :where reset → big thumb on every theme.
+VERIFIED live in Chrome: appearance:none + height 28px in default+chalk; screenshot shows the large amber thumb on the track. deploy success, marker live.
+**OPEN ITEMS:** none. **NO BLOCKERS.**
+-- RD (web)
