@@ -2390,16 +2390,17 @@ async function _kdOpen3D(code, opts) {
       width: 100% !important;
       box-sizing: border-box !important;
     }
-    /* Close button in fullscreen — bigger, contrast circle, away from the
-       iOS status bar (RD 07 + เอ๋ "ออกมาแล้วปุ่มปิดหน้าจอนี้ทำให้เห็นชัดเจน
-       หน่อย"). Applies in both real + pseudo fullscreen. The header-row
-       layout doesn't change in non-FS — only in FS does the close button
-       break out to a floating circle. */
+    /* Close button in fullscreen — bigger contrast circle, BOTTOM-RIGHT to
+       mirror the normal-mode floating close (เอ๋ 2026-06-24 "พอกด full screen
+       ให้เอ็กซ์ลงมาที่ล่างขวาเหมือนกัน"). Was top-right (overlapped the title
+       in pseudo-fs); now matches .kd3d-close-float's corner. safe-area-inset-
+       bottom keeps it clear of the iOS home indicator. Real + pseudo FS. */
     .kd3d-modal .kdstock-frame:fullscreen .kdstock-close,
     .kd3d-modal .kdstock-frame:-webkit-full-screen .kdstock-close,
     .kd3d-modal.kd3d-pseudo-fs .kdstock-frame .kdstock-close {
       position: fixed !important;
-      top: calc(env(safe-area-inset-top, 0px) + 14px) !important;
+      top: auto !important;
+      bottom: calc(env(safe-area-inset-bottom, 0px) + 14px) !important;
       right: calc(env(safe-area-inset-right, 0px) + 14px) !important;
       width: 52px !important;
       height: 52px !important;

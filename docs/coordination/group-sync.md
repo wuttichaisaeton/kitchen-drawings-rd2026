@@ -8531,3 +8531,10 @@ Follow-up to 29dbc3a: `updateMatrix()` alone did NOT fix it (เอ๋ still saw
 **OPEN ITEMS:** (1) เอ๋ to confirm post-ff8d0c7: loading works + open/close/re-open same cabinet stays clean. (2) `&o=` re-downloads the GLB each open (jsdelivr edge-cached → fast; revisit only if opens feel slow). (3) dblclick-model→fullscreen still wired (ปุ่ม fullscreen removed; เอ๋ hasn't asked to kill the gesture).
 **NO BLOCKERS.**
 -- WEB
+
+### WEB · 2026-06-24 · 3D viewer: fullscreen close ✕ → bottom-right (เอ๋ request)
+เอ๋: "พอกด full screen ให้เอ็กซ์ลงมาที่ล่างขวาเหมือนกัน" (IMG_1327 normal = ขวาล่าง ✓ ; IMG_1328 pseudo-fs = ขวาบน ทับชื่อตู้ ❌).
+**ROOT:** close = ปุ่มเดียวมี 2 class `kdstock-close kd3d-close-float` (app.js:2680). โหมดปกติ `.kd3d-close-float` → bottom-right. โหมด fullscreen/pseudo-fs rule (app.js:2398-2424) override เป็น `top:14px;right:14px` (specificity สูงกว่า float + !important) → ขวาบน.
+**FIX:** rule fullscreen เปลี่ยน top→bottom — `top:auto; bottom:calc(env(safe-area-inset-bottom,0)+14px); right:calc(env(safe-area-inset-right,0)+14px)` → ขวาล่างทั้ง 2 โหมด, เคลียร์ iOS home indicator. CSS-only.
+**VERIFY:** `node --check` ✓ (CSS อยู่ใน JS template literal) · grep ✓ app.js:2402-2403. Pixel = รอเอ๋แตะ iPhone — pseudo-fs reproduce เฉพาะเครื่องจริง (desktop preview ไม่ render model-viewer + ไม่เข้า pseudo-fs). committed herewith; deploy watch ต่อ.
+-- WEB
