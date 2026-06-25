@@ -1,6 +1,6 @@
-CC_Assembly walk debug — 2026-06-24T20:42:13.605213
+CC_Assembly walk debug — 2026-06-25T07:05:03.658271
 Project: 1NSVB0-060050
-Total occurrences visited: 30
+Total occurrences visited: 31
 CAM-ALPF tagged components: 0
 
 --- CAM API exploration ---
@@ -14,11 +14,11 @@ depth | SM | CAM | material         | display_name (component)
     0 |     |     |                  | TP0010-060000:1 (TP0010-060000)
     1 | SM  |     | Steel            | TP0011-060000:1 (TP0011-060000)
     1 | SM  |     | ALPF             | TP0012-060000 v3:1 (TP0012-060000 v3)
-    0 |     |     |                  | FN0FL2-070544 v2:1 (FN0FL2-070544 v2)
-    1 | SM  |     | ALPF             | FN0F00-060540 v2:1 (FN0F00-060540 v2)
+    0 |     |     |                  | FN0FL2-060544 v4:1 (FN0FL2-060544 v4)
     1 |     |     |                  | FN1BLA-060000 v9:1 (FN1BLA-060000 v9)
     2 | SM  |     | ALPF             | FN1BLA-120000:1 (FN1BLA-120000)
-    1 |     |     |                  | FN2BNX-060000 v8:2 (FN2BNX-060000 v8)
+    1 | SM  |     | ALPF             | FN0F00-060540 v3:1 (FN0F00-060540 v3)
+    1 |     |     |                  | FN2BNX-060000 v9:2 (FN2BNX-060000 v9)
     2 | SM  |     | ALPF             | FN2BNX-080000:1 (FN2BNX-080000)
     1 |     |     |                  | FN0FN3-080005:1 (FN0FN3-080005)
     2 |     |     |                  | Leg-060 v3:1 (Leg-060 v3)
@@ -38,3 +38,4 @@ depth | SM | CAM | material         | display_name (component)
     3 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
     3 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
     1 |     |     | ALPF             | FN3BLA-060000 v10:1 (FN3BLA-060000 v10)
+    0 | SM  |     | Steel            | Component6:1 (Component6)

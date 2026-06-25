@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-24T23:36:19.328025+00:00",
+  "generated_at": "2026-06-25T00:05:03.661568+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -18426,7 +18426,7 @@
       "name": "1NSVB0-060050",
       "status": "active",
       "created_at": "2026-06-24T08:47:49.052876+00:00",
-      "updated_at": "2026-06-24T13:42:13.605827+00:00",
+      "updated_at": "2026-06-25T00:05:03.658585+00:00",
       "total_unique_parts": 5,
       "total_qty": 5,
       "parts": [
@@ -18434,32 +18434,32 @@
           "code": "FN0F00-060540",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-070544",
-          "variant_root": "FN0FL2-070544",
+          "parent_code": "FN0FL2-060544",
+          "variant_root": "FN0FL2-060544",
           "urn": "urn:adsk.wipprod:dm.lineage:LEGHJda6SV-KMa2t0PwmsQ"
         },
         {
           "code": "FN1BLA-060000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-070544",
-          "variant_root": "FN0FL2-070544",
+          "parent_code": "FN0FL2-060544",
+          "variant_root": "FN0FL2-060544",
           "urn": "urn:adsk.wipprod:dm.lineage:cF7gPB5LRdSsjoiHUZGjzQ"
         },
         {
           "code": "FN2BNX-060000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-070544",
-          "variant_root": "FN0FL2-070544",
+          "parent_code": "FN0FL2-060544",
+          "variant_root": "FN0FL2-060544",
           "urn": "urn:adsk.wipprod:dm.lineage:bP1ZBd0cTvijJ8Dy63cnNA"
         },
         {
           "code": "FN3BLA-060000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL2-070544",
-          "variant_root": "FN0FL2-070544",
+          "parent_code": "FN0FL2-060544",
+          "variant_root": "FN0FL2-060544",
           "urn": "urn:adsk.wipprod:dm.lineage:83faDcY5RpqeZfQ7B21jOQ"
         },
         {
@@ -18471,19 +18471,19 @@
           "urn": "urn:adsk.wipprod:dm.lineage:6lCg9zPYRoGOnO50_B5zCg"
         },
         {
-          "code": "FN0FL2-070544",
+          "code": "FN0FL2-060544",
           "qty": 0,
           "family": "Floor",
           "is_wrapper": true,
-          "variant_root": "FN0FL2-070544"
+          "variant_root": "FN0FL2-060544"
         },
         {
           "code": "FN0FN3-080005",
           "qty": 0,
           "family": "Floor",
           "is_wrapper": true,
-          "parent_code": "FN0FL2-070544",
-          "variant_root": "FN0FL2-070544"
+          "parent_code": "FN0FL2-060544",
+          "variant_root": "FN0FL2-060544"
         },
         {
           "code": "LEG-060",
@@ -18491,7 +18491,7 @@
           "family": "Other",
           "is_wrapper": true,
           "parent_code": "FN0FN3-080005",
-          "variant_root": "FN0FL2-070544"
+          "variant_root": "FN0FL2-060544"
         },
         {
           "code": "TP0010-060000",
