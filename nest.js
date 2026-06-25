@@ -3496,32 +3496,63 @@
       part.mirror  = _readPartMirror(part.code);
     }
   }
-  // Toggle a part's flip180/mirror flag, persist it as an exact-code grain_rules
-  // row, then repaint the preview. Adds the row when turning ON, drops it when
-  // turning OFF. (Rotate-180 + Mirror feature 2026-06-26)
-  async function _setPartOrientFlag(part, which, on) {
-    if (!part) return;
-    if (!S.grainRows) { try { await _loadGrainRows(); } catch (_) { S.grainRows = S.grainRows || []; } }
+  // PURE flag-apply — the SINGLE source of truth for setting flip180/mirror on a
+  // live part object. Mutates `part` in place AND syncs the persisted-row array
+  // so the two never disagree. Returns the new flag value. The toggle (click)
+  // path and the load path (_applyOrientFlagsToParts) both funnel through this so
+  // the flag lands on the SAME object identity that preview + nesting read — no
+  // stale copy, no dependence on an async re-scan. (Rotate-180 + Mirror 2026-06-26)
+  //
+  // The previous bug: the click handler set part.flip180 then awaited
+  // _saveGrainRows() — which calls _applyGrainToParts() (re-derives the flag from
+  // S.grainRows) AND writes RTDB — and only repainted in the trailing .then().
+  // So the live flag's correctness + the repaint were gated behind a network
+  // round-trip and could be clobbered by the grain_rules .on('value') listener
+  // reloading S.grainRows mid-flight. The button toggled its class but the flag
+  // read false and the preview never repainted until a full reload.
+  function _applyOrientFlag(part, which, on, rows) {
+    if (!part) return on;
     const code = part.code;
     const tag = (which === 'flip180') ? 'FLIP180' : 'MIRROR';
-    const has = (S.grainRows || []).find(r =>
-      String(r.pattern) === code && String(r.grain).toUpperCase() === tag);
-    if (on && !has) {
-      S.grainRows.push({ pattern: code, grain: tag, thickness: '', fix: '', angle: null });
-    } else if (!on && has) {
-      S.grainRows = S.grainRows.filter(r => r !== has);
+    if (Array.isArray(rows)) {
+      const has = rows.find(r =>
+        String(r.pattern) === code && String(r.grain).toUpperCase() === tag);
+      if (on && !has) {
+        rows.push({ pattern: code, grain: tag, thickness: '', fix: '', angle: null });
+      } else if (!on && has) {
+        const i = rows.indexOf(has);
+        if (i >= 0) rows.splice(i, 1);   // mutate in place (keep array identity)
+      }
     }
     if (which === 'flip180') part.flip180 = on; else part.mirror = on;
-    try { await _saveGrainRows(); } catch (e) { console.warn('[kdNest] orient flag save failed:', e); }
+    return on;
   }
-  function _togglePartFlip180(part) {
+  // Toggle a part's flip180/mirror flag: flip the LIVE flag + repaint IMMEDIATELY
+  // (synchronously, before any await), then persist the grain_rules row in the
+  // background. The instant-repaint path no longer waits on RTDB, so the preview
+  // and the active button state always reflect the live flag the moment the user
+  // clicks. (Rotate-180 + Mirror feature 2026-06-26)
+  function _toggleOrientFlag(part, which) {
     if (!part) return;
-    return _setPartOrientFlag(part, 'flip180', !part.flip180).then(() => _setPreview(part.code));
+    const next = !(which === 'flip180' ? part.flip180 : part.mirror);
+    // 1) Live flag — set on the same object preview/_runNesting read, RIGHT NOW.
+    //    (The row sync waits until the real grain rows are loaded so we never
+    //    clobber existing grain rules with a fresh [].)
+    _applyOrientFlag(part, which, next, Array.isArray(S.grainRows) ? S.grainRows : null);
+    // 2) Repaint NOW — same draw path 👁 uses — so the change is visible instantly
+    //    and the row's kdnest-orient-active glyph reflects the live flag.
+    _setPreview(part.code);
+    // 3) Persist in the background. If rows weren't loaded yet, load them first
+    //    (keeps existing grain rules) THEN apply the orient row to the real array.
+    //    _saveGrainRows re-derives flags via _applyGrainToParts, but they already
+    //    match what we set above, so the live flag never flips back.
+    Promise.resolve()
+      .then(() => (Array.isArray(S.grainRows) ? S.grainRows : _loadGrainRows()))
+      .then(rows => { _applyOrientFlag(part, which, next, rows); return _saveGrainRows(); })
+      .catch(e => console.warn('[kdNest] orient flag save failed:', e));
   }
-  function _togglePartMirror(part) {
-    if (!part) return;
-    return _setPartOrientFlag(part, 'mirror', !part.mirror).then(() => _setPreview(part.code));
-  }
+  function _togglePartFlip180(part) { _toggleOrientFlag(part, 'flip180'); }
+  function _togglePartMirror(part)  { _toggleOrientFlag(part, 'mirror'); }
 
   // ════════════════════════════════════════════════════════════════════
   //  Run Nesting
@@ -5910,16 +5941,16 @@
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
         _setPreview(part.code);
       });
-      // ⟲180 / ⟷ — per-part orientation toggles. Each flips a persisted flag
-      // (FLIP180 / MIRROR exact-code grain_rules row), repaints the preview, and
-      // is honored by both nesting and DXF export so the cut part matches what
-      // the worker sees. Previews the part on toggle so the change is visible.
-      // (Rotate-180 + Mirror feature 2026-06-26)
+      // ⟲180 / ⟷ — per-part orientation toggles. Each flips the LIVE flag on this
+      // part object + repaints the preview IMMEDIATELY (no reload), then persists
+      // the FLIP180 / MIRROR exact-code grain_rules row in the background. The
+      // flipped flag is honored by both nesting and DXF export so the cut part
+      // matches what the worker sees. (Rotate-180 + Mirror feature 2026-06-26)
       row.querySelector('.kdnest-part-flip180')?.addEventListener('click', () => {
-        S.previewCode = part.code; _togglePartFlip180(part);
+        _togglePartFlip180(part);
       });
       row.querySelector('.kdnest-part-mirror')?.addEventListener('click', () => {
-        S.previewCode = part.code; _togglePartMirror(part);
+        _togglePartMirror(part);
       });
       // ⚠ (no DXF) → open the part in Fusion via the :8765 bridge. Reuses
       // app.js's _routeLeafToFusion (kdAPI.routeLeaf): bridge open + "Opening
@@ -6254,5 +6285,13 @@
     // Used to measure fill ratio / locate interior gaps when tuning the
     // packer. Harmless (admin-only workspace).
     _debug: function () { return S; },
+    // Pure helpers exposed for the Node test harness so it exercises the REAL
+    // toggle + geometry code (not copies). No DOM needed: _applyOrientFlag
+    // mutates a part + rows array in place; _orientedGeom applies EDGE+mirror.
+    // (Rotate-180 + Mirror toggle-takes-effect-immediately fix 2026-06-26)
+    _test: {
+      applyOrientFlag: _applyOrientFlag,
+      orientedGeom: _orientedGeom,
+    },
   };
 })();

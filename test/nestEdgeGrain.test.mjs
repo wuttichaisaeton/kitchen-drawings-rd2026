@@ -512,3 +512,115 @@ test('partial elliptical arc: double mirror restores the sweep', () => {
   assert.ok(Math.abs(twice.cx - ell.cx) < 1e-12, 'cx restored');
   assert.ok(Math.abs(twice.mx - ell.mx) < 1e-12, 'mx restored');
 });
+
+// ── TOGGLE TAKES EFFECT IMMEDIATELY (the live-flag + repaint fix) ────────
+// The previous bug: clicking Mirror/Rotate-180 toggled the button's CSS class
+// but the LIVE part object's flag stayed false and the preview never repainted
+// until a full reload (the handler awaited an RTDB-gated save before applying).
+// These tests load the REAL nest.js (via a tiny DOM/localStorage shim) and call
+// the REAL _applyOrientFlag + _orientedGeom — NOT copies — to prove that:
+//   • the toggle mutates the live part object's flag (and the rows array),
+//   • _orientedGeom(part) then returns MIRRORED geometry (centroid x reflected
+//     across the bbox centre),
+//   • toggling twice returns the flag AND the geometry to the original,
+//   • flip180 toggles the flag on the same object (it's a placement rotation,
+//     so geometry is unchanged by design — guarded separately above).
+// (Rotate-180 + Mirror toggle-immediately fix 2026-06-26)
+async function loadRealNest() {
+  // Minimal shim so nest.js's IIFE (which touches window/document/localStorage
+  // at module-eval time) runs under Node. We only need the pure _test helpers.
+  const store = new Map();
+  const win = {
+    localStorage: {
+      getItem: k => (store.has(k) ? store.get(k) : null),
+      setItem: (k, v) => store.set(k, String(v)),
+      removeItem: k => store.delete(k),
+    },
+    addEventListener() {}, removeEventListener() {},
+    devicePixelRatio: 1, CSS: { escape: s => s },
+    requestAnimationFrame() {}, setTimeout() {}, clearTimeout() {},
+  };
+  win.window = win;
+  const doc = { createElement: () => ({ style: {}, getContext: () => ({}) }),
+                getElementById: () => null, addEventListener() {}, querySelector: () => null };
+  const fs = await import('node:fs');
+  const url = await import('node:url');
+  const path = await import('node:path');
+  const here = path.dirname(url.fileURLToPath(import.meta.url));
+  const src = fs.readFileSync(path.join(here, '..', 'nest.js'), 'utf8');
+  // Run nest.js's IIFE with window/document/localStorage/etc. supplied as
+  // FUNCTION PARAMETERS — the source resolves these as free vars, so they bind
+  // to our shim, not Node globals (no need to mutate globalThis at all).
+  // eslint-disable-next-line no-new-func
+  new Function('window', 'document', 'localStorage', 'CSS', 'requestAnimationFrame',
+               'setTimeout', 'clearTimeout', 'devicePixelRatio', 'navigator', src)
+    (win, doc, win.localStorage, win.CSS, win.requestAnimationFrame,
+     win.setTimeout, win.clearTimeout, win.devicePixelRatio, { userAgent: 'node' });
+  return win.kdNest._test;
+}
+function centroidX(outer) {
+  let sx = 0; for (const p of outer) sx += p[0]; return sx / outer.length;
+}
+function rectPart(code) {
+  // An asymmetric part so a mirror is detectable: weight skewed to the right.
+  return {
+    code, grain: 'H', mirror: false, flip180: false,
+    w: 600, h: 400, bbox: [0, 0, 600, 400],
+    polys: {
+      outer: [[0, 0], [600, 0], [600, 400], [400, 400], [400, 200], [0, 200], [0, 0]],
+      holes: [], strokes: [], entities: [{ kind: 'CIRCLE', cx: 500, cy: 100, r: 20 }],
+    },
+  };
+}
+
+test('REAL toggle: mirror flag flips on the live part + geom reflects', async () => {
+  const T = await loadRealNest();
+  assert.equal(typeof T.applyOrientFlag, 'function', 'real _applyOrientFlag exposed');
+  assert.equal(typeof T.orientedGeom, 'function', 'real _orientedGeom exposed');
+  const part = rectPart('MIRTOG-1');
+  const rows = [];
+  const before = centroidX(T.orientedGeom(part).polys.outer);
+  // toggle ON (what the click handler does to the LIVE object + rows array)
+  T.applyOrientFlag(part, 'mirror', true, rows);
+  assert.equal(part.mirror, true, 'live part.mirror set true by the toggle');
+  assert.equal(rows.length, 1, 'a MIRROR row persisted');
+  assert.equal(String(rows[0].grain).toUpperCase(), 'MIRROR', 'row tagged MIRROR');
+  const after = centroidX(T.orientedGeom(part).polys.outer);
+  const axisCentre = (part.bbox[0] + part.bbox[2]) / 2;   // 300
+  // The centroid x must reflect across the bbox centre (before+after ≈ 2·centre).
+  assert.ok(Math.abs((before + after) - 2 * axisCentre) < 1e-6,
+    `centroid x mirrored across centre (before ${before.toFixed(2)} + after ${after.toFixed(2)} ≈ ${2 * axisCentre})`);
+  assert.ok(Math.abs(before - after) > 1, 'geometry actually moved (asymmetric part)');
+});
+
+test('REAL toggle twice: mirror returns flag + geometry to original', async () => {
+  const T = await loadRealNest();
+  const part = rectPart('MIRTOG-2');
+  const rows = [];
+  const orig = T.orientedGeom(part).polys.outer.map(p => p.slice());
+  T.applyOrientFlag(part, 'mirror', true, rows);
+  T.applyOrientFlag(part, 'mirror', false, rows);   // second click toggles off
+  assert.equal(part.mirror, false, 'flag back to false after two toggles');
+  assert.equal(rows.length, 0, 'MIRROR row removed on toggle-off (in place)');
+  const back = T.orientedGeom(part).polys.outer;
+  for (let i = 0; i < orig.length; i++) {
+    assert.ok(Math.abs(back[i][0] - orig[i][0]) < 1e-9 && Math.abs(back[i][1] - orig[i][1]) < 1e-9,
+      `outer[${i}] restored after double toggle`);
+  }
+});
+
+test('REAL toggle: flip180 flips the live flag (placement-rotation, geom intact)', async () => {
+  const T = await loadRealNest();
+  const part = rectPart('FLIPTOG-1');
+  const rows = [];
+  T.applyOrientFlag(part, 'flip180', true, rows);
+  assert.equal(part.flip180, true, 'live part.flip180 set true');
+  assert.equal(String(rows[0].grain).toUpperCase(), 'FLIP180', 'FLIP180 row persisted');
+  // flip180 is NOT applied in _orientedGeom (it's a placement +180 after packing),
+  // so the oriented geometry is unchanged — only the flag carries the intent.
+  const g = T.orientedGeom(part);
+  assert.ok(g && g.polys && g.polys.outer.length, 'oriented geom still valid with flip180 set');
+  T.applyOrientFlag(part, 'flip180', false, rows);
+  assert.equal(part.flip180, false, 'flag back to false');
+  assert.equal(rows.length, 0, 'FLIP180 row removed on toggle-off');
+});
