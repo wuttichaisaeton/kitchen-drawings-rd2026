@@ -4938,7 +4938,36 @@ body.sb-fs-lock { overflow: hidden; }
   flex-direction: column;
   background: #07090d;
   min-width: 0;
+  position: relative;   /* anchor for the EDGE (angled grain) click overlay */
 }
+/* EDGE (angled grain) clickable overlay — sits over the part preview canvas.
+   Each outer edge is a clickable <line>; hover shows the angle, the selected
+   edge glows. Pinned over the canvas via inline left/top/size. (2026-06-25) */
+.kdnest-edge-overlay {
+  position: absolute;
+  pointer-events: none;   /* only the <line>s catch clicks, not the gaps */
+  z-index: 5;
+}
+.kdnest-edge-line {
+  stroke: rgba(242, 169, 59, 0.0);   /* invisible hit-area until hovered */
+  stroke-width: 10;                  /* fat invisible band = easy to click */
+  cursor: pointer;
+  pointer-events: stroke;
+}
+.kdnest-edge-line:hover { stroke: rgba(242, 169, 59, 0.85); }   /* amber on hover */
+.kdnest-edge-sel        { stroke: rgba(231, 76, 60, 0.95); stroke-width: 3; }  /* current grain edge = red */
+.kdnest-edge-sel:hover  { stroke: rgba(231, 76, 60, 1); }
+.kdnest-edge-tip {
+  fill: #f2a93b;
+  font-family: "Flux Architect", monospace;
+  font-size: 12px;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.7);
+  stroke-width: 3px;
+}
+/* EDGE grain glyph in the part list (◣) — distinct amber so it reads as a
+   special angled-grain lock. */
+.kdnest-part-grain.kdnest-grain-edge { color: #f2a93b; }
 .kdnest-canvas-top {
   display: flex;
   align-items: center;

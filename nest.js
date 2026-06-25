@@ -105,7 +105,7 @@
     return {
       code: 'RECT-' + S._manualSeq,
       qty: 1, selected: true, manual: true,
-      w: 0, h: 0, grain: 'ANY', grainExplicit: true, thickness: 1,
+      w: 0, h: 0, grain: 'ANY', grainAngle: null, grainExplicit: true, thickness: 1,
       polys: null, bbox: null, dxfUrl: '', dxfMeta: null,
       dxfLoaded: true,   // nothing to fetch — ready immediately
     };
@@ -118,7 +118,12 @@
       selected: true,
       // bbox + polygons populated from DXF once loaded
       w: 0, h: 0,
-      grain: 'ANY',     // H / V / ANY — read from CSV later
+      grain: 'ANY',     // H / V / ANY / EDGE — read from CSV later
+      // EDGE (angled grain): grain runs parallel to a user-picked outline edge.
+      // grainAngle = that edge's angle in degrees [0,180); null = not an EDGE
+      // part. Additive — H/V/ANY parts keep grainAngle null and behave exactly
+      // as before. (angled-grain feature 2026-06-25)
+      grainAngle: null,
       thickness: 0,     // mm — read from uploaded_dxfs metadata
       polys: null,      // {outer: [[x,y],...], holes: [[[x,y]...], ...]}
       bbox: null,       // [minX, minY, maxX, maxY] in DXF coords
@@ -1416,10 +1421,16 @@
   // desktop/laser side. (user 2026-05-29)
   function _grainCh(g) {
     g = String(g || '').toUpperCase();
-    return g === 'H' ? '─' : g === 'V' ? '│' : '✱';
+    // EDGE (angled grain) rows show ◣ — they are created by clicking an edge in
+    // the part preview, never by the modal cycle. (angled-grain 2026-06-25)
+    return g === 'H' ? '─' : g === 'V' ? '│' : g === 'EDGE' ? '◣' : '✱';
   }
   function _grainNext(g) {
     g = String(g || '').toUpperCase();
+    // Modal cycle stays H→V→ANY→H. Clicking the glyph on an EDGE rule converts
+    // it to a plain H rule (EDGE/angle is a preview-only flow; the modal has no
+    // angle entry in milestone-1). TODO(phase-5): admin angle column.
+    if (g === 'EDGE') return 'H';
     return g === 'H' ? 'V' : g === 'V' ? 'ANY' : 'H';
   }
   // Fix-height accepts MULTIPLE values, comma-separated (เอ๋ 2026-06-10 'หลายตัว
@@ -1473,11 +1484,20 @@
       if (r.fix != null && String(r.fix).trim() !== '') fix = String(r.fix);
       else if (r.height != null && String(r.height).trim() !== '') { fix = String(r.height); grain = 'V'; }
       else if (r.width != null && String(r.width).trim() !== '') { fix = String(r.width); grain = 'H'; }
+      // EDGE (angled grain): an optional `angle` field [0,180). Backward-compat —
+      // old rows have no `angle`, which loads as null and is simply ignored by
+      // the H/V/ANY paths. (angled-grain feature 2026-06-25)
+      let angle = null;
+      if (r.angle != null && String(r.angle).trim() !== '') {
+        const a = Number(r.angle);
+        if (!isNaN(a)) angle = ((a % 180) + 180) % 180;
+      }
       return {
         pattern: String(r.pattern || ''),
         grain,
         thickness: (r.thickness == null ? '' : String(r.thickness)),
         fix,
+        angle,
       };
     });
     return S.grainRows;
@@ -1490,6 +1510,10 @@
     for (const part of S.parts) {
       const looked = _lookupPattern(part.code, S.grainMap);
       part.grain = (looked && looked.grain) ? looked.grain : '?';   // no rule matched -> '?' uncertain (desktop parity)
+      // EDGE angle: only meaningful when the matched rule is EDGE; otherwise
+      // clear it so an H/V/ANY rule never carries a stale angle. (2026-06-25)
+      part.grainAngle = (looked && looked.grain === 'EDGE' && looked.angle != null)
+        ? Number(looked.angle) : null;
       if (looked && looked.thickness) {
         const t = parseFloat(String(looked.thickness).replace(/mm/i, ''));
         if (!isNaN(t)) part.thickness = t;
@@ -1510,6 +1534,35 @@
     _grainRowsToMap();
     _applyGrainToParts();
   }
+  // ── EDGE (angled grain) persistence ────────────────────────────────
+  // Set a part to EDGE grain at `angleDeg` (or clear back to a fresh '?' state)
+  // and persist it as an EXACT-code grain rule so it survives reload + applies
+  // on every device. Exact-code rules win over wildcard patterns in
+  // _lookupPattern, so this overrides any BK*/etc rule for just this one part.
+  // Additive — never touches H/V/ANY parts. (angled-grain feature 2026-06-25)
+  async function _setPartEdgeGrain(part, angleDeg) {
+    if (!part) return;
+    if (!S.grainRows) { try { await _loadGrainRows(); } catch (_) { S.grainRows = S.grainRows || []; } }
+    const code = part.code;
+    let row = (S.grainRows || []).find(r => String(r.pattern) === code);
+    if (angleDeg == null) {
+      // Clear: drop our exact-code EDGE row (the part falls back to its
+      // wildcard rule, or '?' if none) and reset the in-memory part.
+      if (row) S.grainRows = S.grainRows.filter(r => r !== row);
+      part.grain = '?'; part.grainAngle = null;
+    } else {
+      const a = ((Number(angleDeg) % 180) + 180) % 180;
+      if (!row) {
+        row = { pattern: code, grain: 'EDGE', thickness: '', fix: '', angle: a };
+        S.grainRows.push(row);
+      } else {
+        row.grain = 'EDGE'; row.angle = a;
+      }
+      part.grain = 'EDGE'; part.grainAngle = a;
+    }
+    try { await _saveGrainRows(); } catch (e) { console.warn('[kdNest] EDGE grain save failed:', e); }
+  }
+
   function _openGrainModal() {
     _loadGrainRows().then(_renderGrainModal)
       .catch(e => alert('Grain load failed: ' + (e.message || e)));
@@ -1568,6 +1621,7 @@
       const i = +e.currentTarget.dataset.i;
       if (S.grainRows[i]) {
         S.grainRows[i].grain = _grainNext(S.grainRows[i].grain);
+        if (S.grainRows[i].grain !== 'EDGE') S.grainRows[i].angle = null;   // leaving EDGE drops its angle
         e.currentTarget.textContent = _grainCh(S.grainRows[i].grain);
       }
     }));
@@ -1942,7 +1996,8 @@
     for (const row of rows) {
       const pattern = String(row.pattern || '').trim();
       if (!pattern) continue;
-      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', fix: row.fix || '' };
+      const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', fix: row.fix || '',
+                      angle: (row.angle == null || row.angle === '') ? null : Number(row.angle) };
       const starts = pattern.startsWith('*');
       const ends = pattern.endsWith('*');
       const inner = pattern.slice(starts ? 1 : 0, ends ? -1 : undefined);
@@ -3205,6 +3260,89 @@
     } catch (e) { console.warn('[kdNest] auto-save remnants failed:', e); return 0; }
   }
 
+  // ── EDGE (angled grain) geometry pre-rotation ───────────────────────
+  // For an EDGE part we rotate the geometry by -angle around the origin so the
+  // chosen edge becomes horizontal (parallel to the sheet grain). The packer
+  // then treats it like an H part (rots [0,180]); the physical part is cut at
+  // that angle on the sheet, so the grain runs along the picked edge.
+  // Rotating by -angle (CW) makes an edge at +angle land horizontal.
+  // (angled-grain feature 2026-06-25)
+  function _rotatePoly(pts, angleDeg) {
+    if (!Array.isArray(pts)) return pts;
+    const rad = -angleDeg * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    return pts.map(p => {
+      const x = p[0], y = p[1];
+      return [x * cos - y * sin, x * sin + y * cos];
+    });
+  }
+  // Recompute an [minX,minY,maxX,maxY] bbox from already-rotated points.
+  function _rotateBbox(bbox, angleDeg, newPts) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    const scan = arr => { for (const p of (arr || [])) {
+      if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0];
+      if (p[1] < minY) minY = p[1]; if (p[1] > maxY) maxY = p[1];
+    } };
+    scan(newPts);
+    if (!isFinite(minX)) {
+      // No points — fall back to rotating the bbox corners themselves.
+      const [x0, y0, x1, y1] = bbox || [0, 0, 0, 0];
+      const corners = _rotatePoly([[x0, y0], [x1, y0], [x1, y1], [x0, y1]], angleDeg);
+      return _rotateBbox(null, 0, corners);
+    }
+    return [minX, minY, maxX, maxY];
+  }
+  // Rotate the normalised WCS true-entity descriptors (CIRCLE/ARC/LINE/
+  // LWPOLYLINE/SPLINE/ELLIPSE) by -angle so the exported DXF vector geometry
+  // matches the rendered, pre-rotated outline. Positions rotate; sweep-angle
+  // fields shift by the SAME -angle so arcs/ellipses keep their handedness.
+  function _rotateEntities(entities, angleDeg) {
+    if (!Array.isArray(entities)) return entities;
+    const rad = -angleDeg * Math.PI / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    const rp = (x, y) => [x * cos - y * sin, x * sin + y * cos];
+    return entities.map(d => {
+      if (!d) return d;
+      const k = d.kind;
+      if (k === 'CIRCLE') { const [cx, cy] = rp(d.cx, d.cy); return { ...d, cx, cy }; }
+      if (k === 'ARC')    { const [cx, cy] = rp(d.cx, d.cy); return { ...d, cx, cy, a0: d.a0 + rad, a1: d.a1 + rad }; }
+      if (k === 'LINE')   { const [x0, y0] = rp(d.x0, d.y0), [x1, y1] = rp(d.x1, d.y1); return { ...d, x0, y0, x1, y1 }; }
+      if (k === 'LWPOLYLINE') { return { ...d, verts: (d.verts || []).map(v => { const [x, y] = rp(v.x, v.y); return { x, y, bulge: v.bulge || 0 }; }) }; }
+      if (k === 'SPLINE') {
+        return { ...d,
+          ctrl: (d.ctrl || []).map(p => { const [x, y] = rp(p.x, p.y); return { x, y }; }),
+          fit:  (d.fit  || []).map(p => { const [x, y] = rp(p.x, p.y); return { x, y }; }) };
+      }
+      if (k === 'ELLIPSE') {
+        const [cx, cy] = rp(d.cx, d.cy);
+        // The major-axis vector rotates too (it is a direction, so no translate).
+        const mx = d.mx * cos - d.my * sin, my = d.mx * sin + d.my * cos;
+        return { ...d, cx, cy, mx, my };
+      }
+      return d;
+    });
+  }
+  // Build the EDGE-pre-rotated geometry bundle for one part. Returns the rotated
+  // polys (outer/holes/strokes/entities) + a fresh bbox, all ready to hand to a
+  // piece. (angled-grain feature 2026-06-25)
+  function _edgeRotatedGeom(p) {
+    const a = p.grainAngle;
+    const src = p.polys || {};
+    const newOuter = _rotatePoly(src.outer || [], a);
+    const newHoles = (src.holes || []).map(h => _rotatePoly(h, a));
+    const newStrokes = (src.strokes || []).map(s => _rotatePoly(s, a));
+    const newEntities = _rotateEntities(src.entities || [], a);
+    // Collect every rotated point so the bbox is exact for concave parts.
+    const allPts = [].concat(newOuter, ...newHoles, ...newStrokes);
+    const newBbox = _rotateBbox(p.bbox, a, allPts);
+    return {
+      polys: { outer: newOuter, holes: newHoles, strokes: newStrokes, entities: newEntities },
+      bbox: newBbox,
+      w: Math.round((newBbox[2] - newBbox[0]) * 100) / 100,
+      h: Math.round((newBbox[3] - newBbox[1]) * 100) / 100,
+    };
+  }
+
   // ════════════════════════════════════════════════════════════════════
   //  Run Nesting
   // ════════════════════════════════════════════════════════════════════
@@ -3220,7 +3358,14 @@
       if (p.w <= 0 || p.h <= 0) continue;
       if (!p.bbox && !p.manual) continue;   // DXF parts need a parsed bbox; manual synth one
       const bbox = p.bbox || [0, 0, p.w, p.h];
-      let rots = (p.grain === 'H') ? [0, 180]
+      // EDGE (angled grain): pre-rotate geometry so the chosen edge is
+      // horizontal, then nest it like an H part. Built once per part below; the
+      // pieces use the rotated polys/bbox/w/h. Non-EDGE parts are untouched.
+      const isEdge = (p.grain === 'EDGE' && p.grainAngle != null && p.polys);
+      let edge = null;
+      if (isEdge) edge = _edgeRotatedGeom(p);
+      let rots = isEdge          ? [0, 180]
+               : (p.grain === 'H') ? [0, 180]
                : (p.grain === 'V') ? [90, 270]
                :                     [0, 90, 180, 270];
       // Fix V / Fix H orientation lock (เอ๋ 2026-06-10). Each is a comma-list of
@@ -3239,9 +3384,19 @@
       }
       for (let i = 0; i < p.qty; i++) {
         pieces.push({
-          code: p.code, w: p.w, h: p.h, rots: rots,
-          polys: p.polys, bbox: bbox, thickness: p.thickness,
+          code: p.code,
+          w: isEdge ? edge.w : p.w,
+          h: isEdge ? edge.h : p.h,
+          rots: rots,
+          polys: isEdge ? edge.polys : p.polys,
+          bbox: isEdge ? edge.bbox : bbox,
+          thickness: p.thickness,
           grain: String(p.grain || 'ANY').toUpperCase(),   // for remnant grain-fit gating
+          // EDGE marker carried through pack→render→export. The geometry is
+          // already pre-rotated, so render/export need no extra rotation; this
+          // is here for grain-fit gating + future/debug reference. (2026-06-25)
+          grainAngle: isEdge ? p.grainAngle : null,
+          _origGrainAngle: isEdge ? p.grainAngle : null,
         });
       }
     }
@@ -3310,9 +3465,20 @@
     // direction baked in, so a directional part must match it. MIXED (sheet had
     // both H+V parts) is unsafe for any directional part. ANY remnant takes
     // anything; ANY/?/unset part takes any remnant. (feedback_remnants_grain_finish)
-    function _grainFits(pieceGrain, remGrain) {
+    function _grainFits(pieceGrain, remGrain, pieceAngle) {
       const pg = String(pieceGrain || 'ANY').toUpperCase();
       const rg = String(remGrain || 'ANY').toUpperCase();
+      // EDGE (angled grain): an angled part can only be cut from a fresh-grained
+      // (ANY) offcut, or from an EDGE offcut whose baked-in angle matches. A
+      // plain H/V offcut has the wrong fixed direction. (angled-grain 2026-06-25)
+      if (pg === 'EDGE') {
+        if (rg === 'ANY') return true;
+        if (rg === 'EDGE') {
+          const ra = (remGrain && remGrain._angle != null) ? remGrain._angle : null;   // remnants don't carry an EDGE angle yet (see TODO) → treat as non-match
+          return ra != null && pieceAngle != null && Math.abs(((ra - pieceAngle) % 180 + 180) % 180) < 0.5;
+        }
+        return false;
+      }
       if (pg !== 'H' && pg !== 'V') return true;   // non-directional part: any remnant ok
       if (rg === 'ANY') return true;               // fresh-grained offcut: any direction ok
       return rg === pg;                            // directional part needs same-direction remnant
@@ -3335,7 +3501,7 @@
       let pool = group;
       if (!S.skipRemnants) {
         for (const rm of _remnantStockForThick(tk)) {
-          const compat = pool.filter(pc => _grainFits(pc.grain, rm.grain));
+          const compat = pool.filter(pc => _grainFits(pc.grain, rm.grain, pc.grainAngle));
           if (!compat.length) { _grainSkippedRemnants++; continue; }
           const rr = _nestMultiSheet(compat, [{ ...rm, qty: 1 }], S.gap, S.mode);
           const sheet = (rr.sheets || [])[0];
@@ -3400,12 +3566,24 @@
   // placements on the sheet). So the lines never change direction — only the
   // PART turns. Drawn only for directional grain (H or V); MIXED/ANY = none.
   // Function declarations → hoisted, usable everywhere in this IIFE.
-  function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr, bold) {
+  function _grainHatchCanvas(ctx, grain, x0, y0, x1, y1, colour, dpr, bold, grainAngle) {
     const g = String(grain || '').toUpperCase();
-    if (g !== 'H' && g !== 'V') return;   // directional only — MIXED/ANY draw nothing
+    if (g !== 'H' && g !== 'V' && g !== 'EDGE') return;   // directional only — MIXED/ANY draw nothing
     const d = dpr || 1;
     const step = 8 * d;
     ctx.save();
+    // EDGE (angled grain): rotate the context about the region centre so the
+    // always-horizontal hatch lines render at the chosen edge angle. The lines
+    // are widened to cover the region after rotation. (angled-grain 2026-06-25)
+    if (g === 'EDGE' && grainAngle != null) {
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      const diag = Math.hypot(x1 - x0, y1 - y0);   // big enough to span the rotated box
+      ctx.translate(cx, cy);
+      // Canvas Y is flipped vs DXF, so negate the angle to match the geometry.
+      ctx.rotate(-grainAngle * Math.PI / 180);
+      ctx.translate(-cx, -cy);
+      x0 = cx - diag; x1 = cx + diag; y0 = cy - diag; y1 = cy + diag;
+    }
     ctx.strokeStyle = colour;
     // ``bold`` = no steel silhouette behind the hatch (layer-"0" DXF, degenerate
     // outer → no fill). On the bare dark canvas the normal 0.5px/0.45a lines are
@@ -3431,6 +3609,70 @@
   // ════════════════════════════════════════════════════════════════════
   //  Single-part preview (desktop-style clear view + ↑/↓ keyboard nav)
   // ════════════════════════════════════════════════════════════════════
+  // ── Clickable EDGE overlay (angled grain, milestone-1) ──────────────
+  // An SVG layer pinned over the preview canvas. Every outer edge becomes a
+  // clickable <line> (mapped through the SAME tx() the canvas drew with, so it
+  // stays glued through re-render/resize). Hover shows the edge angle; the
+  // currently-selected EDGE edge is highlighted. Clicking an edge calls
+  // onEdgeClick(part, {angle}) → caller sets EDGE grain to that angle.
+  // Holes are skipped; degenerate (<1mm) edges are skipped. (2026-06-25)
+  function _attachEdgeClickLayer(canvas, part, onEdgeClick) {
+    if (!canvas || !part) return;
+    const wrap = canvas.parentElement;
+    if (!wrap) return;
+    // Remove any stale overlay (re-render rebuilds it fresh).
+    wrap.querySelectorAll('.kdnest-edge-overlay').forEach(el => el.remove());
+    const tx = canvas._kdPreviewTx;
+    const polys = part.polys;
+    if (typeof tx !== 'function' || !polys || !polys.outer || polys.outer.length < 2) return;
+    const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
+    if (!(cssW > 0 && cssH > 0)) return;
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('class', 'kdnest-edge-overlay');
+    svg.setAttribute('viewBox', `0 0 ${cssW} ${cssH}`);
+    svg.setAttribute('preserveAspectRatio', 'none');
+    // Pin the SVG exactly over the canvas (wrap is position:relative). Using the
+    // canvas's own box keeps the overlay aligned regardless of the warning
+    // banners / canvas-top bar above it, and through resize (rebuilt each draw).
+    svg.style.left = canvas.offsetLeft + 'px';
+    svg.style.top = canvas.offsetTop + 'px';
+    svg.style.width = cssW + 'px';
+    svg.style.height = cssH + 'px';
+    // Tooltip text element (top-left), updated on hover.
+    const tip = document.createElementNS(SVGNS, 'text');
+    tip.setAttribute('class', 'kdnest-edge-tip');
+    tip.setAttribute('x', '8'); tip.setAttribute('y', '16');
+    tip.textContent = 'Click an edge to run grain parallel to it';
+    const sel = (part.grain === 'EDGE' && part.grainAngle != null) ? ((part.grainAngle % 180) + 180) % 180 : null;
+    const pts = polys.outer;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const a = pts[i], b = pts[(i + 1) % n];
+      if (!a || !b) continue;
+      const dxw = b[0] - a[0], dyw = b[1] - a[1];
+      if (Math.hypot(dxw, dyw) < 1) continue;   // skip degenerate <1mm edge
+      // Edge angle in WORLD (DXF) space, normalised to [0,180).
+      let ang = Math.atan2(dyw, dxw) * 180 / Math.PI;
+      ang = ((ang % 180) + 180) % 180;
+      const [x0, y0] = tx(a[0], a[1]);
+      const [x1, y1] = tx(b[0], b[1]);
+      const isSel = (sel != null && Math.abs(((ang - sel) % 180 + 180) % 180) < 0.5);
+      const line = document.createElementNS(SVGNS, 'line');
+      line.setAttribute('x1', x0.toFixed(2)); line.setAttribute('y1', y0.toFixed(2));
+      line.setAttribute('x2', x1.toFixed(2)); line.setAttribute('y2', y1.toFixed(2));
+      line.setAttribute('class', 'kdnest-edge-line' + (isSel ? ' kdnest-edge-sel' : ''));
+      line.dataset.angle = ang.toFixed(2);
+      const label = 'Edge angle: ' + ang.toFixed(1) + '°' + (isSel ? '  (current grain)' : '');
+      line.addEventListener('mouseenter', () => { tip.textContent = label; });
+      line.addEventListener('mouseleave', () => { tip.textContent = 'Click an edge to run grain parallel to it'; });
+      line.addEventListener('click', (e) => { e.stopPropagation(); onEdgeClick(part, { angle: ang }); });
+      svg.appendChild(line);
+    }
+    svg.appendChild(tip);
+    wrap.appendChild(svg);
+  }
+
   // Draw ONE part filling the canvas — outer profile + holes + multi-piece
   // strokes — so the worker can read it clearly, like the desktop tool's
   // preview pane. (user 2026-05-30 'view part ชัดเจนเหมือน nest บน desktop')
@@ -3554,9 +3796,10 @@
       // Grain hatch — H/V only, always-horizontal lines (post-revert), clipped to
       // the silhouette so it reads as grain on the metal and never crosses the
       // edge. The preview is rotated so V parts run vertically (grot=90).
-      if (part.grain === 'H' || part.grain === 'V') {
+      if (part.grain === 'H' || part.grain === 'V' || part.grain === 'EDGE') {
         ctx.save(); trace(sil, true); ctx.clip();
-        _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr, false);
+        const _angle = (part.grain === 'EDGE') ? part.grainAngle : null;
+        _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr, false, _angle);
         ctx.restore();
       }
     }
@@ -3574,6 +3817,26 @@
       ctx.strokeStyle = colour + 'cc'; ctx.lineWidth = 1.0 * dpr;
       for (const hole of polys.holes) { if (hole.length >= 2) { trace(hole, true); ctx.stroke(); } }
     }
+    // Stash the DXF→CSS-pixel transform so the clickable EDGE overlay maps its
+    // <line>s with the EXACT same geometry the canvas just drew (survives
+    // re-render/resize — recomputed every draw). tx() is in DEVICE px; divide
+    // by dpr for CSS px to match the SVG viewBox. (angled-grain 2026-06-25)
+    canvas._kdPreviewTx = (x, y) => { const m = tx(x, y); return [m[0] / dpr, m[1] / dpr]; };
+    canvas._kdPreviewPart = part;
+  }
+
+  // EDGE overlay click → lock this part's grain parallel to the clicked edge.
+  // Clicking the ALREADY-selected edge again clears EDGE back to '?' (toggle).
+  // Persists via _setPartEdgeGrain then re-renders so the hatch + highlight
+  // update. (angled-grain feature 2026-06-25)
+  function _onEdgeClick(part, edge) {
+    if (!part || !edge) return;
+    const a = ((edge.angle % 180) + 180) % 180;
+    const cur = (part.grain === 'EDGE' && part.grainAngle != null) ? ((part.grainAngle % 180) + 180) % 180 : null;
+    const same = (cur != null && Math.abs(((cur - a) % 180 + 180) % 180) < 0.5);
+    _setPartEdgeGrain(part, same ? null : a).then(() => {
+      _setPreview(part.code);   // redraw preview (hatch at new angle) + keep scroll
+    });
   }
 
   function _scrollPreviewRow() {
@@ -4627,8 +4890,12 @@
         // clientWidth forces layout, so we don't need to wait for rAF
         // (which can be throttled when the tab isn't foregrounded).
         _drawPartPreview(canvas, part);
-        requestAnimationFrame(() => _drawPartPreview(canvas, part));
+        _attachEdgeClickLayer(canvas, part, _onEdgeClick);
+        requestAnimationFrame(() => { _drawPartPreview(canvas, part); _attachEdgeClickLayer(canvas, part, _onEdgeClick); });
       } else if (S.flatSheets[S.currentSheetIdx]) {
+        // Leaving preview → drop any stale EDGE overlay (sheet view has none).
+        const _wrap = canvas.parentElement;
+        if (_wrap) _wrap.querySelectorAll('.kdnest-edge-overlay').forEach(el => el.remove());
         _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
         requestAnimationFrame(() => _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]));
       }
@@ -4647,7 +4914,7 @@
   function _isGrainDirectional(p) {
     if (!p || !p.selected || p.manual || _cabAllOff(p)) return false;
     const g = String(p.grain || '').toUpperCase();
-    return g !== 'H' && g !== 'V' && g !== 'ANY';   // warn ONLY '?'/unmatched (เอ๋ 2026-05-31 'เตือนเฉพาะค่าที่ไม่แน่ใจ' = desktop's "Grain unspecified"); H/V/ANY = decided -> no warn
+    return g !== 'H' && g !== 'V' && g !== 'ANY' && g !== 'EDGE';   // warn ONLY '?'/unmatched (เอ๋ 2026-05-31 'เตือนเฉพาะค่าที่ไม่แน่ใจ' = desktop's "Grain unspecified"); H/V/ANY/EDGE = decided -> no warn
   }
   // Shoelace area of a polygon ([[x,y],...]) — used to spot degenerate outlines.
   function _polyArea(pts) {
@@ -4874,6 +5141,9 @@
       if (g === 'H')   return { ch: '─', cls: 'kdnest-grain-h',   title: 'H — horizontal' };
       if (g === 'V')   return { ch: '│', cls: 'kdnest-grain-v',   title: 'V — vertical' };
       if (g === 'ANY') return { ch: '✱', cls: 'kdnest-grain-any', title: 'ANY — any rotation' };
+      // EDGE (angled grain): grain locked parallel to a picked outline edge —
+      // set by clicking an edge in the part preview, not by the cycle button.
+      if (g === 'EDGE') return { ch: '◣', cls: 'kdnest-grain-edge', title: 'EDGE — grain parallel to a picked edge (open preview to change; click glyph to reset)' };
       return { ch: '?', cls: 'kdnest-grain-q', title: '? — grain not set' };
     }
 
@@ -5299,6 +5569,14 @@
       // Matches the Python tool's _toggle_grain behavior so a worker
       // switching between tools sees the same interaction.
       row.querySelector('.kdnest-part-grain')?.addEventListener('click', () => {
+        // EDGE is set by clicking an edge in the preview, NOT by this cycle. So
+        // a click on an EDGE glyph RESETS it (clears the persisted EDGE rule
+        // back to '?'); the user can then cycle ?→H→V→ANY or re-pick an edge.
+        // (angled-grain feature 2026-06-25, spec Option A)
+        if (part.grain === 'EDGE') {
+          _setPartEdgeGrain(part, null).then(() => _setPreview(part.code));
+          return;
+        }
         const cycle = { '?': 'H', 'H': 'V', 'V': 'ANY', 'ANY': 'H' };
         part.grain = cycle[part.grain] || 'H';
         _setPreview(part.code);   // preview this part so the grain rotation is visible
@@ -5597,6 +5875,7 @@
     if (g === 'H')   return { ch: '─', cls: 'kdnest-grain-h',   title: 'H — horizontal' };
     if (g === 'V')   return { ch: '│', cls: 'kdnest-grain-v',   title: 'V — vertical' };
     if (g === 'ANY') return { ch: '✱', cls: 'kdnest-grain-any', title: 'ANY — any rotation' };
+    if (g === 'EDGE') return { ch: '◣', cls: 'kdnest-grain-edge', title: 'EDGE — grain parallel to a picked edge' };
     return { ch: '?', cls: 'kdnest-grain-q', title: '? — grain not set' };
   }
 
