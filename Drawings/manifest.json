@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-25T20:24:40.875054+00:00",
+  "generated_at": "2026-06-25T20:40:41.636528+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -6994,6 +6994,34 @@
       "fusion_teams_url": null,
       "page_number": 1,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:JCDMSQrSQLKJoV7uj_TdzQ"
+    },
+    "DSV100-060020-Ruth": {
+      "family": "Drawer",
+      "last_drawn_version": 3,
+      "fusion_version": 3,
+      "pdf": "DSV100-060020-Ruth.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-25T20:40:41.634270+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:_20IP-M4Sue7gLjAtrSC9Q",
+      "page_number": 1
+    },
+    "DSV100-060030-Ruth": {
+      "family": "Drawer",
+      "last_drawn_version": 3,
+      "fusion_version": 3,
+      "pdf": "DSV100-060020-Ruth.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-25T20:40:41.634284+00:00",
+      "fusion_teams_url": null,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:_20IP-M4Sue7gLjAtrSC9Q",
+      "page_number": 1
     }
   },
   "manual_uploads": [],
