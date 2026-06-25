@@ -1,0 +1,12 @@
+CC_Assembly walk debug — 2026-06-25T14:31:41.315812
+Project: DSV0TR-060050
+Total occurrences visited: 2
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | DSV1TR-060050 v5:1 (DSV1TR-060050 v5)
+    0 | SM  |     | ALPF             | DSV2TR-060050 v2:1 (DSV2TR-060050 v2)

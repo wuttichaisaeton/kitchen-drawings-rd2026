@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-25T03:11:38.492760+00:00",
+  "generated_at": "2026-06-25T07:31:41.318696+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -18805,6 +18805,28 @@
           "family": "Floor",
           "is_wrapper": true,
           "variant_root": "DSB0FD-060000"
+        }
+      ]
+    },
+    "DSV0TR-060050": {
+      "name": "DSV0TR-060050",
+      "status": "active",
+      "created_at": "2026-06-25T07:31:41.316099+00:00",
+      "updated_at": "2026-06-25T07:31:41.316099+00:00",
+      "total_unique_parts": 2,
+      "total_qty": 2,
+      "parts": [
+        {
+          "code": "DSV1TR-060050",
+          "qty": 1,
+          "family": "Drawer",
+          "urn": "urn:adsk.wipprod:dm.lineage:kHIyjebxStijIcjlVNOcBg"
+        },
+        {
+          "code": "DSV2TR-060050",
+          "qty": 1,
+          "family": "Drawer",
+          "urn": "urn:adsk.wipprod:dm.lineage:IE7rwSgZQg67PhwThskUPw"
         }
       ]
     }
