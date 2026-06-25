@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-25T00:17:01.609601+00:00",
+  "generated_at": "2026-06-25T03:07:50.753178+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -18426,10 +18426,42 @@
       "name": "1NSVB0-060050",
       "status": "active",
       "created_at": "2026-06-24T08:47:49.052876+00:00",
-      "updated_at": "2026-06-25T00:05:03.658585+00:00",
-      "total_unique_parts": 5,
-      "total_qty": 5,
+      "updated_at": "2026-06-25T03:07:50.750338+00:00",
+      "total_unique_parts": 9,
+      "total_qty": 9,
       "parts": [
+        {
+          "code": "DSB0BD-060050",
+          "qty": 1,
+          "family": "Back-Down",
+          "parent_code": "DSB0FD-060000",
+          "variant_root": "DSV0B0-060031-Ruth",
+          "urn": "urn:adsk.wipprod:dm.lineage:zVPXw9fPRBOrdZVBlvDKEg"
+        },
+        {
+          "code": "DSB0F0-060050",
+          "qty": 1,
+          "family": "Floor",
+          "parent_code": "DSB0FD-060000",
+          "variant_root": "DSV0B0-060031-Ruth",
+          "urn": "urn:adsk.wipprod:dm.lineage:SNiU-StTQbGQe-tU_fNR4w"
+        },
+        {
+          "code": "DSV100-060030-Ruth",
+          "qty": 1,
+          "family": "Drawer",
+          "parent_code": "DSV0B0-060031-Ruth",
+          "variant_root": "DSV0B0-060031-Ruth",
+          "urn": "urn:adsk.wipprod:dm.lineage:yaxfXa2ETfywrMrJp1DMDw"
+        },
+        {
+          "code": "DSV2B3-060031-Ruth",
+          "qty": 1,
+          "family": "Drawer",
+          "parent_code": "DSV0B0-060031-Ruth",
+          "variant_root": "DSV0B0-060031-Ruth",
+          "urn": "urn:adsk.wipprod:dm.lineage:G-gv2aY-Q_q6PC2Cn7Vg6A"
+        },
         {
           "code": "FN0F00-060540",
           "qty": 1,
@@ -18463,12 +18495,33 @@
           "urn": "urn:adsk.wipprod:dm.lineage:83faDcY5RpqeZfQ7B21jOQ"
         },
         {
-          "code": "TP0012-060000",
+          "code": "SHRUTH-060000",
           "qty": 1,
           "family": "Other",
-          "parent_code": "TP0010-060000",
-          "variant_root": "TP0010-060000",
-          "urn": "urn:adsk.wipprod:dm.lineage:6lCg9zPYRoGOnO50_B5zCg"
+          "urn": "urn:adsk.wipprod:dm.lineage:nGtHWD_FTWiAF6K0AWWAXg"
+        },
+        {
+          "code": "DSB0FD-000000",
+          "qty": 0,
+          "family": "Floor",
+          "is_wrapper": true,
+          "parent_code": "DSB0FD-060000",
+          "variant_root": "DSV0B0-060031-Ruth"
+        },
+        {
+          "code": "DSB0FD-060000",
+          "qty": 0,
+          "family": "Floor",
+          "is_wrapper": true,
+          "parent_code": "DSV0B0-060031-Ruth",
+          "variant_root": "DSV0B0-060031-Ruth"
+        },
+        {
+          "code": "DSV0B0-060031-Ruth",
+          "qty": 0,
+          "family": "Drawer",
+          "is_wrapper": true,
+          "variant_root": "DSV0B0-060031-Ruth"
         },
         {
           "code": "FN0FL2-060544",
@@ -18492,13 +18545,6 @@
           "is_wrapper": true,
           "parent_code": "FN0FN3-080005",
           "variant_root": "FN0FL2-060544"
-        },
-        {
-          "code": "TP0010-060000",
-          "qty": 0,
-          "family": "Other",
-          "is_wrapper": true,
-          "variant_root": "TP0010-060000"
         }
       ]
     },
