@@ -218,3 +218,83 @@ test('DOM: button active state tracks the PREVIEWED part when preview switches',
   assert.equal(btnIn(window, 'SD0SUP-000000', '.kdnest-part-mirror').classList.contains('kdnest-orient-active'), true,
     'B mirror button still active (B is still mirrored)');
 });
+
+// ──────────────────────────────────────────────────────────────────────────
+// ASYNC-SETTLE regression — the class the earlier sync-only assertions MISSED.
+//
+// LIVE bug (เอ๋, real Chromium, 04 Ruth, 53 parts): preview SDTRIL-000001 (index
+// 42, NOT 0) → click Mirror. The flag set + geometry mirrored correctly, but a
+// re-render that fired AFTER the grain_rules save reset S.previewCode back to
+// parts[0] (1CVDVL-006010) and the button went inactive. The earlier DOM tests
+// asserted RIGHT AFTER dispatchEvent — before that save-chain re-render — so they
+// stayed green while the live preview jumped.
+//
+// This test makes the missing path deterministic: a real async firebaseDB.set()
+// (a true microtask boundary), and — exactly like the live listener firing after
+// the write — a re-render mid-save that DEFAULTS S.previewCode to parts[0]. The
+// test AWAITS the full toggle promise (live flag → save → settle) and only THEN
+// asserts. Against code that doesn't re-pin the previewed part at the end of the
+// chain it FAILS (previewCode === parts[0], button inactive); with the
+// end-of-chain re-assert it PASSES. (live preserve-previewed-part fix 2026-06-26)
+function settleTest(which, btnSel, flagKey) {
+  return async () => {
+    const { window, T } = boot();
+    const S = T.state();
+    S.rootEl = window.document.getElementById('root');
+    const DECOY = longPart('SD0SUP-000000');     // index 0 — the part the bug jumped to
+    const P = notchPart('SDTRIL-000001');        // index 1 — the previewed part (stand-in for idx 42)
+    seed(T, [DECOY, P], 'SDTRIL-000001');
+    T.refreshView();
+
+    // Real async RTDB stand-in. .set() resolves on a later microtask — and, like
+    // the live grain_rules/uploaded_dxfs listeners reacting to the write, it kicks
+    // a re-render that RESETS the preview to parts[0]. If the toggle chain doesn't
+    // re-pin the previewed part after the save, this reset is what the user is left
+    // staring at.
+    let setCalls = 0;
+    window.firebaseDB = {
+      ref: () => ({
+        async set() {
+          setCalls++;
+          await Promise.resolve();              // force a real async hop
+          // Listener-style re-render that defaults the preview (the offending path).
+          S.previewCode = S.parts[0].code;      // → 'SD0SUP-000000' (the decoy)
+          T.refreshView();
+        },
+        async once() { return { val: () => ({ rows: S.grainRows || [] }) }; },
+      }),
+    };
+
+    assert.equal(P[flagKey], false, 'previewed part flag starts false');
+
+    // REAL click on the PREVIEWED part's button. The handler discards its
+    // background promise, so the test can't await it directly — instead it drains
+    // microtasks via real macrotask ticks until the save chain (and its trailing
+    // re-assert) has fully settled. setCalls confirms the async save ran.
+    btnIn(window, 'SDTRIL-000001', btnSel)
+      .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    // Mid-flight, before the save settles, the preview may already be on the decoy
+    // (the bug's symptom) — that's expected; the fix is that it COMES BACK.
+    const tick = () => new Promise(r => window.setTimeout(r, 0));
+    for (let i = 0; i < 10 && setCalls < 1; i++) await tick();
+    await tick(); await tick();                  // let the trailing .then() settle
+
+    assert.ok(setCalls >= 1, 'grain rules were actually saved (async path exercised)');
+    // (a) preview survived the save-chain re-render — did NOT stick on parts[0].
+    assert.equal(T.state().previewCode, 'SDTRIL-000001',
+      'preview stayed on the previewed part after the save settled (not parts[0])');
+    // (b) the previewed part is still flagged.
+    assert.equal(P[flagKey], true, 'previewed part flag still true after settle');
+    assert.equal(DECOY[flagKey], false, 'decoy at index 0 untouched');
+    // (c) after the settle re-render, the previewed part's button is active.
+    assert.equal(btnIn(window, 'SDTRIL-000001', btnSel).classList.contains('kdnest-orient-active'), true,
+      'previewed-part button active after the save settled');
+    assert.equal(btnIn(window, 'SD0SUP-000000', btnSel).classList.contains('kdnest-orient-active'), false,
+      'decoy button still NOT active');
+  };
+}
+
+test('DOM(async): Mirror — previewed part survives the post-save re-render (awaits settle)',
+  settleTest('mirror', '.kdnest-part-mirror', 'mirror'));
+test('DOM(async): Rotate 180 — previewed part survives the post-save re-render (awaits settle)',
+  settleTest('flip180', '.kdnest-part-flip180', 'flip180'));

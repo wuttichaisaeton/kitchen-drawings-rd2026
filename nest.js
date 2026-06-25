@@ -3533,7 +3533,8 @@
   // and the active button state always reflect the live flag the moment the user
   // clicks. (Rotate-180 + Mirror feature 2026-06-26)
   function _toggleOrientFlag(part, which) {
-    if (!part) return;
+    if (!part) return Promise.resolve();
+    const code = part.code;
     const next = !(which === 'flip180' ? part.flip180 : part.mirror);
     // 1) Live flag — set on the same object preview/_runNesting read, RIGHT NOW.
     //    (The row sync waits until the real grain rows are loaded so we never
@@ -3541,14 +3542,33 @@
     _applyOrientFlag(part, which, next, Array.isArray(S.grainRows) ? S.grainRows : null);
     // 2) Repaint NOW — same draw path 👁 uses — so the change is visible instantly
     //    and the row's kdnest-orient-active glyph reflects the live flag.
-    _setPreview(part.code);
+    _setPreview(code);
     // 3) Persist in the background. If rows weren't loaded yet, load them first
     //    (keeps existing grain rules) THEN apply the orient row to the real array.
     //    _saveGrainRows re-derives flags via _applyGrainToParts, but they already
     //    match what we set above, so the live flag never flips back.
-    Promise.resolve()
+    //
+    // 4) RE-ASSERT preview + flag at the END of the chain. The synchronous
+    //    _setPreview above is correct the instant the user clicks, but the save
+    //    runs an RTDB .set() + _applyGrainToParts(), and any re-render that fires
+    //    in between (the uploaded_dxfs/grain listeners, a concurrent refresh) can
+    //    reset S.previewCode back to a default (parts[0]) — the LIVE bug เอ๋ hit:
+    //    the SDTRIL part's flag was set but the preview JUMPED to parts[0] and the
+    //    button read inactive. Re-pinning the previewed code + the flag AFTER the
+    //    save settles makes the previewed part survive the whole toggle re-render
+    //    chain, no matter what re-rendered in between. Idempotent + cheap.
+    //    (live preserve-previewed-part fix 2026-06-26)
+    return Promise.resolve()
       .then(() => (Array.isArray(S.grainRows) ? S.grainRows : _loadGrainRows()))
       .then(rows => { _applyOrientFlag(part, which, next, rows); return _saveGrainRows(); })
+      .then(() => {
+        // _saveGrainRows → _applyGrainToParts re-derives the flag from the saved
+        // rows; re-assert it on THIS object so a stale read can never flip it back.
+        _applyOrientFlag(part, which, next, Array.isArray(S.grainRows) ? S.grainRows : null);
+        // If anything reset the preview off our part during the save, restore it
+        // (also repaints, so the active class re-binds to the live flag).
+        if (S.previewCode !== code) _setPreview(code);
+      })
       .catch(e => console.warn('[kdNest] orient flag save failed:', e));
   }
   function _togglePartFlip180(part) { _toggleOrientFlag(part, 'flip180'); }
@@ -6308,6 +6328,10 @@
       state: () => S,
       refreshView: _refreshView,
       setPreview: _setPreview,
+      // Returns the background save promise so a test can AWAIT the full async
+      // toggle chain (live flag → save → re-render settle) before asserting that
+      // the previewed part survived — the path a sync-only assertion missed.
+      toggleOrientFlag: _toggleOrientFlag,
     },
   };
 })();
