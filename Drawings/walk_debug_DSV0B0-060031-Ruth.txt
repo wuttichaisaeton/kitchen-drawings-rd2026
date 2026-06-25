@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-25T07:17:01.606930
+CC_Assembly walk debug — 2026-06-26T04:10:10.637011
 Project: DSV0B0-060031-Ruth
 Total occurrences visited: 10
 CAM-ALPF tagged components: 0
@@ -17,4 +17,4 @@ depth | SM | CAM | material         | display_name (component)
     2 |     |     | Steel            | R:1 (R)
     3 |     |     | Steel            | Slide-R:1 (Slide-R)
     0 | SM  |     | ALPF             | DSV2B3-060031-Ruth v2:1 (DSV2B3-060031-Ruth v2)
-    0 | SM  |     | ALPF             | DSV100-060030-Ruth v2:1 (DSV100-060030-Ruth v2)
+    0 | SM  |     | ALPF             | DSV100-060030-Ruth v3:1 (DSV100-060030-Ruth v3)
