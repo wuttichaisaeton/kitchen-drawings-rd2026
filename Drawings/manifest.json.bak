@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-25T00:05:03.661568+00:00",
+  "generated_at": "2026-06-25T00:06:29.527899+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -17780,31 +17780,31 @@
       "name": "DSV0B0-070031-Ruth",
       "status": "active",
       "created_at": "2026-06-24T02:24:16.222275+00:00",
-      "updated_at": "2026-06-24T02:24:16.222275+00:00",
+      "updated_at": "2026-06-25T00:06:29.525191+00:00",
       "total_unique_parts": 4,
       "total_qty": 4,
       "parts": [
         {
-          "code": "DSB0BA-070050",
+          "code": "DSB0BD-070050",
           "qty": 1,
           "family": "Back-Down",
-          "parent_code": "DSB0FA-070000",
-          "variant_root": "DSB0FA-070000",
-          "urn": "urn:adsk.wipprod:dm.lineage:u5GbOU6aQjO33b0ZiBHv-w"
+          "parent_code": "DSB0FD-070000",
+          "variant_root": "DSB0FD-070000",
+          "urn": "urn:adsk.wipprod:dm.lineage:Oeaf2Wo3RhaCK-mr0nwHyQ"
         },
         {
           "code": "DSB0F0-070050",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "DSB0FA-070000",
-          "variant_root": "DSB0FA-070000",
+          "parent_code": "DSB0FD-070000",
+          "variant_root": "DSB0FD-070000",
           "urn": "urn:adsk.wipprod:dm.lineage:t4ZQj8IWReefxzSbwI-9Mg"
         },
         {
-          "code": "DSV100-070020-Ruth",
+          "code": "DSV100-070030-Ruth",
           "qty": 1,
           "family": "Drawer",
-          "urn": "urn:adsk.wipprod:dm.lineage:4O49IDj6QWiPKffCXGEl2Q"
+          "urn": "urn:adsk.wipprod:dm.lineage:djgFws9aQ5yTlscgONasUg"
         },
         {
           "code": "DSV2B3-070031-Ruth",
@@ -17813,19 +17813,19 @@
           "urn": "urn:adsk.wipprod:dm.lineage:hxHkoVRyTSebCJQGbiZmBg"
         },
         {
-          "code": "DSB0FA-000000",
+          "code": "DSB0FD-000000",
           "qty": 0,
           "family": "Floor",
           "is_wrapper": true,
-          "parent_code": "DSB0FA-070000",
-          "variant_root": "DSB0FA-070000"
+          "parent_code": "DSB0FD-070000",
+          "variant_root": "DSB0FD-070000"
         },
         {
-          "code": "DSB0FA-070000",
+          "code": "DSB0FD-070000",
           "qty": 0,
           "family": "Floor",
           "is_wrapper": true,
-          "variant_root": "DSB0FA-070000"
+          "variant_root": "DSB0FD-070000"
         }
       ]
     },

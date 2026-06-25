@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-24T09:24:16.221644
+CC_Assembly walk debug — 2026-06-25T07:06:29.524838
 Project: DSV0B0-070031-Ruth
 Total occurrences visited: 10
 CAM-ALPF tagged components: 0
@@ -8,13 +8,13 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 |     |     |                  | DSB0FA-070000 v4:1 (DSB0FA-070000 v4)
-    1 |     |     |                  | DSB0FA-000000 v2:1 (DSB0FA-000000 v2)
+    0 |     |     |                  | DSB0FD-070000 v4:1 (DSB0FD-070000 v4)
+    1 | SM  |     | ALPF             | DSB0F0-070050 v4:1 (DSB0F0-070050 v4)
+    1 | SM  |     | ALPF             | DSB0BD-070050 v7:1 (DSB0BD-070050 v7)
+    1 |     |     |                  | DSB0FD-000000 v1:1 (DSB0FD-000000 v1)
     2 |     |     | Steel            | L:1 (L)
     3 |     |     | Steel            | Slide-L:1 (Slide-L)
     2 |     |     | Steel            | R:1 (R)
     3 |     |     | Steel            | Slide-R:1 (Slide-R)
-    1 | SM  |     | ALPF             | DSB0F0-070050 v4:1 (DSB0F0-070050 v4)
-    1 | SM  |     | ALPF             | DSB0BA-070050 v7:1 (DSB0BA-070050 v7)
-    0 | SM  |     | ALPF             | DSV100-070020-Ruth v2:1 (DSV100-070020-Ruth v2)
-    0 | SM  |     | ALPF             | DSV2B3-070031-Ruth v1:1 (DSV2B3-070031-Ruth v1)
+    0 | SM  |     | ALPF             | DSV2B3-070031-Ruth v2:1 (DSV2B3-070031-Ruth v2)
+    0 | SM  |     | ALPF             | DSV100-070030-Ruth v1:1 (DSV100-070030-Ruth v1)
