@@ -3660,7 +3660,18 @@
     // Remove any stale overlay (re-render rebuilds it fresh).
     wrap.querySelectorAll('.kdnest-edge-overlay').forEach(el => el.remove());
     const tx = canvas._kdPreviewTx;
-    const polys = part.polys;
+    // EDGE preview rotates the SHAPE so the chosen edge is horizontal. The
+    // canvas stashed the rotated outer loop + the rotation amount (grainAngle).
+    // Position the clickable <line>s on the ROTATED geometry (so they glue to
+    // the shape on screen), but map each edge's ORIGINAL absolute angle (=
+    // on-screen angle + grainAngle) for the value we store on click — clicking
+    // edge E then re-rotates the preview so E lands horizontal. For non-EDGE
+    // parts (rotAmt == null) this is identity: original outer, no offset.
+    // (angled-grain preview 2026-06-26)
+    const rotAmt = canvas._kdPreviewEdgeRot;            // grainAngle, or null
+    const usingRot = (rotAmt != null && Number.isFinite(Number(rotAmt)) && canvas._kdPreviewRotOuter);
+    const polys = usingRot ? { outer: canvas._kdPreviewRotOuter } : part.polys;
+    const angOffset = usingRot ? Number(rotAmt) : 0;    // rotated-screen → original angle
     if (typeof tx !== 'function' || !polys || !polys.outer || polys.outer.length < 2) return;
     const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
     if (!(cssW > 0 && cssH > 0)) return;
@@ -3689,11 +3700,17 @@
       if (!a || !b) continue;
       const dxw = b[0] - a[0], dyw = b[1] - a[1];
       if (Math.hypot(dxw, dyw) < 1) continue;   // skip degenerate <1mm edge
-      // Edge angle in WORLD (DXF) space, normalised to [0,180).
-      let ang = Math.atan2(dyw, dxw) * 180 / Math.PI;
-      ang = ((ang % 180) + 180) % 180;
+      // On-screen edge angle in the (possibly rotated) geometry, [0,180).
+      let screenAng = Math.atan2(dyw, dxw) * 180 / Math.PI;
+      screenAng = ((screenAng % 180) + 180) % 180;
+      // ORIGINAL absolute angle = screen angle + rotation we applied (angOffset).
+      // This is the value stored as the new grainAngle so re-rotating makes THIS
+      // edge horizontal. For non-EDGE parts angOffset=0 → ang === screenAng.
+      const ang = (((screenAng + angOffset) % 180) + 180) % 180;
       const [x0, y0] = tx(a[0], a[1]);
       const [x1, y1] = tx(b[0], b[1]);
+      // Selected edge = the one whose ORIGINAL angle equals the stored grain
+      // (after rotation it is the horizontal edge). Compare in original space.
       const isSel = (sel != null && Math.abs(((ang - sel) % 180 + 180) % 180) < 0.5);
       const line = document.createElementNS(SVGNS, 'line');
       line.setAttribute('x1', x0.toFixed(2)); line.setAttribute('y1', y0.toFixed(2));
@@ -3749,8 +3766,28 @@
       ctx.fillStyle = BG;
       ctx.fillRect(0, 0, cw, ch);
     }
-    const polys = part && part.polys;
-    const bbox = part && part.bbox;
+    // EDGE (angled grain): the preview must look EXACTLY like the placed piece
+    // on the sheet — grain ALWAYS horizontal per เอ๋'s rule ('grain ให้ preview
+    // แนวนอนเท่านั้นตามกฎของเรา ฉะนั้นรูปต้องหมุนตามด้วย'). So instead of drawing
+    // the part at native orientation and tilting the hatch, we pre-rotate the
+    // GEOMETRY by -grainAngle (chosen edge → horizontal) using the SAME engine
+    // helper the nester uses (_edgeRotatedGeom) and draw a plain horizontal
+    // hatch. Non-EDGE parts (H/V/ANY/?) are untouched. (angled-grain preview
+    // 2026-06-26)
+    const _isEdgePreview = (part && part.grain === 'EDGE' && part.grainAngle != null &&
+                            Number.isFinite(Number(part.grainAngle)) && part.polys);
+    let _edgeGeom = null;
+    if (_isEdgePreview) {
+      _edgeGeom = _edgeRotatedGeom(part);
+      // Defensive: a degenerate rotation (non-finite / non-positive dims) falls
+      // back to native orientation so the preview never blanks. (hardening)
+      if (!_edgeGeom || !(_edgeGeom.w > 0) || !(_edgeGeom.h > 0) ||
+          !_edgeGeom.bbox || !_edgeGeom.bbox.every(Number.isFinite)) {
+        _edgeGeom = null;
+      }
+    }
+    const polys = _edgeGeom ? _edgeGeom.polys : (part && part.polys);
+    const bbox = _edgeGeom ? _edgeGeom.bbox : (part && part.bbox);
     if (!polys || !bbox) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -3769,8 +3806,11 @@
     // preview ทำตามนั้น'). A FIX value locks which side is the height/width, so
     // preview THAT — same rule the nester uses. Else fall back to the direction
     // (V = runs vertical / 90°, H / ANY = native). (orig: 2026-05-30)
-    let grot = (part && part.grain === 'V') ? 90 : 0;
-    if (part) {
+    // EDGE parts are ALREADY pre-rotated to horizontal above, so they take no
+    // extra grot (the chosen edge is horizontal in `polys`). V/FIX grot only
+    // applies to non-EDGE directional parts. (angled-grain preview 2026-06-26)
+    let grot = (!_edgeGeom && part && part.grain === 'V') ? 90 : 0;
+    if (part && !_edgeGeom) {
       const pw = part.w || pw0, ph = part.h || ph0, tol = 3;
       if (part.fixHeights && part.fixHeights.length) {           // a value → the HEIGHT
         if (part.fixHeights.some(v => Math.abs(ph - v) <= tol)) grot = 0;
@@ -3835,8 +3875,14 @@
       // edge. The preview is rotated so V parts run vertically (grot=90).
       if (part.grain === 'H' || part.grain === 'V' || part.grain === 'EDGE') {
         ctx.save(); trace(sil, true); ctx.clip();
-        const _angle = (part.grain === 'EDGE') ? part.grainAngle : null;
-        _grainHatchCanvas(ctx, part.grain, offX, offY, offX + drawW, offY + drawH, INK, dpr, false, _angle);
+        // EDGE: the SHAPE is already rotated so the chosen edge is horizontal —
+        // so the grain hatch is plain HORIZONTAL (no angle), matching the sheet.
+        // Pass grain 'H' for EDGE so _grainHatchCanvas draws flat horizontal
+        // lines (the angle-rotate branch is bypassed). (angled-grain preview
+        // 2026-06-26)
+        const _hatchGrain = (part.grain === 'EDGE' && _edgeGeom) ? 'H' : part.grain;
+        const _angle = (part.grain === 'EDGE' && !_edgeGeom) ? part.grainAngle : null;
+        _grainHatchCanvas(ctx, _hatchGrain, offX, offY, offX + drawW, offY + drawH, INK, dpr, false, _angle);
         ctx.restore();
       }
     }
@@ -3860,6 +3906,12 @@
     // by dpr for CSS px to match the SVG viewBox. (angled-grain 2026-06-25)
     canvas._kdPreviewTx = (x, y) => { const m = tx(x, y); return [m[0] / dpr, m[1] / dpr]; };
     canvas._kdPreviewPart = part;
+    // Stash the EDGE-rotated geometry (or null) so the clickable edge overlay
+    // positions its <line>s on the NOW-ROTATED shape via the same tx(), while
+    // mapping clicks back to ORIGINAL angles (= on-screen angle + grainAngle).
+    // (angled-grain preview 2026-06-26)
+    canvas._kdPreviewEdgeRot = _edgeGeom ? part.grainAngle : null;
+    canvas._kdPreviewRotOuter = _edgeGeom ? polys.outer : null;
   }
 
   // EDGE overlay click → lock this part's grain parallel to the clicked edge.

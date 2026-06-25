@@ -176,3 +176,92 @@ test('loop-cap guard bails a pathological non-shrinking loop instead of hanging'
   assert.equal(bailed, true, 'cap stopped the loop');
   assert.ok(iters <= _packLoopCap(1), `bailed within cap (${iters})`);
 });
+
+// ── PREVIEW rotation + edge-overlay angle mapping ───────────────────────
+// เอ๋'s rule: grain in the single-part preview is ALWAYS horizontal, so the
+// SHAPE rotates so the chosen edge becomes horizontal ('grain ให้ preview
+// แนวนอนเท่านั้น ... รูปต้องหมุนตามด้วย'). These guard the preview-only math
+// added in _drawPartPreview / _attachEdgeClickLayer (preview rotates shape by
+// -grainAngle via _rotatePoly; overlay maps a rotated on-screen edge back to
+// its ORIGINAL angle via origAngle = screenAngle + grainAngle). (2026-06-26)
+
+// Faithful copy of the overlay's per-edge angle math.
+function edgeAngleDeg(a, b) {        // on-screen [0,180) angle of a poly edge
+  let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+  return ((ang % 180) + 180) % 180;
+}
+function origAngleFromScreen(screenAng, angOffset) {   // overlay's stored value
+  return (((screenAng + angOffset) % 180) + 180) % 180;
+}
+// Find the [0,180) angle of the longest outer edge (proxy for "an edge").
+function edgeAnglesOf(outer) {
+  const out = [];
+  for (let i = 0; i < outer.length; i++) {
+    const a = outer[i], b = outer[(i + 1) % outer.length];
+    if (Math.hypot(b[0] - a[0], b[1] - a[1]) < 1) continue;
+    out.push(edgeAngleDeg(a, b));
+  }
+  return out;
+}
+
+test('preview rotation: clicking edge at original angle θ makes it horizontal', () => {
+  // A right triangle: the hypotenuse runs at a non-trivial original angle.
+  const part = {
+    grain: 'EDGE',
+    polys: { outer: [[0, 0], [600, 0], [0, 400], [0, 0]], holes: [], strokes: [] },
+    bbox: [0, 0, 600, 400],
+  };
+  // Original angle of the hypotenuse (600,0)->(0,400).
+  const thetaHyp = edgeAngleDeg([600, 0], [0, 400]);
+  // User "clicks" that edge → grainAngle = thetaHyp.
+  part.grainAngle = ((thetaHyp % 180) + 180) % 180;
+  // Preview pre-rotates the SHAPE by -grainAngle (same _rotatePoly the engine
+  // uses). The chosen edge must now be HORIZONTAL (screen angle ≈ 0/180).
+  const rotOuter = _rotatePoly(part.polys.outer, part.grainAngle);
+  const rotHyp = edgeAngleDeg(rotOuter[1], rotOuter[2]);   // (600,0)->(0,400) after rot
+  const horiz = Math.min(rotHyp, 180 - rotHyp);            // distance to horizontal
+  assert.ok(horiz < 0.001, `chosen edge horizontal after rotation (was ${rotHyp.toFixed(3)}°)`);
+});
+
+test('edge-overlay maps rotated on-screen angle back to ORIGINAL angle', () => {
+  const outer = [[0, 0], [600, 0], [0, 400], [0, 0]];
+  const grainAngle = edgeAngleDeg([600, 0], [0, 400]);   // pick the hypotenuse
+  const rotOuter = _rotatePoly(outer, grainAngle);       // preview-rotated shape
+  // For EVERY rotated edge: origAngle(screenAngle, +grainAngle) must equal the
+  // edge's angle in the ORIGINAL (un-rotated) geometry.
+  const origAngles = edgeAnglesOf(outer);
+  const screenAngles = edgeAnglesOf(rotOuter);
+  assert.equal(screenAngles.length, origAngles.length, 'same edge count');
+  for (let i = 0; i < screenAngles.length; i++) {
+    const mapped = origAngleFromScreen(screenAngles[i], grainAngle);
+    const d = Math.min(
+      Math.abs(mapped - origAngles[i]),
+      180 - Math.abs(mapped - origAngles[i]));
+    assert.ok(d < 0.001, `edge ${i}: mapped ${mapped.toFixed(2)} ≈ orig ${origAngles[i].toFixed(2)}`);
+  }
+});
+
+test('re-clicking a different edge updates grainAngle consistently', () => {
+  const outer = [[0, 0], [600, 0], [0, 400], [0, 0]];
+  // 1st click: the hypotenuse → grain runs along it.
+  const g1 = edgeAngleDeg([600, 0], [0, 400]);
+  let rot1 = _rotatePoly(outer, g1);
+  // The bottom edge (0,0)->(600,0) is now at some non-zero screen angle; the
+  // hypotenuse is horizontal. Confirm exactly one edge is horizontal.
+  const horizCount = (rotOuter) => edgeAnglesOf(rotOuter)
+    .filter(a => Math.min(a, 180 - a) < 0.001).length;
+  assert.equal(horizCount(rot1), 1, 'one horizontal edge after 1st click');
+  // 2nd click: user picks the BOTTOM edge in the rotated view. Its on-screen
+  // angle maps to its ORIGINAL angle (= 0) → new grainAngle.
+  const botScreen = edgeAngleDeg(rot1[0], rot1[1]);          // bottom edge, rotated
+  const g2 = origAngleFromScreen(botScreen, g1);             // overlay's stored value
+  assert.ok(Math.min(Math.abs(g2 - 0), 180 - Math.abs(g2 - 0)) < 0.001,
+    `2nd-click maps to original bottom-edge angle 0 (got ${g2.toFixed(3)})`);
+  // Re-rotating by the NEW grainAngle makes the bottom edge horizontal.
+  const rot2 = _rotatePoly(outer, g2);
+  const botAfter = edgeAngleDeg(rot2[0], rot2[1]);
+  assert.ok(Math.min(botAfter, 180 - botAfter) < 0.001,
+    `bottom edge horizontal after re-click (was ${botAfter.toFixed(3)}°)`);
+  // And the grain genuinely changed direction (g1 ≠ g2).
+  assert.ok(Math.abs(g1 - g2) > 1, 'grainAngle changed between clicks');
+});
