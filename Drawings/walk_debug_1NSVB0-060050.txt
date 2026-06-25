@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-25T18:29:09.933614
+CC_Assembly walk debug — 2026-06-25T18:31:38.816883
 Project: 1NSVB0-060050
 Total occurrences visited: 59
 CAM-ALPF tagged components: 0
@@ -63,7 +63,7 @@ depth | SM | CAM | material         | display_name (component)
     3 |     |     |                  | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
     3 |     |     |                  | J2:1 (J2)
     1 |     |     | Steel            | Elec - Lighting 12V Downlighr (Mano) v4:1 (Elec - Lighting 12V Downlighr (Mano) v4)
-    0 |     |     |                  | DSV0TR-060050 v3:1 (DSV0TR-060050 v3)
+    0 |     |     |                  | DSV0TR-060050 v4:1 (DSV0TR-060050 v4)
     1 | SM  |     | ALPF             | DSV1TR-060050 v5:1 (DSV1TR-060050 v5)
     1 | SM  |     | ALPF             | DSV2TR-060050 v3:1 (DSV2TR-060050 v3)
     0 | SM  |     | ALPF             | SDTRIR-000002:1 (SDTRIR-000002)
