@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-26T05:54:08.660402
+CC_Assembly walk debug — 2026-06-26T06:39:07.752064
 Project: 1LLVB4-070XXX
 Total occurrences visited: 87
 CAM-ALPF tagged components: 0
@@ -61,7 +61,7 @@ depth | SM | CAM | material         | display_name (component)
     3 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
     3 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
     1 |     |     | ALPF             | FN3BLA-070000 v10:1 (FN3BLA-070000 v10)
-    0 |     |     |                  | TS004H-070000 v3:1 (TS004H-070000 v3)
+    0 |     |     |                  | TS004H-070000 v4:1 (TS004H-070000 v4)
     1 |     |     |                  | TS2TR4-070050 v5:1 (TS2TR4-070050 v5)
     2 | SM  |     | ALPF             | TS2TRX-000000:1 (TS2TRX-000000)
     2 | SM  |     | ALPF             | TS2TRX-000000:2 (TS2TRX-000000)
@@ -70,7 +70,7 @@ depth | SM | CAM | material         | display_name (component)
     1 | SM  |     | ALPF             | TS1BHH-080000 v2:1 (TS1BHH-080000 v2)
     1 | SM  |     | ALPF             | TS1BHH-080000 v2:2 (TS1BHH-080000 v2)
     1 | SM  |     | ALPF             | TS1BHH-080000 v2:3 (TS1BHH-080000 v2)
-    1 | SM  |     | ALPF             | TS1BHH-070000-Ruth v2:1 (TS1BHH-070000-Ruth v2)
+    1 | SM  |     | ALPF             | TS1BHH-070000-Ruth v4:1 (TS1BHH-070000-Ruth v4)
     0 |     |     |                  | DSV0B0-070024-Ruth v3:1 (DSV0B0-070024-Ruth v3)
     1 |     |     |                  | DSB0FA-070000 v4:1 (DSB0FA-070000 v4)
     2 |     |     |                  | DSB0FA-000000 v2:1 (DSB0FA-000000 v2)
