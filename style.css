@@ -4417,6 +4417,34 @@ body.sb-fs-lock { overflow: hidden; }
 .kdnest-stock-down:hover:not(:disabled) { background: #243349; }
 .kdnest-stock-up:disabled,
 .kdnest-stock-down:disabled { opacity: 0.3; cursor: not-allowed; }
+/* Drag-to-reorder handle (replaces the old ↑/↓ buttons) + per-row
+   enable checkbox. เอ๋ 2026-06-26. */
+.kdnest-stock-drag-handle {
+  font-size: 13px;
+  padding: 4px 2px;
+  color: #6b7a8d;
+}
+.kdnest-stock-enable {
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+  accent-color: #F2A93B;
+  flex: 0 0 auto;
+}
+/* Disabled rows read dimmed but stay fully editable + draggable. */
+.kdnest-stock-off { opacity: 0.45; }
+.kdnest-stock-off .kdnest-stock-enable { opacity: 1; }
+/* Sortable.js dragging visuals for the stock rows. */
+.kdnest-stock-ghost {
+  opacity: 0.3;
+  background: #2a3540 !important;
+  border: 1px dashed #4a5a6f !important;
+}
+.kdnest-stock-chosen { cursor: grabbing; }
+.kdnest-stock-drag {
+  opacity: 0.95;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
 /* Strip the up/down spinner arrows from EVERY number input in the
    Nesting workspace + sheet stock dialog. The spinners overlapped the
    last digit and made values hard to read (user 2026-05-28: 'ตัวปรับ

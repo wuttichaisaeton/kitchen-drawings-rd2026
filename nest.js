@@ -31,10 +31,10 @@
     // ('131/225 short'). Defaults apply only on first visit / unreadable store.
     sheetStock: (function () {
       const _def = [
-        { w: 3050, h: 1525, qty: 1, thickness: 1, label: '10x5' },
-        { w: 3050, h: 1220, qty: 1, thickness: 1, label: '10x4' },
-        { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4'  },
-        { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)' },
+        { w: 3050, h: 1525, qty: 1, thickness: 1, label: '10x5', enabled: true },
+        { w: 3050, h: 1220, qty: 1, thickness: 1, label: '10x4', enabled: true },
+        { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4',  enabled: true },
+        { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)', enabled: true },
       ];
       try {
         const j = JSON.parse(localStorage.getItem('kd_nest_stock_v1'));
@@ -45,6 +45,9 @@
             qty: (r.qty === -1 ? -1 : (+r.qty || 0)),
             thickness: (r.thickness == null ? 1 : +r.thickness),
             label: String(r.label || ''),
+            // เอ๋ 2026-06-26: per-row enable checkbox. Old saved rows have no
+            // 'enabled' field → !== false defaults them ON so nothing vanishes.
+            enabled: (r.enabled !== false),
           }));
         }
       } catch (e) {}
@@ -3664,7 +3667,7 @@
     }
     // Skip zero-sized stock rows (the always-present empty 4th row,
     // or any row the user blanked out). Preserve order = priority.
-    const activeStock = S.sheetStock.filter(s => s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1));
+    const activeStock = S.sheetStock.filter(s => s.enabled !== false && s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1));
     if (activeStock.length === 0) {
       alert('No usable sheet stock — fill in at least one row with W, H and qty.');
       return;
@@ -4594,6 +4597,7 @@
       sheetStock: (S.sheetStock || []).map(s => ({
         w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
         thickness: s.thickness ?? 1, label: s.label || '',
+        enabled: s.enabled !== false,
       })),
       parts: (S.parts || []).map(_serializePart),
       sheets: (S.flatSheets || []).map(_serializeSheet),
@@ -4827,6 +4831,7 @@
       S.sheetStock = job.sheetStock.map(s => ({
         w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
         thickness: s.thickness ?? 1, label: s.label || '',
+        enabled: s.enabled !== false,   // old saved nests → default ON
       }));
     }
     // Rebuild parts: start from a fresh part shell per code, overlay saved fields.
@@ -5425,7 +5430,7 @@
       };
       const stockThick = new Set(
         (S.sheetStock || [])
-          .filter(s => s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1))
+          .filter(s => s.enabled !== false && s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1))
           .map(s => tk(s.thickness ?? 1))
       );
       const byCode = new Map();
@@ -5653,12 +5658,11 @@
             <div class="kdnest-cabs-fresh">${_frNew ? `<span class="kdnest-cab-fr">${_frNew} new</span>` : ''}${_frChg ? `<span class="kdnest-cab-fr">↻ ${_frChg} changed</span>` : ''}<button id="kdnest-cabs-seen" class="kdnest-mini" title="Mark every cabinet seen for the laser role">Mark all seen</button></div>` : ''}` : '';
 
     const sheetStockRows = S.sheetStock.map((s, i) => {
-      const upDisabled = i === 0 ? 'disabled' : '';
-      const downDisabled = i === S.sheetStock.length - 1 ? 'disabled' : '';
+      const enabled = s.enabled !== false;
       return `
-      <div class="kdnest-stock-row" data-i="${i}">
-        <button class="kdnest-stock-up"   data-i="${i}" title="Higher priority (try this size first)" ${upDisabled}>↑</button>
-        <button class="kdnest-stock-down" data-i="${i}" title="Lower priority"                       ${downDisabled}>↓</button>
+      <div class="kdnest-stock-row${enabled ? '' : ' kdnest-stock-off'}" data-i="${i}">
+        <span class="drag-handle kdnest-stock-drag-handle" title="Drag to reorder (higher = try this size first)" aria-hidden="true">⋮⋮</span>
+        <input type="checkbox" data-i="${i}" data-k="enabled" class="kdnest-stock-enable" ${enabled ? 'checked' : ''} title="Enable / disable this size — disabled rows are skipped when nesting">
         <input type="number" data-i="${i}" data-k="w"         value="${s.w || ''}"        min="0" class="kdnest-stock-dim"   placeholder="W">
         <span>×</span>
         <input type="number" data-i="${i}" data-k="h"         value="${s.h || ''}"        min="0" class="kdnest-stock-dim"   placeholder="H">
@@ -5895,28 +5899,48 @@
         }
       });
     });
-    S.rootEl.querySelectorAll('.kdnest-stock-up').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const i = parseInt(e.currentTarget.dataset.i, 10);
-        if (i > 0) {
-          const arr = S.sheetStock;
-          [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]];
+    // Per-row enable checkbox — disabled rows are skipped when nesting
+    // (เอ๋ 2026-06-26). Toggling repaints + persists immediately so the
+    // greyed-out look and the next ▶ Run both reflect the new state.
+    S.rootEl.querySelectorAll('.kdnest-stock-enable').forEach(cb => {
+      cb.addEventListener('change', e => {
+        const i = parseInt(e.target.dataset.i, 10);
+        if (!isNaN(i) && S.sheetStock[i]) {
+          S.sheetStock[i].enabled = e.target.checked;
           _persistStock();
           _refreshView();
         }
       });
     });
-    S.rootEl.querySelectorAll('.kdnest-stock-down').forEach(btn => {
-      btn.addEventListener('click', e => {
-        const i = parseInt(e.currentTarget.dataset.i, 10);
-        if (i < S.sheetStock.length - 1) {
-          const arr = S.sheetStock;
-          [arr[i], arr[i + 1]] = [arr[i + 1], arr[i]];
-          _persistStock();
-          _refreshView();
-        }
+    // Drag-to-reorder the stock rows (replaces the old ↑/↓ buttons). The
+    // packer walks the list top-to-bottom, so order = size priority.
+    // Mirrors the project-card Sortable wiring in app.js (forceFallback
+    // for iPad/touch). On drop, rebuild S.sheetStock from the new DOM
+    // order, persist, and re-render so data-i indices stay fresh.
+    const stockListEl = S.rootEl.querySelector('.kdnest-stock');
+    if (stockListEl && window.Sortable) {
+      window.Sortable.create(stockListEl, {
+        animation: 150,
+        draggable: '.kdnest-stock-row',   // leave the .kdnest-stock-title put
+        handle: '.kdnest-stock-drag-handle',
+        ghostClass: 'kdnest-stock-ghost',
+        chosenClass: 'kdnest-stock-chosen',
+        dragClass: 'kdnest-stock-drag',
+        forceFallback: true,
+        fallbackTolerance: 4,
+        onEnd: () => {
+          const order = [...stockListEl.querySelectorAll('.kdnest-stock-row')]
+            .map(el => parseInt(el.dataset.i, 10))
+            .filter(n => !isNaN(n));
+          const reordered = order.map(i => S.sheetStock[i]).filter(Boolean);
+          if (reordered.length === S.sheetStock.length) {
+            S.sheetStock.splice(0, S.sheetStock.length, ...reordered);
+            _persistStock();
+            _refreshView();
+          }
+        },
       });
-    });
+    }
     // Per-part edits — preserve focus + scroll position via delegation.
     S.rootEl.querySelectorAll('.kdnest-part').forEach(row => {
       const code = row.dataset.code;
