@@ -294,7 +294,10 @@ function _mirrorEntities(entities, axisSum) {
     if (k === 'SPLINE') return { ...d,
       ctrl: (d.ctrl || []).map(p => ({ x: fx(p.x), y: p.y })),
       fit:  (d.fit  || []).map(p => ({ x: fx(p.x), y: p.y })) };
-    if (k === 'ELLIPSE') return { ...d, cx: fx(d.cx), mx: -d.mx };
+    // ELLIPSE: flip centre.x + major-axis X-component AND reverse the partial-
+    // arc sweep (start↔end, negated) — lock-step with _entityToWcs's flip branch
+    // (a0: -a1, a1: -a0). Matches the live nest.js fix. (partial-arc mirror 2026-06-26)
+    if (k === 'ELLIPSE') return { ...d, cx: fx(d.cx), mx: -d.mx, a0: -d.a1, a1: -d.a0 };
     return d;
   });
 }
@@ -424,4 +427,88 @@ test('canonical order: EDGE pre-rotate THEN mirror keeps grain horizontal', () =
   // + reverse, it maps to some pair; assert SOME edge is still horizontal.
   const horiz = edgeAnglesOf(mir.polys.outer).filter(a => Math.min(a, 180 - a) < 0.01).length;
   assert.ok(horiz >= 1, 'a horizontal edge survives the mirror (grain stays horizontal)');
+});
+
+// ── BASELINE PACK-DIMS REGRESSION (native non-EDGE non-mirror part) ──────
+// Faithful copy of nest.js's _orientedGeom (native branch) + the pack-dims
+// decision in _runNesting. BEFORE the Rotate/Mirror feature, the pack loop fed
+// the packer the INTEGER-rounded p.w/p.h. AFTER, _orientedGeom returns a
+// 2-decimal geom.w (Math.round(extent*100)/100, e.g. 599.65 vs 600) which —
+// if blindly adopted — drifts the packer footprint sub-mm and can alter daily
+// nesting layouts. The fix: only adopt geom dims when EDGE or mirror is active;
+// otherwise fall back to p.w/p.h exactly. These guard that the NATIVE case is
+// byte-identical to the pre-feature integer dims. (regression fix 2026-06-26)
+function _orientedGeomNative(p) {
+  // mirrors nest.js _orientedGeom for the no-EDGE branch (native bundle).
+  const [minX, minY, maxX, maxY] = p.bbox;
+  return { polys: p.polys, bbox: p.bbox.slice(),
+           w: Math.round((maxX - minX) * 100) / 100,
+           h: Math.round((maxY - minY) * 100) / 100 };
+}
+function packDims(p) {
+  // mirrors nest.js _runNesting: isEdge=false here (native), so geom is the
+  // native bundle and _geomActive = (isEdge || p.mirror) && geom.
+  const isEdge = false;
+  const geom = _orientedGeomNative(p);
+  const _geomActive = (isEdge || p.mirror) && geom;
+  const useW = (_geomActive && geom.w > 0) ? geom.w : p.w;
+  const useH = (_geomActive && geom.h > 0) ? geom.h : p.h;
+  return { useW, useH };
+}
+
+test('native non-EDGE non-mirror part: packer dims = integer p.w/p.h (pre-feature)', () => {
+  // p.w/p.h are the integer-rounded BOM dims (Math.round of the bbox extent),
+  // but the bbox itself carries sub-mm float extents (599.65 / 399.4).
+  const p = {
+    code: 'NATIVE-1', grain: 'H', mirror: false, flip180: false,
+    w: 600, h: 399,                         // integer-rounded dims (the daily-relied-on values)
+    bbox: [0, 0, 599.65, 399.4],            // float extents from the DXF parse
+    polys: { outer: [[0, 0], [599.65, 0], [599.65, 399.4], [0, 399.4]], holes: [], strokes: [], entities: [] },
+  };
+  const { useW, useH } = packDims(p);
+  assert.equal(useW, 600, 'packer width = integer p.w (NOT geom.w 599.65)');
+  assert.equal(useH, 399, 'packer height = integer p.h (NOT geom.h 399.4)');
+  // And prove the regression would have fired without the guard:
+  const geom = _orientedGeomNative(p);
+  assert.equal(geom.w, 599.65, 'geom.w is the 2-decimal value the old buggy path used');
+  assert.notEqual(geom.w, p.w, 'geom.w differs from integer p.w → must NOT win for native parts');
+});
+
+test('mirror-active part DOES adopt oriented geom dims (feature still works)', () => {
+  const p = {
+    code: 'MIR-1', grain: 'H', mirror: true, flip180: false,
+    w: 600, h: 399,
+    bbox: [0, 0, 599.65, 399.4],
+    polys: { outer: [[0, 0], [599.65, 0], [599.65, 399.4], [0, 399.4]], holes: [], strokes: [], entities: [] },
+  };
+  const { useW, useH } = packDims(p);
+  assert.equal(useW, 599.65, 'mirror active → geom.w wins');
+  assert.equal(useH, 399.4, 'mirror active → geom.h wins');
+});
+
+// ── PARTIAL-ARC ELLIPSE MIRROR SWEEP REVERSAL ───────────────────────────
+// A PARTIAL elliptical arc must reverse its sweep (a0/a1 swap+negate) under a
+// mirror, exactly like _entityToWcs's flip branch (a0: -end, a1: -start).
+// Without it, the wrong swept portion renders after a mirror. A full ellipse is
+// unaffected; double-mirror must restore the original sweep. (partial-arc 2026-06-26)
+test('partial elliptical arc: mirror reverses the sweep (a0/a1 swap+negate)', () => {
+  const axisSum = 600;
+  const s = Math.PI / 6, en = 2 * Math.PI / 3;     // a 30°→120° partial arc
+  const ell = { kind: 'ELLIPSE', cx: 300, cy: 100, mx: 80, my: 0, ratio: 0.5, a0: s, a1: en };
+  const m = _mirrorEntities([ell], axisSum)[0];
+  // Matches _entityToWcs flip: a0 → -a1, a1 → -a0.
+  assert.ok(Math.abs(m.a0 - (-en)) < 1e-12, 'mirrored a0 = -a1 (sweep reversed)');
+  assert.ok(Math.abs(m.a1 - (-s))  < 1e-12, 'mirrored a1 = -a0 (sweep reversed)');
+  assert.ok(Math.abs(m.cx - (axisSum - 300)) < 1e-12, 'centre x reflected');
+  assert.ok(Math.abs(m.mx - (-80)) < 1e-12, 'major-axis X-component flipped');
+});
+
+test('partial elliptical arc: double mirror restores the sweep', () => {
+  const axisSum = 600;
+  const ell = { kind: 'ELLIPSE', cx: 300, cy: 100, mx: 80, my: 0, ratio: 0.5, a0: Math.PI / 6, a1: 2 * Math.PI / 3 };
+  const twice = _mirrorEntities(_mirrorEntities([ell], axisSum), axisSum)[0];
+  assert.ok(Math.abs(twice.a0 - ell.a0) < 1e-12, 'a0 restored after double mirror');
+  assert.ok(Math.abs(twice.a1 - ell.a1) < 1e-12, 'a1 restored after double mirror');
+  assert.ok(Math.abs(twice.cx - ell.cx) < 1e-12, 'cx restored');
+  assert.ok(Math.abs(twice.mx - ell.mx) < 1e-12, 'mx restored');
 });

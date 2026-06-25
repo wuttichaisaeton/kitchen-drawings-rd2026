@@ -3417,7 +3417,12 @@
       if (k === 'SPLINE') return { ...d,
         ctrl: (d.ctrl || []).map(p => ({ x: fx(p.x), y: p.y })),
         fit:  (d.fit  || []).map(p => ({ x: fx(p.x), y: p.y })) };
-      if (k === 'ELLIPSE') return { ...d, cx: fx(d.cx), mx: -d.mx };   // major-axis X-component flips
+      // ELLIPSE: flip centre.x + major-axis X-component, AND reverse the
+      // partial-arc sweep (start↔end, negated) so a partial elliptical arc
+      // renders the mirrored portion — lock-step with _entityToWcs's flip
+      // branch (a0: -en, a1: -s). Full ellipses are unaffected by the swap.
+      // (partial-arc mirror fix 2026-06-26)
+      if (k === 'ELLIPSE') return { ...d, cx: fx(d.cx), mx: -d.mx, a0: -d.a1, a1: -d.a0 };
       return d;
     });
   }
@@ -3553,8 +3558,15 @@
       }
       const usePolys = geom ? geom.polys : p.polys;
       const useBbox  = geom ? geom.bbox  : bbox;
-      const useW     = (geom && geom.w > 0) ? geom.w : p.w;
-      const useH     = (geom && geom.h > 0) ? geom.h : p.h;
+      // Pack dims: ONLY adopt the oriented-geom dims when an orientation that
+      // actually changes geometry is active (EDGE pre-rotate OR mirror). For a
+      // plain native part (no EDGE, no mirror) fall back to the integer-rounded
+      // p.w/p.h exactly as the pre-feature code did, so baseline packing stays
+      // byte-identical (geom.w is a 2-decimal value, e.g. 599.65 vs old 600 →
+      // sub-mm drift would alter daily nesting layouts). (regression fix 2026-06-26)
+      const _geomActive = (isEdge || p.mirror) && geom;
+      const useW     = (_geomActive && geom.w > 0) ? geom.w : p.w;
+      const useH     = (_geomActive && geom.h > 0) ? geom.h : p.h;
       let rots = isEdge          ? [0, 180]
                : (p.grain === 'H') ? [0, 180]
                : (p.grain === 'V') ? [90, 270]
