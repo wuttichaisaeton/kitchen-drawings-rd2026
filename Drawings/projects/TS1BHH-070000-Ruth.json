@@ -1,0 +1,16 @@
+{
+  "name": "TS1BHH-070000-Ruth",
+  "status": "active",
+  "created_at": "2026-06-25T23:01:05.636481+00:00",
+  "updated_at": "2026-06-25T23:01:05.636481+00:00",
+  "total_unique_parts": 1,
+  "total_qty": 1,
+  "parts": [
+    {
+      "code": "TS1BHH-070000-Ruth",
+      "qty": 1,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:tE-CyXc7RLOmUG15AaYRKg"
+    }
+  ]
+}
