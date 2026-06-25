@@ -1,6 +1,6 @@
-CC_Assembly walk debug — 2026-06-25T10:11:38.489432
+CC_Assembly walk debug — 2026-06-25T16:01:23.549523
 Project: 1NSVB0-060050
-Total occurrences visited: 42
+Total occurrences visited: 59
 CAM-ALPF tagged components: 0
 
 --- CAM API exploration ---
@@ -47,6 +47,23 @@ depth | SM | CAM | material         | display_name (component)
     4 |     |     | Steel            | Slide-R:1 (Slide-R)
     1 | SM  |     | ALPF             | DSV2B3-060031-Ruth v2:1 (DSV2B3-060031-Ruth v2)
     1 | SM  |     | ALPF             | DSV100-060030-Ruth v2:1 (DSV100-060030-Ruth v2)
-    0 | SM  |     | ALPF             | SHRUTH-060000 v2:1 (SHRUTH-060000 v2)
+    0 | SM  |     | ALPF             | SHRUTH-060000 v3:1 (SHRUTH-060000 v3)
     0 | SM  |     | Steel            | Component7:1 (Component7)
-    0 |     |     | Steel            | Component8:1 (Component8)
+    0 |     |     |                  | Fitting:1 (Fitting)
+    1 |     |     |                  | Blum - Hinge+Plate Overlay v1:1 (Blum - Hinge+Plate Overlay v1)
+    2 |     |     | ALPF             | Blum - Plate v7:1 (Blum - Plate v7)
+    2 |     |     | Steel            | Hinge - Blum 75B1550 107deg v9:1 (Hinge - Blum 75B1550 107deg v9)
+    3 |     |     |                  | Cup:1 (Cup)
+    3 |     |     | ALPF             | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
+    3 |     |     |                  | J2:1 (J2)
+    1 |     |     |                  | Blum - Hinge+Plate Overlay v1:2 (Blum - Hinge+Plate Overlay v1)
+    2 |     |     | ALPF             | Blum - Plate v7:1 (Blum - Plate v7)
+    2 |     |     | Steel            | Hinge - Blum 75B1550 107deg v9:1 (Hinge - Blum 75B1550 107deg v9)
+    3 |     |     |                  | Cup:1 (Cup)
+    3 |     |     | ALPF             | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
+    3 |     |     |                  | J2:1 (J2)
+    1 |     |     | Steel            | Elec - Lighting 12V Downlighr (Mano) v4:1 (Elec - Lighting 12V Downlighr (Mano) v4)
+    0 |     |     |                  | DSV0TR-060050 v3:1 (DSV0TR-060050 v3)
+    1 | SM  |     | ALPF             | DSV1TR-060050 v5:1 (DSV1TR-060050 v5)
+    1 | SM  |     | ALPF             | DSV2TR-060050 v3:1 (DSV2TR-060050 v3)
+    0 | SM  |     | Steel            | Component13:1 (Component13)
