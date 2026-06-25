@@ -2046,6 +2046,18 @@
   //  Packers (JS ports of the Python implementations)
   // ════════════════════════════════════════════════════════════════════
 
+  // Defensive cap for the multi-sheet `while (remaining.length)` packer loops.
+  // Each pass either places ≥1 piece (remaining shrinks) or breaks on
+  // !placedAny, so a healthy run needs ≤ pieces.length passes. The cap is a
+  // safety net: if a future change (or a NaN/degenerate piece dimension) ever
+  // lets a pass report progress without shrinking `remaining`, the loop bails
+  // out and dumps the leftovers to `unplaced` instead of freezing the UI.
+  // Every input either nests or lands in `unplaced` — never an infinite loop.
+  // (angled-grain hardening 2026-06-25)
+  function _packLoopCap(pieceCount) {
+    return Math.max(1000, (Number(pieceCount) || 0) * 4 + 1000);
+  }
+
   // MaxRects with Best Short Side Fit. Tracks every free rectangle on
   // the sheet — captures internal gaps that Skyline misses.
   class MaxRectsPacker {
@@ -2322,7 +2334,9 @@
     const stockCopy = stock.map(s => ({ ...s }));
     const sheets = [];
     let remaining = sorted.slice();
+    let _loopGuard = _packLoopCap(remaining.length);
     while (remaining.length) {
+      if (--_loopGuard < 0) { console.warn('[kdNest] raster pack loop cap hit — dumping', remaining.length, 'to unplaced'); break; }
       let placedAny = false;
       for (let si = 0; si < stockCopy.length; si++) {
         const s = stockCopy[si];
@@ -2513,7 +2527,9 @@
       const stockCopy = stock.map(s => ({ ...s }));
       const sheets = [];
       let remaining = sorted.slice();
+      let _loopGuard = _packLoopCap(remaining.length);
       while (remaining.length) {
+        if (--_loopGuard < 0) { console.warn('[kdNest] desktop pack loop cap hit — dumping', remaining.length, 'to unplaced'); break; }
         let placedAny = false;
         for (let si = 0; si < stockCopy.length; si++) {
           const s = stockCopy[si];
@@ -2814,7 +2830,9 @@
       const stockCopy = stock.map(s => ({ ...s }));
       const sheets = [];
       let remaining = sorted.slice();
+      let _loopGuard = _packLoopCap(remaining.length);
       while (remaining.length) {
+        if (--_loopGuard < 0) { console.warn('[kdNest] pack loop cap hit — dumping', remaining.length, 'to unplaced'); break; }
         let placedAny = false;
         for (let si = 0; si < stockCopy.length; si++) {
           const s = stockCopy[si];
@@ -3361,9 +3379,20 @@
       // EDGE (angled grain): pre-rotate geometry so the chosen edge is
       // horizontal, then nest it like an H part. Built once per part below; the
       // pieces use the rotated polys/bbox/w/h. Non-EDGE parts are untouched.
-      const isEdge = (p.grain === 'EDGE' && p.grainAngle != null && p.polys);
+      let isEdge = (p.grain === 'EDGE' && p.grainAngle != null &&
+                    Number.isFinite(Number(p.grainAngle)) && p.polys);
       let edge = null;
-      if (isEdge) edge = _edgeRotatedGeom(p);
+      if (isEdge) {
+        edge = _edgeRotatedGeom(p);
+        // Defensive: if the rotation yields non-finite or non-positive dims (a
+        // degenerate / corrupt outline), DON'T feed bad dims to the packer —
+        // fall back to the part's own axis-aligned bbox + ANY rotations so the
+        // piece still nests instead of risking a stuck pack. (hardening 2026-06-25)
+        if (!edge || !(edge.w > 0) || !(edge.h > 0) ||
+            !Number.isFinite(edge.w) || !Number.isFinite(edge.h)) {
+          isEdge = false; edge = null;
+        }
+      }
       let rots = isEdge          ? [0, 180]
                : (p.grain === 'H') ? [0, 180]
                : (p.grain === 'V') ? [90, 270]
@@ -3575,12 +3604,16 @@
     // EDGE (angled grain): rotate the context about the region centre so the
     // always-horizontal hatch lines render at the chosen edge angle. The lines
     // are widened to cover the region after rotation. (angled-grain 2026-06-25)
-    if (g === 'EDGE' && grainAngle != null) {
+    // Guard the angle: a non-finite grainAngle (bad CSV/RTDB value) would make
+    // ctx.rotate(NaN) a no-op but must NEVER reach the scanline loop with NaN
+    // bounds. Treat a bad angle as 0 so the hatch degrades to horizontal instead
+    // of misrendering. (angled-grain hardening 2026-06-25)
+    if (g === 'EDGE' && grainAngle != null && Number.isFinite(Number(grainAngle))) {
       const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
       const diag = Math.hypot(x1 - x0, y1 - y0);   // big enough to span the rotated box
       ctx.translate(cx, cy);
       // Canvas Y is flipped vs DXF, so negate the angle to match the geometry.
-      ctx.rotate(-grainAngle * Math.PI / 180);
+      ctx.rotate(-Number(grainAngle) * Math.PI / 180);
       ctx.translate(-cx, -cy);
       x0 = cx - diag; x1 = cx + diag; y0 = cy - diag; y1 = cy + diag;
     }
@@ -3593,7 +3626,11 @@
     ctx.lineWidth = bold ? Math.max(1, 1.1 * d) : Math.max(0.5, 0.5 * d);
     ctx.globalAlpha = bold ? 0.5 : 0.45;
     ctx.beginPath();
-    for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }  // always horizontal
+    // Bounds/step must be finite & step>0 or the loop never terminates — final
+    // safety net behind the angle guard above. (angled-grain hardening 2026-06-25)
+    if (Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(y0) && Number.isFinite(y1) && step > 0) {
+      for (let y = y0 + step; y < y1; y += step) { ctx.moveTo(x0, y); ctx.lineTo(x1, y); }  // always horizontal
+    }
     ctx.stroke();
     ctx.restore();
   }
