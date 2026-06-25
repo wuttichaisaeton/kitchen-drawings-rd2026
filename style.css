@@ -4503,6 +4503,47 @@ body.sb-fs-lock { overflow: hidden; }
   font-size: 11px;
   margin-left: 4px;
 }
+/* Per-sheet PRICE (THB) — เอ๋ 2026-06-26. Same chip as thickness so the
+   row stays compact; suffix sits tight against the input. */
+.kdnest-stock-prc {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  width: 56px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.kdnest-stock-prc-suffix {
+  color: #889bb3;
+  font-size: 11px;
+  margin-left: -2px;
+}
+/* Total-cost summary — fresh full sheets × per-sheet price, summed.
+   Sits between Sheet stock and the action buttons; only renders after a
+   nest run. Monospace so the breakdown numbers line up. */
+.kdnest-cost-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 8px 16px 0;
+  padding: 8px 12px;
+  border: 1px solid #2a3a4f;
+  border-radius: 6px;
+  background: rgba(57, 168, 110, 0.12);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+}
+.kdnest-cost-label {
+  color: #889bb3;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.kdnest-cost-breakdown {
+  color: #6fd99b;
+  margin-left: auto;
+  text-align: right;
+}
 
 .kdnest-actions {
   display: flex;

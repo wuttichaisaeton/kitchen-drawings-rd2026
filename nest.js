@@ -30,11 +30,13 @@
     // (kd_nest_stock_v1) so a reload doesn't silently reset qty to 1/1/1
     // ('131/225 short'). Defaults apply only on first visit / unreadable store.
     sheetStock: (function () {
+      // เอ๋ 2026-06-26: per-sheet PRICE (THB). Seeded by size so a fresh
+      // visit already costs out (8x4=2350, 10x4=2750, 10x5=3850, custom=0).
       const _def = [
-        { w: 3050, h: 1525, qty: 1, thickness: 1, label: '10x5', enabled: true },
-        { w: 3050, h: 1220, qty: 1, thickness: 1, label: '10x4', enabled: true },
-        { w: 2440, h: 1220, qty: 1, thickness: 1, label: '8x4',  enabled: true },
-        { w: 0,    h: 0,    qty: 0, thickness: 1, label: '(custom)', enabled: true },
+        { w: 3050, h: 1525, qty: 1, thickness: 1, prc: 3850, label: '10x5', enabled: true },
+        { w: 3050, h: 1220, qty: 1, thickness: 1, prc: 2750, label: '10x4', enabled: true },
+        { w: 2440, h: 1220, qty: 1, thickness: 1, prc: 2350, label: '8x4',  enabled: true },
+        { w: 0,    h: 0,    qty: 0, thickness: 1, prc: 0,    label: '(custom)', enabled: true },
       ];
       try {
         const j = JSON.parse(localStorage.getItem('kd_nest_stock_v1'));
@@ -44,6 +46,9 @@
             w: +r.w || 0, h: +r.h || 0,
             qty: (r.qty === -1 ? -1 : (+r.qty || 0)),
             thickness: (r.thickness == null ? 1 : +r.thickness),
+            // เอ๋ 2026-06-26: PRC. Old rows (no prc) get the size default;
+            // a user-entered non-zero price short-circuits and is preserved.
+            prc: (+r.prc || 0) || _getPriceDefault(+r.w || 0, +r.h || 0, String(r.label || '')),
             label: String(r.label || ''),
             // เอ๋ 2026-06-26: per-row enable checkbox. Old saved rows have no
             // 'enabled' field → !== false defaults them ON so nothing vanishes.
@@ -2963,6 +2968,63 @@
   function _persistStock() {
     try { localStorage.setItem('kd_nest_stock_v1', JSON.stringify(S.sheetStock)); } catch (e) {}
   }
+  // ── Sheet price (THB/sheet) defaults by physical size (เอ๋ 2026-06-26) ──
+  // Material + 550 cutting fee. Dimensions are the reliable signal; label is a
+  // fallback. Function declaration → hoisted, so the sheetStock state-init IIFE
+  // (top of S) can call it. Custom / unknown → 0 (user types the price).
+  function _getPriceDefault(w, h, label) {
+    if ((w === 3050 && h === 1525) || (w === 1525 && h === 3050)) return 3850;  // 10x5
+    if ((w === 3050 && h === 1220) || (w === 1220 && h === 3050)) return 2750;  // 10x4
+    if ((w === 2440 && h === 1220) || (w === 1220 && h === 2440)) return 2350;  // 8x4
+    const l = String(label || '').toLowerCase();
+    if (l.includes('10x5')) return 3850;
+    if (l.includes('10x4')) return 2750;
+    if (l.includes('8x4'))  return 2350;
+    return 0;  // custom — no clobber, user owns it
+  }
+  // Apply a size default only when prc is unset/0 — NEVER overwrite a price the
+  // user typed. Called when a row's w/h changes (in case it now matches a known
+  // size and still has no price).
+  function _applyPriceDefault(row) {
+    if (!row.prc) row.prc = _getPriceDefault(row.w, row.h, row.label);
+  }
+  // Count FRESH FULL sheets the last nest used, grouped by stock size. Reused
+  // offcuts (fromRemnant !== null) are EXCLUDED — เอ๋: cost = new sheets only,
+  // never scraps. The last-sheet rectified remnant stays fromRemnant === null
+  // (it isolates a leftover WITHIN a fresh sheet) so it counts normally.
+  function _countFreshSheetsBySize() {
+    const sizeMap = new Map();   // 'WxH' → {w, h, count, prc, label}
+    for (const sheet of (S.flatSheets || [])) {
+      if (sheet.fromRemnant !== null && sheet.fromRemnant !== undefined) continue;
+      const w = Math.round(sheet.sw), h = Math.round(sheet.sh);
+      const key = `${w}x${h}`;
+      if (!sizeMap.has(key)) {
+        const stock = S.sheetStock.find(s => Math.round(s.w) === w && Math.round(s.h) === h);
+        const prc = (stock && stock.prc) || _getPriceDefault(w, h, (stock && stock.label) || '');
+        sizeMap.set(key, { w, h, count: 0, prc, label: (stock && stock.label) || '' });
+      }
+      sizeMap.get(key).count += 1;
+    }
+    return sizeMap;
+  }
+  // Build the cost-summary HTML: "(3850 × 2) + (2350 × 1) = 10,050 THB".
+  // Empty string when there's no nest result (so it simply doesn't render).
+  function _renderCostSummary() {
+    if (!(S.flatSheets && S.flatSheets.length)) return '';
+    const sizeMap = _countFreshSheetsBySize();
+    if (!sizeMap.size) return '';
+    let total = 0;
+    const lines = [];
+    for (const e of sizeMap.values()) {
+      total += e.prc * e.count;
+      lines.push(`(${e.prc.toLocaleString('en-US')} × ${e.count})`);
+    }
+    return `
+          <div class="kdnest-cost-summary">
+            <span class="kdnest-cost-label">Total Cost</span>
+            <span class="kdnest-cost-breakdown">${lines.join(' + ')} = ${total.toLocaleString('en-US')} THB</span>
+          </div>`;
+  }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
   function _rectifyLastSheet() {
     S._rectPendingIdx = -1;            // reset each run (chooser hook reads this)
@@ -4597,6 +4659,7 @@
       sheetStock: (S.sheetStock || []).map(s => ({
         w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
         thickness: s.thickness ?? 1, label: s.label || '',
+        prc: s.prc || 0,   // per-sheet price (THB) — เอ๋ 2026-06-26
         enabled: s.enabled !== false,
       })),
       parts: (S.parts || []).map(_serializePart),
@@ -4831,6 +4894,8 @@
       S.sheetStock = job.sheetStock.map(s => ({
         w: s.w || 0, h: s.h || 0, qty: s.qty || 0,
         thickness: s.thickness ?? 1, label: s.label || '',
+        // old saves (no prc) → size default; user prices short-circuit. 2026-06-26
+        prc: (+s.prc || 0) || _getPriceDefault(s.w || 0, s.h || 0, s.label || ''),
         enabled: s.enabled !== false,   // old saved nests → default ON
       }));
     }
@@ -5670,6 +5735,8 @@
         <input type="number" data-i="${i}" data-k="qty"       value="${s.qty || 0}"               class="kdnest-stock-qty"   title="qty — use -1 for unlimited">
         <input type="number" data-i="${i}" data-k="thickness" value="${s.thickness ?? 1}" min="0" step="0.1" class="kdnest-stock-thick" title="Thickness (mm) — only parts of this thickness get nested onto this stock">
         <span class="kdnest-stock-thick-suffix">mm</span>
+        <input type="number" data-i="${i}" data-k="prc" value="${s.prc ?? _getPriceDefault(s.w, s.h, s.label)}" min="0" step="1" class="kdnest-stock-prc" title="Price per sheet (THB) — auto-set by size, override as needed. 8x4=2350, 10x4=2750, 10x5=3850. Custom=0">
+        <span class="kdnest-stock-prc-suffix">THB</span>
         <span class="kdnest-stock-label">${_esc(s.label || '')}</span>
       </div>`;
     }).join('');
@@ -5728,7 +5795,7 @@
           <div class="kdnest-stock">
             <div class="kdnest-stock-title">Sheet stock</div>
             ${sheetStockRows}
-          </div>
+          </div>${_renderCostSummary()}
           <div class="kdnest-actions">
             <button id="kdnest-run" class="kdnest-btn kdnest-btn-run"><svg class="kdnest-btn-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg> Run Nesting</button>
             ${nSheets
@@ -5883,7 +5950,7 @@
     });
     // Sheet-stock editors + ↑/↓ priority reorder. The packer walks the
     // stock list in order, so moving a row up = 'try this size first'.
-    S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty, .kdnest-stock-thick').forEach(el => {
+    S.rootEl.querySelectorAll('.kdnest-stock-dim, .kdnest-stock-qty, .kdnest-stock-thick, .kdnest-stock-prc').forEach(el => {
       el.addEventListener('change', e => {
         const i = parseInt(e.target.dataset.i, 10);
         const k = e.target.dataset.k;
@@ -5895,7 +5962,16 @@
               && S.sheetStock[i].h > 0 && S.sheetStock[i].label === '(custom)') {
             S.sheetStock[i].label = '';
           }
+          // When the size changes and the row still has no price, seed the
+          // size default (no clobber of a user-entered price). เอ๋ 2026-06-26.
+          if (k === 'w' || k === 'h') _applyPriceDefault(S.sheetStock[i]);
           _persistStock();
+          // PRC (or a size that changed the auto-price) shifts the total —
+          // re-render just the cost summary in place, no full _refreshView.
+          if (k === 'prc' || k === 'w' || k === 'h') {
+            const summaryEl = S.rootEl.querySelector('.kdnest-cost-summary');
+            if (summaryEl) summaryEl.outerHTML = _renderCostSummary();
+          }
         }
       });
     });
