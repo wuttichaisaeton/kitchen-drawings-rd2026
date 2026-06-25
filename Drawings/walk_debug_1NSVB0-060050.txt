@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-26T04:24:28.460984
+CC_Assembly walk debug — 2026-06-26T04:27:18.944712
 Project: 1NSVB0-060050
 Total occurrences visited: 1
 CAM-ALPF tagged components: 0
@@ -8,4 +8,4 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | SDTRIR-000000:1 (SDTRIR-000000)
+    0 | SM  |     | ALPF             | SDTRIL-000001:1 (SDTRIL-000001)
