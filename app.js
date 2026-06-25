@@ -3196,6 +3196,25 @@ async function _kdOpen3D(code, opts) {
     return '';
   };
 
+  // Hardware tag (เอ๋/Fusion contract 2026-06-26): CC_Export3D appends "__HW" to
+  // the node name of every NON-ALPF part (Blum hinges, legs, drawer slides …).
+  // ALPF sheet-metal nodes are untagged. Hardware must NOT explode (stays at its
+  // assembled base position) and renders WHITE so it reads apart from the
+  // hash-coloured ALPF parts. _extractPartLabel splits on the FIRST "__" so the
+  // trailing "__HW" never affects code extraction → fully backward-compatible:
+  // a GLB with zero "__HW" nodes behaves exactly as before (everything explodes,
+  // everything gets a hash colour).
+  const _kd3dIsHardware = (name) => typeof name === 'string' && name.includes('__HW');
+  // A unit's tag can sit on the unit node itself OR on any mesh in its subtree
+  // (Fusion tags the node it exports, which for a multi-mesh part is a child).
+  const _kd3dUnitIsHardware = (node) => {
+    if (!node) return false;
+    if (_kd3dIsHardware(node.name)) return true;
+    let found = false;
+    try { node.traverse(n => { if (!found && _kd3dIsHardware(n.name)) found = true; }); } catch (e) {}
+    return found;
+  };
+
   // Label text colour follows the CURRENT mode's background (เอ๋: black text on
   // a light bg, white text on a dark bg, regular weight). Mode→bg facts mirror
   // the per-mode CSS above: compcolor = light #f3f4f6; hidden/hiddenshade = dark
@@ -3977,6 +3996,14 @@ async function _kdOpen3D(code, opts) {
         || ((mesh.name && mesh.name.length) ? mesh.name
           : (mesh.parent && mesh.parent.name && mesh.parent !== threeScene && mesh.parent.name.length) ? mesh.parent.name
           : ('mesh-' + i));
+      // Hardware (__HW): white, not a hash hue. The tag may live on the mesh's
+      // own name OR on an ancestor (Fusion tags the node it exports; a multi-mesh
+      // part's child meshes inherit hardware-ness from that node). Walk up to
+      // catch both. ALPF parts have no __HW anywhere → unchanged hash colouring.
+      let isHW = _kd3dIsHardware(mesh.name);
+      for (let p = mesh.parent; !isHW && p && p !== threeScene; p = p.parent) {
+        if (_kd3dIsHardware(p.name)) isHW = true;
+      }
       let hsl = colorByOwner.get(ownerKey);
       if (!hsl) {
         const seed = _kd3dHashStr(ownerKey);
@@ -3991,7 +4018,10 @@ async function _kdOpen3D(code, opts) {
       const mats = Array.isArray(newMat) ? newMat : [newMat];
       for (const m of mats) {
         try {
-          if (m.color && m.color.setHSL) m.color.setHSL(hsl.h, hsl.s, hsl.l);
+          if (m.color) {
+            if (isHW && m.color.setRGB) m.color.setRGB(1, 1, 1);        // hardware = white
+            else if (m.color.setHSL) m.color.setHSL(hsl.h, hsl.s, hsl.l);
+          }
           if (m.emissive && m.emissive.setRGB) m.emissive.setRGB(0, 0, 0);
           if (typeof m.emissiveIntensity === 'number') m.emissiveIntensity = 0;
           if (typeof m.metalness === 'number') m.metalness = 0;
@@ -4060,6 +4090,14 @@ async function _kdOpen3D(code, opts) {
       // one-time scene edit → needs queueRender (below).
       const sel = _poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode;
       u.node.visible = !_poppedCode || sel;
+      // Hardware (__HW) parts never explode — pin them to their assembled base
+      // position so hinges/legs/slides stay mounted while the ALPF sheet metal
+      // flies out around them. Untagged ALPF units explode exactly as before.
+      if (_kd3dUnitIsHardware(u.node)) {
+        u.node.position.set(u.baseX, u.baseY, u.baseZ);
+        u.node.updateMatrix();
+        continue;
+      }
       const dx = (u.gx - explodeCenter.x) * factor;
       const dy = (u.gy - explodeCenter.y) * factor;
       const dz = (u.gz - explodeCenter.z) * factor;
