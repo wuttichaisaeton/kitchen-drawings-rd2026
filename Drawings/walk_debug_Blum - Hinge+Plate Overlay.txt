@@ -1,0 +1,15 @@
+CC_Assembly walk debug — 2026-06-25T18:28:42.604951
+Project: Blum - Hinge+Plate Overlay
+Total occurrences visited: 5
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | Blum - Plate v8:1 (Blum - Plate v8)
+    0 |     |     | Steel            | Hinge - Blum 75B1550 107deg v10:1 (Hinge - Blum 75B1550 107deg v10)
+    1 |     |     |                  | Cup:1 (Cup)
+    1 |     |     |                  | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
+    1 |     |     |                  | J2:1 (J2)

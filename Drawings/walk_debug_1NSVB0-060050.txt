@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-25T17:57:18.412716
+CC_Assembly walk debug — 2026-06-25T18:29:09.933614
 Project: 1NSVB0-060050
 Total occurrences visited: 59
 CAM-ALPF tagged components: 0
@@ -50,17 +50,17 @@ depth | SM | CAM | material         | display_name (component)
     0 | SM  |     | ALPF             | SHRUTH-060000 v3:1 (SHRUTH-060000 v3)
     0 | SM  |     | ALPF             | CVCTRI:1 (CVCTRI)
     0 |     |     |                  | Fitting:1 (Fitting)
-    1 |     |     |                  | Blum - Hinge+Plate Overlay v1:1 (Blum - Hinge+Plate Overlay v1)
-    2 |     |     | ALPF             | Blum - Plate v7:1 (Blum - Plate v7)
-    2 |     |     | Steel            | Hinge - Blum 75B1550 107deg v9:1 (Hinge - Blum 75B1550 107deg v9)
+    1 |     |     |                  | Blum - Hinge+Plate Overlay v2:1 (Blum - Hinge+Plate Overlay v2)
+    2 |     |     |                  | Blum - Plate v8:1 (Blum - Plate v8)
+    2 |     |     | Steel            | Hinge - Blum 75B1550 107deg v10:1 (Hinge - Blum 75B1550 107deg v10)
     3 |     |     |                  | Cup:1 (Cup)
-    3 |     |     | ALPF             | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
+    3 |     |     |                  | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
     3 |     |     |                  | J2:1 (J2)
-    1 |     |     |                  | Blum - Hinge+Plate Overlay v1:2 (Blum - Hinge+Plate Overlay v1)
-    2 |     |     | ALPF             | Blum - Plate v7:1 (Blum - Plate v7)
-    2 |     |     | Steel            | Hinge - Blum 75B1550 107deg v9:1 (Hinge - Blum 75B1550 107deg v9)
+    1 |     |     |                  | Blum - Hinge+Plate Overlay v2:2 (Blum - Hinge+Plate Overlay v2)
+    2 |     |     |                  | Blum - Plate v8:1 (Blum - Plate v8)
+    2 |     |     | Steel            | Hinge - Blum 75B1550 107deg v10:1 (Hinge - Blum 75B1550 107deg v10)
     3 |     |     |                  | Cup:1 (Cup)
-    3 |     |     | ALPF             | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
+    3 |     |     |                  | Hinge - Overlay #75B1550 by Blum:1 (Hinge - Overlay #75B1550 by Blum)
     3 |     |     |                  | J2:1 (J2)
     1 |     |     | Steel            | Elec - Lighting 12V Downlighr (Mano) v4:1 (Elec - Lighting 12V Downlighr (Mano) v4)
     0 |     |     |                  | DSV0TR-060050 v3:1 (DSV0TR-060050 v3)
