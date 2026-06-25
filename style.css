@@ -4853,6 +4853,41 @@ body.sb-fs-lock { overflow: hidden; }
 .kdnest-part-onsheet:hover:not(:disabled) { background: #243349; }
 .kdnest-part-view:disabled,
 .kdnest-part-onsheet:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Per-part orientation toggles — Rotate 180° (⟲180) + Mirror (⟷). Compact
+   pair sharing the row with 👁/📍; active = amber pressed state. (2026-06-26) */
+.kdnest-part-orient { display: inline-flex; gap: 2px; flex: 0 0 auto; }
+.kdnest-part-flip180,
+.kdnest-part-mirror {
+  background: #1c2735;
+  border: 1px solid #2a3a4f;
+  color: #cad6e6;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 20px;
+  cursor: pointer;
+  font-family: "Flux Architect", "Segoe UI Symbol", monospace;
+  white-space: nowrap;
+}
+.kdnest-part-flip180:hover:not(:disabled),
+.kdnest-part-mirror:hover:not(:disabled) { background: #243349; }
+.kdnest-part-flip180:disabled,
+.kdnest-part-mirror:disabled { opacity: 0.35; cursor: not-allowed; }
+/* Active (flag on) — Brushed-Steel + Amber accent so it reads as "pressed". */
+.kdnest-part-flip180.kdnest-orient-active,
+.kdnest-part-mirror.kdnest-orient-active {
+  background: rgba(242, 169, 59, 0.18);
+  border-color: #f2a93b;
+  color: #f2a93b;
+  font-weight: 600;
+}
+.kdnest-part-flip180.kdnest-orient-active:hover:not(:disabled),
+.kdnest-part-mirror.kdnest-orient-active:hover:not(:disabled) {
+  background: rgba(242, 169, 59, 0.28);
+}
+
 .kdnest-part-num { color: #889bb3; font-size: 11px; }
 .kdnest-part-code { font-family: "Flux Architect", monospace; }
 .kdnest-part input[type="number"],

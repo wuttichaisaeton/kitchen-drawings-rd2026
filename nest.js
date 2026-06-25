@@ -943,6 +943,7 @@
     S.projectKey = projectKey;
     S.projectName = project.name || projectKey;
     S.parts = [...byCode.values()].sort((a, b) => a.code.localeCompare(b.code));
+    _applyOrientFlagsToParts();   // FLIP180/MIRROR per-part flags from grain_rules
     // Multi-project nesting (เอ๋ board 76ebca5): provenance per part — which
     // project wants how many of this code. Fresh open = single source.
     S.mergedProjects = [projectKey];
@@ -1020,6 +1021,7 @@
       }
     }
     S.parts.sort((a, b) => a.code.localeCompare(b.code));
+    _applyOrientFlagsToParts();   // FLIP180/MIRROR per-part flags from grain_rules
     (S.mergedProjects = S.mergedProjects || [S.projectKey]).push(projectKey);
     // If cabinets are excluded, the merged contributions must respect that too
     // (a merged cabinet sharing a key with an OFF one keeps only the ON share).
@@ -1522,6 +1524,9 @@
       const _g = looked ? String(looked.grain || '').toUpperCase() : '';
       part.fixHeights = (_g === 'V') ? _fix : [];
       part.fixWidths  = (_g === 'H') ? _fix : [];
+      // Orientation flags (separate exact-code rows, stack on top of grain).
+      part.flip180 = _readPartFlip180(part.code);
+      part.mirror  = _readPartMirror(part.code);
     }
   }
   async function _saveGrainRows() {
@@ -1996,6 +2001,13 @@
     for (const row of rows) {
       const pattern = String(row.pattern || '').trim();
       if (!pattern) continue;
+      // FLIP180 / MIRROR rows are per-part ORIENTATION flags, not grain
+      // directions — they stack alongside the real grain rule for a code and
+      // are read separately (_readPartFlip180/_readPartMirror). Excluding them
+      // here keeps an exact-code FLIP180 row from shadowing the same code's
+      // H/V/ANY/EDGE grain rule in m.exact. (Rotate-180 + Mirror 2026-06-26)
+      const _g = String(row.grain || '').toUpperCase();
+      if (_g === 'FLIP180' || _g === 'MIRROR') continue;
       const value = { grain: String(row.grain || 'H').toUpperCase(), thickness: row.thickness || '', fix: row.fix || '',
                       angle: (row.angle == null || row.angle === '') ? null : Number(row.angle) };
       const starts = pattern.startsWith('*');
@@ -3361,6 +3373,151 @@
     };
   }
 
+  // ── MIRROR (left-right flip) geometry ───────────────────────────────
+  // Reflect geometry across the VERTICAL axis through the bbox centre
+  // (x → minX+maxX−x). This is a left-right flip that keeps the bbox
+  // dimensions identical (so w/h, the packer footprint, and the placement
+  // rotation logic are all untouched) while producing the chemically-
+  // opposite (handed) part — what เอ๋ needs when a panel was modelled for
+  // the wrong hand. The reflection is applied AFTER any EDGE pre-rotation,
+  // in the part's displayed frame, so preview == sheet == DXF identically.
+  // Grain stays HORIZONTAL after a left-right flip, so grain semantics are
+  // preserved (no V↔H swap). (Rotate-180 + Mirror feature 2026-06-26)
+  //
+  // CANONICAL TRANSFORM ORDER (used in preview, nesting, export):
+  //   1. EDGE pre-rotate (−grainAngle, re-bbox)   — chosen edge → horizontal
+  //   2. MIRROR (reflect x across current bbox)    — left-right flip
+  //   3. FLIP180 (placement rotation += 180)       — applied after packing
+  //
+  // Mirror reverses polygon winding (CCW↔CW). _polyArea uses Math.abs so it
+  // is winding-agnostic, and the canvas/DXF emitters just close the path —
+  // but to keep outer loops in a consistent CCW orientation (and so a future
+  // even-odd / nonzero fill never inverts), we REVERSE the point order of
+  // every loop after reflecting. A double mirror is therefore an exact
+  // identity (reflect + reverse, twice). (winding note 2026-06-26)
+  function _mirrorPts(pts, axisSum) {
+    if (!Array.isArray(pts)) return pts;
+    // reflect x then reverse order (restore winding sense)
+    return pts.map(p => [axisSum - p[0], p[1]]).reverse();
+  }
+  function _mirrorEntities(entities, axisSum) {
+    if (!Array.isArray(entities)) return entities;
+    const fx = x => axisSum - x;
+    return entities.map(d => {
+      if (!d) return d;
+      const k = d.kind;
+      // A reflection reverses arc/ellipse handedness: a point at angle θ on
+      // the original maps to (π−θ) on the mirror, and the CCW sweep reverses.
+      // Represent the swept arc as CCW from (π−a1) to (π−a0). Same maths as
+      // _entityToWcs's OCS-mirror branch — kept in lock-step.
+      if (k === 'CIRCLE') return { ...d, cx: fx(d.cx) };
+      if (k === 'ARC')    return { ...d, cx: fx(d.cx), a0: Math.PI - d.a1, a1: Math.PI - d.a0 };
+      if (k === 'LINE')   return { ...d, x0: fx(d.x0), x1: fx(d.x1) };
+      if (k === 'LWPOLYLINE') return { ...d, verts: (d.verts || []).map(v => ({ x: fx(v.x), y: v.y, bulge: -(v.bulge || 0) })) };
+      if (k === 'SPLINE') return { ...d,
+        ctrl: (d.ctrl || []).map(p => ({ x: fx(p.x), y: p.y })),
+        fit:  (d.fit  || []).map(p => ({ x: fx(p.x), y: p.y })) };
+      if (k === 'ELLIPSE') return { ...d, cx: fx(d.cx), mx: -d.mx };   // major-axis X-component flips
+      return d;
+    });
+  }
+  // Apply MIRROR to a {polys, bbox, w, h} geometry bundle (the output of
+  // _edgeRotatedGeom, or a freshly-built native bundle). Returns a NEW bundle
+  // with reflected polys/entities; bbox/w/h are unchanged (reflection about the
+  // bbox centre preserves extents). (Rotate-180 + Mirror 2026-06-26)
+  function _mirrorGeom(g) {
+    if (!g || !g.bbox) return g;
+    const [minX, , maxX] = g.bbox;
+    const axisSum = minX + maxX;
+    const src = g.polys || {};
+    return {
+      polys: {
+        outer: _mirrorPts(src.outer || [], axisSum),
+        holes: (src.holes || []).map(h => _mirrorPts(h, axisSum)),
+        strokes: (src.strokes || []).map(s => _mirrorPts(s, axisSum)),
+        entities: _mirrorEntities(src.entities || [], axisSum),
+      },
+      bbox: g.bbox.slice(),
+      w: g.w, h: g.h,
+    };
+  }
+  // Build the FULLY-ORIENTED geometry bundle for one part: EDGE pre-rotate
+  // (if any) → MIRROR (if part.mirror). The result feeds preview, nesting and
+  // export identically (single source of truth for the transform order). FLIP180
+  // is NOT applied here — it is a placement rotation (+180) added after packing.
+  // Returns null when the part has no usable geometry (manual rect, no DXF).
+  // Falsy flags → returns the native bundle, byte-for-byte the old behaviour.
+  // (Rotate-180 + Mirror 2026-06-26)
+  function _orientedGeom(p) {
+    if (!p || !p.polys || !p.bbox) return null;
+    const isEdge = (p.grain === 'EDGE' && p.grainAngle != null &&
+                    Number.isFinite(Number(p.grainAngle)));
+    let g;
+    if (isEdge) {
+      g = _edgeRotatedGeom(p);
+      if (!g || !(g.w > 0) || !(g.h > 0) || !g.bbox || !g.bbox.every(Number.isFinite)) g = null;
+    }
+    if (!g) {
+      // Native bundle (no EDGE rotation) — keep the part's own polys/bbox.
+      const [minX, minY, maxX, maxY] = p.bbox;
+      g = { polys: p.polys, bbox: p.bbox.slice(),
+            w: Math.round((maxX - minX) * 100) / 100,
+            h: Math.round((maxY - minY) * 100) / 100 };
+    }
+    if (p.mirror) g = _mirrorGeom(g);
+    return g;
+  }
+
+  // ── Rotate-180 + Mirror flag persistence (grain_rules rows) ─────────
+  // flip180 + mirror are per-part booleans persisted as their OWN exact-code
+  // grain_rules rows ({pattern: code, grain: 'FLIP180'|'MIRROR'}), STACKING
+  // alongside whatever H/V/ANY/EDGE rule the part already has. They are NOT
+  // returned by _lookupPattern (which yields one grain rule per code), so we
+  // scan S.grainRows directly. Backward-compatible: old data has no such rows
+  // → both flags read false. (Rotate-180 + Mirror feature 2026-06-26)
+  function _readPartFlip180(code) {
+    return (S.grainRows || []).some(r =>
+      String(r.pattern) === code && String(r.grain).toUpperCase() === 'FLIP180');
+  }
+  function _readPartMirror(code) {
+    return (S.grainRows || []).some(r =>
+      String(r.pattern) === code && String(r.grain).toUpperCase() === 'MIRROR');
+  }
+  // Apply the persisted FLIP180/MIRROR rows to every loaded part. Called after
+  // grain rows load/save so the in-memory flags track the shared rules.
+  function _applyOrientFlagsToParts() {
+    for (const part of (S.parts || [])) {
+      part.flip180 = _readPartFlip180(part.code);
+      part.mirror  = _readPartMirror(part.code);
+    }
+  }
+  // Toggle a part's flip180/mirror flag, persist it as an exact-code grain_rules
+  // row, then repaint the preview. Adds the row when turning ON, drops it when
+  // turning OFF. (Rotate-180 + Mirror feature 2026-06-26)
+  async function _setPartOrientFlag(part, which, on) {
+    if (!part) return;
+    if (!S.grainRows) { try { await _loadGrainRows(); } catch (_) { S.grainRows = S.grainRows || []; } }
+    const code = part.code;
+    const tag = (which === 'flip180') ? 'FLIP180' : 'MIRROR';
+    const has = (S.grainRows || []).find(r =>
+      String(r.pattern) === code && String(r.grain).toUpperCase() === tag);
+    if (on && !has) {
+      S.grainRows.push({ pattern: code, grain: tag, thickness: '', fix: '', angle: null });
+    } else if (!on && has) {
+      S.grainRows = S.grainRows.filter(r => r !== has);
+    }
+    if (which === 'flip180') part.flip180 = on; else part.mirror = on;
+    try { await _saveGrainRows(); } catch (e) { console.warn('[kdNest] orient flag save failed:', e); }
+  }
+  function _togglePartFlip180(part) {
+    if (!part) return;
+    return _setPartOrientFlag(part, 'flip180', !part.flip180).then(() => _setPreview(part.code));
+  }
+  function _togglePartMirror(part) {
+    if (!part) return;
+    return _setPartOrientFlag(part, 'mirror', !part.mirror).then(() => _setPreview(part.code));
+  }
+
   // ════════════════════════════════════════════════════════════════════
   //  Run Nesting
   // ════════════════════════════════════════════════════════════════════
@@ -3376,23 +3533,28 @@
       if (p.w <= 0 || p.h <= 0) continue;
       if (!p.bbox && !p.manual) continue;   // DXF parts need a parsed bbox; manual synth one
       const bbox = p.bbox || [0, 0, p.w, p.h];
-      // EDGE (angled grain): pre-rotate geometry so the chosen edge is
-      // horizontal, then nest it like an H part. Built once per part below; the
-      // pieces use the rotated polys/bbox/w/h. Non-EDGE parts are untouched.
+      // CANONICAL geometry: EDGE pre-rotate (chosen edge → horizontal) then
+      // MIRROR (left-right flip), built once per part via _orientedGeom. The
+      // pieces use the oriented polys/bbox/w/h. Parts with neither EDGE grain
+      // nor mirror get the native bundle byte-for-byte (unchanged behaviour).
+      // FLIP180 is NOT geometry — it's a placement rotation (+180) added after
+      // packing. (Rotate-180 + Mirror 2026-06-26)
       let isEdge = (p.grain === 'EDGE' && p.grainAngle != null &&
                     Number.isFinite(Number(p.grainAngle)) && p.polys);
-      let edge = null;
-      if (isEdge) {
-        edge = _edgeRotatedGeom(p);
-        // Defensive: if the rotation yields non-finite or non-positive dims (a
-        // degenerate / corrupt outline), DON'T feed bad dims to the packer —
-        // fall back to the part's own axis-aligned bbox + ANY rotations so the
-        // piece still nests instead of risking a stuck pack. (hardening 2026-06-25)
-        if (!edge || !(edge.w > 0) || !(edge.h > 0) ||
-            !Number.isFinite(edge.w) || !Number.isFinite(edge.h)) {
-          isEdge = false; edge = null;
-        }
+      let geom = _orientedGeom(p);   // EDGE + MIRROR applied; null if no geometry
+      // Defensive: a degenerate EDGE rotation yields non-finite/non-positive
+      // dims → fall back to native axis-aligned + ANY rots so the piece still
+      // nests instead of risking a stuck pack. (hardening 2026-06-25)
+      if (isEdge && (!geom || !(geom.w > 0) || !(geom.h > 0) ||
+                     !Number.isFinite(geom.w) || !Number.isFinite(geom.h))) {
+        isEdge = false;
+        geom = (p.mirror && p.polys) ? _mirrorGeom({ polys: p.polys, bbox: bbox.slice(),
+          w: p.w, h: p.h }) : null;
       }
+      const usePolys = geom ? geom.polys : p.polys;
+      const useBbox  = geom ? geom.bbox  : bbox;
+      const useW     = (geom && geom.w > 0) ? geom.w : p.w;
+      const useH     = (geom && geom.h > 0) ? geom.h : p.h;
       let rots = isEdge          ? [0, 180]
                : (p.grain === 'H') ? [0, 180]
                : (p.grain === 'V') ? [90, 270]
@@ -3414,11 +3576,11 @@
       for (let i = 0; i < p.qty; i++) {
         pieces.push({
           code: p.code,
-          w: isEdge ? edge.w : p.w,
-          h: isEdge ? edge.h : p.h,
+          w: useW,
+          h: useH,
           rots: rots,
-          polys: isEdge ? edge.polys : p.polys,
-          bbox: isEdge ? edge.bbox : bbox,
+          polys: usePolys,
+          bbox: useBbox,
           thickness: p.thickness,
           grain: String(p.grain || 'ANY').toUpperCase(),   // for remnant grain-fit gating
           // EDGE marker carried through pack→render→export. The geometry is
@@ -3426,6 +3588,10 @@
           // is here for grain-fit gating + future/debug reference. (2026-06-25)
           grainAngle: isEdge ? p.grainAngle : null,
           _origGrainAngle: isEdge ? p.grainAngle : null,
+          // Orientation flags carried for grain-fit gating + the post-pack
+          // FLIP180 placement-rotation pass below. (Rotate-180 + Mirror 2026-06-26)
+          flip180: !!p.flip180,
+          _mirrorActive: !!p.mirror,
         });
       }
     }
@@ -3561,6 +3727,17 @@
       }
       allUnplaced.push(...r.unplaced);
     }
+    // FLIP180 post-pack pass: rotate every flip180 placement by an extra 180°
+    // IN PLACE. A 180° turn never swaps the footprint w↔h, so the piece still
+    // fits the exact slot the packer chose — only its orientation flips. The
+    // placement transform (sheet draw + DXF export) reads pl.rot, so the cut
+    // part and the preview both reflect the flip. Stays in {0,90,180,270} (the
+    // four exact values transform() handles). (Rotate-180 + Mirror 2026-06-26)
+    for (const s of allSheets) {
+      for (const pl of (s.placements || [])) {
+        if (pl.flip180) pl.rot = (((pl.rot || 0) + 180) % 360 + 360) % 360;
+      }
+    }
     const result = { sheets: allSheets, unplaced: allUnplaced };
     S.flatSheets = result.sheets.map(s => ({
       thick: s.thick,
@@ -3669,9 +3846,13 @@
     // parts (rotAmt == null) this is identity: original outer, no offset.
     // (angled-grain preview 2026-06-26)
     const rotAmt = canvas._kdPreviewEdgeRot;            // grainAngle, or null
-    const usingRot = (rotAmt != null && Number.isFinite(Number(rotAmt)) && canvas._kdPreviewRotOuter);
-    const polys = usingRot ? { outer: canvas._kdPreviewRotOuter } : part.polys;
-    const angOffset = usingRot ? Number(rotAmt) : 0;    // rotated-screen → original angle
+    const mirrored = !!canvas._kdPreviewMirror;
+    // The DISPLAYED outer differs from part.polys.outer when EDGE-rotated AND/OR
+    // mirrored — use the stashed displayed outer in either case so the lines
+    // glue to the on-screen shape. (Rotate-180 + Mirror preview 2026-06-26)
+    const usingDisplayed = !!canvas._kdPreviewRotOuter && (rotAmt != null && Number.isFinite(Number(rotAmt)) || mirrored);
+    const polys = usingDisplayed ? { outer: canvas._kdPreviewRotOuter } : part.polys;
+    const angOffset = (rotAmt != null && Number.isFinite(Number(rotAmt))) ? Number(rotAmt) : 0;   // edge-rotated-screen → original angle
     if (typeof tx !== 'function' || !polys || !polys.outer || polys.outer.length < 2) return;
     const cssW = canvas.clientWidth, cssH = canvas.clientHeight;
     if (!(cssW > 0 && cssH > 0)) return;
@@ -3700,13 +3881,18 @@
       if (!a || !b) continue;
       const dxw = b[0] - a[0], dyw = b[1] - a[1];
       if (Math.hypot(dxw, dyw) < 1) continue;   // skip degenerate <1mm edge
-      // On-screen edge angle in the (possibly rotated) geometry, [0,180).
+      // On-screen edge angle in the (possibly rotated / mirrored) geometry, [0,180).
       let screenAng = Math.atan2(dyw, dxw) * 180 / Math.PI;
       screenAng = ((screenAng % 180) + 180) % 180;
-      // ORIGINAL absolute angle = screen angle + rotation we applied (angOffset).
-      // This is the value stored as the new grainAngle so re-rotating makes THIS
-      // edge horizontal. For non-EDGE parts angOffset=0 → ang === screenAng.
-      const ang = (((screenAng + angOffset) % 180) + 180) % 180;
+      // ORIGINAL absolute angle. The displayed shape = reflect_x(rotate(orig,
+      // −grainAngle)) under the canonical order (EDGE then MIRROR). To recover
+      // the original angle we undo each step: a left-right reflection maps a
+      // line at angle θ to 180−θ, so un-reflect first (screen → 180−screen when
+      // mirrored), THEN add back the EDGE rotation (angOffset = grainAngle).
+      // For a plain part (no rot, no mirror) this is identity. (Rotate-180 +
+      // Mirror preview 2026-06-26)
+      const unMir = mirrored ? (180 - screenAng) : screenAng;
+      const ang = (((unMir + angOffset) % 180) + 180) % 180;
       const [x0, y0] = tx(a[0], a[1]);
       const [x1, y1] = tx(b[0], b[1]);
       // Selected edge = the one whose ORIGINAL angle equals the stored grain
@@ -3786,8 +3972,21 @@
         _edgeGeom = null;
       }
     }
-    const polys = _edgeGeom ? _edgeGeom.polys : (part && part.polys);
-    const bbox = _edgeGeom ? _edgeGeom.bbox : (part && part.bbox);
+    // MIRROR (left-right flip): reflect the geometry AFTER EDGE pre-rotation, in
+    // the displayed frame — the SAME canonical order the nester uses, so the
+    // preview is byte-for-byte the cut part. Reflection about the bbox centre
+    // keeps the extents identical. Non-mirror parts are untouched. (Rotate-180 +
+    // Mirror preview 2026-06-26)
+    let _baseGeom = _edgeGeom;
+    if (part && part.mirror && (part.polys || _edgeGeom)) {
+      const _src = _edgeGeom || {
+        polys: part.polys, bbox: part.bbox && part.bbox.slice(),
+        w: part.w, h: part.h,
+      };
+      if (_src.bbox) _baseGeom = _mirrorGeom(_src);
+    }
+    const polys = _baseGeom ? _baseGeom.polys : (part && part.polys);
+    const bbox = _baseGeom ? _baseGeom.bbox : (part && part.bbox);
     if (!polys || !bbox) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -3820,11 +4019,22 @@
         else if (part.fixWidths.some(v => Math.abs(ph - v) <= tol)) grot = 90;
       }
     }
+    // FLIP180: add 180° to the preview rotation — the SAME +180 the nester adds
+    // to the placement, so the preview matches the cut part. 0→180, 90→270.
+    // A 180° turn never swaps w↔h, so the footprint dims (fw/fh) are unchanged.
+    // (Rotate-180 + Mirror preview 2026-06-26)
+    if (part && part.flip180) grot = (grot + 180) % 360;
     const mapPt = (x, y) => {
       const u = x - minX, v = y - minY;
-      return (grot === 90) ? [-v + ph0, u] : [u, v];
+      // Match the engine/export placement transform()'s linear part for all four
+      // exact rotations (0/90/180/270) so preview == sheet == DXF.
+      if (grot === 90)  return [-v + ph0, u];
+      if (grot === 180) return [pw0 - u, ph0 - v];
+      if (grot === 270) return [v, pw0 - u];
+      return [u, v];
     };
-    const fw = (grot === 90) ? ph0 : pw0, fh = (grot === 90) ? pw0 : ph0;
+    const fw = (grot === 90 || grot === 270) ? ph0 : pw0;
+    const fh = (grot === 90 || grot === 270) ? pw0 : ph0;
     // Padding around the part. The DXF preview modal passes a small pad so the
     // canvas hugs the silhouette and the download button sits right against it
     // (เอ๋ 2026-06-01 'ปุ่มดาวน์โหลดให้อยู่ชิด Part เลย'); the Nest workspace
@@ -3911,7 +4121,12 @@
     // mapping clicks back to ORIGINAL angles (= on-screen angle + grainAngle).
     // (angled-grain preview 2026-06-26)
     canvas._kdPreviewEdgeRot = _edgeGeom ? part.grainAngle : null;
-    canvas._kdPreviewRotOuter = _edgeGeom ? polys.outer : null;
+    // Use the DISPLAYED outer (EDGE-rotated AND/OR mirrored) so the clickable
+    // <line>s glue to the shape on screen. The mirror flag lets the overlay
+    // reflect each clicked edge's angle back to ORIGINAL space (a reflection
+    // maps screen angle α → 180−α). (Rotate-180 + Mirror preview 2026-06-26)
+    canvas._kdPreviewRotOuter = (_edgeGeom || (part && part.mirror)) ? polys.outer : null;
+    canvas._kdPreviewMirror = !!(part && part.mirror);
   }
 
   // EDGE overlay click → lock this part's grain parallel to the clicked edge.
@@ -5294,6 +5509,10 @@
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
           <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set yet — pick H/V if it matters · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
+          <span class="kdnest-part-orient">
+            <button class="kdnest-part-flip180${p.flip180 ? ' kdnest-orient-active' : ''}" title="Rotate 180° — flip this part's orientation (preview + nest + cut DXF)" ${p.manual ? 'disabled' : ''} data-flip180>⟲180</button>
+            <button class="kdnest-part-mirror${p.mirror ? ' kdnest-orient-active' : ''}" title="Mirror horizontally — left-right flip (makes the opposite-hand part; preview + nest + cut DXF)" ${(p.manual || !p.polys) ? 'disabled' : ''} data-mirror>⟷</button>
+          </span>
           <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>
           ${status}
         </div>`;
@@ -5678,6 +5897,17 @@
       // flips through parts; a sheet ‹/› or Run Nesting returns to the nest.
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
         _setPreview(part.code);
+      });
+      // ⟲180 / ⟷ — per-part orientation toggles. Each flips a persisted flag
+      // (FLIP180 / MIRROR exact-code grain_rules row), repaints the preview, and
+      // is honored by both nesting and DXF export so the cut part matches what
+      // the worker sees. Previews the part on toggle so the change is visible.
+      // (Rotate-180 + Mirror feature 2026-06-26)
+      row.querySelector('.kdnest-part-flip180')?.addEventListener('click', () => {
+        S.previewCode = part.code; _togglePartFlip180(part);
+      });
+      row.querySelector('.kdnest-part-mirror')?.addEventListener('click', () => {
+        S.previewCode = part.code; _togglePartMirror(part);
       });
       // ⚠ (no DXF) → open the part in Fusion via the :8765 bridge. Reuses
       // app.js's _routeLeafToFusion (kdAPI.routeLeaf): bridge open + "Opening

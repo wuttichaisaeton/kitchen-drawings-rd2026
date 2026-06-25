@@ -265,3 +265,163 @@ test('re-clicking a different edge updates grainAngle consistently', () => {
   // And the grain genuinely changed direction (g1 ≠ g2).
   assert.ok(Math.abs(g1 - g2) > 1, 'grainAngle changed between clicks');
 });
+
+// ── ROTATE-180 + MIRROR (per-part orientation) ──────────────────────────
+// Faithful copies of the mirror helpers from nest.js (_mirrorPts /
+// _mirrorEntities / _mirrorGeom) + the canonical transform-order facts the
+// engine, preview and export all share. These guard:
+//   • mirror twice = exact identity (reflect+reverse is an involution)
+//   • flip180 twice = identity (placement rotation, mod 360)
+//   • mirror reflects outer/holes/strokes AND entity coords (CIRCLE/ARC/LINE)
+//   • mirror preserves bbox extents (w/h unchanged → packer footprint unchanged)
+//   • mirror keeps polygon AREA positive (winding flips CW↔CCW but area magnitude
+//     is preserved — _polyArea is winding-agnostic via Math.abs)
+// (Rotate-180 + Mirror feature 2026-06-26)
+function _mirrorPts(pts, axisSum) {
+  if (!Array.isArray(pts)) return pts;
+  return pts.map(p => [axisSum - p[0], p[1]]).reverse();
+}
+function _mirrorEntities(entities, axisSum) {
+  if (!Array.isArray(entities)) return entities;
+  const fx = x => axisSum - x;
+  return entities.map(d => {
+    if (!d) return d;
+    const k = d.kind;
+    if (k === 'CIRCLE') return { ...d, cx: fx(d.cx) };
+    if (k === 'ARC')    return { ...d, cx: fx(d.cx), a0: Math.PI - d.a1, a1: Math.PI - d.a0 };
+    if (k === 'LINE')   return { ...d, x0: fx(d.x0), x1: fx(d.x1) };
+    if (k === 'LWPOLYLINE') return { ...d, verts: (d.verts || []).map(v => ({ x: fx(v.x), y: v.y, bulge: -(v.bulge || 0) })) };
+    if (k === 'SPLINE') return { ...d,
+      ctrl: (d.ctrl || []).map(p => ({ x: fx(p.x), y: p.y })),
+      fit:  (d.fit  || []).map(p => ({ x: fx(p.x), y: p.y })) };
+    if (k === 'ELLIPSE') return { ...d, cx: fx(d.cx), mx: -d.mx };
+    return d;
+  });
+}
+function _mirrorGeom(g) {
+  if (!g || !g.bbox) return g;
+  const [minX, , maxX] = g.bbox;
+  const axisSum = minX + maxX;
+  const src = g.polys || {};
+  return {
+    polys: {
+      outer: _mirrorPts(src.outer || [], axisSum),
+      holes: (src.holes || []).map(h => _mirrorPts(h, axisSum)),
+      strokes: (src.strokes || []).map(s => _mirrorPts(s, axisSum)),
+      entities: _mirrorEntities(src.entities || [], axisSum),
+    },
+    bbox: g.bbox.slice(),
+    w: g.w, h: g.h,
+  };
+}
+function _polyAreaSigned(pts) {   // SIGNED shoelace (sign = winding)
+  let a = 0;
+  for (let i = 0, n = pts.length; i < n; i++) {
+    const [x1, y1] = pts[i], [x2, y2] = pts[(i + 1) % n];
+    a += x1 * y2 - x2 * y1;
+  }
+  return a / 2;
+}
+function geomOf() {
+  // An L-ish concave part with a hole + a couple of true entities.
+  return {
+    polys: {
+      outer: [[0, 0], [600, 0], [600, 200], [300, 200], [300, 400], [0, 400], [0, 0]],
+      holes: [[[50, 50], [120, 50], [120, 120], [50, 120], [50, 50]]],
+      strokes: [],
+      entities: [
+        { kind: 'CIRCLE', cx: 500, cy: 100, r: 20 },
+        { kind: 'LINE', x0: 10, y0: 10, x1: 590, y1: 10 },
+        { kind: 'ARC', cx: 400, cy: 300, r: 30, a0: 0, a1: Math.PI / 2 },
+      ],
+    },
+    bbox: [0, 0, 600, 400], w: 600, h: 400,
+  };
+}
+
+test('mirror twice = exact identity (outer/holes coords restored)', () => {
+  const g = geomOf();
+  const once = _mirrorGeom(g);
+  const twice = _mirrorGeom(once);
+  for (let i = 0; i < g.polys.outer.length; i++) {
+    assert.ok(Math.abs(twice.polys.outer[i][0] - g.polys.outer[i][0]) < 1e-9, `outer[${i}].x restored`);
+    assert.ok(Math.abs(twice.polys.outer[i][1] - g.polys.outer[i][1]) < 1e-9, `outer[${i}].y restored`);
+  }
+  for (let i = 0; i < g.polys.holes[0].length; i++) {
+    assert.ok(Math.abs(twice.polys.holes[0][i][0] - g.polys.holes[0][i][0]) < 1e-9, `hole[${i}].x restored`);
+  }
+});
+
+test('mirror twice = identity for entities (CIRCLE/LINE/ARC)', () => {
+  const g = geomOf();
+  const twice = _mirrorGeom(_mirrorGeom(g));
+  const e0 = g.polys.entities, e2 = twice.polys.entities;
+  assert.ok(Math.abs(e2[0].cx - e0[0].cx) < 1e-9, 'CIRCLE cx restored');
+  assert.ok(Math.abs(e2[1].x0 - e0[1].x0) < 1e-9 && Math.abs(e2[1].x1 - e0[1].x1) < 1e-9, 'LINE x restored');
+  // ARC: a0/a1 are remapped to π−a1 / π−a0 each pass; two passes restore the sweep.
+  const norm = a => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+  assert.ok(Math.abs(norm(e2[2].a0) - norm(e0[2].a0)) < 1e-9, 'ARC a0 restored');
+  assert.ok(Math.abs(norm(e2[2].a1) - norm(e0[2].a1)) < 1e-9, 'ARC a1 restored');
+  assert.ok(Math.abs(e2[2].cx - e0[2].cx) < 1e-9, 'ARC cx restored');
+});
+
+test('mirror reflects coords across the bbox vertical centre', () => {
+  const g = geomOf();
+  const m = _mirrorGeom(g);
+  const axisSum = g.bbox[0] + g.bbox[2];   // 600
+  // Every outer point's x must be axisSum − origX (order reversed, so match by set).
+  const origXs = g.polys.outer.map(p => p[0]).sort((a, b) => a - b);
+  const mirXs = m.polys.outer.map(p => axisSum - p[0]).sort((a, b) => a - b);
+  for (let i = 0; i < origXs.length; i++) {
+    assert.ok(Math.abs(mirXs[i] - origXs[i]) < 1e-9, 'reflected x set matches original');
+  }
+  // A CIRCLE at cx=500 reflects to 600−500 = 100.
+  assert.ok(Math.abs(m.polys.entities[0].cx - 100) < 1e-9, 'CIRCLE cx reflected to 100');
+});
+
+test('mirror preserves bbox extents → packer footprint (w/h) unchanged', () => {
+  const g = geomOf();
+  const m = _mirrorGeom(g);
+  assert.deepEqual(m.bbox, g.bbox, 'bbox unchanged by reflection-about-centre');
+  assert.equal(m.w, g.w, 'w unchanged');
+  assert.equal(m.h, g.h, 'h unchanged');
+});
+
+test('mirror flips winding but preserves area magnitude (DXF stays valid)', () => {
+  const g = geomOf();
+  const m = _mirrorGeom(g);
+  const a0 = _polyAreaSigned(g.polys.outer);
+  const a1 = _polyAreaSigned(m.polys.outer);
+  assert.ok(Math.abs(Math.abs(a0) - Math.abs(a1)) < 1e-6, 'area magnitude preserved');
+  assert.ok(Math.sign(a0) !== 0 && Math.abs(a1) > 0, 'non-degenerate area both ways');
+});
+
+test('flip180 twice = identity (placement rotation, mod 360)', () => {
+  const flip = r => (((r || 0) + 180) % 360 + 360) % 360;
+  for (const r of [0, 90, 180, 270]) {
+    assert.equal(flip(flip(r)), r, `flip180 twice on rot ${r} = identity`);
+    assert.ok([0, 90, 180, 270].includes(flip(r)), `flip180(${r}) stays an exact quarter-turn`);
+  }
+  assert.equal(flip(0), 180, '0→180');
+  assert.equal(flip(90), 270, '90→270');
+});
+
+test('canonical order: EDGE pre-rotate THEN mirror keeps grain horizontal', () => {
+  // An EDGE part pre-rotated to horizontal, then mirrored: the (now horizontal)
+  // chosen edge must STAY horizontal after a left-right flip (grain semantics).
+  const part = {
+    grain: 'EDGE',
+    polys: { outer: [[0, 0], [600, 0], [0, 400], [0, 0]], holes: [], strokes: [] },
+    bbox: [0, 0, 600, 400],
+  };
+  part.grainAngle = edgeAngleDeg([600, 0], [0, 400]);   // the hypotenuse
+  const edge = _edgeRotatedGeom(part);
+  // Build a bundle for the mirror helper (it needs polys + bbox).
+  const rotOuter = _rotatePoly(part.polys.outer, part.grainAngle);
+  const bundle = { polys: { outer: rotOuter, holes: [], strokes: [], entities: [] }, bbox: edge.bbox, w: edge.w, h: edge.h };
+  const mir = _mirrorGeom(bundle);
+  // The chosen edge was rotOuter[1]->rotOuter[2] (now horizontal). After mirror
+  // + reverse, it maps to some pair; assert SOME edge is still horizontal.
+  const horiz = edgeAnglesOf(mir.polys.outer).filter(a => Math.min(a, 180 - a) < 0.01).length;
+  assert.ok(horiz >= 1, 'a horizontal edge survives the mirror (grain stays horizontal)');
+});
