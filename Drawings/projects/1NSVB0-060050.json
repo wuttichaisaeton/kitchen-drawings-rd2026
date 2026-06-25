@@ -2,12 +2,12 @@
   "name": "1NSVB0-060050",
   "status": "active",
   "created_at": "2026-06-24T08:47:49.052876+00:00",
-  "updated_at": "2026-06-25T21:27:18.945100+00:00",
+  "updated_at": "2026-06-25T21:32:44.638835+00:00",
   "total_unique_parts": 1,
   "total_qty": 1,
   "parts": [
     {
-      "code": "SDTRIL-000001",
+      "code": "TOPTRI-000000",
       "qty": 1,
       "family": "Other",
       "urn": "urn:adsk.wipprod:dm.lineage:qiUbpFciRRSHcTECHFnVwA"
