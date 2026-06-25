@@ -5941,16 +5941,24 @@
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
         _setPreview(part.code);
       });
-      // ⟲180 / ⟷ — per-part orientation toggles. Each flips the LIVE flag on this
-      // part object + repaints the preview IMMEDIATELY (no reload), then persists
-      // the FLIP180 / MIRROR exact-code grain_rules row in the background. The
-      // flipped flag is honored by both nesting and DXF export so the cut part
-      // matches what the worker sees. (Rotate-180 + Mirror feature 2026-06-26)
+      // ⟲180 / ⟷ — per-part orientation toggles. Each flips the LIVE flag on THIS
+      // row's part object + makes it the previewed part + repaints IMMEDIATELY (no
+      // reload), then persists the FLIP180 / MIRROR exact-code grain_rules row in
+      // the background. The flipped flag is honored by both nesting and DXF export
+      // so the cut part matches what the worker sees. (Rotate-180 + Mirror 2026-06-26)
+      //
+      // Resolve the target by the row's LIVE data-code at click time — NOT only the
+      // closure `part` — so the button can never act on a stale/other part even if
+      // S.parts was re-ordered between render and click. _toggleOrientFlag then pins
+      // S.previewCode to this same code, so the canvas stays on (or switches to) the
+      // toggled part and the active class tracks it. (live wrong-part hardening 2026-06-26)
+      const _orientTarget = () =>
+        S.parts.find(p => p.code === row.dataset.code) || part;
       row.querySelector('.kdnest-part-flip180')?.addEventListener('click', () => {
-        _togglePartFlip180(part);
+        _togglePartFlip180(_orientTarget());
       });
       row.querySelector('.kdnest-part-mirror')?.addEventListener('click', () => {
-        _togglePartMirror(part);
+        _togglePartMirror(_orientTarget());
       });
       // ⚠ (no DXF) → open the part in Fusion via the :8765 bridge. Reuses
       // app.js's _routeLeafToFusion (kdAPI.routeLeaf): bridge open + "Opening
@@ -6292,6 +6300,14 @@
     _test: {
       applyOrientFlag: _applyOrientFlag,
       orientedGeom: _orientedGeom,
+      // DOM-level harness hooks (test-only). Let a jsdom test drive the REAL
+      // click path: seed S, render+wire the real handlers, then dispatch a real
+      // 'click' on the ⟲180 / ⟷ buttons and assert the previewed part (not some
+      // other part) gets the flag + the preview stays put + the button's active
+      // class tracks the previewed part. (live orient-button fix 2026-06-26)
+      state: () => S,
+      refreshView: _refreshView,
+      setPreview: _setPreview,
     },
   };
 })();
