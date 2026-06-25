@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-24T16:29:11.036129
+CC_Assembly walk debug — 2026-06-26T06:13:00.280040
 Project: FN0FL3-080058
 Total occurrences visited: 41
 CAM-ALPF tagged components: 0
@@ -10,7 +10,7 @@ depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 |     |     |                  | FN1BLA-080000 v9:1 (FN1BLA-080000 v9)
     1 | SM  |     | ALPF             | FN1BLA-120000:1 (FN1BLA-120000)
-    0 | SM  |     | ALPF             | FN0F00-080540 v5:1 (FN0F00-080540 v5)
+    0 | SM  |     | ALPF             | FN0F00-080540 v6:1 (FN0F00-080540 v6)
     0 |     |     |                  | FN2BNX-080000 v10:2 (FN2BNX-080000 v10)
     1 | SM  |     | ALPF             | FN2BNX-080000:1 (FN2BNX-080000)
     0 |     |     |                  | FN2BNX-080000 v10:3 (FN2BNX-080000 v10)
