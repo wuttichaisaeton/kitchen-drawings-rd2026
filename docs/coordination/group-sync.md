@@ -8724,3 +8724,11 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **หมายเหตุ:** session อื่น commit common-line feature (fa2806f) แล้ว — nest.js clean, แก้ของผม 2 บรรทัดล้วน ไม่พันกัน.
 **VERIFY:** syntax+logic ✓ (_theme อ่าน data-theme; ios→#eef1f6). Pixel = เอ๋เปิด grain-edge ดู (canvas ต้อง load part — preview navigate หนัก). ถ้า grain line/contrast เพี้ยนบนพื้นสว่างบอกได้ จะเพิ่ม ios INK/MUTED.
 -- WEB
+
+### WEB · 2026-06-26 · nest: sheet labels = ดำ ในธีม iOS (อ่านออกบนพื้นสว่าง)
+เอ๋: "theme นี้ให้ตัวอักษรสีดำ" (ต่อจาก bg สว่าง — label `_lblNorm` ตก ELSE = `#e8eef5` near-white → จางบนพื้น iOS).
+**ROOT:** label ink theme-aware (sketch ดำ/obsidian/default light) แต่ไม่มี `ios` → ตก default light. (comment อ้างคำขอเดิม sketch 2026-05-31 'theme pencil ให้ตัวอักษรเป็นสีดำ' — เคสเดียวกัน).
+**FIX:** เพิ่ม `ios` branch: `_lblNorm`→`#1d1d1f`, `_lblHot`→`#000000` (nest.js:5111-5114) + REMNANT text `ios`→`#0a7a5f` (dark green อ่านออก, คงสี remnant) (nest.js:5097). `node --check` ✓, diff = 3 บรรทัดล้วน.
+**หมายเหตุ:** session อื่นมี WIP 1 บรรทัด (rasterMask export hook) — stash/commit/pop แยกของผมออก ไม่กระทบ.
+**VERIFY:** syntax+logic ✓. Pixel = เอ๋ดู sheet (canvas render หนัก). ถ้ายังเพี้ยนบอกได้.
+-- WEB

@@ -5094,7 +5094,7 @@
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(78,204,163,0.10)';
       ctx.fillRect(rx, ry, rw, rh);
-      ctx.fillStyle = '#4ecca3';
+      ctx.fillStyle = (_stheme === 'ios') ? '#0a7a5f' : '#4ecca3';   // dark green = readable on the light iOS sheet
       ctx.font = (12 * (window.devicePixelRatio || 1)) + 'px "Flux Architect", monospace';
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText('REMNANT ' + Math.round(rr.w) + '×' + Math.round(rr.h), rx + 6, ry + 6);
@@ -5109,8 +5109,10 @@
     // invisible, so use near-black ink. chalk/default sheets are dark → keep
     // the light ink. (user 2026-05-31 'theme pencil ให้ตัวอีกษรเป็นสีดำ')
     const _lblNorm = _stheme === 'sketch' ? '#1a1f26'
+      : _stheme === 'ios' ? '#1d1d1f'
       : _stheme === 'obsidian' ? '#e5c158' : '#e8eef5';
     const _lblHot  = _stheme === 'sketch' ? '#000000'
+      : _stheme === 'ios' ? '#000000'
       : _stheme === 'obsidian' ? '#ffffff' : '#fffce8';
     labels.forEach(function (L) {
       L.fp = (L.fits ? 11 : 9) * dpr;
