@@ -1,0 +1,69 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = 04 Ruth
+target_kind       = project
+walk_bodies       = 456
+main_glb_bytes    = 11563432
+main_nodes        = 420
+main_stl_bytes    = 47631480
+dropped_bodies    = 36 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = BK1DN1-080000 v31__Body1 @ (413.0, 546.0, 500.0)
+node_world_mm[1] = BXXTR0-000000__Body1 @ (22.0, 563.0, 127.0)
+node_world_mm[2] = BXXTR0-000000__Body1 @ (804.0, 563.0, 127.0)
+--- main helper subprocess output ---
+44
+OK L__Cut-L_1___HW_4 24/44
+OK L__Cut-L_2___HW_4 24/44
+OK L__Body__HW_4 728/1512
+OK Slide-R__Rail_1___HW_2 46/88
+OK Slide-R__C-Side-R__HW_4 232/476
+OK Slide-R__Bracket_1___HW_4 196/396
+OK Slide-R__Back_1___HW_2 208/432
+OK Slide-R__Rail_5___HW_2 162/316
+OK Slide-R__Rail_6___HW_2 384/764
+OK Slide-R__Rail_7___HW_2 53/102
+OK Slide-R__Logo__HW_4 624/1244
+OK Slide-R__Slide__HW_4 243/486
+OK Slide-R__Rail_1_1___HW_2 98/192
+OK R__Cut-R_2___HW_4 24/44
+OK R__Cut-R_3___HW_4 24/44
+OK R__Cut-R__HW_4 24/44
+OK R__Body__HW_4 728/1512
+OK R__Cut-R_1___HW_4 24/44
+OK DSV2B3-060031-Ruth_v2__Body1 712/1444
+OK DSV100-060030-Ruth_v3__Body4 1273/2542
+OK SHRUTH-060000_v3__Body1 2364/4876
+OK SHRUTH-060000_v3__Body6 11698/23392
+OK SHRUTH-060000_v3__Body7 4493/8982
+OK CVCTRI__Body1 604/1220
+OK Blum_-_Plate_v8__Body1__HW 1768/3536
+OK Blum_-_Plate_v8__Body5__HW 509/1022
+OK Blum_-_Plate_v8__Body7__HW 1768/3536
+OK Cup__Body1__HW 7529/15074
+OK Hinge_-_Overlay_75B1550_by_Blum__Body1__HW 447/898
+OK J2__Body1__HW 470/944
+OK Hinge_-_Blum_75B1550_107deg_v10__Body1__HW 311/622
+OK Hinge_-_Blum_75B1550_107deg_v10__Body2__HW 2291/4594
+OK Blum_-_Plate_v8__Body1__HW_2 1768/3536
+OK Blum_-_Plate_v8__Body5__HW_2 509/1022
+OK Blum_-_Plate_v8__Body7__HW_2 1768/3536
+OK Cup__Body1__HW_2 7529/15074
+OK Hinge_-_Overlay_75B1550_by_Blum__Body1__HW_2 447/898
+OK J2__Body1__HW_2 470/944
+OK Hinge_-_Blum_75B1550_107deg_v10__Body1__HW_2 311/622
+OK Hinge_-_Blum_75B1550_107deg_v10__Body2__HW_2 2291/4594
+OK Elec_-_Lighting_12V_Downlighr_Mano_v4__Body1__HW 398/792
+OK Elec_-_Lighting_12V_Downlighr_Mano_v4__Body3__HW 374/744
+OK DSV1TR-060050_v5__Body42 1350/2696
+OK DSV2TR-060050_v3__Body1 791/1602
+OK SDTRIR-000002__Body1 532/1092
+OK 1CVDVL-006010_v1__Body1 1140/2340
+OK BTHLSR-140000_v2__Body1 5282/10684
+OK BTHLSR-140000_v2__Body2 18550/37096
+OK BTHLSR-140000_v2__Body3 9559/19114
+OK FT2100-000000_v2__Body1 2512/5036
+OK MR__Body1__HW 8/12
+OK BS10__Body1 525/1046
+ORPHAN_SUMMARY median=595.8 threshold=1787.3 count=0/420
+GLB 11563432 420

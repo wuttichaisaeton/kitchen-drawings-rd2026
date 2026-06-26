@@ -1,0 +1,15 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = 1CVDVL-006010
+target_kind       = part
+walk_bodies       = 1
+main_glb_bytes    = 42668
+main_nodes        = 1
+main_stl_bytes    = 117084
+dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = 1CVDVL-006010 v1__Body1 @ (0.0, 0.0, 0.0)
+--- main helper subprocess output ---
+OK 1CVDVL-006010_v1__Body1 1140/2340
+ORPHAN_SUMMARY skipped (only 1 nodes)
+GLB 42668 1

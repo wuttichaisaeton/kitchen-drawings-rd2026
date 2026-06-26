@@ -1,6 +1,6 @@
 CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 1NSVB0-060050
-target_kind       = root
+target_kind       = cabinet
 walk_bodies       = 123
 main_glb_bytes    = 2813208
 main_nodes        = 101
