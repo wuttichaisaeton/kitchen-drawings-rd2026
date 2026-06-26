@@ -7769,3 +7769,236 @@ html[data-theme="chalk"] .kdnest-part {
   border: none !important;
   box-shadow: none !important;
 }
+
+/* ════════════════════════════════════════════════════════════════════
+   iOS THEME (เอ๋ 2026-06-26, ref apple.com/os) — clean Apple light design.
+   San Francisco system font on a #f5f5f7 page with white cards, #1d1d1f
+   ink, #0071e3 Apple-blue accent, hairline #d2d2d7 separators, soft
+   shadows, rounded corners, a frosted "Liquid Glass" header. Same
+   technique as the other themes: vars then a blanket reset then repaint
+   surfaces. The blanket reset font-family swap turns Flux into SF
+   EVERYWHERE (เอ๋ "เปลี่ยน fonts ให้เป็นแบบนี้"). Scoped to data-theme=ios.
+   ════════════════════════════════════════════════════════════════════ */
+html[data-theme="ios"] {
+  --ios-bg:        #f5f5f7;
+  --ios-card:      #ffffff;
+  --ios-ink:       #1d1d1f;
+  --ios-soft:      #86868b;
+  --ios-line:      #d2d2d7;
+  --ios-blue:      #0071e3;
+  --ios-radius:    14px;
+  --ios-radius-sm: 10px;
+  --ios-shadow:    0 2px 10px rgba(0,0,0,0.08);
+  --ios-font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+}
+
+html[data-theme="ios"] body,
+html[data-theme="ios"] #root,
+html[data-theme="ios"] main {
+  background-color: var(--ios-bg) !important;
+  background-image: none !important;
+  color: var(--ios-ink) !important;
+  font-family: var(--ios-font) !important;
+}
+
+/* Blanket reset — flatten dark fills/glows, set ink + the SF font on every
+   element (the font swap), keep art + mask-icons untouched. */
+html[data-theme="ios"] body *:not(svg):not(svg *):not(img):not([class*="icon"]) {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--ios-ink) !important;
+  border-color: var(--ios-line) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  -webkit-text-stroke: 0 !important;
+  font-family: var(--ios-font) !important;
+}
+
+/* Frosted "Liquid Glass" header + footer — translucent white with blur. */
+html[data-theme="ios"] header {
+  background-color: rgba(255,255,255,0.72) !important;
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--ios-line) !important;
+}
+html[data-theme="ios"] footer {
+  background-color: rgba(255,255,255,0.85) !important;
+  border-top: 1px solid var(--ios-line) !important;
+}
+html[data-theme="ios"] h1 { color: var(--ios-ink) !important; font-weight: 600 !important; text-transform: none !important; letter-spacing: -0.012em; }
+html[data-theme="ios"] h1 .brand-sub { color: var(--ios-soft) !important; font-weight: 400 !important; text-transform: none !important; font-style: normal !important; }
+
+/* Card / panel / row surfaces — white, hairline, soft shadow, rounded. */
+html[data-theme="ios"] .project-card,
+html[data-theme="ios"] .card,
+html[data-theme="ios"] .bom-row,
+html[data-theme="ios"] .tree-row,
+html[data-theme="ios"] .cut-list,
+html[data-theme="ios"] .cut-row,
+html[data-theme="ios"] .cut-section,
+html[data-theme="ios"] .cut-waiting,
+html[data-theme="ios"] .pdxf-popover,
+html[data-theme="ios"] .part-dxf-popover,
+html[data-theme="ios"] .cs-modal,
+html[data-theme="ios"] .cs-row,
+html[data-theme="ios"] .kdstock-frame,
+html[data-theme="ios"] .kdstock-card,
+html[data-theme="ios"] .kdstock-box,
+html[data-theme="ios"] .kdng-box,
+html[data-theme="ios"] .kdjobs-row,
+html[data-theme="ios"] .dxf-preview-frame,
+html[data-theme="ios"] .mm-comment-panel,
+html[data-theme="ios"] .comment-item,
+html[data-theme="ios"] .kdnest-sidebar,
+html[data-theme="ios"] .kdnest-part,
+html[data-theme="ios"] .kdnest-stock-row,
+html[data-theme="ios"] .theme-menu {
+  background-color: var(--ios-card) !important;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius) !important;
+  box-shadow: var(--ios-shadow) !important;
+  background-image: none !important;
+}
+
+/* Modals (doubled-class to out-rank the blanket reset) — white sheet, deep soft shadow. */
+html[data-theme="ios"] .cs-modal.cs-modal,
+html[data-theme="ios"] .part-dxf-popover.part-dxf-popover,
+html[data-theme="ios"] .kdstock-box.kdstock-box,
+html[data-theme="ios"] .kdstock-frame.kdstock-frame,
+html[data-theme="ios"] .kdng-box.kdng-box {
+  background-color: var(--ios-card) !important;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18) !important;
+}
+html[data-theme="ios"] .kdng-backdrop.kdng-backdrop,
+html[data-theme="ios"] .kdstock-backdrop.kdstock-backdrop {
+  background-color: rgba(0,0,0,0.40) !important;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* Buttons — Apple pill: white with a hairline, ink label, fully rounded. */
+html[data-theme="ios"] button,
+html[data-theme="ios"] .tab,
+html[data-theme="ios"] .action-btn,
+html[data-theme="ios"] .filter-btn,
+html[data-theme="ios"] .mini,
+html[data-theme="ios"] .back-btn,
+html[data-theme="ios"] .kdnest-btn,
+html[data-theme="ios"] .theme-btn,
+html[data-theme="ios"] .theme-opt,
+html[data-theme="ios"] .comment-add,
+html[data-theme="ios"] .kdjobs-load,
+html[data-theme="ios"] .kdjobs-del,
+html[data-theme="ios"] .cs-download-btn {
+  background-color: var(--ios-card) !important;
+  color: var(--ios-ink) !important;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: 980px !important;
+  box-shadow: none !important;
+  font-weight: 500;
+}
+html[data-theme="ios"] button:hover,
+html[data-theme="ios"] .tab:hover,
+html[data-theme="ios"] .action-btn:hover,
+html[data-theme="ios"] .kdnest-btn:hover { background-color: #ececef !important; }
+html[data-theme="ios"] button:active,
+html[data-theme="ios"] .tab:active { transform: scale(0.97); }
+
+/* Inputs — white field, hairline, blue focus ring. */
+html[data-theme="ios"] input,
+html[data-theme="ios"] textarea,
+html[data-theme="ios"] select,
+html[data-theme="ios"] .search-wrap,
+html[data-theme="ios"] #search,
+html[data-theme="ios"] .comment-input,
+html[data-theme="ios"] .kme-cmt-input {
+  background-color: var(--ios-card) !important;
+  color: var(--ios-ink) !important;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: var(--ios-radius-sm) !important;
+}
+html[data-theme="ios"] input:focus,
+html[data-theme="ios"] textarea:focus,
+html[data-theme="ios"] select:focus,
+html[data-theme="ios"] #search:focus {
+  border-color: var(--ios-blue) !important;
+  box-shadow: 0 0 0 3px rgba(0,113,227,0.25) !important;
+  outline: none !important;
+}
+html[data-theme="ios"] ::placeholder { color: var(--ios-soft) !important; }
+
+/* Active tab — Apple blue pill. */
+html[data-theme="ios"] .tab.active {
+  color: var(--ios-blue) !important;
+  border-color: rgba(0,113,227,0.35) !important;
+  background-color: rgba(0,113,227,0.10) !important;
+  font-weight: 600;
+}
+
+/* Dividers + secondary text. */
+html[data-theme="ios"] hr,
+html[data-theme="ios"] .divider { border-color: var(--ios-line) !important; }
+html[data-theme="ios"] .updated,
+html[data-theme="ios"] .brand-sub,
+html[data-theme="ios"] .cut-list-summary,
+html[data-theme="ios"] .kdnest-title-sub,
+html[data-theme="ios"] .pdxf-sub,
+html[data-theme="ios"] .kdjobs-meta,
+html[data-theme="ios"] #count { color: var(--ios-soft) !important; }
+
+/* Keep the NEW freshness badge an eye-catching pill (the blanket reset would
+   otherwise strip its fill) — Apple blue here. */
+html[data-theme="ios"] .kdnest-cab-fr {
+  background-color: var(--ios-blue) !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+/* Warning banners + error chips — keep their RED / amber semantics. */
+html[data-theme="ios"] .kdnest-warn--unplaced {
+  background-color: #ffe5e3 !important; border: 1px solid #ff3b30 !important; color: #b3261e !important; border-radius: 12px !important;
+}
+html[data-theme="ios"] .kdnest-warn--review {
+  background-color: #fff3e0 !important; border: 1px solid #ff9500 !important; color: #9a5b00 !important; border-radius: 12px !important;
+}
+html[data-theme="ios"] .kdnest-warn--unplaced *,
+html[data-theme="ios"] .kdnest-warn--review * { color: inherit !important; }
+html[data-theme="ios"] body button.kdnest-errchip.kdnest-errchip-blk {
+  background-color: #ff3b30 !important; border: 1px solid #c62828 !important; color: #fff !important; border-radius: 980px !important;
+}
+html[data-theme="ios"] body button.kdnest-errchip.kdnest-errchip-warn {
+  background-color: #fff3e0 !important; border: 1px solid #ff9500 !important; color: #9a5b00 !important; border-radius: 980px !important;
+}
+html[data-theme="ios"] body button.kdnest-errchip * { color: inherit !important; }
+
+/* Mindmap (React Flow) — light canvas, white nodes, soft gray edges. */
+html[data-theme="ios"] .react-flow,
+html[data-theme="ios"] .react-flow__renderer,
+html[data-theme="ios"] .mindmap-wrapper,
+html[data-theme="ios"] .mindmap-canvas {
+  background-color: var(--ios-bg) !important;
+  background-image: none !important;
+}
+html[data-theme="ios"] .kme-node {
+  background-color: var(--ios-card) !important;
+  border: 1px solid var(--ios-line) !important;
+  border-radius: 12px !important;
+  box-shadow: var(--ios-shadow) !important;
+  color: var(--ios-ink) !important;
+}
+html[data-theme="ios"] .kme-node-label,
+html[data-theme="ios"] .kme-node-qty,
+html[data-theme="ios"] .kme-node-qty-num { color: var(--ios-ink) !important; }
+html[data-theme="ios"] .react-flow__edge-path { stroke: #c4c4c9 !important; stroke-width: 1.6 !important; }
+html[data-theme="ios"] .react-flow__handle { background: var(--ios-blue) !important; border-color: var(--ios-blue) !important; }
+html[data-theme="ios"] .kme-node.kme-project,
+html[data-theme="ios"] .kme-project {
+  background-color: var(--ios-card) !important;
+  border: 1.5px solid var(--ios-blue) !important;
+}
+
+/* Theme picker menu + active option. */
+html[data-theme="ios"] .theme-menu { box-shadow: 0 8px 30px rgba(0,0,0,0.16) !important; border: 1px solid var(--ios-line) !important; border-radius: 14px !important; }
+html[data-theme="ios"] .theme-opt.is-active { color: var(--ios-blue) !important; font-weight: 600 !important; }

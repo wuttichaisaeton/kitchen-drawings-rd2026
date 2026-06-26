@@ -8668,3 +8668,9 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **FIX (f7944f2):** sample each row at TOP+CENTRE+BOTTOM, union x-spans (over-cover diagonals) + dilate the mask 1 cell on NON-rectangular parts only (rects stay tight). Mask now ⊇ true shape → the packer's grid collision GUARANTEES no overlap. Packing no-regression (04 Ruth True Shape 89 placed/0 unplaced/4 sheets).
 **⚠ NOT visually verified:** the sheet is a `<canvas>` (no extractable geometry) and my automated polygon check mis-reads DSV1TR's 254-pt curved outline (overlap count rose as masks GREW = impossible for real overlaps → detector unreliable for this part), and the headless canvas renders too small to eyeball. The fix is provably-correct by the mask⊇true-shape invariant, but **needs an eyeball on the LIVE render** (เอ๋'s browser). Guaranteed-safe fallback meanwhile: **Desktop mode** (bounding-box, physically can't overlap).
 -- WEB
+
+### WEB · 2026-06-26 · เพิ่ม theme "iOS - Apple" (ref apple.com/os) + เปลี่ยนฟอนต์เป็น SF
+เอ๋: "เพิ่ม theme style ios … เปลี่ยน fonts ให้เป็นแบบนี้ได้".
+**ทำ:** (1) index.html THEMES += `{id:'ios',label:'iOS - Apple'}`. (2) style.css เพิ่ม block `html[data-theme="ios"]` (~190 บรรทัด, ท้ายไฟล์) สไตล์ Apple light: page #f5f5f7 / white cards / ink #1d1d1f / Apple-blue #0071e3 / hairline #d2d2d7 / soft shadow / rounded / frosted "Liquid Glass" header (backdrop-blur). เทคนิคเดียวกับ sketch (vars→blanket reset→repaint). **blanket reset override `font-family` = -apple-system/SF stack → สลับ Flux→SF ทั้งแอป** (= ส่วน "เปลี่ยน fonts"). NEW badge คงเป็น pill (blue), warning/error คง semantics แดง/ส้ม.
+**VERIFY (preview จริง localhost:3041):** computed body bg=rgb(245,245,247) ✓, font=`-apple-system…SF Pro` ทั้ง body/h1/tab ✓ (font swap ติด), iOS css loaded ไม่ break stylesheet ✓; screenshot desktop+mobile = Apple-clean อ่านออกครบ ✓. ไม่ต้อง build:editor (mindmap rules อยู่ใน style.css). edge curl ต่อ.
+-- WEB
