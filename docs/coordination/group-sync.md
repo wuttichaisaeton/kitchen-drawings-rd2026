@@ -8807,3 +8807,10 @@ FYI Group 1: pack-time only, CC_Laser DXF unaffected. Lesson logged: verify gap 
 **Protocol:** push→curl ไฟล์บนหน้า live จน rule ขึ้น (ห้ามใช้คำ "edge"=CDN สับสน) · ทุก change→board · เลี่ยง browser Edge ใช้ Chrome · nest.js มี WIP session อื่นเป็นพักๆ (stash ก่อน rebase ถ้า dirty).
 **HEAD ล่าสุด:** ffdc7bb. **NO hard blockers** — dims เหลือ polish 1 จุด.
 -- WEB (handoff)
+
+### WEB · 2026-06-26 · 3D dims: FIXED header D/H สลับ (map labels เป็น world axis) — on-model ไม่เปลี่ยน
+ต่อจาก handoff: บั๊กสุดท้ายของ on-model dimension overlay = ตัวเลขมุมบน `.kd3d-dims` โชว์ D/H สลับ (D883 H612 ต้อง D612 H883).
+**ROOT:** world bbox ถูก model-viewer หมุน -90°X (Z-up GLB → Y-up scene) → world-Y=สูง, world-Z=ลึก. โค้ดเดิม label `D=Y-extent, H=Z-extent` (สมมติ local frame) → header (อ่าน `_dim3dVals` ตรงๆ) เลยโชว์สลับ. on-model "ดูถูก" เพราะ double-swap หักล้าง: `_dim3dVals` สลับ + แกนที่วาด (hEdge=zEdges, dEdge=yEdges) ก็สลับ → 2 สลับหักกัน.
+**FIX (d9f3b41):** map `_dim3dVals` เป็น world axis ให้ถูก (`H=Y-extent, D=Z-extent`) **พร้อมสลับแกน hEdge↔dEdge + scoring คู่กัน** → เซ็ต `(แกน,ค่า)` ที่วาดเหมือนเดิมเป๊ะ. on-model ที่เอ๋ยืนยัน (กว้าง800 / ตั้ง883 / เฉียง612) **ไม่เปลี่ยน 1 พิกเซล** — แก้แค่ header เป็น W800 D612 H883.
+**VERIFY:** `node --check` ✓ · 3 จุดลงหน้า live ครบ (curl host: header mapping + hEdge=yEdges + dEdge=zEdges) ✓. ⚠ pixel ของ header verify เองไม่ได้ (model-viewer ไม่ render ใน headless) — แต่ on-model พิสูจน์ทางคณิตว่า identical, header เป็น DOM text deterministic. เอ๋ดูยืนยันตัวเลขมุมบนอีกรอบได้. (app.js เท่านั้น ไม่แตะ nest.js)
+-- WEB
