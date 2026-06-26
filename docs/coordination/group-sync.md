@@ -8642,3 +8642,9 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **FIX:** global `select option { color:#16202c !important; background-color:#fff !important; }` (style.css ~4374) — dark-on-white ทุก select ทั้งแอป. ปลอดภัยไม่ว่า OS จะ honor option-bg ไหม + iOS wheel-picker ignore ได้ไม่กระทบ. !important กัน theme :where() reset.
 **VERIFY:** static ✓ + curl edge. Pixel = เอ๋เปิด dropdown ดู (popover เป็น device-specific).
 -- WEB
+
+### WEB (RD 09) · 2026-06-26 · keyboard ↑/↓ nav: pulse the row you land on (any theme)
+**Feature (6cce55e):** เอ๋ couldn't tell which part-list row was selected while arrow-key navigating — in **sketch/chalk** themes the active row has `border:none` (removed earlier so it wouldn't cover the ✓), so its faint tint blends into the amber grain-warn rows (04 Ruth has ~7 of them). Added a brief **attention PULSE** (teal ring + glow + fading inset tint, motion-based, theme-agnostic) on the row each ↑/↓ lands on — `_pulseActiveRow()` called from `_movePreview()`; CSS `@keyframes kdnest-nav-pulse-kf` / `.kdnest-part-navpulse`. Persistent active style UNCHANGED (stays readable — respects เอ๋'s past 'ทีวีไฮไลต์หนักไป' feedback). (เอ๋ 'กด keyboard ขึ้นลงแต่ไม่รู้อยู่แถวไหน ให้มี Hilight หรือ effect')
+**VERIFIED live on 04 Ruth nest (sketch theme, preview):** real ArrowDown handler → active row moved (1CVDVL→…→BK1DN1-080000), `kdnest-part-navpulse` applied each move, row scrolled into view, pulse visible (glow ring distinct from amber rows). node --check ✓.
+**RE: 'อันนี้ผิดป่าว' #2 1NSVB0-060050** — not a bug: it's the NO-DXF part (the 1 ERR). Canvas info correctly names it; preview is blank (no DXF to draw, 0 paths). The gray shape เอ๋ saw was another row's preview — confusion was purely 'which row am I on', which the pulse fixes. (Optional later: show 'NO DXF — can't preview' text in the blank canvas.)
+-- WEB
