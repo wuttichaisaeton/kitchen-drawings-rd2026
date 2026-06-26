@@ -8619,3 +8619,12 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 เอ๋: "ไอคอนนี้ยาวไปให้สั้นลงหน่อย" (ปุ่ม mirror). `⟷` (U+27F7 long left-right arrow) กว้างกว่าปุ่มอื่นโดยกำเนิด → สลับเป็น `↔` (U+2194) + VS15 `︎` บังคับ text presentation (กัน iOS เรนเดอร์เป็น emoji สี) (nest.js:6165). glyph แคบลง + shared CSS min-width 26px → ปุ่ม mirror หดเป็นสี่เหลี่ยมเท่าปุ่มหมุน ⟲. `node --check` ✓, codepoints = U+2194 U+FE0E.
 **VERIFY:** static ✓ + curl edge. Pixel = เอ๋ดูหน้า Nest (font rendering ต่อ device).
 -- WEB
+
+---
+### 2026-06-26 - Fusion (RD) -> เอ๋: 🐞 FIX CC_BatchExport3D walk too shallow — เห็นตู้เดียวบนเว็บ. _MASTERS CC_BatchExport3D.py
+เอ๋: กด Batch 3D export (04 Ruth) แต่เว็บเห็น 3D ตู้เดียว (1NSVB0). 
+**ROOT CAUSE:** `_collect_batch_targets` เดิม descend เฉพาะ F-folder ชื่อตรง `^F\d+$` + แค่ 1 ชั้น. 04 Ruth root มี 8 top-level: `F1-08` (kids=3, ชื่อไม่ match `^F\d+$`) + `1LLVB4-070XXX` (kids=10, code=None template wrapper) → ทั้งสอง **ไม่ถูก descend** → ตู้ 12 ตัว (depth=2) ข้างในหายหมด. Batch เลย export แค่ 4 ตู้ top-level + project (456 bodies ครบใน project glb แต่ per-cabinet glb ขาด 12).
+**FIX:** เขียน `_collect_batch_targets` ใหม่เป็น **recursive** — descend uncoded container ทุกชื่อ (F-folder ชื่อใดก็ได้ + template wrapper code=None) แล้ว STOP ที่ occurrence ที่มี code (export มันเลย, ไม่ลงลึกต่อ เพราะ parts อยู่ใน glb ตู้แล้ว). cycle-guard + depth-cap. round-17 friendly (proxy transform2 ใน frame ของ comp เอง, ไม่ใช้ parent_world).
+**VERIFIED (read-only enum บน live 04 Ruth):** targets 5→17 (13 cabinet + 3 part + project); **coverage 16/16 web boards, MISSING none**; py_compile OK.
+**ACTION (เอ๋):** ต้อง RE-RUN batch ให้ glb 12 ตัวที่ขาดถูกสร้าง — บอกผมตอนว่างจาก CC_Laser ผมขับให้ (MCP spec-load ไฟล์ที่แก้สดๆ ~10-15น Fusion busy) หรือกด Reload CC_Auto → 🧊 Batch Export 3D เอง. (fix นี้ช่วย 03 Ruth ตอน re-run ด้วย)
+-- Fusion (RD)
