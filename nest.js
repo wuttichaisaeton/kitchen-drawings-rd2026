@@ -80,6 +80,15 @@
                           // until that lands. User 2026-05-28 wanted UI
                           // parity with the Python tool's twin toggles.
     gap: 2,
+    // COMMON-LINE cutting (เอ๋ 2026-06-26): merge a shared straight edge between
+    // two touching parts into ONE laser cut (saves cut length + material). Opt-in,
+    // OFF by default → _buildSheetDxf is byte-identical when off. Only axis-aligned
+    // straight edges merge (rectangles); curved/diagonal parts are untouched.
+    // commonTabs: leave small UNCUT bridges on merged edges so parts don't shift
+    // mid-cut (เอ๋'s laser does kerf-comp). Both persisted.
+    commonLine: (function () { try { return localStorage.getItem('kd_nest_common_v1') === '1'; } catch (e) { return false; } })(),
+    commonTabs: (function () { try { return localStorage.getItem('kd_nest_commontab_v1') === '1'; } catch (e) { return false; } })(),
+    commonTabMm: (function () { try { const n = parseFloat(localStorage.getItem('kd_nest_commontabmm_v1') || ''); return (n > 0 && n < 20) ? n : 0.5; } catch (e) { return 0.5; } })(),
     // AUTO COST-OPTIMIZE (เอ๋ 2026-06-26): Run defaults to auto-finding the
     // CHEAPEST enabled sheet-size mix (by each size's prc) and may MIX sizes.
     // optManual ON → run as-is (today's exact behavior, no trials). Persisted.
@@ -5568,6 +5577,59 @@
     }
   }
 
+  // ── Common-line merge (เอ๋ 2026-06-26) ─────────────────────────────────
+  // Given the axis-aligned straight OUTER edges of all parts on a sheet (sheet
+  // mm), return the de-duplicated cut lines: where 2+ parts share a collinear
+  // edge (segments coincide/overlap), that span is cut ONCE instead of twice.
+  // With tabMm>0, spans shared by >=2 parts are broken with small UNCUT bridges
+  // so the parts don't shift mid-cut. Non-axis-aligned edges are never passed in
+  // (caller emits them unchanged) → curved/diagonal parts are untouched.
+  const _CL_EPS = 0.08;   // mm — coincidence / collinearity tolerance
+  function _commonLineTabbed(a, b, mk, out, tabMm) {
+    const len = b - a;
+    if (len <= Math.max(8, tabMm * 6)) { out.push(mk(a, b)); return; }   // too short → solid cut
+    const nTabs = Math.max(1, Math.floor(len / 250));   // ~1 uncut bridge / 250mm
+    const cutLen = (len - nTabs * tabMm) / (nTabs + 1);
+    let pos = a;
+    for (let t = 0; t < nTabs; t++) { out.push(mk(pos, pos + cutLen)); pos += cutLen + tabMm; }
+    out.push(mk(pos, b));
+  }
+  function _commonLineMerge(segs, tabMm) {
+    const q = v => Math.round(v / _CL_EPS);
+    const vert = new Map(), horiz = new Map();   // perpendicular-coord key → {coord, ivs:[{lo,hi}]}
+    const add = (map, key, lo, hi, coord) => {
+      let g = map.get(key); if (!g) { g = { coord, ivs: [] }; map.set(key, g); }
+      g.ivs.push({ lo: Math.min(lo, hi), hi: Math.max(lo, hi) });
+    };
+    for (const s of segs) {
+      const dx = Math.abs(s.x1 - s.x0), dy = Math.abs(s.y1 - s.y0);
+      if (dx <= _CL_EPS && dy > _CL_EPS) add(vert, q((s.x0 + s.x1) / 2), s.y0, s.y1, (s.x0 + s.x1) / 2);
+      else if (dy <= _CL_EPS && dx > _CL_EPS) add(horiz, q((s.y0 + s.y1) / 2), s.x0, s.x1, (s.y0 + s.y1) / 2);
+      // else: not axis-aligned — ignore (should not be passed in)
+    }
+    const out = [];
+    const sweep = (g, mk) => {
+      const ivs = g.ivs, bounds = [];
+      for (const iv of ivs) { bounds.push(iv.lo, iv.hi); }
+      bounds.sort((a, b) => a - b);
+      const uniq = [];
+      for (const v of bounds) if (!uniq.length || Math.abs(v - uniq[uniq.length - 1]) > _CL_EPS) uniq.push(v);
+      for (let i = 0; i + 1 < uniq.length; i++) {
+        const a = uniq[i], b = uniq[i + 1];
+        if (b - a <= _CL_EPS) continue;
+        const mid = (a + b) / 2;
+        let cov = 0;
+        for (const iv of ivs) if (iv.lo - _CL_EPS <= mid && mid <= iv.hi + _CL_EPS) cov++;
+        if (cov === 0) continue;
+        if (cov >= 2 && tabMm > 0) _commonLineTabbed(a, b, mk, out, tabMm);
+        else out.push(mk(a, b));
+      }
+    };
+    for (const g of vert.values())  sweep(g, (lo, hi) => [g.coord, lo, g.coord, hi]);
+    for (const g of horiz.values()) sweep(g, (lo, hi) => [lo, g.coord, hi, g.coord]);
+    return out;
+  }
+
   // DXF builder for one nested sheet — minimal R12-ish text format.
   // ezdxf would be nicer but we have to ship browser-only. The format
   // below works in any DXF reader (NestingTool's ezdxf-based reader
@@ -5585,8 +5647,21 @@
     const lines = ['0','SECTION','2','HEADER','9','$INSUNITS','70','4','0','ENDSEC',
                    '0','SECTION','2','ENTITIES'];
 
+    // Common-line collection (opt-in). When ON, axis-aligned OUTER edges are
+    // buffered (not emitted) and merged once at the end; everything else (holes,
+    // border, labels, curves, non-axis edges) emits normally. OFF → never touched.
+    const _clActive = !!S.commonLine;
+    const _clTab = S.commonTabs ? (S.commonTabMm || 0.5) : 0;
+    const _clBuf = [];
+    // Feed each polyline edge through line() — line() collects the axis-aligned
+    // OUTER ones and emits the rest. Used to decompose OUTER polylines when ON.
+    function _clDecompose(pts) {
+      for (let i = 0; i + 1 < pts.length; i++) line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], 'OUTER_PROFILES');
+    }
+
     function lwpolyline(pts, layer) {
       if (!pts || pts.length < 2) return;
+      if (_clActive && (layer || '0') === 'OUTER_PROFILES') { _clDecompose(pts); return; }
       lines.push('0','LWPOLYLINE','8', layer || '0',
                  '90', String(pts.length), '70','1');
       for (const [x, y] of pts) {
@@ -5616,12 +5691,24 @@
                  '50', sDeg.toFixed(4), '51', eDeg.toFixed(4));
     }
     function line(x0, y0, x1, y1, layer) {
+      if (_clActive && (layer || '0') === 'OUTER_PROFILES') {
+        const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0);
+        if ((dx <= _CL_EPS && dy > _CL_EPS) || (dy <= _CL_EPS && dx > _CL_EPS)) {
+          _clBuf.push({ x0, y0, x1, y1 });   // axis-aligned OUTER edge → merge later
+          return;
+        }
+      }
       lines.push('0','LINE','8', layer || '0',
                  '10', x0.toFixed(3), '20', y0.toFixed(3), '30','0',
                  '11', x1.toFixed(3), '21', y1.toFixed(3), '31','0');
     }
     function polyBulge(verts, closed, layer) {
       if (!verts || verts.length < 2) return;
+      if (_clActive && (layer || '0') === 'OUTER_PROFILES' && verts.every(v => Math.abs(v.bulge || 0) < 1e-9)) {
+        const pts = verts.map(v => [v.x, v.y]);
+        if (closed) pts.push([verts[0].x, verts[0].y]);
+        _clDecompose(pts); return;   // straight OUTER polyline → per-edge merge
+      }
       lines.push('0','LWPOLYLINE','8', layer || '0',
                  '90', String(verts.length), '70', closed ? '1' : '0');
       for (const v of verts) {
@@ -5809,6 +5896,14 @@
             lwpolyline(hole.map(([x,y]) => transform(x,y)), 'INTERIOR_PROFILES');
           }
         }
+      }
+    }
+    // Common-line: emit the de-duplicated/tabbed shared edges collected above.
+    if (_clActive && _clBuf.length) {
+      for (const s of _commonLineMerge(_clBuf, _clTab)) {
+        lines.push('0','LINE','8','OUTER_PROFILES',
+                   '10', s[0].toFixed(3), '20', s[1].toFixed(3), '30','0',
+                   '11', s[2].toFixed(3), '21', s[3].toFixed(3), '31','0');
       }
     }
     lines.push('0','ENDSEC','0','EOF');
@@ -6353,6 +6448,13 @@
             <label class="kdnest-optmanual-lab" title="Manual: Run uses the sheet stock exactly as set (no cost-optimize). OFF (default) = Run auto-picks the cheapest enabled sheet-size mix by price.">
               <input id="kdnest-optmanual" type="checkbox"${S.optManual ? ' checked' : ''}> Manual
             </label>
+            <label class="kdnest-optmanual-lab" title="Common-line: where two parts touch on a straight edge, cut that edge ONCE (saves material + cut length). Affects the saved/exported Cut Sheet DXF. Best with Desktop mode + Gap 0. Straight edges only — curved/diagonal parts are untouched.">
+              <input id="kdnest-common" type="checkbox"${S.commonLine ? ' checked' : ''}> 🔗 Common-line
+            </label>
+            <label class="kdnest-optmanual-lab" title="Leave small UNCUT bridges on shared edges so parts don't shift while cutting (your laser does kerf-comp). OFF = solid shared cut (the operator sequences the cut). Only active when Common-line is on."${S.commonLine ? '' : ' style="opacity:.45"'}>
+              <input id="kdnest-commontab" type="checkbox"${S.commonTabs ? ' checked' : ''}${S.commonLine ? '' : ' disabled'}> tab
+              <input id="kdnest-commontabmm" type="number" value="${S.commonTabMm}" min="0.1" max="5" step="0.1" style="width:3.4em"${S.commonLine ? '' : ' disabled'}>mm
+            </label>
           </div>
           <!-- Skip-remnants checkbox moved INTO the Remnants Stock modal as
                "Use remnants" (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่ Remnants
@@ -6492,6 +6594,21 @@
       try { localStorage.setItem('kd_nest_rectleft_v1', S.rectLeftover ? '1' : '0'); } catch (err) {}
     });
     $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; });
+    // Common-line: affects the SAVED Cut Sheet DXF (_buildSheetDxf), not the
+    // layout — no re-run needed; re-render only to enable/disable the tab control.
+    $('#kdnest-common')?.addEventListener('change', e => {
+      S.commonLine = !!e.target.checked;
+      try { localStorage.setItem('kd_nest_common_v1', S.commonLine ? '1' : '0'); } catch (_) {}
+      _refreshView();
+    });
+    $('#kdnest-commontab')?.addEventListener('change', e => {
+      S.commonTabs = !!e.target.checked;
+      try { localStorage.setItem('kd_nest_commontab_v1', S.commonTabs ? '1' : '0'); } catch (_) {}
+    });
+    $('#kdnest-commontabmm')?.addEventListener('change', e => {
+      const n = parseFloat(e.target.value);
+      if (n > 0 && n < 20) { S.commonTabMm = n; try { localStorage.setItem('kd_nest_commontabmm_v1', String(n)); } catch (_) {} }
+    });
     // (skip/remember checkboxes removed from the sidebar — see Remnants Stock
     // modal's "Use remnants" toggle + Save-Nest offcut remembering.)
     $('#kdnest-parts-all')?.addEventListener('click', () => {
@@ -7051,6 +7168,8 @@
       runNesting: _runNesting,
       downsizeLastFreshSheet: _downsizeLastFreshSheet,
       buildNestPieces: _buildNestPieces,
+      buildSheetDxf: _buildSheetDxf,        // common-line verification hook
+      commonLineMerge: _commonLineMerge,    // pure merge engine (unit-testable)
       // Returns the background save promise so a test can AWAIT the full async
       // toggle chain (live flag → save → re-render settle) before asserting that
       // the previewed part survived — the path a sync-only assertion missed.
