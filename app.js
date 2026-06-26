@@ -3901,6 +3901,16 @@ async function _kdOpen3D(code, opts) {
       // In part view, count only the visible mesh(es) so dims describe the
       // selected part, not the whole cabinet's _parts scatter.
       if (partView && !n.visible) return;
+      // Skip HARDWARE (__HW: Blum slides, gallery rods, hinges …): it extends
+      // beyond the sheet-metal panel box, so including it floats the bbox corners
+      // out to the hardware extremes (เอ๋ 2026-06-26 DSV0B0 drawer — dim corners
+      // landed on the gallery rod/slides, not the panel). Dims must measure the
+      // structural ALPF envelope. The tag may sit on the mesh or any ancestor.
+      let _isHW = _kd3dIsHardware(n.name);
+      for (let p = n.parent; !_isHW && p && p !== threeScene; p = p.parent) {
+        if (_kd3dIsHardware(p.name)) _isHW = true;
+      }
+      if (_isHW) return;
       if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch (e) {}
       const bb = n.geometry.boundingBox;
       if (!bb || !n.matrixWorld || !n.matrixWorld.elements) return;
