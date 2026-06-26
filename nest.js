@@ -2958,14 +2958,28 @@
     function bb(poly) { let a = 1e15, b = 1e15, c = -1e15, d = -1e15; for (const p of poly) { if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1]; if (p[0] > c) c = p[0]; if (p[1] > d) d = p[1]; } return [a, b, c, d]; }
     function ori(a, b, c) { const v = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); return v > 1e-6 ? 1 : v < -1e-6 ? -1 : 0; }
     function segX(p1, p2, p3, p4) { const d1 = ori(p3, p4, p1), d2 = ori(p3, p4, p2), d3 = ori(p1, p2, p3), d4 = ori(p1, p2, p4); return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)); }
+    // A crossing alone is NOT a real collision: the ~R-cell raster lets two true
+    // outlines touch with a hair of penetration, and at Gap 0 (common-line) parts
+    // are MEANT to touch. Only penetration deeper than OVERLAP_TOL_MM is genuine and
+    // worth bailing to Desktop for. Measured 04 Ruth Gap 0: 6 pairs, max 0.43mm of
+    // sub-cell touching — the old any-crossing test flagged it and demoted the
+    // void-filled True Shape layout to Desktop (เอ๋ 'true shape ต้องเติมในกรอบแดง'
+    // 2026-06-26). Real packing-bug overlaps (e.g. the flip180 corner-swap) are cm-scale.
+    const OVERLAP_TOL_MM = 1.5;
+    function _inPoly(x, y, poly) { let ins = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1]; if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) ins = !ins; } return ins; }
+    // Deepest vertex penetration (mm) between two placed polygons — a vertex of one
+    // poly sitting inside the other, measured to the other's nearest edge.
+    function _maxPenMm(PA, PB) { let pen = 0; const probe = (P, Q) => { for (const vtx of P) { if (!_inPoly(vtx[0], vtx[1], Q)) continue; let m = 1e15; for (let i = 0, j = Q.length - 1; i < Q.length; j = i++) { const x1 = Q[j][0], y1 = Q[j][1], x2 = Q[i][0], y2 = Q[i][1]; const dx = x2 - x1, dy = y2 - y1; const L2 = dx * dx + dy * dy || 1e-9; let t = ((vtx[0] - x1) * dx + (vtx[1] - y1) * dy) / L2; t = t < 0 ? 0 : t > 1 ? 1 : t; const px = x1 + t * dx, py = y1 + t * dy; const d = Math.hypot(vtx[0] - px, vtx[1] - py); if (d < m) m = d; } if (m > pen) pen = m; } }; probe(PA, PB); probe(PB, PA); return pen; }
     for (const sh of result.sheets) {
       const ps = (sh.placements || []).map(function (pl) { const poly = placedPoly(pl); return poly ? { poly: poly, box: bb(poly) } : null; }).filter(Boolean);
       for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
         const A = ps[i], B = ps[j];
         if (A.box[2] <= B.box[0] || B.box[2] <= A.box[0] || A.box[3] <= B.box[1] || B.box[3] <= A.box[1]) continue;   // bbox disjoint/touching → skip
-        for (let a = 0; a < A.poly.length; a++) { const a1 = A.poly[a], a2 = A.poly[(a + 1) % A.poly.length];
+        let cross = false;
+        for (let a = 0; a < A.poly.length && !cross; a++) { const a1 = A.poly[a], a2 = A.poly[(a + 1) % A.poly.length];
           for (let b = 0; b < B.poly.length; b++) { const b1 = B.poly[b], b2 = B.poly[(b + 1) % B.poly.length];
-            if (segX(a1, a2, b1, b2)) return true; } }
+            if (segX(a1, a2, b1, b2)) { cross = true; break; } } }
+        if (cross && _maxPenMm(A.poly, B.poly) > OVERLAP_TOL_MM) return true;   // genuine collision only
       }
     }
     return false;
