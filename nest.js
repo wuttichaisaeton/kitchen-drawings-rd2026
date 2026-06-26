@@ -4660,7 +4660,7 @@
     // เป็นสีเดียวกับพื้นหลังโดยรอบ'). Read the computed bg of the canvas's
     // wrapper; transparent (theme reset) → fall back to <body>, then the
     // per-theme constant. INK/MUTED stay theme-based for contrast.
-    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _obsidian ? '#08090d' : (_theme === 'ios') ? '#eef1f6' : '#0f1419';
+    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _obsidian ? '#08090d' : '#0f1419';
     const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : _obsidian ? '#e5c158' : '#4ecca3';
     const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : _obsidian ? '#b0a790' : '#88aab1';
     // Opaque steel silhouette so the diecut reads as a real metal part, not a
@@ -4967,8 +4967,7 @@
       ? document.documentElement.getAttribute('data-theme') : null;
     const _outerBG = _stheme === 'sketch' ? '#efe7d6'
       : _stheme === 'chalk' ? '#26302e'
-      : _stheme === 'obsidian' ? '#08090d'
-      : _stheme === 'ios' ? '#eef1f6' : '#0f1419';
+      : _stheme === 'obsidian' ? '#08090d' : '#0f1419';
     ctx.fillStyle = _outerBG;
     ctx.fillRect(0, 0, cw, ch);
     // Sheet outline
@@ -5146,7 +5145,7 @@
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(78,204,163,0.10)';
       ctx.fillRect(rx, ry, rw, rh);
-      ctx.fillStyle = (_stheme === 'ios') ? '#0a7a5f' : '#4ecca3';   // dark green = readable on the light iOS sheet
+      ctx.fillStyle = '#4ecca3';
       ctx.font = (12 * (window.devicePixelRatio || 1)) + 'px "Flux Architect", monospace';
       ctx.textAlign = 'left'; ctx.textBaseline = 'top';
       ctx.fillText('REMNANT ' + Math.round(rr.w) + '×' + Math.round(rr.h), rx + 6, ry + 6);
@@ -5161,10 +5160,8 @@
     // invisible, so use near-black ink. chalk/default sheets are dark → keep
     // the light ink. (user 2026-05-31 'theme pencil ให้ตัวอีกษรเป็นสีดำ')
     const _lblNorm = _stheme === 'sketch' ? '#1a1f26'
-      : _stheme === 'ios' ? '#1d1d1f'
       : _stheme === 'obsidian' ? '#e5c158' : '#e8eef5';
     const _lblHot  = _stheme === 'sketch' ? '#000000'
-      : _stheme === 'ios' ? '#000000'
       : _stheme === 'obsidian' ? '#ffffff' : '#fffce8';
     labels.forEach(function (L) {
       L.fp = (L.fits ? 11 : 9) * dpr;

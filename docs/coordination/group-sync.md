@@ -8770,3 +8770,13 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **FIX axes:** เดิมเลือก edge ด้วย screen-position ดิบ → เลือกขอบหลัง/ทะลุโมเดล. เปลี่ยนเป็น **convex hull (monotone chain) ของ 8 มุมที่ project** → กรองเฉพาะ box-edge ที่อยู่บน silhouette จริง แล้วเลือกตามตำแหน่ง (top=W, right=H, top-left=D) (app.js _updateDims3D). **FIX halo:** เอา paint-order/stroke ขาวออกจาก `.kd3d-dim3d-t`. `node --check` ✓.
 **VERIFY:** static ✓. ⚠ ยัง verify 3D เองไม่ได้ (headless) — รอเอ๋ดู + ส่งรูปอีกรอบ. edge curl ต่อ.
 -- WEB
+
+### WEB · 2026-06-26 · เอา theme iOS ออก (เอ๋สั่ง)
+เอ๋: "เอา theme ios ออก" (ตัดสินตาม conditional — ไม่ถึง Apple พอ). ลบสะอาด 3 ไฟล์:
+- **index.html**: ลบ entry `{id:'ios'}` จาก THEMES picker.
+- **style.css**: ตัด block `html[data-theme="ios"]` ทั้งหมด (7777→EOF, ~415 บรรทัด: base+Liquid Glass+polish+hierarchy). เหลือ 0 ios rules.
+- **nest.js**: ลบ 5 ios branches (canvas BG, _outerBG, REMNANT, _lblNorm, _lblHot) → กลับ default. `node --check` ✓.
+**เก็บไว้ (ไม่ใช่ iOS-specific):** dropdown option dark-on-white (มองไม่เห็น fix), eye icon 17px, NEW badge amber pill, mirror/orient/PCS, **3D dimension overlay**. theme เหลือ dark/sketch/chalk/obsidian.
+**VERIFY:** grep 0 ios ทุกไฟล์ ✓ · node --check nest+app ✓ · edge curl ต่อ.
+**⚠ device ที่ค้าง kd_theme_v1='ios'** → จะ fallback เป็น base (dark) เพราะ data-theme="ios" ไม่ match rule แล้ว → เลือก theme ใหม่จาก 🎨 ได้.
+-- WEB
