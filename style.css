@@ -4860,7 +4860,10 @@ select option { color: #16202c !important; background-color: #ffffff !important;
 /* Cabinet freshness (เอ๋ 2026-06-11): per-role NEW/CHANGED markers on capsules.
    Amber #F2A93B = the brand "fresh" accent, same as .part-new-badge. An OFF
    cabinet keeps its badge (dimmed with the pill = เอ๋ "โชว์แบบหรี่"). */
-.kdnest-cab-fr { font-size: 8.5px; font-weight: 700; color: #F2A93B; margin-left: 4px; }
+/* เอ๋ 2026-06-26 "new ให้มีสีที่สะดุดตาหน่อย": was tiny amber TEXT (low contrast
+   on the light sketch theme). Make it a filled amber PILL with dark text + glow so
+   the NEW/↻ badge pops on every theme. !important beats the sketch :where() reset. */
+.kdnest-cab-fr { display: inline-block; font-size: 9px; font-weight: 800; color: #1b1205 !important; background: #F2A93B !important; margin-left: 5px; padding: 0 5px; border-radius: 7px; letter-spacing: 0.4px; box-shadow: 0 0 7px rgba(242,169,59,0.6); }
 .kdnest-cab-new { border-color: #F2A93B; box-shadow: 0 0 0 1px #F2A93B inset; }
 .kdnest-cab-changed { border-color: #F2A93B; border-style: dashed; }
 /* F-group folders (เอ๋ 2026-06-12): group the capsules under collapsible
