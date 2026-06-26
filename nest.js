@@ -3817,7 +3817,11 @@
   // background. The instant-repaint path no longer waits on RTDB, so the preview
   // and the active button state always reflect the live flag the moment the user
   // clicks. (Rotate-180 + Mirror feature 2026-06-26)
-  function _toggleOrientFlag(part, which) {
+  // `o.silent` (part-popup path): set + persist the flag but DON'T call _setPreview
+  // (which re-renders the whole workspace and would replace the nest sheet with the
+  // single-part canvas). The popup repaints its own canvas + re-nests instead, so
+  // the layout behind stays visible. (เอ๋ 2026-06-27 part popup)
+  function _toggleOrientFlag(part, which, o) {
     if (!part) return Promise.resolve();
     const code = part.code;
     const next = !(which === 'flip180' ? part.flip180 : part.mirror);
@@ -3827,7 +3831,7 @@
     _applyOrientFlag(part, which, next, Array.isArray(S.grainRows) ? S.grainRows : null);
     // 2) Repaint NOW — same draw path 👁 uses — so the change is visible instantly
     //    and the row's kdnest-orient-active glyph reflects the live flag.
-    _setPreview(code);
+    if (!(o && o.silent)) _setPreview(code);
     // 3) Persist in the background. If rows weren't loaded yet, load them first
     //    (keeps existing grain rules) THEN apply the orient row to the real array.
     //    _saveGrainRows re-derives flags via _applyGrainToParts, but they already
@@ -3852,12 +3856,151 @@
         _applyOrientFlag(part, which, next, Array.isArray(S.grainRows) ? S.grainRows : null);
         // If anything reset the preview off our part during the save, restore it
         // (also repaints, so the active class re-binds to the live flag).
-        if (S.previewCode !== code) _setPreview(code);
+        if (!(o && o.silent) && S.previewCode !== code) _setPreview(code);
       })
       .catch(e => console.warn('[kdNest] orient flag save failed:', e));
   }
   function _togglePartFlip180(part) { _toggleOrientFlag(part, 'flip180'); }
   function _togglePartMirror(part)  { _toggleOrientFlag(part, 'mirror'); }
+
+  // ── Part popup (👁) — floating, draggable panel shown OVER the nest layout ──
+  // เอ๋ 2026-06-27: 'กดดู part ให้เป็น popup ... รูป Nesting ยังคงอยู่ และเวลาหมุน Part
+  // ให้ Nesting ด้านหลังจัดเรียงใหม่ทันที'. So instead of _setPreview (which replaces
+  // the sheet on the main canvas), 👁 opens a small floating panel: the nest stays
+  // visible behind it (no backdrop). ⟲/↔ inside the panel rotate/mirror the part and
+  // DEBOUNCE a re-nest (~0.6s after the last click) so rapid clicks coalesce into one
+  // full re-pack; a "re-nesting…" label shows while it runs (full True-Shape run ~15s).
+  let _ppRenestTimer = null;
+  let _ppRenesting = false;
+  let _ppRerunPending = false;
+  function _openPartPopup(code) {
+    const part = S.parts.find(p => p.code === code);
+    if (!part) return;
+    // Close any existing popup PROPERLY (its own close() drops its document keydown
+    // listener + theme observer + timer); a bare .remove() would orphan those.
+    // (review fix 2026-06-27)
+    document.querySelectorAll('.kdnest-partpop').forEach(m => { if (typeof m._kdClose === 'function') m._kdClose(); else m.remove(); });
+    if (_ppRenestTimer) { clearTimeout(_ppRenestTimer); _ppRenestTimer = null; }
+    _ppRerunPending = false;   // fresh session — drop any stale queued rerun
+    const dims = (part.w && part.h) ? (Math.round(part.w) + '×' + Math.round(part.h)) : '';
+    const flipTitle = part.manual ? 'Rotate 180° (disabled — manual part has no DXF)' : 'Rotate 180°';
+    const mirrTitle = (part.manual || !part.polys) ? 'Mirror (disabled — needs DXF geometry)' : 'Mirror horizontally';
+    const pop = document.createElement('div');
+    pop.className = 'kdnest-partpop';
+    pop.dataset.code = code;
+    pop.innerHTML =
+      '<div class="kdstock-box kdnest-partpop-box">'
+      + '<div class="kdstock-head kdnest-partpop-head">'
+      +   '<span class="kdnest-partpop-title">' + _esc(_disp(code)) + (dims ? ' <span class="kdnest-partpop-dim">' + dims + '</span>' : '') + '</span>'
+      +   '<span class="kdnest-partpop-status" hidden>re-nesting…</span>'
+      +   '<span class="kdng-spacer"></span>'
+      +   '<button class="kdnest-partpop-close" title="Close (Esc)">✕</button>'
+      + '</div>'
+      + '<div class="kdnest-partpop-body"><canvas class="kdnest-partpop-canvas"></canvas></div>'
+      + '<div class="kdnest-partpop-ctrls">'
+      +   '<button class="kdnest-part-flip180 kdnest-partpop-btn' + (part.flip180 ? ' kdnest-orient-active' : '') + '"' + (part.manual ? ' disabled' : '') + ' title="' + flipTitle + '">⟲ 180°</button>'
+      +   '<button class="kdnest-part-mirror kdnest-partpop-btn' + (part.mirror ? ' kdnest-orient-active' : '') + '"' + ((part.manual || !part.polys) ? ' disabled' : '') + ' title="' + mirrTitle + '">↔︎ Mirror</button>'
+      + '</div>';
+    document.body.appendChild(pop);
+    const q = sel => pop.querySelector(sel);
+    const canvas = q('.kdnest-partpop-canvas');
+    const statusEl = q('.kdnest-partpop-status');
+    let themeObs = null;
+    // live(): always the CURRENT object in S.parts (rebuilt on re-nest); no stale
+    // fallback — if the part is gone (deleted mid-popup), callers close the panel.
+    const live = () => S.parts.find(x => x.code === code);
+    const close = () => {
+      if (_ppRenestTimer) { clearTimeout(_ppRenestTimer); _ppRenestTimer = null; }
+      _ppRerunPending = false;
+      document.removeEventListener('keydown', onKey, true);
+      if (themeObs) { try { themeObs.disconnect(); } catch (_) {} themeObs = null; }
+      pop.remove();
+    };
+    pop._kdClose = close;   // so a later _openPartPopup (or external) can clean us up
+    const draw = () => { const p = live(); if (!p) { close(); return; } _drawPartPreview(canvas, p, { transparent: true }); };
+    requestAnimationFrame(draw);
+    const syncBtns = () => {
+      const p = live(); if (!p) return;
+      q('.kdnest-part-flip180')?.classList.toggle('kdnest-orient-active', !!p.flip180);
+      q('.kdnest-part-mirror')?.classList.toggle('kdnest-orient-active', !!p.mirror);
+    };
+    // Escape closes; arrow keys are swallowed so the workspace part-nav can't switch
+    // the layout BEHIND the open popup (which would contradict "nest stays visible").
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); return; }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopImmediatePropagation();
+    };
+    document.addEventListener('keydown', onKey, true);
+    q('.kdnest-partpop-close').addEventListener('click', close);
+    // Theme can change while the popup is open (🎨 picker) — _drawPartPreview bakes
+    // theme colours at draw time, so redraw the canvas when data-theme flips.
+    try {
+      themeObs = new MutationObserver(() => { if (document.body.contains(pop)) draw(); });
+      themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    } catch (_) {}
+    // Re-nest behind the popup — debounced so rapid ⟲/↔ clicks batch into one run.
+    const runRenest = async () => {
+      _ppRenestTimer = null;
+      if (_ppRenesting) { _ppRerunPending = true; return; }   // a run is in flight → queue one
+      _ppRenesting = true;
+      if (statusEl) statusEl.hidden = false;
+      q('.kdnest-partpop-ctrls')?.classList.add('kdnest-partpop-busy');
+      try {
+        await _yield();   // let the "re-nesting…" label paint before the (sync) full pack
+        await _runNestingAuto({ quiet: true });   // SAME as the Run button (cost-optimized) but silent
+      } catch (e) { console.warn('[kdNest] popup re-nest failed:', e); }
+      finally { _ppRenesting = false; }   // ALWAYS clear so a future re-nest is never blocked
+      if (!document.body.contains(pop)) return;   // popup closed mid-run
+      // _runNesting → _refreshView re-rendered the workspace; the popup is a <body>
+      // sibling so it survived. Repaint the panel from the (live) part + new flags.
+      draw(); syncBtns();
+      q('.kdnest-partpop-ctrls')?.classList.remove('kdnest-partpop-busy');
+      if (statusEl) statusEl.hidden = true;
+      if (_ppRerunPending) { _ppRerunPending = false; scheduleRenest(); }
+    };
+    const scheduleRenest = () => {
+      if (statusEl) statusEl.hidden = false;
+      if (_ppRenestTimer) clearTimeout(_ppRenestTimer);
+      _ppRenestTimer = setTimeout(runRenest, 600);
+    };
+    const orient = (which) => {
+      const p = live(); if (!p) { close(); return; }
+      _toggleOrientFlag(p, which, { silent: true });   // set+persist flag, NO workspace re-render
+      draw(); syncBtns();
+      scheduleRenest();
+    };
+    q('.kdnest-part-flip180')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) orient('flip180'); });
+    q('.kdnest-part-mirror')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) orient('mirror'); });
+    // Draggable by its header (same pattern as the Remnants modal) so it can be
+    // moved aside to watch the layout re-arrange.
+    (function _ppDrag() {
+      const box = q('.kdnest-partpop-box');
+      const handle = q('.kdnest-partpop-head');
+      if (!box || !handle) return;
+      handle.style.cursor = 'move';
+      let drag = null;
+      handle.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('button')) return;   // clicking ✕ shouldn't start a drag
+        const r = box.getBoundingClientRect();
+        box.style.position = 'absolute';
+        box.style.margin = '0';
+        box.style.left = r.left + 'px';
+        box.style.top = r.top + 'px';
+        drag = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+        try { handle.setPointerCapture(e.pointerId); } catch (_) {}
+        e.preventDefault();
+      });
+      handle.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        const bw = box.offsetWidth, bh = box.offsetHeight;
+        box.style.left = Math.max(0, Math.min(e.clientX - drag.dx, window.innerWidth - bw)) + 'px';
+        box.style.top = Math.max(0, Math.min(e.clientY - drag.dy, window.innerHeight - bh)) + 'px';
+      });
+      const end = function (e) { drag = null; try { handle.releasePointerCapture(e.pointerId); } catch (_) {} };
+      handle.addEventListener('pointerup', end);
+      handle.addEventListener('pointercancel', end);
+    })();
+  }
 
   // ════════════════════════════════════════════════════════════════════
   //  Run Nesting
@@ -4210,11 +4353,16 @@
     // every Run. OUTPUT saving — unrelated to the Stock modal's "Use remnants in
     // next run" (INPUT) toggle. Asked only after both validations pass (a no-op
     // Run never prompts) and BEFORE the packing computation starts.
-    S.rememberRemnants = confirm(
-      'Remember remnants (offcuts) from this run?\n\n' +
-      'OK — when you Save Nest, leftover offcuts are saved to your Remnants library.\n' +
-      'Cancel — this run\'s offcuts are not saved.'
-    );
+    // Part-popup re-nest (opts.quiet) skips this prompt — it's a re-arrange preview
+    // triggered by rotating a part, not a save (offcuts are only stored on Save Nest
+    // anyway). Keeps whatever S.rememberRemnants already was. (เอ๋ 2026-06-27)
+    if (!(opts && opts.quiet)) {
+      S.rememberRemnants = confirm(
+        'Remember remnants (offcuts) from this run?\n\n' +
+        'OK — when you Save Nest, leftover offcuts are saved to your Remnants library.\n' +
+        'Cancel — this run\'s offcuts are not saved.'
+      );
+    }
 
     // Group pieces by thickness so a 0.8mm BM part can't get nested
     // onto a 1mm stock sheet (and vice versa). User 2026-05-28 asked
@@ -4323,7 +4471,7 @@
     }
     _refreshView();
     // Last-sheet leftover can run either way → let เอ๋ see both and pick.
-    if (S.rectLeftover && S._rectPendingIdx >= 0) _openRectDirModal(S._rectPendingIdx);
+    if (!(opts && opts.quiet) && S.rectLeftover && S._rectPendingIdx >= 0) _openRectDirModal(S._rectPendingIdx);
     // Offcut remembering moved to 💾 Save Nest (เอ๋ 2026-06-10 'ถ้าจะ save ให้มา
     // save ที่ save Project') — a test Run no longer touches the shared
     // remnant pool; only an explicitly saved nest does.
@@ -4334,9 +4482,12 @@
   // mix (by each size's prc) — may MIX sizes — then renders the winner via the
   // normal full path (_runNesting). Manual toggle ON → run as-is, no trials.
   let _optRunning = false;   // guard against double-clicks during the async trials
-  async function _runNestingAuto() {
-    // MANUAL path = today's exact behavior. Untouched.
-    if (S.optManual) { _runNesting(); return; }
+  // `o.quiet` (part-popup re-nest): same cost-optimized run as the Run button, but
+  // the internal _runNesting calls skip the remnants confirm + rect-dir chooser so a
+  // rotate-driven re-arrange is silent. (เอ๋ 2026-06-27 part popup)
+  async function _runNestingAuto(o) {
+    // MANUAL path = today's exact behavior. Untouched (quiet threads through).
+    if (S.optManual) { _runNesting(o); return; }
     if (_optRunning) return;
 
     // Build pieces + validate up front (same checks the normal run does) so a
@@ -4478,7 +4629,7 @@
       _optRunning = false;
       _setRunBtnBusy(false);
       S.optDownsizePass = false;   // no winner mix → no downsizing on the fallback run
-      _runNesting();   // normal full run surfaces the unplaced as usual
+      _runNesting(o && o.quiet ? { quiet: true } : undefined);   // normal full run surfaces the unplaced as usual
       return;
     }
 
@@ -4517,7 +4668,7 @@
     // 2026-06-26)
     S.optDownsizePass = true;
     S.optDownsizeAllowKeys = downsizeAllow;
-    _runNesting({ downsize: true, allowKeys: downsizeAllow });   // full final render in S.mode (confirm + rect modal fire here, once)
+    _runNesting({ downsize: true, allowKeys: downsizeAllow, quiet: !!(o && o.quiet) });   // full final render in S.mode (confirm + rect modal fire here, once — skipped when quiet popup re-nest)
     S.optDownsizePass = false;
     S.optDownsizeAllowKeys = null;
     S.optChosen = true;     // mark this result as auto-chosen → "Auto-chosen" badge
@@ -6954,7 +7105,7 @@
       // 👁 → clear in-canvas single-part preview (desktop-style). ↑/↓ then
       // flips through parts; a sheet ‹/› or Run Nesting returns to the nest.
       row.querySelector('.kdnest-part-view')?.addEventListener('click', () => {
-        _setPreview(part.code);
+        _openPartPopup(part.code);   // floating panel OVER the nest (nest stays visible behind)
       });
       // ⟲180 / ⟷ — per-part orientation toggles. Each flips the LIVE flag on THIS
       // row's part object + makes it the previewed part + repaints IMMEDIATELY (no
