@@ -2305,7 +2305,7 @@ async function _kdOpen3D(code, opts) {
        Flux Architect holds in every theme without extra overrides. */
     .kd3d-modal .kd3d-dim3d-l{stroke:#e5484d;stroke-width:2.2;fill:none;stroke-linecap:round}
     .kd3d-modal .kd3d-dim3d-ah{fill:#e5484d}
-    .kd3d-modal .kd3d-dim3d-t{fill:#e5484d;font-family:"Flux Architect",ui-monospace,monospace;font-size:23px;font-weight:700;paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:4px;letter-spacing:.5px}
+    .kd3d-modal .kd3d-dim3d-t{fill:#e5484d;font-family:"Flux Architect",ui-monospace,monospace;font-size:23px;font-weight:700;letter-spacing:.5px}
     .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:2px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease,background .12s ease;pointer-events:auto;cursor:pointer;border-radius:5px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-left{left:0}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{right:0}
@@ -3626,10 +3626,24 @@ async function _kdOpen3D(code, opts) {
     const yEdges = [[0,0],[0,1],[1,0],[1,1]].map(([x,z]) => [ci(x,0,z), ci(x,1,z)]);
     const zEdges = [[0,0],[0,1],[1,0],[1,1]].map(([x,y]) => [ci(x,y,0), ci(x,y,1)]);
     const mid = e => ({ x: (P[e[0]].x + P[e[1]].x) / 2, y: (P[e[0]].y + P[e[1]].y) / 2 });
-    const pickBy = (edges, score) => edges.reduce((b, e) => score(mid(e)) < score(mid(b)) ? e : b);
-    const wEdge = pickBy(xEdges, m => m.y);          // topmost = W
-    const hEdge = pickBy(zEdges, m => -m.x);         // rightmost = H
-    const dEdge = pickBy(yEdges, m => m.x + m.y);    // top-left = D
+    // Pick the SILHOUETTE edge per axis: only box edges on the CONVEX HULL of the
+    // 8 projected corners lie on the outline — the others run THROUGH the model and
+    // made the dim lines bend/cross (เอ๋ "ต้องตั้งแกนให้ถูก"). Build the hull
+    // (monotone chain), then among each axis's hull edges choose by screen position
+    // (top=W, right=H, top-left=D).
+    const sorted = [...Array(8).keys()].sort((i, j) => (P[i].x - P[j].x) || (P[i].y - P[j].y));
+    const cross = (o, a, b) => (P[a].x - P[o].x) * (P[b].y - P[o].y) - (P[a].y - P[o].y) * (P[b].x - P[o].x);
+    const lo = [], up = [];
+    for (const i of sorted) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], i) <= 0) lo.pop(); lo.push(i); }
+    for (let k = 7; k >= 0; k--) { const i = sorted[k]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], i) <= 0) up.pop(); up.push(i); }
+    const hull = lo.slice(0, -1).concat(up.slice(0, -1));
+    const hullE = new Set();
+    for (let i = 0; i < hull.length; i++) { const a = hull[i], b = hull[(i + 1) % hull.length]; hullE.add(Math.min(a, b) + '_' + Math.max(a, b)); }
+    const onHull = e => hullE.has(Math.min(e[0], e[1]) + '_' + Math.max(e[0], e[1]));
+    const pickEdge = (edges, score) => { const h = edges.filter(onHull); return (h.length ? h : edges).reduce((b, e) => score(mid(e)) < score(mid(b)) ? e : b); };
+    const wEdge = pickEdge(xEdges, m => m.y);          // topmost silhouette = W
+    const hEdge = pickEdge(zEdges, m => -m.x);         // rightmost silhouette = H
+    const dEdge = pickEdge(yEdges, m => m.x + m.y);    // top-left silhouette = D
     const NS = 'http://www.w3.org/2000/svg';
     while (_dim3dSvg.firstChild) _dim3dSvg.removeChild(_dim3dSvg.firstChild);
     const line = (x1, y1, x2, y2) => { const l = document.createElementNS(NS, 'line'); l.setAttribute('x1', x1); l.setAttribute('y1', y1); l.setAttribute('x2', x2); l.setAttribute('y2', y2); l.setAttribute('class', 'kd3d-dim3d-l'); _dim3dSvg.appendChild(l); };

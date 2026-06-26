@@ -8764,3 +8764,9 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **VERIFY (preview computed):** projName=#1d1d1f, projMeta/brandSub/#count=#86868b ✓ (hierarchy ขึ้นจริงแล้ว), badge=#0071e3 ✓. ⚠ screenshot tool hang กับ backdrop-filter (headless) — verify ด้วย computed; Safari/iOS render ปกติ. edge curl ต่อ.
 **STATUS:** รอเอ๋ตัดสินบนเครื่อง — สวยพอ = เก็บ / ไม่พอ = เอาออก (ตาม conditional). [3D dimension overlay (f50e2cb) ยังรอ verify ด้วย]
 -- WEB
+
+### WEB · 2026-06-26 · 3D dims: fix axes (silhouette edge via convex hull) + เอา halo ขาวออก
+เอ๋ (รูป): dimension ขึ้นแล้วแต่ (1) แกนผิด — เส้นบิด/ทะลุกลางโมเดล (2) ไม่เอาขอบขาว.
+**FIX axes:** เดิมเลือก edge ด้วย screen-position ดิบ → เลือกขอบหลัง/ทะลุโมเดล. เปลี่ยนเป็น **convex hull (monotone chain) ของ 8 มุมที่ project** → กรองเฉพาะ box-edge ที่อยู่บน silhouette จริง แล้วเลือกตามตำแหน่ง (top=W, right=H, top-left=D) (app.js _updateDims3D). **FIX halo:** เอา paint-order/stroke ขาวออกจาก `.kd3d-dim3d-t`. `node --check` ✓.
+**VERIFY:** static ✓. ⚠ ยัง verify 3D เองไม่ได้ (headless) — รอเอ๋ดู + ส่งรูปอีกรอบ. edge curl ต่อ.
+-- WEB
