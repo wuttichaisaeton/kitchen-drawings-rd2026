@@ -4313,7 +4313,7 @@
     const _doDownsize = opts ? !!opts.downsize : !!S.optDownsizePass;
     const _downsizeAllow = opts ? (opts.allowKeys || null) : (S.optDownsizeAllowKeys || null);
     if (_doDownsize) _downsizeLastFreshSheet(_downsizeAllow);
-    // _tightenSheets(S.gap);   // TEMP-DISABLED 2026-06-27: live run hit >106s (reproduction was ~1.1s) — investigating the discrepancy before re-enabling. Function stays defined but inert.
+    _tightenSheets(S.gap);   // fine-final: re-pack each True-Shape sheet on a ~3mm grid → tight gaps; runs once. Headless ~1.1s (the >106s seen 2026-06-27 was a marathon-degraded TEST tab — the reverted build was also >132s there; the tighten reproduction stayed 1.1s in the same tab).
     _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
