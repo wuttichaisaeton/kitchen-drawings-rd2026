@@ -8661,3 +8661,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **FIX:** `.kdnest-cab-fr` เดิม = amber TEXT 8.5px (low contrast บนพื้น cream) → filled **amber pill** dark text 9px bold + glow (style.css:4863). คุมทั้ง chip NEW/↻ + summary "N new". `!important` fill/text กัน sketch :where() reset. ใช้ amber (brand) ไม่ใช่แดง (=warning/unplaced) เลี่ยงสับสน. CSS-only.
 **VERIFY:** static ✓ + curl edge. Pixel = เอ๋ดูหน้า Nest (chip ต้องมี cabinet ใหม่).
 -- WEB
+
+### WEB (RD 09) · 2026-06-26 · True Shape nest OVERLAP fix (DSV1TR triangle) — needs live eyeball
+**เอ๋ flagged:** MODE "True Shape" placed `DSV1TR-060050` (a 254-pt curved 'triangle') OVERLAPPING a neighbour on sheet 4 (ซ้อนกัน = both parts ruined). Confirmed REAL: empirical polygon-cross check on the BEFORE layout found 1 real overlap (DSV1TR × DSV2B3-070031-Ruth) matching เอ๋'s screenshot.
+**ROOT CAUSE:** `_rasterMask` (nest.js:2246) sampled each grid row at its CENTRE Y only → diagonal/curved edges left edge cells uncovered → mask UNDER-approximated the true shape → a neighbour packed into the diagonal gap → true outlines overlapped. (Rectangles unaffected — centre sampling is exact for axis-aligned.)
+**FIX (f7944f2):** sample each row at TOP+CENTRE+BOTTOM, union x-spans (over-cover diagonals) + dilate the mask 1 cell on NON-rectangular parts only (rects stay tight). Mask now ⊇ true shape → the packer's grid collision GUARANTEES no overlap. Packing no-regression (04 Ruth True Shape 89 placed/0 unplaced/4 sheets).
+**⚠ NOT visually verified:** the sheet is a `<canvas>` (no extractable geometry) and my automated polygon check mis-reads DSV1TR's 254-pt curved outline (overlap count rose as masks GREW = impossible for real overlaps → detector unreliable for this part), and the headless canvas renders too small to eyeball. The fix is provably-correct by the mask⊇true-shape invariant, but **needs an eyeball on the LIVE render** (เอ๋'s browser). Guaranteed-safe fallback meanwhile: **Desktop mode** (bounding-box, physically can't overlap).
+-- WEB
