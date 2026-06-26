@@ -5393,6 +5393,23 @@ html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rg
 .kdnest-part.kdnest-row-errflash  { animation: kdnest-row-errflash-kf 0.95s ease-out 2; }
 .kdnest-part.kdnest-row-warnflash { animation: kdnest-row-warnflash-kf 0.95s ease-out 2; }
 
+/* Keyboard ↑/↓ nav pulse — flash the row you land on so you ALWAYS see where you
+   are, in EVERY theme (sketch/chalk strip the active border, so the resting tint
+   alone blends into the amber grain-warn rows). Motion + glow catches the eye
+   without a heavy persistent style; inset tint fades so text is never buried.
+   (เอ๋ 2026-06-26 'กด keyboard ขึ้นลงแต่ไม่รู้อยู่แถวไหน ให้มี Hilight หรือ effect') */
+@keyframes kdnest-nav-pulse-kf {
+  0%   { box-shadow: 0 0 0 0 rgba(78,204,163,0), inset 0 0 0 0 rgba(78,204,163,0); }
+  30%  { box-shadow: 0 0 0 3px rgba(20,150,128,1), 0 0 18px rgba(78,204,163,0.75), inset 0 0 0 9999px rgba(78,204,163,0.24); }
+  100% { box-shadow: 0 0 0 0 rgba(78,204,163,0), inset 0 0 0 0 rgba(78,204,163,0); }
+}
+.kdnest-part.kdnest-part-navpulse {
+  animation: kdnest-nav-pulse-kf 0.7s ease-out;
+  border-radius: 6px;
+  position: relative;
+  z-index: 3;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    THEME SYSTEM (2026-05-30, request: selectable themes incl. sketch)
    Default = Dark = the base styles above (no [data-theme] needed).

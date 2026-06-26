@@ -4745,6 +4745,20 @@
     const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
     if (row) row.scrollIntoView({ block: 'nearest' });
   }
+  // Brief attention pulse on the active row after a keyboard ↑/↓ move so the user
+  // always sees WHICH row they're on — motion + glow, theme-agnostic (sketch/chalk
+  // drop the active border, so the resting tint alone blends into amber grain-warn
+  // rows). The persistent active style stays subtle so text isn't buried. (เอ๋
+  // 2026-06-26 'กด keyboard ขึ้นลงแต่ไม่รู้อยู่แถวไหน ให้มี Hilight หรือ effect ด้วย')
+  function _pulseActiveRow() {
+    if (!S.rootEl || !S.previewCode) return;
+    const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
+    if (!row) return;
+    row.classList.remove('kdnest-part-navpulse');
+    void row.offsetWidth;   // reflow → restart the animation on every move
+    row.classList.add('kdnest-part-navpulse');
+    setTimeout(() => row.classList.remove('kdnest-part-navpulse'), 750);
+  }
   function _setPreview(code) {
     // Keep the part-list scroll where it is — the user clicked 👁 (or the grain
     // glyph) ON a row that's already in view, so the re-render must NOT yank the
@@ -4763,6 +4777,7 @@
     S.previewCode = S.parts[idx].code;
     _refreshView();
     _scrollPreviewRow();
+    _pulseActiveRow();   // brief attention pulse on the row we landed on (keyboard nav)
   }
   // Sheet index of the first placement of `code`. Module-scoped twin of the
   // findSheetIdx() local inside _refreshView so the keyboard nav below can
