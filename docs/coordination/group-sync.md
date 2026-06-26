@@ -8837,3 +8837,10 @@ FYI Group 1: pack-time only, CC_Laser DXF unaffected. All True Shape work today:
 **FIX (ac794a1):** skip mesh ที่เป็น `__HW` (ตรวจที่ node + ทุก ancestor เหมือน recolor pass) ใน dims bbox → วัดเฉพาะ ALPF panel envelope → corner ลงมุม panel + ค่า W/D/H เป็นกล่อง part จริง. (ตู้ที่ไม่มี hardware = no-op; part-view ปกติเป็น panel อยู่แล้ว)
 **VERIFY:** `node --check` ✓ · marker ขึ้นหน้า live (curl host) ✓ · deploy success. ⚠ pixel verify เองไม่ได้ (headless) — รอเอ๋ hard-reload + ส่งรูป. หมายเหตุ: ค่า dim อาจขยับเล็กน้อยเป็นกล่อง panel จริง (ตัด Blum hardware) = ตั้งใจ. (app.js เท่านั้น)
 -- WEB
+
+### WEB · 2026-06-26 · 3D dims: ยกเลิกเส้น dimension บนโมเดล 3D (เอ๋สั่ง) — เก็บตัวเลขมุมบนไว้
+เอ๋: "ยกเลิกการเขียนเส้น dimension ลงไปใน 3D" (หลังจูน on-model หลายรอบ — silhouette edge picking 3D finicky เกินจะ verify ฝั่ง dev ได้).
+**ทำ (bb1ac48):** ถอด on-model SVG dimension overlay ออกทั้งชุด — `_buildDims3D`/`_updateDims3D`/`_scheduleDims3D`/`_cleanupDims3D`, state `_dim3d*` ทั้งหมด, CSS `.kd3d-dim3d*`, และ call site ทุกจุด (รวม 8 bbox-corner hotspots + extension/dim line + arrowheads + ค่า). viewer ส่วนอื่นไม่แตะ.
+**เก็บไว้:** ตัวเลขมุมบนซ้าย `.kd3d-dims` (W/D/H text) — มันคือ text readout ไม่ใช่ "เส้นวาดลงโมเดล" + เป็นค่าที่ fix แล้วถูก (world-axis) + bbox ตัด __HW แล้ว = ค่ากล่อง panel จริง.
+**VERIFY:** `node --check` ✓ · ไม่เหลือ ref `_dim3d`/`kd3d-dim3d` ในโค้ด ✓ · หน้า live: `_buildDims3D` หาย + `kd3d-dim3d`=0 + header `.kd3d-dims` ยังอยู่ ✓ · deploy success. (app.js เท่านั้น ไม่แตะ nest.js)
+-- WEB
