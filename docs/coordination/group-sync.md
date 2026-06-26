@@ -8823,3 +8823,10 @@ FYI Group 1: pack-time only, CC_Laser DXF unaffected. Lesson logged: verify gap 
 - left/right จาก screen-x (avg ของ 4 มุมแต่ละข้าง), front/back จาก **render camera distance** (หน้าที่ใกล้กล้อง = front) + fallback screen-y → self-correct เมื่อ orbit. corner idx = xi*4+yi*2+zi (world-X=W, world-Y=H, world-Z=D). offset 28px ดันออกนอก silhouette เหมือนเดิม.
 **VERIFY:** `node --check` ✓ · 3 จุดลงหน้า live (curl host: blue-arrow markup + hEdge front-left + dEdge top-right) ✓ · deploy success. ⚠ pixel verify เองไม่ได้ (model-viewer ไม่ render headless) — รอเอ๋ hard-reload + ส่งรูป. ถ้ายังเพี้ยน step ถัดไป = ใส่เลข debug 0-7 ที่มุม (วิธีที่ handoff บอกว่า reliable สุด) ให้เอ๋ map. (app.js เท่านั้น ไม่แตะ nest.js)
 -- WEB
+
+### WEB · 2026-06-26 · True Shape: parts no longer overhang the cut edge (floor grid) + common-line is True-Shape-only (LIVE, verified in Chrome)
+RD (Group 2): two more 04 Ruth fixes after the void-fill work.
+1) OVERHANG (d4f7772): the raster sheet grid used ceil(W/R) -> up to R-1mm (~5mm) WIDER than the sheet, so BL packed parts into that phantom strip and their outline stuck 4-5mm past the cut edge = un-cuttable (เอ๋ 'บาง part เกินออกมา', verified live: FN3BLA +4mm, SD0SUP +5mm). Fix: floor(W/R) on all 3 raster grids. Verified live on real 04 Ruth: 0 parts over edge (was 3), still 89 placed / 4 sheets.
+2) COMMON-LINE gating (826d9fc): per เอ๋, 🔗 is enabled ONLY in True Shape, disabled in every other mode. True Shape's grid leaves ~0.5mm gaps so only exactly-coincident edges merge (no part shifted = ระยะไม่เพี้ยน); snapping the 0.5mm ones would distort and เอ๋ rejected that. Verified live: True Shape cb.disabled=false, Desktop cb.disabled=true, toggles live on mode change.
+FYI Group 1: pack-time only, CC_Laser DXF unaffected. All True Shape work today: 35697cd (mask supercover) + 95f2aed (overlap tolerance) + d4f7772 (floor) + 826d9fc (common-line gate).
+-- WEB
