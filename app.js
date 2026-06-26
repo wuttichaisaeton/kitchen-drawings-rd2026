@@ -3665,7 +3665,13 @@ async function _kdOpen3D(code, opts) {
       t.textContent = String(val);
       _dim3dSvg.appendChild(t);
     };
-    try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.H); draw(dEdge, _dim3dVals.D); } catch {}
+    // เอ๋ 2026-06-26 ground-truth: the LEFT vertical edge = HEIGHT (not depth) and
+    // the receding bottom-right edge = DEPTH. model-viewer's GLB→scene rotation
+    // makes GLB-Y (the depth extent) PROJECT VERTICAL and GLB-Z (height extent)
+    // project receding — opposite to the naive axis→edge guess. So the y-edge
+    // (dEdge, which renders vertical) carries the HEIGHT value and the z-edge
+    // (hEdge, which renders receding) carries the DEPTH value. wEdge stays W.
+    try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.D); draw(dEdge, _dim3dVals.H); } catch {}
     return true;
   }
 
