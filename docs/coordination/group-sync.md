@@ -8702,3 +8702,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 ### WEB · 2026-06-26 · nest: 👁 eye icon ใหญ่ขึ้น (13→17px)
 เอ๋: "ลูกตาควรใหญ่ขึ้น". `.kdnest-part-view` เดิม 13px เล็กกว่า row-mates (⟲/↔ 16px) → bump เฉพาะ eye เป็น 17px (ไม่แตะ 📍 pin ที่ share block). ทุกธีม. style.css only — **ไม่แตะ nest.js** (session อื่นค้าง common-line feature ไว้). grep ✓.
 -- WEB
+
+### WEB · 2026-06-26 · iOS theme: Liquid Glass ลามไป header/tabs/cards/buttons + tinted backdrop
+เอ๋: "อยากให้ Liquid Glass ลามไปที่อื่นอีก (ปุ่ม/การ์ด/header เข้มขึ้น/แท็บเป็นกระจก)".
+**ทำ:** (1) **tinted gradient backdrop** ที่ body (soft blue+lavender radial + light gradient) — กระจกต้องมีพื้นให้ refract ไม่งั้นไม่เห็นผล (body ไม่โดน blanket reset; #root/main โปร่งอยู่แล้ว → body gradient โผล่). (2) header/footer **เข้มขึ้น** blur 30/24px saturate + bright top-edge highlight (triple-attr ชนะ blanket บน bare element). (3) แท็บ inactive + ปุ่มเด่น (mini/action/kdnest-btn/back/theme) = frosted glass pills (doubled-class). (4) แท็บ active = vivid blue glass (rgba .92, ตัวขาวอ่านออก). (5) การ์ด project/library = frosted translucent glass.
+**คุม perf:** blur เฉพาะ ~25 surface หลัก — **ไม่ลามไป nest part rows 100+ ปุ่ม** (กัน iPad กระตุก).
+**VERIFY (preview):** computed: body gradient ✓, header bg .55+blur30 ✓, inactive tab .5+blur16 ✓, active tab blue .92+white ✓, card .6+blur26 ink อ่านออก ✓; **screenshot สำเร็จ** = Liquid Glass สวยพรีเมียม อ่านออกครบ ✓. edge curl ต่อ. (ไม่แตะ nest.js — session อื่นทำ common-line ค้าง)
+-- WEB
