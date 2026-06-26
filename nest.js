@@ -5771,7 +5771,11 @@
     // Common-line collection (opt-in). When ON, axis-aligned OUTER edges are
     // buffered (not emitted) and merged once at the end; everything else (holes,
     // border, labels, curves, non-axis edges) emits normally. OFF → never touched.
-    const _clActive = !!S.commonLine;
+    // OFF on True Shape: its raster grid leaves ~0.5mm gaps between parts, so
+    // shared edges can't merge without snapping = distorting dimensions (เอ๋ wants
+    // ระยะเดิมไม่เพี้ยน, 2026-06-26). Common-line needs exact touching edges (Desktop).
+    // S.commonLine itself is untouched, so switching back to Desktop restores it.
+    const _clActive = !!S.commonLine && S.mode !== 'True Shape';
     const _clTab = S.commonTabs ? (S.commonTabMm || 0.5) : 0;
     const _clBuf = [];
     // Feed each polyline edge through line() — line() collects the axis-aligned
@@ -6569,12 +6573,12 @@
             <label class="kdnest-optmanual-lab" title="Manual: Run uses the sheet stock exactly as set (no cost-optimize). OFF (default) = Run auto-picks the cheapest enabled sheet-size mix by price.">
               <input id="kdnest-optmanual" type="checkbox"${S.optManual ? ' checked' : ''}> Manual
             </label>
-            <label class="kdnest-optmanual-lab" title="Common-line: where two parts touch on a straight edge, cut that edge ONCE (saves material + cut length). Affects the saved/exported Cut Sheet DXF. Best with Desktop mode + Gap 0. Straight edges only — curved/diagonal parts are untouched.">
-              <input id="kdnest-common" type="checkbox"${S.commonLine ? ' checked' : ''}> 🔗 Common-line
+            <label class="kdnest-optmanual-lab"${S.mode === 'True Shape' ? ' style="opacity:.5"' : ''} title="${S.mode === 'True Shape' ? 'Off for True Shape: its raster grid leaves ~0.5mm gaps between parts, so shared edges cannot merge without shifting parts (distorting dimensions). Switch to Desktop for common-line.' : 'Common-line: where two parts touch on a straight edge, cut that edge ONCE (saves material + cut length). Affects the saved/exported Cut Sheet DXF. Best with Desktop mode + Gap 0. Straight edges only — curved/diagonal parts are untouched.'}">
+              <input id="kdnest-common" type="checkbox"${(S.commonLine && S.mode !== 'True Shape') ? ' checked' : ''}${S.mode === 'True Shape' ? ' disabled' : ''}> 🔗 Common-line
             </label>
-            <label class="kdnest-optmanual-lab" title="Leave small UNCUT bridges on shared edges so parts don't shift while cutting (your laser does kerf-comp). OFF = solid shared cut (the operator sequences the cut). Only active when Common-line is on."${S.commonLine ? '' : ' style="opacity:.45"'}>
-              <input id="kdnest-commontab" type="checkbox"${S.commonTabs ? ' checked' : ''}${S.commonLine ? '' : ' disabled'}> tab
-              <input id="kdnest-commontabmm" type="number" value="${S.commonTabMm}" min="0.1" max="5" step="0.1" style="width:3.4em"${S.commonLine ? '' : ' disabled'}>mm
+            <label class="kdnest-optmanual-lab" title="Leave small UNCUT bridges on shared edges so parts don't shift while cutting (your laser does kerf-comp). OFF = solid shared cut (the operator sequences the cut). Only active when Common-line is on."${(S.commonLine && S.mode !== 'True Shape') ? '' : ' style="opacity:.45"'}>
+              <input id="kdnest-commontab" type="checkbox"${S.commonTabs ? ' checked' : ''}${(S.commonLine && S.mode !== 'True Shape') ? '' : ' disabled'}> tab
+              <input id="kdnest-commontabmm" type="number" value="${S.commonTabMm}" min="0.1" max="5" step="0.1" style="width:3.4em"${(S.commonLine && S.mode !== 'True Shape') ? '' : ' disabled'}>mm
             </label>
           </div>
           <!-- Skip-remnants checkbox moved INTO the Remnants Stock modal as
@@ -6709,7 +6713,7 @@
       if (S.currentSheetIdx < S.flatSheets.length - 1) { S.currentSheetIdx++; _refreshView(); }
       else if (wasPreview) _refreshView();
     });
-    $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; });
+    $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; _refreshView(); });   // re-render: 🔗 Common-line auto-disables on True Shape, re-enables on other modes
     $('#kdnest-rectleft')?.addEventListener('change', e => {
       S.rectLeftover = !!e.target.checked;
       try { localStorage.setItem('kd_nest_rectleft_v1', S.rectLeftover ? '1' : '0'); } catch (err) {}
