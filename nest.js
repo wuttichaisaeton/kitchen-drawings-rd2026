@@ -5680,7 +5680,7 @@
   function _commonLineTabbed(a, b, mk, out, tabMm) {
     const len = b - a;
     if (len <= Math.max(8, tabMm * 6)) { out.push(mk(a, b)); return; }   // too short → solid cut
-    const nTabs = Math.max(1, Math.floor(len / 200));   // ~1 uncut bridge / 200mm (0.3mm tab, thin stainless)
+    const nTabs = Math.max(1, Math.floor(len / 300));   // ~1 uncut bridge / 300mm (0.3mm tab, thin stainless) [เอ๋ 2026-06-26: 200→300]
     const cutLen = (len - nTabs * tabMm) / (nTabs + 1);
     let pos = a;
     for (let t = 0; t < nTabs; t++) { out.push(mk(pos, pos + cutLen)); pos += cutLen + tabMm; }
