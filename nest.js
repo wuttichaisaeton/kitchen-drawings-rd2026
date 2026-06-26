@@ -2294,8 +2294,16 @@
       ? piece.polys.outer : null;
     if (outer) {
       const pts = outer.map(p => mapPt(p[0], p[1]));
-      for (let gy = 0; gy < mh; gy++) {
-        const Y = (gy + 0.5) * R, xs = [];
+      // CONSERVATIVE rasterisation: a cell is solid if the polygon covers ANY
+      // part of it — not just its centre. A single centre-Y sample per row
+      // UNDER-approximates diagonal edges (a triangle's hypotenuse leaves edge
+      // cells uncovered), so a neighbour packs into that gap and the true shapes
+      // OVERLAP. Sampling each row at its TOP, CENTRE and BOTTOM edge and
+      // unioning the x-spans makes the mask always >= the true shape → no
+      // overlap. x-fill is already conservative (floor/ceil). (เอ๋ 2026-06-26
+      // 'nesting ชิ้นนี้ผิด ซ้อนกัน' — DSV1TR triangle overlapped a neighbour)
+      const scanRow = (Y, gy) => {
+        const xs = [];
         for (let i = 0; i < pts.length; i++) {
           const a = pts[i], b = pts[(i + 1) % pts.length];
           if ((a[1] <= Y && b[1] > Y) || (b[1] <= Y && a[1] > Y)) {
@@ -2308,6 +2316,35 @@
           const c1 = Math.min(mw, Math.ceil(xs[k + 1] / R));
           for (let c = c0; c < c1; c++) solid[gy * mw + c] = 1;
         }
+      };
+      for (let gy = 0; gy < mh; gy++) {
+        scanRow(gy * R + 1e-6, gy);          // row top edge
+        scanRow((gy + 0.5) * R, gy);         // row centre
+        scanRow((gy + 1) * R - 1e-6, gy);    // row bottom edge
+      }
+      // Dilate by 1 cell ON NON-RECTANGULAR parts only: closes any sub-cell
+      // coverage gap on curved/diagonal outlines (e.g. DSV1TR's 254-pt arc edges)
+      // so the mask is strictly >= the true shape → the packer's grid collision
+      // then GUARANTEES placed parts can't overlap. A full-bbox rectangle has no
+      // diagonal edge to under-cover, so it is skipped → rectangles keep packing
+      // tight. (เอ๋ 2026-06-26 'nesting ชิ้นนี้ผิด ซ้อนกัน')
+      let allSolid = true;
+      for (let i = 0; i < solid.length; i++) { if (!solid[i]) { allSolid = false; break; } }
+      if (!allSolid) {
+        const _dil = solid.slice();
+        for (let y = 0; y < mh; y++) {
+          for (let x = 0; x < mw; x++) {
+            if (!solid[y * mw + x]) continue;
+            for (let dy = -1; dy <= 1; dy++) {
+              const ny = y + dy; if (ny < 0 || ny >= mh) continue;
+              for (let dx = -1; dx <= 1; dx++) {
+                const nx = x + dx; if (nx < 0 || nx >= mw) continue;
+                _dil[ny * mw + nx] = 1;
+              }
+            }
+          }
+        }
+        solid.set(_dil);
       }
     }
     // Degenerate / no-polygon (manual rect) → fill the whole footprint.
