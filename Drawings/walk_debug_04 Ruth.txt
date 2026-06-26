@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-26T07:26:58.398853
+CC_Assembly walk debug — 2026-06-26T09:08:49.672114
 Project: 04 Ruth
 Total occurrences visited: 253
 CAM-ALPF tagged components: 0
@@ -260,4 +260,4 @@ depth | SM | CAM | material         | display_name (component)
     0 | SM  |     | ALPF             | FT2100-000000 v2:1 (FT2100-000000 v2)
     0 |     |     | Steel            | MR:1 (MR)
     0 |     |     |                  | BS:1 (BS)
-    1 | SM  |     | Steel            | BS10:1 (BS10)
+    1 | SM  |     | ALPF             | BS10:1 (BS10)
