@@ -1,0 +1,54 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = FN0FL2-070544
+target_kind       = cabinet
+walk_bodies       = 41
+main_glb_bytes    = 639180
+main_nodes        = 38
+main_stl_bytes    = 2814692
+dropped_bodies    = 3 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = FN1BLA-120000__Body1 @ (-0.0, -198.0, -21.0)
+node_world_mm[1] = FN0F00-070540 v4__Body18 @ (0.0, 0.0, 0.0)
+node_world_mm[2] = FN2BNX-080000__Body1 @ (0.0, 240.0, -21.0)
+--- main helper subprocess output ---
+OK FN1BLA-120000__Body1 1552/3204
+OK FN0F00-070540_v4__Body18 1796/3748
+OK FN2BNX-080000__Body1 2200/4608
+OK Leg_-_080_mm._by_YH__Body1__HW 3259/6534
+OK Leg_-_080_mm._by_YH__Cut__HW 62/120
+OK Leg_-_080_mm._by_YH__Cut_1___HW 62/120
+OK Leg_-_080_mm._by_YH__Cut_3___HW 62/120
+OK Leg_-_080_mm._by_YH__Cut_2___HW 62/120
+OK Body1__HW 964/1928
+OK Body1__HW_2 540/1076
+OK Body1__HW_3 440/876
+OK Leg_-_080_mm._by_YH__Body1__HW_2 3259/6534
+OK Leg_-_080_mm._by_YH__Cut__HW_2 62/120
+OK Leg_-_080_mm._by_YH__Cut_1___HW_2 62/120
+OK Leg_-_080_mm._by_YH__Cut_3___HW_2 62/120
+OK Leg_-_080_mm._by_YH__Cut_2___HW_2 62/120
+OK Body1__HW_4 964/1928
+OK Body1__HW_5 540/1076
+OK Body1__HW_6 440/876
+OK Leg_-_080_mm._by_YH__Body1__HW_3 3259/6534
+OK Leg_-_080_mm._by_YH__Cut__HW_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_1___HW_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_3___HW_3 62/120
+OK Leg_-_080_mm._by_YH__Cut_2___HW_3 62/120
+OK Body1__HW_7 964/1928
+OK Body1__HW_8 540/1076
+OK Body1__HW_9 440/876
+OK Leg_-_080_mm._by_YH__Body1__HW_4 3259/6534
+OK Leg_-_080_mm._by_YH__Cut__HW_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_1___HW_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_3___HW_4 62/120
+OK Leg_-_080_mm._by_YH__Cut_2___HW_4 62/120
+OK Body1__HW_10 964/1928
+OK Body1__HW_11 540/1076
+OK Body1__HW_12 440/876
+OK FN3BLA-070000_v10__Body4 374/776
+OK FN3BLA-070000_v10__Body5 52/100
+OK FN3BLA-070000_v10__Body6 111/218
+ORPHAN_SUMMARY median=371.5 threshold=1114.6 count=0/38
+GLB 639180 38

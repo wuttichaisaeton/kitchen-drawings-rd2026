@@ -1,0 +1,50 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = DSV0B0-070031-Ruth
+target_kind       = cabinet
+walk_bodies       = 34
+main_glb_bytes    = 382108
+main_nodes        = 34
+main_stl_bytes    = 1109956
+dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = DSB0F0-070050 v4__Body3 @ (-232.0, 199.6, -8.0)
+node_world_mm[1] = DSB0BD-070050 v7__Body3 @ (-232.0, 437.6, 75.5)
+node_world_mm[2] = Slide-L__C-Side-L__HW @ (-282.0, -38.4, -0.0)
+--- main helper subprocess output ---
+OK DSB0F0-070050_v4__Body3 1440/2964
+OK DSB0BD-070050_v7__Body3 1206/2460
+OK Slide-L__C-Side-L__HW 232/476
+OK Slide-L__Logo__HW 624/1244
+OK Slide-L__Bracket__HW 196/396
+OK Slide-L__Slide__HW 243/486
+OK Slide-L__Rail_4___HW 46/88
+OK Slide-L__Rail_3___HW 53/102
+OK Slide-L__Rail__HW 384/764
+OK Slide-L__Back__HW 208/432
+OK Slide-L__Rail_2___HW 162/316
+OK Slide-L__Rail_4_1___HW 98/192
+OK L__Cut-L_3___HW 24/44
+OK L__Cut-L__HW 24/44
+OK L__Cut-L_1___HW 24/44
+OK L__Cut-L_2___HW 24/44
+OK L__Body__HW 728/1512
+OK Slide-R__Rail_1___HW 46/88
+OK Slide-R__C-Side-R__HW 232/476
+OK Slide-R__Bracket_1___HW 196/396
+OK Slide-R__Back_1___HW 208/432
+OK Slide-R__Rail_5___HW 162/316
+OK Slide-R__Rail_6___HW 384/764
+OK Slide-R__Rail_7___HW 53/102
+OK Slide-R__Logo__HW 624/1244
+OK Slide-R__Slide__HW 243/486
+OK Slide-R__Rail_1_1___HW 98/192
+OK R__Cut-R_2___HW 24/44
+OK R__Cut-R_3___HW 24/44
+OK R__Cut-R__HW 24/44
+OK R__Body__HW 728/1512
+OK R__Cut-R_1___HW 24/44
+OK DSV2B3-070031-Ruth_v2__Body1 765/1550
+OK DSV100-070030-Ruth_v1__Body4 1402/2800
+ORPHAN_SUMMARY median=359.1 threshold=1077.4 count=0/34
+GLB 382108 34

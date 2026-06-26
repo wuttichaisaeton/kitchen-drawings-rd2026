@@ -1,0 +1,21 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = BK0DN0-070000
+target_kind       = cabinet
+walk_bodies       = 5
+main_glb_bytes    = 106428
+main_nodes        = 5
+main_stl_bytes    = 403420
+dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = BK1DN1-070000 v31__Body1 @ (0.0, 0.0, 0.0)
+node_world_mm[1] = BXXTR0-000000__Body1 @ (-341.0, 17.0, -373.0)
+node_world_mm[2] = BXXTR0-000000__Body1 @ (341.0, 17.0, -373.0)
+--- main helper subprocess output ---
+OK BK1DN1-070000_v31__Body1 1752/3500
+OK BXXTR0-000000__Body1 556/1140
+OK BXXTR0-000000__Body1_2 556/1140
+OK BXXTR0-000000__Body1_3 556/1140
+OK BXXTR0-000000__Body1_4 556/1140
+ORPHAN_SUMMARY median=471.2 threshold=1413.6 count=0/5
+GLB 106428 5

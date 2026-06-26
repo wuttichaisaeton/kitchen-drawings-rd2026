@@ -2,7 +2,7 @@ CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 04 Ruth
 target_kind       = project
 walk_bodies       = 456
-main_glb_bytes    = 11563432
+main_glb_bytes    = 11563480
 main_nodes        = 420
 main_stl_bytes    = 47631480
 dropped_bodies    = 36 (STL 0-byte/error, skipped — round 16 now counts these)
@@ -12,8 +12,7 @@ node_world_mm[0] = BK1DN1-080000 v31__Body1 @ (413.0, 546.0, 500.0)
 node_world_mm[1] = BXXTR0-000000__Body1 @ (22.0, 563.0, 127.0)
 node_world_mm[2] = BXXTR0-000000__Body1 @ (804.0, 563.0, 127.0)
 --- main helper subprocess output ---
-44
-OK L__Cut-L_1___HW_4 24/44
+Cut-L_1___HW_4 24/44
 OK L__Cut-L_2___HW_4 24/44
 OK L__Body__HW_4 728/1512
 OK Slide-R__Rail_1___HW_2 46/88
@@ -64,6 +63,6 @@ OK BTHLSR-140000_v2__Body2 18550/37096
 OK BTHLSR-140000_v2__Body3 9559/19114
 OK FT2100-000000_v2__Body1 2512/5036
 OK MR__Body1__HW 8/12
-OK BS10__Body1 525/1046
+OK BSRUTH-000000__Body1 525/1046
 ORPHAN_SUMMARY median=595.8 threshold=1787.3 count=0/420
-GLB 11563432 420
+GLB 11563480 420
