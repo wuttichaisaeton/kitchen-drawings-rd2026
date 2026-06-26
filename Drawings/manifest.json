@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-26T02:12:52.859003+00:00",
+  "generated_at": "2026-06-26T02:29:27.381528+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -7106,6 +7106,20 @@
       "fusion_teams_url": null,
       "page_number": 1,
       "drawing_urn": "urn:adsk.wipprod:dm.lineage:vNE_He_jT_Gy5JN12wOIhA"
+    },
+    "1CVDVL-006010": {
+      "family": "Other",
+      "last_drawn_version": 1,
+      "fusion_version": 1,
+      "pdf": "1CVDVL-006010.pdf",
+      "bends": 0,
+      "material": "",
+      "thickness_mm": 0.0,
+      "dimensions": "",
+      "generated_at": "2026-06-26T02:29:27.381528+00:00",
+      "fusion_teams_url": null,
+      "page_number": 1,
+      "drawing_urn": "urn:adsk.wipprod:dm.lineage:k5WffDtzSja1EysS4MgWQw"
     }
   },
   "manual_uploads": [],
