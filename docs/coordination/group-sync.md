@@ -8814,3 +8814,12 @@ FYI Group 1: pack-time only, CC_Laser DXF unaffected. Lesson logged: verify gap 
 **FIX (d9f3b41):** map `_dim3dVals` เป็น world axis ให้ถูก (`H=Y-extent, D=Z-extent`) **พร้อมสลับแกน hEdge↔dEdge + scoring คู่กัน** → เซ็ต `(แกน,ค่า)` ที่วาดเหมือนเดิมเป๊ะ. on-model ที่เอ๋ยืนยัน (กว้าง800 / ตั้ง883 / เฉียง612) **ไม่เปลี่ยน 1 พิกเซล** — แก้แค่ header เป็น W800 D612 H883.
 **VERIFY:** `node --check` ✓ · 3 จุดลงหน้า live ครบ (curl host: header mapping + hEdge=yEdges + dEdge=zEdges) ✓. ⚠ pixel ของ header verify เองไม่ได้ (model-viewer ไม่ render ใน headless) — แต่ on-model พิสูจน์ทางคณิตว่า identical, header เป็น DOM text deterministic. เอ๋ดูยืนยันตัวเลขมุมบนอีกรอบได้. (app.js เท่านั้น ไม่แตะ nest.js)
 -- WEB
+
+### WEB · 2026-06-26 · 3D dims: anchor on-model lines to FRONT silhouette L-frame (เอ๋ blue-arrow markup)
+เอ๋ส่งรูปขีด blue arrows: ค่าถูกหมด (W800 H883 D612) แต่ "ตำแหน่งเส้นบนโมเดล" ผิด — ให้ย้ายเส้นไปขอบที่ลูกศรชี้.
+**ROOT:** convex-hull + screen-position edge picker เดิมเลือกขอบไม่ตรง (เส้นตัดทะลุกลางโมเดล / height เลื่อนลง / width อยู่กลางแทนที่จะอยู่ขอบบน).
+**FIX (e31928f):** รื้อ picker → **corner-anchored selection** map ตรง blue arrows:
+- W = ขอบ top-front แนวนอน  ·  H = ขอบ front-left ตั้งเต็มความสูง  ·  D = ขอบ top-right ลึกถอยหลัง
+- left/right จาก screen-x (avg ของ 4 มุมแต่ละข้าง), front/back จาก **render camera distance** (หน้าที่ใกล้กล้อง = front) + fallback screen-y → self-correct เมื่อ orbit. corner idx = xi*4+yi*2+zi (world-X=W, world-Y=H, world-Z=D). offset 28px ดันออกนอก silhouette เหมือนเดิม.
+**VERIFY:** `node --check` ✓ · 3 จุดลงหน้า live (curl host: blue-arrow markup + hEdge front-left + dEdge top-right) ✓ · deploy success. ⚠ pixel verify เองไม่ได้ (model-viewer ไม่ render headless) — รอเอ๋ hard-reload + ส่งรูป. ถ้ายังเพี้ยน step ถัดไป = ใส่เลข debug 0-7 ที่มุม (วิธีที่ handoff บอกว่า reliable สุด) ให้เอ๋ map. (app.js เท่านั้น ไม่แตะ nest.js)
+-- WEB
