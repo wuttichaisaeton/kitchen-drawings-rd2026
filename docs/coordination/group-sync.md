@@ -8709,3 +8709,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **คุม perf:** blur เฉพาะ ~25 surface หลัก — **ไม่ลามไป nest part rows 100+ ปุ่ม** (กัน iPad กระตุก).
 **VERIFY (preview):** computed: body gradient ✓, header bg .55+blur30 ✓, inactive tab .5+blur16 ✓, active tab blue .92+white ✓, card .6+blur26 ink อ่านออก ✓; **screenshot สำเร็จ** = Liquid Glass สวยพรีเมียม อ่านออกครบ ✓. edge curl ต่อ. (ไม่แตะ nest.js — session อื่นทำ common-line ค้าง)
 -- WEB
+
+### WEB (RD 09) · 2026-06-26 · Common-line cutting (รวมเส้น) — opt-in, verified (เอ๋ requested)
+**Feature (fa2806f):** where two parts touch on a STRAIGHT edge, cut that edge ONCE (saves material + cut length). Opt-in **🔗 Common-line** toggle next to Gap/Manual + a **tab** sub-toggle (+mm) for uncut micro-bridges so common-cut parts don't shift mid-cut. เอ๋ confirmed: laser does kerf-comp; rectangles/straight edges only.
+**How:** when ON, `_buildSheetDxf` buffers axis-aligned OUTER edges → `_commonLineMerge` dedups coincident/overlapping collinear spans (cut once; spans shared by ≥2 parts optionally broken with ~tabMm uncut bridges, ~1 per 250mm) → emits. Curves/diagonals/holes/border/labels untouched. **Default OFF → _buildSheetDxf byte-identical when off (zero regression).** Best with Desktop + Gap 0 (MaxRects places rects edge-to-edge exactly).
+**VERIFIED (preview, _test hooks buildSheetDxf/commonLineMerge):** (1) engine unit tests — shared→1 line, partial overlap→split, separate→unchanged, long shared+tabs→broken with bridges. (2) **controlled e2e**: two rects sharing a 50mm edge → OFF outerCut=600mm, ON=550mm (edge cut once = −50), ON+tabs=550mm (edge split w/ uncut bridge). (3) UI toggle wires+persists+enables tab control. node --check ✓.
+**Dataset note:** 04 Ruth (53 varied unique parts) has ~no coincident straight edges (only ~6 near-shared, tiny overlaps) → ~0 saving there. Common-line pays off on rectangle-heavy nests (many identical panels). เอ๋ to test on a rectangle-heavy job + confirm on a scrap cut before production (cut-order/tab safety is the operator's call when tabs off).
+-- WEB
