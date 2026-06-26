@@ -3672,6 +3672,17 @@ async function _kdOpen3D(code, opts) {
     // (dEdge, which renders vertical) carries the HEIGHT value and the z-edge
     // (hEdge, which renders receding) carries the DEPTH value. wEdge stays W.
     try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.D); draw(dEdge, _dim3dVals.H); } catch {}
+    // TEMP corner-index debug ROUND 2 (เอ๋ — anchor placement). Numbers 0–7 at
+    // each projected corner so เอ๋ tells me which 2 corners each dim line should
+    // connect → lock the edge selection exactly. REMOVE after.
+    P.forEach((p, i) => {
+      const d = document.createElementNS(NS, 'text');
+      d.setAttribute('x', p.x); d.setAttribute('y', p.y);
+      d.setAttribute('fill', '#0a66ff'); d.setAttribute('font-size', '22'); d.setAttribute('font-weight', '800');
+      d.setAttribute('text-anchor', 'middle'); d.setAttribute('paint-order', 'stroke');
+      d.setAttribute('stroke', 'rgba(255,255,255,0.92)'); d.setAttribute('stroke-width', '4.5');
+      d.textContent = i; _dim3dSvg.appendChild(d);
+    });
     return true;
   }
 
