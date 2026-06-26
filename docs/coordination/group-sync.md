@@ -8674,3 +8674,15 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **ทำ:** (1) index.html THEMES += `{id:'ios',label:'iOS - Apple'}`. (2) style.css เพิ่ม block `html[data-theme="ios"]` (~190 บรรทัด, ท้ายไฟล์) สไตล์ Apple light: page #f5f5f7 / white cards / ink #1d1d1f / Apple-blue #0071e3 / hairline #d2d2d7 / soft shadow / rounded / frosted "Liquid Glass" header (backdrop-blur). เทคนิคเดียวกับ sketch (vars→blanket reset→repaint). **blanket reset override `font-family` = -apple-system/SF stack → สลับ Flux→SF ทั้งแอป** (= ส่วน "เปลี่ยน fonts"). NEW badge คงเป็น pill (blue), warning/error คง semantics แดง/ส้ม.
 **VERIFY (preview จริง localhost:3041):** computed body bg=rgb(245,245,247) ✓, font=`-apple-system…SF Pro` ทั้ง body/h1/tab ✓ (font swap ติด), iOS css loaded ไม่ break stylesheet ✓; screenshot desktop+mobile = Apple-clean อ่านออกครบ ✓. ไม่ต้อง build:editor (mindmap rules อยู่ใน style.css). edge curl ต่อ.
 -- WEB
+
+### WEB (RD 09) · 2026-06-26 · True Shape overlap DEEP-DIVE + 4-sheet packing answer (เอ๋ delegated)
+**OUTCOME for เอ๋'s goal "fit all on 4 sheets":**
+- **4× 10x5 (3050×1525) = 15,400 is the ONLY/optimum 4-sheet solution** (Desktop, all 89 placed, 0 unplaced, **0 overlap verified**).
+- **4-foot ("40*4") sheets are GEOMETRICALLY IMPOSSIBLE:** `BSRUTH-000000` = 2464×**1256** mm; its short side 1256 > 1220 → cannot lie flat on ANY 4-foot sheet, any rotation. Plus the rest needs 5–6 sheets: 10x4→5 sheets+BSRUTH unplaced; 8x4→6 sheets+BSRUTH unplaced.
+- **→ Recommend เอ๋ use DESKTOP mode** (bbox pack, physically can't overlap; verified 0 overlap) for cutting. It meets the 4-sheet goal at the optimum.
+**True Shape overlap (DSV1TR-060050) — REAL, deep-dived, NOT yet fixed:**
+- Confirmed real via a true-polygon edge-cross detector whose transform I proved IDENTICAL to the renderer `_drawSheet` transform (4968) AND the mask `mapPt` (2256). Detector validated: Desktop run = 0 overlaps (provably overlap-free).
+- DSV1TR's outer is a VALID simple polygon (254 pts, 0 self-intersections, area 202402mm²). Its raster mask (3-edge-sample+dilate) was verified to COVER 100% of its true shape (1692 interior samples, 0 uncovered, mask 218808 > true 202402mm²).
+- Despite correct masks + matching transforms + grid placement, the packer still places ~5 neighbours overlapping DSV1TR on sheet 4 → **the bug is in the COLLISION LOGIC (_blFind/_stamp/pack loop), NOT the mask.** My commit f7944f2 (conservative mask) attacked the wrong layer and did NOT fix it → **REVERTED (bfb7b61).**
+- NEXT (open): instrument the live raster packer (_blFind/_stamp) to catch why a non-clashing grid placement renders as a true-shape overlap — needs a focused debugging session. Meanwhile Desktop is the safe path.
+-- WEB
