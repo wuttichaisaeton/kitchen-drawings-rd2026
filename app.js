@@ -3892,6 +3892,20 @@ async function _kdOpen3D(code, opts) {
     // doesn't recompute on mode-switch.
     let mnX = Infinity, mnY = Infinity, mnZ = Infinity;
     let mxX = -Infinity, mxY = -Infinity, mxZ = -Infinity;
+    // WORLD-space bbox (เอ๋ 2026-06-26 — fixes the 7/8 mis-projected dim corners).
+    // snapshotScene's baked-coord NORMALIZATION recenters each unit's geometry into
+    // its node.position, so geometry.boundingBox is now RECENTERED-LOCAL, not world.
+    // The hotspots + render are in WORLD coords (the working centroid hotspot uses
+    // Box3.setFromObject = world). So force matrixWorld current, then transform each
+    // mesh's local bbox corners by matrixWorld → accumulate the real WORLD bbox. The
+    // parts are axis-aligned (translation-only) so the extents — and thus the W/D/H
+    // VALUES — are unchanged; only the absolute corner positions get fixed.
+    try { threeScene.updateMatrixWorld(true); } catch (e) {}
+    const _tw = (e, x, y, z) => ({
+      x: e[0] * x + e[4] * y + e[8] * z + e[12],
+      y: e[1] * x + e[5] * y + e[9] * z + e[13],
+      z: e[2] * x + e[6] * y + e[10] * z + e[14],
+    });
     threeScene.traverse(n => {
       if (!n.isMesh || !n.geometry || !n.geometry.attributes || !n.geometry.attributes.position) return;
       // In part view, count only the visible mesh(es) so dims describe the
@@ -3899,9 +3913,13 @@ async function _kdOpen3D(code, opts) {
       if (partView && !n.visible) return;
       if (!n.geometry.boundingBox) try { n.geometry.computeBoundingBox(); } catch (e) {}
       const bb = n.geometry.boundingBox;
-      if (!bb) return;
-      if (bb.min.x < mnX) mnX = bb.min.x; if (bb.min.y < mnY) mnY = bb.min.y; if (bb.min.z < mnZ) mnZ = bb.min.z;
-      if (bb.max.x > mxX) mxX = bb.max.x; if (bb.max.y > mxY) mxY = bb.max.y; if (bb.max.z > mxZ) mxZ = bb.max.z;
+      if (!bb || !n.matrixWorld || !n.matrixWorld.elements) return;
+      const me = n.matrixWorld.elements;
+      for (let xi = 0; xi < 2; xi++) for (let yi = 0; yi < 2; yi++) for (let zi = 0; zi < 2; zi++) {
+        const w = _tw(me, xi ? bb.max.x : bb.min.x, yi ? bb.max.y : bb.min.y, zi ? bb.max.z : bb.min.z);
+        if (w.x < mnX) mnX = w.x; if (w.y < mnY) mnY = w.y; if (w.z < mnZ) mnZ = w.z;
+        if (w.x > mxX) mxX = w.x; if (w.y > mxY) mxY = w.y; if (w.z > mxZ) mxZ = w.z;
+      }
     });
     const dimsEl = modal2 && modal2.querySelector('.kd3d-dims');
     // Dims must come from the ASSEMBLED .glb only — a `_parts.glb` scatter
