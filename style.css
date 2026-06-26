@@ -5232,7 +5232,7 @@ select option { color: #16202c !important; background-color: #ffffff !important;
 .kdnest-partpop-status { font-size: 11px; font-weight: 400; color: #e0a23a; }
 .kdnest-partpop-close { background: none; border: none; cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; color: inherit; opacity: 0.7; }
 .kdnest-partpop-close:hover { opacity: 1; color: #e06c6c; }
-.kdnest-partpop-body { padding: 10px 12px; flex: 1 1 auto; min-height: 0; }
+.kdnest-partpop-body { padding: 10px 12px; flex: 1 1 auto; min-height: 0; position: relative; }
 .kdnest-partpop-canvas { display: block; width: 100%; height: 100%; }
 .kdnest-partpop-ctrls { display: flex; gap: 8px; padding: 0 12px 12px; }
 .kdnest-partpop-ctrls.kdnest-partpop-busy { opacity: 0.5; pointer-events: none; }

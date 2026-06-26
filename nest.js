@@ -3925,7 +3925,10 @@
     let themeObs = null, sizeObs = null;
     // live(): always the CURRENT object in S.parts (rebuilt on re-nest); no stale
     // fallback — if the part is gone (deleted mid-popup), callers close the panel.
-    const live = () => S.parts.find(x => x.code === code);
+    // curCode is mutable so ↑/↓ can switch the viewed part in place. (เอ๋ 2026-06-27)
+    let curCode = code;
+    const live = () => S.parts.find(x => x.code === curCode);
+    const titleEl = q('.kdnest-partpop-title');
     const close = () => {
       if (_ppRenestTimer) { clearTimeout(_ppRenestTimer); _ppRenestTimer = null; }
       _ppRerunPending = false;
@@ -3935,18 +3938,57 @@
       pop.remove();
     };
     pop._kdClose = close;   // so a later _openPartPopup (or external) can clean us up
-    const draw = () => { const p = live(); if (!p) { close(); return; } _drawPartPreview(canvas, p, { transparent: true }); };
+    // Edge-click → lock this part's grain parallel to the clicked edge (the power the
+    // retired inline preview had), then redraw + debounce a re-nest. (เอ๋ 2026-06-27)
+    const onEdgePopup = (p, edge) => {
+      if (!p || !edge) return;
+      const a = ((edge.angle % 180) + 180) % 180;
+      const cur = (p.grain === 'EDGE' && p.grainAngle != null) ? ((p.grainAngle % 180) + 180) % 180 : null;
+      const same = (cur != null && Math.abs(((cur - a) % 180 + 180) % 180) < 0.5);
+      _setPartEdgeGrain(p, same ? null : a).then(() => { draw(); syncBtns(); scheduleRenest(); })
+        .catch(e => console.warn('[kdNest] popup edge grain failed:', e));
+    };
+    // Draw the part + (re)attach the clickable edge overlay (the "Click an edge…"
+    // hint rides on the overlay). _drawPartPreview MUST run first (sets the transform).
+    const draw = () => {
+      const p = live(); if (!p) { close(); return; }
+      _drawPartPreview(canvas, p, { transparent: true });
+      _attachEdgeClickLayer(canvas, p, onEdgePopup);
+    };
     requestAnimationFrame(draw);
     const syncBtns = () => {
       const p = live(); if (!p) return;
-      q('.kdnest-part-flip180')?.classList.toggle('kdnest-orient-active', !!p.flip180);
-      q('.kdnest-part-mirror')?.classList.toggle('kdnest-orient-active', !!p.mirror);
+      const fb = q('.kdnest-part-flip180'), mb = q('.kdnest-part-mirror');
+      if (fb) { fb.disabled = !!p.manual; fb.classList.toggle('kdnest-orient-active', !!p.flip180); }
+      if (mb) { mb.disabled = !!(p.manual || !p.polys); mb.classList.toggle('kdnest-orient-active', !!p.mirror); }
     };
-    // Escape closes; arrow keys are swallowed so the workspace part-nav can't switch
-    // the layout BEHIND the open popup (which would contradict "nest stays visible").
+    // Switch the popup to another part IN PLACE (keeps size/position). Used by ↑/↓.
+    const showPart = (newCode) => {
+      const p = S.parts.find(x => x.code === newCode); if (!p) return;
+      curCode = newCode; pop.dataset.code = newCode;
+      const d = (p.w && p.h) ? (Math.round(p.w) + '×' + Math.round(p.h)) : '';
+      if (titleEl) titleEl.innerHTML = _esc(_disp(newCode)) + (d ? ' <span class="kdnest-partpop-dim">' + d + '</span>' : '');
+      draw(); syncBtns();
+    };
+    pop._kdShowPart = showPart;   // so _setPreview can point the open popup at a part
+    // ↑/↓ steps to the prev/next VIEWABLE (non-manual) part. (เอ๋ 2026-06-27 'ใช้ปุ่ม
+    // ขึ้นลงที่ Keyboard ในการเปลี่ยนภาพ')
+    const navPart = (dir) => {
+      const list = S.parts; if (!list.length) return;
+      let idx = list.findIndex(p => p.code === curCode); if (idx < 0) idx = 0;
+      for (let step = idx + dir; step >= 0 && step < list.length; step += dir) {
+        if (!list[step].manual) { showPart(list[step].code); return; }
+      }
+    };
+    // Escape closes; ↑/↓ switch the viewed part; all arrows are swallowed so the
+    // workspace never reacts behind the popup. Fields keep their own arrows.
     const onKey = (e) => {
       if (e.key === 'Escape') { e.stopImmediatePropagation(); close(); return; }
-      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopImmediatePropagation();
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      if (e.key === 'ArrowUp')   { e.stopImmediatePropagation(); e.preventDefault(); navPart(-1); return; }
+      if (e.key === 'ArrowDown') { e.stopImmediatePropagation(); e.preventDefault(); navPart(1); return; }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.stopImmediatePropagation();
     };
     document.addEventListener('keydown', onKey, true);
     q('.kdnest-partpop-close').addEventListener('click', close);
@@ -5102,58 +5144,16 @@
     canvas._kdPreviewMirror = !!(part && part.mirror);
   }
 
-  // EDGE overlay click → lock this part's grain parallel to the clicked edge.
-  // Clicking the ALREADY-selected edge again clears EDGE back to '?' (toggle).
-  // Persists via _setPartEdgeGrain then re-renders so the hatch + highlight
-  // update. (angled-grain feature 2026-06-25)
-  function _onEdgeClick(part, edge) {
-    if (!part || !edge) return;
-    const a = ((edge.angle % 180) + 180) % 180;
-    const cur = (part.grain === 'EDGE' && part.grainAngle != null) ? ((part.grainAngle % 180) + 180) % 180 : null;
-    const same = (cur != null && Math.abs(((cur - a) % 180 + 180) % 180) < 0.5);
-    _setPartEdgeGrain(part, same ? null : a).then(() => {
-      _setPreview(part.code);   // redraw preview (hatch at new angle) + keep scroll
-    });
-  }
-
-  function _scrollPreviewRow() {
-    if (!S.rootEl || !S.previewCode) return;
-    const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
-    if (row) row.scrollIntoView({ block: 'nearest' });
-  }
-  // Brief attention pulse on the active row after a keyboard ↑/↓ move so the user
-  // always sees WHICH row they're on — motion + glow, theme-agnostic (sketch/chalk
-  // drop the active border, so the resting tint alone blends into amber grain-warn
-  // rows). The persistent active style stays subtle so text isn't buried. (เอ๋
-  // 2026-06-26 'กด keyboard ขึ้นลงแต่ไม่รู้อยู่แถวไหน ให้มี Hilight หรือ effect ด้วย')
-  function _pulseActiveRow() {
-    if (!S.rootEl || !S.previewCode) return;
-    const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
-    if (!row) return;
-    row.classList.remove('kdnest-part-navpulse');
-    void row.offsetWidth;   // reflow → restart the animation on every move
-    row.classList.add('kdnest-part-navpulse');
-    setTimeout(() => row.classList.remove('kdnest-part-navpulse'), 750);
-  }
+  // (Inline single-part preview RETIRED 2026-06-27 — the part popup is the sole part
+  // viewer. The old _onEdgeClick / _scrollPreviewRow / _pulseActiveRow / _movePreview
+  // helpers went with it; edge-click + ↑/↓ now live inside _openPartPopup.)
   function _setPreview(code) {
-    // Keep the part-list scroll where it is — the user clicked 👁 (or the grain
-    // glyph) ON a row that's already in view, so the re-render must NOT yank the
-    // list back to the top (เอ๋ 2026-06-21 'กด 👁 แล้วลิสต์เด้งขึ้นบนสุด ต้อง scroll
-    // กลับลงมาทุกที'). Reuses the same keep-scroll re-render as ↻ Re-resolve.
-    // (Keyboard ↑/↓ uses _movePreview → _scrollPreviewRow to bring the newly
-    // selected row into view — that path is unchanged.)
-    S.previewCode = code;
+    // Old inline-preview callers (grain glyph cycle, row ⟲/↔) just refresh the list
+    // so the row glyph updates; if a popup is open, point it at this part. S.previewCode
+    // stays null → the main canvas always shows the sheet/layout, never the inline part.
+    const pop = document.querySelector('.kdnest-partpop');
+    if (pop && typeof pop._kdShowPart === 'function') pop._kdShowPart(code);
     _refreshViewKeepScroll();
-  }
-  function _movePreview(delta) {
-    if (!S.parts.length) return;
-    let idx = S.parts.findIndex(p => p.code === S.previewCode);
-    if (idx < 0) idx = (delta > 0 ? -1 : 0);
-    idx = Math.max(0, Math.min(S.parts.length - 1, idx + delta));
-    S.previewCode = S.parts[idx].code;
-    _refreshView();
-    _scrollPreviewRow();
-    _pulseActiveRow();   // brief attention pulse on the row we landed on (keyboard nav)
   }
   // Sheet index of the first placement of `code`. Module-scoped twin of the
   // findSheetIdx() local inside _refreshView so the keyboard nav below can
@@ -6270,27 +6270,11 @@
     S.rootEl.innerHTML = _viewHtml();
     _wireEvents();
     const canvas = S.rootEl.querySelector('#kdnest-canvas');
-    if (canvas) {
-      // Give the canvas a tick to size before draw.
-      if (S.previewCode) {
-        const part = S.parts.find(p => p.code === S.previewCode);
-        // Draw directly — the canvas is CSS-sized immediately; reading
-        // clientWidth forces layout, so we don't need to wait for rAF
-        // (which can be throttled when the tab isn't foregrounded).
-        _drawPartPreview(canvas, part);
-        _attachEdgeClickLayer(canvas, part, _onEdgeClick);
-        requestAnimationFrame(() => { _drawPartPreview(canvas, part); _attachEdgeClickLayer(canvas, part, _onEdgeClick); });
-      } else if (S.flatSheets[S.currentSheetIdx]) {
-        // Leaving preview → drop any stale EDGE overlay (sheet view has none).
-        const _wrap = canvas.parentElement;
-        if (_wrap) _wrap.querySelectorAll('.kdnest-edge-overlay').forEach(el => el.remove());
-        _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
-        requestAnimationFrame(() => _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]));
-      }
-    }
-    if (S.previewCode) {
-      const row = S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(S.previewCode) : S.previewCode) + '"]');
-      if (row) row.classList.add('kdnest-part-previewing');
+    if (canvas && S.flatSheets[S.currentSheetIdx]) {
+      // Main canvas always shows the current sheet now — the inline single-part
+      // preview is retired (the part popup is the sole viewer). (เอ๋ 2026-06-27)
+      _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]);
+      requestAnimationFrame(() => _drawSheet(canvas, S.flatSheets[S.currentSheetIdx]));
     }
   }
 
@@ -6742,14 +6726,6 @@
     }).join('');
 
     const sheetNavInfo = nSheets ? `${S.currentSheetIdx + 1} / ${nSheets}` : '0 / 0';
-    const previewInfo = (() => {
-      if (!S.previewCode) return '';
-      const i = S.parts.findIndex(p => p.code === S.previewCode);
-      const pp = S.parts[i];
-      if (!pp) return '';
-      const dims = (pp.w && pp.h) ? ` (${pp.w}×${pp.h} mm)` : '';
-      return `Preview: #${i + 1} ${_esc(_disp(pp.code))}${dims} · ↑/↓ flip · ‹ › exits`;
-    })();
     const curSheet = S.flatSheets[S.currentSheetIdx];
     const sheetSubLine = curSheet
       ? `${Math.round(curSheet.sw)}×${Math.round(curSheet.sh)} mm${curSheet.thick && curSheet.thick !== '?' ? ` · ${curSheet.thick}mm` : ''} · ${curSheet.placements.length} parts`
@@ -6830,7 +6806,7 @@
         <main class="kdnest-canvas-wrap">
           ${_warningsHtml()}
           <div class="kdnest-canvas-top">
-            <span class="kdnest-canvas-info">${S.previewCode ? previewInfo : `Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}`}</span>
+            <span class="kdnest-canvas-info">Sheet ${sheetNavInfo} · ${_esc(sheetSubLine)}</span>
             <div class="kdnest-nav">
               <button id="kdnest-prev" class="kdnest-nav-btn" ${nSheets > 0 ? '' : 'disabled'}>‹</button>
               <span class="kdnest-nav-pos" title="Sheet ${nSheets ? S.currentSheetIdx + 1 : 0} of ${nSheets}">${nSheets ? `${S.currentSheetIdx + 1}/${nSheets}` : '0/0'}</span>
@@ -7356,17 +7332,13 @@
       const t = e.target;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const delta = e.key === 'ArrowDown' ? 1 : -1;
-        // In single-part preview → flip parts. While a part is highlighted on
-        // its sheet (📍) → browse placed parts on their sheets. Otherwise fall
-        // back to entering the single-part preview.
-        if (S.previewCode) _movePreview(delta);
-        else if (S.highlightCode) _moveOnSheet(delta);
-        else _movePreview(delta);
+        // The part popup (if open) handles ↑/↓ via its OWN capture listener (it
+        // stops propagation, so those never reach here). The inline single-part
+        // preview is retired (เอ๋ 2026-06-27 'รูปด้านหลังไม่ต้องโชว์แล้ว'), so ↑/↓ here
+        // only browses PLACED parts while one is highlighted on its sheet (📍).
+        if (S.highlightCode) { e.preventDefault(); _moveOnSheet(e.key === 'ArrowDown' ? 1 : -1); }
       } else if (e.key === 'Escape') {
-        if (S.previewCode) { e.preventDefault(); S.previewCode = null; _refreshView(); }
-        else if (S.highlightCode) { e.preventDefault(); clearTimeout(window.__kdNestHighlightTO); S.highlightCode = null; _refreshView(); }
+        if (S.highlightCode) { e.preventDefault(); clearTimeout(window.__kdNestHighlightTO); S.highlightCode = null; _refreshView(); }
       }
     };
     document.addEventListener('keydown', S._onKeyNav);
