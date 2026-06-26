@@ -2428,14 +2428,13 @@
     }
   }
 
-  function _nestMultiSheetRaster(pieces, stock, gap) {
-    // Resolution: ~1/200 of the smaller sheet side, min 5mm. Finer = tighter
-    // + more accurate gap, but quadratically slower. (A finer /400 grid gave gaps
-    // ~4mm but the Auto cost-optimizer re-runs the pack ~20x → live run ~90s, too
-    // slow — reverted 2026-06-26. The right tight-gap fix is coarse-grid for the
-    // sheet-cost scenarios + fine-grid only for the final winning layout.)
+  function _nestMultiSheetRaster(pieces, stock, gap, rOverride) {
+    // Resolution: coarse ~1/200 (min 5mm) by default — fast, used by the main pack +
+    // the cost-optimize trials. The fine-final TIGHTEN post-pass (_tightenSheets) passes
+    // a small rOverride per sheet (~3mm) so the ~6mm coarse-grid gaps tighten WITHOUT
+    // the optimizer paying for a fine grid. Finer = tighter but quadratically slower.
     const minSide = Math.min.apply(null, stock.map(s => Math.min(s.w, s.h)).concat([1525]));
-    const R = Math.max(5, Math.round(minSide / 200));
+    const R = (rOverride && rOverride > 0) ? rOverride : Math.max(5, Math.round(minSide / 200));
     const dCells = gap > 0 ? Math.max(1, Math.round(gap / R)) : 0;
     // Sort by TRUE polygon area desc (big shapes anchor first).
     function trueArea(p) {
@@ -3208,6 +3207,45 @@
           </div>`;
   }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
+  // Fine-final TIGHTEN (True Shape only): the cost-optimizer + main pack run on the
+  // coarse ~6mm grid (fast), which leaves ~6-9mm gaps between parts. This post-pass
+  // re-packs each sheet's OWN parts on a fine ~3mm raster grid — a few parts per
+  // sheet, so it's cheap (runs ONCE on the final layout, not in the optimizer's
+  // repeated trials). Gaps tighten to ~3-4mm while True Shape's void-fill is preserved
+  // (still the raster packer, just finer). NEVER-WORSE: any sheet whose fine re-pack
+  // drops a part or self-overlaps keeps its original placements untouched.
+  // (เอ๋ 2026-06-26 'gap แน่นขึ้น + เร็วปกติ' — coarse-optimize / fine-final.)
+  function _tightenSheets(gap) {
+    if (S.mode !== 'True Shape') return;
+    const sheets = S.flatSheets || [];
+    if (!sheets.length) return;
+    // _rectifyLastSheet (runs after) rect-repacks the last FRESH sheet when Rect
+    // leftover is on — tightening it here would just be overwritten, so skip it.
+    let skipIdx = -1;
+    if (S.rectLeftover) { for (let i = sheets.length - 1; i >= 0; i--) { if (!sheets[i].fromRemnant) { skipIdx = i; break; } } }
+    for (let si = 0; si < sheets.length; si++) {
+      if (si === skipIdx) continue;
+      const sheet = sheets[si];
+      if (!sheet.placements || sheet.placements.length < 2) continue;
+      const pieces = sheet.placements.map(pl => ({
+        code: pl.code, w: pl.w, h: pl.h,
+        rots: Array.isArray(pl.rots) ? pl.rots.slice() : [0, 90, 180, 270],
+        polys: pl.polys, bbox: pl.bbox, thickness: pl.thickness, grain: pl.grain,
+        flip180: pl.flip180,
+      }));
+      const minSide = Math.min(sheet.sw, sheet.sh);
+      const fineR = Math.max(3, Math.round(minSide / 450));   // ~3mm for kitchen sheets
+      let r;
+      try { r = _nestMultiSheetRaster(pieces.map(p => ({ ...p })), [{ w: sheet.sw, h: sheet.sh, qty: 1 }], gap, fineR); }
+      catch (e) { continue; }
+      const out = r && r.sheets && r.sheets[0];
+      if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
+      if (out.placements.length !== sheet.placements.length) continue;
+      if (_resultHasTrueOverlap({ sheets: [{ sw: sheet.sw, sh: sheet.sh, placements: out.placements }] })) continue;
+      sheet.placements = out.placements;   // tightened — never-worse verified
+    }
+  }
+
   function _rectifyLastSheet() {
     S._rectPendingIdx = -1;            // reset each run (chooser hook reads this)
     if (!S.rectLeftover) return;
@@ -4275,6 +4313,7 @@
     const _doDownsize = opts ? !!opts.downsize : !!S.optDownsizePass;
     const _downsizeAllow = opts ? (opts.allowKeys || null) : (S.optDownsizeAllowKeys || null);
     if (_doDownsize) _downsizeLastFreshSheet(_downsizeAllow);
+    _tightenSheets(S.gap);   // fine-final: re-pack each True-Shape sheet on a ~3mm grid → tight gaps, runs once (coarse-optimize / fine-final)
     _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
