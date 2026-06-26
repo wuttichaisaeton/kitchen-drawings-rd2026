@@ -3033,7 +3033,7 @@
     return `
           <div class="kdnest-cost-summary">
             <span class="kdnest-cost-label">Total Cost${badge}</span>
-            <span class="kdnest-cost-breakdown">${lines.join(' + ')} = ${total.toLocaleString('en-US')} THB</span>
+            <span class="kdnest-cost-breakdown">${lines.join(' + ')} = <span class="kdnest-cost-total">${total.toLocaleString('en-US')} THB</span></span>
           </div>`;
   }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep

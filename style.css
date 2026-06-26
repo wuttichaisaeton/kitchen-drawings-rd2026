@@ -4521,28 +4521,44 @@ body.sb-fs-lock { overflow: hidden; }
 }
 /* Total-cost summary — fresh full sheets × per-sheet price, summed.
    Sits between Sheet stock and the action buttons; only renders after a
-   nest run. Monospace so the breakdown numbers line up. */
+   nest run. The most important readout in the panel, so it's a highlighted
+   summary box (amber-tinted, stronger border) in the app's Flux Architect
+   font — NOT a faint monospace row. The grand total is emphasised separately
+   (.kdnest-cost-total) so the number that matters jumps out. */
 .kdnest-cost-summary {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin: 8px 16px 0;
-  padding: 8px 12px;
-  border: 1px solid #2a3a4f;
-  border-radius: 6px;
-  background: rgba(57, 168, 110, 0.12);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12px;
+  margin: 10px 16px 2px;
+  padding: 11px 14px;
+  border: 1px solid rgba(242, 169, 59, 0.45);
+  border-left: 3px solid #f2a93b;
+  border-radius: 8px;
+  background: rgba(242, 169, 59, 0.10);
+  font-family: "Flux Architect", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
 }
 .kdnest-cost-label {
-  color: #889bb3;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: #cdd9e8;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  font-size: 12px;
 }
 .kdnest-cost-breakdown {
-  color: #6fd99b;
+  color: #8fa3bd;
   margin-left: auto;
   text-align: right;
+  font-size: 12px;
+}
+/* Grand total — the headline number. Big, bold, amber so it reads first. */
+.kdnest-cost-total {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #f2a93b;
+  letter-spacing: 0.01em;
 }
 /* "Auto-chosen" badge — result came from the cost-optimize Run (เอ๋ 2026-06-26) */
 .kdnest-cost-badge {
@@ -6697,6 +6713,28 @@ html[data-theme="chalk"] .cut-loc-head{ border-bottom-color:rgba(180,200,190,0.2
    sketch deep amber on cream, chalk amber on dark board. */
 html[data-theme="sketch"]{ --kdflag:#cf6f00; --kdflag-bg:rgba(207,111,0,0.14); }
 html[data-theme="chalk"] { --kdflag:#ff9800; --kdflag-bg:rgba(255,152,0,0.16); }
+
+/* Total-cost summary across themes. The blanket reset strips our amber tint
+   to transparent + recolours all children to ink/chalk, so re-assert the
+   highlighted box and re-emphasise the grand total. Container-prefixed +
+   doubled-class on the total so it out-ranks the ~(0,2,6) reset chain.
+   sketch = deep amber on cream paper; chalk = amber on dark board. */
+html[data-theme="sketch"] .kdnest-sidebar .kdnest-cost-summary,
+html[data-theme="chalk"]  .kdnest-sidebar .kdnest-cost-summary{
+  border:2px solid var(--kdflag) !important;
+  border-left:3px solid var(--kdflag) !important;
+  background-color:var(--kdflag-bg) !important;
+  border-radius:var(--wob2) !important;
+}
+html[data-theme="sketch"] .kdnest-cost-summary .kdnest-cost-label{ color:var(--ink) !important; }
+html[data-theme="chalk"]  .kdnest-cost-summary .kdnest-cost-label{ color:var(--chalk) !important; }
+html[data-theme="sketch"] .kdnest-cost-summary .kdnest-cost-breakdown{ color:var(--ink-soft) !important; }
+html[data-theme="chalk"]  .kdnest-cost-summary .kdnest-cost-breakdown{ color:var(--chalk-dim) !important; }
+html[data-theme="sketch"] .kdnest-cost-summary .kdnest-cost-total.kdnest-cost-total,
+html[data-theme="chalk"]  .kdnest-cost-summary .kdnest-cost-total.kdnest-cost-total{
+  color:var(--kdflag) !important;
+}
+
 html[data-theme="sketch"] .kdnest-controls .kdnest-skip-lab,
 html[data-theme="chalk"]  .kdnest-controls .kdnest-skip-lab{
   border:2px solid var(--kdflag) !important; background:var(--kdflag-bg) !important;
