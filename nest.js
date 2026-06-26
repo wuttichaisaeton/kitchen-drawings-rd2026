@@ -5771,12 +5771,12 @@
     // Common-line collection (opt-in). When ON, axis-aligned OUTER edges are
     // buffered (not emitted) and merged once at the end; everything else (holes,
     // border, labels, curves, non-axis edges) emits normally. OFF → never touched.
-    // เอ๋'s call (2026-06-26): common-line is a TRUE-SHAPE-only toggle (her void-fill
-    // working mode); OFF in every other mode (incl Desktop). On True Shape only the
-    // EXACTLY-coincident edges merge (the 0.08mm _CL_EPS bucket) so NO part is
-    // shifted = ระยะเดิมไม่เพี้ยน; the ~0.5mm-apart edges the raster grid leaves stay
-    // as separate cuts (no snapping, no distortion).
-    const _clActive = !!S.commonLine && S.mode === 'True Shape';
+    // Common-line CANCELLED (เอ๋ 2026-06-26 'ยกเลิกแผนการรวมเส้นทั้งหมด'). On True
+    // Shape's raster grid, shared edges land ~0.5mm apart, so they only merge by
+    // snapping = distorting dimensions (which she rejected); the value of the GAP is
+    // also grid-quantized. Feature is off everywhere + the 🔗 UI is removed. The merge
+    // code below stays inert (never collects). Restore as a toggle to revive it.
+    const _clActive = false;
     const _clTab = S.commonTabs ? (S.commonTabMm || 0.5) : 0;
     const _clBuf = [];
     // Feed each polyline edge through line() — line() collects the axis-aligned
@@ -6574,13 +6574,8 @@
             <label class="kdnest-optmanual-lab" title="Manual: Run uses the sheet stock exactly as set (no cost-optimize). OFF (default) = Run auto-picks the cheapest enabled sheet-size mix by price.">
               <input id="kdnest-optmanual" type="checkbox"${S.optManual ? ' checked' : ''}> Manual
             </label>
-            <label class="kdnest-optmanual-lab"${S.mode !== 'True Shape' ? ' style="opacity:.5"' : ''} title="${S.mode !== 'True Shape' ? 'Common-line is available only in True Shape mode (your void-fill mode). Switch to True Shape to use it.' : 'Common-line: cut a shared straight edge ONCE (saves material + cut length), written to the saved/exported Cut Sheet DXF. True Shape places on a raster grid, so only edges that land EXACTLY coincident merge — no part dimensions are shifted; edges ~0.5mm apart stay as separate cuts.'}">
-              <input id="kdnest-common" type="checkbox"${(S.commonLine && S.mode === 'True Shape') ? ' checked' : ''}${S.mode !== 'True Shape' ? ' disabled' : ''}> 🔗 Common-line
-            </label>
-            <label class="kdnest-optmanual-lab" title="Leave small UNCUT bridges on shared edges so parts don't shift while cutting (your laser does kerf-comp). OFF = solid shared cut (the operator sequences the cut). Only active when Common-line is on."${(S.commonLine && S.mode === 'True Shape') ? '' : ' style="opacity:.45"'}>
-              <input id="kdnest-commontab" type="checkbox"${S.commonTabs ? ' checked' : ''}${(S.commonLine && S.mode === 'True Shape') ? '' : ' disabled'}> tab
-              <input id="kdnest-commontabmm" type="number" value="${S.commonTabMm}" min="0.1" max="5" step="0.1" style="width:3.4em"${(S.commonLine && S.mode === 'True Shape') ? '' : ' disabled'}>mm
-            </label>
+            <!-- Common-line (🔗 + tab) controls removed 2026-06-26 (เอ๋ 'ยกเลิกแผนการรวมเส้นทั้งหมด').
+                 _clActive is forced false in _buildSheetDxf; the merge code is inert. -->
           </div>
           <!-- Skip-remnants checkbox moved INTO the Remnants Stock modal as
                "Use remnants" (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่ Remnants
