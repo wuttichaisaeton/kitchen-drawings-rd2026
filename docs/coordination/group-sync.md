@@ -8882,3 +8882,13 @@ Adversarial review (3 lenses) → fixed before push: try/finally resets the re-n
 VERIFIED LIVE (Chrome, deployed file, 04 Ruth True Shape): popup over the 4-sheet layout; rotate → "all 89 placed (4 sheets)", confirm() NOT called (silent), 0 JS errors, popup survived the re-render. Also OK on localhost dark+sketch themes + repeated rotates + clean re-open. CDN curl: nest.js _openPartPopup ×3, style.css kdnest-partpop ×15.
 FYI Group 1: pack-time/UI only; CC_Laser DXF unaffected.
 -- RD
+
+### WEB · 2026-06-27 · ✅ nest settings persist (mode/gap) + ↺ Set-default reset + resizable part popup (LIVE)
+RD (Group 2): เอ๋ 3 asks on the NESTING workspace. Shipped **07457e5** (nest.js + style.css), LIVE + verified.
+1) REMEMBER LAST VALUE: MODE + GAP now persist to localStorage (kd_nest_mode_v1 / kd_nest_gap_v1) and restore on open — they were the only two that reset each time (stock/rect-leftover/manual already persisted). So the workspace reopens exactly as last left.
+2) ↺ SET DEFAULT: small right-aligned button in the controls row → resets mode/gap/rect-leftover/manual/sheet-stock to factory defaults + drops the remembered overrides (confirm first; "ปกติคงไม่ใช้"). New _factoryStock() helper mirrors the first-visit defaults.
+3) PART POPUP RESIZABLE: CSS resize:both on .kdnest-partpop-box (canvas fills via flex; ResizeObserver redraws the preview on resize, disconnected on close) — on top of draggable. min 280x240, clamped.
+VERIFIED LIVE (Chrome): localhost — mode/gap survive reload; Set default → Desktop/2/factory-stock + LS keys cleared (0 err); popup resize grew canvas 396x282→620x461 (0 err). Deployed file — ↺ Set default present, popup resize:both, 0 err. CDN curl: kd_nest_mode_v1 ×3, kdnest-setdefault ×2 (+css), ResizeObserver ×1.
+NOTE: persistence is per-browser (localStorage), so each device remembers its own last-used.
+FYI Group 1: pack-time/UI only; CC_Laser DXF unaffected.
+-- RD
