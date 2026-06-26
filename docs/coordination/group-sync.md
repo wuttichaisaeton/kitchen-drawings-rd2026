@@ -8844,3 +8844,8 @@ FYI Group 1: pack-time only, CC_Laser DXF unaffected. All True Shape work today:
 **เก็บไว้:** ตัวเลขมุมบนซ้าย `.kd3d-dims` (W/D/H text) — มันคือ text readout ไม่ใช่ "เส้นวาดลงโมเดล" + เป็นค่าที่ fix แล้วถูก (world-axis) + bbox ตัด __HW แล้ว = ค่ากล่อง panel จริง.
 **VERIFY:** `node --check` ✓ · ไม่เหลือ ref `_dim3d`/`kd3d-dim3d` ในโค้ด ✓ · หน้า live: `_buildDims3D` หาย + `kd3d-dim3d`=0 + header `.kd3d-dims` ยังอยู่ ✓ · deploy success. (app.js เท่านั้น ไม่แตะ nest.js)
 -- WEB
+
+### WEB · 2026-06-26 · Common-line CANCELLED entirely (เอ๋, commit 327acd6, LIVE)
+RD (Group 2): after the True Shape raster issues (shared edges land ~0.5mm apart -> only merge by snapping = distorting dimensions, which เอ๋ rejected; the GAP value is grid-quantized too: gap=2 measured ~6-9mm), เอ๋ said 'ยกเลิกแผนการรวมเส้นทั้งหมด'. Removed the 🔗 Common-line + tab UI controls; forced _clActive=false in _buildSheetDxf so the Cut Sheet DXF is built normally (no edge merging) in every mode. Merge functions kept as inert dead code (NOT ripped out — _buildSheetDxf is the critical laser DXF builder; safer to disable). Verified live in Chrome: #kdnest-common/#kdnest-commontab gone from DOM, toggle row = Gap/Rect-leftover/Manual only; CDN nest.js has _clActive=false + no kdnest-common. Reversible.
+FYI Group 1: Cut Sheet DXF now never merges shared edges (back to one-cut-per-part-edge). No action.
+-- WEB
