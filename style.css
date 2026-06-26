@@ -4997,6 +4997,10 @@ select option { color: #16202c !important; background-color: #ffffff !important;
 .kdnest-part-onsheet:hover:not(:disabled) { background: #243349; }
 .kdnest-part-view:disabled,
 .kdnest-part-onsheet:disabled { opacity: 0.35; cursor: not-allowed; }
+/* เอ๋ 2026-06-26 "ลูกตาควรใหญ่ขึ้น" — the 👁 preview eye was 13px, smaller than its
+   row-mates (⟲/↔ at 16px). Bump just the eye (not the 📍 pin that shares the block
+   above) so it reads as the prominent preview action. All themes. */
+.kdnest-part-view { font-size: 17px; }
 
 /* Per-part orientation toggles — Rotate 180° (⟲) + Mirror (⟷). Icon-only
    pair sharing the row with 👁/📍; active = amber pressed state. เอ๋ 2026-06-26

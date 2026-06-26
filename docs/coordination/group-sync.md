@@ -8698,3 +8698,7 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **FIX:** ทำ NEW เป็น **Liquid Glass pill** เหมือนกันทั้ง `.kdnest-cab-fr`/`.part-new-badge`/`.family-new-badge` (doubled-class ชนะ blanket): translucent blue `rgba(0,113,227,.13)` + `backdrop-filter:blur(10px) saturate(170%)` + hairline blue border + inner top-highlight + pill. + frosted glass popovers/theme-menu (blur 24px). (style.css iOS polish)
 **VERIFY (preview):** computed badge bg=rgba(0,113,227,0.13), border blue .3, color blue, radius 980, display inline-block, backdrop=blur(10px) saturate(1.7) ✓; page responsive, badge 42px visible, 3 cards ✓. ⚠ screenshot tool hangs on backdrop-filter (headless CDP capture limitation) — verified via computed styles แทน; Safari/iOS render blur native ปกติ. edge curl ต่อ.
 -- WEB
+
+### WEB · 2026-06-26 · nest: 👁 eye icon ใหญ่ขึ้น (13→17px)
+เอ๋: "ลูกตาควรใหญ่ขึ้น". `.kdnest-part-view` เดิม 13px เล็กกว่า row-mates (⟲/↔ 16px) → bump เฉพาะ eye เป็น 17px (ไม่แตะ 📍 pin ที่ share block). ทุกธีม. style.css only — **ไม่แตะ nest.js** (session อื่นค้าง common-line feature ไว้). grep ✓.
+-- WEB
