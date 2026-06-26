@@ -2331,29 +2331,42 @@
         scanRow((gy + 0.5) * R, gy);         // row centre
         scanRow((gy + 1) * R - 1e-6, gy);    // row bottom edge
       }
-      // Dilate by 1 cell ON NON-RECTANGULAR parts only: closes any sub-cell
-      // coverage gap on curved/diagonal outlines (e.g. DSV1TR's 254-pt arc edges)
-      // so the mask is strictly >= the true shape → the packer's grid collision
-      // then GUARANTEES placed parts can't overlap. A full-bbox rectangle has no
-      // diagonal edge to under-cover, so it is skipped → rectangles keep packing
-      // tight. (เอ๋ 2026-06-26 'nesting ชิ้นนี้ผิด ซ้อนกัน')
-      let allSolid = true;
-      for (let i = 0; i < solid.length; i++) { if (!solid[i]) { allSolid = false; break; } }
-      if (!allSolid) {
-        const _dil = solid.slice();
-        for (let y = 0; y < mh; y++) {
-          for (let x = 0; x < mw; x++) {
-            if (!solid[y * mw + x]) continue;
-            for (let dy = -1; dy <= 1; dy++) {
-              const ny = y + dy; if (ny < 0 || ny >= mh) continue;
-              for (let dx = -1; dx <= 1; dx++) {
-                const nx = x + dx; if (nx < 0 || nx >= mw) continue;
-                _dil[ny * mw + nx] = 1;
-              }
-            }
-          }
+      // EDGE SUPERCOVER: mark every cell each polygon edge passes through
+      // (Amanatides–Woo grid traversal). Closes the sub-cell coverage gaps the
+      // row-scan leaves on diagonal/curved outlines (e.g. DSV1TR's 254-pt arc) so
+      // the mask stays strictly >= the true shape → the grid collision still
+      // GUARANTEES no overlap — but WITHOUT inflating the part by a whole cell.
+      // The old 1-cell dilation (f7944f2) closed the same gaps, but its ~R halo
+      // also sealed shut the true-shape VOIDS a neighbour should nest into (เอ๋
+      // 'true shape ต้องเติมในกรอบแดง' 2026-06-26: the triangle offcut stopped
+      // filling). Edge cells only = voids stay open AND still no overlap. Verified
+      // headless: notch-fill restored, 0 conservativeness violations, tight
+      // interlock of 12 curved triangles = 0 overlaps. Rectangles unaffected
+      // (their boundary cells are already interior-filled).
+      const _mark = (c, r) => { if (c >= 0 && c < mw && r >= 0 && r < mh) solid[r * mw + c] = 1; };
+      const _markSeg = (x0, y0, x1, y1) => {
+        let cx = Math.floor(x0 / R), cy = Math.floor(y0 / R);
+        const ex = Math.floor(x1 / R), ey = Math.floor(y1 / R);
+        const dx = x1 - x0, dy = y1 - y0;
+        const stepX = dx > 0 ? 1 : dx < 0 ? -1 : 0;
+        const stepY = dy > 0 ? 1 : dy < 0 ? -1 : 0;
+        const tDeltaX = dx !== 0 ? Math.abs(R / dx) : Infinity;
+        const tDeltaY = dy !== 0 ? Math.abs(R / dy) : Infinity;
+        const nextBX = stepX > 0 ? (cx + 1) * R : cx * R;
+        const nextBY = stepY > 0 ? (cy + 1) * R : cy * R;
+        let tMaxX = dx !== 0 ? Math.abs((nextBX - x0) / dx) : Infinity;
+        let tMaxY = dy !== 0 ? Math.abs((nextBY - y0) / dy) : Infinity;
+        _mark(cx, cy);
+        let guard = mw + mh + 4;
+        while ((cx !== ex || cy !== ey) && guard-- > 0) {
+          if (tMaxX < tMaxY) { tMaxX += tDeltaX; cx += stepX; }
+          else { tMaxY += tDeltaY; cy += stepY; }
+          _mark(cx, cy);
         }
-        solid.set(_dil);
+      };
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        _markSeg(a[0], a[1], b[0], b[1]);
       }
     }
     // Degenerate / no-polygon (manual rect) → fill the whole footprint.
