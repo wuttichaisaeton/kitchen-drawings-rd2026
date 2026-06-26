@@ -3630,7 +3630,7 @@ async function _kdOpen3D(code, opts) {
     // 8 projected corners lie on the outline — the others run THROUGH the model and
     // made the dim lines bend/cross (เอ๋ "ต้องตั้งแกนให้ถูก"). Build the hull
     // (monotone chain), then among each axis's hull edges choose by screen position
-    // (top=W, right=H, top-left=D).
+    // (top=W on world-X, top-left=H on world-Y/up, right=D on world-Z).
     const sorted = [...Array(8).keys()].sort((i, j) => (P[i].x - P[j].x) || (P[i].y - P[j].y));
     const cross = (o, a, b) => (P[a].x - P[o].x) * (P[b].y - P[o].y) - (P[a].y - P[o].y) * (P[b].x - P[o].x);
     const lo = [], up = [];
@@ -3641,9 +3641,9 @@ async function _kdOpen3D(code, opts) {
     for (let i = 0; i < hull.length; i++) { const a = hull[i], b = hull[(i + 1) % hull.length]; hullE.add(Math.min(a, b) + '_' + Math.max(a, b)); }
     const onHull = e => hullE.has(Math.min(e[0], e[1]) + '_' + Math.max(e[0], e[1]));
     const pickEdge = (edges, score) => { const h = edges.filter(onHull); return (h.length ? h : edges).reduce((b, e) => score(mid(e)) < score(mid(b)) ? e : b); };
-    const wEdge = pickEdge(xEdges, m => m.y);          // topmost silhouette = W
-    const hEdge = pickEdge(zEdges, m => -m.x);         // rightmost silhouette = H
-    const dEdge = pickEdge(yEdges, m => m.x + m.y);    // top-left silhouette = D
+    const wEdge = pickEdge(xEdges, m => m.y);          // topmost silhouette = W (world-X)
+    const hEdge = pickEdge(yEdges, m => m.x + m.y);    // top-left silhouette = H (world-Y / vertical)
+    const dEdge = pickEdge(zEdges, m => -m.x);         // rightmost silhouette = D (world-Z / receding)
     const NS = 'http://www.w3.org/2000/svg';
     while (_dim3dSvg.firstChild) _dim3dSvg.removeChild(_dim3dSvg.firstChild);
     const line = (x1, y1, x2, y2) => { const l = document.createElementNS(NS, 'line'); l.setAttribute('x1', x1); l.setAttribute('y1', y1); l.setAttribute('x2', x2); l.setAttribute('y2', y2); l.setAttribute('class', 'kd3d-dim3d-l'); _dim3dSvg.appendChild(l); };
@@ -3665,11 +3665,12 @@ async function _kdOpen3D(code, opts) {
       t.textContent = String(val);
       _dim3dSvg.appendChild(t);
     };
-    // With the WORLD-space bbox (above) the corners project correctly, so the
-    // natural axis→edge mapping holds: WIDTH on the x-edge, HEIGHT on the z-edge
-    // (the vertical), DEPTH on the y-edge (the receding). (An earlier H/D swap +
-    // corner-index debug compensated for the broken projection; both removed once
-    // the world-space fix landed — เอ๋ 2026-06-26 confirmed W800 D612 H883.)
+    // WORLD-frame axis→edge mapping (matches the header's world-axis labels so the
+    // on-model values and the corner header agree): WIDTH on the world-X edge,
+    // HEIGHT on the world-Y edge (vertical/up), DEPTH on the world-Z edge (the
+    // receding diagonal). The drawn (edge,value) pairs are identical to the prior
+    // double-swapped version — only the header text is corrected — so the on-model
+    // overlay เอ๋ confirmed (W800 H883 D612) is unchanged.
     try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.H); draw(dEdge, _dim3dVals.D); } catch {}
     return true;
   }
@@ -3917,12 +3918,17 @@ async function _kdOpen3D(code, opts) {
     // the part's real bbox, not the scattered cabinet).
     const isPartsLoad = !!currentLoadedSrc && /_parts\.glb(\?|$)/.test(currentLoadedSrc);
     if (dimsEl && !dimsCached && (!isPartsLoad || partView) && mnX < Infinity) {
-      // Axis mapping: Fusion exports Z-up (STL → trimesh → GLB), so the GLB's
-      // axes are X=width, Y=depth, Z=height. (เอ๋ caught the swap 2026-06-22:
-      // "บอกระยะผิด ต้อง w 1050 d 611 h 891" on 1CSVB2 = 1050×611×891 cabinet.)
+      // Axis mapping (WORLD frame): the bbox above is WORLD-space, and model-viewer
+      // inserts a -90°X rotation (Z-up GLB → Y-up scene) ABOVE the model, so the
+      // GLB's Z-up "height" becomes world-Y and its Y "depth" becomes world-Z:
+      //   world-X = WIDTH, world-Y = HEIGHT (up), world-Z = DEPTH.
+      // (เอ๋ caught the original local-frame swap 2026-06-22 "w 1050 d 611 h 891"
+      // on 1CSVB2; then 2026-06-26 the header still read D/H swapped because the
+      // world bbox is rotated — mapping Y→D, Z→H under the OLD local assumption
+      // labelled the up-extent as Depth. Fixed to world axes: Y→H, Z→D.)
       // Unit autodetect: Fusion ships mm directly, but glTF's default unit is
       // METERS (Astronaut DEMO et al.) — if the largest extent is < 10, ×1000.
-      let W = mxX - mnX, D = mxY - mnY, H = mxZ - mnZ;
+      let W = mxX - mnX, H = mxY - mnY, D = mxZ - mnZ;
       const scale = Math.max(W, D, H) < 10 ? 1000 : 1;
       W = Math.round(W * scale); D = Math.round(D * scale); H = Math.round(H * scale);
       // เอ๋ 2026-06-24: dims on 3 lines, one per dimension — W / D / H.
