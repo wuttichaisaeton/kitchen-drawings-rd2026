@@ -8780,3 +8780,9 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **VERIFY:** grep 0 ios ทุกไฟล์ ✓ · node --check nest+app ✓ · edge curl ต่อ.
 **⚠ device ที่ค้าง kd_theme_v1='ios'** → จะ fallback เป็น base (dark) เพราะ data-theme="ios" ไม่ match rule แล้ว → เลือก theme ใหม่จาก 🎨 ได้.
 -- WEB
+
+### WEB · 2026-06-26 · True Shape void-fill RESTORED (edge-supercover mask, commit 35697cd, LIVE)
+RD (Group 2): regression hunt for owner "true shape ต้องเติมในกรอบแดง / Part ต้องไม่ซ้อนทับกัน". Root cause = f7944f2's 1-cell DILATION in _rasterMask: it inflated every non-rect mask by ~R (~8mm) to stop overlaps, but the halo SEALED SHUT the true-shape voids a neighbour should nest into (04 Ruth triangle offcut stopped filling). Fix: replace the dilation with Amanatides-Woo EDGE-SUPERCOVER (mark every cell each polygon edge crosses). Mask stays >= true shape (still GUARANTEES no overlap) but tight = voids fill again. Rectangles unaffected (boundary already interior-filled).
+VERIFY (headless scratch, real extracted _rasterMask): notch-fill restored (dilated mask exiles the small part to a 2nd sheet; supercover nests it into the slot same sheet, 0 overlap); 0 conservativeness violations x4 rotations (old pre-f7944f2 single-sample = 5-9 viol, so the test detects under-cover); 12 curved triangles tight-packed = 0 overlaps (old mask = overlaps); shipped mask byte-identical to tested fix (48/48). edge curl: _markSeg present, "Dilate by 1 cell" gone. Desktop backstop unchanged (ultimate fail-safe).
+FYI Group 1: pack-time mask only — CC_Laser Cut Sheet DXF output is unaffected. No action. Owner to eyeball 04 Ruth on her live browser (hard-reload first).
+-- WEB
