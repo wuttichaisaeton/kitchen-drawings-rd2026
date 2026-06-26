@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-26T03:11:48.561286+00:00",
+  "generated_at": "2026-06-26T03:33:14.291579+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -7124,7 +7124,7 @@
     "SD00NA-080050": {
       "family": "Other",
       "last_drawn_version": 12,
-      "fusion_version": 12,
+      "fusion_version": 13,
       "pdf": "SD00NA-080050.pdf",
       "bends": 0,
       "material": "",
@@ -19283,7 +19283,7 @@
       "name": "SD00NA-080050",
       "status": "active",
       "created_at": "2026-06-24T09:01:34.778667+00:00",
-      "updated_at": "2026-06-24T09:01:34.778667+00:00",
+      "updated_at": "2026-06-26T03:33:14.274755+00:00",
       "total_unique_parts": 2,
       "total_qty": 6,
       "parts": [
