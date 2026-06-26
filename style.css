@@ -8002,3 +8002,51 @@ html[data-theme="ios"] .kme-project {
 /* Theme picker menu + active option. */
 html[data-theme="ios"] .theme-menu { box-shadow: 0 8px 30px rgba(0,0,0,0.16) !important; border: 1px solid var(--ios-line) !important; border-radius: 14px !important; }
 html[data-theme="ios"] .theme-opt.is-active { color: var(--ios-blue) !important; font-weight: 600 !important; }
+
+/* ── iOS polish v2 (เอ๋ "อยากให้ดู Apple มากกว่านี้") — Apple font smoothing,
+   borderless floating cards (diffuse shadow only), bolder + tighter SF
+   headings, a solid-blue selected tab. Appended after the base iOS block so
+   these win on source order. ── */
+
+/* Apple's signature subpixel-off font smoothing — makes SF render light + crisp
+   exactly like apple.com (no-op off WebKit/Gecko, so other platforms unaffected). */
+html[data-theme="ios"] body,
+html[data-theme="ios"] body *:not(svg):not(svg *) {
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+}
+
+/* Floating WHITE cards — Apple's signature: white on the gray page with only a
+   soft diffuse shadow, no border, bigger radius. DOUBLED class so it out-ranks
+   the blanket reset (0,2,5) which otherwise forces transparent bg + the hairline
+   border + box-shadow:none (same trick the sketch theme uses for its modals). */
+html[data-theme="ios"] .project-card.project-card,
+html[data-theme="ios"] .card.card,
+html[data-theme="ios"] .kdnest-part.kdnest-part,
+html[data-theme="ios"] .kdjobs-row.kdjobs-row,
+html[data-theme="ios"] .kme-node.kme-node {
+  background-color: #ffffff !important;
+  border: 1px solid transparent !important;
+  border-radius: 18px !important;
+  box-shadow: 0 4px 22px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* Apple typography — big, semibold, tight tracking on titles. */
+html[data-theme="ios"] h1 { font-weight: 700 !important; letter-spacing: -0.022em !important; }
+html[data-theme="ios"] .project-name,
+html[data-theme="ios"] .section-title,
+html[data-theme="ios"] .master-name,
+html[data-theme="ios"] .kdnest-title,
+html[data-theme="ios"] h2,
+html[data-theme="ios"] h3 {
+  font-weight: 600 !important;
+  letter-spacing: -0.018em !important;
+}
+html[data-theme="ios"] .project-name { font-size: 1.16em !important; }
+
+/* Selected tab — SOLID Apple-blue pill, white label (iOS selected-segment style). */
+html[data-theme="ios"] .tab.active {
+  background-color: var(--ios-blue) !important;
+  color: #ffffff !important;
+  border-color: var(--ios-blue) !important;
+}

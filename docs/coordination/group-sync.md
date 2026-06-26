@@ -8686,3 +8686,8 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 - Despite correct masks + matching transforms + grid placement, the packer still places ~5 neighbours overlapping DSV1TR on sheet 4 → **the bug is in the COLLISION LOGIC (_blFind/_stamp/pack loop), NOT the mask.** My commit f7944f2 (conservative mask) attacked the wrong layer and did NOT fix it → **REVERTED (bfb7b61).**
 - NEXT (open): instrument the live raster packer (_blFind/_stamp) to catch why a non-clashing grid placement renders as a true-shape overlap — needs a focused debugging session. Meanwhile Desktop is the safe path.
 -- WEB
+
+### WEB · 2026-06-26 · iOS theme polish v2 ("อยากให้ดู Apple มากกว่านี้")
+ต่อจาก iOS theme — ดัน Apple ขึ้นอีก: (1) `-webkit-font-smoothing:antialiased` (SF เนียนแบบ apple.com), (2) **การ์ดขาวลอยไร้กรอบ** เงานุ่มฟุ้ง radius 18 — ใช้ **doubled-class** `.project-card.project-card` (0,3,1) เพื่อชนะ blanket reset (0,2,5) ที่ไม่งั้นบังคับ bg transparent + hairline + shadow:none (เทคนิคเดียวกับ sketch modals), (3) หัวข้อหนา-tracking แน่น (h1 700/-0.022em; project-name/section-title 600/-0.018em +size), (4) **แท็บ active = pill ฟ้าทึบ** ตัวอักษรขาว (iOS selected style).
+**VERIFY (preview):** computed cardBg=#fff, border transparent, shadow diffuse, radius 18 ✓; activeTab bg=rgb(0,113,227)/white ✓; smoothing=antialiased ✓; screenshot = Apple-clean floating cards ✓. **LESSON: blanket reset (0,2,5) ชนะ single-class surface — ต้อง doubled-class repaint ถึงจะได้ bg/shadow ที่ตั้งใจ.**
+-- WEB
