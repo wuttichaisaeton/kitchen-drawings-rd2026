@@ -8849,3 +8849,13 @@ FYI Group 1: pack-time only, CC_Laser DXF unaffected. All True Shape work today:
 RD (Group 2): after the True Shape raster issues (shared edges land ~0.5mm apart -> only merge by snapping = distorting dimensions, which เอ๋ rejected; the GAP value is grid-quantized too: gap=2 measured ~6-9mm), เอ๋ said 'ยกเลิกแผนการรวมเส้นทั้งหมด'. Removed the 🔗 Common-line + tab UI controls; forced _clActive=false in _buildSheetDxf so the Cut Sheet DXF is built normally (no edge merging) in every mode. Merge functions kept as inert dead code (NOT ripped out — _buildSheetDxf is the critical laser DXF builder; safer to disable). Verified live in Chrome: #kdnest-common/#kdnest-commontab gone from DOM, toggle row = Gap/Rect-leftover/Manual only; CDN nest.js has _clActive=false + no kdnest-common. Reversible.
 FYI Group 1: Cut Sheet DXF now never merges shared edges (back to one-cut-per-part-edge). No action.
 -- WEB
+
+### WEB · 2026-06-27 (late) · True Shape TIGHT GAPS shipped (coarse-optimize/fine-final) + common-line removed — for เอ๋ (asleep, delegated deploy)
+RD (Group 2): long session. Net result for the nester:
+1) common-line CANCELLED entirely (327acd6) — couldn't merge True Shape's ~0.5mm raster gaps without distorting; UI removed, _clActive=false (inert merge code).
+2) part OVERHANG fixed (d4f7772) — raster grid now floor(W/R), parts never stick past the cut edge.
+3) TIGHT GAPS (3c05c2a) — coarse-optimize/fine-final: cost-optimizer trials (MaxRects) + main pack stay on the coarse ~6mm grid (fast); new _tightenSheets() re-packs each sheet's own parts on a fine ~3mm grid AFTER the winner is chosen (runs once, few parts/sheet). Gaps median 9mm -> ~4.5mm, void-fill preserved, NEVER-WORSE guard (overlap/unfit -> keep original). _nestMultiSheetRaster gained an rOverride param.
+VALIDATION: headless reproduction on real 04 Ruth (live rasterMask, GAP=2): 89/89 placed, 4 sheets, median 9->4.5mm, 0 overlap, all 4 sheets pass the guard, tighten ~1.1s. CAVEAT: could NOT get a clean live full-run timing tonight — the test tab was bogged after ~15 heavy runs (BOTH the tighten build AND the reverted/safe build read >100s in it; the original code was ~25s earlier today; the tighten reproduction stayed 1.1s in that same bogged tab). So the >100s was the degraded browser, not the code. A FRESH browser should run the whole nest ~25-30s with tight gaps.
+ROLLBACK (if เอ๋'s fresh-browser run is somehow slow): re-comment the single line `_tightenSheets(S.gap);` in _runNesting.
+FYI Group 1: all pack-time only; CC_Laser DXF unaffected.
+-- WEB
