@@ -8691,3 +8691,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 ต่อจาก iOS theme — ดัน Apple ขึ้นอีก: (1) `-webkit-font-smoothing:antialiased` (SF เนียนแบบ apple.com), (2) **การ์ดขาวลอยไร้กรอบ** เงานุ่มฟุ้ง radius 18 — ใช้ **doubled-class** `.project-card.project-card` (0,3,1) เพื่อชนะ blanket reset (0,2,5) ที่ไม่งั้นบังคับ bg transparent + hairline + shadow:none (เทคนิคเดียวกับ sketch modals), (3) หัวข้อหนา-tracking แน่น (h1 700/-0.022em; project-name/section-title 600/-0.018em +size), (4) **แท็บ active = pill ฟ้าทึบ** ตัวอักษรขาว (iOS selected style).
 **VERIFY (preview):** computed cardBg=#fff, border transparent, shadow diffuse, radius 18 ✓; activeTab bg=rgb(0,113,227)/white ✓; smoothing=antialiased ✓; screenshot = Apple-clean floating cards ✓. **LESSON: blanket reset (0,2,5) ชนะ single-class surface — ต้อง doubled-class repaint ถึงจะได้ bg/shadow ที่ตั้งใจ.**
 -- WEB
+
+### WEB · 2026-06-26 · iOS theme: Liquid Glass NEW badge + frosted popovers
+เอ๋: "UX UI Liquid Glass" + 2 รูป (cabinet NEW = ข้อความเปล่าในธีม iOS; project NEW = pill) "new ควรเป็นแบบนี้".
+**ROOT:** cabinet NEW `.kdnest-cab-fr` (single-class) โดน blanket reset (0,2,5) กิน fill → ข้อความเปล่า; project NEW `.part-new-badge` รอดเป็น hairline pill.
+**FIX:** ทำ NEW เป็น **Liquid Glass pill** เหมือนกันทั้ง `.kdnest-cab-fr`/`.part-new-badge`/`.family-new-badge` (doubled-class ชนะ blanket): translucent blue `rgba(0,113,227,.13)` + `backdrop-filter:blur(10px) saturate(170%)` + hairline blue border + inner top-highlight + pill. + frosted glass popovers/theme-menu (blur 24px). (style.css iOS polish)
+**VERIFY (preview):** computed badge bg=rgba(0,113,227,0.13), border blue .3, color blue, radius 980, display inline-block, backdrop=blur(10px) saturate(1.7) ✓; page responsive, badge 42px visible, 3 cards ✓. ⚠ screenshot tool hangs on backdrop-filter (headless CDP capture limitation) — verified via computed styles แทน; Safari/iOS render blur native ปกติ. edge curl ต่อ.
+-- WEB

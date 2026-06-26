@@ -8050,3 +8050,42 @@ html[data-theme="ios"] .tab.active {
   color: #ffffff !important;
   border-color: var(--ios-blue) !important;
 }
+
+/* ── Liquid Glass NEW badge (เอ๋ "UX UI Liquid Glass" + "new ควรเป็นแบบนี้") ──
+   A frosted translucent blue pill, CONSISTENT across the cabinet chip
+   (.kdnest-cab-fr), the project/part card (.part-new-badge) and the folder
+   (.family-new-badge). In the iOS theme the blanket reset (0,2,5) had stripped
+   .kdnest-cab-fr down to plain text — doubled class (0,3,1) repaints it. Glass =
+   semi-transparent fill + blur + a bright inner top edge + hairline border. */
+html[data-theme="ios"] .kdnest-cab-fr.kdnest-cab-fr,
+html[data-theme="ios"] .part-new-badge.part-new-badge,
+html[data-theme="ios"] .family-new-badge.family-new-badge {
+  display: inline-block !important;
+  padding: 1px 8px !important;
+  margin-left: 5px !important;
+  border-radius: 980px !important;
+  font-size: 9.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.4px !important;
+  line-height: 1.55 !important;
+  color: #0071e3 !important;
+  background: rgba(0,113,227,0.13) !important;
+  border: 1px solid rgba(0,113,227,0.30) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(170%);
+  backdrop-filter: blur(10px) saturate(170%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55) !important;
+  text-shadow: none !important;
+  vertical-align: middle !important;
+}
+
+/* Liquid Glass surfaces — frosted translucent popovers/menus (Apple "vibrancy").
+   Doubled class to beat the blanket reset. */
+html[data-theme="ios"] .theme-menu.theme-menu,
+html[data-theme="ios"] .pdxf-popover.pdxf-popover,
+html[data-theme="ios"] .part-dxf-popover.part-dxf-popover {
+  background-color: rgba(255,255,255,0.72) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.6) !important;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.16) !important;
+}
