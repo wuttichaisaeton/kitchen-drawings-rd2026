@@ -80,6 +80,14 @@
                           // until that lands. User 2026-05-28 wanted UI
                           // parity with the Python tool's twin toggles.
     gap: 2,
+    // AUTO COST-OPTIMIZE (เอ๋ 2026-06-26): Run defaults to auto-finding the
+    // CHEAPEST enabled sheet-size mix (by each size's prc) and may MIX sizes.
+    // optManual ON → run as-is (today's exact behavior, no trials). Persisted.
+    optManual: (function () {
+      try { return localStorage.getItem('kd_nest_optmanual_v1') === '1'; }
+      catch (e) { return false; }
+    })(),
+    optChosen: false,     // last run came from the auto-optimizer → show "Auto-chosen" badge
     grainMap: null,       // populated by _loadGrainMap once per session
     sidebarWidth: null,   // px — null = use CSS default; admin can drag to resize
     highlightCode: null,  // when set, draw a glow ring around every
@@ -3019,9 +3027,12 @@
       total += e.prc * e.count;
       lines.push(`(${e.prc.toLocaleString('en-US')} × ${e.count})`);
     }
+    const badge = S.optChosen
+      ? '<span class="kdnest-cost-badge" title="Run auto-picked the cheapest enabled sheet-size mix by price">Auto-chosen</span>'
+      : '';
     return `
           <div class="kdnest-cost-summary">
-            <span class="kdnest-cost-label">Total Cost</span>
+            <span class="kdnest-cost-label">Total Cost${badge}</span>
             <span class="kdnest-cost-breakdown">${lines.join(' + ')} = ${total.toLocaleString('en-US')} THB</span>
           </div>`;
   }
@@ -3642,12 +3653,107 @@
   // ════════════════════════════════════════════════════════════════════
   //  Run Nesting
   // ════════════════════════════════════════════════════════════════════
-  function _runNesting() {
-    S.previewCode = null;   // running shows the nest result, not a part preview
-    S.loadedJobStale = null;   // a fresh run supersedes any outdated loaded job
-    // Expand parts into per-instance pieces (qty copies each) and
-    // restrict rotations by grain (H = no 90/270, V = no 0/180,
-    // ANY = all four).
+  // ── Shared nesting helpers (hoisted to module scope so the auto-optimizer
+  //    trials and _runNesting both use the EXACT same grouping / remnant / grain
+  //    logic). (AUTO COST-OPTIMIZE เอ๋ 2026-06-26) ──────────────────────────
+  function _thickKey(t) {
+    const n = typeof t === 'number' ? t : parseFloat(String(t).replace(/[^\d.]/g, ''));
+    return isNaN(n) ? '?' : String(Math.round(n * 100) / 100);
+  }
+  function _remnantStockForThick(tk) {
+    const out = [];
+    for (const r of (S.remnants || [])) {
+      if (_thickKey(r.thickness ?? 1) !== tk) continue;
+      if (S.remnantsOff && S.remnantsOff.has(r.id)) continue;
+      const w = (r.actualW != null) ? +r.actualW : +r.w;
+      const h = (r.actualH != null) ? +r.actualH : +r.h;
+      if (!(w > 0 && h > 0)) continue;
+      out.push({ w: Math.round(w), h: Math.round(h), qty: 1,
+                 thickness: r.thickness ?? 1, label: '♻ remnant', _remnantId: r.id,
+                 grain: String(r.grain || 'ANY').toUpperCase(),
+                 material: r.material || '', finish: r.finish || '' });
+    }
+    return out;
+  }
+  function _grainFits(pieceGrain, remGrain, pieceAngle) {
+    const pg = String(pieceGrain || 'ANY').toUpperCase();
+    const rg = String(remGrain || 'ANY').toUpperCase();
+    if (pg === 'EDGE') {
+      if (rg === 'ANY') return true;
+      if (rg === 'EDGE') {
+        const ra = (remGrain && remGrain._angle != null) ? remGrain._angle : null;
+        return ra != null && pieceAngle != null && Math.abs(((ra - pieceAngle) % 180 + 180) % 180) < 0.5;
+      }
+      return false;
+    }
+    if (pg !== 'H' && pg !== 'V') return true;
+    if (rg === 'ANY') return true;
+    return rg === pg;
+  }
+
+  // Run the remnant scrap-first pre-pass for ONE thickness group, returning the
+  // POST-remnant fresh pool (remnants are free/excluded from cost). PURE — does
+  // not touch S.flatSheets/UI. Used by both the optimizer (to score only the
+  // fresh-stock decision) and conceptually mirrors _runNesting's pre-pass.
+  function _remnantPrepass(pool, tk, mode) {
+    if (S.skipRemnants) return pool.slice();
+    let p = pool.slice();
+    for (const rm of _remnantStockForThick(tk)) {
+      const compat = p.filter(pc => _grainFits(pc.grain, rm.grain, pc.grainAngle));
+      if (!compat.length) continue;
+      const rr = _nestMultiSheet(compat, [{ ...rm, qty: 1 }], S.gap, mode);
+      const sheet = (rr.sheets || [])[0];
+      if (!sheet || !sheet.placements.length) continue;
+      const used = new Map();
+      for (const pl of sheet.placements) used.set(pl.code, (used.get(pl.code) || 0) + 1);
+      p = p.filter(pc => {
+        const left = used.get(pc.code) || 0;
+        if (left > 0) { used.set(pc.code, left - 1); return false; }
+        return true;
+      });
+    }
+    return p;
+  }
+
+  // Cost of a headless trial result = sum over FRESH sheets of that size's prc.
+  // res.sheets each carry sw/sh; price looked up by size from priceBySize map.
+  // (PURE — feed it a result + a {`${w}x${h}`:prc} map; this is the unit tested
+  //  selection logic.) Returns {cost, freshCount} or null if any unplaced.
+  function _scoreTrialResult(res, priceBySize) {
+    if (!res || (res.unplaced && res.unplaced.length)) return null;
+    let cost = 0, fresh = 0;
+    for (const s of (res.sheets || [])) {
+      const key = `${Math.round(s.sw)}x${Math.round(s.sh)}`;
+      cost += (priceBySize[key] || 0);
+      fresh++;
+    }
+    return { cost, freshCount: fresh };
+  }
+
+  // Pick the cheapest feasible (0-unplaced) trial. trials: array of
+  // {name, stock, result}. priceBySize: {`${w}x${h}`:prc}. Returns the winning
+  // trial augmented with {cost, freshCount}, or null if none place everything.
+  // Tie-break: fewer fresh sheets. (THE unit-tested selection logic.)
+  function _pickCheapestTrial(trials, priceBySize) {
+    let best = null;
+    for (const t of trials) {
+      const sc = _scoreTrialResult(t.result, priceBySize);
+      if (!sc) continue;   // infeasible (has unplaced) — skip
+      const cand = { ...t, cost: sc.cost, freshCount: sc.freshCount };
+      if (best === null
+          || cand.cost < best.cost
+          || (cand.cost === best.cost && cand.freshCount < best.freshCount)) {
+        best = cand;
+      }
+    }
+    return best;
+  }
+
+  // Expand the selected parts into per-instance pieces (qty copies each) with
+  // grain-restricted rotations — the SHARED piece-build used by both the normal
+  // run and the auto-optimizer trials, so trials nest the exact same pieces.
+  // (extracted from _runNesting for AUTO COST-OPTIMIZE เอ๋ 2026-06-26)
+  function _buildNestPieces() {
     const pieces = [];
     for (const p of S.parts) {
       if (!p.selected) continue;
@@ -3723,6 +3829,17 @@
         });
       }
     }
+    return pieces;
+  }
+
+  function _runNesting() {
+    S.previewCode = null;   // running shows the nest result, not a part preview
+    S.loadedJobStale = null;   // a fresh run supersedes any outdated loaded job
+    S.optChosen = false;   // a manual/normal run is NOT auto-chosen (badge off)
+    // Expand parts into per-instance pieces (qty copies each) and
+    // restrict rotations by grain (H = no 90/270, V = no 0/180,
+    // ANY = all four).
+    const pieces = _buildNestPieces();
     if (pieces.length === 0) {
       alert('No parts to nest — check selection / DXF loading status.');
       return;
@@ -3752,59 +3869,14 @@
     // mix gauges. Stock is filtered per group — a row with
     // thickness=1 only takes thickness=1 pieces. Pieces whose
     // thickness has no matching stock row land in 'unplaced'.
-    function thickKey(t) {
-      const n = typeof t === 'number' ? t : parseFloat(String(t).replace(/[^\d.]/g, ''));
-      return isNaN(n) ? '?' : String(Math.round(n * 100) / 100);
-    }
+    // thickKey / _remnantStockForThick / _grainFits are now module-scope helpers
+    // (_thickKey etc.) shared with the auto-optimizer. (เอ๋ 2026-06-26)
+    const thickKey = _thickKey;
     const byThick = new Map();
     for (const piece of pieces) {
       const k = thickKey(piece.thickness);
       if (!byThick.has(k)) byThick.set(k, []);
       byThick.get(k).push(piece);
-    }
-
-    // Saved offcuts as stock rows for this thickness — uses the ACTUAL cut
-    // size when the Laser worker recorded it, else the calculated size. Carries
-    // the remnant's grain + material/finish so the packer can gate by grain and
-    // the banner can flag a mismatch. (เอ๋ 2026-05-31 'นำค่าจริงมาใช้' +
-    // 'ตัด nest จริงต้องเอาเศษมาใช้' + 'อยากให้ครบ')
-    function _remnantStockForThick(tk) {
-      const out = [];
-      for (const r of (S.remnants || [])) {
-        if (thickKey(r.thickness ?? 1) !== tk) continue;
-        if (S.remnantsOff && S.remnantsOff.has(r.id)) continue;   // per-remnant exclude (เอ๋ 2026-06-11)
-        const w = (r.actualW != null) ? +r.actualW : +r.w;
-        const h = (r.actualH != null) ? +r.actualH : +r.h;
-        if (!(w > 0 && h > 0)) continue;
-        out.push({ w: Math.round(w), h: Math.round(h), qty: 1,
-                   thickness: r.thickness ?? 1, label: '♻ remnant', _remnantId: r.id,
-                   grain: String(r.grain || 'ANY').toUpperCase(),
-                   material: r.material || '', finish: r.finish || '' });
-      }
-      return out;
-    }
-    // Can a piece with directional grain pg ('H'/'V'/'ANY'/'?'/...) be cut from
-    // a remnant whose own grain is rg? A reused offcut already has a grain
-    // direction baked in, so a directional part must match it. MIXED (sheet had
-    // both H+V parts) is unsafe for any directional part. ANY remnant takes
-    // anything; ANY/?/unset part takes any remnant. (feedback_remnants_grain_finish)
-    function _grainFits(pieceGrain, remGrain, pieceAngle) {
-      const pg = String(pieceGrain || 'ANY').toUpperCase();
-      const rg = String(remGrain || 'ANY').toUpperCase();
-      // EDGE (angled grain): an angled part can only be cut from a fresh-grained
-      // (ANY) offcut, or from an EDGE offcut whose baked-in angle matches. A
-      // plain H/V offcut has the wrong fixed direction. (angled-grain 2026-06-25)
-      if (pg === 'EDGE') {
-        if (rg === 'ANY') return true;
-        if (rg === 'EDGE') {
-          const ra = (remGrain && remGrain._angle != null) ? remGrain._angle : null;   // remnants don't carry an EDGE angle yet (see TODO) → treat as non-match
-          return ra != null && pieceAngle != null && Math.abs(((ra - pieceAngle) % 180 + 180) % 180) < 0.5;
-        }
-        return false;
-      }
-      if (pg !== 'H' && pg !== 'V') return true;   // non-directional part: any remnant ok
-      if (rg === 'ANY') return true;               // fresh-grained offcut: any direction ok
-      return rg === pg;                            // directional part needs same-direction remnant
     }
 
     const allSheets = [];
@@ -3887,6 +3959,212 @@
     // Offcut remembering moved to 💾 Save Nest (เอ๋ 2026-06-10 'ถ้าจะ save ให้มา
     // save ที่ save Project') — a test Run no longer touches the shared
     // remnant pool; only an explicitly saved nest does.
+  }
+
+  // ── AUTO COST-OPTIMIZE orchestrator (เอ๋ 2026-06-26) ────────────────────────
+  // The Run button's DEFAULT entry. Auto-finds the CHEAPEST enabled sheet-size
+  // mix (by each size's prc) — may MIX sizes — then renders the winner via the
+  // normal full path (_runNesting). Manual toggle ON → run as-is, no trials.
+  let _optRunning = false;   // guard against double-clicks during the async trials
+  async function _runNestingAuto() {
+    // MANUAL path = today's exact behavior. Untouched.
+    if (S.optManual) { _runNesting(); return; }
+    if (_optRunning) return;
+
+    // Build pieces + validate up front (same checks the normal run does) so a
+    // no-op run never spins / prompts.
+    const pieces = _buildNestPieces();
+    if (pieces.length === 0) {
+      alert('No parts to nest — check selection / DXF loading status.');
+      return;
+    }
+    const activeStock = S.sheetStock.filter(s => s.enabled !== false && s.w > 0 && s.h > 0 && (s.qty !== 0 || s.qty === -1));
+    if (activeStock.length === 0) {
+      alert('No usable sheet stock — fill in at least one row with W, H and qty.');
+      return;
+    }
+
+    _optRunning = true;
+    _setRunBtnBusy(true);
+    // Yield once so the browser paints the "Optimizing…" state before the
+    // (synchronous-per-trial) packing work begins.
+    await _yield();
+
+    // Cheap scoring mode for trials; render the WINNER in full mode after.
+    // 'MaxRects' = single cheap pass (research: ~5x cheaper than Desktop).
+    const TRIAL_MODE = 'MaxRects';
+
+    // Group the SELECTED pieces by thickness (same keying as _runNesting).
+    const byThick = new Map();
+    for (const piece of pieces) {
+      const k = _thickKey(piece.thickness);
+      if (!byThick.has(k)) byThick.set(k, []);
+      byThick.get(k).push(piece);
+    }
+
+    // The chosen stock config we will WRITE back onto S.sheetStock before the
+    // final run: per row index → {enabled, qty}. Rows not for an optimized
+    // thickness keep their current settings. We only ever set enabled/qty.
+    const chosen = new Map();   // rowIndex → {enabled, qty}
+    let anyOptimized = false;
+    let anyInfeasible = false;
+
+    for (const [tk, group] of byThick) {
+      // Rows for THIS thickness, with their real index in S.sheetStock so we can
+      // write the winner back. Only enabled, sized, non-zero-qty rows.
+      const rows = [];
+      S.sheetStock.forEach((s, i) => {
+        if (s.enabled === false) return;
+        if (!(s.w > 0 && s.h > 0)) return;
+        if (s.qty === 0) return;
+        if (_thickKey(s.thickness ?? 1) !== tk) return;
+        rows.push({ i, s });
+      });
+      if (rows.length === 0) continue;           // no fresh stock for this thickness — leave to _runNesting (→ unplaced)
+      if (rows.length === 1) continue;           // single size: nothing to optimize, current settings stand
+
+      // POST-remnant fresh pool (remnants free/excluded from cost).
+      const pool = _remnantPrepass(group, tk, TRIAL_MODE);
+      if (!pool.length) continue;                // everything fit on offcuts — no fresh cost decision
+
+      // price-by-size lookup for scoring.
+      const priceBySize = {};
+      for (const { s } of rows) {
+        const key = `${Math.round(s.w)}x${Math.round(s.h)}`;
+        priceBySize[key] = (s.prc || 0) || _getPriceDefault(s.w, s.h, s.label);
+      }
+      // Real finite qty cap per size (−1 = unlimited).
+      const capBySize = {};
+      for (const { s } of rows) {
+        const key = `${Math.round(s.w)}x${Math.round(s.h)}`;
+        capBySize[key] = (s.qty === -1) ? Infinity : (s.qty | 0);
+      }
+
+      // Build trial stock sets. For a trial each "enabled" size gets qty = its
+      // real cap (or a generous unlimited for the trial when cap=Infinity); a
+      // size left OUT of the trial is qty 0. A scenario is INFEASIBLE if the
+      // packer needs more of a size than its real qty cap allows (caught by
+      // _nestMultiSheet honoring the qty) → it leaves pieces unplaced → scored
+      // out by _pickCheapestTrial.
+      const TRIAL_UNLIMITED = 9999;
+      const trialStock = (enabledKeys) => rows.map(({ s }) => {
+        const key = `${Math.round(s.w)}x${Math.round(s.h)}`;
+        const on = enabledKeys.has(key);
+        const cap = capBySize[key];
+        const qty = !on ? 0 : (cap === Infinity ? TRIAL_UNLIMITED : cap);
+        return { ...s, qty };
+      });
+      const allKeys = rows.map(({ s }) => `${Math.round(s.w)}x${Math.round(s.h)}`);
+      const uniqKeys = [...new Set(allKeys)];
+
+      const scenarios = [];
+      // (a) each single size alone
+      for (const k of uniqKeys) scenarios.push({ name: k, keys: new Set([k]) });
+      // (b) all-sizes mix
+      if (uniqKeys.length > 1) scenarios.push({ name: 'mix-all', keys: new Set(uniqKeys) });
+
+      // Run + score the primary scenarios (cheap mode), yielding between trials.
+      const trials = [];
+      for (const sc of scenarios) {
+        const stock = trialStock(sc.keys);
+        let res = null;
+        try { res = _nestMultiSheet(pool.map(p => ({ ...p })), stock, S.gap, TRIAL_MODE); }
+        catch (e) { res = null; }
+        trials.push({ name: sc.name, keys: sc.keys, stock, result: res });
+        await _yield();
+      }
+
+      let winner = _pickCheapestTrial(trials, priceBySize);
+
+      // (c) 2-size combos ONLY as a fallback if NO scenario placed everything.
+      if (!winner && uniqKeys.length >= 2) {
+        const comboTrials = [];
+        for (let a = 0; a < uniqKeys.length; a++) {
+          for (let b = a + 1; b < uniqKeys.length; b++) {
+            const keys = new Set([uniqKeys[a], uniqKeys[b]]);
+            const stock = trialStock(keys);
+            let res = null;
+            try { res = _nestMultiSheet(pool.map(p => ({ ...p })), stock, S.gap, TRIAL_MODE); }
+            catch (e) { res = null; }
+            comboTrials.push({ name: `combo:${uniqKeys[a]}+${uniqKeys[b]}`, keys, stock, result: res });
+            await _yield();
+          }
+        }
+        winner = _pickCheapestTrial(comboTrials, priceBySize);
+      }
+
+      if (!winner) { anyInfeasible = true; continue; }   // nothing places everything for this thickness
+
+      // Record the winning per-row enabled/qty for this thickness.
+      anyOptimized = true;
+      for (const { i, s } of rows) {
+        const key = `${Math.round(s.w)}x${Math.round(s.h)}`;
+        const on = winner.keys.has(key);
+        chosen.set(i, { enabled: on ? (s.enabled !== false) : false, qty: s.qty });
+      }
+    }
+
+    // If NOTHING could be optimized to a full placement (parts too big for any
+    // enabled size, etc.), fall back to today's behavior so nothing breaks.
+    if (!anyOptimized) {
+      _optRunning = false;
+      _setRunBtnBusy(false);
+      _runNesting();   // normal full run surfaces the unplaced as usual
+      return;
+    }
+
+    // ── Apply the winning mix onto the real stock rows, persist, then render
+    //    the FINAL layout via the normal full path ONCE in the user's mode.
+    //    Snapshot the rows we touch so we can restore exactly afterwards (we
+    //    only flip enabled to drop the losing sizes; qty is kept as the user's).
+    const snapshot = new Map();
+    for (const [i, cfg] of chosen) {
+      snapshot.set(i, { enabled: S.sheetStock[i].enabled, qty: S.sheetStock[i].qty });
+      S.sheetStock[i].enabled = cfg.enabled;
+      // keep qty as the user set it (real cap) — the packer fills first size by
+      // order then the next; the chosen ENABLED set is what makes the mix cheap.
+    }
+    _persistStock();
+
+    _runNesting();          // full final render in S.mode (confirm + rect modal fire here, once)
+    S.optChosen = true;     // mark this result as auto-chosen → "Auto-chosen" badge
+
+    // Restore the rows' enabled flags so the user's manual stock selection is
+    // not silently mutated for the NEXT run (the winner already produced the
+    // layout). qty was never changed. Persist the restore.
+    for (const [i, snap] of snapshot) {
+      S.sheetStock[i].enabled = snap.enabled;
+      S.sheetStock[i].qty = snap.qty;
+    }
+    _persistStock();
+
+    _optRunning = false;
+    _setRunBtnBusy(false);
+    _refreshView();         // re-render cost summary with the badge + restored rows
+  }
+
+  // Yield to the event loop so the UI thread can paint between trials (spinner
+  // stays responsive, no freeze). rAF when available, else setTimeout(0).
+  function _yield() {
+    return new Promise(res => {
+      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => res());
+      else setTimeout(res, 0);
+    });
+  }
+  // Toggle the Run button's busy/"Optimizing…" state.
+  function _setRunBtnBusy(busy) {
+    const btn = S.rootEl && S.rootEl.querySelector('#kdnest-run');
+    if (!btn) return;
+    if (busy) {
+      btn.dataset.label = btn.innerHTML;
+      btn.disabled = true;
+      btn.classList.add('kdnest-btn-busy');
+      btn.textContent = 'Optimizing…';
+    } else {
+      btn.disabled = false;
+      btn.classList.remove('kdnest-btn-busy');
+      if (btn.dataset.label) { btn.innerHTML = btn.dataset.label; delete btn.dataset.label; }
+    }
   }
 
   // ── Grain-direction hatch ──────────────────────────────────────────
@@ -5787,6 +6065,9 @@
             <label class="kdnest-rectleft-lab" title="Re-pack the LAST sheet so the leftover becomes one usable rectangle (saved as a remnant ≥300mm)">
               <input id="kdnest-rectleft" type="checkbox"${S.rectLeftover ? ' checked' : ''}> Rect leftover (last)
             </label>
+            <label class="kdnest-optmanual-lab" title="Manual: Run uses the sheet stock exactly as set (no cost-optimize). OFF (default) = Run auto-picks the cheapest enabled sheet-size mix by price.">
+              <input id="kdnest-optmanual" type="checkbox"${S.optManual ? ' checked' : ''}> Manual
+            </label>
           </div>
           <!-- Skip-remnants checkbox moved INTO the Remnants Stock modal as
                "Use remnants" (เอ๋ 2026-06-10 'skip Remnants ให้มาอยู่ที่ Remnants
@@ -5852,7 +6133,12 @@
   function _wireEvents() {
     const $ = sel => S.rootEl.querySelector(sel);
     $('#kdnest-back')?.addEventListener('click', close);
-    $('#kdnest-run')?.addEventListener('click', _runNesting);
+    $('#kdnest-run')?.addEventListener('click', _runNestingAuto);
+    // Manual toggle — ON = run as-is (today's behavior, no cost-optimize trials).
+    $('#kdnest-optmanual')?.addEventListener('change', e => {
+      S.optManual = !!e.target.checked;
+      try { localStorage.setItem('kd_nest_optmanual_v1', S.optManual ? '1' : '0'); } catch (_) {}
+    });
     // ONE adaptive button (เอ๋ 2026-06-10): nest run/loaded → 💾 Save Nest
     // (save + into Project + remember offcuts); nothing yet → 📂 Load Nest.
     $('#kdnest-savenest')?.addEventListener('click', () =>

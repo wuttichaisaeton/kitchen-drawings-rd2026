@@ -4544,6 +4544,27 @@ body.sb-fs-lock { overflow: hidden; }
   margin-left: auto;
   text-align: right;
 }
+/* "Auto-chosen" badge — result came from the cost-optimize Run (เอ๋ 2026-06-26) */
+.kdnest-cost-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(242, 169, 59, 0.18);
+  border: 1px solid rgba(242, 169, 59, 0.55);
+  color: #f2a93b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+}
+/* Run button while the optimizer is scoring trials */
+.kdnest-btn-run.kdnest-btn-busy {
+  background: #355a44;
+  color: #bfe9cf;
+  cursor: progress;
+  opacity: 0.85;
+}
 
 .kdnest-actions {
   display: flex;
