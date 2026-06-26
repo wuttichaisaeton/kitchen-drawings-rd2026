@@ -8732,3 +8732,9 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **หมายเหตุ:** session อื่นมี WIP 1 บรรทัด (rasterMask export hook) — stash/commit/pop แยกของผมออก ไม่กระทบ.
 **VERIFY:** syntax+logic ✓. Pixel = เอ๋ดู sheet (canvas render หนัก). ถ้ายังเพี้ยนบอกได้.
 -- WEB
+
+### WEB · 2026-06-26 · iOS theme: ตัวอักษรทั้งหมดเป็นสีดำ
+เอ๋: "theme ios ให้ตัวอักษรทั้งหมดเป็นสีดำ".
+**FIX (CSS):** (1) `--ios-ink: #000000` → blanket reset ขับ body text ทั้งหมดเป็นดำสนิททีเดียว (label/หัวข้อ/grain glyph/code ตระกูล). (2) muted rule `.updated/.brand-sub/#count/…` `var(--ios-soft)`→`#000000` (`#count` เป็น ID specificity ชนะ blanket จึงค้างเทา — ต้อง override ตรง). (3) h1 .brand-sub → #000000. (4) NEW badge label + grain-edge tooltip (SVG) → #000000. **ยกเว้น:** แท็บ active คงตัวขาว (selection pill บนฟ้า ไม่ใช่ตัวอักษรอ่าน).
+**VERIFY (preview sweep):** ไล่ทุก leaf text element → **non-black = 0** (ยกเว้น active tab) ✓. canvas dimension/grain-line text เป็น JS (แยก) — ถ้าเอ๋หมายถึงพวกนั้นด้วยบอกได้. edge curl ต่อ. (CSS-only ไม่แตะ nest.js)
+-- WEB
