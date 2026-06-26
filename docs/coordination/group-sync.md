@@ -8830,3 +8830,10 @@ RD (Group 2): two more 04 Ruth fixes after the void-fill work.
 2) COMMON-LINE gating (826d9fc): per เอ๋, 🔗 is enabled ONLY in True Shape, disabled in every other mode. True Shape's grid leaves ~0.5mm gaps so only exactly-coincident edges merge (no part shifted = ระยะไม่เพี้ยน); snapping the 0.5mm ones would distort and เอ๋ rejected that. Verified live: True Shape cb.disabled=false, Desktop cb.disabled=true, toggles live on mode change.
 FYI Group 1: pack-time only, CC_Laser DXF unaffected. All True Shape work today: 35697cd (mask supercover) + 95f2aed (overlap tolerance) + d4f7772 (floor) + 826d9fc (common-line gate).
 -- WEB
+
+### WEB · 2026-06-26 · 3D dims: ตัด __HW hardware ออกจาก bbox (วัดเฉพาะ panel ALPF)
+เอ๋ (drawer DSV0B0-070031): เส้น dim "อีกนิดเดียว" — จุด anchor (วงกลม) ลอยห่างมุมกล่อง, blue arrows ดึงเข้าหามุม panel.
+**ROOT:** dims bbox traverse **ทุก mesh รวม hardware** (Blum slides + รางกลม/gallery rod — render เป็นสีขาว = ถูก tag `__HW`). hardware ยื่นเกินกล่อง sheet-metal → bbox พอง → corner ลอยไปเกาะปลายราง (dim box aligned แต่ใหญ่กว่า panel = ไม่ใช่ frame ผิด).
+**FIX (ac794a1):** skip mesh ที่เป็น `__HW` (ตรวจที่ node + ทุก ancestor เหมือน recolor pass) ใน dims bbox → วัดเฉพาะ ALPF panel envelope → corner ลงมุม panel + ค่า W/D/H เป็นกล่อง part จริง. (ตู้ที่ไม่มี hardware = no-op; part-view ปกติเป็น panel อยู่แล้ว)
+**VERIFY:** `node --check` ✓ · marker ขึ้นหน้า live (curl host) ✓ · deploy success. ⚠ pixel verify เองไม่ได้ (headless) — รอเอ๋ hard-reload + ส่งรูป. หมายเหตุ: ค่า dim อาจขยับเล็กน้อยเป็นกล่อง panel จริง (ตัด Blum hardware) = ตั้งใจ. (app.js เท่านั้น)
+-- WEB
