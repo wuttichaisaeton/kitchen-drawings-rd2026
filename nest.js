@@ -919,6 +919,36 @@
       }
     }
 
+    // Drop phantom "cabinet-as-part" leaks. CC_Assembly should flag every
+    // container occurrence is_wrapper (the skip at the aggregation loop above),
+    // but it classifies leaf-vs-container on MATERIAL alone — so a bodyless
+    // group whose root carries an ALPF tag (e.g. 1NSVB0-060050, a CABINET with
+    // ~17 child parts and no sheet-metal body) slips through as a qty-1 part with
+    // no DXF → a false "1 ERR / NO DXF". (เอ๋ 2026-06-26 "มันเป็น group ไม่ใช่ part")
+    // SAFE 4-clause backstop (verified across 131 projects to drop ONLY
+    // 1NSVB0-060050): a code is a phantom container iff (a) it is NEVER a child
+    // (no occurrence has parent_code), (b) variant_root === itself, (c) it IS the
+    // parent_code of >=1 other part (has children), AND (d) it has no DXF. Clause
+    // (d) is the hard fail-safe: a real cuttable part always has a DXF, so a real
+    // dual-role part (e.g. SD00NA-080050, a side panel that also parents supports)
+    // is never dropped. Warns (not silent) so a future miss leaves a trace.
+    {
+      const parentCodes = new Set();        // codes that parent >=1 other part
+      const codesWithParent = new Set();    // codes that ARE a child somewhere
+      const vrOfCode = new Map();           // code → its variant_root (first seen)
+      for (const p of partsRaw) {
+        if (!p || !p.code) continue;
+        if (p.parent_code) { parentCodes.add(p.parent_code); codesWithParent.add(p.code); }
+        if (p.variant_root != null && !vrOfCode.has(p.code)) vrOfCode.set(p.code, p.variant_root);
+      }
+      for (const [key, part] of [...byCode.entries()]) {
+        if (parentCodes.has(key) && !codesWithParent.has(key) && vrOfCode.get(key) === key && !part.dxfUrl) {
+          console.warn('[kdNest] dropping phantom container-as-part (no is_wrapper, has children, no DXF):', key);
+          byCode.delete(key);
+        }
+      }
+    }
+
     // Apply grain.json rules — same pattern table the Python tool reads
     // from NestingTool/grain.xlsx. User edits the xlsx; a one-shot
     // conversion writes drawings-ui/grain.json next to it. Patterns:
