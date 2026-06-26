@@ -6374,18 +6374,38 @@
     const $ = sel => S.rootEl.querySelector(sel);
     $('#kdnest-back')?.addEventListener('click', close);
     $('#kdnest-run')?.addEventListener('click', _runNestingAuto);
-    // Header error chip → reveal WHICH parts failed: scroll the review banner
-    // into view + flash it. The banner (built from the same _reviewSummary data)
-    // lists each part + reason. (เอ๋ 2026-06-26 'กดดูได้ว่าอันไหนพัง')
+    // Header error chip → reveal WHICH parts failed. (a) flash the review banner
+    // (built from the same _reviewSummary data); (b) ALSO highlight + scroll to
+    // the failing part ROWS in the left list so เอ๋ sees the real culprit, not
+    // just the banner. (เอ๋ 2026-06-26 'กดดูได้ว่าอันไหนพัง' → 'กดแล้วไป
+    // highlight แถวชิ้นที่พังในลิสต์ซ้าย')
     $('.kdnest-errchip')?.addEventListener('click', () => {
-      const anchor = S.rootEl && S.rootEl.querySelector('#kdnest-review-anchor');
-      if (!anchor) return;
-      anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      anchor.classList.remove('kdnest-warn-flash');
-      // reflow so re-adding the class restarts the animation
-      void anchor.offsetWidth;
-      anchor.classList.add('kdnest-warn-flash');
-      setTimeout(() => anchor.classList.remove('kdnest-warn-flash'), 1800);
+      const root = S.rootEl;
+      if (!root) return;
+      // (a) flash the review banner (keep — useful on narrow / stacked layouts)
+      const anchor = root.querySelector('#kdnest-review-anchor');
+      if (anchor) {
+        anchor.classList.remove('kdnest-warn-flash');
+        void anchor.offsetWidth;   // reflow → restart animation
+        anchor.classList.add('kdnest-warn-flash');
+        setTimeout(() => anchor.classList.remove('kdnest-warn-flash'), 1800);
+      }
+      // (b) point at the actual broken parts: blink + scroll to the failing ROWS
+      //     (blocking first → red; soft review → amber). Match rows by data-code.
+      const sev = new Map(_reviewSummary().parts.map(r => [r.code, r.blocking]));
+      const rows = [...root.querySelectorAll('.kdnest-part')]
+        .filter(el => sev.has(el.getAttribute('data-code')))
+        .sort((a, b) => (sev.get(b.getAttribute('data-code')) ? 1 : 0)
+                      - (sev.get(a.getAttribute('data-code')) ? 1 : 0));
+      for (const el of rows) {
+        const cls = sev.get(el.getAttribute('data-code')) ? 'kdnest-row-errflash' : 'kdnest-row-warnflash';
+        el.classList.remove(cls);
+        void el.offsetWidth;   // reflow → restart animation
+        el.classList.add(cls);
+        setTimeout(() => el.classList.remove(cls), 2000);
+      }
+      // scroll the first (blocking) failing row into view LAST so it wins
+      if (rows.length) rows[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
     // Manual toggle — ON = run as-is (today's behavior, no cost-optimize trials).
     $('#kdnest-optmanual')?.addEventListener('change', e => {
