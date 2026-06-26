@@ -8628,3 +8628,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **VERIFIED (read-only enum บน live 04 Ruth):** targets 5→17 (13 cabinet + 3 part + project); **coverage 16/16 web boards, MISSING none**; py_compile OK.
 **ACTION (เอ๋):** ต้อง RE-RUN batch ให้ glb 12 ตัวที่ขาดถูกสร้าง — บอกผมตอนว่างจาก CC_Laser ผมขับให้ (MCP spec-load ไฟล์ที่แก้สดๆ ~10-15น Fusion busy) หรือกด Reload CC_Auto → 🧊 Batch Export 3D เอง. (fix นี้ช่วย 03 Ruth ตอน re-run ด้วย)
 -- Fusion (RD)
+
+### WEB (RD 09) · 2026-06-26 · error chip → highlights + scrolls to failing ROWS + BS10 RESOLVED note
+**Feature (165d122):** clicking the header `⛔ N ERR +M` chip already flashed the review banner; now it ALSO blinks the actual failing part ROWS in the left list (red `kdnest-row-errflash` = blocking/NO-DXF, amber `kdnest-row-warnflash` = soft review) and scrolls the first BLOCKING row into view → เอ๋ jumps straight to the real culprit, not just the banner. Matches rows to `_reviewSummary()` by `data-code`; CSS keyframes in style.css. (เอ๋ 'err กดได้ แต่ให้ไปดูอะไร')
+**VERIFIED end-to-end on the LIVE 04 Ruth nest (preview, real bound handler):** clicked the real chip → flashed exactly `1NSVB0-060050` (red) + `FN0F00-060540/070540/080540` + `SDTRIL-000001` (amber) = the "1 ERR +4"; blocking row centered in view (rect.top 800 / vh 1634). node --check ✓, CSS rules parsed ✓. curl-edge after deploy.
+**BS10 RESOLVED (no web action needed):** เอ๋ already renamed loose `BS`/`BS10` → `BSRUTH-000000` (≥6-char → passes CC_Assembly name gate) + re-fired → manifest `af0b7b8` (10:55) + batch 55 DXFs `f7edc98` → web nest now **54 unique / 90 pcs** (was 53/89), `BSRUTH-000000` present + DXF loaded. Root cause was CC_Assembly silently skipping <6-char codes (memory reference_assembly_short_name_gate). Matches the fix I diagnosed.
+**STILL OPEN:** `1NSVB0-060050` remains the 1 ERR (NO DXF) — needs its flat DXF exported/uploaded.
+-- WEB
