@@ -7830,7 +7830,7 @@ html[data-theme="ios"] footer {
   border-top: 1px solid var(--ios-line) !important;
 }
 html[data-theme="ios"] h1 { color: var(--ios-ink) !important; font-weight: 600 !important; text-transform: none !important; letter-spacing: -0.012em; }
-html[data-theme="ios"] h1 .brand-sub { color: #000000 !important; font-weight: 400 !important; text-transform: none !important; font-style: normal !important; }
+html[data-theme="ios"] h1 .brand-sub { color: #86868b !important; font-weight: 400 !important; text-transform: none !important; font-style: normal !important; }
 
 /* Card / panel / row surfaces — white, hairline, soft shadow, rounded. */
 html[data-theme="ios"] .project-card,
@@ -7944,13 +7944,19 @@ html[data-theme="ios"] .tab.active {
 /* Dividers + secondary text. */
 html[data-theme="ios"] hr,
 html[data-theme="ios"] .divider { border-color: var(--ios-line) !important; }
-html[data-theme="ios"] .updated,
-html[data-theme="ios"] .brand-sub,
-html[data-theme="ios"] .cut-list-summary,
-html[data-theme="ios"] .kdnest-title-sub,
-html[data-theme="ios"] .pdxf-sub,
-html[data-theme="ios"] .kdjobs-meta,
-html[data-theme="ios"] #count { color: #000000 !important; }   /* เอ๋ "ตัวอักษรทั้งหมดเป็นสีดำ" — was --ios-soft gray; #count is an ID so it beats the blanket reset */
+/* Apple GRAY secondary hierarchy (เอ๋ "ขัดให้ Apple จริงๆ"). DOUBLED class so it
+   beats the blanket reset (0,2,5) — which was forcing every secondary line to ink,
+   so the premium gray hierarchy never actually showed (only #count, an ID, did).
+   THIS is what makes it read Apple: primary #1d1d1f, secondary #86868b. */
+html[data-theme="ios"] .updated.updated,
+html[data-theme="ios"] .brand-sub.brand-sub,
+html[data-theme="ios"] .cut-list-summary.cut-list-summary,
+html[data-theme="ios"] .kdnest-title-sub.kdnest-title-sub,
+html[data-theme="ios"] .pdxf-sub.pdxf-sub,
+html[data-theme="ios"] .kdjobs-meta.kdjobs-meta,
+html[data-theme="ios"] .project-meta.project-meta,
+html[data-theme="ios"] .nest-home-stats.nest-home-stats,
+html[data-theme="ios"] #count { color: #86868b !important; }
 
 /* Keep the NEW freshness badge an eye-catching pill (the blanket reset would
    otherwise strip its fill) — Apple blue here. */
@@ -8107,10 +8113,13 @@ html[data-theme="ios"] .part-dxf-popover.part-dxf-popover {
    matched by the blanket reset (not its own descendant), and #root/main are
    already transparent (reset) → body's gradient is what shows through. */
 html[data-theme="ios"] body {
+  /* เอ๋ "ขัดให้ Apple จริงๆ": tints toned WAY down + a lighter, cooler near-white
+     base so it reads clean/premium like apple.com (the old blue+purple was too
+     colourful) while still giving the frosted glass something faint to refract. */
   background:
-    radial-gradient(1100px 640px at 8% -10%, rgba(10,132,255,0.13), transparent 58%),
-    radial-gradient(1000px 600px at 104% 6%, rgba(175,82,222,0.10), transparent 56%),
-    linear-gradient(180deg, #eef1f6 0%, #e8ebf2 100%) !important;
+    radial-gradient(1200px 700px at 0% -12%, rgba(0,113,227,0.06), transparent 55%),
+    radial-gradient(1100px 640px at 108% 2%, rgba(120,90,220,0.04), transparent 52%),
+    linear-gradient(180deg, #f7f9fc 0%, #eef1f6 100%) !important;
 }
 
 /* Header + footer — STRONGER Liquid Glass (เข้มขึ้น): deeper blur + saturation +
@@ -8168,15 +8177,14 @@ html[data-theme="ios"] .card.card {
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 6px 28px rgba(0,0,0,0.07) !important;
 }
 
-/* ── ALL text pure black (เอ๋ 2026-06-26 "theme ios ให้ตัวอักษรทั้งหมดเป็นสีดำ") ──
-   Body text is driven from --ios-ink via the blanket reset, so flipping the var to
-   #000000 turns every standard label/heading/muted/grain-glyph/family-code pure
-   black at once. Then black the few high-specificity accents that survive — the
-   NEW badge label + the grain-edge SVG tooltip. The selected tab keeps white text
-   (it's a blue selection pill, not reading text). Canvas-drawn dimension/grain
-   text is JS-side (separate). */
-html[data-theme="ios"] { --ios-ink: #000000; }
+/* ── Apple typographic hierarchy (เอ๋ 2026-06-26 "ขัดให้ Apple จริงๆ") ──
+   The earlier "all text black" flattened the look. Apple's signature is a GRAY
+   HIERARCHY — primary near-black #1d1d1f, secondary gray #86868b — which reads
+   premium and layered. Restore it: ink back to #1d1d1f (looks black, softer than
+   pure #000), the NEW badge label back to the Apple-blue accent, the grain tooltip
+   to ink. (Secondary/muted text restored to gray in the muted rule above.) */
+html[data-theme="ios"] { --ios-ink: #1d1d1f; }
 html[data-theme="ios"] .kdnest-cab-fr.kdnest-cab-fr,
 html[data-theme="ios"] .part-new-badge.part-new-badge,
-html[data-theme="ios"] .family-new-badge.family-new-badge { color: #000000 !important; }
-html[data-theme="ios"] .kdnest-edge-tip { fill: #000000 !important; stroke: rgba(255,255,255,0.75) !important; }
+html[data-theme="ios"] .family-new-badge.family-new-badge { color: #0071e3 !important; }
+html[data-theme="ios"] .kdnest-edge-tip { fill: #1d1d1f !important; stroke: rgba(255,255,255,0.8) !important; }

@@ -8757,3 +8757,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **Blast radius contained:** ทุก entry point ใน try/catch → worst case = ไม่มี dim, viewer ไม่พัง.
 **VERIFY:** `node --check` ✓ · wiring 19 refs ✓. ⚠ **pixel verify ไม่ได้ที่นี่** — model-viewer ไม่ render ใน headless preview (documented). ต้องเอ๋ดูบนเครื่อง + จูน edge placement (3D finicky, อาจต้องปรับ 1-2 รอบ). edge curl ต่อ. (app.js เท่านั้น ไม่แตะ nest.js)
 -- WEB
+
+### WEB · 2026-06-26 · iOS theme: final Apple polish (เอ๋ "ขัดให้ Apple จริงๆ")
+เอ๋ ยื่น ultimatum: ทำ iOS ให้ Apple จริงหรือเอาออก — เลือก "ขัดอีกรอบ".
+**KEY FIX = คืน Apple gray hierarchy (ที่ "ดำหมด" ทำหาย).** เจอว่า blanket reset (0,2,5) กดสีรองเป็น ink มาตลอด → hierarchy ไม่เคยขึ้นจริง (เห็นแต่ #count ที่เป็น ID). แก้: muted selectors เป็น **doubled-class** (.brand-sub.brand-sub ฯลฯ + .project-meta/.nest-home-stats) → ชนะ blanket → secondary = #86868b เทา, primary = #1d1d1f. + `--ios-ink` คืน #1d1d1f (ไม่ใช่ #000), NEW badge คืนฟ้า, backdrop tints ลด (blue .06/purple .04) + base สว่างขึ้น #f7f9fc → clean ขึ้น.
+**VERIFY (preview computed):** projName=#1d1d1f, projMeta/brandSub/#count=#86868b ✓ (hierarchy ขึ้นจริงแล้ว), badge=#0071e3 ✓. ⚠ screenshot tool hang กับ backdrop-filter (headless) — verify ด้วย computed; Safari/iOS render ปกติ. edge curl ต่อ.
+**STATUS:** รอเอ๋ตัดสินบนเครื่อง — สวยพอ = เก็บ / ไม่พอ = เอาออก (ตาม conditional). [3D dimension overlay (f50e2cb) ยังรอ verify ด้วย]
+-- WEB
