@@ -88,6 +88,9 @@
       catch (e) { return false; }
     })(),
     optChosen: false,     // last run came from the auto-optimizer → show "Auto-chosen" badge
+    costStale: false,     // sheet-stock changed AFTER a run → Total Cost dims + "press Run to update"
+                          // until the next run recomputes it (เอ๋ 2026-06-26 'กดปิดแล้ว cost ไม่เปลี่ยน').
+                          // Set true in the stock handlers; cleared false when _runNesting sets S.flatSheets.
     grainMap: null,       // populated by _loadGrainMap once per session
     sidebarWidth: null,   // px — null = use CSS default; admin can drag to resize
     highlightCode: null,  // when set, draw a glow ring around every
@@ -3030,10 +3033,19 @@
     const badge = S.optChosen
       ? '<span class="kdnest-cost-badge" title="Run auto-picked the cheapest enabled sheet-size mix by price">Auto-chosen</span>'
       : '';
+    // STALE: stock changed after this result → the number is from the OLD run.
+    // Dim the box + add a hint so the worker knows to re-run (เอ๋ 2026-06-26 'กด
+    // ปิด sheet แล้ว cost ไม่เปลี่ยน' — it just wasn't recomputed yet). Same box,
+    // no layout jump; cleared on the next run via S.costStale=false in _runNesting.
+    const stale = !!S.costStale;
+    const staleCls = stale ? ' kdnest-cost-stale' : '';
+    const hint = stale
+      ? '<span class="kdnest-cost-hint">press Run to update</span>'
+      : '';
     return `
-          <div class="kdnest-cost-summary">
+          <div class="kdnest-cost-summary${staleCls}"${stale ? ' title="Sheet stock changed — press Run to recompute the cost"' : ''}>
             <span class="kdnest-cost-label">Total Cost${badge}</span>
-            <span class="kdnest-cost-breakdown">${lines.join(' + ')} = <span class="kdnest-cost-total">${total.toLocaleString('en-US')} THB</span></span>
+            <span class="kdnest-cost-breakdown">${lines.join(' + ')} = <span class="kdnest-cost-total">${total.toLocaleString('en-US')} THB</span></span>${hint}
           </div>`;
   }
   const _REMNANT_MIN_LAST = 300;   // mm — last-sheet rectangle must be this big to keep
@@ -3946,6 +3958,7 @@
     }));
     S.currentSheetIdx = 0;
     S.unplaced = result.unplaced || [];
+    S.costStale = false;   // fresh run → Total Cost is current again (drops the dim + hint)
     _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
@@ -6138,6 +6151,10 @@
     $('#kdnest-optmanual')?.addEventListener('change', e => {
       S.optManual = !!e.target.checked;
       try { localStorage.setItem('kd_nest_optmanual_v1', S.optManual ? '1' : '0'); } catch (_) {}
+      // Manual vs auto-optimize changes how Run picks the sheet mix → the shown
+      // cost may no longer match what the next run would produce. Mark stale +
+      // refresh so the summary dims with the hint.
+      if (S.flatSheets && S.flatSheets.length) { S.costStale = true; _refreshView(); }
     });
     // ONE adaptive button (เอ๋ 2026-06-10): nest run/loaded → 💾 Save Nest
     // (save + into Project + remember offcuts); nothing yet → 📂 Load Nest.
@@ -6252,6 +6269,8 @@
           // size default (no clobber of a user-entered price). เอ๋ 2026-06-26.
           if (k === 'w' || k === 'h') _applyPriceDefault(S.sheetStock[i]);
           _persistStock();
+          // Stock changed after a result → the shown cost is from the OLD run.
+          if (S.flatSheets && S.flatSheets.length) S.costStale = true;
           // PRC (or a size that changed the auto-price) shifts the total —
           // re-render just the cost summary in place, no full _refreshView.
           if (k === 'prc' || k === 'w' || k === 'h') {
@@ -6270,6 +6289,8 @@
         if (!isNaN(i) && S.sheetStock[i]) {
           S.sheetStock[i].enabled = e.target.checked;
           _persistStock();
+          // Toggling a size on/off changes the cost mix → mark the shown total stale.
+          if (S.flatSheets && S.flatSheets.length) S.costStale = true;
           _refreshView();
         }
       });
@@ -6298,6 +6319,9 @@
           if (reordered.length === S.sheetStock.length) {
             S.sheetStock.splice(0, S.sheetStock.length, ...reordered);
             _persistStock();
+            // Order = size priority for the packer → the next run may pick a
+            // different mix, so the shown cost is potentially stale.
+            if (S.flatSheets && S.flatSheets.length) S.costStale = true;
             _refreshView();
           }
         },

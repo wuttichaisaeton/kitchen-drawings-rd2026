@@ -99,6 +99,37 @@ test('reorder is a no-op if the DOM order count mismatches (defensive)', () => {
   assert.deepEqual(stock.map(s => s.label), ['a', 'b'], 'array untouched on mismatch');
 });
 
+// ── Total Cost STALE signalling (เอ๋ 2026-06-26) ──────────────────────────
+// When the sheet stock changes AFTER a run, the shown Total Cost is from the
+// OLD run → it must dim + show "press Run to update" until the next run.
+// nest.js is a browser IIFE; this is a FAITHFUL copy of the load-bearing rule
+// shared by every stock handler ("mark stale only if a result exists") and the
+// run-complete clear (in _runNesting where S.flatSheets is set). Live dim + hint
+// were verified in the browser preview; this is the fast CI guard.
+
+// verbatim rule from the stock handlers (enable/dim/qty/thick/prc, reorder, manual)
+const markStaleOnStockChange = S => { if (S.flatSheets && S.flatSheets.length) S.costStale = true; };
+// verbatim clear from _runNesting after it sets S.flatSheets
+const onRunComplete = (S, sheets) => { S.flatSheets = sheets; S.costStale = false; };
+
+test('stock-enable toggle flips costStale TRUE once a result exists', () => {
+  const S = { flatSheets: [{ sw: 2440, sh: 1220, placements: [] }], costStale: false };
+  markStaleOnStockChange(S);            // user toggles a sheet-enable checkbox
+  assert.equal(S.costStale, true, 'toggling stock after a run marks the cost stale');
+});
+
+test('a run clears costStale back to FALSE (fresh number)', () => {
+  const S = { flatSheets: [{}], costStale: true };
+  onRunComplete(S, [{ sw: 2440, sh: 1220, placements: [] }]);
+  assert.equal(S.costStale, false, 'the run-complete path drops the stale flag');
+});
+
+test('stock change with NO result yet does not mark stale (renders nothing anyway)', () => {
+  const S = { flatSheets: [], costStale: false };
+  markStaleOnStockChange(S);
+  assert.equal(S.costStale, false, 'no result → no stale state (summary renders empty)');
+});
+
 // ── REAL nest.js sanity: the live filter still drops a disabled row ───────
 // Loads the actual nest.js IIFE (via the same shim style as nestEdgeGrain) only
 // to confirm the symbol set didn't regress — falls back silently if the build
