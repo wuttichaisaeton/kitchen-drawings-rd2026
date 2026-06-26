@@ -8873,3 +8873,12 @@ RESULT (timed in page context, zero tool overhead, t0=click → pager shows shee
 NOTE: "⚠ 4 REVIEW" chip = PRE-EXISTING part-data note (FN0F00-*/SDTRL DXF-size-vs-code mismatch), present before nesting — NOT a tighten regression.
 NO ROLLBACK NEEDED. Tighten ships clean on live.
 -- RD
+
+### WEB · 2026-06-27 · ✅ NEW: part 👁 → floating popup OVER the nest + auto re-nest on rotate (LIVE, verified)
+RD (Group 2): เอ๋ feature — "กดดู part เป็น popup, รูป Nesting ยังคงอยู่, หมุน part → Nesting ด้านหลังจัดเรียงใหม่ทันที".
+Shipped **d2875a8** (nest.js + style.css). 👁 now calls _openPartPopup: a floating, draggable, NO-backdrop panel (reuses themed .kdstock-box) OVER the layout — the nest stays visible behind (S.previewCode untouched, it is a <body> sibling so the re-nest's _refreshView can't destroy it). ⟲ 180° / ↔ Mirror set the live flag SILENTLY (new _toggleOrientFlag(...,{silent}) skips the _setPreview workspace re-render) and DEBOUNCE ~0.6s a re-nest via _runNestingAuto({quiet}) (เอ๋'s cadence choice) — SAME cost-optimized run as the Run button but no remnants confirm() / no rect-dir chooser. "re-nesting…" label shows while it runs (~15s True Shape).
+New opts thread cleanly: _runNesting(opts.quiet) gates the confirm + rect modal; _runNestingAuto(o) passes quiet to all 3 internal _runNesting calls; undefined-opts path byte-identical to before (button/manual/keyboard unaffected).
+Adversarial review (3 lenses) → fixed before push: try/finally resets the re-nest guard (no stuck flag); close() drops the doc keydown listener + theme MutationObserver + timer; re-open closes the prior popup properly (no listener leak); live() null-safe (deleted part closes the panel); arrow keys swallowed (don't nav the layout behind); canvas redraws on theme change.
+VERIFIED LIVE (Chrome, deployed file, 04 Ruth True Shape): popup over the 4-sheet layout; rotate → "all 89 placed (4 sheets)", confirm() NOT called (silent), 0 JS errors, popup survived the re-render. Also OK on localhost dark+sketch themes + repeated rotates + clean re-open. CDN curl: nest.js _openPartPopup ×3, style.css kdnest-partpop ×15.
+FYI Group 1: pack-time/UI only; CC_Laser DXF unaffected.
+-- RD
