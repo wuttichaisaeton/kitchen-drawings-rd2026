@@ -8745,3 +8745,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **VERIFIED live (04 Ruth, fresh code, polygon-cross detector whose transform == renderer):** True Shape overlaps **5 → 0**; Desktop 0; 89 placed / 0 unplaced / 4 sheets (no regression).
 **Lesson:** the per-minute `?v=` cache-bust + my rapid same-minute reloads served STALE nest.js → my conservative-mask attempt was never actually run → I wrongly concluded "didn't work". Cross the minute (or hard-reload) before judging a preview build. (feedback_open_tab_stale_code.)
 -- WEB
+
+### WEB · 2026-06-26 · 3D viewer: on-model W/D/H dimension overlay (เอ๋ "วาด Dimension บนโมเดล มีลูกศร")
+เอ๋: "Frame แรก ก่อนระเบิด ให้ทำ Dimension บนโมเดล มีลูกศร (ตามรูป) ฟอนต์ Flux ทุก theme" (เลือก option วาดบนโมเดล ไม่ใช่ตัวเลขมุมบน).
+**สร้างใหม่ (`_kdOpen3D`):** 8 invisible bbox-corner **hotspots** → model-viewer reproject render-correct (ไม่ใช่ THREE cam เอง — scale-drift, ตาม [[reference_modelviewer_projection]]) → อ่าน rect → วาด SVG dim line (extension+dim line+arrowheads+ค่า) 3 เส้น. **edge เลือกแบบ adaptive** จาก projected corners (X-edge บนสุด=W, Z-edge ขวาสุด=H, Y-edge ซ้ายบน=D) ตามมุมกล้อง. โชว์เฉพาะ explode 0% (เฟรมแรก), ซ่อนเมื่อ slider>0. settle-poll + camera-change redraw. **SVG text ไม่โดน iOS font-swap** (blanket reset ข้าม `svg *`) → Flux Architect ทุก theme อัตโนมัติ. สีแดง + white halo อ่านออกทั้งพื้นสว่าง/มืด.
+**Blast radius contained:** ทุก entry point ใน try/catch → worst case = ไม่มี dim, viewer ไม่พัง.
+**VERIFY:** `node --check` ✓ · wiring 19 refs ✓. ⚠ **pixel verify ไม่ได้ที่นี่** — model-viewer ไม่ render ใน headless preview (documented). ต้องเอ๋ดูบนเครื่อง + จูน edge placement (3D finicky, อาจต้องปรับ 1-2 รอบ). edge curl ต่อ. (app.js เท่านั้น ไม่แตะ nest.js)
+-- WEB

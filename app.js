@@ -2299,6 +2299,13 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-overlay{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-ovl-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
     .kd3d-modal .kd3d-ovl-leader{stroke-width:1.4;fill:none}
+    /* On-model W/D/H dimension overlay (เอ๋ 2026-06-26) — red dim lines + Flux
+       value with a white halo so it reads on light (iOS) AND dark themes. SVG
+       text is excluded from the iOS font swap (blanket reset skips svg *), so
+       Flux Architect holds in every theme without extra overrides. */
+    .kd3d-modal .kd3d-dim3d-l{stroke:#e5484d;stroke-width:2.2;fill:none;stroke-linecap:round}
+    .kd3d-modal .kd3d-dim3d-ah{fill:#e5484d}
+    .kd3d-modal .kd3d-dim3d-t{fill:#e5484d;font-family:"Flux Architect",ui-monospace,monospace;font-size:23px;font-weight:700;paint-order:stroke;stroke:rgba(255,255,255,.9);stroke-width:4px;letter-spacing:.5px}
     .kd3d-modal .kd3d-ovl-row{position:absolute;display:inline-flex;align-items:baseline;white-space:nowrap;line-height:1.1;padding:2px 8px;letter-spacing:.2px;max-width:46%;flex-direction:row;transition:opacity .15s ease,background .12s ease;pointer-events:auto;cursor:pointer;border-radius:5px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-left{left:0}
     .kd3d-modal .kd3d-ovl-row.kd3d-ovl-right{right:0}
@@ -2997,6 +3004,17 @@ async function _kdOpen3D(code, opts) {
   let _ovlRaf = 0;
   let _ovlCamHandler = null;
   let _ovlThree = null;   // THREE instance captured at build for the leader-projection fallback
+  // On-model W/D/H dimension overlay (เอ๋ 2026-06-26 "วาด Dimension บนโมเดล มีลูกศร,
+  // เฟรมแรกก่อนระเบิด, Flux, ทุก theme"). 8 bbox-corner hotspots → model-viewer
+  // projects them render-correct (NEVER our own THREE cam — scale-drifts; see
+  // [[reference_modelviewer_projection]]); we read their rects + draw SVG dim lines.
+  let _dim3dCorners = null;    // [{x,y,z}] ×8 in GLB world-local (Z-up) coords
+  let _dim3dVals = null;       // { W, D, H } rounded mm
+  let _dim3dSvg = null;        // the SVG dimension layer
+  let _dim3dHs = [];           // the 8 hotspot <div>s
+  let _dim3dPoll = 0;          // settle-poll timer
+  let _dim3dCamH = null;       // camera-change/resize listener
+  let _dim3dRaf = 0;
   let _assembledFrames = [];       // เอ๋: red Box3Helper frames on parts marked assembled (ticked)
   let _populateBrowserFn = null;
   // Dual-GLB switcher state (Fusion 31 2026-06-22). The MAIN .glb is assembled
@@ -3241,6 +3259,7 @@ async function _kdOpen3D(code, opts) {
     }
     explodeLabels = [];
     _teardownExplodeOverlay();
+    try { _cleanupDims3D(); } catch {}
   };
 
   // ── Explode-label OVERLAY: teardown ──────────────────────────────────────
@@ -3533,6 +3552,109 @@ async function _kdOpen3D(code, opts) {
     // Nothing to re-sync on explode/orbit; the old per-frame reflow is gone.
   };
 
+  // ── On-model W/D/H dimension overlay (เอ๋ 2026-06-26) ───────────────────────
+  // Shown on the FIRST frame (explode 0%) only. 8 invisible bbox-corner hotspots
+  // let model-viewer reproject the box corners render-correct on every orbit; we
+  // read their screen rects and draw 3 SVG dimension lines (extension lines + dim
+  // line + arrowheads + a Flux value). Each edge is picked ADAPTIVELY from the
+  // projected corners (topmost X-edge = W, rightmost Z-edge = H, top-left Y-edge =
+  // D) so it tracks whatever angle the cabinet sits at. SVG text is immune to the
+  // iOS theme's font swap (the blanket reset excludes svg *) → Flux in every theme.
+  // Defensive: any projection gap just skips drawing — never throws into the viewer.
+  const _DIM3D_OFFSET = 28;   // px the dim line sits outside the silhouette
+  const _cleanupDims3D = () => {
+    if (_dim3dPoll) { clearTimeout(_dim3dPoll); _dim3dPoll = 0; }
+    if (_dim3dRaf) { cancelAnimationFrame(_dim3dRaf); _dim3dRaf = 0; }
+    if (_dim3dCamH) {
+      try { if (mv) mv.removeEventListener('camera-change', _dim3dCamH); } catch {}
+      try { window.removeEventListener('resize', _dim3dCamH); } catch {}
+      _dim3dCamH = null;
+    }
+    try { _dim3dHs.forEach(el => el.remove()); } catch {}
+    _dim3dHs = [];
+    if (_dim3dSvg) { try { _dim3dSvg.remove(); } catch {} _dim3dSvg = null; }
+  };
+  const _scheduleDims3D = () => {
+    if (_dim3dRaf) return;
+    _dim3dRaf = requestAnimationFrame(() => { _dim3dRaf = 0; _updateDims3D(); });
+  };
+  function _buildDims3D() {
+    _cleanupDims3D();
+    if (!mv || !_dim3dCorners || !_dim3dVals || mode !== 'explode') return;
+    const viewer = body.querySelector('.kd3d-viewer');
+    if (!viewer) return;
+    const NS = 'http://www.w3.org/2000/svg';
+    _dim3dHs = _dim3dCorners.map((c, i) => {
+      const h = document.createElement('div');
+      h.slot = 'hotspot-kddim-' + i;
+      h.dataset.position = `${c.x}m ${c.y}m ${c.z}m`;
+      h.style.cssText = 'visibility:hidden;width:0;height:0;pointer-events:none';
+      try { mv.appendChild(h); } catch {}
+      return h;
+    });
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'kd3d-dim3d');
+    svg.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:4';
+    viewer.appendChild(svg);
+    _dim3dSvg = svg;
+    _dim3dCamH = () => _scheduleDims3D();
+    try { mv.addEventListener('camera-change', _dim3dCamH); } catch {}
+    try { window.addEventListener('resize', _dim3dCamH); } catch {}
+    // Hotspots take a few render frames to position → settle-poll until resolved.
+    let tries = 0;
+    const poll = () => { _dim3dPoll = 0; const ok = _updateDims3D(); if (!ok && tries++ < 18) _dim3dPoll = setTimeout(poll, 130); };
+    poll();
+  }
+  function _updateDims3D() {
+    if (!_dim3dSvg || !mv) return false;
+    const viewer = body.querySelector('.kd3d-viewer');
+    if (!viewer) return false;
+    const vb = viewer.getBoundingClientRect();
+    _dim3dSvg.setAttribute('viewBox', `0 0 ${vb.width} ${vb.height}`);
+    const show = (mode === 'explode') && explodePct === 0;
+    _dim3dSvg.style.display = show ? '' : 'none';
+    if (!show) return true;
+    const P = _dim3dHs.map(h => {
+      const r = h.getBoundingClientRect();
+      if (!(r.width || r.height || r.left || r.top)) return null;
+      return { x: r.left + r.width / 2 - vb.left, y: r.top + r.height / 2 - vb.top };
+    });
+    if (P.some(p => !p)) return false;   // not settled yet → keep polling
+    const cx = P.reduce((s, p) => s + p.x, 0) / 8, cy = P.reduce((s, p) => s + p.y, 0) / 8;
+    const ci = (xi, yi, zi) => xi * 4 + yi * 2 + zi;
+    const xEdges = [[0,0],[0,1],[1,0],[1,1]].map(([y,z]) => [ci(0,y,z), ci(1,y,z)]);
+    const yEdges = [[0,0],[0,1],[1,0],[1,1]].map(([x,z]) => [ci(x,0,z), ci(x,1,z)]);
+    const zEdges = [[0,0],[0,1],[1,0],[1,1]].map(([x,y]) => [ci(x,y,0), ci(x,y,1)]);
+    const mid = e => ({ x: (P[e[0]].x + P[e[1]].x) / 2, y: (P[e[0]].y + P[e[1]].y) / 2 });
+    const pickBy = (edges, score) => edges.reduce((b, e) => score(mid(e)) < score(mid(b)) ? e : b);
+    const wEdge = pickBy(xEdges, m => m.y);          // topmost = W
+    const hEdge = pickBy(zEdges, m => -m.x);         // rightmost = H
+    const dEdge = pickBy(yEdges, m => m.x + m.y);    // top-left = D
+    const NS = 'http://www.w3.org/2000/svg';
+    while (_dim3dSvg.firstChild) _dim3dSvg.removeChild(_dim3dSvg.firstChild);
+    const line = (x1, y1, x2, y2) => { const l = document.createElementNS(NS, 'line'); l.setAttribute('x1', x1); l.setAttribute('y1', y1); l.setAttribute('x2', x2); l.setAttribute('y2', y2); l.setAttribute('class', 'kd3d-dim3d-l'); _dim3dSvg.appendChild(l); };
+    const arrow = (tip, from) => { const dx = tip.x - from.x, dy = tip.y - from.y, d = Math.hypot(dx, dy) || 1, ux = dx / d, uy = dy / d, px = -uy, py = ux, s = 8, w = 3.2; const p = document.createElementNS(NS, 'polygon'); p.setAttribute('points', `${tip.x},${tip.y} ${tip.x-ux*s+px*w},${tip.y-uy*s+py*w} ${tip.x-ux*s-px*w},${tip.y-uy*s-py*w}`); p.setAttribute('class', 'kd3d-dim3d-ah'); _dim3dSvg.appendChild(p); };
+    const draw = (edge, val) => {
+      const a = P[edge[0]], b = P[edge[1]];
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      let ox = mx - cx, oy = my - cy; const ol = Math.hypot(ox, oy) || 1;
+      ox = ox / ol * _DIM3D_OFFSET; oy = oy / ol * _DIM3D_OFFSET;
+      const a2 = { x: a.x + ox, y: a.y + oy }, b2 = { x: b.x + ox, y: b.y + oy };
+      line(a.x, a.y, a2.x, a2.y); line(b.x, b.y, b2.x, b2.y); line(a2.x, a2.y, b2.x, b2.y);
+      arrow(a2, b2); arrow(b2, a2);
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('x', (a2.x + b2.x) / 2 + ox * 0.55);
+      t.setAttribute('y', (a2.y + b2.y) / 2 + oy * 0.55);
+      t.setAttribute('class', 'kd3d-dim3d-t');
+      t.setAttribute('text-anchor', 'middle');
+      t.setAttribute('dominant-baseline', 'middle');
+      t.textContent = String(val);
+      _dim3dSvg.appendChild(t);
+    };
+    try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.H); draw(dEdge, _dim3dVals.D); } catch {}
+    return true;
+  }
+
   const snapshotScene = () => {
     _cleanupExplodeLabels();
     threeScene = _getScene();
@@ -3769,6 +3891,13 @@ async function _kdOpen3D(code, opts) {
       // เอ๋ 2026-06-24: dims on 3 lines, one per dimension — W / D / H.
       dimsEl.innerHTML = `W ${W}<br>D ${D}<br>H ${H}`;
       dimsCached = true;
+      // On-model dimension overlay (เอ๋ 2026-06-26): keep the 8 RAW bbox corners
+      // (hotspot frame = raw scene coords) + the scaled mm values, then build it.
+      _dim3dVals = { W, D, H };
+      _dim3dCorners = [];
+      for (let xi = 0; xi < 2; xi++) for (let yi = 0; yi < 2; yi++) for (let zi = 0; zi < 2; zi++)
+        _dim3dCorners.push({ x: xi ? mxX : mnX, y: yi ? mxY : mnY, z: zi ? mxZ : mnZ });
+      try { _buildDims3D(); } catch (e) { console.warn('[kd3d] dims3d build failed', e); }
     }
 
     // ── Robust outlier filter (RD 08 2026-06-22) ────────────────────────────
@@ -4226,6 +4355,7 @@ async function _kdOpen3D(code, opts) {
       if (sliderVal) sliderVal.textContent = '0%';
       applyExplode(0);
       _buildExplodeLabels();
+      try { _buildDims3D(); } catch (e) {}
       try { localStorage.setItem(EXPLODE_KEY, '0'); } catch {}
     } else {
       resetExplode();
@@ -4294,7 +4424,7 @@ async function _kdOpen3D(code, opts) {
       explodePct = parseInt(slider.value, 10) || 0;
       sliderVal && (sliderVal.textContent = explodePct + '%');
       if (raf) cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => { raf = 0; if (mode === 'explode') applyExplode(explodePct); });
+      raf = requestAnimationFrame(() => { raf = 0; if (mode === 'explode') applyExplode(explodePct); try { _scheduleDims3D(); } catch {} });
     });
     slider.addEventListener('change', () => {
       try { localStorage.setItem(EXPLODE_KEY, String(explodePct)); } catch {}
