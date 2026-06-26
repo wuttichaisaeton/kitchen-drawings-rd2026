@@ -3666,6 +3666,18 @@ async function _kdOpen3D(code, opts) {
       _dim3dSvg.appendChild(t);
     };
     try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.H); draw(dEdge, _dim3dVals.D); } catch {}
+    // TEMP corner-index debug (เอ๋ help — the 90° axis question). Label each
+    // projected bbox corner 0–7 (index = xi*4+yi*2+zi; 0=min,1=max on x/y/z) so
+    // เอ๋'s screenshot reveals exactly where each corner lands → precise edge fix.
+    // REMOVE after the axis is correct.
+    if (window.__KD_DIM_DEBUG !== false) P.forEach((p, i) => {
+      const d = document.createElementNS(NS, 'text');
+      d.setAttribute('x', p.x); d.setAttribute('y', p.y);
+      d.setAttribute('fill', '#0a66ff'); d.setAttribute('font-size', '20'); d.setAttribute('font-weight', '800');
+      d.setAttribute('text-anchor', 'middle'); d.setAttribute('paint-order', 'stroke');
+      d.setAttribute('stroke', 'rgba(255,255,255,0.9)'); d.setAttribute('stroke-width', '4');
+      d.textContent = i; _dim3dSvg.appendChild(d);
+    });
     return true;
   }
 
