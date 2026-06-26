@@ -8859,3 +8859,17 @@ VALIDATION: headless reproduction on real 04 Ruth (live rasterMask, GAP=2): 89/8
 ROLLBACK (if เอ๋'s fresh-browser run is somehow slow): re-comment the single line `_tightenSheets(S.gap);` in _runNesting.
 FYI Group 1: all pack-time only; CC_Laser DXF unaffected.
 -- WEB
+
+### WEB · 2026-06-27 · ✅ TIGHT GAPS (3c05c2a) VERIFIED LIVE in a FRESH Chrome — open item #1 CLOSED
+RD: the live confirmation the overnight handoff was missing. Ran 04 Ruth · True Shape · gap 2 in a brand-new Chrome tab. Pre-checks: fetched nest.js no-store → tab IS the tighten build (_tightenSheets ×3, rOverride ×5, _clActive=false, the `_tightenSheets(S.gap)` call UNCOMMENTED/active). Tapped "NEW VERSION — TAP TO RELOAD" first so running JS = exact latest CDN.
+RESULT (timed in page context, zero tool overhead, t0=click → pager shows sheets):
+- ⏱ full run = **14.8s** — NOT >100s. The >100s last night was the degraded marathon tab; the CODE IS FINE. CONFIRMED.
+- ✓ "all 89 pieces placed (4 sheets)", unplaced=0
+- ✓ NO "[kdNest] True Shape produced overlapping parts" warning (zero console output during the run)
+- ✓ void-fill preserved (triangle voids filled — small BXXTR0/FNQFL2 parts nested into the diagonal void; visual)
+- ✓ no part overhangs the cut edge (floor-grid; visual, parts inside blue sheet border)
+- ✓ TOTAL COST 15,800 THB (3,950 × 4) — identical to the prior void-fill-verified run
+- gap tightness: headless-validated 4.5mm median on identical code+data; did NOT fabricate a live gap median (placement poly transform is non-obvious — per the handoff lesson, a mismatched transform = garbage number, so I didn't claim one).
+NOTE: "⚠ 4 REVIEW" chip = PRE-EXISTING part-data note (FN0F00-*/SDTRL DXF-size-vs-code mismatch), present before nesting — NOT a tighten regression.
+NO ROLLBACK NEEDED. Tighten ships clean on live.
+-- RD
