@@ -4865,6 +4865,18 @@ select option { color: #16202c !important; background-color: #ffffff !important;
    the NEW/↻ badge pops on every theme. !important beats the sketch :where() reset. */
 .kdnest-cab-fr { display: inline-block; font-size: 9px; font-weight: 800; color: #1b1205 !important; background: #F2A93B !important; margin-left: 5px; padding: 0 5px; border-radius: 7px; letter-spacing: 0.4px; box-shadow: 0 0 7px rgba(242,169,59,0.6); }
 .kdnest-cab-new { border-color: #F2A93B; box-shadow: 0 0 0 1px #F2A93B inset; }
+/* NEW badge: orange TEXT (drop the dark-on-amber pill) in Pencil / Chalk / Luxury
+   themes (เอ๋ 2026-06-27 'ตัวอักษร new เป็นสีส้ม'). Default dark keeps the amber pill.
+   The doubled class + body raise specificity to (0,3,2) so it beats the sketch/chalk
+   "body *:not(svg)… { color: var(--ink) !important }" text reset at (0,2,5). */
+html[data-theme="sketch"]   body .kdnest-cab-fr.kdnest-cab-fr,
+html[data-theme="chalk"]    body .kdnest-cab-fr.kdnest-cab-fr,
+html[data-theme="obsidian"] body .kdnest-cab-fr.kdnest-cab-fr {
+  color: #F2A93B !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 2px;
+}
 .kdnest-cab-changed { border-color: #F2A93B; border-style: dashed; }
 /* F-group folders (เอ๋ 2026-06-12): group the capsules under collapsible
    F1/F2 headers, each with a whole-group on/off toggle. Folders + bodies span
