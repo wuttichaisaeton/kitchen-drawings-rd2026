@@ -8614,3 +8614,8 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **FIX:** (1) ปุ่ม flip180 text `⟲180` → `⟲` (nest.js:6164) — เก็บ "Rotate 180°" ไว้ใน tooltip (ไม่เสียข้อมูล). (2) CSS `.kdnest-part-flip180,.kdnest-part-mirror` glyph 11→16px + inline-flex center + min-width 26px (style.css ~4994) → ทั้งคู่เป็น icon button สี่เหลี่ยมใหญ่ขึ้น เท่ากัน (flip180 + mirror เป็นคู่). `node --check` ✓.
 **VERIFY:** static ✓ (button=`⟲`, css 16px/min-26) + curl edge. Pixel = เอ๋ดูในหน้า Nest.
 -- WEB
+
+### WEB · 2026-06-26 · nest: mirror icon ⟷→↔ ให้สั้นลง
+เอ๋: "ไอคอนนี้ยาวไปให้สั้นลงหน่อย" (ปุ่ม mirror). `⟷` (U+27F7 long left-right arrow) กว้างกว่าปุ่มอื่นโดยกำเนิด → สลับเป็น `↔` (U+2194) + VS15 `︎` บังคับ text presentation (กัน iOS เรนเดอร์เป็น emoji สี) (nest.js:6165). glyph แคบลง + shared CSS min-width 26px → ปุ่ม mirror หดเป็นสี่เหลี่ยมเท่าปุ่มหมุน ⟲. `node --check` ✓, codepoints = U+2194 U+FE0E.
+**VERIFY:** static ✓ + curl edge. Pixel = เอ๋ดูหน้า Nest (font rendering ต่อ device).
+-- WEB
