@@ -5305,6 +5305,45 @@ html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rg
 .kdnest-warn--grain    { background: rgba(190,140,30,0.16); border-color: #be8c1e; color: #ffe9bf; }
 .kdnest-warn--review   { background: rgba(200,110,30,0.14); border-color: #c86e1e; color: #ffdcc0; }
 .kdnest-warn--ok       { background: rgba(46,158,68,0.16); border-color: #2f9e44; color: #c8f0d2; }
+/* Flash when the header error chip scrolls a review banner into view */
+@keyframes kdnest-warn-flash-kf {
+  0%   { box-shadow: 0 0 0 0 rgba(255,80,80,0.0); }
+  20%  { box-shadow: 0 0 0 3px rgba(255,80,80,0.65); }
+  100% { box-shadow: 0 0 0 0 rgba(255,80,80,0.0); }
+}
+.kdnest-warn-flash { animation: kdnest-warn-flash-kf 1.8s ease-out; }
+
+/* ── Header error chip (เอ๋ 2026-06-26 'ให้ error เด่น กดดูได้ว่าอันไหนพัง') ──
+   Replaces the faint grey "⚠ N err" — a LOUD clickable badge so a broken part
+   (NO DXF / DXF error) is impossible to miss. Red = blocking (can't cut),
+   amber = soft review (size-vs-code / bloated). Clicking scrolls to the review
+   banner that names the parts. */
+.kdnest-errchip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: "Flux Architect", ui-monospace, monospace;
+  font-size: 10px; font-weight: 800; line-height: 1;
+  padding: 2px 7px; border-radius: 8px; margin-left: 4px;
+  vertical-align: 1px; white-space: nowrap; cursor: pointer;
+  border: 1px solid transparent; letter-spacing: 0.3px;
+  transition: background .12s, box-shadow .12s, transform .08s;
+}
+.kdnest-errchip:hover  { transform: translateY(-1px); }
+.kdnest-errchip:active { transform: translateY(0); }
+.kdnest-errchip-blk {
+  background: #c62828; border-color: #ff6b6b; color: #fff;
+  box-shadow: 0 0 0 0 rgba(255,90,90,0.6);
+  animation: kdnest-errchip-pulse 2.2s ease-in-out infinite;
+}
+.kdnest-errchip-blk:hover { background: #e03333; box-shadow: 0 0 0 2px rgba(255,107,107,0.55); }
+.kdnest-errchip-warn {
+  background: rgba(242,169,59,0.18); border-color: #F2A93B; color: #F2A93B;
+}
+.kdnest-errchip-warn:hover { background: rgba(242,169,59,0.32); box-shadow: 0 0 0 1px #F2A93B inset; }
+.kdnest-errchip-more { opacity: 0.8; font-weight: 700; margin-left: 1px; }
+@keyframes kdnest-errchip-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,90,90,0.0); }
+  50%      { box-shadow: 0 0 0 3px rgba(255,90,90,0.45); }
+}
 /* Per-row markers */
 /* Directional-grain warning (เอ๋ 2026-05-31 'ยังไม่เห็นการเตือนเรื่องทิศทางของ
    grain' — the old inset ring was too faint). The glyph cell becomes a SOLID
@@ -5552,6 +5591,16 @@ html[data-theme="sketch"] .kdnest-warn--review {
 }
 html[data-theme="sketch"] .kdnest-warn--unplaced *,
 html[data-theme="sketch"] .kdnest-warn--review * { color: inherit !important; }
+/* Header error chip — ink-on-paper, but the blocking one stays unmistakably red. */
+html[data-theme="sketch"] .kdnest-errchip-blk {
+  background-color: #a8392a !important; border: 2px solid #7a2418 !important;
+  color: #fff !important; border-radius: var(--wob) !important;
+}
+html[data-theme="sketch"] .kdnest-errchip-warn {
+  background-color: #f5e3cf !important; border: 2px solid #b5701f !important;
+  color: #7a4a12 !important; border-radius: var(--wob) !important;
+}
+html[data-theme="sketch"] .kdnest-errchip * { color: inherit !important; }
 
 /* MINDMAP — React Flow nodes/edges live in the same document, so style.css
    reaches them; no editor rebuild needed. Paper cards + pen edges. */
@@ -6258,6 +6307,16 @@ html[data-theme="chalk"] .kdnest-warn--review {
 }
 html[data-theme="chalk"] .kdnest-warn--unplaced *,
 html[data-theme="chalk"] .kdnest-warn--review * { color: inherit !important; }
+/* Header error chip — chalk on slate; blocking = red, warning = yellow. */
+html[data-theme="chalk"] .kdnest-errchip-blk {
+  background-color: var(--c-red) !important; border: 2px solid var(--c-red) !important;
+  color: #1c1410 !important; border-radius: var(--wob) !important;
+}
+html[data-theme="chalk"] .kdnest-errchip-warn {
+  background-color: #3a352a !important; border: 2px solid var(--c-yellow) !important;
+  color: var(--c-yellow) !important; border-radius: var(--wob) !important;
+}
+html[data-theme="chalk"] .kdnest-errchip * { color: inherit !important; }
 
 /* Bend list done — green-chalk wash + strikethrough. */
 html[data-theme="chalk"] .bend-row.is-bent {
@@ -7025,6 +7084,13 @@ html[data-theme="obsidian"] .kdnest-warn--review {
 }
 html[data-theme="obsidian"] .kdnest-warn--unplaced *,
 html[data-theme="obsidian"] .kdnest-warn--review * { color: inherit !important; }
+/* Header error chip — blocking stays loud red, warning matches the gold review. */
+html[data-theme="obsidian"] .kdnest-errchip-blk {
+  background-color: #c62828 !important; border: 1px solid #ff6b6b !important; color: #fff !important;
+}
+html[data-theme="obsidian"] .kdnest-errchip-warn {
+  background-color: rgba(224,161,79,0.2) !important; border: 1px solid #e0a14f !important; color: #ffe9cf !important;
+}
 
 /* Non-DXF modal backdrops dimmed. */
 html[data-theme="obsidian"] .pdxf-backdrop,

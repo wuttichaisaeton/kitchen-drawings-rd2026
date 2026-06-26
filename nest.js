@@ -5752,6 +5752,31 @@
     return out;
   }
 
+  // A review reason is BLOCKING (the part literally can't be cut) vs a soft
+  // WARNING (loadable but suspect). Blocking → red header chip; warning → amber.
+  // Drives the prominent clickable error chip in the header summary. (เอ๋
+  // 2026-06-26 'ให้ error เด่น กดดูได้ว่าอันไหนพัง')
+  function _reasonIsBlocking(reason) {
+    const r = String(reason || '').toLowerCase();
+    return r.startsWith('no dxf') || r.startsWith('dxf error') || r.indexOf('degenerate') >= 0;
+  }
+
+  // Roll up every part's review reasons into {blocking, warning, parts:[{code,reasons,blocking}]}.
+  // Single source of truth for both the header chip count and (reusing the same
+  // data) the review banner the chip scrolls to.
+  function _reviewSummary() {
+    const parts = [];
+    let blocking = 0, warning = 0;
+    for (const p of S.parts) {
+      const reasons = _reviewReasons(p);
+      if (!reasons.length) continue;
+      const isBlk = reasons.some(_reasonIsBlocking);
+      if (isBlk) blocking++; else warning++;
+      parts.push({ code: p.code, reasons, blocking: isBlk });
+    }
+    return { blocking, warning, parts };
+  }
+
   // Build 0–3 stacked warning banners for the result pane. Persistent (not
   // dismissible) so a real problem can't be clicked away before cutting.
   // (user 2026-05-30 'จำนวนขาด ... ก็ไม่มีการแจ้งเตือน')
@@ -5826,22 +5851,31 @@
       );
     }
 
-    // ③ Review / looks-weird (orange).
-    const reviews = [];
-    for (const p of S.parts) {
-      const reasons = _reviewReasons(p);
-      if (reasons.length) reviews.push({ code: p.code, reasons });
-    }
-    if (reviews.length) {
-      const lines = reviews.map(r =>
-        `<div class="kdnest-warn-line" title="${_esc(r.code)}">${_esc(_disp(r.code))} — ${_esc(r.reasons.join('; '))}</div>`
-      ).join('');
-      banners.push(
-        `<div class="kdnest-warn kdnest-warn--review">
-           <div class="kdnest-warn-head">Review ${reviews.length} part${reviews.length === 1 ? '' : 's'}:</div>
-           ${lines}
-         </div>`
-      );
+    // ③ Review / looks-weird. Reuse _reviewSummary (same source the header chip
+    // counts) and split by severity: BLOCKING parts (no DXF / DXF error — can't
+    // be cut) get a loud RED banner; soft WARNINGS (size-vs-code / bloated) stay
+    // amber. The header error chip scrolls to #kdnest-review-anchor. (เอ๋
+    // 2026-06-26 'ให้ error เด่น กดดูได้ว่าอันไหนพัง')
+    const _rev = _reviewSummary();
+    if (_rev.parts.length) {
+      const blk = _rev.parts.filter(r => r.blocking);
+      const warn = _rev.parts.filter(r => !r.blocking);
+      const lineHtml = r =>
+        `<div class="kdnest-warn-line" title="${_esc(r.code)}">${_esc(_disp(r.code))} — ${_esc(r.reasons.join('; '))}</div>`;
+      let body = '';
+      if (blk.length) {
+        body += `<div class="kdnest-warn kdnest-warn--unplaced" id="kdnest-review-anchor">
+           <div class="kdnest-warn-head">⛔ ${blk.length} part${blk.length === 1 ? '' : 's'} can't be cut — NO DXF / DXF error:</div>
+           ${blk.map(lineHtml).join('')}
+         </div>`;
+      }
+      if (warn.length) {
+        body += `<div class="kdnest-warn kdnest-warn--review"${blk.length ? '' : ' id="kdnest-review-anchor"'}>
+           <div class="kdnest-warn-head">Review ${warn.length} part${warn.length === 1 ? '' : 's'}:</div>
+           ${warn.map(lineHtml).join('')}
+         </div>`;
+      }
+      banners.push(body);
     }
 
     return banners.join('');
@@ -5855,7 +5889,22 @@
     const totalPcs = visParts.reduce((s, p) => s + (p.selected ? (p.qty || 0) : 0), 0);
     const totalUnique = visParts.filter(p => p.selected).length;
     const loadedDxfs = visParts.filter(p => p.dxfLoaded).length;
-    const errorDxfs = visParts.filter(p => p.dxfError).length;
+    // Header error chip: roll up review reasons (NO DXF / DXF error = blocking;
+    // size-vs-code / bloated = warning). Prominent + clickable → scrolls to the
+    // review banner that lists which parts failed and why. (เอ๋ 2026-06-26)
+    const _revHdr = _reviewSummary();
+    const _errChip = (() => {
+      if (!_revHdr.parts.length) return '';
+      if (_revHdr.blocking) {
+        const n = _revHdr.blocking;
+        const more = _revHdr.warning ? ` +${_revHdr.warning}` : '';
+        const tip = _revHdr.parts.filter(r => r.blocking).map(r => _disp(r.code) + ' — ' + r.reasons.join('; ')).join('\n');
+        return ` <button class="kdnest-errchip kdnest-errchip-blk" type="button" title="${_esc(n + ' part(s) can\'t be cut (NO DXF / DXF error)' + (_revHdr.warning ? ' · +' + _revHdr.warning + ' to review' : '') + ' — click to see which:\n' + tip)}">⛔ ${n} ERR${more ? `<span class="kdnest-errchip-more">${more}</span>` : ''}</button>`;
+      }
+      const n = _revHdr.warning;
+      const tip = _revHdr.parts.map(r => _disp(r.code) + ' — ' + r.reasons.join('; ')).join('\n');
+      return ` <button class="kdnest-errchip kdnest-errchip-warn" type="button" title="${_esc(n + ' part(s) to review — click to see which:\n' + tip)}">⚠ ${n} REVIEW</button>`;
+    })();
 
     // Grain symbols match the Python Nesting Tool + grain.xlsx legend
     // so a worker glancing at either tool sees the same mark per row:
@@ -6061,7 +6110,7 @@
             <button class="kdnest-back" id="kdnest-back" title="Back to project">←</button>
             <div class="kdnest-title">
               <div class="kdnest-title-main"><svg class="nest-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="18" height="17" rx="1.5"/><rect x="5.5" y="6" width="6" height="5" rx="0.6"/><rect x="13" y="6" width="5.5" height="8.5" rx="0.6"/><rect x="5.5" y="13" width="7.5" height="5" rx="0.6"/></svg>Nesting</div>
-              <div class="kdnest-title-sub">${_esc(S.projectName)}${(S.mergedProjects && S.mergedProjects.length > 1) ? ` <span class="kdjobs-stale" title="${_esc('Merged projects: ' + S.mergedProjects.join(' + '))}">+${S.mergedProjects.length - 1} project${S.mergedProjects.length > 2 ? 's' : ''}</span>` : ''} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${visParts.length} DXF loaded${errorDxfs ? ` · ⚠ ${errorDxfs} err` : ''}${offCabsN ? ` · <span class="kdjobs-stale" title="${_esc(cabGroups.filter(g => S.cabinetsOff.has(g.cab)).map(g => g.cab || 'No cabinet').join(' + ') + ' excluded from this nest')}">−${offCabsN} cab</span>` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
+              <div class="kdnest-title-sub">${_esc(S.projectName)}${(S.mergedProjects && S.mergedProjects.length > 1) ? ` <span class="kdjobs-stale" title="${_esc('Merged projects: ' + S.mergedProjects.join(' + '))}">+${S.mergedProjects.length - 1} project${S.mergedProjects.length > 2 ? 's' : ''}</span>` : ''} · ${totalUnique} unique · ${totalPcs} pcs · ${loadedDxfs}/${visParts.length} DXF loaded${_errChip}${offCabsN ? ` · <span class="kdjobs-stale" title="${_esc(cabGroups.filter(g => S.cabinetsOff.has(g.cab)).map(g => g.cab || 'No cabinet').join(' + ') + ' excluded from this nest')}">−${offCabsN} cab</span>` : ''}${(S.loadedJobStale && S.loadedJobStale.length) ? ` · <span class="kdjobs-stale" title="${_esc(_STALE_TITLE + ' (' + S.loadedJobStale.join(', ') + ')')}">⚠ Outdated — Run Nesting again</span>` : ''}</div>
             </div>
           </div>
           <div class="kdnest-controls">
@@ -6147,6 +6196,19 @@
     const $ = sel => S.rootEl.querySelector(sel);
     $('#kdnest-back')?.addEventListener('click', close);
     $('#kdnest-run')?.addEventListener('click', _runNestingAuto);
+    // Header error chip → reveal WHICH parts failed: scroll the review banner
+    // into view + flash it. The banner (built from the same _reviewSummary data)
+    // lists each part + reason. (เอ๋ 2026-06-26 'กดดูได้ว่าอันไหนพัง')
+    $('.kdnest-errchip')?.addEventListener('click', () => {
+      const anchor = S.rootEl && S.rootEl.querySelector('#kdnest-review-anchor');
+      if (!anchor) return;
+      anchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      anchor.classList.remove('kdnest-warn-flash');
+      // reflow so re-adding the class restarts the animation
+      void anchor.offsetWidth;
+      anchor.classList.add('kdnest-warn-flash');
+      setTimeout(() => anchor.classList.remove('kdnest-warn-flash'), 1800);
+    });
     // Manual toggle — ON = run as-is (today's behavior, no cost-optimize trials).
     $('#kdnest-optmanual')?.addEventListener('change', e => {
       S.optManual = !!e.target.checked;
