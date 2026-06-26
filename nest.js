@@ -2461,7 +2461,12 @@
       for (let si = 0; si < stockCopy.length; si++) {
         const s = stockCopy[si];
         if (s.qty === 0) continue;
-        const gw = Math.ceil(s.w / R), gh = Math.ceil(s.h / R);
+        // FLOOR, not ceil: a ceil grid is up to R-1mm WIDER/taller than the real
+        // sheet, so BL packs parts into that phantom overhang strip → their true
+        // outline sticks out 4-5mm past the cut edge = un-cuttable (เอ๋ 2026-06-26
+        // 'บาง part เกินออกมา', verified: FN3BLA +4mm right, SD0SUP +5mm top). floor
+        // keeps every cell fully inside the sheet. Costs ≤R-1mm of usable W/H (~0.2%).
+        const gw = Math.floor(s.w / R), gh = Math.floor(s.h / R);
         const occ = new Uint8Array(gw * gh);
         const placed = [], stillLeft = [];
         for (const piece of remaining) {
@@ -2558,7 +2563,7 @@
     const bboxArea = p => (p.w || 0) * (p.h || 0);
 
     function trueOcc(sheet) {
-      const gw = Math.ceil(sheet.sw / R), gh = Math.ceil(sheet.sh / R);
+      const gw = Math.floor(sheet.sw / R), gh = Math.floor(sheet.sh / R);   // floor: keep cells inside the sheet (no overhang) — see _nestMultiSheetRaster
       const occ = new Uint8Array(gw * gh);
       for (const pl of sheet.placements) {
         _stamp(occ, gw, gh, maskOf(pl, pl.rot), Math.round(pl.x / R), Math.round(pl.y / R), dCells);
@@ -2580,7 +2585,7 @@
     function gapFill(candidate) {
       const sheets = candidate.sheets.map(s => ({ ...s, placements: s.placements.slice() }));
       for (const sheet of sheets) {
-        const gw = Math.ceil(sheet.sw / R), gh = Math.ceil(sheet.sh / R);
+        const gw = Math.floor(sheet.sw / R), gh = Math.floor(sheet.sh / R);   // floor: keep cells inside the sheet (no overhang) — see _nestMultiSheetRaster
         const occ = new Uint8Array(gw * gh);
         const fillCap = HYBRID_FILL_AREA_FRAC * sheet.sw * sheet.sh;
         const isFill = pl => Array.isArray(pl.rots) && pl.rots.length === 4 && bboxArea(pl) <= fillCap;
