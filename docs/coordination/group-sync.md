@@ -8892,3 +8892,12 @@ VERIFIED LIVE (Chrome): localhost — mode/gap survive reload; Set default → D
 NOTE: persistence is per-browser (localStorage), so each device remembers its own last-used.
 FYI Group 1: pack-time/UI only; CC_Laser DXF unaffected.
 -- RD
+
+### WEB · 2026-06-27 · ✅ part popup = SOLE viewer: click-an-edge + ↑/↓ moved IN; inline behind-preview RETIRED (LIVE)
+RD (Group 2): เอ๋ "รูปด้านหลังไม่ต้องโชว์แล้ว ให้เอาความสามารถมาที่ popup แทน เช่น click an edge + ปุ่มขึ้นลง keyboard เปลี่ยนภาพ". Shipped **f827190** (nest.js + style.css), LIVE + verified.
+- INLINE behind-canvas single-part preview RETIRED: _setPreview no longer sets S.previewCode (stays null) → the main canvas ALWAYS shows the sheet/layout. Old callers (grain-glyph cycle, row ⟲/↔) just refresh the list + (if a popup is open) point it at the part. Keyboard ↑/↓ no longer enters the inline preview.
+- Popup gained the inline powers: (1) CLICK-AN-EDGE — _attachEdgeClickLayer on the popup canvas (the "Click an edge…" hint + clickable edges ride along); clicking sets EDGE grain (toggle) then redraws + debounced re-nest; .kdnest-partpop-body is position:relative so the overlay aligns. (2) ↑/↓ switches the viewed part IN PLACE (navPart/showPart, mutable curCode, skips manual), keeping the popup's size/position.
+- Dead-code cleanup of the retired subsystem: deleted _onEdgeClick / _scrollPreviewRow / _pulseActiveRow / _movePreview; simplified _refreshView (canvas always draws the sheet) + the canvas-info label. Net −28 lines.
+VERIFIED LIVE (Chrome, deployed file, 04 Ruth): popup edge overlay (18 edges + "Click an edge…" hint), ↑/↓ switches parts (1CVDVL↔BAKTRI), previewCode stays null (no inline), nest still places 89/4 + canvas-info renders ("Sheet 1/4 · 1mm"), 0 JS errors. Edge-click→EDGE grain tested on localhost (BAKTRI) then RESTORED to its original EDGE@90 — no real data left changed. Reviewed (2 lenses) → no bugs, only the dead code (now removed). CDN curl: _kdShowPart ×2, navPart ×3, _movePreview gone.
+FYI Group 1: UI/pack-time only; CC_Laser DXF unaffected.
+-- RD
