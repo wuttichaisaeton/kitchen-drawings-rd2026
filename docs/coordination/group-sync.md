@@ -8792,3 +8792,18 @@ RD (Group 2): follow-up to 35697cd. The edge-supercover mask alone did NOT fix t
 VERIFY (LIVE, Chrome, 04 Ruth, GAP 0, hard-reloaded fresh nest.js?v=29707834): True Shape no longer falls back (no console warning), 89 placed in 4 sheets vs 5 (Desktop), 15800 vs 18250 THB, triangle voids filled. Headless detector 8/8 (0.43/0.5/1.4mm=ok; 1.6/5mm/flip180=flagged). edge curl: OVERLAP_TOL_MM + _maxPenMm present.
 FYI Group 1: pack-time only, CC_Laser DXF unaffected. Lesson logged: verify gap 0 specifically — gap>=1 passed while gap 0 still fell back.
 -- WEB
+
+### WEB · 2026-06-26 · 🔚 SESSION HANDOFF (มาราธอน ~5.5h) → WEB session ใหม่
+**ทุกอย่างยกเว้น dims = เสร็จ+verify บน live แล้ว.** ทำไปทั้ง session: ปุ่ม ✕ fullscreen ขวาล่าง · re-fit ตอน toggle fullscreen · zoom-fit margin 1.4→2.6 · PCS badge ใหญ่อำพัน · mirror ⟷→↔ · select option อ่านออก (dark-on-white) · eye icon 17px · NEW badge อำพัน pill · **เพิ่มแล้วลบ theme iOS ทั้งชุด** (เอ๋สั่งเอาออก — index.html/style.css/nest.js สะอาด 0 ios) · nest common-line (session อื่น fa2806f).
+
+**⚠ PENDING = on-model 3D dimension overlay (`_kdOpen3D` ใน app.js) — เกือบเสร็จ เหลือ 1 จุด:**
+- ฟีเจอร์: เฟรมแรก explode 0% วาด W/D/H + ลูกศร บนโมเดล (เอ๋ "มีลูกศร ตามรูป"). SVG → Flux ทุก theme. กด slider ระเบิด=ซ่อน. red ไม่มี halo (เอ๋สั่ง).
+- โครงสร้าง: 8 bbox-corner **hotspots** → model-viewer project → อ่าน rect → convex-hull เลือก silhouette edge → วาด SVG dim line. ค้นใน app.js: `_buildDims3D`/`_updateDims3D`/`_dim3dCorners`/`kd3d-dim3d`.
+- **FIX สำคัญที่ทำไปแล้ว (commit 88139aa):** dims bbox ต้องคำนวณ **WORLD-space** (transform local bbox ด้วย `matrixWorld` + `updateMatrixWorld(true)` ก่อน). เพราะ snapshotScene **recenter geometry เข้า node.position** → `geometry.boundingBox` เป็น recentered-LOCAL ไม่ใช่ world → hotspot corner เพี้ยน 7/8. world-space แก้ corner ลงถูกแล้ว (เอ๋ยืนยัน).
+- **บั๊กที่เหลือ:** matrixWorld มี model-viewer -90°X rotation (Z-up→Y-up) → world bbox **หมุน**: world-Y=สูง, world-Z=ลึก, world-X=กว้าง. ผล: `.kd3d-dims` header text (`D ${mxY-mnY} H ${mxZ-mnZ}`) **สลับ** (โชว์ D883 H612 ต้อง D612 H883). on-model ดันถูก (natural map + frame หมุน เผอิญตรง).
+- **วิธีแก้ (ให้ session ใหม่):** decouple — corner POSITION ใช้ world; LABEL ค่า map ตาม **world axis**: W=X-extent, **H=Y-extent(up), D=Z-extent**. แก้ทั้ง `.kd3d-dims` text (~app.js:3920 `dimsEl.innerHTML`) และ on-model `_dim3dVals`/edge-set ให้ consistent (สูง→world-Y edge=ตั้ง, ลึก→world-Z edge=เฉียง). มี corner-index debug (numbers 0-7) เป็นเครื่องมือ — เคยใช้ verify ได้ผล.
+- **⚠ verify 3D บนเครื่อง dev ไม่ได้** (model-viewer ไม่ render ใน headless preview) — ต้องเอ๋ดู+ส่งรูป. รอบที่เวิร์กสุด = ใส่เลข debug แล้วเอ๋ map.
+
+**Protocol:** push→curl ไฟล์บนหน้า live จน rule ขึ้น (ห้ามใช้คำ "edge"=CDN สับสน) · ทุก change→board · เลี่ยง browser Edge ใช้ Chrome · nest.js มี WIP session อื่นเป็นพักๆ (stash ก่อน rebase ถ้า dirty).
+**HEAD ล่าสุด:** ffdc7bb. **NO hard blockers** — dims เหลือ polish 1 จุด.
+-- WEB (handoff)
