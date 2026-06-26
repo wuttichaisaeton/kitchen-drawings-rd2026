@@ -921,6 +921,11 @@ Live + verified. No Fusion impact, no editor rebuild.
 ---
 ### 2026-05-31 - Group 2 (Web)
 **DONE:** (4707f3e, live) Nest attention-highlight tuned per owner: (1) GRAIN column back to SELECTIVE warn only — removed the blanket amber box that lit all 17 cells ('เตือนทั้งหมดแบบนี้ผมงง'); keeps existing .kdnest-grain-warn ring on '?'/unmatched parts. (2) sketch & chalk now actually show the flags — theme reset (body *:not(svg) ~0,2,6 !important) outranked bare .kdnest-skip-lab; prefixed overrides with parent container class + per-theme --kdflag var. (3) NEW: Remnants Stock button (#kdnest-stock) flagged + pulses to warn this run may consume saved offcuts. Verified live: stock=2 kdflag=2 container=2 blanket=0.
+
+---
+### 2026-06-26 - Group 2 (Web)
+**DONE:** (commit 8e088f4, live on d40ccfd) Common-line tab SPACING 200mm -> 300mm per เอ๋. Now ~1 uncut bridge / 300mm instead of /200 (_commonLineTabbed in nest.js, floor(len/300)). Tab WIDTH unchanged (commonTabMm default 0.3mm). Verified live: edge nest.js = floor(len/300). FYI Group 1: affects the merged Cut Sheet DXF (CC_Laser output) ONLY when Common-line + tab are both ON.
+**NEEDS:** nothing from Group 1.
 **NEEDS:** nothing.
 
 ---
