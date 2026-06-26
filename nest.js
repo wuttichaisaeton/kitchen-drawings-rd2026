@@ -6161,7 +6161,7 @@
           <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set yet — pick H/V if it matters · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
           <span class="kdnest-part-orient">
-            <button class="kdnest-part-flip180${p.flip180 ? ' kdnest-orient-active' : ''}" title="Rotate 180° — flip this part's orientation (preview + nest + cut DXF)" ${p.manual ? 'disabled' : ''} data-flip180>⟲180</button>
+            <button class="kdnest-part-flip180${p.flip180 ? ' kdnest-orient-active' : ''}" title="Rotate 180° — flip this part's orientation (preview + nest + cut DXF)" ${p.manual ? 'disabled' : ''} data-flip180>⟲</button>
             <button class="kdnest-part-mirror${p.mirror ? ' kdnest-orient-active' : ''}" title="Mirror horizontally — left-right flip (makes the opposite-hand part; preview + nest + cut DXF)" ${(p.manual || !p.polys) ? 'disabled' : ''} data-mirror>⟷</button>
           </span>
           <button class="kdnest-part-onsheet" data-sheet="${onSheetIdx}" title="${sheetDisabled ? 'Run Nesting first to place this part' : 'Jump to the sheet where this part is laid out'}" ${sheetDisabled ? 'disabled' : ''}>📍</button>

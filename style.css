@@ -4988,19 +4988,25 @@ body.sb-fs-lock { overflow: hidden; }
 .kdnest-part-view:disabled,
 .kdnest-part-onsheet:disabled { opacity: 0.35; cursor: not-allowed; }
 
-/* Per-part orientation toggles — Rotate 180° (⟲180) + Mirror (⟷). Compact
-   pair sharing the row with 👁/📍; active = amber pressed state. (2026-06-26) */
+/* Per-part orientation toggles — Rotate 180° (⟲) + Mirror (⟷). Icon-only
+   pair sharing the row with 👁/📍; active = amber pressed state. เอ๋ 2026-06-26
+   "เอาตัวเลข 180 ออก แล้วทำสัญลักษณ์ให้ใหญ่ขึ้น": dropped the "180" text (kept in
+   the tooltip) and bumped the glyph 11→16px, centered as a square icon button. */
 .kdnest-part-orient { display: inline-flex; gap: 2px; flex: 0 0 auto; }
 .kdnest-part-flip180,
 .kdnest-part-mirror {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: #1c2735;
   border: 1px solid #2a3a4f;
   color: #cad6e6;
   height: 22px;
-  padding: 0 5px;
+  min-width: 26px;
+  padding: 0 4px;
   border-radius: 4px;
-  font-size: 11px;
-  line-height: 20px;
+  font-size: 16px;
+  line-height: 1;
   cursor: pointer;
   font-family: "Flux Architect", "Segoe UI Symbol", monospace;
   white-space: nowrap;

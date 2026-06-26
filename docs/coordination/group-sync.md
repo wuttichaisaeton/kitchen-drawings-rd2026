@@ -8608,3 +8608,9 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 - RD pending: #9 iPad Safari verify (fullscreen + exit btn).
 **NO BLOCKERS.**
 -- WEB
+
+### WEB · 2026-06-26 · nest: orient toggle เอา "180" ออก + สัญลักษณ์ใหญ่ขึ้น
+เอ๋: "เอาตัวเลข 180 ออก แล้วทำสัญลักษณ์ให้ใหญ่ขึ้น" (คอลัมน์ ⟲180 ในลิสต์ part).
+**FIX:** (1) ปุ่ม flip180 text `⟲180` → `⟲` (nest.js:6164) — เก็บ "Rotate 180°" ไว้ใน tooltip (ไม่เสียข้อมูล). (2) CSS `.kdnest-part-flip180,.kdnest-part-mirror` glyph 11→16px + inline-flex center + min-width 26px (style.css ~4994) → ทั้งคู่เป็น icon button สี่เหลี่ยมใหญ่ขึ้น เท่ากัน (flip180 + mirror เป็นคู่). `node --check` ✓.
+**VERIFY:** static ✓ (button=`⟲`, css 16px/min-26) + curl edge. Pixel = เอ๋ดูในหน้า Nest.
+-- WEB
