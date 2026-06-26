@@ -3979,7 +3979,16 @@
     return pieces;
   }
 
-  function _runNesting() {
+  // opts (optional, AUTO path only): { downsize:true, allowKeys:Set } carries the
+  // last-partial-sheet downsize INTENT + the user's original enabled size-set as
+  // explicit PARAMETERS rather than via the S.optDownsizePass/optDownsizeAllowKeys
+  // flags. The flags were set right before this call and reset on the very next
+  // line by the orchestrator; passing the intent as an argument means the downsize
+  // still fires correctly even if this function later becomes async or grows an
+  // `await` before the downsize line (a racing reset could otherwise clear the
+  // flag first). Flags are still read as a fallback so the Manual path + any other
+  // caller are unaffected. (downsize gate race fix เอ๋ 2026-06-26)
+  function _runNesting(opts) {
     S.previewCode = null;   // running shows the nest result, not a part preview
     S.loadedJobStale = null;   // a fresh run supersedes any outdated loaded job
     S.optChosen = false;   // a manual/normal run is NOT auto-chosen (badge off)
@@ -4098,7 +4107,11 @@
     // enabled size its parts still fit on (lowers Total Cost; no-op if nothing
     // cheaper fits). Runs BEFORE _rectifyLastSheet so the leftover-rectangle is
     // computed on the final (downsized) size. Manual runs never set this flag.
-    if (S.optDownsizePass) _downsizeLastFreshSheet(S.optDownsizeAllowKeys || null);
+    // Downsize INTENT comes from the explicit arg first (race-proof), falling back
+    // to the legacy flags so the Manual path + any other caller are unchanged.
+    const _doDownsize = opts ? !!opts.downsize : !!S.optDownsizePass;
+    const _downsizeAllow = opts ? (opts.allowKeys || null) : (S.optDownsizeAllowKeys || null);
+    if (_doDownsize) _downsizeLastFreshSheet(_downsizeAllow);
     _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
@@ -4294,9 +4307,15 @@
       if (wasEnabled) downsizeAllow.add(`${Math.round(s.w)}x${Math.round(s.h)}`);
     });
 
-    S.optDownsizePass = true;   // enable the last-partial-sheet downsizing inside _runNesting
-    S.optDownsizeAllowKeys = downsizeAllow;   // user's ORIGINAL enabled sizes (auto path)
-    _runNesting();          // full final render in S.mode (confirm + rect modal fire here, once)
+    // Pass the downsize intent + allow-set as EXPLICIT ARGS — the authoritative,
+    // race-proof channel. The flags are kept in sync only as a legacy fallback for
+    // any other reader; they are NOT what drives this call, so the reset below can
+    // never win a race against the downsize line inside _runNesting (which is what
+    // would silently skip the downsize if _runNesting ever awaited). (fix เอ๋
+    // 2026-06-26)
+    S.optDownsizePass = true;
+    S.optDownsizeAllowKeys = downsizeAllow;
+    _runNesting({ downsize: true, allowKeys: downsizeAllow });   // full final render in S.mode (confirm + rect modal fire here, once)
     S.optDownsizePass = false;
     S.optDownsizeAllowKeys = null;
     S.optChosen = true;     // mark this result as auto-chosen → "Auto-chosen" badge
@@ -6959,6 +6978,14 @@
       state: () => S,
       refreshView: _refreshView,
       setPreview: _setPreview,
+      // Auto-path harness hooks (test-only). Let a Node/jsdom test drive the REAL
+      // cost-optimize → final-run → downsize chain and assert the last sheet swaps
+      // to the cheaper size EVEN when _runNesting crosses an async boundary (the
+      // gate-race regression guard). (downsize gate race fix 2026-06-26)
+      runNestingAuto: _runNestingAuto,
+      runNesting: _runNesting,
+      downsizeLastFreshSheet: _downsizeLastFreshSheet,
+      buildNestPieces: _buildNestPieces,
       // Returns the background save promise so a test can AWAIT the full async
       // toggle chain (live flag → save → re-render settle) before asserting that
       // the previewed part survived — the path a sync-only assertion missed.
