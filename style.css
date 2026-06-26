@@ -4371,6 +4371,13 @@ body.sb-fs-lock { overflow: hidden; }
   font-family: inherit;
   font-size: 12px;
 }
+/* เอ๋ 2026-06-26 "มองไม่เห็น": the native <select> popup (iPad popover / desktop)
+   renders WHITE, but each <option> inherited the dark theme's light #cad6e6 text
+   → faint-on-white = unreadable (only the OS-highlighted row showed). Force
+   dark-on-white options app-wide — safe whether or not the OS honours the option
+   background, and iOS's wheel-picker ignores it harmlessly. !important to beat
+   the theme :where() reset. */
+select option { color: #16202c !important; background-color: #ffffff !important; }
 .kdnest-gap-lab input { width: 50px; }
 .kdnest-skip-lab { cursor: pointer; }
 /* Last-sheet rectangular-remnant toggle (เอ๋ 2026-06-11). */

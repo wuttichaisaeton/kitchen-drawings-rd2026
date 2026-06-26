@@ -8635,3 +8635,10 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **BS10 RESOLVED (no web action needed):** เอ๋ already renamed loose `BS`/`BS10` → `BSRUTH-000000` (≥6-char → passes CC_Assembly name gate) + re-fired → manifest `af0b7b8` (10:55) + batch 55 DXFs `f7edc98` → web nest now **54 unique / 90 pcs** (was 53/89), `BSRUTH-000000` present + DXF loaded. Root cause was CC_Assembly silently skipping <6-char codes (memory reference_assembly_short_name_gate). Matches the fix I diagnosed.
 **STILL OPEN:** `1NSVB0-060050` remains the 1 ERR (NO DXF) — needs its flat DXF exported/uploaded.
 -- WEB
+
+### WEB · 2026-06-26 · nest: MODE dropdown options "มองไม่เห็น" → dark-on-white
+เอ๋: MODE dropdown เปิดมาพื้นขาว แต่ option (AUTO/TRUE SHAPE/MAXRECTS/…) จางมองไม่เห็น (เห็นแค่ AUTO ที่ OS highlight).
+**ROOT:** `.kdnest-controls select` สี `#cad6e6` (เทาอ่อน) → `<option>` inherit → native popup (iPad popover/desktop) พื้น**ขาว** = เทาอ่อนบนขาว อ่านไม่ออก.
+**FIX:** global `select option { color:#16202c !important; background-color:#fff !important; }` (style.css ~4374) — dark-on-white ทุก select ทั้งแอป. ปลอดภัยไม่ว่า OS จะ honor option-bg ไหม + iOS wheel-picker ignore ได้ไม่กระทบ. !important กัน theme :where() reset.
+**VERIFY:** static ✓ + curl edge. Pixel = เอ๋เปิด dropdown ดู (popover เป็น device-specific).
+-- WEB
