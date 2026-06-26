@@ -58,7 +58,11 @@
       } catch (e) {}
       return _def;
     })(),
-    mode: 'Desktop',   // default — mirrors the desktop NestingTool (เอ๋: best layout, 2026-05-30)
+    mode: (function () {   // default 'Desktop'; remember last-used (เอ๋ 2026-06-27)
+      try { const v = localStorage.getItem('kd_nest_mode_v1');
+        return ['Auto','True Shape','MaxRects','BL Corner','Left','Bottom','Max Remnant','Desktop'].includes(v) ? v : 'Desktop';
+      } catch (e) { return 'Desktop'; }
+    })(),
     skipRemnants: true,   // default ON — user 2026-05-28 wants fresh stock first
     rectLeftover: (function () {       // เอ๋ 2026-06-11: re-pack the LAST sheet so its
       try { return localStorage.getItem('kd_nest_rectleft_v1') !== '0'; }  // leftover is one rectangle. Default ON.
@@ -79,7 +83,10 @@
                           // track remnants yet so both flags are no-ops
                           // until that lands. User 2026-05-28 wanted UI
                           // parity with the Python tool's twin toggles.
-    gap: 2,
+    gap: (function () {   // default 2; remember last-used (เอ๋ 2026-06-27)
+      try { const n = parseFloat(localStorage.getItem('kd_nest_gap_v1')); return (isFinite(n) && n >= 0) ? n : 2; }
+      catch (e) { return 2; }
+    })(),
     // COMMON-LINE cutting (เอ๋ 2026-06-26): merge a shared straight edge between
     // two touching parts into ONE laser cut (saves cut length + material). Opt-in,
     // OFF by default → _buildSheetDxf is byte-identical when off. Only axis-aligned
@@ -3137,6 +3144,16 @@
   function _persistStock() {
     try { localStorage.setItem('kd_nest_stock_v1', JSON.stringify(S.sheetStock)); } catch (e) {}
   }
+  // Standard factory sheet stock — used by the ↺ Set default reset (and mirrors the
+  // first-visit defaults in the S.sheetStock init). (เอ๋ 2026-06-27)
+  function _factoryStock() {
+    return [
+      { w: 3050, h: 1525, qty: 1, thickness: 1, prc: 3850, label: '10x5', enabled: true },
+      { w: 3050, h: 1220, qty: 1, thickness: 1, prc: 2750, label: '10x4', enabled: true },
+      { w: 2440, h: 1220, qty: 1, thickness: 1, prc: 2350, label: '8x4',  enabled: true },
+      { w: 0,    h: 0,    qty: 0, thickness: 1, prc: 0,    label: '(custom)', enabled: true },
+    ];
+  }
   // ── Sheet price (THB/sheet) defaults by physical size (เอ๋ 2026-06-26) ──
   // Material + 550 cutting fee. Dimensions are the reliable signal; label is a
   // fallback. Function declaration → hoisted, so the sheetStock state-init IIFE
@@ -3905,7 +3922,7 @@
     const q = sel => pop.querySelector(sel);
     const canvas = q('.kdnest-partpop-canvas');
     const statusEl = q('.kdnest-partpop-status');
-    let themeObs = null;
+    let themeObs = null, sizeObs = null;
     // live(): always the CURRENT object in S.parts (rebuilt on re-nest); no stale
     // fallback — if the part is gone (deleted mid-popup), callers close the panel.
     const live = () => S.parts.find(x => x.code === code);
@@ -3914,6 +3931,7 @@
       _ppRerunPending = false;
       document.removeEventListener('keydown', onKey, true);
       if (themeObs) { try { themeObs.disconnect(); } catch (_) {} themeObs = null; }
+      if (sizeObs) { try { sizeObs.disconnect(); } catch (_) {} sizeObs = null; }
       pop.remove();
     };
     pop._kdClose = close;   // so a later _openPartPopup (or external) can clean us up
@@ -3937,6 +3955,11 @@
     try {
       themeObs = new MutationObserver(() => { if (document.body.contains(pop)) draw(); });
       themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    } catch (_) {}
+    // Resizable panel: CSS resize:both on the box → redraw the canvas to fill the new size.
+    try {
+      sizeObs = new ResizeObserver(() => { if (document.body.contains(pop)) requestAnimationFrame(draw); });
+      sizeObs.observe(q('.kdnest-partpop-box'));
     } catch (_) {}
     // Re-nest behind the popup — debounced so rapid ⟲/↔ clicks batch into one run.
     const runRenest = async () => {
@@ -6767,6 +6790,7 @@
             <label class="kdnest-optmanual-lab" title="Manual: Run uses the sheet stock exactly as set (no cost-optimize). OFF (default) = Run auto-picks the cheapest enabled sheet-size mix by price.">
               <input id="kdnest-optmanual" type="checkbox"${S.optManual ? ' checked' : ''}> Manual
             </label>
+            <button id="kdnest-setdefault" class="kdnest-setdefault" title="Reset Mode / Gap / Rect leftover / Manual / Sheet stock to the standard defaults">↺ Set default</button>
             <!-- Common-line (🔗 + tab) controls removed 2026-06-26 (เอ๋ 'ยกเลิกแผนการรวมเส้นทั้งหมด').
                  _clActive is forced false in _buildSheetDxf; the merge code is inert. -->
           </div>
@@ -6902,12 +6926,23 @@
       if (S.currentSheetIdx < S.flatSheets.length - 1) { S.currentSheetIdx++; _refreshView(); }
       else if (wasPreview) _refreshView();
     });
-    $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; _refreshView(); });   // re-render: 🔗 Common-line auto-disables on True Shape, re-enables on other modes
+    $('#kdnest-mode')?.addEventListener('change', e => { S.mode = e.target.value; try { localStorage.setItem('kd_nest_mode_v1', S.mode); } catch (_) {} _refreshView(); });   // remember last-used mode; re-render (common-line auto state)
     $('#kdnest-rectleft')?.addEventListener('change', e => {
       S.rectLeftover = !!e.target.checked;
       try { localStorage.setItem('kd_nest_rectleft_v1', S.rectLeftover ? '1' : '0'); } catch (err) {}
     });
-    $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; });
+    $('#kdnest-gap')?.addEventListener('change', e => { S.gap = parseFloat(e.target.value) || 0; try { localStorage.setItem('kd_nest_gap_v1', String(S.gap)); } catch (_) {} });
+    // ↺ Set default — reset the workspace settings (mode/gap/rect/manual/stock) to
+    // the standard factory defaults + drop the remembered overrides. (เอ๋ 2026-06-27,
+    // "ปุ่ม set default เล็กๆ ซึ่งปกติคงไม่ใช้" — rarely used)
+    $('#kdnest-setdefault')?.addEventListener('click', () => {
+      if (!confirm('Reset nesting settings (mode, gap, rect leftover, manual, sheet stock) to the standard defaults?')) return;
+      S.mode = 'Desktop'; S.gap = 2; S.rectLeftover = true; S.optManual = false;
+      S.sheetStock = _factoryStock();
+      S.costStale = true;
+      ['kd_nest_mode_v1','kd_nest_gap_v1','kd_nest_rectleft_v1','kd_nest_optmanual_v1','kd_nest_stock_v1'].forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+      _refreshView();
+    });
     // Common-line: affects the SAVED Cut Sheet DXF (_buildSheetDxf), not the
     // layout — no re-run needed; re-render only to enable/disable the tab control.
     $('#kdnest-common')?.addEventListener('change', e => {

@@ -5225,20 +5225,25 @@ select option { color: #16202c !important; background-color: #ffffff !important;
    re-arranges live when the part is rotated/mirrored. Reuses .kdstock-box/.kdstock-head
    so it inherits every theme. (เอ๋ 2026-06-27) */
 .kdnest-partpop { position: fixed; inset: 0; z-index: 99990; display: flex; align-items: center; justify-content: center; pointer-events: none; }
-.kdnest-partpop .kdnest-partpop-box { pointer-events: auto; width: 380px; max-width: 92vw; }
+.kdnest-partpop .kdnest-partpop-box { pointer-events: auto; width: 380px; height: 360px; min-width: 280px; min-height: 240px; max-width: 96vw; max-height: 92vh; resize: both; }
 .kdnest-partpop-head { align-items: center; }
 .kdnest-partpop-title { font-weight: 700; }
 .kdnest-partpop-dim { opacity: 0.6; font-weight: 400; font-size: 0.85em; margin-left: 2px; }
 .kdnest-partpop-status { font-size: 11px; font-weight: 400; color: #e0a23a; }
 .kdnest-partpop-close { background: none; border: none; cursor: pointer; font-size: 15px; line-height: 1; padding: 2px 4px; color: inherit; opacity: 0.7; }
 .kdnest-partpop-close:hover { opacity: 1; color: #e06c6c; }
-.kdnest-partpop-body { padding: 10px 12px; }
-.kdnest-partpop-canvas { display: block; width: 100%; height: 240px; }
+.kdnest-partpop-body { padding: 10px 12px; flex: 1 1 auto; min-height: 0; }
+.kdnest-partpop-canvas { display: block; width: 100%; height: 100%; }
 .kdnest-partpop-ctrls { display: flex; gap: 8px; padding: 0 12px 12px; }
 .kdnest-partpop-ctrls.kdnest-partpop-busy { opacity: 0.5; pointer-events: none; }
 .kdnest-partpop-btn { flex: 1 1 0; height: auto; min-width: 0; padding: 8px 10px; font-size: 13px; cursor: pointer; border: 1px solid rgba(127,127,127,0.42); background: rgba(127,127,127,0.10); color: inherit; border-radius: 6px; }
 .kdnest-partpop-btn:hover:not(:disabled) { background: rgba(127,127,127,0.20); }
 .kdnest-partpop-btn:disabled { opacity: 0.4; cursor: default; }
+
+/* ↺ Set default — small, unobtrusive reset for the nesting settings (เอ๋ 2026-06-27,
+   "ปกติคงไม่ใช้"). Pushed to the right end of the controls row. */
+.kdnest-setdefault { margin-left: auto; align-self: center; font-size: 11px; padding: 3px 9px; opacity: 0.55; background: transparent; border: 1px solid rgba(127,127,127,0.38); border-radius: 6px; color: inherit; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.kdnest-setdefault:hover { opacity: 1; border-color: rgba(127,127,127,0.7); }
 /* Remnant-direction chooser (เอ๋ 2026-06-12): two side-by-side variant previews.
    Reuses .kdstock-frame (opaque + above backdrop in every theme). Wider frame
    for two canvases; stacks on narrow screens (iPad portrait). */
