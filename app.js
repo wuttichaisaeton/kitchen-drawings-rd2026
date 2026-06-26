@@ -3621,29 +3621,33 @@ async function _kdOpen3D(code, opts) {
     });
     if (P.some(p => !p)) return false;   // not settled yet → keep polling
     const cx = P.reduce((s, p) => s + p.x, 0) / 8, cy = P.reduce((s, p) => s + p.y, 0) / 8;
-    const ci = (xi, yi, zi) => xi * 4 + yi * 2 + zi;
-    const xEdges = [[0,0],[0,1],[1,0],[1,1]].map(([y,z]) => [ci(0,y,z), ci(1,y,z)]);
-    const yEdges = [[0,0],[0,1],[1,0],[1,1]].map(([x,z]) => [ci(x,0,z), ci(x,1,z)]);
-    const zEdges = [[0,0],[0,1],[1,0],[1,1]].map(([x,y]) => [ci(x,y,0), ci(x,y,1)]);
-    const mid = e => ({ x: (P[e[0]].x + P[e[1]].x) / 2, y: (P[e[0]].y + P[e[1]].y) / 2 });
-    // Pick the SILHOUETTE edge per axis: only box edges on the CONVEX HULL of the
-    // 8 projected corners lie on the outline — the others run THROUGH the model and
-    // made the dim lines bend/cross (เอ๋ "ต้องตั้งแกนให้ถูก"). Build the hull
-    // (monotone chain), then among each axis's hull edges choose by screen position
-    // (top=W on world-X, top-left=H on world-Y/up, right=D on world-Z).
-    const sorted = [...Array(8).keys()].sort((i, j) => (P[i].x - P[j].x) || (P[i].y - P[j].y));
-    const cross = (o, a, b) => (P[a].x - P[o].x) * (P[b].y - P[o].y) - (P[a].y - P[o].y) * (P[b].x - P[o].x);
-    const lo = [], up = [];
-    for (const i of sorted) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], i) <= 0) lo.pop(); lo.push(i); }
-    for (let k = 7; k >= 0; k--) { const i = sorted[k]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], i) <= 0) up.pop(); up.push(i); }
-    const hull = lo.slice(0, -1).concat(up.slice(0, -1));
-    const hullE = new Set();
-    for (let i = 0; i < hull.length; i++) { const a = hull[i], b = hull[(i + 1) % hull.length]; hullE.add(Math.min(a, b) + '_' + Math.max(a, b)); }
-    const onHull = e => hullE.has(Math.min(e[0], e[1]) + '_' + Math.max(e[0], e[1]));
-    const pickEdge = (edges, score) => { const h = edges.filter(onHull); return (h.length ? h : edges).reduce((b, e) => score(mid(e)) < score(mid(b)) ? e : b); };
-    const wEdge = pickEdge(xEdges, m => m.y);          // topmost silhouette = W (world-X)
-    const hEdge = pickEdge(yEdges, m => m.x + m.y);    // top-left silhouette = H (world-Y / vertical)
-    const dEdge = pickEdge(zEdges, m => -m.x);         // rightmost silhouette = D (world-Z / receding)
+    // เอ๋ 2026-06-26 (blue-arrow markup): anchor each dim to the FRONT silhouette
+    // L-frame instead of screen-position heuristics (the old convex-hull picker
+    // mis-chose edges and ran lines through the model). WIDTH = top-front
+    // horizontal, HEIGHT = front-left vertical, DEPTH = top-right receding. Find
+    // left/right from screen-x and front/back from the render camera (nearer face
+    // = front), so the placement self-corrects as the model orbits.
+    // corner index = xi*4 + yi*2 + zi  (world-X=width, world-Y=up/height, world-Z=depth)
+    const idx = (xi, yi, zi) => xi * 4 + yi * 2 + zi;
+    const avgX = a => a.reduce((s, i) => s + P[i].x, 0) / a.length;
+    const avgY = a => a.reduce((s, i) => s + P[i].y, 0) / a.length;
+    const leftXi = avgX([0, 1, 2, 3]) <= avgX([4, 5, 6, 7]) ? 0 : 1;   // smaller screen-x = left
+    const rightXi = leftXi ^ 1;
+    let frontZi = -1;
+    try {
+      const cam = _findCamera();
+      const C = _dim3dCorners;
+      if (cam && cam.matrixWorld && cam.matrixWorld.elements && C && C.length === 8) {
+        const e = cam.matrixWorld.elements, cpx = e[12], cpy = e[13], cpz = e[14];
+        const d2 = i => { const c = C[i], dx = c.x - cpx, dy = c.y - cpy, dz = c.z - cpz; return dx * dx + dy * dy + dz * dz; };
+        frontZi = (d2(0) + d2(2) + d2(4) + d2(6)) <= (d2(1) + d2(3) + d2(5) + d2(7)) ? 0 : 1; // nearer camera = front
+      }
+    } catch {}
+    if (frontZi < 0) frontZi = avgY([0, 2, 4, 6]) >= avgY([1, 3, 5, 7]) ? 0 : 1; // fallback: front sits lower on screen
+    const backZi = frontZi ^ 1;
+    const wEdge = [idx(leftXi, 1, frontZi), idx(rightXi, 1, frontZi)];   // top-front horizontal = W
+    const hEdge = [idx(leftXi, 1, frontZi), idx(leftXi, 0, frontZi)];    // front-left vertical   = H
+    const dEdge = [idx(rightXi, 1, frontZi), idx(rightXi, 1, backZi)];   // top-right receding    = D
     const NS = 'http://www.w3.org/2000/svg';
     while (_dim3dSvg.firstChild) _dim3dSvg.removeChild(_dim3dSvg.firstChild);
     const line = (x1, y1, x2, y2) => { const l = document.createElementNS(NS, 'line'); l.setAttribute('x1', x1); l.setAttribute('y1', y1); l.setAttribute('x2', x2); l.setAttribute('y2', y2); l.setAttribute('class', 'kd3d-dim3d-l'); _dim3dSvg.appendChild(l); };
@@ -3665,12 +3669,9 @@ async function _kdOpen3D(code, opts) {
       t.textContent = String(val);
       _dim3dSvg.appendChild(t);
     };
-    // WORLD-frame axis→edge mapping (matches the header's world-axis labels so the
-    // on-model values and the corner header agree): WIDTH on the world-X edge,
-    // HEIGHT on the world-Y edge (vertical/up), DEPTH on the world-Z edge (the
-    // receding diagonal). The drawn (edge,value) pairs are identical to the prior
-    // double-swapped version — only the header text is corrected — so the on-model
-    // overlay เอ๋ confirmed (W800 H883 D612) is unchanged.
+    // Draw each value on its anchored silhouette edge (W=top-front, H=front-left
+    // vertical, D=top-right receding); the header world-axis labels (W=X, H=Y, D=Z)
+    // agree with these edges.
     try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.H); draw(dEdge, _dim3dVals.D); } catch {}
     return true;
   }
