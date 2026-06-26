@@ -3758,7 +3758,17 @@
   // sw/sh/placements in place. No-op (and never a regression) when nothing
   // cheaper fits. Called from the AUTO path only, BEFORE _rectifyLastSheet so the
   // leftover-rectangle is computed on the final (downsized) size.
-  function _downsizeLastFreshSheet() {
+  //
+  // allowKeys (optional): a Set of `${W}x${H}` size keys the USER originally
+  // enabled. The auto-optimizer TEMPORARILY disables the losing sizes on
+  // S.sheetStock before the final run (so the winning mix renders) — which means
+  // the live `enabled` flag no longer reflects what the user actually allows, and
+  // the cheaper downsize target (e.g. 8x4 when the winner is 10x4-only) would be
+  // skipped as "disabled". When allowKeys is provided the candidate loop trusts
+  // it instead of the live flag, so a user-enabled cheaper size is still eligible.
+  // Omitted → fall back to the live `enabled` flag (unchanged behaviour). (fix
+  // for live downsize not firing เอ๋ 2026-06-26)
+  function _downsizeLastFreshSheet(allowKeys) {
     const sheets = S.flatSheets || [];
     // last FRESH-stock sheet (offcut-derived sheets aren't downsized — remnants
     // are free/excluded from cost).
@@ -3790,10 +3800,14 @@
     // remaining qty after the rest of the plan (−1 = unlimited).
     const candidates = [];
     for (const s of S.sheetStock) {
-      if (s.enabled === false) continue;
       if (!(s.w > 0 && s.h > 0)) continue;
-      if (_thickKey(s.thickness ?? 1) !== tk) continue;
       const w = Math.round(s.w), h = Math.round(s.h);
+      // Eligibility: trust allowKeys (the user's original enabled set) when given,
+      // else the live `enabled` flag. The auto-optimizer mutates `enabled` before
+      // this runs, so the live flag can't be trusted on the auto path.
+      const eligible = allowKeys ? allowKeys.has(`${w}x${h}`) : (s.enabled !== false);
+      if (!eligible) continue;
+      if (_thickKey(s.thickness ?? 1) !== tk) continue;
       if (w === curW && h === curH) continue;   // same size — nothing to gain
       const prc = (s.prc || 0) || _getPriceDefault(w, h, s.label);
       const key = `${w}x${h}`;
@@ -4084,7 +4098,7 @@
     // enabled size its parts still fit on (lowers Total Cost; no-op if nothing
     // cheaper fits). Runs BEFORE _rectifyLastSheet so the leftover-rectangle is
     // computed on the final (downsized) size. Manual runs never set this flag.
-    if (S.optDownsizePass) _downsizeLastFreshSheet();
+    if (S.optDownsizePass) _downsizeLastFreshSheet(S.optDownsizeAllowKeys || null);
     _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
@@ -4266,9 +4280,25 @@
     }
     _persistStock();
 
+    // The downsize pass must see the sizes the USER originally enabled — NOT the
+    // optimizer's temporary enabled flags (we just disabled the losing sizes
+    // above, which would otherwise hide the cheaper downsize target from the
+    // candidate loop). Build the allow-set from the pre-mutation snapshot plus
+    // any rows we never touched (left at their own enabled flag). (fix เอ๋
+    // 2026-06-26)
+    const downsizeAllow = new Set();
+    S.sheetStock.forEach((s, i) => {
+      if (!(s.w > 0 && s.h > 0)) return;
+      const wasEnabled = snapshot.has(i) ? (snapshot.get(i).enabled !== false)
+                                         : (s.enabled !== false);
+      if (wasEnabled) downsizeAllow.add(`${Math.round(s.w)}x${Math.round(s.h)}`);
+    });
+
     S.optDownsizePass = true;   // enable the last-partial-sheet downsizing inside _runNesting
+    S.optDownsizeAllowKeys = downsizeAllow;   // user's ORIGINAL enabled sizes (auto path)
     _runNesting();          // full final render in S.mode (confirm + rect modal fire here, once)
     S.optDownsizePass = false;
+    S.optDownsizeAllowKeys = null;
     S.optChosen = true;     // mark this result as auto-chosen → "Auto-chosen" badge
 
     // Restore the rows' enabled flags so the user's manual stock selection is
