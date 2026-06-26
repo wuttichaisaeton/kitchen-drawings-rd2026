@@ -8716,3 +8716,11 @@ Big session, all LIVE on Pages (verify each via curl edge if unsure):
 **VERIFIED (preview, _test hooks buildSheetDxf/commonLineMerge):** (1) engine unit tests — shared→1 line, partial overlap→split, separate→unchanged, long shared+tabs→broken with bridges. (2) **controlled e2e**: two rects sharing a 50mm edge → OFF outerCut=600mm, ON=550mm (edge cut once = −50), ON+tabs=550mm (edge split w/ uncut bridge). (3) UI toggle wires+persists+enables tab control. node --check ✓.
 **Dataset note:** 04 Ruth (53 varied unique parts) has ~no coincident straight edges (only ~6 near-shared, tiny overlaps) → ~0 saving there. Common-line pays off on rectangle-heavy nests (many identical panels). เอ๋ to test on a rectangle-heavy job + confirm on a scrap cut before production (cut-order/tab safety is the operator's call when tabs off).
 -- WEB
+
+### WEB · 2026-06-26 · nest: grain-edge canvas bg = light ในธีม iOS
+เอ๋: "ให้พื้นหลังเป็นสีเดียวกับพื้นหลังรวม" (grain-edge editor พื้นดำ #0f1419 ไม่เข้าธีม iOS สว่าง).
+**ROOT:** canvas วาด bg เองด้วย JS (theme-aware อยู่แล้ว: sketch/chalk/obsidian) แต่**ไม่มี case `ios`** → ตก default dark `#0f1419`. (comment ในโค้ดอ้างคำขอเดิมของเอ๋ 2026-05-31 เป๊ะ — "พื้นหลังเป็นสีเดียวกับพื้นหลังโดยรอบ").
+**FIX:** เพิ่ม branch `_theme/_stheme === 'ios' → '#eef1f6'` (สีพื้น iOS gradient) ทั้ง 2 จุด: `BG` (nest.js:4574) + `_outerBG` (nest.js:4882). CSS-only แก้ไม่ได้ (canvas paint เป็น JS). `node --check` ✓.
+**หมายเหตุ:** session อื่น commit common-line feature (fa2806f) แล้ว — nest.js clean, แก้ของผม 2 บรรทัดล้วน ไม่พันกัน.
+**VERIFY:** syntax+logic ✓ (_theme อ่าน data-theme; ios→#eef1f6). Pixel = เอ๋เปิด grain-edge ดู (canvas ต้อง load part — preview navigate หนัก). ถ้า grain line/contrast เพี้ยนบนพื้นสว่างบอกได้ จะเพิ่ม ios INK/MUTED.
+-- WEB

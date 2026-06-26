@@ -4571,7 +4571,7 @@
     // เป็นสีเดียวกับพื้นหลังโดยรอบ'). Read the computed bg of the canvas's
     // wrapper; transparent (theme reset) → fall back to <body>, then the
     // per-theme constant. INK/MUTED stay theme-based for contrast.
-    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _obsidian ? '#08090d' : '#0f1419';
+    const BG = _sketch ? '#efe7d6' : _chalk ? '#26302e' : _obsidian ? '#08090d' : (_theme === 'ios') ? '#eef1f6' : '#0f1419';
     const INK = _sketch ? '#1b1815' : _chalk ? '#f4f1e8' : _obsidian ? '#e5c158' : '#4ecca3';
     const MUTED = _sketch ? '#6f6757' : _chalk ? '#9fb3ad' : _obsidian ? '#b0a790' : '#88aab1';
     // Opaque steel silhouette so the diecut reads as a real metal part, not a
@@ -4878,7 +4878,8 @@
       ? document.documentElement.getAttribute('data-theme') : null;
     const _outerBG = _stheme === 'sketch' ? '#efe7d6'
       : _stheme === 'chalk' ? '#26302e'
-      : _stheme === 'obsidian' ? '#08090d' : '#0f1419';
+      : _stheme === 'obsidian' ? '#08090d'
+      : _stheme === 'ios' ? '#eef1f6' : '#0f1419';
     ctx.fillStyle = _outerBG;
     ctx.fillRect(0, 0, cw, ch);
     // Sheet outline
