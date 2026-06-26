@@ -5591,16 +5591,28 @@ html[data-theme="sketch"] .kdnest-warn--review {
 }
 html[data-theme="sketch"] .kdnest-warn--unplaced *,
 html[data-theme="sketch"] .kdnest-warn--review * { color: inherit !important; }
-/* Header error chip — ink-on-paper, but the blocking one stays unmistakably red. */
-html[data-theme="sketch"] .kdnest-errchip-blk {
-  background-color: #a8392a !important; border: 2px solid #7a2418 !important;
+/* Header error chip — ink-on-paper, but the blocking one stays unmistakably red.
+   NOTE: the blanket reset above (html[data-theme="sketch"] body *:not(svg)...
+   :not([class*="icon"])) has specificity (0,2,5) — the :not([class*="icon"])
+   attr selector ties the class column and the 5 type selectors then WIN over a
+   plain `html[data-theme] .class` (0,2,1), so the chip rendered transparent +
+   dark ink. Scope through `body button.chip.chip` → (0,3,3) to beat it cleanly,
+   and use `background-color`/`color` (matching the reset's longhand) so our
+   !important wins. (เอ๋ 2026-06-26 'ให้ error เด่น' — must stay red in sketch.) */
+html[data-theme="sketch"] body button.kdnest-errchip.kdnest-errchip-blk {
+  background-color: #c62828 !important; background-image: none !important;
+  border: 2px solid #7a2418 !important;
   color: #fff !important; border-radius: var(--wob) !important;
 }
-html[data-theme="sketch"] .kdnest-errchip-warn {
-  background-color: #f5e3cf !important; border: 2px solid #b5701f !important;
+html[data-theme="sketch"] body button.kdnest-errchip.kdnest-errchip-warn {
+  background-color: #f5e3cf !important; background-image: none !important;
+  border: 2px solid #b5701f !important;
   color: #7a4a12 !important; border-radius: var(--wob) !important;
 }
-html[data-theme="sketch"] .kdnest-errchip * { color: inherit !important; }
+html[data-theme="sketch"] body button.kdnest-errchip * { color: inherit !important; }
+html[data-theme="sketch"] body button.kdnest-errchip.kdnest-errchip-blk:hover {
+  background-color: #e03333 !important;
+}
 
 /* MINDMAP — React Flow nodes/edges live in the same document, so style.css
    reaches them; no editor rebuild needed. Paper cards + pen edges. */
@@ -6307,16 +6319,26 @@ html[data-theme="chalk"] .kdnest-warn--review {
 }
 html[data-theme="chalk"] .kdnest-warn--unplaced *,
 html[data-theme="chalk"] .kdnest-warn--review * { color: inherit !important; }
-/* Header error chip — chalk on slate; blocking = red, warning = yellow. */
-html[data-theme="chalk"] .kdnest-errchip-blk {
-  background-color: var(--c-red) !important; border: 2px solid var(--c-red) !important;
-  color: #1c1410 !important; border-radius: var(--wob) !important;
+/* Header error chip — chalk on slate; blocking = red, warning = yellow.
+   Same fix as sketch: the chalk blanket reset (html[data-theme="chalk"] body *
+   :not(svg)...:not([class*="icon"]), spec (0,2,5)) beat a plain class override,
+   leaving the chip transparent + chalk-grey. Scope through `body button.chip.chip`
+   → (0,3,3) so the red wins. --c-red is a pale "red chalk" (#e08a7a) — too faint
+   for a BLOCKING badge, so use a saturated #c62828 + white text to pop on slate. */
+html[data-theme="chalk"] body button.kdnest-errchip.kdnest-errchip-blk {
+  background-color: #c62828 !important; background-image: none !important;
+  border: 2px solid #e08a7a !important;
+  color: #fff !important; border-radius: var(--wob) !important;
 }
-html[data-theme="chalk"] .kdnest-errchip-warn {
-  background-color: #3a352a !important; border: 2px solid var(--c-yellow) !important;
+html[data-theme="chalk"] body button.kdnest-errchip.kdnest-errchip-warn {
+  background-color: #3a352a !important; background-image: none !important;
+  border: 2px solid var(--c-yellow) !important;
   color: var(--c-yellow) !important; border-radius: var(--wob) !important;
 }
-html[data-theme="chalk"] .kdnest-errchip * { color: inherit !important; }
+html[data-theme="chalk"] body button.kdnest-errchip * { color: inherit !important; }
+html[data-theme="chalk"] body button.kdnest-errchip.kdnest-errchip-blk:hover {
+  background-color: #e03333 !important;
+}
 
 /* Bend list done — green-chalk wash + strikethrough. */
 html[data-theme="chalk"] .bend-row.is-bent {
