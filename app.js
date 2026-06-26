@@ -3665,24 +3665,12 @@ async function _kdOpen3D(code, opts) {
       t.textContent = String(val);
       _dim3dSvg.appendChild(t);
     };
-    // เอ๋ 2026-06-26 ground-truth: the LEFT vertical edge = HEIGHT (not depth) and
-    // the receding bottom-right edge = DEPTH. model-viewer's GLB→scene rotation
-    // makes GLB-Y (the depth extent) PROJECT VERTICAL and GLB-Z (height extent)
-    // project receding — opposite to the naive axis→edge guess. So the y-edge
-    // (dEdge, which renders vertical) carries the HEIGHT value and the z-edge
-    // (hEdge, which renders receding) carries the DEPTH value. wEdge stays W.
-    try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.D); draw(dEdge, _dim3dVals.H); } catch {}
-    // TEMP corner-index debug ROUND 2 (เอ๋ — anchor placement). Numbers 0–7 at
-    // each projected corner so เอ๋ tells me which 2 corners each dim line should
-    // connect → lock the edge selection exactly. REMOVE after.
-    P.forEach((p, i) => {
-      const d = document.createElementNS(NS, 'text');
-      d.setAttribute('x', p.x); d.setAttribute('y', p.y);
-      d.setAttribute('fill', '#0a66ff'); d.setAttribute('font-size', '22'); d.setAttribute('font-weight', '800');
-      d.setAttribute('text-anchor', 'middle'); d.setAttribute('paint-order', 'stroke');
-      d.setAttribute('stroke', 'rgba(255,255,255,0.92)'); d.setAttribute('stroke-width', '4.5');
-      d.textContent = i; _dim3dSvg.appendChild(d);
-    });
+    // With the WORLD-space bbox (above) the corners project correctly, so the
+    // natural axis→edge mapping holds: WIDTH on the x-edge, HEIGHT on the z-edge
+    // (the vertical), DEPTH on the y-edge (the receding). (An earlier H/D swap +
+    // corner-index debug compensated for the broken projection; both removed once
+    // the world-space fix landed — เอ๋ 2026-06-26 confirmed W800 D612 H883.)
+    try { draw(wEdge, _dim3dVals.W); draw(hEdge, _dim3dVals.H); draw(dEdge, _dim3dVals.D); } catch {}
     return true;
   }
 
