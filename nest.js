@@ -2429,13 +2429,13 @@
   }
 
   function _nestMultiSheetRaster(pieces, stock, gap) {
-    // Resolution: ~1/400 of the smaller sheet side, min 3mm (เอ๋ 2026-06-26 'gap แน่นขึ้น':
-    // was /200 min5 → 04 Ruth R=6 → gaps median ~9mm; now R=3 → gaps median ~4mm / min
-    // ~2.5mm, much closer to the set value). Finer = tighter packing + a gap nearer the
-    // setting, but quadratically slower (04 Ruth raster pack ~0.9s → ~4.8s). Max Remnant
-    // keeps the coarser /200 (it's a separate function, left unchanged).
+    // Resolution: ~1/200 of the smaller sheet side, min 5mm. Finer = tighter
+    // + more accurate gap, but quadratically slower. (A finer /400 grid gave gaps
+    // ~4mm but the Auto cost-optimizer re-runs the pack ~20x → live run ~90s, too
+    // slow — reverted 2026-06-26. The right tight-gap fix is coarse-grid for the
+    // sheet-cost scenarios + fine-grid only for the final winning layout.)
     const minSide = Math.min.apply(null, stock.map(s => Math.min(s.w, s.h)).concat([1525]));
-    const R = Math.max(3, Math.round(minSide / 400));
+    const R = Math.max(5, Math.round(minSide / 200));
     const dCells = gap > 0 ? Math.max(1, Math.round(gap / R)) : 0;
     // Sort by TRUE polygon area desc (big shapes anchor first).
     function trueArea(p) {
