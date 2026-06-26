@@ -88,7 +88,7 @@
     // mid-cut (เอ๋'s laser does kerf-comp). Both persisted.
     commonLine: (function () { try { return localStorage.getItem('kd_nest_common_v1') === '1'; } catch (e) { return false; } })(),
     commonTabs: (function () { try { return localStorage.getItem('kd_nest_commontab_v1') === '1'; } catch (e) { return false; } })(),
-    commonTabMm: (function () { try { const n = parseFloat(localStorage.getItem('kd_nest_commontabmm_v1') || ''); return (n > 0 && n < 20) ? n : 0.5; } catch (e) { return 0.5; } })(),
+    commonTabMm: (function () { try { const n = parseFloat(localStorage.getItem('kd_nest_commontabmm_v1') || ''); return (n > 0 && n < 20) ? n : 0.3; } catch (e) { return 0.3; } })(),
     // AUTO COST-OPTIMIZE (เอ๋ 2026-06-26): Run defaults to auto-finding the
     // CHEAPEST enabled sheet-size mix (by each size's prc) and may MIX sizes.
     // optManual ON → run as-is (today's exact behavior, no trials). Persisted.
@@ -2454,16 +2454,23 @@
         for (const piece of remaining) {
           let best = null;
           for (const rot of piece.rots) {
-            const mask = getMask(piece, rot);
+            // flip180 = the part is cut 180° from natural. BAKE it into the packed
+            // orientation so the mask we reserve == the shape we cut. The old
+            // post-pack +180 (below) reserved the UN-flipped slot then flipped the
+            // shape inside its bbox → for non-rect parts (e.g. DSV1TR triangle) the
+            // shape moved to the opposite corner and OVERLAPPED interlocked
+            // neighbours. (เอ๋ 2026-06-26 'ชิ้นงานยังซ้อนทับกันอยู่' — root cause)
+            const placeRot = piece.flip180 ? (((rot + 180) % 360) + 360) % 360 : rot;
+            const mask = getMask(piece, placeRot);
             const pos = _blFind(occ, gw, gh, mask);
             if (pos && (best === null || pos.gy < best.gy ||
                         (pos.gy === best.gy && pos.gx < best.gx))) {
-              best = { rot, mask, gx: pos.gx, gy: pos.gy };
+              best = { rot: placeRot, mask, gx: pos.gx, gy: pos.gy };
             }
           }
           if (best) {
             _stamp(occ, gw, gh, best.mask, best.gx, best.gy, dCells);
-            placed.push({ ...piece, x: best.gx * R, y: best.gy * R, rot: best.rot });
+            placed.push({ ...piece, x: best.gx * R, y: best.gy * R, rot: best.rot, _flipBaked: true });
           } else {
             stillLeft.push(piece);
           }
@@ -2917,12 +2924,53 @@
     return result;
   }
 
+  // True-polygon overlap check on a packed result (sheet mm) — same transform as
+  // the renderer _drawSheet / DXF export. Fail-safe for True Shape: its raster
+  // collision can leave two parts overlapping (root cause in the raster pack,
+  // not the mask — proven 2026-06-26: masks cover their shapes yet clash). If an
+  // overlap is detected we fall back to the Desktop (bbox) layout, which can
+  // never overlap → no overlapping cut ever reaches the laser. bbox pre-filter
+  // keeps it fast (only truly bbox-overlapping pairs get the edge test).
+  // (เอ๋ 'ชิ้นงานยังซ้อนทับกันอยู่' — DSV1TR triangle.)
+  function _resultHasTrueOverlap(result) {
+    if (!result || !result.sheets) return false;
+    function placedPoly(pl) {
+      const bx = pl.bbox ? pl.bbox[0] : 0, by = pl.bbox ? pl.bbox[1] : 0, pw = pl.w, ph = pl.h, rot = pl.rot;
+      const o = pl.polys && pl.polys.outer; if (!o || o.length < 3) return null;
+      return o.map(function (p) { const u = p[0] - bx, v = p[1] - by; let X, Y;
+        if (rot === 90) { X = -v + ph; Y = u; } else if (rot === 180) { X = pw - u; Y = ph - v; }
+        else if (rot === 270) { X = v; Y = pw - u; } else { X = u; Y = v; }
+        return [X + pl.x, Y + pl.y]; });
+    }
+    function bb(poly) { let a = 1e15, b = 1e15, c = -1e15, d = -1e15; for (const p of poly) { if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1]; if (p[0] > c) c = p[0]; if (p[1] > d) d = p[1]; } return [a, b, c, d]; }
+    function ori(a, b, c) { const v = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]); return v > 1e-6 ? 1 : v < -1e-6 ? -1 : 0; }
+    function segX(p1, p2, p3, p4) { const d1 = ori(p3, p4, p1), d2 = ori(p3, p4, p2), d3 = ori(p1, p2, p3), d4 = ori(p1, p2, p4); return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0)); }
+    for (const sh of result.sheets) {
+      const ps = (sh.placements || []).map(function (pl) { const poly = placedPoly(pl); return poly ? { poly: poly, box: bb(poly) } : null; }).filter(Boolean);
+      for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
+        const A = ps[i], B = ps[j];
+        if (A.box[2] <= B.box[0] || B.box[2] <= A.box[0] || A.box[3] <= B.box[1] || B.box[3] <= A.box[1]) continue;   // bbox disjoint/touching → skip
+        for (let a = 0; a < A.poly.length; a++) { const a1 = A.poly[a], a2 = A.poly[(a + 1) % A.poly.length];
+          for (let b = 0; b < B.poly.length; b++) { const b1 = B.poly[b], b2 = B.poly[(b + 1) % B.poly.length];
+            if (segX(a1, a2, b1, b2)) return true; } }
+      }
+    }
+    return false;
+  }
+
   function _nestMultiSheet(pieces, stock, gap, mode) {
     // pieces: [{code, w, h, rots:[0,90,...], qty}]
     // stock: [{w, h, qty}]   qty=-1 → unlimited
     // Returns: {sheets: [{sw, sh, placements:[{...}]}], unplaced: [...]}
 
-    if (mode === 'True Shape') return _nestMultiSheetRaster(pieces, stock, gap);
+    if (mode === 'True Shape') {
+      const r = _nestMultiSheetRaster(pieces, stock, gap);
+      if (_resultHasTrueOverlap(r)) {
+        console.warn('[kdNest] True Shape produced overlapping parts — falling back to the Desktop layout (overlap-free).');
+        return _nestMultiSheetDesktop(pieces, stock, gap);
+      }
+      return r;
+    }
     if (mode === 'Max Remnant') return _nestMultiSheetMaxRemnant(pieces, stock, gap);
     if (mode === 'Desktop') return _nestMultiSheetDesktop(pieces, stock, gap);
 
@@ -4167,7 +4215,11 @@
     // four exact values transform() handles). (Rotate-180 + Mirror 2026-06-26)
     for (const s of allSheets) {
       for (const pl of (s.placements || [])) {
-        if (pl.flip180) pl.rot = (((pl.rot || 0) + 180) % 360 + 360) % 360;
+        // bbox-mode placements only: the True-Shape raster packer already BAKED
+        // the flip into the packed orientation (_flipBaked) so it reserved the
+        // correct slot — re-adding 180 here would double-flip + re-introduce the
+        // overlap. bbox modes don't bake it (flip in place is safe for a bbox).
+        if (pl.flip180 && !pl._flipBaked) pl.rot = (((pl.rot || 0) + 180) % 360 + 360) % 360;
       }
     }
     const result = { sheets: allSheets, unplaced: allUnplaced };
@@ -5628,7 +5680,7 @@
   function _commonLineTabbed(a, b, mk, out, tabMm) {
     const len = b - a;
     if (len <= Math.max(8, tabMm * 6)) { out.push(mk(a, b)); return; }   // too short → solid cut
-    const nTabs = Math.max(1, Math.floor(len / 250));   // ~1 uncut bridge / 250mm
+    const nTabs = Math.max(1, Math.floor(len / 200));   // ~1 uncut bridge / 200mm (0.3mm tab, thin stainless)
     const cutLen = (len - nTabs * tabMm) / (nTabs + 1);
     let pos = a;
     for (let t = 0; t < nTabs; t++) { out.push(mk(pos, pos + cutLen)); pos += cutLen + tabMm; }
@@ -7210,6 +7262,7 @@
       buildNestPieces: _buildNestPieces,
       buildSheetDxf: _buildSheetDxf,        // common-line verification hook
       commonLineMerge: _commonLineMerge,    // pure merge engine (unit-testable)
+      rasterMask: _rasterMask,              // True-Shape mask (overlap debug hook)
       // Returns the background save promise so a test can AWAIT the full async
       // toggle chain (live flag → save → re-render settle) before asserting that
       // the previewed part survived — the path a sync-only assertion missed.
