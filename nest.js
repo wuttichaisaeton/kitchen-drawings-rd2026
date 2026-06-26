@@ -3727,6 +3727,127 @@
     return p;
   }
 
+  // ── LAST-PARTIAL-SHEET DOWNSIZING (เอ๋ 2026-06-26) ───────────────────────────
+  // After the optimizer picks a plan, its LAST fresh sheet is usually partial (a
+  // few parts + a big leftover). If those parts also fit on a CHEAPER enabled
+  // size, swapping the last sheet to that size lowers total cost with zero loss
+  // (e.g. 10x4 ×4 + 8x4 ×1 = 13,350 beats 10x4 ×5 = 13,750).
+  //
+  // PURE selection core: given the current sheet's price and a list of CHEAPER
+  // candidate sizes (ascending price), return the first whose `fitsFn(cand)`
+  // packs ALL the last sheet's parts onto ONE sheet (0 unplaced). fitsFn returns
+  // the packed placements array on success, or null/falsy on no-fit. Returns
+  // { size, placements } for the cheapest fitting candidate, or null if none
+  // fits / nothing is strictly cheaper. (THE unit-tested downsizing logic.)
+  function _pickDownsizeSize(currentPrc, candidates, fitsFn) {
+    const cheaper = (candidates || [])
+      .filter(c => (c.prc || 0) < currentPrc)   // STRICTLY cheaper only — never upsize
+      .slice()
+      .sort((a, b) => (a.prc || 0) - (b.prc || 0));   // try cheapest first
+    for (const cand of cheaper) {
+      const placements = fitsFn(cand);
+      if (placements && placements.length) return { size: cand, placements };
+    }
+    return null;
+  }
+
+  // DOM wrapper: operate on the live S.flatSheets. Finds the LAST FRESH sheet,
+  // reconstructs its parts, builds the cheaper-enabled-size candidate list for
+  // that sheet's thickness (honoring finite qty caps + grain via the headless
+  // packer), and — if all parts fit on a cheaper size — swaps the sheet's
+  // sw/sh/placements in place. No-op (and never a regression) when nothing
+  // cheaper fits. Called from the AUTO path only, BEFORE _rectifyLastSheet so the
+  // leftover-rectangle is computed on the final (downsized) size.
+  function _downsizeLastFreshSheet() {
+    const sheets = S.flatSheets || [];
+    // last FRESH-stock sheet (offcut-derived sheets aren't downsized — remnants
+    // are free/excluded from cost).
+    let li = -1;
+    for (let i = sheets.length - 1; i >= 0; i--) { if (!sheets[i].fromRemnant) { li = i; break; } }
+    if (li < 0) return;
+    const sheet = sheets[li];
+    if (!sheet.placements || !sheet.placements.length) return;
+
+    const curW = Math.round(sheet.sw), curH = Math.round(sheet.sh);
+    const curRow = S.sheetStock.find(s => Math.round(s.w) === curW && Math.round(s.h) === curH);
+    const curPrc = (curRow && curRow.prc) || _getPriceDefault(curW, curH, (curRow && curRow.label) || '');
+    if (!(curPrc > 0)) return;   // unknown/zero price → can't reason about savings
+
+    const tk = _thickKey(sheet.thick);
+
+    // How many fresh sheets of each size the rest of the plan already consumes —
+    // so a finite qty cap left over for the candidate size is computed honestly
+    // (the last sheet itself doesn't count against the candidate).
+    const usedFreshBySize = new Map();
+    sheets.forEach((s, i) => {
+      if (i === li) return;
+      if (s.fromRemnant) return;
+      const k = `${Math.round(s.w ? s.w : s.sw)}x${Math.round(s.h ? s.h : s.sh)}`;
+      usedFreshBySize.set(k, (usedFreshBySize.get(k) || 0) + 1);
+    });
+
+    // Candidate cheaper sizes for this thickness: enabled, sized, and with ≥1
+    // remaining qty after the rest of the plan (−1 = unlimited).
+    const candidates = [];
+    for (const s of S.sheetStock) {
+      if (s.enabled === false) continue;
+      if (!(s.w > 0 && s.h > 0)) continue;
+      if (_thickKey(s.thickness ?? 1) !== tk) continue;
+      const w = Math.round(s.w), h = Math.round(s.h);
+      if (w === curW && h === curH) continue;   // same size — nothing to gain
+      const prc = (s.prc || 0) || _getPriceDefault(w, h, s.label);
+      const key = `${w}x${h}`;
+      const cap = (s.qty === -1) ? Infinity : (s.qty | 0);
+      const remaining = (cap === Infinity) ? Infinity : (cap - (usedFreshBySize.get(key) || 0));
+      if (remaining < 1) continue;   // qty cap exhausted by the rest of the plan
+      candidates.push({ w, h, prc, thickness: s.thickness ?? 1,
+        grain: String(s.grain || 'ANY').toUpperCase(),
+        material: s.material || '', finish: s.finish || '' });
+    }
+    if (!candidates.length) return;
+
+    // Reconstruct the last sheet's parts (strip x/y/rot; keep rots so grain
+    // gating + allowed rotations survive the re-pack). Same shape as rectify.
+    const parts = sheet.placements.map(pl => ({
+      code: pl.code, w: pl.w, h: pl.h,
+      rots: Array.isArray(pl.rots) ? pl.rots.slice() : [0, 90, 180, 270],
+      polys: pl.polys, bbox: pl.bbox, thickness: pl.thickness,
+      grain: pl.grain, grainAngle: pl.grainAngle, _origGrainAngle: pl._origGrainAngle,
+      flip180: pl.flip180, _mirrorActive: pl._mirrorActive,
+    }));
+    const need = sheet.placements.length;
+
+    // fitsFn: try to pack ALL parts onto ONE sheet of `cand` (qty 1). Uses the
+    // same cheap MaxRects + denser fallback the rectify pass uses. Grain +
+    // thickness are baked into the pieces, so the packer gates them; if it can't
+    // place everything on one sheet it returns >1 sheet or leaves unplaced → no
+    // fit. Returns the packed placements on success, null otherwise.
+    const fitsFn = (cand) => {
+      const stock = [{ w: cand.w, h: cand.h, qty: 1, thickness: cand.thickness,
+        grain: cand.grain, material: cand.material, finish: cand.finish }];
+      for (const mode of ['MaxRects', 'Bottom']) {
+        let r;
+        try { r = _nestMultiSheet(parts.map(p => ({ ...p })), stock, S.gap, mode); }
+        catch (e) { continue; }
+        const out = r && r.sheets && r.sheets[0];
+        if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
+        if (out.placements.length !== need) continue;   // ALL parts must fit
+        return out.placements;
+      }
+      return null;
+    };
+
+    const pick = _pickDownsizeSize(curPrc, candidates, fitsFn);
+    if (!pick) return;   // nothing cheaper fits → keep the original plan exactly
+
+    // Swap the last sheet to the smaller, cheaper size in place. _countFreshSheetsBySize
+    // re-reads sw/sh → Total Cost drops; the canvas reads S.flatSheets → shows it.
+    sheet.sw = pick.size.w;
+    sheet.sh = pick.size.h;
+    sheet.placements = pick.placements;
+    sheet.lastRemnantRect = null;   // rect (if any) is recomputed by _rectifyLastSheet
+  }
+
   // Cost of a headless trial result = sum over FRESH sheets of that size's prc.
   // res.sheets each carry sw/sh; price looked up by size from priceBySize map.
   // (PURE — feed it a result + a {`${w}x${h}`:prc} map; this is the unit tested
@@ -3959,6 +4080,11 @@
     S.currentSheetIdx = 0;
     S.unplaced = result.unplaced || [];
     S.costStale = false;   // fresh run → Total Cost is current again (drops the dim + hint)
+    // AUTO path only: try to swap the LAST partial fresh sheet for the cheapest
+    // enabled size its parts still fit on (lowers Total Cost; no-op if nothing
+    // cheaper fits). Runs BEFORE _rectifyLastSheet so the leftover-rectangle is
+    // computed on the final (downsized) size. Manual runs never set this flag.
+    if (S.optDownsizePass) _downsizeLastFreshSheet();
     _rectifyLastSheet();   // last-sheet rectangular remnant (may move pieces + auto-jump)
     // How many saved offcuts a grain clash kept out of this run — drives the
     // review banner so the worker knows a leftover was skipped (not silently).
@@ -4122,6 +4248,7 @@
     if (!anyOptimized) {
       _optRunning = false;
       _setRunBtnBusy(false);
+      S.optDownsizePass = false;   // no winner mix → no downsizing on the fallback run
       _runNesting();   // normal full run surfaces the unplaced as usual
       return;
     }
@@ -4139,7 +4266,9 @@
     }
     _persistStock();
 
+    S.optDownsizePass = true;   // enable the last-partial-sheet downsizing inside _runNesting
     _runNesting();          // full final render in S.mode (confirm + rect modal fire here, once)
+    S.optDownsizePass = false;
     S.optChosen = true;     // mark this result as auto-chosen → "Auto-chosen" badge
 
     // Restore the rows' enabled flags so the user's manual stock selection is
