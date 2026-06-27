@@ -7863,7 +7863,7 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-stockbody { display: flex; flex-direction: column; gap: 6px; }
 .kdsp-stockbody .kdsp-code { font-size: 15px; font-weight: 700; word-break: break-word; }  /* part NAME prominent */
 .kdsp-stockbody .kdsp-pill { font-size: 13px; font-weight: 600; padding: 4px 12px; display: inline-flex; align-items: baseline; gap: 5px; }
-.kdsp-qtynum { font-size: 22px; font-weight: 800; line-height: 1; }   /* qty number big + clear (เอ๋) */
+.kdsp-qtynum { font-size: 22px; font-weight: 800; line-height: 1; color: #ff4d4f; }   /* qty number big + clear + RED (เอ๋) */
 .kdsp-code { font-size: 13px; }
 .kdsp-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .kdsp-pill { background: #1f3d2e; color: #7ee0a8; border-radius: 999px; padding: 2px 9px; font-size: 12px; }
