@@ -172,7 +172,16 @@
                         // Nesting was passing a synthesised meta).
       dxfLoaded: false,
       dxfError: null,
+      useStock: true,  // S2: subtract confirmed Stock Part qty from this row's cut count (toggle in the row)
     };
+  }
+
+  // S2 "don't re-cut": how many to actually cut = demand minus confirmed stock
+  // (when the row's stock toggle is on). Clamped to >= 0.
+  function _stockAdjustedQty(demand, inStock, useStock) {
+    demand = Math.max(0, demand | 0);
+    if (!useStock) return demand;
+    return Math.max(0, demand - Math.max(0, inStock | 0));
   }
 
   // ── DXF library lazy-load ──────────────────────────────────────────
