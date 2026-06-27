@@ -106,6 +106,34 @@
   function _loadLS() { try { return JSON.parse(localStorage.getItem(LS_CACHE)) || {}; } catch (e) { return {}; } }
   function _saveLS(rows) { try { localStorage.setItem(LS_CACHE, JSON.stringify(_stripPhotos(rows))); } catch (e) {} }
 
+  // ── photo compression: returns a base64 jpeg (no data: prefix) or throws ──
+  function compressImage(file) {
+    return new Promise(function (resolve, reject) {
+      if (!file || !/^image\//.test(file.type || '')) { reject(new Error('not-image')); return; }
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var ladder = _compressLadder(), best = null;
+          for (var i = 0; i < ladder.length; i++) {
+            var dim = _scaleFor(img.naturalWidth || img.width, img.naturalHeight || img.height, ladder[i].maxEdge);
+            var cv = document.createElement('canvas');
+            cv.width = dim.w; cv.height = dim.h;
+            cv.getContext('2d').drawImage(img, 0, 0, dim.w, dim.h);
+            var b64 = cv.toDataURL('image/jpeg', ladder[i].q).split(',')[1] || '';
+            best = b64;
+            if (b64Bytes(b64) <= TARGET_BYTES) break;
+          }
+          URL.revokeObjectURL(url);
+          if (!best || b64Bytes(best) > MAX_BYTES) { reject(new Error('too-large')); return; }
+          resolve(best);
+        } catch (e) { URL.revokeObjectURL(url); reject(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('decode-failed')); };
+      img.src = url;
+    });
+  }
+
   // ── (render added in later tasks) ───────────────────────────
 
   function renderHome() {
