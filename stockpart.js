@@ -13,7 +13,7 @@
   var _CUBE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><line x1="12" y1="12" x2="12" y2="21"/></svg>';
   // AI image-match endpoint (S3). Set to the LINE-bot Render base + /api/stock-match.
   // Empty until configured → _fireAiMatch no-ops (feature dormant, graceful).
-  var KDSP_AI_ENDPOINT = '';   // e.g. 'https://<line-bot>.onrender.com/api/stock-match'
+  var KDSP_AI_ENDPOINT = 'https://stainless-line-bot.onrender.com/api/stock-match';
 
   // ── state ───────────────────────────────────────────────────
   var _stockCache = {};   // pushId -> row

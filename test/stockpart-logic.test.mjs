@@ -206,11 +206,13 @@ test('_fireAiMatch POSTs {id,photo,remarks} to the endpoint and swallows rejecti
   assert.deepEqual(body, { id: 'ID1', photo: 'BASE64', remarks: 'ยาว 946' });
 });
 
-test('_fireAiMatch no-ops without id/photo/endpoint', () => {
+test('_fireAiMatch no-ops without id or photo (endpoint param falls back to the configured const)', () => {
   const { T, window } = boot();
   let n = 0; window.fetch = () => { n++; return Promise.resolve(); };
-  T._fireAiMatch('', 'B64', 'r', 'https://x/api');     // no id
-  T._fireAiMatch('ID', '', 'r', 'https://x/api');       // no photo
-  T._fireAiMatch('ID', 'B64', 'r', '');                 // no endpoint
+  T._fireAiMatch('', 'B64', 'r', 'https://x/api');     // no id  → no-op
+  T._fireAiMatch('ID', '', 'r', 'https://x/api');       // no photo → no-op
   assert.equal(n, 0);
+  // a falsy endpoint param falls back to KDSP_AI_ENDPOINT; with id+photo present that DOES fire
+  T._fireAiMatch('ID', 'B64', 'r', 'https://y/api');    // explicit endpoint → fires
+  assert.equal(n, 1);
 });
