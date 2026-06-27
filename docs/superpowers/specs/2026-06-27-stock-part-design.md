@@ -34,7 +34,7 @@ can subtract without re-querying RTDB.
 | **Worker GLB confirm** | after เอ๋ assigns a code, the **GLB is sent back to the worker** (who holds the physical part) to tap ✓ correct / ✗ not-it; ✗ bounces to เอ๋ to re-pick | ground-truth verification by the person with the part; works in S1 (no AI needed) |
 | **Code entry (S1)** | **manual** — เอ๋ searches/picks the 13-char code from `uploaded_dxfs` while looking at the photo; 3D compare is the primary disambiguator | AI suggestion is S3; S1 picker is search + eyeball + View 3D |
 | **Placement** | a **new top-level "Stock" tab**, role-aware (not a Nest modal) | workers reach capture without entering Nest; own render module |
-| **Worker-screen language** | **Thai** — explicit exception approved by เอ๋ **2026-06-27** (overrides the standing English-only UI rule, [[feedback_drawings_ui_no_thai]]), bounded to the worker capture screen | only the worker capture surface is Thai; admin surfaces + tab chrome stay English |
+| **Worker-screen language** | **English + Flux everywhere** (เอ๋ FINAL 2026-06-27: *"เปลี่ยนเป็นภาษาอังกฤษ font flux ทั้งหมด เฉพาะช่อง remarks ให้ช่างพิมพ์ภาษาไทยได้"*). The ONLY Thai is what the worker **types into the remarks/note field** | all labels/buttons/toasts/errors English; only `#kdsp-note` carries `.kdsp-th` so typed Thai renders ([[feedback_drawings_ui_no_thai]]) |
 | **Photo store (S1)** | compressed **base64 in RTDB only** — no GitHub, no PAT, by anyone | simplest path; removes PAT/SHA/atomicity/orphan-file complexity; GitHub migration → S2 |
 | **Stock unit** | **1 row = 1 intake event** (photo+qty+date+who); available qty per code = sum of confirmed rows for that code | เอ๋ deletes a wrong row individually; mirrors `nest_remnants` |
 | **Edit/delete** | admin-only (confirm / set+edit code / edit qty / delete / reject); workers add-only + in-session undo-last | matches remnants admin-gating (`isAdmin()`) |
@@ -176,10 +176,10 @@ node (see [[reference_rtdb_rules_expiry]] — rules with a `now <` expiry can si
 
 ### 1. Capture (worker, Thai)
 Photo picker → preview thumbnail → qty stepper (default 1, **min 1 / max 99**, qty 0 blocked
-at submit) → optional Thai note → submit button. On submit: compress → push pending row →
-Thai success toast with an **undo-last** affordance (removes the just-pushed row by remembered
-pushId). No code field, no 3D. Large touch targets. **Worker-facing strings are Thai**
-(labels, button, note placeholder, toasts, the compress-too-large error). After submit the
+at submit) → optional remarks (Thai input OK) → submit button. On submit: compress → push pending row →
+success toast with an **undo-last** affordance (removes the just-pushed row by remembered
+pushId). No code field, no 3D. Large touch targets. **All worker-facing UI is English/Flux** —
+only the **remarks input** accepts Thai (`#kdsp-note` carries `.kdsp-th` so typed Thai renders; placeholder English). After submit the
 form resets to empty; the worker cannot edit a submitted row except via undo-last (then
 re-add). See [[feedback_communicate_with_images]] — this screen is photo-first.
 
@@ -204,7 +204,7 @@ with the **live inline GLB** of the assigned code (an embedded `<model-viewer sr
 shown automatically — NOT hidden behind a tap; เอ๋'s requirement: the worker must directly
 compare "รูปถ่าย ↔ แบบ 3D"), plus the code and `thickness · material`, a caption
 "รูปที่ถ่าย ↔ แบบ 3D — เหมือนกันไหม?", an "ขยายดู 3D" button (opens `_kdOpen3D` full viewer as a
-fallback), and two big Thai buttons:
+fallback), and two big buttons (English):
 - **✓ ถูกต้อง** → `workerConfirmGlb(id)` → `confirmed` (enters stock; card leaves the list).
 - **✗ ไม่ใช่** → `workerRejectGlb(id)` → back to `pending` flagged `bounced_from` (returns to
   เอ๋'s queue). Optional one-tap Thai reason later (not S1).
@@ -251,20 +251,22 @@ code (mono) + `thickness · material · grain` + a **3D/▶** that opens `_kdOpe
 | empty: code search | "No matching code" |
 | reject | `status:'rejected'`, hidden from queue+list, `photo_data` kept; admin can hard-delete |
 
-## Worker-screen Thai font (reuse the exact Comments stack)
-The Comments feature (`style.css:1034` `.comment-text`, `:1078` `.comment-input`) renders mixed
-Thai/Latin via this **proven, webfont-free** stack — Flux first (Latin), then the device's
-**system Thai fonts** (browser does per-glyph fallback):
+## Remarks-field Thai font (reuse the exact Comments stack)
+**All Stock Part UI is English/Flux** (เอ๋ FINAL). The ONE place Thai may appear is the text a
+worker **types into the remarks/note field** — so ONLY `#kdsp-note` gets the Comments stack
+(`style.css:1034` `.comment-text`) — Flux first (Latin), then the device's **system Thai fonts**
+(browser per-glyph fallback, webfont-free):
 ```
 font-family: "Flux Architect", "IBM Plex Sans Thai", "Noto Sans Thai",
              "Leelawadee UI", "Sukhumvit Set", "Thonburi", Tahoma, -apple-system, sans-serif;
 ```
-1. Define class **`.kdsp-th`** with that **exact** stack and apply it to the **worker screens**
-   (capture + Confirm-GLB): labels, note input + placeholder, toasts, the too-large error,
-   ✓/✗ button text. A plain class selector overrides the `font-family` inherited from `body`
-   (the only global `*` rule sets `box-sizing`/tap-highlight, not fonts — no specificity
-   battle). No `@font-face`/`<link>` needed: Thai Windows has Leelawadee UI, iOS/Mac have
+1. Define class **`.kdsp-th`** with that **exact** stack and apply it **only to the remarks
+   `<input id="kdsp-note">`** (placeholder stays English). A plain class selector overrides
+   the `font-family` inherited from `body` (the only global `*` rule sets `box-sizing`, not
+   fonts). No `@font-face`/`<link>` needed: Thai Windows has Leelawadee UI, iOS/Mac have
    Thonburi/Sukhumvit, Android has Noto — Comments already rely on this and render fine.
+2. Every other Stock Part string (capture labels/button, worker-confirm captions + ✓/✗
+   buttons, review, list, toasts, errors) is **English / Flux Architect**.
 2. Everything else (tab chrome, review queue, stock list, all admin-facing strings) stays
    **English / Flux Architect**.
 
@@ -331,7 +333,7 @@ pattern (doubled-class to beat the body-text reset where needed).
 qty/code, bounced-row flag, assign-code/reject, post-action UX); **worker Confirm-GLB list
 (Thai — photo beside the 3D model, ✓ ถูกต้อง / ✗ ไม่ใช่ round-trip, bounce-back to เอ๋)**;
 stock list grouped by code (qty aggregation, sort, search, empty states, View 3D, admin
-edit/delete with correct merge/aggregate semantics); Thai font on the worker screens only;
+edit/delete with correct merge/aggregate semantics); English/Flux UI throughout, only the remarks field accepts Thai input;
 theme-safe styling across dark/sketch/chalk/obsidian; textContent escaping.
 
 **DEFER:**

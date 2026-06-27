@@ -217,7 +217,7 @@
     var now = Date.now();
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
-      var bounce = r.bounced_from ? '<div class="kdsp-flag">Worker said not' + escapeHtml(r.bounced_from) + '</div>' : '';
+      var bounce = r.bounced_from ? '<div class="kdsp-flag">Worker said not: ' + escapeHtml(r.bounced_from) + '</div>' : '';
       card.innerHTML =
         '<div class="kdsp-revrow">' +
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
