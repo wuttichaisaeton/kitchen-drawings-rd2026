@@ -76,14 +76,54 @@
     return ladder;
   }
 
-  // ── (store, render added in later tasks) ────────────────────
+  // ── store (RTDB stock_parts) ────────────────────────────────
+  function _ref(id) { return window.firebaseDB.ref(RTDB_PATH + (id ? '/' + id : '')); }
+  async function saveIntake(obj) {
+    if (!window.firebaseDB) throw new Error('No database connection');
+    var r = _ref().push();
+    await r.set(obj);
+    return r.key;
+  }
+  async function _updateStock(id, patch) { if (window.firebaseDB && id) await _ref(id).update(patch); }
+  async function _deleteStock(id) { if (window.firebaseDB && id) await _ref(id).remove(); }
+  async function assignCode(id, code, meta) {
+    meta = meta || {};
+    await _updateStock(id, { status: 'awaiting_worker_confirm', code: code, thickness_mm: (meta.thickness_mm == null ? null : meta.thickness_mm), material: meta.material || '', grain: meta.grain || '', reviewed_at: Date.now(), reviewed_by_role: 'admin' });
+  }
+  async function rejectIntake(id) { await _updateStock(id, { status: 'rejected', reviewed_at: Date.now(), reviewed_by_role: 'admin' }); }
+  async function workerConfirmGlb(id) { await _updateStock(id, { status: 'confirmed', worker_confirmed_at: Date.now() }); }
+  async function workerRejectGlb(id) {
+    var r = _stockCache[id] || {};
+    await _updateStock(id, { status: 'pending', bounced_from: r.code || '', bounced_at: Date.now(), code: '' });
+  }
+
+  // ── listener + localStorage mirror (metadata only) ──────────
+  function _stripPhotos(rows) {
+    var out = {};
+    for (var id in rows) { var c = Object.assign({}, rows[id]); delete c.photo_data; out[id] = c; }
+    return out;
+  }
+  function _loadLS() { try { return JSON.parse(localStorage.getItem(LS_CACHE)) || {}; } catch (e) { return {}; } }
+  function _saveLS(rows) { try { localStorage.setItem(LS_CACHE, JSON.stringify(_stripPhotos(rows))); } catch (e) {} }
+
+  // ── (render added in later tasks) ───────────────────────────
 
   function renderHome() {
     if (typeof ROOT === 'undefined' || !ROOT) return;
     ROOT.innerHTML = '<div class="kdsp-home"><p class="kdsp-empty">Stock Part — coming up.</p></div>';
   }
 
-  function init() { /* listener wired in Task 2 */ }
+  function init() {
+    _stockCache = _loadLS();   // instant paint (no photos yet)
+    if (!window.firebaseDB) return;
+    try {
+      _ref().on('value', function (snap) {
+        _stockCache = snap.val() || {};
+        _saveLS(_stockCache);
+        if (typeof _backgroundRender === 'function') _backgroundRender();
+      }, function (err) { console.warn('[kdStockPart] listener error:', err); });
+    } catch (e) { console.warn('[kdStockPart] init failed:', e); }
+  }
 
   window.kdStockPart = {
     renderHome: renderHome,
@@ -98,7 +138,11 @@
       b64Bytes: b64Bytes,
       _scaleFor: _scaleFor,
       _compressLadder: _compressLadder,
-      _setCache: function (c) { _stockCache = c || {}; }
+      _setCache: function (c) { _stockCache = c || {}; },
+      saveIntake: saveIntake, assignCode: assignCode, rejectIntake: rejectIntake,
+      workerConfirmGlb: workerConfirmGlb, workerRejectGlb: workerRejectGlb,
+      _updateStock: _updateStock, _deleteStock: _deleteStock,
+      _snapshot: function () { return _stockCache; }
     }
   };
 })();
