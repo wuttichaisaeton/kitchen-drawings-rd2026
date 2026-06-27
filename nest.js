@@ -3354,6 +3354,56 @@
       return { placements, rect: { x: rect.x, y: rect.y, w: rect.w, h: rect.h, area: rect.area } };
     };
 
+    // CORNER (┕): cluster all parts into the BOTTOM-LEFT so material is freed on
+    // BOTH the top AND the right at once (เอ๋ 2026-06-27: "เหลือพื้นที่ด้านบน และขวา —
+    // บน OK แต่ขวาไม่ OK"; h frees only top, v frees only right). Pack 'Bottom' into
+    // a NARROWER virtual sheet (vw × H): parts stack into fewer columns so the
+    // real right column (W−usedW) stays clear, while the bottom-up stack leaves a
+    // top band (H−usedH). Scan vw and keep the layout that maximises the SMALLER
+    // of the two margins (most balanced L), requiring BOTH ≥ 300mm. Returns the
+    // packed placements + the larger L-arm as the green remnant, or null when no
+    // vw frees both (then fall back to the single-edge h/v variants).
+    const _repackCorner = () => {
+      const W = sheet.sw, H = sheet.sh;
+      let best = null;
+      for (let f = 0.95; f >= 0.53; f -= 0.06) {
+        const vw = Math.round(W * f);
+        let r;
+        try { r = _nestMultiSheet(pieces.map(p => ({ ...p })), [{ w: vw, h: H, qty: 1, thickness: sheet.thick }], S.gap, 'Bottom'); }
+        catch (e) { continue; }
+        const out = r && r.sheets && r.sheets[0];
+        if (!out || (r.unplaced && r.unplaced.length) || r.sheets.length !== 1) continue;
+        if (out.placements.length !== pieces.length) continue;
+        let maxx = 0, maxy = 0;
+        for (const pl of out.placements) {
+          const w = (pl.rot === 90 || pl.rot === 270) ? pl.h : pl.w;
+          const h = (pl.rot === 90 || pl.rot === 270) ? pl.w : pl.h;
+          if (pl.x + w > maxx) maxx = pl.x + w;
+          if (pl.y + h > maxy) maxy = pl.y + h;
+        }
+        const rightMargin = W - maxx, topMargin = H - maxy;
+        if (rightMargin < _REMNANT_MIN_LAST || topMargin < _REMNANT_MIN_LAST) continue;
+        const score = Math.min(rightMargin, topMargin);
+        if (!best || score > best.score) best = { placements: out.placements, maxx, maxy, score };
+      }
+      if (!best) return null;
+      const rightRect = { x: best.maxx, y: 0, w: W - best.maxx, h: H };
+      const topRect = { x: 0, y: best.maxy, w: W, h: H - best.maxy };
+      const rect = (rightRect.w * rightRect.h >= topRect.w * topRect.h) ? rightRect : topRect;
+      rect.area = rect.w * rect.h;
+      return { placements: best.placements, rect };
+    };
+
+    // Prefer CORNER (frees top + right). Needs enough slack to clear ≥300mm on
+    // both edges; if the sheet is too full it returns null and we fall back to the
+    // single-edge h/v variants (the last fresh sheet keeps the wide/long chooser).
+    const corner = _repackCorner();
+    if (corner) {
+      sheet._rectVariants = { corner };
+      _applyRectVariant(sheet, li, 'corner', allowChooser);
+      return;   // both edges freed — no h/v chooser needed
+    }
+
     // h (─ wide): parts toward the BOTTOM -> leftover = wide band on top.
     // v (│ long): parts toward the LEFT  -> leftover = tall column on right.
     const variants = {
