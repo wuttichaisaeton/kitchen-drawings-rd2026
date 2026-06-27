@@ -236,7 +236,7 @@
           '<div class="kdsp-revmeta">' +
             '<p class="kdsp-muted">Qty ' + (r.qty || 0) + ' · by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
             bounce +
-            (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;font-style:italic;">“' + escapeHtml(r.note) + '”</p>' : '') +
+            (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;">“' + escapeHtml(r.note) + '”</p>' : '') +
             '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
             '<div class="kdsp-pick-results" data-id="' + escapeHtml(r.id) + '"></div>' +
             '<p class="kdsp-ai-slot kdsp-muted">AI suggestion — coming soon</p>' +
@@ -318,7 +318,7 @@
       // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
         '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
-        (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;font-style:italic;">“' + escapeHtml(r.note) + '”</p>' : '') +
+        (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;">“' + escapeHtml(r.note) + '”</p>' : '') +
         '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
           '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
