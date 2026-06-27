@@ -215,6 +215,58 @@ body .role-switcher .role-switch-btn.active {
 }
 .role-badge { outline: 2px solid rgba(255, 255, 255, 0.8); outline-offset: 1px; }   /* worker's current-role pill, ringed (outline isn't stripped) */
 .admin-badge { outline: 2px solid rgba(255, 255, 255, 0.85); outline-offset: 1px; } /* admin = current status, ringed */
+
+/* ── Theme-proof fill for the reset themes (sketch/chalk/obsidian) ──────────
+   On the paper/board themes the blanket reset (html[data-theme=...] body *
+   { background:transparent!important }, specificity (0,2,6)) strips every
+   inline/gradient fill, so the active-role chip + admin/role badges flatten
+   into the page and a thin ring + ink text alone reads weak (เอ๋: 'theme
+   pencil ไม่ชัดเจน'). Repaint them as SOLID inked/chalk stamps — selectors use
+   `body` + (≥3 classes) to outrank the reset; the ring + scale carry over from
+   the base .active rule. The label text still names the role; the fill +
+   contrasting ring make "you are here / your status" unmistakable. */
+
+/* SKETCH (cream paper): active role = black ink stamp, red ring; admin = red-brown stamp. */
+html[data-theme="sketch"] body .role-switcher .role-switch-btn.active {
+  background: var(--pen) !important; background-image: none !important;
+  color: var(--paper2) !important; border-color: var(--pen) !important;
+}
+html[data-theme="sketch"] body .role-badge.role-badge {
+  background: var(--pen) !important; background-image: none !important;
+  color: var(--paper2) !important; border-color: var(--pen) !important;
+  outline-color: var(--accent) !important;
+}
+html[data-theme="sketch"] body .admin-badge.admin-badge {
+  background: var(--accent) !important; background-image: none !important;
+  color: #fff !important; border-color: var(--accent) !important;
+  outline-color: var(--pen) !important;
+}
+
+/* CHALK (slate board): active role = red-chalk fill; role = chalk-white; admin = yellow-chalk. */
+html[data-theme="chalk"] body .role-switcher .role-switch-btn.active {
+  background: var(--c-red) !important; background-image: none !important;
+  color: var(--board) !important; border-color: var(--c-red) !important;
+  outline-color: var(--chalk) !important;
+}
+html[data-theme="chalk"] body .role-badge.role-badge {
+  background: var(--chalk) !important; background-image: none !important;
+  color: var(--board) !important; border-color: var(--chalk) !important;
+  outline-color: var(--c-red) !important;
+}
+html[data-theme="chalk"] body .admin-badge.admin-badge {
+  background: var(--c-yellow) !important; background-image: none !important;
+  color: var(--board) !important; border-color: var(--c-yellow) !important;
+  outline-color: var(--board) !important;
+}
+
+/* OBSIDIAN (gold-on-black; weak :where reset): active role + badges = gold fill, dark text. */
+html[data-theme="obsidian"] .role-switcher .role-switch-btn.active,
+html[data-theme="obsidian"] .role-badge,
+html[data-theme="obsidian"] .admin-badge {
+  background: var(--ob-accent) !important; background-image: none !important;
+  color: var(--ob-bg) !important; border-color: var(--ob-accent) !important;
+}
+
 .role-switch-btn .icon-bend {
   width: 12px;
   height: 12px;
