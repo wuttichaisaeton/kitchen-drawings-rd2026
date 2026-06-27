@@ -8962,3 +8962,13 @@ VERIFIED LIVE (deployed file, real Firebase, then RESTORED): 1CVDVL-006010 (grai
 NOTE: each cycle now writes the shared grain_rules (per-part exact rows) like EDGE/flip/mirror already do — so it shows in the 🧬 Grain table and applies on every device.
 FYI Group 1: grain_rules data only; CC_Laser reads the same grain table.
 -- RD
+
+### WEB (RD 13) · 2026-06-27 · ✅ Stock Part S1 shipped + LIVE (registry + photo intake + worker GLB-confirm)
+RD: เอ๋ feature — เก็บ part เก่าที่ตัด+พับแล้วแต่ไม่ได้ใช้ เป็น "stock" เพื่อไม่ตัดซ้ำ. NEW top-level **"Stock Part" tab** (role-aware, all roles). Flow: ช่างถ่ายรูป+จำนวน (จอไทย, ไม่ต้องรู้ code) → RTDB `stock_parts` (รูป base64, เขียน anonymous, ไม่ใช้ PAT) → **เอ๋ (admin) review เลือก code 13 หลักจาก uploaded_dxfs** (ค้น+เทียบ 3D) → **GLB เด้งกลับให้ช่างดู inline ข้างรูปถ่าย** (`<model-viewer>` 4.0.0 = _KD3D_MV_CDN) เทียบ ✓ ถูกต้อง/✗ ไม่ใช่ → confirmed เข้า stock list (รวมตาม code, ค้น, admin แก้ qty/code + ลบ). 4-state lifecycle pending→awaiting_worker_confirm→confirmed (✗ เด้งกลับ pending flagged).
+Built brainstorm→spec→plan→subagent-driven (9 tasks, per-task spec+quality review + final review, all approved). New file **stockpart.js** (`window.kdStockPart`, prefix `.kdsp-*` เพื่อเลี่ยงชน Remnants `.kdstock-*`); app.js/index.html/style.css minimal wiring only. Theme-safe (sketch/chalk opaque overrides); input escaped (escapeHtml/CSS.escape); Thai เฉพาะจอช่าง (exception เอ๋อนุมัติ + บันทึก memory).
+VERIFIED: stockpart unit tests 9/9 (node --test test/stockpart-*.test.mjs); node --check stockpart.js+app.js; LIVE CDN (no-store): window.kdStockPart + _buildWorkerConfirm + _ensureModelViewer + inline model-viewer + 53 .kdsp- rules; Pages deploy success. ⏳ PENDING = เอ๋ verify บนมือถือ/Chrome จริง (กล้องถ่าย + model-viewer render + 4 ธีม + round-trip) — Tier-3 manual, headless ไม่ได้.
+HEAD **b30c77e** (feature f5aba58..b30c77e). Specs: docs/superpowers/specs/2026-06-27-stock-part-design.md + plans/2026-06-27-stock-part-s1.md.
+DEFER: **S2** (nest "ไม่ตัดซ้ำ" — หัก stockQtyByCode ออกจาก nest + photo→GitHub migration) = **ต้อง Group 1 wire CC_ nest qty**. **S3** (AI จับรูป→code อัตโนมัติ, UI เว้น slot ไว้แล้ว).
+⚠️ Heads-up: npm test มี 3 fail (#59-61 nestOrientDom) = **มีอยู่ก่อนแล้ว ไม่เกี่ยวฟีเจอร์นี้** (test file + nest.js ไม่อยู่ใน diff; แก้แยก).
+FYI Group 1: web-only — ไม่มี Fusion/manifest/CC_Laser change. S1 ไม่แตะ nesting.
+-- RD
