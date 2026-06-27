@@ -8909,3 +8909,18 @@ RD (Group 2): เอ๋ "ให้ตัวอักษร new เป็นส�
 VERIFIED LIVE (Chrome): 15 real NEW badges in the 04 Ruth workspace, Pencil theme → computed color rgb(242,169,59)=#F2A93B, bg transparent. Computed across all: sketch/chalk/obsidian = orange/transparent; default dark = dark-on-amber (unchanged). CDN curl: doubled-class rule present ×3.
 FYI Group 1: web CSS only.
 -- RD
+
+### WEB · 2026-06-27 · ✅ popup highlights viewed part (sheet glow + row + jump) + grain/📍 icons in popup (LIVE)
+RD (Group 2): เอ๋ (1) "โชว์ Hilight หรือ effect ด้วย" (2) "นำ icon ทั้งหมดขึ้นมาที่ Popup". Shipped **2d663c4** (nest.js), LIVE + verified.
+- popupHighlight(code): glow the part's placements on the sheet behind (S.highlightCode) + jump to its sheet (_sheetIdxOf) + mark its row active + scroll row into view. On open + ↑/↓ nav + the new 📍 Sheet button; close() clears it.
+- Popup toolbar now: ─Grain · ⟲180° · ↔Mirror · 📍Sheet (grain mirrors the row glyph — H/V/ANY ephemeral, EDGE persists). Row active-class now keys off S.highlightCode (previewCode retired).
+VERIFIED LIVE (fresh tab, localhost, Desktop 89/5): 4 icons; open→glow+row+jump; ↑/↓ follows; close clears; 0 errors; no RTDB mutation. Reviewed 1 lens → no real bugs. CDN curl: popupHighlight ×4.
+FYI Group 1: UI/pack-time only.
+
+### WEB · 2026-06-27 · 🔚 SESSION HANDOFF RD 11 → RD 12 (marathon ~ all-day; tab bog + paste-prompt requested)
+HEAD **2d663c4**, in sync with origin, tree CLEAN. Everything below is LIVE + verified on the deployed file.
+SHIPPED THIS SESSION (RD 11): (a) tighten 3c05c2a VERIFIED live (RD10→11 open #1 CLOSED) · (b) MEMORY.md 163→139 · (c) part popup over nest + re-nest on rotate, debounced 0.6s via _runNestingAuto({quiet}) [d2875a8] · (d) nest settings persist mode/gap + ↺ Set-default reset + resizable popup [07457e5] · (e) popup = SOLE viewer: edge-click + ↑/↓ + inline preview RETIRED + dead-code cleanup [f827190] · (f) NEW cabinet badge orange in Pencil/Chalk/Luxury [5397ccd] · (g) popup highlights viewed part + grain/📍 icons [2d663c4].
+OPEN: #3 Fusion lane (เอ๋'s machine, local-only): re-🔥 04 Ruth as parts change; CC_Assembly sm-gate #8 (phantom-part root); CC_Assembly <6-char warn #7. — Nothing else pending; all web requests done+live.
+KEY MAP: _openPartPopup (~nest.js:3893) = the popup (draggable+resizable, edge-click, ↑/↓ nav, popupHighlight, grain/flip/mirror/📍 toolbar, debounced re-nest); _setPreview routes to popup (inline retired); helpers grainGlyph / _sheetIdxOf / _attachEdgeClickLayer / _setPartEdgeGrain / _toggleOrientFlag({silent}) / _factoryStock.
+LESSONS (OBEY): ① a marathon test tab BOGS after ~15-20 heavy nest runs → >45s CDP timeouts even after a page reload; a hard-reload does NOT clear it — open a NEW TAB. ② popup tests MUTATE shared RTDB (grain_rules flip/mirror/EDGE persist; localhost+live share the SAME Firebase) → capture original + RESTORE after testing real parts (restored 1CVDVL flip180 + BAKTRI EDGE@90 this session). ③ stock thickness/qty is per-browser localStorage (kd_nest_stock_v1) not RTDB; live 04 Ruth = thickness 1 / qty 10 (the "10" pill = QTY); qty=-1 makes the cost-optimizer slow (~19s Desktop). ④ sketch/chalk themes force body text colour at specificity (0,2,5) — text overrides need ≥(0,3,x). ⑤ PowerShell here-strings break on ↑/↺/—/emoji → git commit -F <file> or multiple -m ASCII. ⑥ Chrome only, ห้าม Edge; say "CDN"/"ไฟล์จริงบนเว็บ".
+-- RD (handoff)
