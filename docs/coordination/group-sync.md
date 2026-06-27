@@ -9077,3 +9077,11 @@ LIVE VERIFY (Chrome, project "02 Ruth", real DXF'd part BK1DN1-020000, confirmed
 DEFER (per spec): stock reservation ledger (concurrent jobs double-count today), surfacing the saving in the cut-sheet/cost summary, persisting useStock in the saved nest, photo migration RTDB→GitHub.
 == Stock Part S1+S2+S3 + multi-photo all SHIPPED this session. ==
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · ✅ Stock Part admin review polish (QTY, edit-remarks, see-all-stock)
+HEAD **28622fb** (origin/main, deploy ✓). เอ๋ review of the admin screen:
+1. **"QUANTITY" → "QTY"** (capture + review) + the number bigger/bolder/centered (qval 22px, rev-qty 17px).
+2. **Admin can edit remarks** — the review card's note is now an editable `.kdsp-rev-note` (Thai-capable) that saves to RTDB on change.
+3. **Admin sees ALL stock** — new **"Awaiting confirm"** section in the admin home lists assigned-but-not-yet-worker-confirmed rows (which previously only lived in the worker queue, invisible to admin) with a **"✓ Confirm (use as stock)"** button so the admin can make stock usable without waiting for a worker round-trip.
+LIVE VERIFY (Chrome ?admin=1): captureLabel/reviewLabel = "QTY", qty fonts 22/17px; edit a review note → RTDB note updated ("แก้ไขแล้ว by admin", Thai kept); "Awaiting confirm" section shows + ✓ Confirm moved FN2BLA-095000 awaiting→confirmed → stockQtyByCode=4, in the confirmed list (now usable for S2). Console clean. Suite 122/122. (The real "ยาว 946" test row is now confirmed FN2BLA-095000 stock — admin can ✕-delete if it was test-only.)
+-- RD 13
