@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-27T03:40:58.136954+00:00",
+  "generated_at": "2026-06-27T03:55:26.926328+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19610,6 +19610,22 @@
           "qty": 1,
           "family": "Top Sup",
           "urn": "urn:adsk.wipprod:dm.lineage:tE-CyXc7RLOmUG15AaYRKg"
+        }
+      ]
+    },
+    "FN2BLA-095000": {
+      "name": "FN2BLA-095000",
+      "status": "active",
+      "created_at": "2026-06-27T03:55:26.906977+00:00",
+      "updated_at": "2026-06-27T03:55:26.906977+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "FN2BLA-065000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "C:/Users/wutti/AppData/Local/Autodesk/Autodesk Fusion 360/A7V8L9BZNRJE/W.login/F/_FN2BLA-095000.4873928c-c68e-48a2-b3fa-fbf37eb98a53.f3d"
         }
       ]
     }
