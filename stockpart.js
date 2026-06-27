@@ -202,6 +202,74 @@
     try { await _deleteStock(id); _kdToast('ยกเลิกแล้ว'); renderHome(); } catch (e) { _kdToast('ยกเลิกไม่สำเร็จ'); }
   }
 
+  // ── admin review queue + code picker ────────────────────────
+  function _pending() {
+    var out = [];
+    for (var id in _stockCache) { var r = _stockCache[id]; if (r && r.status === 'pending') out.push(Object.assign({ id: id }, r)); }
+    out.sort(function (a, b) { return (b.created_at || 0) - (a.created_at || 0); });
+    return out;
+  }
+  function _buildReview() {
+    var el = document.createElement('section'); el.className = 'kdsp-section';
+    var rows = _pending();
+    var h = '<h3 class="kdsp-h">Review queue <span class="kdsp-count">' + rows.length + '</span></h3>';
+    if (!rows.length) h += '<p class="kdsp-empty">Nothing to review</p>';
+    el.innerHTML = h;
+    var now = Date.now();
+    rows.forEach(function (r) {
+      var card = document.createElement('div'); card.className = 'kdsp-card';
+      var bounce = r.bounced_from ? '<div class="kdsp-flag">ช่างบอกไม่ใช่ ' + escapeHtml(r.bounced_from) + '</div>' : '';
+      card.innerHTML =
+        '<div class="kdsp-revrow">' +
+          '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
+          '<div class="kdsp-revmeta">' +
+            '<p class="kdsp-muted">Qty ' + (r.qty || 0) + ' · by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
+            bounce +
+            '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find part code…" data-id="' + escapeHtml(r.id) + '">' +
+            '<div class="kdsp-pick-results" data-id="' + escapeHtml(r.id) + '"></div>' +
+            '<p class="kdsp-ai-slot kdsp-muted">AI suggestion — coming soon</p>' +
+            '<div class="kdsp-actions">' +
+              '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-assign" data-id="' + escapeHtml(r.id) + '" disabled>Assign code → send to worker</button>' +
+              '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      el.appendChild(card);
+
+      var chosen = { code: '', meta: {} };
+      var input = card.querySelector('.kdsp-pick-q');
+      var results = card.querySelector('.kdsp-pick-results');
+      var assignBtn = card.querySelector('.kdsp-assign');
+      function paintResults() {
+        var list = codePickerFilter(_uploadedDxfsCache || {}, input.value).slice(0, 30);
+        if (!list.length) { results.innerHTML = '<p class="kdsp-muted">No matching code</p>'; return; }
+        results.innerHTML = list.map(function (m) {
+          return '<div class="kdsp-cand" data-code="' + escapeHtml(m.master_code) + '">' +
+            '<code>' + escapeHtml(m.master_code) + '</code>' +
+            '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + '</span>' +
+            '<button type="button" class="kdsp-3d" data-code="' + escapeHtml(m.master_code) + '">3D</button>' +
+            '<button type="button" class="kdsp-use" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">use</button>' +
+          '</div>';
+        }).join('');
+      }
+      input.addEventListener('input', paintResults);
+      results.addEventListener('click', function (e) {
+        var b3 = e.target.closest('.kdsp-3d'); if (b3) { _kdOpen3D(b3.getAttribute('data-code')); return; }
+        var bu = e.target.closest('.kdsp-use'); if (!bu) return;
+        chosen = { code: bu.getAttribute('data-code'), meta: { thickness_mm: bu.getAttribute('data-th') ? Number(bu.getAttribute('data-th')) : null, material: bu.getAttribute('data-mat'), grain: bu.getAttribute('data-grn') } };
+        input.value = chosen.code; assignBtn.disabled = false; paintResults();
+      });
+      assignBtn.addEventListener('click', async function () {
+        if (!chosen.code) return; assignBtn.disabled = true;
+        try { await assignCode(r.id, chosen.code, chosen.meta); _kdToast('ส่งให้ช่างยืนยันแล้ว'); } catch (e) { assignBtn.disabled = false; _kdToast('บันทึกไม่สำเร็จ'); }
+      });
+      card.querySelector('.kdsp-reject').addEventListener('click', async function () {
+        try { await rejectIntake(r.id); _kdToast('ปฏิเสธแล้ว'); } catch (e) { _kdToast('ทำรายการไม่สำเร็จ'); }
+      });
+    });
+    return el;
+  }
+
   // ── (render added in later tasks) ───────────────────────────
 
   function renderHome() {
