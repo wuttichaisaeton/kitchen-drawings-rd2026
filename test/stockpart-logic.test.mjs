@@ -141,32 +141,6 @@ test('codePickerFilter: typing a mm length finds cm-encoded codes (±5mm)', () =
   assert.equal(hit[0].master_code, 'FN2BNX-095000');
 });
 
-test('_buildEdgesOnScene adds a white edge line per mesh, hides each fill, is idempotent', () => {
-  const { T } = boot();
-  // injected fake THREE (matches the modal's EdgesGeometry/LineBasicMaterial/LineSegments usage)
-  const THREE = {
-    EdgesGeometry: function (geo, ang) { this.geo = geo; this.ang = ang; },
-    LineBasicMaterial: function (o) { Object.assign(this, o); },
-    LineSegments: function (g, m) { this.geometry = g; this.material = m; this.isLineSegments = true; },
-  };
-  const mkMesh = () => ({ isMesh: true, geometry: { attributes: { position: {} } }, material: { colorWrite: true }, children: [], add(c) { this.children.push(c); } });
-  const m1 = mkMesh(), m2 = mkMesh();
-  const scene = { traverse(fn) { [m1, m2, { isMesh: false }, { isMesh: true /* no geometry */ }].forEach(fn); } };
-  const n = T._buildEdgesOnScene(THREE, scene, {});
-  assert.equal(n, 2);                          // only the 2 real meshes edged
-  assert.equal(m1.children.length, 1);
-  assert.ok(m1.children[0].isLineSegments);    // a LineSegments child was added
-  assert.equal(m1.material.colorWrite, false); // fill hidden so only edges read
-  assert.equal(m2.material.colorWrite, false);
-  assert.equal(T._buildEdgesOnScene(THREE, scene, {}), 0); // idempotent — no double edges
-});
-
-test('_buildEdgesOnScene safely no-ops without THREE or scene (cell stays solid)', () => {
-  const { T } = boot();
-  assert.equal(T._buildEdgesOnScene(null, { traverse() {} }, {}), 0);
-  assert.equal(T._buildEdgesOnScene({}, null, {}), 0);
-});
-
 test('catalogNotInStock returns query matches minus codes already in stock; empty query → []', () => {
   const { T } = boot();
   const cache = {

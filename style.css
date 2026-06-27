@@ -7857,6 +7857,9 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-cmp { margin: 0; display: flex; flex-direction: column; gap: 4px; }
 .kdsp-cmp img, .kdsp-cmp model-viewer, .kdsp-cmp .kdsp-noimg { width: 100%; height: 200px; border-radius: 10px; background: #0f1419; object-fit: contain; display: block; }
 .kdsp-cmp figcaption { font-size: 12px; color: #8a97a8; text-align: center; }
+/* auto-match 3D cell: click-to-fullscreen target (opens _kdOpen3D), no tiny inline render */
+.kdsp-cmp .kdsp-cmp-3d { width: 100%; height: 200px; border-radius: 10px; background: #11151c; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: zoom-in; color: #b8a06a; font-size: 13px; }
+.kdsp-cmp-3d svg { width: 30px; height: 30px; opacity: .9; }
 .kdsp-foot-actions { display: flex; align-items: center; gap: 6px; }
 .kdsp-editbox { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #2c3a4e; margin-top: 8px; padding-top: 8px; }
 .kdsp-edit-qty { display: flex; align-items: center; gap: 8px; }

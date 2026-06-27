@@ -9,6 +9,8 @@
   var TARGET_BYTES = 700000;               // compress target (RTDB-friendly)
   var MAX_BYTES = 1500000;                 // hard reject ceiling
   var CAP_WARN = 10, CAP_BLOCK = 20;       // intakes / 24h / device
+  // cube glyph for the "View 3D" click-to-fullscreen cell (matches the tab icon)
+  var _CUBE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><line x1="12" y1="12" x2="12" y2="21"/></svg>';
 
   // ── state ───────────────────────────────────────────────────
   var _stockCache = {};   // pushId -> row
@@ -316,7 +318,7 @@
             return '<div class="kdsp-auto" style="margin:8px 0;">' +
               '<div class="kdsp-compare">' +
                 '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
-                '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate loading="eager" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" interaction-prompt="none" reveal="auto" style="background:#11151c !important;"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
+                '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0">' + _CUBE_SVG + '<span>View 3D</span></div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
               '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:4px;">' +
                 '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
@@ -349,12 +351,9 @@
         '</div>';
       el.appendChild(card);
       (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-thumb'));
-      if (autos.length && typeof _ensureModelViewer === 'function') _ensureModelViewer();
-      if (autos.length) {
-        _wireMvErrors(card);
-        // เอ๋ #1: render each auto-match GLB cell as a CAD hidden-line drawing
-        Array.prototype.forEach.call(card.querySelectorAll('.kdsp-cmp model-viewer'), _hiddenLineInline);
-      }
+      // เอ๋: the auto-match 3D cell is a click-to-fullscreen target (no tiny inline
+      // render) — the .kdsp-auto3d handler below opens _kdOpen3D for both the cell
+      // and the 3D button.
       card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           btn.disabled = true;
@@ -417,63 +416,6 @@
       document.head.appendChild(s);
     });
     return _mvReady;
-  }
-
-  // ── inline CAD hidden-line on the auto-match GLB cells (เอ๋ #1) ──────
-  // Convert a small inline <model-viewer> to a white-feature-edge line drawing
-  // on its dark bg — the same look as _kdOpen3D's 'hidden' mode, applied to the
-  // little compare cell so it reads as ลายเส้น, not a solid model. Technique is
-  // exactly the modal's (proven): for every mesh, build a THREE.EdgesGeometry
-  // (≥22° feature edges) → white LineSegments child, and hide the surface fill
-  // via colorWrite=false (it still writes depth, so occluded edges drop out =
-  // visible-edges-only). Idempotent per node, and a no-op if THREE/scene are
-  // unavailable so the cell simply stays the (acceptable) solid GLB.
-  function _buildEdgesOnScene(THREE, scene, opts) {
-    opts = opts || {};
-    if (!THREE || !scene || typeof scene.traverse !== 'function') return 0;
-    var color = (opts.color != null) ? opts.color : 0xdfe8f2;
-    var angle = (opts.angle != null) ? opts.angle : 22;
-    var n = 0;
-    scene.traverse(function (node) {
-      if (!node || !node.isMesh || !node.geometry || !node.geometry.attributes || !node.geometry.attributes.position) return;
-      if (node.__kdspEdged) return;
-      try {
-        var eg = new THREE.EdgesGeometry(node.geometry, angle);
-        var mat = new THREE.LineBasicMaterial({ color: color, transparent: true, opacity: 0.92, depthTest: true, depthWrite: false });
-        var line = new THREE.LineSegments(eg, mat);
-        line.renderOrder = 2;
-        node.add(line);
-        var mats = Array.isArray(node.material) ? node.material : [node.material];
-        mats.forEach(function (m) { if (m) { try { m.colorWrite = false; m.needsUpdate = true; } catch (e) {} } });
-        node.__kdspEdged = true;
-        n++;
-      } catch (e) {}
-    });
-    return n;
-  }
-  // Glue: wait for the inline mv to load its GLB, grab model-viewer's own THREE
-  // scene (mv[Symbol(scene)], same access _kdOpen3D uses) + the app's THREE
-  // module (window._kd3dEnsureThree), then draw the edges. All guarded → on any
-  // failure the cell keeps its solid GLB. NOTE: model-viewer is rAF-driven, so
-  // this only paints when the tab is visible (verified on เอ๋'s real device).
-  function _hiddenLineInline(mv) {
-    if (!mv || mv.__kdspHLwired) return;
-    mv.__kdspHLwired = true;
-    function apply() {
-      var ensure = window._kd3dEnsureThree;
-      if (typeof ensure !== 'function') return;
-      var scene = null;
-      try {
-        var sym = Object.getOwnPropertySymbols(mv).find(function (s) { return s.toString() === 'Symbol(scene)'; });
-        scene = sym ? mv[sym] : null;
-      } catch (e) { return; }
-      if (!scene) return;
-      ensure().then(function (THREE) {
-        try { var n = _buildEdgesOnScene(THREE, scene, {}); if (n && typeof scene.queueRender === 'function') scene.queueRender(); } catch (e) {}
-      }).catch(function () {});
-    }
-    if (mv.loaded) apply();
-    mv.addEventListener('load', apply);
   }
 
   // ── worker confirm-GLB list (Thai) — photo beside the live 3D model ──
@@ -668,7 +610,6 @@
       confirmedByCode: confirmedByCode,
       codePickerFilter: codePickerFilter,
       catalogNotInStock: catalogNotInStock,
-      _buildEdgesOnScene: _buildEdgesOnScene,
       _parseLen: _parseLen,
       _codeDims: _codeDims,
       _codesByLength: _codesByLength,
