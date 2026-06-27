@@ -352,6 +352,7 @@
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
       var bounce = r.bounced_from ? '<div class="kdsp-flag">Worker said not: ' + escapeHtml(r.bounced_from) + '</div>' : '';
+      var _pics = _rowPhotos(r);
       var _rel = relativeTime(now, r.created_at);
       var _relAgo = /^\d+[mh]$/.test(_rel) ? _rel + ' ago' : _rel;   // "6h" → "6h ago"; "just now"/date unchanged
       var _L = _parseLen(r.note);
@@ -364,7 +365,7 @@
             var glb = (typeof _kd3dGlbUrl === 'function') ? _kd3dGlbUrl(m.master_code) : '';
             return '<div class="kdsp-auto" style="margin:8px 0;">' +
               '<div class="kdsp-compare">' +
-                '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
+                '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (_pics[0] || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
                 '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0" title="View 3D — tap to open full screen">' + (glb ? '<model-viewer src="' + glb + '" loading="eager" interaction-prompt="none" reveal="auto" orientation="' + _THUMB_ORIENT + '" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" style="pointer-events:none;width:100%;height:100%;background:transparent;"></model-viewer>' : (_CUBE_SVG + '<span>View 3D</span>')) + '</div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
               '<div class="kdsp-auto-meta">' +
@@ -379,7 +380,7 @@
       }
       card.innerHTML =
         '<div class="kdsp-revrow">' +
-          '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
+          '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (_pics[0] || '') + '" alt="">' +
           '<div class="kdsp-revmeta">' +
             '<p class="kdsp-muted">added by ' + escapeHtml(r.created_by_role || '') + ' · ' + _relAgo + '</p>' +
             '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;"><span class="kdsp-muted">Quantity</span><input type="number" class="kdsp-rev-qty" min="1" max="99" value="' + (r.qty || 1) + '" style="width:72px;text-align:center;"></div>' +
@@ -398,7 +399,14 @@
           '</div>' +
         '</div>';
       el.appendChild(card);
-      (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-thumb'));
+      (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(_pics, 0); }); } })(card.querySelector('.kdsp-thumb'));
+      // photo strip (1-3) — click any to open the lightbox at that index
+      if (_pics.length > 1) {
+        var _strip = document.createElement('div'); _strip.className = 'kdsp-phototray';
+        _strip.innerHTML = _pics.map(function (b, idx) { return '<span class="kdsp-traythumb"><img src="data:image/jpeg;base64,' + b + '" data-i="' + idx + '" alt=""></span>'; }).join('');
+        var _meta = card.querySelector('.kdsp-revmeta'); if (_meta) _meta.insertBefore(_strip, _meta.firstChild);
+        _strip.querySelectorAll('img').forEach(function (im) { im.style.cursor = 'zoom-in'; im.addEventListener('click', function () { _openPhoto(_pics, Number(im.getAttribute('data-i'))); }); });
+      }
       // เอ๋: the auto-match 3D cell shows a SOLID model thumbnail (pointer-events:none)
       // and the .kdsp-auto3d handler below opens the full-screen _kdOpen3D modal on
       // click — for both the thumbnail cell and the 3D button.
@@ -409,7 +417,7 @@
         Array.prototype.forEach.call(card.querySelectorAll('.kdsp-cmp-3d model-viewer'), _applyThumbEdges);
       }
       // เอ๋ #5: re-run the AI match (e.g. after a new code entered the catalog) — fire-and-forget; the listener repaints when the fresh ai_suggestion lands
-      (function (b) { if (b) b.addEventListener('click', function () { _fireAiMatch(r.id, r.photo_data, r.note); _kdToast('Re-running AI…'); }); })(card.querySelector('.kdsp-airerun'));
+      (function (b) { if (b) b.addEventListener('click', function () { _fireAiMatch(r.id, _pics, r.note); _kdToast('Re-running AI…'); }); })(card.querySelector('.kdsp-airerun'));
       card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           btn.disabled = true;
@@ -549,13 +557,14 @@
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
       var glb = (typeof _kd3dGlbUrl === 'function' && r.code) ? _kd3dGlbUrl(r.code) : '';
+      var _pics = _rowPhotos(r);
       // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
         '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
         (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
         '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
-          '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
+          '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (_pics[0] || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
           '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" interaction-prompt="none" reveal="auto" style="background:#11151c !important;"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>3D model</figcaption></figure>' +
         '</div>' +
         '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">Open 3D</button>' +
@@ -564,7 +573,13 @@
           '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ Not this</button>' +
         '</div>';
       el.appendChild(card);
-      (function (p) { if (p) { p.style.cursor = 'zoom-in'; p.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-cmp img'));
+      if (_pics.length > 1) {
+        var _cstrip = document.createElement('div'); _cstrip.className = 'kdsp-phototray';
+        _cstrip.innerHTML = _pics.map(function (b, idx) { return '<span class="kdsp-traythumb"><img src="data:image/jpeg;base64,' + b + '" data-i="' + idx + '" alt=""></span>'; }).join('');
+        card.insertBefore(_cstrip, card.firstChild);
+        _cstrip.querySelectorAll('img').forEach(function (im) { im.style.cursor = 'zoom-in'; im.addEventListener('click', function () { _openPhoto(_pics, Number(im.getAttribute('data-i'))); }); });
+      }
+      (function (p) { if (p) { p.style.cursor = 'zoom-in'; p.addEventListener('click', function () { _openPhoto(_pics, 0); }); } })(card.querySelector('.kdsp-cmp img'));
       _wireMvErrors(card);
       card.querySelector('.kdsp-see3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
       card.querySelector('.kdsp-ok').addEventListener('click', async function () {
@@ -607,7 +622,8 @@
     codes.forEach(function (code) {
       var g = groups[code];
       var card = document.createElement('div'); card.className = 'kdsp-card kdsp-stockcard';
-      var photo = (g.rows[0] && g.rows[0].photo_data) ? '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + g.rows[0].photo_data + '" alt="">' : '<div class="kdsp-thumb kdsp-noimg"></div>';
+      var _lp = _rowPhotos(g.rows[0]);
+      var photo = _lp[0] ? '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + _lp[0] + '" alt="">' : '<div class="kdsp-thumb kdsp-noimg"></div>';
       var firstQty = (g.rows[0] && g.rows[0].qty != null) ? g.rows[0].qty : 1;
       card.innerHTML = photo +
         '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
@@ -630,7 +646,7 @@
             '<div class="kdsp-edit-results"></div>' +
           '</div>');
       grid.appendChild(card);
-      (function (t) { if (t && !t.classList.contains('kdsp-noimg')) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(g.rows[0] && g.rows[0].photo_data); }); } })(card.querySelector('.kdsp-thumb'));
+      (function (t) { if (t && !t.classList.contains('kdsp-noimg')) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(_lp, 0); }); } })(card.querySelector('.kdsp-thumb'));
       card.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(code); });
       if (!readOnly) {
         var rid = g.rows[0] && g.rows[0].id;
