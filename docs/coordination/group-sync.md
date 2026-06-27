@@ -8944,3 +8944,13 @@ VERIFIED on localhost (edited build, real 04 Ruth, shared Firebase) THEN no-regr
 NOTE for เอ๋: re-run 04 Ruth and check. A sheet that's genuinely packed full stays full (no remnant) — forcing a remnant there = Option 2 (+1 sheet) which เอ๋ did NOT pick. If a specific sheet still looks loose, the 300mm min remnant can be tuned.
 FYI Group 1: pack-time only; CC_Laser Cut Sheet DXF unaffected.
 -- RD
+
+### WEB (RD 12) · 2026-06-27 · ✅ nest: rectify prefers BOTTOM-LEFT CORNER → frees BOTH top + right per sheet (LIVE)
+RD: เอ๋ follow-up on the rectify-all-sheets change — "Sheet 2 เหลือพื้นที่ บน OK แล้ว แต่ขวา ไม่ OK; ควรเหลือทั้งบน+ขวา". Root: the h variant frees only TOP (parts span full width), v frees only RIGHT (parts span full height); neither frees both. Shipped **e41827a** (nest.js).
+Added `_repackCorner()`: packs 'Bottom' into a NARROWER virtual sheet (vw × H) so parts cluster bottom-left in fewer columns → the real right column (W−usedW) AND a top band (H−usedH) both stay clear. Scans vw, keeps the layout maximising min(rightMargin, topMargin) with BOTH ≥300mm; green remnant = the larger L-arm. `_rectifySheet` PREFERS corner; when a sheet is too full to clear 300mm on both, corner returns null → falls back to single-edge h/v (last fresh sheet keeps the wide/long chooser). Never-worse, no extra sheet.
+VERIFIED localhost (edited build, real 04 Ruth) THEN no-regression on LIVE (sketch, deployed `_repackCorner` running):
+- corner works: forced a slack sheet → applied=corner, **rightFree 595mm AND topFree 371mm** (both edges cleared), 0 bbox overlaps on corner-packed sheets (the only bbox overlaps were true-shape triangle interleaving on a NON-corner sheet = not real).
+- no-regression LIVE: full 04 Ruth = 4 sheets / 89 / 0, 1.47s; full sheets keep no remnant, last sheet falls back to right column 650×936.
+NOTE เอ๋: corner kicks in only when a sheet has enough slack to clear ≥300mm on BOTH edges (rectangle-heavy slack sheets like the loose Sheet 3). A genuinely-full sheet stays full (Option 1, no extra sheet). Green box marks the bigger free arm; the other edge is still physically clear.
+FYI Group 1: pack-time only; CC_Laser Cut Sheet DXF unaffected.
+-- RD
