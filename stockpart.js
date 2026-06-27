@@ -149,7 +149,7 @@
     el.innerHTML =
       (_undoLast ? '<button type="button" id="kdsp-undo" class="kdsp-btn kdsp-btn-ghost">เลิกล่าสุด</button>' : '') +
       '<h3 class="kdsp-h">เพิ่มของเข้าคลัง</h3>' +
-      '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" capture="environment" id="kdsp-photo" hidden>' +
+      '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" id="kdsp-photo" hidden>' +
       '<span class="kdsp-photo-hint">ถ่ายรูป part</span></label>' +
       '<img class="kdsp-preview" id="kdsp-preview" alt="" hidden>' +
       '<div class="kdsp-row"><span>จำนวน</span><div class="kdsp-qty">' +
@@ -414,7 +414,7 @@
     var admin = (typeof isAdmin === 'function') && isAdmin();
     ROOT.innerHTML = '';
     var wrap = document.createElement('div'); wrap.className = 'kdsp-home';
-    if (admin) { wrap.appendChild(_buildReview()); wrap.appendChild(_buildList(false)); }
+    if (admin) { wrap.appendChild(_buildCapture()); wrap.appendChild(_buildReview()); wrap.appendChild(_buildList(false)); }
     else { wrap.appendChild(_buildCapture()); wrap.appendChild(_buildWorkerConfirm()); wrap.appendChild(_buildList(true)); }
     ROOT.appendChild(wrap);
   }
