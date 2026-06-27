@@ -249,6 +249,7 @@
       try {
         if (JSON.stringify(row).length > MAX_BYTES) throw new Error('too-large');
         _undoLast = await saveIntake(row);
+        _fireAiMatch(_undoLast, photoB64, row.note);
         var _n = _recordSubmit();
         _kdToast('Sent — waiting for review · you can undo');
         if (_n > CAP_WARN) _kdToast('A lot added today');
@@ -345,7 +346,7 @@
             '<p class="kdsp-muted" style="margin:8px 0 2px;">' + (autos.length ? 'Or find another code:' : (_L ? 'No code within ±5mm of ' + _L + 'mm — find manually:' : 'Find a code:')) + '</p>' +
             '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
             '<div class="kdsp-pick-results" data-id="' + escapeHtml(r.id) + '"></div>' +
-            '<p class="kdsp-ai-slot kdsp-muted">AI image-match — coming soon</p>' +
+            _aiSuggestHtml(r.ai_suggestion) +
             '<div class="kdsp-actions">' +
               '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-assign" data-id="' + escapeHtml(r.id) + '" disabled>Assign code → send to worker</button>' +
               '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>' +
@@ -393,6 +394,16 @@
         var bu = e.target.closest('.kdsp-use'); if (!bu) return;
         chosen = { code: bu.getAttribute('data-code'), meta: { thickness_mm: bu.getAttribute('data-th') ? Number(bu.getAttribute('data-th')) : null, material: bu.getAttribute('data-mat'), grain: bu.getAttribute('data-grn') } };
         input.value = chosen.code; assignBtn.disabled = false; paintResults();
+      });
+      // AI suggestion "use" → same assign flow; resolve meta from the catalog at click
+      card.querySelectorAll('.kdsp-ai-use').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var code = b.getAttribute('data-code');
+          var m = codePickerFilter(_uploadedDxfsCache || {}, code).filter(function (x) { return x.master_code === code; })[0] || {};
+          chosen = { code: code, meta: { thickness_mm: (m.thickness_mm == null ? null : m.thickness_mm), material: m.material || '', grain: m.grain || '' } };
+          if (input) input.value = code;
+          if (assignBtn) assignBtn.disabled = false;
+        });
       });
       assignBtn.addEventListener('click', async function () {
         if (!chosen.code) return; assignBtn.disabled = true;

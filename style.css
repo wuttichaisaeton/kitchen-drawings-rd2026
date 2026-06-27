@@ -7879,6 +7879,12 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-catalog { border-top: 1px dashed #2c3a4e; margin-top: 14px; padding-top: 10px; }
 .kdsp-cathead { color: #8a97a8; font-size: 13px; margin: 0 0 8px; }
 .kdsp-catcard { opacity: .92; }
+.kdsp-ai-slot.kdsp-ai-has { border: 1px solid #3a4a60; border-radius: 10px; padding: 8px; margin: 6px 0; }
+.kdsp-ai-pick { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.kdsp-ai-pick code { font-size: 13px; }
+.kdsp-ai-pick .kdsp-muted { flex: 1 1 120px; min-width: 0; font-size: 12px; }
+.kdsp-ai-top code { color: #e8c069; }
+.kdsp-ai-use { padding: 4px 10px; border-radius: 8px; border: 1px solid #2c3a4e; background: #d29922; color: #1b2330; font-weight: 600; cursor: pointer; flex-shrink: 0; }
 
 /* per-theme opaque overrides — doubled class (0,2,0) to beat the blanket reset (0,2,5) */
 html[data-theme="sketch"] .kdsp-card.kdsp-card { background-color: var(--paper2) !important; border: 1px solid var(--pen) !important; }
