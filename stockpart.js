@@ -114,6 +114,12 @@
       return '<span style="font-family:\'IBM Plex Sans Thai\',\'Leelawadee UI\',\'Sukhumvit Set\',\'Thonburi\',Tahoma,sans-serif">' + t + '</span>';
     });
   }
+  // 1-3 photos per row; old rows have only photo_data. Every render reads through this.
+  function _rowPhotos(r) {
+    if (r && Array.isArray(r.photos) && r.photos.length) return r.photos;
+    if (r && r.photo_data) return [r.photo_data];
+    return [];
+  }
   function relativeTime(now, ts) {
     if (!ts) return '';
     var m = Math.floor(Math.max(0, now - ts) / 60000);
@@ -725,6 +731,7 @@
       confirmedByCode: confirmedByCode,
       codePickerFilter: codePickerFilter,
       catalogNotInStock: catalogNotInStock,
+      _rowPhotos: _rowPhotos,
       _aiSuggestHtml: _aiSuggestHtml,
       _fireAiMatch: _fireAiMatch,
       _buildThumbEdges: _buildThumbEdges,

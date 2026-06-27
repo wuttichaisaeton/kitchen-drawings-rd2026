@@ -116,6 +116,15 @@ test('_parseLen extracts the length number from worker remarks', () => {
   assert.equal(T._parseLen(''), null);
 });
 
+test('_rowPhotos returns the photo list (photos[] | [photo_data] | [])', () => {
+  const { T } = boot();
+  assert.deepEqual(T._rowPhotos({ photos: ['a', 'b'] }), ['a', 'b']);
+  assert.deepEqual(T._rowPhotos({ photo_data: 'a' }), ['a']);              // old single-photo row
+  assert.deepEqual(T._rowPhotos({ photos: [], photo_data: 'a' }), ['a']);  // empty array → fall back
+  assert.deepEqual(T._rowPhotos({}), []);
+  assert.deepEqual(T._rowPhotos(null), []);
+});
+
 test('_buildThumbEdges adds a dark edge line per mesh and KEEPS the fill (solid + edges, #4)', () => {
   const { T } = boot();
   const THREE = {
