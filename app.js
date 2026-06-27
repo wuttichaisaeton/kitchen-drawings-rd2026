@@ -190,16 +190,16 @@ function _visibleTabsForRole() {
   // lists/colours, but it no longer HIDES tabs for the owner — an admin who had switched into a
   // worker role (or opened a worker link) used to get trapped in that role's 2-tab view. To preview
   // a worker's hidden-tab experience, turn admin OFF first (then the role gating below applies).
-  if (isAdmin()) return { projects: true, library: true, drawing: true, nest: true, simbend: true };
+  if (isAdmin()) return { projects: true, library: true, drawing: true, nest: true, simbend: true, stockpart: true };
   switch (getRole()) {
-    case 'laser':    return { projects: true, library: false, drawing: false, nest: true,  simbend: false };
-    case 'bend':     return { projects: true, library: false, drawing: false, nest: false, simbend: true  };
-    case 'assemble': return { projects: true, library: false, drawing: true,  nest: false, simbend: false };
-    default:         return { projects: true, library: false, drawing: true,  nest: false, simbend: false };  // generic viewer
+    case 'laser':    return { projects: true, library: false, drawing: false, nest: true,  simbend: false, stockpart: true };
+    case 'bend':     return { projects: true, library: false, drawing: false, nest: false, simbend: true,  stockpart: true };
+    case 'assemble': return { projects: true, library: false, drawing: true,  nest: false, simbend: false, stockpart: true };
+    default:         return { projects: true, library: false, drawing: true,  nest: false, simbend: false, stockpart: true };  // generic viewer
   }
 }
 
-const _TAB_IDS = { projects: 'tab-projects', library: 'tab-library', drawing: 'tab-drawing', nest: 'tab-nest', simbend: 'tab-simbend' };
+const _TAB_IDS = { projects: 'tab-projects', library: 'tab-library', drawing: 'tab-drawing', nest: 'tab-nest', simbend: 'tab-simbend', stockpart: 'tab-stockpart' };
 
 function applyTabVisibility() {
   const vis = _visibleTabsForRole();
@@ -8158,6 +8158,7 @@ function render() {
     if (view === 'nest')     return renderNestHome();
     if (view === 'simbend')  return renderSimBendHome();
     if (view === 'drawing')  return renderDrawingGallery();
+    if (view === 'stockpart') return window.kdStockPart.renderHome();
     return renderLibraryHome();
   }
   const top = stack[stack.length - 1];
@@ -15929,6 +15930,7 @@ async function init() {
   initFamilyChipSync();
   initUploadedPdfsSync();
   initUploadedDxfsSync();
+  if (window.kdStockPart) window.kdStockPart.init();
   initCutSheetsSync();
   initNestPartsSync();
   initActiveRowsSync();
