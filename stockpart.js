@@ -320,9 +320,9 @@
                 '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
                 '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0" title="View 3D — tap to open full screen">' + (glb ? '<model-viewer src="' + glb + '" loading="eager" interaction-prompt="none" reveal="auto" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" style="pointer-events:none;width:100%;height:100%;background:transparent;"></model-viewer>' : (_CUBE_SVG + '<span>View 3D</span>')) + '</div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
-              '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:4px;">' +
+              '<div class="kdsp-auto-meta">' +
                 '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
-                '<span style="display:flex;gap:6px;">' +
+                '<span class="kdsp-auto-btns">' +
                   '<button type="button" class="kdsp-btn kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '">3D</button>' +
                   '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-approve" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">Approve</button>' +
                 '</span>' +

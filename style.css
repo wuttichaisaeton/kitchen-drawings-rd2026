@@ -7861,6 +7861,16 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-cmp .kdsp-cmp-3d { position: relative; width: 100%; height: 200px; border-radius: 10px; overflow: hidden; background: #11151c; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: zoom-in; color: #b8a06a; font-size: 13px; }
 .kdsp-cmp-3d model-viewer { width: 100%; height: 100%; }
 .kdsp-cmp-3d svg { width: 30px; height: 30px; opacity: .9; }
+/* auto-match meta row: wrap so the Approve button never clips on iPhone */
+.kdsp-auto-meta { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 4px; }
+.kdsp-auto-meta > .kdsp-muted { flex: 1 1 140px; min-width: 0; font-size: 12px; word-break: break-word; }
+.kdsp-auto-btns { display: flex; gap: 6px; flex-shrink: 0; }
+/* phone: shorter compare cells + tighter gutters so cards fit without clipping */
+@media (max-width: 480px) {
+  .kdsp-home { padding: 8px; }
+  .kdsp-cmp img, .kdsp-cmp model-viewer, .kdsp-cmp .kdsp-noimg, .kdsp-cmp .kdsp-cmp-3d { height: 150px; }
+  .kdsp-btn { padding: 9px 11px; }
+}
 .kdsp-foot-actions { display: flex; align-items: center; gap: 6px; }
 .kdsp-editbox { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #2c3a4e; margin-top: 8px; padding-top: 8px; }
 .kdsp-edit-qty { display: flex; align-items: center; gap: 8px; }
