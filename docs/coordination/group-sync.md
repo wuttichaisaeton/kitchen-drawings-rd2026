@@ -9041,3 +9041,8 @@ HEAD **ae28a58** (origin/main, deploy run 28284691171 ✓). S3 AI image-match �
 LIVE VERIFY (Chrome, ?admin=1): wrote a synthetic `stock_parts/<id>/ai_suggestion` → slot rendered "✨ AI suggestion · FN2BNX-095000 80% · long floor rail [use] · FN2BLA-060000 40% [use]"; clicking `use` filled the code + enabled Assign (same flow as manual); synthetic removed → slot back to placeholder; console clean.
 NEXT — Phase B (backend `LINE_System`, Tasks 5-9): `stock_match.py` (Haiku 4.5 vision + narrow + RTDB I/O) + `POST /api/stock-match` + CORS. ⏸ BLOCKED on เอ๋: (1) the Render base URL (to set KDSP_AI_ENDPOINT), (2) green-light to push LINE_System (= redeploy the production LINE bot). Web stays dormant + harmless until then.
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · 🔧 Stock Part S3 Phase B (backend) CODE-READY (local, not deployed)
+S3 backend (Tasks 5-7) written + tested **locally in `LINE_System`** — 3 commits on master, **NOT pushed** (no Render redeploy yet, per เอ๋). New `LINE_System/stock_match.py` (parse_len/code_dims/narrow±50/build_prompt+legend/parse_ranked/read_catalog/write_suggestion/call_model Haiku-4.5/run_match) + `test_stock_match.py` (7/7 incl. offline run_match orchestration) + `POST /api/stock-match` route + CORS (scoped to github.io) in `webhook_server.py` (local test_client: OPTIONS 204+CORS, empty POST 400; `python -m py_compile` OK).
+⏸ Tasks 8-9 (deploy + go-live) BLOCKED on เอ๋: (1) the LINE-bot **Render base URL** (`*.onrender.com`) to set `KDSP_AI_ENDPOINT` in stockpart.js, (2) green-light to **push `LINE_System` = redeploy the production LINE bot**. Web (Phase A, HEAD b147bcd) stays dormant + harmless until the endpoint is set.
+-- RD 13
