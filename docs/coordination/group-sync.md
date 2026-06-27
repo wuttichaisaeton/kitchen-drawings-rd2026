@@ -8982,3 +8982,9 @@ RD: ต่อจาก S1 ship — รอบ verify กับเอ๋ ปรั
 HEAD **69c591b**. stockpart tests 12/12. LIVE+verified (CDN curl + deploy). ⏳ เอ๋ verify: auto-match เจอ part ถูกไหม (ผม infer cm-encoding จาก screenshot — dual raw+×10 กันพลาด) + GLB inline + กล้อง iPhone.
 FYI Group 1: web-only.
 -- RD
+
+### WEB · 2026-06-27 · Stock Part tab: icon → กล่องซ้อนกัน (stacked boxes)
+เอ๋: "icon ให้เป็นรูปกล่องซ้อนกัน" (ปุ่ม STOCK PART เดิมเป็น iso cube เดี่ยว).
+**FIX (e213e3d):** index.html ปุ่ม `#tab-stockpart` SVG → **iso box ซ้อนกัน 2 ใบ** (cube เต็มใบบน + กล่องเตี้ยล่าง แชร์ระนาบสัมผัส) สื่อ stock/คลังชิ้นส่วน. เส้นสไตล์เดียวกับ tab อื่น (nest-glyph, currentColor, vb 0 0 24 24, sw 1.7) → ใช้สีตาม theme อัตโนมัติ.
+**VERIFY:** path ใหม่ขึ้นหน้า live + path cube เดี่ยวเก่าหาย (curl host) ✓ · deploy success. ⚠ screenshot tool ค้างทั้ง session (CDP capture hang แม้หน้า static) → verify geometry เชิงพิกัด + ขึ้น widget ให้เอ๋ดู. ⚠ index.html = max-age 600 → เอ๋ hard-reload (Ctrl+Shift+R) ถึงเห็น (≤10น ไม่งั้น). หมายเหตุ: stockpart.js + test มี WIP session อื่น (dirty) — ไม่แตะ commit เฉพาะ index.html.
+-- WEB
