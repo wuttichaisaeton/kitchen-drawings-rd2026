@@ -7857,14 +7857,12 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-cand { flex-direction: row; align-items: center; gap: 8px; padding: 4px 0; }
 .kdsp-cand code { font-size: 13px; }
 .kdsp-listhead { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
-.kdsp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.kdsp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .kdsp-stockcard { display: flex; flex-direction: column; gap: 8px; }
-/* confirmed stock card = horizontal: photo left, content filling the right (เอ๋) */
-.kdsp-stockcard:not(.kdsp-catcard) { flex-direction: row; align-items: flex-start; gap: 12px; }
-.kdsp-stockcard:not(.kdsp-catcard) .kdsp-thumb { flex-shrink: 0; }
-.kdsp-stockbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
-.kdsp-stockbody .kdsp-code { font-size: 17px; font-weight: 700; }       /* part NAME prominent */
-.kdsp-stockbody .kdsp-pill { font-size: 14px; font-weight: 700; padding: 3px 11px; }  /* qty prominent */
+/* เอ๋: 2-column vertical cards; show only photo + NAME + QTY (no thickness/material) */
+.kdsp-stockbody { display: flex; flex-direction: column; gap: 6px; }
+.kdsp-stockbody .kdsp-code { font-size: 15px; font-weight: 700; word-break: break-word; }  /* part NAME prominent */
+.kdsp-stockbody .kdsp-pill { font-size: 14px; font-weight: 700; padding: 3px 11px; }        /* qty prominent */
 .kdsp-code { font-size: 13px; }
 .kdsp-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .kdsp-pill { background: #1f3d2e; color: #7ee0a8; border-radius: 999px; padding: 2px 9px; font-size: 12px; }
