@@ -134,6 +134,74 @@
     });
   }
 
+  // ── per-device intake rate cap ──────────────────────────────
+  function _submitTimes() { try { return JSON.parse(localStorage.getItem(LS_SUBMIT)) || []; } catch (e) { return []; } }
+  function _recordSubmit() {
+    var now = Date.now(), arr = _submitTimes().filter(function (t) { return now - t < 86400000; });
+    arr.push(now);
+    try { localStorage.setItem(LS_SUBMIT, JSON.stringify(arr)); } catch (e) {}
+    return arr.length;
+  }
+  function _submitCount24h() { var now = Date.now(); return _submitTimes().filter(function (t) { return now - t < 86400000; }).length; }
+
+  // ── capture screen (worker, Thai) ───────────────────────────
+  function _buildCapture() {
+    var el = document.createElement('section');
+    el.className = 'kdsp-card kdsp-th';
+    el.innerHTML =
+      (_undoLast ? '<button type="button" id="kdsp-undo" class="kdsp-btn kdsp-btn-ghost">เลิกล่าสุด</button>' : '') +
+      '<h3 class="kdsp-h">เพิ่มของเข้าคลัง</h3>' +
+      '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" capture="environment" id="kdsp-photo" hidden>' +
+      '<span class="kdsp-photo-hint">ถ่ายรูป part</span></label>' +
+      '<img class="kdsp-preview" id="kdsp-preview" alt="" hidden>' +
+      '<div class="kdsp-row"><span>จำนวน</span><div class="kdsp-qty">' +
+        '<button type="button" id="kdsp-qminus">−</button><b id="kdsp-qval">1</b><button type="button" id="kdsp-qplus">+</button>' +
+      '</div></div>' +
+      '<input type="text" id="kdsp-note" class="kdsp-input" placeholder="หมายเหตุ (ไม่บังคับ)">' +
+      '<button type="button" id="kdsp-submit" class="kdsp-btn kdsp-btn-primary" disabled>ส่งเข้าคิวตรวจ</button>';
+
+    var u = el.querySelector('#kdsp-undo'); if (u) u.onclick = _undoLastIntake;
+    var qty = 1, photoB64 = null;
+    var qval = el.querySelector('#kdsp-qval'), submit = el.querySelector('#kdsp-submit');
+    function setQty(n) { qty = Math.min(QTY_MAX, Math.max(QTY_MIN, n)); qval.textContent = String(qty); }
+    el.querySelector('#kdsp-qminus').onclick = function () { setQty(qty - 1); };
+    el.querySelector('#kdsp-qplus').onclick = function () { setQty(qty + 1); };
+    el.querySelector('#kdsp-photo').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0]; if (!f) return;
+      submit.disabled = true; el.querySelector('.kdsp-photo-hint').textContent = 'กำลังย่อรูป…';
+      compressImage(f).then(function (b64) {
+        photoB64 = b64;
+        var pv = el.querySelector('#kdsp-preview'); pv.src = 'data:image/jpeg;base64,' + b64; pv.hidden = false;
+        el.querySelector('.kdsp-photo-hint').textContent = 'ถ่ายใหม่';
+        submit.disabled = false;
+      }).catch(function (err) {
+        photoB64 = null; submit.disabled = true;
+        el.querySelector('.kdsp-photo-hint').textContent = 'ถ่ายรูป part';
+        _kdToast(err && err.message === 'too-large' ? 'รูปใหญ่เกินไป ลองถ่ายใหม่' : 'ไฟล์รูปไม่ถูกต้อง ลองใหม่');
+      });
+    });
+    submit.addEventListener('click', async function () {
+      if (!photoB64) return;
+      if (_submitCount24h() >= CAP_BLOCK) { _kdToast('วันนี้เพิ่มของเยอะเกินไปแล้ว ลองพรุ่งนี้'); return; }
+      var row = { status: 'pending', code: '', qty: qty, note: el.querySelector('#kdsp-note').value || '', photo_data: photoB64, created_at: Date.now(), created_by_role: (typeof getRole === 'function' ? getRole() : 'workshop') };
+      submit.disabled = true;
+      try {
+        if (JSON.stringify(row).length > MAX_BYTES) throw new Error('too-large');
+        _undoLast = await saveIntake(row);
+        _recordSubmit();
+        _kdToast('ส่งแล้ว รอเอ๋ตรวจ · กดเลิกได้');
+        renderHome();
+      } catch (e) { submit.disabled = false; _kdToast('บันทึกไม่สำเร็จ ลองใหม่'); }
+    });
+    return el;
+  }
+
+  async function _undoLastIntake() {
+    if (!_undoLast) return;
+    var id = _undoLast; _undoLast = null;
+    try { await _deleteStock(id); _kdToast('ยกเลิกแล้ว'); renderHome(); } catch (e) { _kdToast('ยกเลิกไม่สำเร็จ'); }
+  }
+
   // ── (render added in later tasks) ───────────────────────────
 
   function renderHome() {
