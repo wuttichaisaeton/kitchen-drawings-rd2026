@@ -191,10 +191,15 @@ function _visibleTabsForRole() {
   // worker role (or opened a worker link) used to get trapped in that role's 2-tab view. To preview
   // a worker's hidden-tab experience, turn admin OFF first (then the role gating below applies).
   if (isAdmin()) return { projects: true, library: true, drawing: true, nest: true, simbend: true, stockpart: true };
+  // เอ๋ 2026-06-28: a ?role= worker link shows ONLY Projects + Stock Part. Each
+  // role's key action lives INSIDE the project detail (laser→📐 Cut Sheets,
+  // bend→📑 All PDF, assemble→Assembly mindmap — see renderProject), so the
+  // Nest/SimBend/Drawing tabs aren't needed and are dropped. workshop (the
+  // generic no-role default) keeps Drawing.
   switch (getRole()) {
-    case 'laser':    return { projects: true, library: false, drawing: false, nest: true,  simbend: false, stockpart: true };
-    case 'bend':     return { projects: true, library: false, drawing: false, nest: false, simbend: true,  stockpart: true };
-    case 'assemble': return { projects: true, library: false, drawing: true,  nest: false, simbend: false, stockpart: true };
+    case 'laser':    return { projects: true, library: false, drawing: false, nest: false, simbend: false, stockpart: true };
+    case 'bend':     return { projects: true, library: false, drawing: false, nest: false, simbend: false, stockpart: true };
+    case 'assemble': return { projects: true, library: false, drawing: false, nest: false, simbend: false, stockpart: true };
     default:         return { projects: true, library: false, drawing: true,  nest: false, simbend: false, stockpart: true };  // generic viewer
   }
 }
@@ -387,6 +392,27 @@ function _renderAdminRoleSwitcher() {
 
 // Apply URL flags on page load (admin + role). Clean URL after toggling
 // so flags don't persist in browser history.
+
+// Map a URL's role flags → {role, project} (or null if none). Pure + tested
+// (test/roleAccessLinks.test.mjs). Canonical `?role=<role>` (value = role,
+// generic only); aliases `?asm`/`?laser`/`?bend` (value = ''|'all' generic, or
+// a project key to drop into). Unknown ?role= value → {role:null} (consumed,
+// bakes nothing). `?role=` is checked first so it wins if both are present.
+const _ALIAS_ROLE = { asm: 'assemble', laser: 'laser', bend: 'bend' };
+function _resolveRoleFlag(params) {
+  if (params.has('role')) {
+    const r = (params.get('role') || '').toLowerCase();
+    return ['assemble', 'laser', 'bend'].includes(r) ? { role: r, project: '' } : { role: null, project: '' };
+  }
+  for (const k of ['asm', 'laser', 'bend']) {
+    if (!params.has(k)) continue;
+    const v = params.get(k) || '';
+    const project = (v === '' || v.toLowerCase() === 'all') ? '' : v;
+    return { role: _ALIAS_ROLE[k], project };
+  }
+  return null;
+}
+
 (function applyUrlFlags() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -396,14 +422,6 @@ function _renderAdminRoleSwitcher() {
       if (v === '1' || v === 'on' || v === 'true') setAdmin(true);
       else if (v === '0' || v === 'off' || v === 'false') setAdmin(false);
       params.delete('admin');
-      dirty = true;
-    }
-    // ?role= URL links RETIRED per เอ๋ (2026-06-09 — shared role-links surfacing in
-    // LINE chats made it unclear who had what; roles are now switched ONLY via the
-    // in-app role buttons). The param is still stripped from the URL so old shared
-    // links degrade gracefully to the plain site instead of carrying a dead flag.
-    if (params.has('role')) {
-      params.delete('role');
       dirty = true;
     }
     // Deep-link `?p=Bung+01` auto-navigates straight into that project
@@ -416,42 +434,25 @@ function _renderAdminRoleSwitcher() {
       params.delete('p');
       dirty = true;
     }
-    // Deep-link `?asm` = SHARED ASSEMBLER LINK (เอ๋ 2026-06-22 "link ต้องเข้าไป
-    // ในส่วน assembly" + "ควรให้เขาเห็น งาน assembly ทั้งหมด"). Two flavours
-    // depending on the value, both safe replacements for the retired ?role=:
-    //   `?asm` (no value) or `?asm=all` — GENERIC entry. Just bakes
-    //     role=assemble onto this device + lands on Projects home so the
-    //     assembler sees ALL projects (one LINE share for life — เอ๋'s ask).
-    //   `?asm=<project>` — PER-PROJECT entry. Bakes role + drops straight into
-    //     that project's Assembly view (Kanban+Checklist+Mindmap = the project
-    //     page).
-    // Either way the URL is stripped post-apply so a re-share doesn't carry
-    // role/view info.
-    if (params.has('asm')) {
-      const v = params.get('asm') || '';
-      if (v === '' || v.toLowerCase() === 'all') {
-        // Generic. Direct LS write — applyUrlFlags runs at script-init time
-        // before the DOM is fully ready, and setRole() has DOM side effects;
-        // the first render() reads kd_role_v1 from LS so we're correct without
-        // needing the badge re-paint here.
-        try { localStorage.setItem(LS_ROLE_KEY, 'assemble'); } catch {}
-      } else {
-        window.__kdInitialProject = v;
-        window.__kdAsmBakeRole = true;
+    // Role links (เอ๋ 2026-06-28): one shared link per channel. `?role=assemble|
+    // laser|bend` is canonical; `?asm`/`?laser`/`?bend` are kept as aliases (old
+    // LINE shares keep working; aliases also accept `=all` or `=<project>`).
+    // The link FULLY scopes the view: it bakes the role AND clears admin, so
+    // "กดเข้าช่องทางไหน ก็เห็นแค่ช่องทางนั้น" — `?admin=1` is the only path back to
+    // the full view. (Supersedes the 2026-06-09 ?role= retirement + the older
+    // ?asm __kdAsmBakeRole mount-time bake: baking here at parse-time is earlier,
+    // so role-gated chrome is correct on the very first paint.) `?role=<bad>` is
+    // consumed but bakes nothing. Per-project (`?asm=Bung 01`) sets __kdInitialProject.
+    const _roleFlag = _resolveRoleFlag(params);
+    if (_roleFlag) {
+      if (_roleFlag.role) {
+        try {
+          localStorage.setItem(LS_ROLE_KEY, _roleFlag.role);
+          localStorage.removeItem(LS_ADMIN_KEY);
+        } catch {}
+        if (_roleFlag.project) window.__kdInitialProject = _roleFlag.project;
       }
-      params.delete('asm');
-      dirty = true;
-    }
-    // Deep-link `?laser` = SHARED LASER LINK (เอ๋ 2026-06-22 "ขอ link สำหรับ
-    // ช่างตัด Laser"). Mirrors ?asm: bakes role=laser onto this device (one
-    // LINE share for life) so the cutter lands with the Nest tab visible.
-    // `?laser` / `?laser=all` = generic (lands on Projects, sees all);
-    // `?laser=<project>` = drops straight into that project. URL stripped after.
-    if (params.has('laser')) {
-      const v = params.get('laser') || '';
-      try { localStorage.setItem(LS_ROLE_KEY, 'laser'); } catch {}
-      if (v !== '' && v.toLowerCase() !== 'all') window.__kdInitialProject = v;
-      params.delete('laser');
+      ['role', 'asm', 'laser', 'bend'].forEach((k) => params.delete(k));
       dirty = true;
     }
     if (dirty) {
