@@ -14,6 +14,9 @@
   // AI image-match endpoint (S3). Set to the LINE-bot Render base + /api/stock-match.
   // Empty until configured → _fireAiMatch no-ops (feature dormant, graceful).
   var KDSP_AI_ENDPOINT = 'https://stainless-line-bot.onrender.com/api/stock-match';
+  // เอ๋: auto-match thumbnail model is wrong-axis → rotate 90° about X.
+  // model-viewer orientation = "roll(Z) pitch(X) yaw(Y)" → X-90° = pitch 90°.
+  var _THUMB_ORIENT = '0deg 90deg 0deg';
 
   // ── state ───────────────────────────────────────────────────
   var _stockCache = {};   // pushId -> row
@@ -324,7 +327,7 @@
             return '<div class="kdsp-auto" style="margin:8px 0;">' +
               '<div class="kdsp-compare">' +
                 '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
-                '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0" title="View 3D — tap to open full screen">' + (glb ? '<model-viewer src="' + glb + '" loading="eager" interaction-prompt="none" reveal="auto" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" style="pointer-events:none;width:100%;height:100%;background:transparent;"></model-viewer>' : (_CUBE_SVG + '<span>View 3D</span>')) + '</div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
+                '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0" title="View 3D — tap to open full screen">' + (glb ? '<model-viewer src="' + glb + '" loading="eager" interaction-prompt="none" reveal="auto" orientation="' + _THUMB_ORIENT + '" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" style="pointer-events:none;width:100%;height:100%;background:transparent;"></model-viewer>' : (_CUBE_SVG + '<span>View 3D</span>')) + '</div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
               '<div class="kdsp-auto-meta">' +
                 '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
@@ -455,6 +458,11 @@
     var n = 0;
     scene.traverse(function (node) {
       if (!node || !node.isMesh || !node.geometry || !node.geometry.attributes || !node.geometry.attributes.position) return;
+      // เอ๋: only edge the actual model (meshes under node 'world') — NOT model-viewer's
+      // shadow/ground/skybox planes, which otherwise draw a big "floor frame" rectangle.
+      var underWorld = false;
+      for (var pa = node.parent; pa; pa = pa.parent) { if (pa.name === 'world') { underWorld = true; break; } }
+      if (!underWorld) return;
       if (node.__kdspThumbEdged) return;
       try {
         var eg = new THREE.EdgesGeometry(node.geometry, 22);

@@ -123,13 +123,16 @@ test('_buildThumbEdges adds a dark edge line per mesh and KEEPS the fill (solid 
     LineBasicMaterial: function (o) { Object.assign(this, o); },
     LineSegments: function (g, m) { this.geometry = g; this.material = m; this.isLineSegments = true; },
   };
-  const mkMesh = () => ({ isMesh: true, geometry: { attributes: { position: {} } }, material: { colorWrite: true }, children: [], add(c) { this.children.push(c); } });
-  const m1 = mkMesh(), m2 = mkMesh();
-  const scene = { traverse(fn) { [m1, m2, { isMesh: false }].forEach(fn); } };
+  const world = { name: 'world', parent: null };
+  const mkMesh = (parent) => ({ isMesh: true, geometry: { attributes: { position: {} } }, material: { colorWrite: true }, children: [], add(c) { this.children.push(c); }, parent: parent });
+  const m1 = mkMesh(world), m2 = mkMesh(world);
+  const ground = mkMesh({ name: 'GroundPlane', parent: null });   // model-viewer shadow/ground — must be skipped
+  const scene = { traverse(fn) { [m1, m2, ground, { isMesh: false }].forEach(fn); } };
   const n = T._buildThumbEdges(THREE, scene);
-  assert.equal(n, 2);
+  assert.equal(n, 2);                                  // only the 2 meshes under 'world'
   assert.ok(m1.children[0].isLineSegments);
   assert.equal(m1.material.colorWrite, true);          // FILL KEPT (the #4 distinction vs edges-only)
+  assert.equal(ground.children.length, 0);             // ground/shadow plane NOT edged → no "floor frame" lines
   assert.equal(T._buildThumbEdges(THREE, scene), 0);   // idempotent
 });
 
