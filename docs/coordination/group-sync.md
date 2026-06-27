@@ -9063,3 +9063,10 @@ S3 MVP DONE: photo→AI suggest→เอ๋ confirms. Deferred (per spec): image
 LIVE VERIFY (Chrome ?admin=1): added-by label, centered qty, re-run button, thumb-edge wiring all confirmed; backend re-run 200/2.3s top=FN2BLA-095000; console clean.
 NEXT: S2 (nest don't-re-cut) — design approved (per-row toggle, in-memory useStock, badge+link, defer reservation+photo-migration); writing the spec next.
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · ✅ Stock Part multi-photo (1-3) LIVE end-to-end + thumbnail review fixes
+- **Multi-photo** (เอ๋: ใส่ได้ 1-3 รูป, AI ใช้ทุกรูป): web HEAD **a16ce69**, backend `stainless-kitchen-line-bot@9628ce1` (Render ✓). `_rowPhotos(r)` shim (`photos[]` | `[photo_data]`) read everywhere → old single-photo rows unchanged. Capture = photo-tray (add/remove up to 3, `input multiple`, compress each, 2.6MB row guard) → writes `photos[]`+`photo_data=photos[0]`. Review/worker-confirm show a 1-3 photo strip; `_openPhoto` is a multi-image lightbox (‹ › + counter). `_fireAiMatch` posts `photos[]`; backend `call_model`/`run_match` send **one image block per photo** to Haiku (route reads `photos`, falls back to `photo`; sum-size ≤5MB). stockpart suite 119/119, backend 8/8.
+- LIVE VERIFY (Chrome): capture input has `multiple` + tray present; a 2-photo pending row → review strip shows 2 thumbs, lightbox 1/2→›→2/2; backend **photos-only** POST (no `photo`) → 200/2.2s ranked FN2BLA-095000 75% (proves the new photos[] path); old single-photo render intact; console clean.
+- **Thumbnail review fixes** (earlier today, HEAD 5745ae0): edges only on the model (skip ground/shadow plane → no "floor frame"), X-rotation clockwise (`orientation=0deg -90deg 0deg`); "added by X · 6h ago"; centered qty; "↻ Re-run AI" button; AI dimension vocabulary (ยาว/W/L=length, D=thickness, H=height) in the Haiku legend.
+NEXT: S2 (nest don't-re-cut) — spec approved, writing the plan now.
+-- RD 13
