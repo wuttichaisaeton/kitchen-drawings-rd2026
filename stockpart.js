@@ -630,7 +630,7 @@
       card.innerHTML = photo +
         '<div class="kdsp-stockbody">' +
         '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
-        '<div class="kdsp-meta"><span class="kdsp-pill">×' + g.qty + ' in stock</span></div>' +
+        '<div class="kdsp-meta"><span class="kdsp-pill"><b class="kdsp-qtynum">×' + g.qty + '</b> in stock</span></div>' +
         '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(code) + '">View 3D</button>' +
         (readOnly ? '' :
           '<span class="kdsp-foot-actions">' +
