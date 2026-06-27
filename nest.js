@@ -1633,6 +1633,39 @@
     try { await _saveGrainRows(); } catch (e) { console.warn('[kdNest] EDGE grain save failed:', e); }
   }
 
+  // ── H/V/ANY grain persistence (exact-code grain_rules row) ─────────
+  // The row/popup grain glyph cycles ?→H→V→ANY. เอ๋ 2026-06-27: a cycled grain
+  // must be REMEMBERED. It used to mutate part.grain IN MEMORY ONLY, so the
+  // debounced re-nest's _applyGrainToParts re-derived grain from grain_rules and
+  // reverted it to '?' ("ระบุ grain แล้วไม่จำ, เลื่อนอันถัดไปอันเดิมขึ้น ?"). Persist it as
+  // an EXACT-code grain rule (wins over wildcards in _lookupPattern), mirroring
+  // _setPartEdgeGrain. dir = 'H'|'V'|'ANY' (set) or '?'/null (clear → drop the
+  // exact row, fall back to wildcard / '?'). FLIP180/MIRROR rows stack separately
+  // (same pattern, different grain) — never touch them; only the PRIMARY grain row
+  // carries H/V/ANY/EDGE.
+  async function _setPartGrainDir(part, dir) {
+    if (!part) return;
+    if (!S.grainRows) { try { await _loadGrainRows(); } catch (_) { S.grainRows = S.grainRows || []; } }
+    const code = part.code;
+    const isPrimary = r => String(r.pattern) === code &&
+      !['FLIP180', 'MIRROR'].includes(String(r.grain).toUpperCase());
+    let row = (S.grainRows || []).find(isPrimary);
+    const g = String(dir || '?').toUpperCase();
+    if (g === '?' || g === '') {
+      if (row) S.grainRows = S.grainRows.filter(r => r !== row);
+      part.grain = '?'; part.grainAngle = null;
+    } else {
+      if (!row) {
+        row = { pattern: code, grain: g, thickness: '', fix: '', angle: null };
+        S.grainRows.push(row);
+      } else {
+        row.grain = g; row.angle = null;   // clear any stale EDGE angle
+      }
+      part.grain = g; part.grainAngle = null;
+    }
+    try { await _saveGrainRows(); } catch (e) { console.warn('[kdNest] grain dir save failed:', e); }
+  }
+
   function _openGrainModal() {
     _loadGrainRows().then(_renderGrainModal)
       .catch(e => alert('Grain load failed: ' + (e.message || e)));
@@ -4129,17 +4162,18 @@
     q('.kdnest-part-flip180')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) orient('flip180'); });
     q('.kdnest-part-mirror')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) orient('mirror'); });
     // Grain glyph — cycle ?→H→V→ANY (or reset EDGE); affects packing → debounced re-nest.
-    // MIRRORS the per-row grain glyph EXACTLY: the H/V/ANY cycle is in-memory (reverts
-    // on reload, same as the row — grain is persisted only via the 🎨 Grain modal);
-    // the EDGE reset persists through _setPartEdgeGrain. (consistent-with-row 2026-06-27)
+    // MIRRORS the per-row grain glyph: the H/V/ANY cycle now PERSISTS via
+    // _setPartGrainDir (exact-code grain_rules row) so it survives the re-nest /
+    // reload (เอ๋ 2026-06-27 'ระบุ grain แล้วไม่จำ'); EDGE reset persists via
+    // _setPartEdgeGrain. (persist-grain-cycle 2026-06-27)
     q('.kdnest-part-grain')?.addEventListener('click', () => {
       const p = live(); if (!p) { close(); return; }
       if (String(p.grain || '').toUpperCase() === 'EDGE') {
         _setPartEdgeGrain(p, null).then(() => { draw(); syncBtns(); scheduleRenest(); }).catch(() => {});
       } else {
         const cyc = { '?': 'H', 'H': 'V', 'V': 'ANY', 'ANY': 'H' };
-        p.grain = cyc[String(p.grain || '').toUpperCase()] || 'H';
-        draw(); syncBtns(); scheduleRenest();
+        const next = cyc[String(p.grain || '').toUpperCase()] || 'H';
+        _setPartGrainDir(p, next).then(() => { draw(); syncBtns(); scheduleRenest(); }).catch(() => {});
       }
     });
     // 📍 Sheet — jump to the part's sheet behind the popup + (re)highlight it.
@@ -7215,8 +7249,10 @@
           return;
         }
         const cycle = { '?': 'H', 'H': 'V', 'V': 'ANY', 'ANY': 'H' };
-        part.grain = cycle[part.grain] || 'H';
-        _setPreview(part.code);   // preview this part so the grain rotation is visible
+        const next = cycle[part.grain] || 'H';
+        // PERSIST the cycle (exact-code grain_rules row) so it's remembered across
+        // re-nest / reload — was in-memory only, reverted to '?' (เอ๋ 2026-06-27).
+        _setPartGrainDir(part, next).then(() => _setPreview(part.code));
       });
       // View part — open DXF preview modal for this part's source DXF.
       // Hand the FULL RTDB metadata to the modal (same object the Laser
