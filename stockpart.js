@@ -213,6 +213,22 @@
     try { await _deleteStock(id); _kdToast('Undone'); renderHome(); } catch (e) { _kdToast('Undo failed'); }
   }
 
+  // ── photo lightbox (tap a photo to enlarge; click / Esc to close) ──
+  function _openPhoto(b64) {
+    if (!b64) return;
+    var ov = document.createElement('div');
+    ov.setAttribute('style', 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.88) !important;cursor:zoom-out;padding:16px;');
+    var img = document.createElement('img');
+    img.src = 'data:image/jpeg;base64,' + b64;
+    img.setAttribute('style', 'max-width:96vw;max-height:96vh;border-radius:8px;box-shadow:0 6px 40px rgba(0,0,0,.6);');
+    ov.appendChild(img);
+    function onKey(e) { if (e.key === 'Escape') close(); }
+    function close() { try { ov.remove(); } catch (e) {} document.removeEventListener('keydown', onKey); }
+    ov.addEventListener('click', close);
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+  }
+
   // ── admin review queue + code picker ────────────────────────
   function _pending() {
     var out = [];
@@ -247,6 +263,7 @@
           '</div>' +
         '</div>';
       el.appendChild(card);
+      (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-thumb'));
 
       var chosen = { code: '', meta: {} };
       var input = card.querySelector('.kdsp-pick-q');
@@ -330,6 +347,7 @@
           '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ Not this</button>' +
         '</div>';
       el.appendChild(card);
+      (function (p) { if (p) { p.style.cursor = 'zoom-in'; p.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-cmp img'));
       card.querySelector('.kdsp-see3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
       card.querySelector('.kdsp-ok').addEventListener('click', async function () {
         try { await workerConfirmGlb(r.id); _kdToast('Added to stock — thanks'); } catch (e) { _kdToast('Action failed'); }
@@ -378,6 +396,7 @@
             '<div class="kdsp-edit-results"></div>' +
           '</div>');
       grid.appendChild(card);
+      (function (t) { if (t && !t.classList.contains('kdsp-noimg')) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(g.rows[0] && g.rows[0].photo_data); }); } })(card.querySelector('.kdsp-thumb'));
       card.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(code); });
       if (!readOnly) {
         var rid = g.rows[0] && g.rows[0].id;
