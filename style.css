@@ -81,6 +81,23 @@ header {
   flex-wrap: wrap;
 }
 
+/* Current-status slot — holds the admin badge / worker role-badge / admin role-
+   switcher right after the brand so "your status / you are here" is ALWAYS visible
+   top-left and never wraps to a hidden row or clips off the right edge.
+   (เอ๋ 2026-06-28: 'เข้าแอดมินแต่ไม่เห็นอะไรเลย' — the pills used to append LAST in the
+   flex-wrap header and the greedy flex:1 search-wrap shoved them onto a hidden 2nd
+   row / off the right edge.) Sits BEFORE search-wrap, so search wraps below it.
+   flex:0 0 auto = never shrink/squeeze the pills; flex-wrap so the admin cluster
+   wraps internally on a phone. NO overflow:hidden — the active chip's scale(1.08)
+   + 2px ring paint OUTSIDE the box and must not be clipped. */
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+}
+
 h1 {
   margin: 0;
   font-size: 18px;
@@ -158,7 +175,8 @@ h1 {
 .role-badge {
   font-size: 10px;
   padding: 3px 8px;
-  margin-left: 6px;
+  /* margin-left dropped — the .header-status slot's gap now spaces the pills
+     (was 6px, assumed a left sibling in the old header-row tail). */
   border-radius: 10px;
   border: 1px solid transparent;
   color: #fff;
@@ -179,7 +197,7 @@ h1 {
 .role-switcher {
   display: inline-flex;
   gap: 4px;
-  margin-left: 8px;
+  /* margin-left dropped — spacing now comes from the .header-status slot gap. */
   flex-wrap: wrap;
 }
 .role-switch-btn {

@@ -154,7 +154,7 @@ function setAdmin(on) {
 
 function updateAdminBadge() {
   let badge = document.getElementById('admin-badge');
-  const headerRow = document.querySelector('.header-row');
+  const headerRow = document.getElementById('header-status') || document.querySelector('.header-row');  // current-status pills mount in the dedicated top-left slot (legacy fallback: header-row tail)
   if (isAdmin()) {
     if (!badge && headerRow) {
       badge = document.createElement('span');
@@ -288,7 +288,7 @@ function isWorkshopRole() { return getRole() === 'workshop'; }
 
 function updateRoleBadge() {
   let badge = document.getElementById('role-badge');
-  const headerRow = document.querySelector('.header-row');
+  const headerRow = document.getElementById('header-status') || document.querySelector('.header-row');  // current-status pills mount in the dedicated top-left slot (legacy fallback: header-row tail)
   const role = getRole();
   // When admin mode is on the dedicated role switcher already highlights
   // the active role with its gradient — showing the chip too produced a
@@ -339,7 +339,7 @@ function updateRoleBadge() {
 // button instead of typing ":<role>" in the search box.
 function _renderAdminRoleSwitcher() {
   let bar = document.getElementById('role-switcher');
-  const headerRow = document.querySelector('.header-row');
+  const headerRow = document.getElementById('header-status') || document.querySelector('.header-row');  // current-status pills mount in the dedicated top-left slot (legacy fallback: header-row tail)
   if (!isAdmin()) {
     if (bar) bar.remove();
     return;

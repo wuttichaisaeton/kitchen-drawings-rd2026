@@ -103,6 +103,10 @@
          working without restyling). -->
     <div class="header-row">
       <h1><span class="brand-icon" aria-hidden="true"></span>Kitchen <span class="brand-sub">by Rough Design</span></h1>
+      <!-- Current-status slot: admin badge / worker role-badge / admin role-switcher
+           mount here (app.js) right after the brand so the user's status is ALWAYS
+           visible top-left and never wraps to a hidden row or clips off the right. -->
+      <div id="header-status" class="header-status"></div>
       <div class="header-controls">
         <button id="header-back-btn" class="back-btn" aria-label="Back" style="display:none">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
