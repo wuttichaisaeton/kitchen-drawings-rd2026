@@ -256,6 +256,19 @@
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
   }
+  // on GLB load failure, swap the blank viewer for a clear "no 3D model" note
+  function _wireMvErrors(scope) {
+    if (!scope || !scope.querySelectorAll) return;
+    Array.prototype.forEach.call(scope.querySelectorAll('model-viewer'), function (mv) {
+      mv.addEventListener('error', function () {
+        var fig = mv.parentNode; if (!fig) return;
+        var d = document.createElement('div'); d.className = 'kdsp-noimg';
+        d.setAttribute('style', 'display:flex;align-items:center;justify-content:center;color:#8a97a8;font-size:12px;');
+        d.textContent = 'no 3D model';
+        fig.insertBefore(d, fig.firstChild); mv.remove();
+      });
+    });
+  }
 
   // ── admin review queue + code picker ────────────────────────
   function _pending() {
@@ -285,7 +298,7 @@
             return '<div class="kdsp-auto" style="margin:8px 0;">' +
               '<div class="kdsp-compare">' +
                 '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
-                '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
+                '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" interaction-prompt="none" reveal="auto" style="background:#11151c !important;"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
               '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:4px;">' +
                 '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
@@ -315,6 +328,7 @@
       el.appendChild(card);
       (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-thumb'));
       if (autos.length && typeof _ensureModelViewer === 'function') _ensureModelViewer();
+      if (autos.length) _wireMvErrors(card);
       card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           btn.disabled = true;
@@ -399,7 +413,7 @@
         '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
           '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
-          '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>3D model</figcaption></figure>' +
+          '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" interaction-prompt="none" reveal="auto" style="background:#11151c !important;"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>3D model</figcaption></figure>' +
         '</div>' +
         '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">Open 3D</button>' +
         '<div class="kdsp-actions">' +
@@ -408,6 +422,7 @@
         '</div>';
       el.appendChild(card);
       (function (p) { if (p) { p.style.cursor = 'zoom-in'; p.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-cmp img'));
+      _wireMvErrors(card);
       card.querySelector('.kdsp-see3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
       card.querySelector('.kdsp-ok').addEventListener('click', async function () {
         try { await workerConfirmGlb(r.id); _kdToast('Added to stock — thanks'); } catch (e) { _kdToast('Action failed'); }
