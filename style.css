@@ -7841,6 +7841,8 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
 .kdsp-qty { display: flex; align-items: center; gap: 12px; }
 .kdsp-qty button { width: 36px; height: 36px; border-radius: 8px; font-size: 18px; }
+.kdsp-qty b { min-width: 34px; text-align: center; font-size: 22px; font-weight: 700; color: #e8eef5; }
+.kdsp-rev-qty { width: 64px; text-align: center; font-size: 17px; font-weight: 700; }
 .kdsp-input { width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #2c3a4e; background: #0f1419; color: #e8eef5; margin-top: 8px; }
 .kdsp-btn { padding: 10px 14px; border-radius: 10px; border: 1px solid #2c3a4e; background: transparent; color: #e8eef5; cursor: pointer; }
 .kdsp-btn-primary { background: #d29922; border-color: #d29922; color: #1b2330; font-weight: 600; }

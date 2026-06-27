@@ -226,7 +226,7 @@
       '<div class="kdsp-phototray" id="kdsp-phototray"></div>' +
       '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" capture="environment" multiple id="kdsp-photo" hidden>' +
       '<span class="kdsp-photo-hint">Add photo (1-3)</span></label>' +
-      '<div class="kdsp-row"><span>Quantity</span><div class="kdsp-qty">' +
+      '<div class="kdsp-row"><span>QTY</span><div class="kdsp-qty">' +
         '<button type="button" id="kdsp-qminus">−</button><b id="kdsp-qval">1</b><button type="button" id="kdsp-qplus">+</button>' +
       '</div></div>' +
       '<input type="text" id="kdsp-note" class="kdsp-input kdsp-th" placeholder="Remarks (optional, Thai OK)">' +
@@ -383,9 +383,9 @@
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (_pics[0] || '') + '" alt="">' +
           '<div class="kdsp-revmeta">' +
             '<p class="kdsp-muted">added by ' + escapeHtml(r.created_by_role || '') + ' · ' + _relAgo + '</p>' +
-            '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;"><span class="kdsp-muted">Quantity</span><input type="number" class="kdsp-rev-qty" min="1" max="99" value="' + (r.qty || 1) + '" style="width:72px;text-align:center;"></div>' +
+            '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;"><span class="kdsp-muted">QTY</span><input type="number" class="kdsp-rev-qty" min="1" max="99" value="' + (r.qty || 1) + '"></div>' +
             bounce +
-            (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
+            '<input type="text" class="kdsp-input kdsp-th kdsp-rev-note" placeholder="Remarks (Thai OK)" value="' + escapeHtml(r.note || '') + '">' +
             autoHtml +
             '<p class="kdsp-muted" style="margin:8px 0 2px;">' + (autos.length ? 'Or find another code:' : (_L ? 'No code within ±5mm of ' + _L + 'mm — find manually:' : 'Find a code:')) + '</p>' +
             '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
@@ -418,6 +418,8 @@
       }
       // เอ๋ #5: re-run the AI match (e.g. after a new code entered the catalog) — fire-and-forget; the listener repaints when the fresh ai_suggestion lands
       (function (b) { if (b) b.addEventListener('click', function () { _fireAiMatch(r.id, _pics, r.note); _kdToast('Re-running AI…'); }); })(card.querySelector('.kdsp-airerun'));
+      // admin can edit the worker's remarks (เอ๋) — save on change
+      (function (n) { if (n) n.addEventListener('change', async function () { try { await _updateStock(r.id, { note: n.value }); _kdToast('Remarks saved'); } catch (e) { _kdToast('Save failed'); } }); })(card.querySelector('.kdsp-rev-note'));
       card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           btn.disabled = true;
@@ -752,13 +754,48 @@
     var admin = (typeof isAdmin === 'function') && isAdmin();
     ROOT.innerHTML = '';
     var wrap = document.createElement('div'); wrap.className = 'kdsp-home';
-    if (admin) { wrap.appendChild(_buildCapture()); wrap.appendChild(_buildReview()); wrap.appendChild(_buildList(false)); }
+    if (admin) { wrap.appendChild(_buildCapture()); wrap.appendChild(_buildReview()); wrap.appendChild(_buildAdminAwaiting()); wrap.appendChild(_buildList(false)); }
     else { wrap.appendChild(_buildCapture()); wrap.appendChild(_buildWorkerConfirm()); wrap.appendChild(_buildList(true)); }
     ROOT.appendChild(wrap);
   }
 
   // S2: deep-link from the nest "↗" — focus the stock list on a code.
   function focusCode(code) { _listQuery = String(code || ''); renderHome(); }
+
+  // เอ๋: admin must SEE all stock + be able to use it. Assigned-but-not-yet-worker-
+  // confirmed rows otherwise vanish from the admin's view (they live only in the
+  // worker Confirm-GLB list). Show them here with a one-tap "Confirm (use as stock)"
+  // so the admin can make stock usable without waiting for a worker round-trip.
+  function _buildAdminAwaiting() {
+    var el = document.createElement('section'); el.className = 'kdsp-section';
+    var rows = _awaiting();
+    if (!rows.length) return el;
+    el.innerHTML = '<h3 class="kdsp-h">Awaiting confirm <span class="kdsp-count">' + rows.length + '</span></h3>';
+    var now = Date.now();
+    rows.forEach(function (r) {
+      var pics = _rowPhotos(r);
+      var card = document.createElement('div'); card.className = 'kdsp-card';
+      card.innerHTML =
+        '<div class="kdsp-revrow">' +
+          '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (pics[0] || '') + '" alt="">' +
+          '<div class="kdsp-revmeta">' +
+            '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ×' + (r.qty || 1) + ' · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
+            '<p class="kdsp-muted">assigned ' + relativeTime(now, r.reviewed_at) + ' · waiting for a worker</p>' +
+            '<div class="kdsp-actions">' +
+              '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-adminconfirm" data-id="' + escapeHtml(r.id) + '">✓ Confirm (use as stock)</button>' +
+              '<button type="button" class="kdsp-btn kdsp-aw3d" data-code="' + escapeHtml(r.code || '') + '">3D</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      el.appendChild(card);
+      (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(pics, 0); }); } })(card.querySelector('.kdsp-thumb'));
+      card.querySelector('.kdsp-adminconfirm').addEventListener('click', async function () {
+        try { await workerConfirmGlb(r.id); _kdToast('Confirmed → in stock'); } catch (e) { _kdToast('Action failed'); }
+      });
+      card.querySelector('.kdsp-aw3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
+    });
+    return el;
+  }
 
   function init() {
     _stockCache = _loadLS();   // instant paint (no photos yet)
