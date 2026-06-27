@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-27T10:55:26.906529
+CC_Assembly walk debug — 2026-06-27T10:59:59.956321
 Project: FN2BLA-095000
 Total occurrences visited: 1
 CAM-ALPF tagged components: 0
@@ -8,4 +8,4 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | FN2BLA-065000:1 (FN2BLA-065000)
+    0 | SM  |     | ALPF             | FN2BLA-040000:1 (FN2BLA-040000)
