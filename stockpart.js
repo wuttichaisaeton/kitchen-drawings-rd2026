@@ -14,9 +14,10 @@
   // AI image-match endpoint (S3). Set to the LINE-bot Render base + /api/stock-match.
   // Empty until configured → _fireAiMatch no-ops (feature dormant, graceful).
   var KDSP_AI_ENDPOINT = 'https://stainless-line-bot.onrender.com/api/stock-match';
-  // เอ๋: auto-match thumbnail model is wrong-axis → rotate 90° about X.
-  // model-viewer orientation = "roll(Z) pitch(X) yaw(Y)" → X-90° = pitch 90°.
-  var _THUMB_ORIENT = '0deg 90deg 0deg';
+  // เอ๋: auto-match thumbnail model is wrong-axis → rotate 90° about X, CLOCKWISE.
+  // model-viewer orientation = "roll(Z) pitch(X) yaw(Y)"; +pitch is counter-clockwise,
+  // so clockwise X-90° = pitch -90°. (Flip the sign if it ends up the wrong way.)
+  var _THUMB_ORIENT = '0deg -90deg 0deg';
 
   // ── state ───────────────────────────────────────────────────
   var _stockCache = {};   // pushId -> row
