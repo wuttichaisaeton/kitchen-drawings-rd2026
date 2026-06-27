@@ -270,6 +270,64 @@
     return el;
   }
 
+  // ── ensure <model-viewer> is registered (so we can embed it INLINE) ──
+  // เอ๋ requirement: the worker must SEE the GLB beside their photo and compare.
+  // Matches app.js's _kdOpen3D loader (const _KD3D_MV_CDN, model-viewer 4.0.0)
+  // so inline + modal use the same build. Resolves when the element is defined.
+  var _mvReady = null;
+  function _ensureModelViewer() {
+    if (_mvReady) return _mvReady;
+    _mvReady = new Promise(function (resolve) {
+      if (window.customElements && customElements.get('model-viewer')) { resolve(true); return; }
+      var s = document.createElement('script'); s.type = 'module';
+      s.src = 'https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js'; // matches _KD3D_MV_CDN
+      s.onload = function () { resolve(true); };
+      s.onerror = function () { resolve(false); };
+      document.head.appendChild(s);
+    });
+    return _mvReady;
+  }
+
+  // ── worker confirm-GLB list (Thai) — photo beside the live 3D model ──
+  function _awaiting() {
+    var out = [];
+    for (var id in _stockCache) { var r = _stockCache[id]; if (r && r.status === 'awaiting_worker_confirm') out.push(Object.assign({ id: id }, r)); }
+    out.sort(function (a, b) { return (b.reviewed_at || 0) - (a.reviewed_at || 0); });
+    return out;
+  }
+  function _buildWorkerConfirm() {
+    var el = document.createElement('section'); el.className = 'kdsp-section kdsp-th';
+    var rows = _awaiting();
+    el.innerHTML = '<h3 class="kdsp-h">รอยืนยันว่าใช่ part นี้ไหม</h3>' + (rows.length ? '' : '<p class="kdsp-empty">ยังไม่มีรายการรอยืนยัน</p>');
+    if (rows.length) _ensureModelViewer();   // load the element so the inline GLB renders
+    rows.forEach(function (r) {
+      var card = document.createElement('div'); card.className = 'kdsp-card';
+      var glb = (typeof _kd3dGlbUrl === 'function' && r.code) ? _kd3dGlbUrl(r.code) : '';
+      // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
+      card.innerHTML =
+        '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
+        '<p class="kdsp-cmp-cap">รูปที่ถ่าย ↔ แบบ 3D — เหมือนกันไหม?</p>' +
+        '<div class="kdsp-compare">' +
+          '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>รูปถ่าย</figcaption></figure>' +
+          '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>แบบ 3D</figcaption></figure>' +
+        '</div>' +
+        '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">ขยายดู 3D</button>' +
+        '<div class="kdsp-actions">' +
+          '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-ok" data-id="' + escapeHtml(r.id) + '">✓ ถูกต้อง</button>' +
+          '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ ไม่ใช่</button>' +
+        '</div>';
+      el.appendChild(card);
+      card.querySelector('.kdsp-see3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
+      card.querySelector('.kdsp-ok').addEventListener('click', async function () {
+        try { await workerConfirmGlb(r.id); _kdToast('เข้าคลังแล้ว ขอบคุณ'); } catch (e) { _kdToast('ทำรายการไม่สำเร็จ'); }
+      });
+      card.querySelector('.kdsp-no').addEventListener('click', async function () {
+        try { await workerRejectGlb(r.id); _kdToast('ส่งกลับให้เอ๋เลือกใหม่'); } catch (e) { _kdToast('ทำรายการไม่สำเร็จ'); }
+      });
+    });
+    return el;
+  }
+
   // ── (render added in later tasks) ───────────────────────────
 
   function renderHome() {
