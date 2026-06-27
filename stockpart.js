@@ -130,9 +130,11 @@
   }
   async function _updateStock(id, patch) { if (window.firebaseDB && id) await _ref(id).update(patch); }
   async function _deleteStock(id) { if (window.firebaseDB && id) await _ref(id).remove(); }
-  async function assignCode(id, code, meta) {
+  async function assignCode(id, code, meta, qty) {
     meta = meta || {};
-    await _updateStock(id, { status: 'awaiting_worker_confirm', code: code, thickness_mm: (meta.thickness_mm == null ? null : meta.thickness_mm), material: meta.material || '', grain: meta.grain || '', reviewed_at: Date.now(), reviewed_by_role: 'admin', bounced_from: '', bounced_at: null });
+    var patch = { status: 'awaiting_worker_confirm', code: code, thickness_mm: (meta.thickness_mm == null ? null : meta.thickness_mm), material: meta.material || '', grain: meta.grain || '', reviewed_at: Date.now(), reviewed_by_role: 'admin', bounced_from: '', bounced_at: null };
+    if (qty != null && !isNaN(qty)) patch.qty = Math.min(QTY_MAX, Math.max(QTY_MIN, qty));
+    await _updateStock(id, patch);
   }
   async function rejectIntake(id) { await _updateStock(id, { status: 'rejected', reviewed_at: Date.now(), reviewed_by_role: 'admin' }); }
   async function workerConfirmGlb(id) { await _updateStock(id, { status: 'confirmed', worker_confirmed_at: Date.now() }); }
@@ -320,7 +322,8 @@
         '<div class="kdsp-revrow">' +
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
           '<div class="kdsp-revmeta">' +
-            '<p class="kdsp-muted">Qty ' + (r.qty || 0) + ' · by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
+            '<p class="kdsp-muted">by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
+            '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;"><span class="kdsp-muted">Quantity</span><input type="number" class="kdsp-rev-qty" min="1" max="99" value="' + (r.qty || 1) + '" style="width:72px;"></div>' +
             bounce +
             (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
             autoHtml +
@@ -342,7 +345,7 @@
         btn.addEventListener('click', async function () {
           btn.disabled = true;
           try {
-            await assignCode(r.id, btn.getAttribute('data-code'), { thickness_mm: btn.getAttribute('data-th') ? Number(btn.getAttribute('data-th')) : null, material: btn.getAttribute('data-mat'), grain: btn.getAttribute('data-grn') });
+            await assignCode(r.id, btn.getAttribute('data-code'), { thickness_mm: btn.getAttribute('data-th') ? Number(btn.getAttribute('data-th')) : null, material: btn.getAttribute('data-mat'), grain: btn.getAttribute('data-grn') }, revQty());
             _kdToast('Approved → sent to worker');
           } catch (e) { btn.disabled = false; _kdToast('Save failed'); }
         });
@@ -350,6 +353,7 @@
       card.querySelectorAll('.kdsp-auto3d').forEach(function (b) { b.addEventListener('click', function () { _kdOpen3D(b.getAttribute('data-code')); }); });
 
       var chosen = { code: '', meta: {} };
+      var revQty = function () { var qv = card.querySelector('.kdsp-rev-qty'); return qv ? Number(qv.value) : null; };
       var input = card.querySelector('.kdsp-pick-q');
       var results = card.querySelector('.kdsp-pick-results');
       var assignBtn = card.querySelector('.kdsp-assign');
@@ -374,7 +378,7 @@
       });
       assignBtn.addEventListener('click', async function () {
         if (!chosen.code) return; assignBtn.disabled = true;
-        try { await assignCode(r.id, chosen.code, chosen.meta); _kdToast('Sent to worker to confirm'); } catch (e) { assignBtn.disabled = false; _kdToast('Save failed'); }
+        try { await assignCode(r.id, chosen.code, chosen.meta, revQty()); _kdToast('Sent to worker to confirm'); } catch (e) { assignBtn.disabled = false; _kdToast('Save failed'); }
       });
       card.querySelector('.kdsp-reject').addEventListener('click', async function () {
         try { await rejectIntake(r.id); _kdToast('Rejected'); } catch (e) { _kdToast('Action failed'); }
