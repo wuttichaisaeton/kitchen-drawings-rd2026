@@ -203,6 +203,18 @@ h1 {
   background: rgba(255, 255, 255, 0.08);
   color: #fff;
 }
+/* เอ๋: clearly HIGHLIGHT the current working role/status on every device + theme.
+   The active chip's per-role gradient is an inline bg → stripped by the sketch/chalk
+   `body *{background:transparent!important}` reset; a ring + scale survive it, so the
+   "you are here" marker is unmistakable in dark/sketch/chalk/obsidian alike. */
+.admin-badge, .role-badge, .role-switch-btn { font-size: 11px; }
+.role-switcher .role-switch-btn.active,
+body .role-switcher .role-switch-btn.active {
+  outline: 2px solid #ff4d4f; outline-offset: 1px;
+  transform: scale(1.08); position: relative; z-index: 1; font-weight: 800;
+}
+.role-badge { outline: 2px solid rgba(255, 255, 255, 0.8); outline-offset: 1px; }   /* worker's current-role pill, ringed (outline isn't stripped) */
+.admin-badge { outline: 2px solid rgba(255, 255, 255, 0.85); outline-offset: 1px; } /* admin = current status, ringed */
 .role-switch-btn .icon-bend {
   width: 12px;
   height: 12px;
