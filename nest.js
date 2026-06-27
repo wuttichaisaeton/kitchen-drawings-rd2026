@@ -3902,6 +3902,8 @@
     const dims = (part.w && part.h) ? (Math.round(part.w) + '×' + Math.round(part.h)) : '';
     const flipTitle = part.manual ? 'Rotate 180° (disabled — manual part has no DXF)' : 'Rotate 180°';
     const mirrTitle = (part.manual || !part.polys) ? 'Mirror (disabled — needs DXF geometry)' : 'Mirror horizontally';
+    const _g0 = grainGlyph(String(part.grain || '').toUpperCase());
+    const _onSheet0 = _sheetIdxOf(code);
     const pop = document.createElement('div');
     pop.className = 'kdnest-partpop';
     pop.dataset.code = code;
@@ -3915,8 +3917,10 @@
       + '</div>'
       + '<div class="kdnest-partpop-body"><canvas class="kdnest-partpop-canvas"></canvas></div>'
       + '<div class="kdnest-partpop-ctrls">'
+      +   '<button class="kdnest-part-grain kdnest-partpop-btn ' + _g0.cls + '" title="Grain: ' + _g0.title + ' — click to cycle ?→H→V→ANY (EDGE: click an edge)">' + _g0.ch + ' Grain</button>'
       +   '<button class="kdnest-part-flip180 kdnest-partpop-btn' + (part.flip180 ? ' kdnest-orient-active' : '') + '"' + (part.manual ? ' disabled' : '') + ' title="' + flipTitle + '">⟲ 180°</button>'
       +   '<button class="kdnest-part-mirror kdnest-partpop-btn' + (part.mirror ? ' kdnest-orient-active' : '') + '"' + ((part.manual || !part.polys) ? ' disabled' : '') + ' title="' + mirrTitle + '">↔︎ Mirror</button>'
+      +   '<button class="kdnest-partpop-sheet kdnest-partpop-btn"' + (_onSheet0 < 0 ? ' disabled' : '') + ' title="Jump to the sheet where this part is placed and highlight it">📍 Sheet</button>'
       + '</div>';
     document.body.appendChild(pop);
     const q = sel => pop.querySelector(sel);
@@ -3935,9 +3939,23 @@
       document.removeEventListener('keydown', onKey, true);
       if (themeObs) { try { themeObs.disconnect(); } catch (_) {} themeObs = null; }
       if (sizeObs) { try { sizeObs.disconnect(); } catch (_) {} sizeObs = null; }
+      clearTimeout(window.__kdNestHighlightTO);
+      const hadHl = (S.highlightCode != null); S.highlightCode = null;
       pop.remove();
+      if (hadHl) _refreshView();   // drop the on-sheet glow + row highlight
     };
     pop._kdClose = close;   // so a later _openPartPopup (or external) can clean us up
+    // Highlight the viewed part: glow its placements on the sheet + mark its row, and
+    // jump to its sheet so the effect is visible behind the popup. (เอ๋ 2026-06-27 'โชว์ Hilight')
+    const popupHighlight = (c) => {
+      clearTimeout(window.__kdNestHighlightTO);   // the popup owns the highlight while open
+      S.highlightCode = c;
+      const idx = _sheetIdxOf(c);
+      if (idx >= 0) S.currentSheetIdx = idx;
+      _refreshView();
+      const r = S.rootEl && S.rootEl.querySelector('.kdnest-part[data-code="' + (window.CSS && CSS.escape ? CSS.escape(c) : c) + '"]');
+      if (r) r.scrollIntoView({ block: 'nearest' });
+    };
     // Edge-click → lock this part's grain parallel to the clicked edge (the power the
     // retired inline preview had), then redraw + debounce a re-nest. (เอ๋ 2026-06-27)
     const onEdgePopup = (p, edge) => {
@@ -3961,6 +3979,10 @@
       const fb = q('.kdnest-part-flip180'), mb = q('.kdnest-part-mirror');
       if (fb) { fb.disabled = !!p.manual; fb.classList.toggle('kdnest-orient-active', !!p.flip180); }
       if (mb) { mb.disabled = !!(p.manual || !p.polys); mb.classList.toggle('kdnest-orient-active', !!p.mirror); }
+      const gb = q('.kdnest-part-grain');
+      if (gb) { const gg = grainGlyph(String(p.grain || '').toUpperCase()); gb.className = 'kdnest-part-grain kdnest-partpop-btn ' + gg.cls; gb.innerHTML = gg.ch + ' Grain'; gb.title = 'Grain: ' + gg.title + ' — click to cycle'; }
+      const sb = q('.kdnest-partpop-sheet');
+      if (sb) sb.disabled = _sheetIdxOf(p.code) < 0;
     };
     // Switch the popup to another part IN PLACE (keeps size/position). Used by ↑/↓.
     const showPart = (newCode) => {
@@ -3969,6 +3991,7 @@
       const d = (p.w && p.h) ? (Math.round(p.w) + '×' + Math.round(p.h)) : '';
       if (titleEl) titleEl.innerHTML = _esc(_disp(newCode)) + (d ? ' <span class="kdnest-partpop-dim">' + d + '</span>' : '');
       draw(); syncBtns();
+      popupHighlight(newCode);   // glow + row highlight + jump to its sheet
     };
     pop._kdShowPart = showPart;   // so _setPreview can point the open popup at a part
     // ↑/↓ steps to the prev/next VIEWABLE (non-manual) part. (เอ๋ 2026-06-27 'ใช้ปุ่ม
@@ -4036,6 +4059,22 @@
     };
     q('.kdnest-part-flip180')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) orient('flip180'); });
     q('.kdnest-part-mirror')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) orient('mirror'); });
+    // Grain glyph — cycle ?→H→V→ANY (or reset EDGE); affects packing → debounced re-nest.
+    // MIRRORS the per-row grain glyph EXACTLY: the H/V/ANY cycle is in-memory (reverts
+    // on reload, same as the row — grain is persisted only via the 🎨 Grain modal);
+    // the EDGE reset persists through _setPartEdgeGrain. (consistent-with-row 2026-06-27)
+    q('.kdnest-part-grain')?.addEventListener('click', () => {
+      const p = live(); if (!p) { close(); return; }
+      if (String(p.grain || '').toUpperCase() === 'EDGE') {
+        _setPartEdgeGrain(p, null).then(() => { draw(); syncBtns(); scheduleRenest(); }).catch(() => {});
+      } else {
+        const cyc = { '?': 'H', 'H': 'V', 'V': 'ANY', 'ANY': 'H' };
+        p.grain = cyc[String(p.grain || '').toUpperCase()] || 'H';
+        draw(); syncBtns(); scheduleRenest();
+      }
+    });
+    // 📍 Sheet — jump to the part's sheet behind the popup + (re)highlight it.
+    q('.kdnest-partpop-sheet')?.addEventListener('click', (e) => { if (!e.currentTarget.disabled) popupHighlight(curCode); });
     // Draggable by its header (same pattern as the Remnants modal) so it can be
     // moved aside to watch the layout re-arrange.
     (function _ppDrag() {
@@ -4065,6 +4104,7 @@
       handle.addEventListener('pointerup', end);
       handle.addEventListener('pointercancel', end);
     })();
+    popupHighlight(code);   // initial: highlight the opened part on the layout behind
   }
 
   // ════════════════════════════════════════════════════════════════════
@@ -6616,7 +6656,7 @@
       const rowGrainWarn = grainDir ? ' kdnest-part-grainwarn' : '';
       const reviewMark = _reviewReasons(p).length ? ' kdnest-part-review' : '';
       return `
-        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${p.code === S.previewCode ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
+        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${(S.highlightCode && p.code === S.highlightCode) ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
           <span class="kdnest-part-code" title="${_esc(p.code)}${p.origCode ? _esc(' · renamed from ' + p.origCode) : ''}${p.sources && Object.keys(p.sources).length > 1 ? _esc(' — ' + Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + ')) : ''}">${p.manual ? '▭ ' : ''}${p.origCode ? '✎ ' : ''}${_esc(_disp(p.code))}${p.sources && Object.keys(p.sources).length > 1 ? `<sup class="kdnest-part-srcs" title="${_esc(Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + '))}">${Object.keys(p.sources).length}P</sup>` : ''}</span>${(!p.manual && typeof window.isAdmin === 'function' && window.isAdmin()) ? `<button class="kdnest-part-rename" title="${p.origCode ? 'Re-pointed to ' + _esc(p.code) + ' (from ' + _esc(p.origCode) + ') — click to change or revert' : 'Rename / re-point this part code (web override — does not touch Fusion)'}" style="background:none;border:none;cursor:pointer;font-size:0.82em;opacity:0.5;padding:0 1px;line-height:1">✏️</button>` : ''}
