@@ -369,7 +369,7 @@
                 '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0" title="View 3D — tap to open full screen">' + (glb ? '<model-viewer src="' + glb + '" loading="eager" interaction-prompt="none" reveal="auto" orientation="' + _THUMB_ORIENT + '" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" style="pointer-events:none;width:100%;height:100%;background:transparent;"></model-viewer>' : (_CUBE_SVG + '<span>View 3D</span>')) + '</div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
               '<div class="kdsp-auto-meta">' +
-                '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
+                '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm > 0 ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
                 '<span class="kdsp-auto-btns">' +
                   '<button type="button" class="kdsp-btn kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '">3D</button>' +
                   '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-approve" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">Approve</button>' +
@@ -442,7 +442,7 @@
         results.innerHTML = list.map(function (m) {
           return '<div class="kdsp-cand" data-code="' + escapeHtml(m.master_code) + '">' +
             '<code>' + escapeHtml(m.master_code) + '</code>' +
-            '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span>' +
+            '<span class="kdsp-muted">' + (m.thickness_mm > 0 ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span>' +
             '<button type="button" class="kdsp-3d" data-code="' + escapeHtml(m.master_code) + '">3D</button>' +
             '<button type="button" class="kdsp-use" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">use</button>' +
           '</div>';
@@ -562,7 +562,7 @@
       var _pics = _rowPhotos(r);
       // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
-        '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
+        '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm > 0 ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
         (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
         '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
@@ -628,9 +628,10 @@
       var photo = _lp[0] ? '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + _lp[0] + '" alt="">' : '<div class="kdsp-thumb kdsp-noimg"></div>';
       var firstQty = (g.rows[0] && g.rows[0].qty != null) ? g.rows[0].qty : 1;
       card.innerHTML = photo +
+        '<div class="kdsp-stockbody">' +
         '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
         '<div class="kdsp-meta"><span class="kdsp-pill">×' + g.qty + ' in stock</span>' +
-        '<span class="kdsp-muted">' + (g.thickness_mm != null ? g.thickness_mm + 'mm ' : '') + escapeHtml(g.material || '') + '</span></div>' +
+        '<span class="kdsp-muted">' + (g.thickness_mm > 0 ? g.thickness_mm + 'mm ' : '') + escapeHtml(g.material || '') + '</span></div>' +
         '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(code) + '">View 3D</button>' +
         (readOnly ? '' :
           '<span class="kdsp-foot-actions">' +
@@ -646,7 +647,8 @@
             '</div>' +
             '<input type="text" class="kdsp-input kdsp-edit-codeq" placeholder="Change code…">' +
             '<div class="kdsp-edit-results"></div>' +
-          '</div>');
+          '</div>') +
+        '</div>';   // /kdsp-stockbody
       grid.appendChild(card);
       (function (t) { if (t && !t.classList.contains('kdsp-noimg')) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(_lp, 0); }); } })(card.querySelector('.kdsp-thumb'));
       card.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(code); });
@@ -672,7 +674,7 @@
           codeResults.innerHTML = list.map(function (m) {
             return '<div class="kdsp-cand" data-code="' + escapeHtml(m.master_code) + '">' +
               '<code>' + escapeHtml(m.master_code) + '</code>' +
-              '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span>' +
+              '<span class="kdsp-muted">' + (m.thickness_mm > 0 ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span>' +
               '<button type="button" class="kdsp-use" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">use</button>' +
             '</div>';
           }).join('');
@@ -697,7 +699,7 @@
         var cc = document.createElement('div'); cc.className = 'kdsp-card kdsp-stockcard kdsp-catcard';
         cc.innerHTML = '<div class="kdsp-thumb kdsp-noimg"></div>' +
           '<code class="kdsp-code">' + escapeHtml(m.master_code) + '</code>' +
-          '<div class="kdsp-meta"><span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span></div>' +
+          '<div class="kdsp-meta"><span class="kdsp-muted">' + (m.thickness_mm > 0 ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span></div>' +
           '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(m.master_code) + '">View 3D</button></div>';
         cgrid.appendChild(cc);
         cc.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(m.master_code); });
@@ -779,7 +781,7 @@
         '<div class="kdsp-revrow">' +
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (pics[0] || '') + '" alt="">' +
           '<div class="kdsp-revmeta">' +
-            '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ×' + (r.qty || 1) + ' · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
+            '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ×' + (r.qty || 1) + ' · ' + (r.thickness_mm > 0 ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
             '<p class="kdsp-muted">assigned ' + relativeTime(now, r.reviewed_at) + ' · waiting for a worker</p>' +
             '<div class="kdsp-actions">' +
               '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-adminconfirm" data-id="' + escapeHtml(r.id) + '">✓ Confirm (use as stock)</button>' +
