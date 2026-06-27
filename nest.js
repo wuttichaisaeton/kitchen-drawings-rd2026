@@ -3263,16 +3263,31 @@
     }
   }
 
+  // Rectify EVERY fresh sheet (was last-only). เอ๋ 2026-06-27: she wants every
+  // sheet to collapse its parts toward an edge and leave a clean reusable remnant
+  // (top/right) like the last sheet, not spread edge-to-edge. Each _rectifySheet
+  // call is NEVER-WORSE and NEVER adds a sheet/cost: it bails (keeps the original
+  // layout) unless the sheet's parts re-fit on the SAME one sheet AND leave a
+  // >=300mm reusable rectangle — so full sheets are untouched (no-op) and only
+  // sheets with slack (e.g. เอ๋'s loose Sheet 3) get the clean remnant. The last
+  // fresh sheet keeps the interactive wide/long chooser; the others auto-apply
+  // the bigger remnant silently. (Option 1 'จัดชิด ต้นทุนเท่าเดิม')
   function _rectifyLastSheet() {
     S._rectPendingIdx = -1;            // reset each run (chooser hook reads this)
     if (!S.rectLeftover) return;
     const sheets = S.flatSheets || [];
-    // last FRESH-stock sheet (offcut-derived sheets aren't re-rectified)
-    let li = -1;
-    for (let i = sheets.length - 1; i >= 0; i--) { if (!sheets[i].fromRemnant) { li = i; break; } }
-    if (li < 0) return;
+    let lastFresh = -1;
+    for (let i = sheets.length - 1; i >= 0; i--) { if (!sheets[i].fromRemnant) { lastFresh = i; break; } }
+    if (lastFresh < 0) return;
+    for (let i = 0; i < sheets.length; i++) {
+      if (!sheets[i].fromRemnant) _rectifySheet(i, i === lastFresh);
+    }
+  }
+
+  function _rectifySheet(li, allowChooser) {
+    const sheets = S.flatSheets || [];
     const sheet = sheets[li];
-    if (!sheet.placements || !sheet.placements.length) return;
+    if (!sheet || !sheet.placements || !sheet.placements.length) return;
     const origPlacements = sheet.placements;   // floor — never make the result worse
 
     // Reconstruct pieces from the placements (strip x/y/rot; keep rots so grain
@@ -3355,19 +3370,20 @@
       sheet.lastRemnantRect = null;
       return;
     }
-    _applyRectVariant(sheet, li, dir);
-    // Both valid -> ask เอ๋ to SEE both (modal); one valid -> applied silently.
-    if (variants.h && variants.v) S._rectPendingIdx = li;
+    _applyRectVariant(sheet, li, dir, allowChooser);
+    // Last fresh sheet with BOTH directions valid -> let เอ๋ pick (modal). Every
+    // other sheet (or a single valid direction) applies silently, no view jump.
+    if (allowChooser && variants.h && variants.v) S._rectPendingIdx = li;
   }
 
   // Apply one computed variant to the live sheet (swap placements + rect) and
   // land the view on it. Shared by the default-apply and the chooser click.
-  function _applyRectVariant(sheet, idx, dir) {
+  function _applyRectVariant(sheet, idx, dir, jump) {
     const variant = sheet._rectVariants && sheet._rectVariants[dir];
     if (!variant) return;
     sheet.placements = variant.placements;
     sheet.lastRemnantRect = { x: variant.rect.x, y: variant.rect.y, w: variant.rect.w, h: variant.rect.h };
-    S.currentSheetIdx = idx;
+    if (jump !== false) S.currentSheetIdx = idx;   // non-last sheets rectify silently (no view jump)
   }
 
   // Side-by-side chooser shown when the last sheet's leftover can run either way
