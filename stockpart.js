@@ -145,18 +145,18 @@
   // ── capture screen (worker, Thai) ───────────────────────────
   function _buildCapture() {
     var el = document.createElement('section');
-    el.className = 'kdsp-card kdsp-th';
+    el.className = 'kdsp-card';
     el.innerHTML =
-      (_undoLast ? '<button type="button" id="kdsp-undo" class="kdsp-btn kdsp-btn-ghost">เลิกล่าสุด</button>' : '') +
-      '<h3 class="kdsp-h">เพิ่มของเข้าคลัง</h3>' +
+      (_undoLast ? '<button type="button" id="kdsp-undo" class="kdsp-btn kdsp-btn-ghost">Undo last</button>' : '') +
+      '<h3 class="kdsp-h">Add part to stock</h3>' +
       '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" id="kdsp-photo" hidden>' +
-      '<span class="kdsp-photo-hint">ถ่ายรูป part</span></label>' +
+      '<span class="kdsp-photo-hint">Take / choose a photo</span></label>' +
       '<img class="kdsp-preview" id="kdsp-preview" alt="" hidden>' +
-      '<div class="kdsp-row"><span>จำนวน</span><div class="kdsp-qty">' +
+      '<div class="kdsp-row"><span>Quantity</span><div class="kdsp-qty">' +
         '<button type="button" id="kdsp-qminus">−</button><b id="kdsp-qval">1</b><button type="button" id="kdsp-qplus">+</button>' +
       '</div></div>' +
-      '<input type="text" id="kdsp-note" class="kdsp-input" placeholder="หมายเหตุ (ไม่บังคับ)">' +
-      '<button type="button" id="kdsp-submit" class="kdsp-btn kdsp-btn-primary" disabled>ส่งเข้าคิวตรวจ</button>';
+      '<input type="text" id="kdsp-note" class="kdsp-input kdsp-th" placeholder="Remarks (optional, Thai OK)">' +
+      '<button type="button" id="kdsp-submit" class="kdsp-btn kdsp-btn-primary" disabled>Send to review</button>';
 
     var u = el.querySelector('#kdsp-undo'); if (u) u.onclick = _undoLastIntake;
     var qty = 1, photoB64 = null;
@@ -166,31 +166,31 @@
     el.querySelector('#kdsp-qplus').onclick = function () { setQty(qty + 1); };
     el.querySelector('#kdsp-photo').addEventListener('change', function (e) {
       var f = e.target.files && e.target.files[0]; if (!f) return;
-      submit.disabled = true; el.querySelector('.kdsp-photo-hint').textContent = 'กำลังย่อรูป…';
+      submit.disabled = true; el.querySelector('.kdsp-photo-hint').textContent = 'Compressing…';
       compressImage(f).then(function (b64) {
         photoB64 = b64;
         var pv = el.querySelector('#kdsp-preview'); pv.src = 'data:image/jpeg;base64,' + b64; pv.hidden = false;
-        el.querySelector('.kdsp-photo-hint').textContent = 'ถ่ายใหม่';
+        el.querySelector('.kdsp-photo-hint').textContent = 'Change photo';
         submit.disabled = false;
       }).catch(function (err) {
         photoB64 = null; submit.disabled = true;
-        el.querySelector('.kdsp-photo-hint').textContent = 'ถ่ายรูป part';
-        _kdToast(err && err.message === 'too-large' ? 'รูปใหญ่เกินไป ลองถ่ายใหม่' : 'ไฟล์รูปไม่ถูกต้อง ลองใหม่');
+        el.querySelector('.kdsp-photo-hint').textContent = 'Take / choose a photo';
+        _kdToast(err && err.message === 'too-large' ? 'Image too large — try again' : 'Invalid image — try again');
       });
     });
     submit.addEventListener('click', async function () {
       if (!photoB64) return;
-      if (_submitCount24h() >= CAP_BLOCK) { _kdToast('วันนี้เพิ่มของเยอะเกินไปแล้ว ลองพรุ่งนี้'); return; }
+      if (_submitCount24h() >= CAP_BLOCK) { _kdToast('Too many added today — try tomorrow'); return; }
       var row = { status: 'pending', code: '', qty: qty, note: el.querySelector('#kdsp-note').value || '', photo_data: photoB64, created_at: Date.now(), created_by_role: (typeof getRole === 'function' ? getRole() : 'workshop') };
       submit.disabled = true;
       try {
         if (JSON.stringify(row).length > MAX_BYTES) throw new Error('too-large');
         _undoLast = await saveIntake(row);
         var _n = _recordSubmit();
-        _kdToast('ส่งแล้ว รอเอ๋ตรวจ · กดเลิกได้');
-        if (_n > CAP_WARN) _kdToast('วันนี้เพิ่มของเยอะแล้วนะ');
+        _kdToast('Sent — waiting for review · you can undo');
+        if (_n > CAP_WARN) _kdToast('A lot added today');
         renderHome();
-      } catch (e) { submit.disabled = false; _kdToast('บันทึกไม่สำเร็จ ลองใหม่'); }
+      } catch (e) { submit.disabled = false; _kdToast('Save failed — try again'); }
     });
     return el;
   }
@@ -198,7 +198,7 @@
   async function _undoLastIntake() {
     if (!_undoLast) return;
     var id = _undoLast; _undoLast = null;
-    try { await _deleteStock(id); _kdToast('ยกเลิกแล้ว'); renderHome(); } catch (e) { _kdToast('ยกเลิกไม่สำเร็จ'); }
+    try { await _deleteStock(id); _kdToast('Undone'); renderHome(); } catch (e) { _kdToast('Undo failed'); }
   }
 
   // ── admin review queue + code picker ────────────────────────
@@ -217,7 +217,7 @@
     var now = Date.now();
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
-      var bounce = r.bounced_from ? '<div class="kdsp-flag">ช่างบอกไม่ใช่ ' + escapeHtml(r.bounced_from) + '</div>' : '';
+      var bounce = r.bounced_from ? '<div class="kdsp-flag">Worker said not' + escapeHtml(r.bounced_from) + '</div>' : '';
       card.innerHTML =
         '<div class="kdsp-revrow">' +
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
@@ -260,10 +260,10 @@
       });
       assignBtn.addEventListener('click', async function () {
         if (!chosen.code) return; assignBtn.disabled = true;
-        try { await assignCode(r.id, chosen.code, chosen.meta); _kdToast('ส่งให้ช่างยืนยันแล้ว'); } catch (e) { assignBtn.disabled = false; _kdToast('บันทึกไม่สำเร็จ'); }
+        try { await assignCode(r.id, chosen.code, chosen.meta); _kdToast('Sent to worker to confirm'); } catch (e) { assignBtn.disabled = false; _kdToast('Save failed'); }
       });
       card.querySelector('.kdsp-reject').addEventListener('click', async function () {
-        try { await rejectIntake(r.id); _kdToast('ปฏิเสธแล้ว'); } catch (e) { _kdToast('ทำรายการไม่สำเร็จ'); }
+        try { await rejectIntake(r.id); _kdToast('Rejected'); } catch (e) { _kdToast('Action failed'); }
       });
     });
     return el;
@@ -295,9 +295,9 @@
     return out;
   }
   function _buildWorkerConfirm() {
-    var el = document.createElement('section'); el.className = 'kdsp-section kdsp-th';
+    var el = document.createElement('section'); el.className = 'kdsp-section';
     var rows = _awaiting();
-    el.innerHTML = '<h3 class="kdsp-h">รอยืนยันว่าใช่ part นี้ไหม</h3>' + (rows.length ? '' : '<p class="kdsp-empty">ยังไม่มีรายการรอยืนยัน</p>');
+    el.innerHTML = '<h3 class="kdsp-h">Confirm: is this the right part?</h3>' + (rows.length ? '' : '<p class="kdsp-empty">Nothing to confirm</p>');
     if (rows.length) _ensureModelViewer();   // load the element so the inline GLB renders
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
@@ -305,23 +305,23 @@
       // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
         '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
-        '<p class="kdsp-cmp-cap">รูปที่ถ่าย ↔ แบบ 3D — เหมือนกันไหม?</p>' +
+        '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
-          '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>รูปถ่าย</figcaption></figure>' +
-          '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>แบบ 3D</figcaption></figure>' +
+          '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
+          '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>3D model</figcaption></figure>' +
         '</div>' +
-        '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">ขยายดู 3D</button>' +
+        '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">Open 3D</button>' +
         '<div class="kdsp-actions">' +
-          '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-ok" data-id="' + escapeHtml(r.id) + '">✓ ถูกต้อง</button>' +
-          '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ ไม่ใช่</button>' +
+          '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-ok" data-id="' + escapeHtml(r.id) + '">✓ Correct</button>' +
+          '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ Not this</button>' +
         '</div>';
       el.appendChild(card);
       card.querySelector('.kdsp-see3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
       card.querySelector('.kdsp-ok').addEventListener('click', async function () {
-        try { await workerConfirmGlb(r.id); _kdToast('เข้าคลังแล้ว ขอบคุณ'); } catch (e) { _kdToast('ทำรายการไม่สำเร็จ'); }
+        try { await workerConfirmGlb(r.id); _kdToast('Added to stock — thanks'); } catch (e) { _kdToast('Action failed'); }
       });
       card.querySelector('.kdsp-no').addEventListener('click', async function () {
-        try { await workerRejectGlb(r.id); _kdToast('ส่งกลับให้เอ๋เลือกใหม่'); } catch (e) { _kdToast('ทำรายการไม่สำเร็จ'); }
+        try { await workerRejectGlb(r.id); _kdToast('Sent back for re-pick'); } catch (e) { _kdToast('Action failed'); }
       });
     });
     return el;
@@ -369,7 +369,7 @@
         var rid = g.rows[0] && g.rows[0].id;
         card.querySelector('.kdsp-del').addEventListener('click', async function () {
           if (!rid) return;
-          try { await _deleteStock(rid); _kdToast('ลบ 1 แถวแล้ว'); } catch (e) { _kdToast('ลบไม่สำเร็จ'); }
+          try { await _deleteStock(rid); _kdToast('Deleted one row'); } catch (e) { _kdToast('Delete failed'); }
         });
         var editBox = card.querySelector('.kdsp-editbox');
         card.querySelector('.kdsp-edit').addEventListener('click', function () { editBox.hidden = !editBox.hidden; });
@@ -377,7 +377,7 @@
           if (!rid) return;
           var v = card.querySelector('.kdsp-edit-qval').value;
           var qn = Math.min(99, Math.max(1, Number(v) || 1));
-          try { await _updateStock(rid, { qty: qn }); _kdToast('Saved'); } catch (e) { _kdToast('บันทึกไม่สำเร็จ'); }
+          try { await _updateStock(rid, { qty: qn }); _kdToast('Saved'); } catch (e) { _kdToast('Save failed'); }
         });
         var codeQ = card.querySelector('.kdsp-edit-codeq');
         var codeResults = card.querySelector('.kdsp-edit-results');
@@ -398,7 +398,7 @@
           var newCode = bu.getAttribute('data-code');
           var th = bu.getAttribute('data-th') ? Number(bu.getAttribute('data-th')) : null;
           try { await _updateStock(rid, { code: newCode, thickness_mm: th, material: bu.getAttribute('data-mat') || '', grain: bu.getAttribute('data-grn') || '' }); _kdToast('Code updated'); }
-          catch (err) { _kdToast('บันทึกไม่สำเร็จ'); }
+          catch (err) { _kdToast('Save failed'); }
         });
       }
     });
