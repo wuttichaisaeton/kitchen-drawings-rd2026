@@ -58,8 +58,31 @@
   // dimension hint parsed from the code suffix (after the dash). 6-digit WWWHHH -> "946×0mm".
   function _codeDim(code) {
     var suf = (String(code || '').split('-')[1] || '').replace(/\D/g, '');
-    if (suf.length === 6) return parseInt(suf.slice(0, 3), 10) + '×' + parseInt(suf.slice(3), 10) + 'mm';
+    if (suf.length === 6) return (parseInt(suf.slice(0, 3), 10) * 10) + '×' + (parseInt(suf.slice(3), 10) * 10) + 'mm';
     return suf;
+  }
+  // numeric W/H parsed from the 6-digit code suffix (WWWHHH), for length auto-match
+  function _codeDims(code) {
+    var suf = (String(code || '').split('-')[1] || '').replace(/\D/g, '');
+    if (suf.length < 6) return null;
+    return { w: parseInt(suf.slice(0, 3), 10), h: parseInt(suf.slice(3, 6), 10) };
+  }
+  // largest integer in the worker's remarks = the length they measured (mm)
+  function _parseLen(note) {
+    var nums = String(note || '').match(/\d+/g);
+    if (!nums) return null;
+    var max = 0;
+    nums.forEach(function (n) { var v = parseInt(n, 10); if (v > max) max = v; });
+    return max >= 10 ? max : null;
+  }
+  // candidate codes whose width OR height is within ±tol mm of L, nearest first
+  function _codesByLength(dxfCache, L, tol) {
+    return codePickerFilter(dxfCache, '').map(function (m) {
+      var d = _codeDims(m.master_code); if (!d) return null;
+      // suffix WWW/HHH are in cm (×10 = mm) for most families; also try the raw value to be safe
+      var best = Math.min(Math.abs(d.w * 10 - L), Math.abs(d.h * 10 - L), Math.abs(d.w - L), Math.abs(d.h - L));
+      return best <= tol ? Object.assign({ _lenDelta: best }, m) : null;
+    }).filter(Boolean).sort(function (a, b) { return a._lenDelta - b._lenDelta || a.master_code.localeCompare(b.master_code); });
   }
   function relativeTime(now, ts) {
     if (!ts) return '';
@@ -246,6 +269,26 @@
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
       var bounce = r.bounced_from ? '<div class="kdsp-flag">Worker said not: ' + escapeHtml(r.bounced_from) + '</div>' : '';
+      var _L = _parseLen(r.note);
+      var autos = _L ? _codesByLength(_uploadedDxfsCache || {}, _L, 5).slice(0, 8) : [];
+      var autoHtml = '';
+      if (autos.length) {
+        autoHtml = '<div class="kdsp-automatch" style="margin:6px 0;border-top:1px solid #2c3a4e;padding-top:8px;">' +
+          '<p class="kdsp-muted">Auto-match · ±5mm of ' + _L + 'mm · ' + autos.length + ' found</p>' +
+          autos.map(function (m) {
+            var glb = (typeof _kd3dGlbUrl === 'function') ? _kd3dGlbUrl(m.master_code) : '';
+            return '<div class="kdsp-auto" style="margin:8px 0;">' +
+              '<div class="kdsp-compare">' +
+                '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
+                '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
+              '</div>' +
+              '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:4px;">' +
+                '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
+                '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-approve" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">Approve</button>' +
+              '</div>' +
+            '</div>';
+          }).join('') + '</div>';
+      }
       card.innerHTML =
         '<div class="kdsp-revrow">' +
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
@@ -253,9 +296,11 @@
             '<p class="kdsp-muted">Qty ' + (r.qty || 0) + ' · by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
             bounce +
             (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;">“' + escapeHtml(r.note) + '”</p>' : '') +
+            autoHtml +
+            '<p class="kdsp-muted" style="margin:8px 0 2px;">' + (autos.length ? 'Or find another code:' : (_L ? 'No code within ±5mm of ' + _L + 'mm — find manually:' : 'Find a code:')) + '</p>' +
             '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
             '<div class="kdsp-pick-results" data-id="' + escapeHtml(r.id) + '"></div>' +
-            '<p class="kdsp-ai-slot kdsp-muted">AI suggestion — coming soon</p>' +
+            '<p class="kdsp-ai-slot kdsp-muted">AI image-match — coming soon</p>' +
             '<div class="kdsp-actions">' +
               '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-assign" data-id="' + escapeHtml(r.id) + '" disabled>Assign code → send to worker</button>' +
               '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>' +
@@ -264,6 +309,16 @@
         '</div>';
       el.appendChild(card);
       (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-thumb'));
+      if (autos.length && typeof _ensureModelViewer === 'function') _ensureModelViewer();
+      card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
+        btn.addEventListener('click', async function () {
+          btn.disabled = true;
+          try {
+            await assignCode(r.id, btn.getAttribute('data-code'), { thickness_mm: btn.getAttribute('data-th') ? Number(btn.getAttribute('data-th')) : null, material: btn.getAttribute('data-mat'), grain: btn.getAttribute('data-grn') });
+            _kdToast('Approved → sent to worker');
+          } catch (e) { btn.disabled = false; _kdToast('Save failed'); }
+        });
+      });
 
       var chosen = { code: '', meta: {} };
       var input = card.querySelector('.kdsp-pick-q');
@@ -473,6 +528,9 @@
       _aggregateConfirmed: _aggregateConfirmed,
       confirmedByCode: confirmedByCode,
       codePickerFilter: codePickerFilter,
+      _parseLen: _parseLen,
+      _codeDims: _codeDims,
+      _codesByLength: _codesByLength,
       relativeTime: relativeTime,
       b64Bytes: b64Bytes,
       _scaleFor: _scaleFor,

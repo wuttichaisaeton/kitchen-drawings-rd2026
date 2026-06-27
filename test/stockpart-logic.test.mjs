@@ -106,3 +106,26 @@ test('codePickerFilter finds by length / dimension digits', () => {
   assert.deepEqual(codes, ['BK1DN1-946000', 'FN3BLA-060946']);
   assert.equal(T.codePickerFilter(cache, '040').length, 1); // SD0SUP width 040
 });
+
+test('_parseLen extracts the length number from worker remarks', () => {
+  const { T } = boot();
+  assert.equal(T._parseLen('ยาว 946'), 946);
+  assert.equal(T._parseLen('946 mm'), 946);
+  assert.equal(T._parseLen('ยาว 946 กว้าง 50'), 946); // largest = length
+  assert.equal(T._parseLen('no number'), null);
+  assert.equal(T._parseLen(''), null);
+});
+
+test('_codesByLength finds codes within ±tol mm of L (width or height)', () => {
+  const { T } = boot();
+  const cache = {
+    a: { master_code: 'TS1BHH-095000', uploaded_at: 1 }, // W 95cm = 950mm -> 4mm off 946
+    b: { master_code: 'FN2BNX-094800', uploaded_at: 1 }, // W 94cm = 940mm -> 6mm off (excluded at 5)
+    c: { master_code: 'BK1DN1-060946', uploaded_at: 1 }, // raw H 946 -> 0mm off 946
+    d: { master_code: 'SD0SUP-040030', uploaded_at: 1 }, // far
+  };
+  const hits = T._codesByLength(cache, 946, 5);
+  assert.equal(hits.length, 2);                          // 950mm + raw-946; 940mm excluded
+  assert.equal(hits[0].master_code, 'BK1DN1-060946');    // nearest (0mm) first
+  assert.equal(T._codesByLength(cache, 946, 1).length, 1); // only exact within 1mm
+});
