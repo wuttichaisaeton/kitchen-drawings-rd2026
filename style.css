@@ -7862,6 +7862,9 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-edit-qty { display: flex; align-items: center; gap: 8px; }
 .kdsp-edit-qty .kdsp-input { margin-top: 0; width: 90px; }
 .kdsp-edit-results { display: flex; flex-direction: column; gap: 4px; }
+.kdsp-catalog { border-top: 1px dashed #2c3a4e; margin-top: 14px; padding-top: 10px; }
+.kdsp-cathead { color: #8a97a8; font-size: 13px; margin: 0 0 8px; }
+.kdsp-catcard { opacity: .92; }
 
 /* per-theme opaque overrides — doubled class (0,2,0) to beat the blanket reset (0,2,5) */
 html[data-theme="sketch"] .kdsp-card.kdsp-card { background-color: var(--paper2) !important; border: 1px solid var(--pen) !important; }

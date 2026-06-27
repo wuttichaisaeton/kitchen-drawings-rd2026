@@ -60,6 +60,16 @@
     list.sort(function (a, b) { return a.master_code.localeCompare(b.master_code); });
     return list;
   }
+  // catalog codes matching a query that are NOT already in stock. `stock` may be
+  // the confirmedByCode() map (object keyed by code) or an array of codes. A blank
+  // query returns [] so the list never dumps the whole 269-code catalog unprompted.
+  function catalogNotInStock(dxfCache, query, stock) {
+    if (!String(query || '').trim()) return [];
+    var have = {};
+    if (Array.isArray(stock)) stock.forEach(function (c) { have[c] = true; });
+    else if (stock) for (var k in stock) have[k] = true;
+    return codePickerFilter(dxfCache, query).filter(function (m) { return !have[m.master_code]; });
+  }
   // dimension hint parsed from the code suffix (after the dash). 6-digit WWWHHH -> "946×0mm".
   function _codeDim(code) {
     var suf = (String(code || '').split('-')[1] || '').replace(/\D/g, '');
@@ -462,10 +472,19 @@
         return false;
       });
     }
+    // When a query is typed, also surface catalog codes that match but have NO
+    // stock yet (separate section below) so search reaches every part ever cut,
+    // not just confirmed stock. Excludes codes already shown in the stock grid.
+    var catalog = _listQuery ? catalogNotInStock(_uploadedDxfsCache || {}, _listQuery, groups).slice(0, 40) : [];
     el.innerHTML = '<div class="kdsp-listhead"><h3 class="kdsp-h">Stock parts</h3>' +
       '<input type="text" id="kdsp-search" class="kdsp-input" placeholder="Search code or length…" value="' + escapeHtml(_listQuery) + '"></div>';
     var grid = document.createElement('div'); grid.className = 'kdsp-grid'; el.appendChild(grid);
-    if (!codes.length) { grid.innerHTML = '<p class="kdsp-empty">' + (Object.keys(groups).length === 0 ? 'No stock yet — approve items above first' : (_listQuery ? 'No matching code' : 'No stock yet')) + '</p>'; }
+    if (!codes.length) {
+      var emptyMsg = (Object.keys(groups).length === 0) ? 'No stock yet — approve items above first'
+        : (!_listQuery ? 'No stock yet'
+        : (catalog.length ? 'No stock for this — see catalog below' : 'No matching code'));
+      grid.innerHTML = '<p class="kdsp-empty">' + emptyMsg + '</p>';
+    }
     codes.forEach(function (code) {
       var g = groups[code];
       var card = document.createElement('div'); card.className = 'kdsp-card kdsp-stockcard';
@@ -531,6 +550,24 @@
         });
       }
     });
+    // "In catalog · no stock yet" — query matches from uploaded_dxfs that aren't
+    // stocked. View 3D opens the model so เอ๋ can confirm it's the part to log.
+    if (catalog.length) {
+      var cat = document.createElement('div'); cat.className = 'kdsp-catalog';
+      cat.innerHTML = '<p class="kdsp-cathead">In catalog · no stock yet · ' + catalog.length + '</p>';
+      var cgrid = document.createElement('div'); cgrid.className = 'kdsp-grid';
+      catalog.forEach(function (m) {
+        var cc = document.createElement('div'); cc.className = 'kdsp-card kdsp-stockcard kdsp-catcard';
+        cc.innerHTML = '<div class="kdsp-thumb kdsp-noimg"></div>' +
+          '<code class="kdsp-code">' + escapeHtml(m.master_code) + '</code>' +
+          '<div class="kdsp-meta"><span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span></div>' +
+          '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(m.master_code) + '">View 3D</button></div>';
+        cgrid.appendChild(cc);
+        cc.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(m.master_code); });
+      });
+      cat.appendChild(cgrid);
+      el.appendChild(cat);
+    }
     var search = el.querySelector('#kdsp-search');
     search.addEventListener('input', function () { _listQuery = search.value; renderHome(); setTimeout(function () { var s = ROOT.querySelector('#kdsp-search'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }, 0); });
     return el;
@@ -569,6 +606,7 @@
       _aggregateConfirmed: _aggregateConfirmed,
       confirmedByCode: confirmedByCode,
       codePickerFilter: codePickerFilter,
+      catalogNotInStock: catalogNotInStock,
       _parseLen: _parseLen,
       _codeDims: _codeDims,
       _codesByLength: _codesByLength,

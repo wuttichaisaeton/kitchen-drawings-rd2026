@@ -140,3 +140,24 @@ test('codePickerFilter: typing a mm length finds cm-encoded codes (±5mm)', () =
   assert.equal(hit.length, 1);
   assert.equal(hit[0].master_code, 'FN2BNX-095000');
 });
+
+test('catalogNotInStock returns query matches minus codes already in stock; empty query → []', () => {
+  const { T } = boot();
+  const cache = {
+    s1: { master_code: 'FN3BLA-060000', uploaded_at: 1, thickness_mm: 1, material: 'ALPF' },
+    s2: { master_code: 'FN3BLA-090000', uploaded_at: 1 },
+    s3: { master_code: 'SD0SUP-040030', uploaded_at: 1 },
+  };
+  // query 'FN3' matches both FN3 codes; one is already in stock → only the other returned
+  const stockObj = { 'FN3BLA-060000': { code: 'FN3BLA-060000' } };  // accepts the confirmedByCode() map
+  const hit = T.catalogNotInStock(cache, 'FN3', stockObj);
+  assert.equal(hit.length, 1);
+  assert.equal(hit[0].master_code, 'FN3BLA-090000');
+  // accepts an array of codes too — both in stock → nothing left
+  assert.equal(T.catalogNotInStock(cache, 'FN3', ['FN3BLA-060000', 'FN3BLA-090000']).length, 0);
+  // a blank query must NOT dump the whole catalog
+  assert.deepEqual(T.catalogNotInStock(cache, '', stockObj), []);
+  assert.deepEqual(T.catalogNotInStock(cache, '   ', stockObj), []);
+  // no stock arg → all query matches pass through
+  assert.equal(T.catalogNotInStock(cache, 'FN3').length, 2);
+});
