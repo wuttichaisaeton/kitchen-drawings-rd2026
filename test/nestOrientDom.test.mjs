@@ -8,11 +8,14 @@
 // This test loads the REAL nest.js inside a jsdom window, seeds S with parts,
 // renders the REAL markup + wires the REAL handlers, then dispatches a REAL
 // 'click' on the actual button element and asserts:
-//   (a) S.previewCode is UNCHANGED (preview stays on the part you were viewing),
-//   (b) the PREVIEWED part's mirror/flip180 flag is now true (the right part),
+//   (a) S.previewCode is not disturbed — the inline behind-canvas preview was
+//       RETIRED 2026-06-27 (f827190): _setPreview no longer writes S.previewCode,
+//       the part popup is the sole viewer, and the main canvas always shows the
+//       sheet/layout. The orient buttons act on the CLICKED ROW's own part,
+//   (b) the clicked row's OWN mirror/flip180 flag is now true (the right part),
 //   (c) _orientedGeom for that part reflects the new orientation,
-//   (d) the button element carries the active class (per-previewed-part).
-// (live orient-button fix 2026-06-26)
+//   (d) the button element carries the active class, bound to that row's own flag.
+// (live orient-button fix 2026-06-26; updated for popup-only viewer 2026-06-27)
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { JSDOM } from 'jsdom';
@@ -191,30 +194,39 @@ test('DOM: clicking ⟲180 Rotate flips the PREVIEWED part (index 1, not the dec
     'decoy flip180 button still NOT active');
 });
 
-test('DOM: button active state tracks the PREVIEWED part when preview switches', () => {
+// Each part-list ROW's orient button reads its OWN part's flag — independent of
+// which part the (popup) viewer is pointed at. Before the inline-preview
+// retirement this was framed as "active state tracks the PREVIEWED part"; now
+// there is no inline preview, so the stronger, simpler contract is: every row
+// button is bound to its row's own flag, and _setPreview never moves S.previewCode
+// (it only points an open popup + refreshes). (updated for popup-only viewer 2026-06-27)
+test('DOM: each row\'s orient button active-state tracks that row\'s OWN part flag (popup-only viewer)', () => {
   const { window, T } = boot();
   const S = T.state();
   S.rootEl = window.document.getElementById('root');
   const A = notchPart('SDTRIL-000001');          // index 0
   const B = notchPart('SD0SUP-000000');          // index 1
-  seed(T, [A, B], 'SD0SUP-000000');              // previewing B (index 1)
+  seed(T, [A, B], null);                          // inline preview retired → no previewCode
   T.refreshView();
 
-  // Mirror the previewed part B (index 1).
+  // Mirror part B (index 1) via its OWN row button.
   btnIn(window, 'SD0SUP-000000', '.kdnest-part-mirror')
     .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-  assert.equal(B.mirror, true, 'B (previewed, index 1) mirrored');
+  assert.equal(B.mirror, true, 'B (index 1) mirrored');
   assert.equal(A.mirror, false, 'A (index 0) NOT mirrored — proves index-0 wasn\'t targeted');
-  // B's button active, A's not.
+  // B's button active, A's not — each row reflects its OWN flag.
   assert.equal(btnIn(window, 'SD0SUP-000000', '.kdnest-part-mirror').classList.contains('kdnest-orient-active'), true);
   assert.equal(btnIn(window, 'SDTRIL-000001', '.kdnest-part-mirror').classList.contains('kdnest-orient-active'), false);
 
-  // Switch preview to A (👁) — A's mirror button must still read its OWN flag (false).
+  // _setPreview (the old 👁 / edge-cycle path) now only points an open popup at the
+  // part + refreshes the list — it must NOT write S.previewCode (the main canvas
+  // always shows the sheet). With no popup open this is just a refresh, and the
+  // per-part row buttons must STILL read their own flags afterwards.
   T.setPreview('SDTRIL-000001');
-  assert.equal(T.state().previewCode, 'SDTRIL-000001', 'preview switched to A');
+  assert.equal(T.state().previewCode, null, '_setPreview does not set previewCode (popup is the sole viewer)');
   assert.equal(btnIn(window, 'SDTRIL-000001', '.kdnest-part-mirror').classList.contains('kdnest-orient-active'), false,
     'A mirror button reflects A\'s own (false) flag, not B\'s');
-  // B is still mirrored — its row's button stays active even though B isn't previewed.
+  // B is still mirrored — its row's button stays active.
   assert.equal(btnIn(window, 'SD0SUP-000000', '.kdnest-part-mirror').classList.contains('kdnest-orient-active'), true,
     'B mirror button still active (B is still mirrored)');
 });
@@ -222,20 +234,22 @@ test('DOM: button active state tracks the PREVIEWED part when preview switches',
 // ──────────────────────────────────────────────────────────────────────────
 // ASYNC-SETTLE regression — the class the earlier sync-only assertions MISSED.
 //
-// LIVE bug (เอ๋, real Chromium, 04 Ruth, 53 parts): preview SDTRIL-000001 (index
-// 42, NOT 0) → click Mirror. The flag set + geometry mirrored correctly, but a
-// re-render that fired AFTER the grain_rules save reset S.previewCode back to
-// parts[0] (1CVDVL-006010) and the button went inactive. The earlier DOM tests
-// asserted RIGHT AFTER dispatchEvent — before that save-chain re-render — so they
-// stayed green while the live preview jumped.
+// LIVE bug (เอ๋, real Chromium, 04 Ruth, 53 parts): SDTRIL-000001 (index 42, NOT
+// 0) → click Mirror. The flag set + geometry mirrored correctly, but a re-render
+// that fired AFTER the grain_rules save clobbered the clicked part's live flag /
+// row button (it went inactive). The earlier DOM tests asserted RIGHT AFTER
+// dispatchEvent — before that save-chain re-render — so they stayed green while
+// the live button flickered off.
 //
 // This test makes the missing path deterministic: a real async firebaseDB.set()
 // (a true microtask boundary), and — exactly like the live listener firing after
-// the write — a re-render mid-save that DEFAULTS S.previewCode to parts[0]. The
-// test AWAITS the full toggle promise (live flag → save → settle) and only THEN
-// asserts. Against code that doesn't re-pin the previewed part at the end of the
-// chain it FAILS (previewCode === parts[0], button inactive); with the
-// end-of-chain re-assert it PASSES. (live preserve-previewed-part fix 2026-06-26)
+// the write — a re-render mid-save (the stub also pokes S.previewCode to mimic the
+// old listener, now inert since the inline preview was retired). The test AWAITS
+// the full toggle chain (live flag → save → settle) and only THEN asserts the
+// CLICKED part's flag + its row button survived. Against code that doesn't
+// re-assert the flag at the end of the chain it FAILS (button inactive); with the
+// end-of-chain _applyOrientFlag re-assert it PASSES.
+// (live preserve-flag-across-resettle fix 2026-06-26; popup-only viewer 2026-06-27)
 function settleTest(which, btnSel, flagKey) {
   return async () => {
     const { window, T } = boot();
@@ -248,17 +262,18 @@ function settleTest(which, btnSel, flagKey) {
 
     // Real async RTDB stand-in. .set() resolves on a later microtask — and, like
     // the live grain_rules/uploaded_dxfs listeners reacting to the write, it kicks
-    // a re-render that RESETS the preview to parts[0]. If the toggle chain doesn't
-    // re-pin the previewed part after the save, this reset is what the user is left
-    // staring at.
+    // a full re-render mid-save. If the toggle chain doesn't re-assert the clicked
+    // part's flag after the save, that re-render is what clobbers the button.
     let setCalls = 0;
     window.firebaseDB = {
       ref: () => ({
         async set() {
           setCalls++;
           await Promise.resolve();              // force a real async hop
-          // Listener-style re-render that defaults the preview (the offending path).
-          S.previewCode = S.parts[0].code;      // → 'SD0SUP-000000' (the decoy)
+          // Listener-style mid-save re-render. (The previewCode poke mimics the old
+          // listener and is now inert — the inline preview was retired f827190 — but
+          // the T.refreshView() is the real shake-out that must not drop the flag.)
+          S.previewCode = S.parts[0].code;      // → 'SD0SUP-000000' (the decoy); inert now
           T.refreshView();
         },
         async once() { return { val: () => ({ rows: S.grainRows || [] }) }; },
@@ -273,22 +288,21 @@ function settleTest(which, btnSel, flagKey) {
     // re-assert) has fully settled. setCalls confirms the async save ran.
     btnIn(window, 'SDTRIL-000001', btnSel)
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    // Mid-flight, before the save settles, the preview may already be on the decoy
-    // (the bug's symptom) — that's expected; the fix is that it COMES BACK.
+    // Mid-flight, before the save settles, a re-render may fire (the bug's window) —
+    // that's expected; the fix is the clicked part's flag + button COME BACK.
     const tick = () => new Promise(r => window.setTimeout(r, 0));
     for (let i = 0; i < 10 && setCalls < 1; i++) await tick();
     await tick(); await tick();                  // let the trailing .then() settle
 
     assert.ok(setCalls >= 1, 'grain rules were actually saved (async path exercised)');
-    // (a) preview survived the save-chain re-render — did NOT stick on parts[0].
-    assert.equal(T.state().previewCode, 'SDTRIL-000001',
-      'preview stayed on the previewed part after the save settled (not parts[0])');
-    // (b) the previewed part is still flagged.
-    assert.equal(P[flagKey], true, 'previewed part flag still true after settle');
+    // (a) the clicked part is STILL flagged after the save-chain re-render — the
+    //     end-of-chain _applyOrientFlag re-assert survived the mid-save refresh.
+    assert.equal(P[flagKey], true, 'clicked part flag still true after settle');
     assert.equal(DECOY[flagKey], false, 'decoy at index 0 untouched');
-    // (c) after the settle re-render, the previewed part's button is active.
+    // (b) after the settle re-render, the clicked part's row button is still active
+    //     (it binds to the part's own live flag, not to any inline-preview pointer).
     assert.equal(btnIn(window, 'SDTRIL-000001', btnSel).classList.contains('kdnest-orient-active'), true,
-      'previewed-part button active after the save settled');
+      'clicked-part button active after the save settled');
     assert.equal(btnIn(window, 'SD0SUP-000000', btnSel).classList.contains('kdnest-orient-active'), false,
       'decoy button still NOT active');
   };
