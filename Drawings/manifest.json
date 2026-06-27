@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-26T08:54:08.246660+00:00",
+  "generated_at": "2026-06-27T03:40:58.136954+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1578,7 +1578,7 @@
     "FN2BNX-060000": {
       "family": "Floor",
       "last_drawn_version": 13,
-      "fusion_version": 9,
+      "fusion_version": 13,
       "pdf": "FN0B00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -1747,7 +1747,7 @@
     "FN0F00-060000": {
       "family": "Floor",
       "last_drawn_version": 15,
-      "fusion_version": 15,
+      "fusion_version": 16,
       "pdf": "FN0F00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -11140,7 +11140,7 @@
       "name": "1LLV04-06000L",
       "status": "active",
       "created_at": "2026-06-10T20:26:38.748068+00:00",
-      "updated_at": "2026-06-10T20:42:54.362836+00:00",
+      "updated_at": "2026-06-27T03:40:58.118637+00:00",
       "total_unique_parts": 11,
       "total_qty": 25,
       "parts": [
@@ -11235,7 +11235,8 @@
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "variant_root": "1-HingeW"
+          "parent_code": "HINGEW4-H0800",
+          "variant_root": "HINGEW4-H0800"
         },
         {
           "code": "BK0DN0-060000",
@@ -11264,6 +11265,21 @@
           "qty": 0,
           "family": "Floor",
           "is_wrapper": true,
+          "variant_root": "FN0FN2-060004"
+        },
+        {
+          "code": "HINGEW4-H0800",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "HINGEW4-H0800"
+        },
+        {
+          "code": "LEG-060",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "FN0FN2-060004",
           "variant_root": "FN0FN2-060004"
         },
         {
