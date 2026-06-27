@@ -276,19 +276,36 @@
   }
 
   // ── photo lightbox (tap a photo to enlarge; click / Esc to close) ──
-  function _openPhoto(b64) {
-    if (!b64) return;
+  function _openPhoto(photos, startIndex) {
+    var list = Array.isArray(photos) ? photos.slice() : (photos ? [photos] : []);
+    if (!list.length) return;
+    var i = Math.min(Math.max(0, startIndex | 0), list.length - 1);
     var ov = document.createElement('div');
     ov.setAttribute('style', 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.88) !important;cursor:zoom-out;padding:16px;');
     var img = document.createElement('img');
-    img.src = 'data:image/jpeg;base64,' + b64;
     img.setAttribute('style', 'max-width:96vw;max-height:96vh;border-radius:8px;box-shadow:0 6px 40px rgba(0,0,0,.6);');
+    var prev, next, cnt;
+    function show() { img.src = 'data:image/jpeg;base64,' + list[i]; if (cnt) cnt.textContent = (i + 1) + '/' + list.length; }
     ov.appendChild(img);
-    function onKey(e) { if (e.key === 'Escape') close(); }
+    if (list.length > 1) {
+      var navCss = 'position:fixed;top:50%;transform:translateY(-50%);font-size:40px;color:#fff;cursor:pointer;padding:8px 16px;user-select:none;';
+      prev = document.createElement('div'); prev.textContent = '‹'; prev.setAttribute('style', navCss + 'left:8px;');
+      next = document.createElement('div'); next.textContent = '›'; next.setAttribute('style', navCss + 'right:8px;');
+      cnt = document.createElement('div'); cnt.setAttribute('style', 'position:fixed;bottom:18px;left:50%;transform:translateX(-50%);color:#fff;font-size:14px;');
+      prev.addEventListener('click', function (e) { e.stopPropagation(); i = (i - 1 + list.length) % list.length; show(); });
+      next.addEventListener('click', function (e) { e.stopPropagation(); i = (i + 1) % list.length; show(); });
+      ov.appendChild(prev); ov.appendChild(next); ov.appendChild(cnt);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') close();
+      else if (e.key === 'ArrowLeft' && list.length > 1) { i = (i - 1 + list.length) % list.length; show(); }
+      else if (e.key === 'ArrowRight' && list.length > 1) { i = (i + 1) % list.length; show(); }
+    }
     function close() { try { ov.remove(); } catch (e) {} document.removeEventListener('keydown', onKey); }
     ov.addEventListener('click', close);
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
+    show();
   }
   // on GLB load failure, swap the blank viewer for a clear "no 3D model" note
   function _wireMvErrors(scope) {
