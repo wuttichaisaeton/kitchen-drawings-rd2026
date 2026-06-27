@@ -116,6 +116,39 @@ test('_parseLen extracts the length number from worker remarks', () => {
   assert.equal(T._parseLen(''), null);
 });
 
+test('_buildThumbEdges adds a dark edge line per mesh and KEEPS the fill (solid + edges, #4)', () => {
+  const { T } = boot();
+  const THREE = {
+    EdgesGeometry: function (g, a) { this.g = g; this.a = a; },
+    LineBasicMaterial: function (o) { Object.assign(this, o); },
+    LineSegments: function (g, m) { this.geometry = g; this.material = m; this.isLineSegments = true; },
+  };
+  const mkMesh = () => ({ isMesh: true, geometry: { attributes: { position: {} } }, material: { colorWrite: true }, children: [], add(c) { this.children.push(c); } });
+  const m1 = mkMesh(), m2 = mkMesh();
+  const scene = { traverse(fn) { [m1, m2, { isMesh: false }].forEach(fn); } };
+  const n = T._buildThumbEdges(THREE, scene);
+  assert.equal(n, 2);
+  assert.ok(m1.children[0].isLineSegments);
+  assert.equal(m1.material.colorWrite, true);          // FILL KEPT (the #4 distinction vs edges-only)
+  assert.equal(T._buildThumbEdges(THREE, scene), 0);   // idempotent
+});
+
+test('_buildThumbEdges no-ops without THREE or scene', () => {
+  const { T } = boot();
+  assert.equal(T._buildThumbEdges(null, { traverse() {} }), 0);
+  assert.equal(T._buildThumbEdges({}, null), 0);
+});
+
+test('_parseLen honors the dimension vocabulary (ยาว / W / L = length)', () => {
+  const { T } = boot();
+  assert.equal(T._parseLen('W946'), 946);            // W label
+  assert.equal(T._parseLen('L 946'), 946);           // L label
+  assert.equal(T._parseLen('ยาว 946 หนา 1'), 946);   // ยาว wins; thickness 1 not picked
+  assert.equal(T._parseLen('L50 W946'), 946);        // a W/L label is used, not a stray small number
+  assert.equal(T._parseLen('946 mm'), 946);          // no label → fall back to largest
+  assert.equal(T._parseLen('wall'), null);           // letters only, no digits → null
+});
+
 test('_codesByLength finds codes within ±tol mm of L (width or height)', () => {
   const { T } = boot();
   const cache = {

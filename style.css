@@ -7865,6 +7865,7 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-auto-meta { display: flex; align-items: center; gap: 8px; justify-content: space-between; flex-wrap: wrap; margin-top: 4px; }
 .kdsp-auto-meta > .kdsp-muted { flex: 1 1 140px; min-width: 0; font-size: 12px; word-break: break-word; }
 .kdsp-auto-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.kdsp-airerun { margin: 6px 0; font-size: 13px; align-self: flex-start; }
 /* phone: shorter compare cells + tighter gutters so cards fit without clipping */
 @media (max-width: 480px) {
   .kdsp-home { padding: 8px; }

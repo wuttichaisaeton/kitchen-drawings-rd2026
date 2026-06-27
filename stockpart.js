@@ -311,6 +311,8 @@
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
       var bounce = r.bounced_from ? '<div class="kdsp-flag">Worker said not: ' + escapeHtml(r.bounced_from) + '</div>' : '';
+      var _rel = relativeTime(now, r.created_at);
+      var _relAgo = /^\d+[mh]$/.test(_rel) ? _rel + ' ago' : _rel;   // "6h" → "6h ago"; "just now"/date unchanged
       var _L = _parseLen(r.note);
       var autos = _L ? _codesByLength(_uploadedDxfsCache || {}, _L, 5).slice(0, 8) : [];
       var autoHtml = '';
@@ -338,8 +340,8 @@
         '<div class="kdsp-revrow">' +
           '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
           '<div class="kdsp-revmeta">' +
-            '<p class="kdsp-muted">by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
-            '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;"><span class="kdsp-muted">Quantity</span><input type="number" class="kdsp-rev-qty" min="1" max="99" value="' + (r.qty || 1) + '" style="width:72px;"></div>' +
+            '<p class="kdsp-muted">added by ' + escapeHtml(r.created_by_role || '') + ' · ' + _relAgo + '</p>' +
+            '<div style="display:flex;align-items:center;gap:8px;margin:4px 0;"><span class="kdsp-muted">Quantity</span><input type="number" class="kdsp-rev-qty" min="1" max="99" value="' + (r.qty || 1) + '" style="width:72px;text-align:center;"></div>' +
             bounce +
             (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
             autoHtml +
@@ -347,6 +349,7 @@
             '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
             '<div class="kdsp-pick-results" data-id="' + escapeHtml(r.id) + '"></div>' +
             _aiSuggestHtml(r.ai_suggestion) +
+            '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-airerun" data-id="' + escapeHtml(r.id) + '" title="Re-run AI match (e.g. after a new code was added)">↻ Re-run AI</button>' +
             '<div class="kdsp-actions">' +
               '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-assign" data-id="' + escapeHtml(r.id) + '" disabled>Assign code → send to worker</button>' +
               '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-reject" data-id="' + escapeHtml(r.id) + '">Reject</button>' +
@@ -359,7 +362,13 @@
       // and the .kdsp-auto3d handler below opens the full-screen _kdOpen3D modal on
       // click — for both the thumbnail cell and the 3D button.
       if (autos.length && typeof _ensureModelViewer === 'function') _ensureModelViewer();
-      if (autos.length) _wireMvErrors(card);   // swap a failed GLB cell for "no 3D model"
+      if (autos.length) {
+        _wireMvErrors(card);   // swap a failed GLB cell for "no 3D model"
+        // เอ๋ #4: overlay dark feature-edges on the SOLID thumbnail for clarity (keeps the fill)
+        Array.prototype.forEach.call(card.querySelectorAll('.kdsp-cmp-3d model-viewer'), _applyThumbEdges);
+      }
+      // เอ๋ #5: re-run the AI match (e.g. after a new code entered the catalog) — fire-and-forget; the listener repaints when the fresh ai_suggestion lands
+      (function (b) { if (b) b.addEventListener('click', function () { _fireAiMatch(r.id, r.photo_data, r.note); _kdToast('Re-running AI…'); }); })(card.querySelector('.kdsp-airerun'));
       card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           btn.disabled = true;
@@ -432,6 +441,51 @@
       document.head.appendChild(s);
     });
     return _mvReady;
+  }
+
+  // ── thumbnail edge overlay (เอ๋ #4) — dark CAD feature-lines ON the solid model ──
+  // Overlays THREE.EdgesGeometry lines (≥22° feature edges) on each mesh of an
+  // inline <model-viewer>, KEEPING the surface fill (unlike the modal's hidden mode)
+  // so the thumbnail reads as a solid part with crisp edges. Uses model-viewer's own
+  // scene (mv[Symbol(scene)]) + the app's THREE (window._kd3dEnsureThree). Idempotent;
+  // a no-op (silent) if THREE/scene unavailable → the cell stays the plain solid GLB.
+  // NOTE: model-viewer is rAF-driven → only paints on a visible tab (verify on a real device).
+  function _buildThumbEdges(THREE, scene) {
+    if (!THREE || !scene || typeof scene.traverse !== 'function') return 0;
+    var n = 0;
+    scene.traverse(function (node) {
+      if (!node || !node.isMesh || !node.geometry || !node.geometry.attributes || !node.geometry.attributes.position) return;
+      if (node.__kdspThumbEdged) return;
+      try {
+        var eg = new THREE.EdgesGeometry(node.geometry, 22);
+        var mat = new THREE.LineBasicMaterial({ color: 0x111317, transparent: true, opacity: 0.85, depthTest: true, depthWrite: false });
+        var line = new THREE.LineSegments(eg, mat);
+        line.renderOrder = 2;
+        node.add(line);                 // fill kept → solid model + dark edge lines
+        node.__kdspThumbEdged = true;
+        n++;
+      } catch (e) {}
+    });
+    return n;
+  }
+  function _applyThumbEdges(mv) {
+    if (!mv || mv.__kdspThumbWired) return;
+    mv.__kdspThumbWired = true;
+    function apply() {
+      var ensure = window._kd3dEnsureThree;
+      if (typeof ensure !== 'function') return;
+      var scene = null;
+      try {
+        var sym = Object.getOwnPropertySymbols(mv).find(function (s) { return s.toString() === 'Symbol(scene)'; });
+        scene = sym ? mv[sym] : null;
+      } catch (e) { return; }
+      if (!scene) return;
+      ensure().then(function (THREE) {
+        try { var k = _buildThumbEdges(THREE, scene); if (k && typeof scene.queueRender === 'function') scene.queueRender(); } catch (e) {}
+      }).catch(function () {});
+    }
+    if (mv.loaded) apply();
+    mv.addEventListener('load', apply);
   }
 
   // ── worker confirm-GLB list (Thai) — photo beside the live 3D model ──
@@ -664,6 +718,7 @@
       catalogNotInStock: catalogNotInStock,
       _aiSuggestHtml: _aiSuggestHtml,
       _fireAiMatch: _fireAiMatch,
+      _buildThumbEdges: _buildThumbEdges,
       _parseLen: _parseLen,
       _codeDims: _codeDims,
       _codesByLength: _codesByLength,
