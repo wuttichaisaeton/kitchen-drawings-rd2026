@@ -1,0 +1,42 @@
+CC_Assembly walk debug — 2026-06-27T16:00:52.060478
+Project: FN0FN3-060006
+Total occurrences visited: 32
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | FN0F00-060000 v17:1 (FN0F00-060000 v17)
+    0 |     |     |                  | FN2BNX-060000 v14:3 (FN2BNX-060000 v14)
+    1 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
+    0 |     |     |                  | FN2BNX-060000 v14:1 (FN2BNX-060000 v14)
+    1 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
+    0 |     |     |                  | FN2BNX-060000 v14:2 (FN2BNX-060000 v14)
+    1 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
+    0 |     |     |                  | Legs 40-80:1 (Legs 40-80)
+    1 |     |     |                  | Leg-060 v5:1 (Leg-060 v5)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    1 |     |     |                  | Leg-060 v5:2 (Leg-060 v5)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    1 |     |     |                  | Leg-060 v5:3 (Leg-060 v5)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    1 |     |     |                  | Leg-060 v5:4 (Leg-060 v5)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    1 |     |     |                  | Leg-060 v5:5 (Leg-060 v5)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)
+    1 |     |     |                  | Leg-060 v5:6 (Leg-060 v5)
+    2 |     |     |                  | Leg - 080 mm. by YH:1 (Leg - 080 mm. by YH)
+    2 |     |     | Acetal Resin, Bl | ฐานล้าง:1 (ฐานล้าง)
+    2 |     |     | Acetal Resin, Bl | กลาง:1 (กลาง)

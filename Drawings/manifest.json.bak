@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-27T08:53:45.870386+00:00",
+  "generated_at": "2026-06-27T09:00:52.063137+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19626,6 +19626,36 @@
           "qty": 1,
           "family": "Floor",
           "urn": "urn:adsk.wipprod:dm.lineage:YVqBV4g4SAG3CkZg91fZnw"
+        }
+      ]
+    },
+    "FN0FN3-060006": {
+      "name": "FN0FN3-060006",
+      "status": "active",
+      "created_at": "2026-06-27T09:00:52.060792+00:00",
+      "updated_at": "2026-06-27T09:00:52.060792+00:00",
+      "total_unique_parts": 2,
+      "total_qty": 4,
+      "parts": [
+        {
+          "code": "FN0F00-060000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:_YFiHXSeT52VR8AcQkAwSw"
+        },
+        {
+          "code": "FN2BNX-060000",
+          "qty": 3,
+          "family": "Floor",
+          "variant_root": "FN2BNX-060000",
+          "urn": "urn:adsk.wipprod:dm.lineage:LXxWDtBWRVm2y_jN5B8nAA"
+        },
+        {
+          "code": "LEG-060",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "LEG-060"
         }
       ]
     }
