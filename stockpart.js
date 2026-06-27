@@ -318,7 +318,7 @@
             return '<div class="kdsp-auto" style="margin:8px 0;">' +
               '<div class="kdsp-compare">' +
                 '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
-                '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0">' + _CUBE_SVG + '<span>View 3D</span></div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
+                '<figure class="kdsp-cmp"><div class="kdsp-cmp-3d kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '" role="button" tabindex="0" title="View 3D — tap to open full screen">' + (glb ? '<model-viewer src="' + glb + '" loading="eager" interaction-prompt="none" reveal="auto" camera-orbit="40deg 68deg 110%" shadow-intensity="0.6" exposure="1.1" style="pointer-events:none;width:100%;height:100%;background:transparent;"></model-viewer>' : (_CUBE_SVG + '<span>View 3D</span>')) + '</div><figcaption>' + escapeHtml(m.master_code) + '</figcaption></figure>' +
               '</div>' +
               '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:4px;">' +
                 '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
@@ -351,9 +351,11 @@
         '</div>';
       el.appendChild(card);
       (function (t) { if (t) { t.style.cursor = 'zoom-in'; t.addEventListener('click', function () { _openPhoto(r.photo_data); }); } })(card.querySelector('.kdsp-thumb'));
-      // เอ๋: the auto-match 3D cell is a click-to-fullscreen target (no tiny inline
-      // render) — the .kdsp-auto3d handler below opens _kdOpen3D for both the cell
-      // and the 3D button.
+      // เอ๋: the auto-match 3D cell shows a SOLID model thumbnail (pointer-events:none)
+      // and the .kdsp-auto3d handler below opens the full-screen _kdOpen3D modal on
+      // click — for both the thumbnail cell and the 3D button.
+      if (autos.length && typeof _ensureModelViewer === 'function') _ensureModelViewer();
+      if (autos.length) _wireMvErrors(card);   // swap a failed GLB cell for "no 3D model"
       card.querySelectorAll('.kdsp-approve').forEach(function (btn) {
         btn.addEventListener('click', async function () {
           btn.disabled = true;
