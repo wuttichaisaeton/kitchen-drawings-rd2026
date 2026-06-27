@@ -7823,6 +7823,10 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-card { background: #1b2330; border: 1px solid #2c3a4e; border-radius: 12px; padding: 12px; }
 .kdsp-empty, .kdsp-muted { color: #8a97a8; }
 .kdsp-photo { display: flex; align-items: center; justify-content: center; min-height: 120px; border: 1px dashed #3a4a60; border-radius: 12px; cursor: pointer; }
+.kdsp-phototray { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.kdsp-traythumb { position: relative; display: inline-block; }
+.kdsp-traythumb img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; background: #0f1419; }
+.kdsp-trayx { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%; border: none; background: #b3261e; color: #fff; cursor: pointer; font-size: 12px; line-height: 1; }
 .kdsp-preview, .kdsp-thumb { max-width: 100%; border-radius: 10px; }
 .kdsp-thumb { width: 92px; height: 92px; object-fit: cover; background: #0f1419; }
 .kdsp-noimg { display: inline-block; }

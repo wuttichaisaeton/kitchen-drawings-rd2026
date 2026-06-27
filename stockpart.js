@@ -7,7 +7,8 @@
   var LS_SUBMIT = 'kd_sp_submit_times';    // per-device intake rate cap
   var QTY_MIN = 1, QTY_MAX = 99;
   var TARGET_BYTES = 700000;               // compress target (RTDB-friendly)
-  var MAX_BYTES = 1500000;                 // hard reject ceiling
+  var MAX_BYTES = 1500000;                 // hard reject ceiling (per single photo)
+  var ROW_MAX_BYTES = 2600000;             // per-row reject ceiling (1-3 photos + meta)
   var CAP_WARN = 10, CAP_BLOCK = 20;       // intakes / 24h / device
   // cube glyph for the "View 3D" click-to-fullscreen cell (matches the tab icon)
   var _CUBE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><line x1="12" y1="12" x2="12" y2="21"/></svg>';
@@ -171,7 +172,7 @@
   // ── listener + localStorage mirror (metadata only) ──────────
   function _stripPhotos(rows) {
     var out = {};
-    for (var id in rows) { var c = Object.assign({}, rows[id]); delete c.photo_data; out[id] = c; }
+    for (var id in rows) { var c = Object.assign({}, rows[id]); delete c.photo_data; delete c.photos; out[id] = c; }
     return out;
   }
   function _loadLS() { try { return JSON.parse(localStorage.getItem(LS_CACHE)) || {}; } catch (e) { return {}; } }
@@ -222,9 +223,9 @@
     el.innerHTML =
       (_undoLast ? '<button type="button" id="kdsp-undo" class="kdsp-btn kdsp-btn-ghost">Undo last</button>' : '') +
       '<h3 class="kdsp-h">Add part to stock</h3>' +
-      '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" id="kdsp-photo" hidden>' +
-      '<span class="kdsp-photo-hint">Take / choose a photo</span></label>' +
-      '<img class="kdsp-preview" id="kdsp-preview" alt="" hidden>' +
+      '<div class="kdsp-phototray" id="kdsp-phototray"></div>' +
+      '<label class="kdsp-photo" id="kdsp-photo-label"><input type="file" accept="image/*" capture="environment" multiple id="kdsp-photo" hidden>' +
+      '<span class="kdsp-photo-hint">Add photo (1-3)</span></label>' +
       '<div class="kdsp-row"><span>Quantity</span><div class="kdsp-qty">' +
         '<button type="button" id="kdsp-qminus">−</button><b id="kdsp-qval">1</b><button type="button" id="kdsp-qplus">+</button>' +
       '</div></div>' +
@@ -232,40 +233,53 @@
       '<button type="button" id="kdsp-submit" class="kdsp-btn kdsp-btn-primary" disabled>Send to review</button>';
 
     var u = el.querySelector('#kdsp-undo'); if (u) u.onclick = _undoLastIntake;
-    var qty = 1, photoB64 = null;
+    var qty = 1, photos = [];
     var qval = el.querySelector('#kdsp-qval'), submit = el.querySelector('#kdsp-submit');
+    var tray = el.querySelector('#kdsp-phototray'), label = el.querySelector('#kdsp-photo-label');
     function setQty(n) { qty = Math.min(QTY_MAX, Math.max(QTY_MIN, n)); qval.textContent = String(qty); }
     el.querySelector('#kdsp-qminus').onclick = function () { setQty(qty - 1); };
     el.querySelector('#kdsp-qplus').onclick = function () { setQty(qty + 1); };
-    el.querySelector('#kdsp-photo').addEventListener('change', function (e) {
-      var f = e.target.files && e.target.files[0]; if (!f) return;
-      submit.disabled = true; el.querySelector('.kdsp-photo-hint').textContent = 'Compressing…';
-      compressImage(f).then(function (b64) {
-        photoB64 = b64;
-        var pv = el.querySelector('#kdsp-preview'); pv.src = 'data:image/jpeg;base64,' + b64; pv.hidden = false;
-        el.querySelector('.kdsp-photo-hint').textContent = 'Change photo';
-        submit.disabled = false;
-      }).catch(function (err) {
-        photoB64 = null; submit.disabled = true;
-        el.querySelector('.kdsp-photo-hint').textContent = 'Take / choose a photo';
-        _kdToast(err && err.message === 'too-large' ? 'Image too large — try again' : 'Invalid image — try again');
+    function renderTray() {
+      tray.innerHTML = photos.map(function (b64, idx) {
+        return '<span class="kdsp-traythumb"><img src="data:image/jpeg;base64,' + b64 + '" alt=""><button type="button" class="kdsp-trayx" data-i="' + idx + '">✕</button></span>';
+      }).join('');
+      tray.querySelectorAll('.kdsp-trayx').forEach(function (b) {
+        b.addEventListener('click', function () { photos.splice(Number(b.getAttribute('data-i')), 1); renderTray(); });
       });
+      if (label) label.style.display = (photos.length >= 3) ? 'none' : '';
+      submit.disabled = photos.length < 1;
+      var hint = el.querySelector('.kdsp-photo-hint'); if (hint) hint.textContent = 'Add photo (' + photos.length + '/3)';
+    }
+    el.querySelector('#kdsp-photo').addEventListener('change', function (e) {
+      var files = Array.prototype.slice.call(e.target.files || []).slice(0, 3 - photos.length);
+      e.target.value = '';                 // allow re-picking the same file
+      if (!files.length) return;
+      var hint = el.querySelector('.kdsp-photo-hint'); if (hint) hint.textContent = 'Compressing…';
+      Promise.all(files.map(function (f) { return compressImage(f).then(function (b64) { return b64; }).catch(function () { return null; }); }))
+        .then(function (results) {
+          var ok = 0;
+          results.forEach(function (b64) { if (b64 && photos.length < 3) { photos.push(b64); ok++; } });
+          if (ok < results.length) _kdToast('Some photos were skipped (invalid / too large)');
+          renderTray();
+        });
     });
     submit.addEventListener('click', async function () {
-      if (!photoB64) return;
+      if (!photos.length) return;
       if (_submitCount24h() >= CAP_BLOCK) { _kdToast('Too many added today — try tomorrow'); return; }
-      var row = { status: 'pending', code: '', qty: qty, note: el.querySelector('#kdsp-note').value || '', photo_data: photoB64, created_at: Date.now(), created_by_role: (typeof getRole === 'function' ? getRole() : 'workshop') };
+      var pics = photos.slice(0, 3);
+      var row = { status: 'pending', code: '', qty: qty, note: el.querySelector('#kdsp-note').value || '', photos: pics, photo_data: pics[0], created_at: Date.now(), created_by_role: (typeof getRole === 'function' ? getRole() : 'workshop') };
       submit.disabled = true;
       try {
-        if (JSON.stringify(row).length > MAX_BYTES) throw new Error('too-large');
+        if (JSON.stringify(row).length > ROW_MAX_BYTES) throw new Error('too-large');
         _undoLast = await saveIntake(row);
-        _fireAiMatch(_undoLast, photoB64, row.note);
+        _fireAiMatch(_undoLast, pics, row.note);
         var _n = _recordSubmit();
         _kdToast('Sent — waiting for review · you can undo');
         if (_n > CAP_WARN) _kdToast('A lot added today');
         renderHome();
-      } catch (e) { submit.disabled = false; _kdToast('Save failed — try again'); }
+      } catch (e) { submit.disabled = false; _kdToast(e && e.message === 'too-large' ? 'Photos too large — use fewer' : 'Save failed — try again'); }
     });
+    renderTray();
     return el;
   }
 
@@ -699,9 +713,10 @@
   // Fire-and-forget the AI match request at intake. endpoint defaults to the
   // module const (the param exists so tests inject without depending on it).
   // Prefer window.fetch so it's correct in the browser and the test stub wins.
-  function _fireAiMatch(id, photo, remarks, endpoint) {
+  function _fireAiMatch(id, photos, remarks, endpoint) {
     endpoint = endpoint || KDSP_AI_ENDPOINT;
-    if (!id || !photo || !endpoint) return;
+    var list = Array.isArray(photos) ? photos : (photos ? [photos] : []);
+    if (!id || !list.length || !endpoint) return;
     try {
       var w = (typeof window !== 'undefined') ? window : null;
       var f = (w && typeof w.fetch === 'function') ? w.fetch.bind(w) : (typeof fetch === 'function' ? fetch : null);
@@ -709,7 +724,7 @@
       f(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: id, photo: photo, remarks: remarks || '' })
+        body: JSON.stringify({ id: id, photos: list, photo: list[0], remarks: remarks || '' })
       }).catch(function () {});
     } catch (e) {}
   }
