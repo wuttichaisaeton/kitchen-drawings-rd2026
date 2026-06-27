@@ -8954,3 +8954,11 @@ VERIFIED localhost (edited build, real 04 Ruth) THEN no-regression on LIVE (sket
 NOTE เอ๋: corner kicks in only when a sheet has enough slack to clear ≥300mm on BOTH edges (rectangle-heavy slack sheets like the loose Sheet 3). A genuinely-full sheet stays full (Option 1, no extra sheet). Green box marks the bigger free arm; the other edge is still physically clear.
 FYI Group 1: pack-time only; CC_Laser Cut Sheet DXF unaffected.
 -- RD
+
+### WEB (RD 12) · 2026-06-27 · ✅ BUGFIX: H/V/ANY grain cycle now PERSISTS (was in-memory → reverted to ?) (LIVE)
+RD: เอ๋ "ระบุ grain แล้วไม่จำ — เลื่อนอันถัดไป อันเดิมขึ้นเครื่องหมาย ?". Root: the row + popup grain glyph H/V/ANY cycle mutated `part.grain` IN MEMORY only; the debounced re-nest's `_applyGrainToParts` re-derives grain from RTDB grain_rules → reverted to '?'. (EDGE + FLIP180/MIRROR already persisted; only H/V/ANY didn't — it was intentional once, but เอ๋ wants it remembered.) Shipped **a01b243** (nest.js, rebased→8daebd2).
+Added `_setPartGrainDir(part, dir)`: writes/updates an EXACT-code grain_rules row (wins over wildcards in `_lookupPattern`), or drops it for '?'. Both grain handlers (row + popup) now call it. CRITICAL: it targets only the PRIMARY grain row (excludes FLIP180/MIRROR rows, which stack on the same pattern) — a naive find(pattern===code) like `_setPartEdgeGrain` uses would clobber a part's flip/mirror flag.
+VERIFIED LIVE (deployed file, real Firebase, then RESTORED): 1CVDVL-006010 (grain '?' WITH an existing FLIP180 row) → cycle → grain 'H', rows became [FLIP180, H] (H stacked, FLIP180 intact) → re-nest (the revert path) → grain STAYS 'H' → restored grain_rules to original [FLIP180]. Also passed identically on localhost first.
+NOTE: each cycle now writes the shared grain_rules (per-part exact rows) like EDGE/flip/mirror already do — so it shows in the 🧬 Grain table and applies on every device.
+FYI Group 1: grain_rules data only; CC_Laser reads the same grain table.
+-- RD
