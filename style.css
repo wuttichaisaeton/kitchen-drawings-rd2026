@@ -7816,6 +7816,7 @@ html[data-theme="chalk"] .kdnest-part {
 /* ── Stock Part (S1) ─────────────────────────────────────────── */
 .kdsp-home { max-width: 760px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 16px; }
 .kdsp-th { font-family: "Flux Architect", "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", "Sukhumvit Set", "Thonburi", Tahoma, -apple-system, sans-serif; }
+.kdsp-home code, .kdsp-card code { font-family: "Flux Architect", "SF Mono", Menlo, Consolas, monospace !important; }
 .kdsp-section { display: flex; flex-direction: column; gap: 10px; }
 .kdsp-h { font-size: 16px; margin: 0 0 4px; }
 .kdsp-count { opacity: .6; font-weight: normal; }
