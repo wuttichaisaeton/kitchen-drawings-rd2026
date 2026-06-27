@@ -9046,3 +9046,11 @@ NEXT — Phase B (backend `LINE_System`, Tasks 5-9): `stock_match.py` (Haiku 4.5
 S3 backend (Tasks 5-7) written + tested **locally in `LINE_System`** — 3 commits on master, **NOT pushed** (no Render redeploy yet, per เอ๋). New `LINE_System/stock_match.py` (parse_len/code_dims/narrow±50/build_prompt+legend/parse_ranked/read_catalog/write_suggestion/call_model Haiku-4.5/run_match) + `test_stock_match.py` (7/7 incl. offline run_match orchestration) + `POST /api/stock-match` route + CORS (scoped to github.io) in `webhook_server.py` (local test_client: OPTIONS 204+CORS, empty POST 400; `python -m py_compile` OK).
 ⏸ Tasks 8-9 (deploy + go-live) BLOCKED on เอ๋: (1) the LINE-bot **Render base URL** (`*.onrender.com`) to set `KDSP_AI_ENDPOINT` in stockpart.js, (2) green-light to **push `LINE_System` = redeploy the production LINE bot**. Web (Phase A, HEAD b147bcd) stays dormant + harmless until the endpoint is set.
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · 🚀 Stock Part S3 AI image-match LIVE end-to-end (both repos)
+เอ๋ green-lit deploy. SHIPPED + verified end-to-end on the real site.
+- **Backend** (`LINE_System` → pushed to `stainless-kitchen-line-bot@master` → Render redeploy ✓, ~2min): `POST /api/stock-match` live (OPTIONS 204 + CORS for github.io). Render base = `https://stainless-line-bot.onrender.com` (recovered from Line 01 transcripts + [[project_line_bot]]; kept warm by UptimeRobot so cold-start is rarely hit). `stock_match.py` 7/7 tests.
+- **Web** (drawings-ui HEAD **5e0177a**, deploy ✓): `KDSP_AI_ENDPOINT` set live; stockpart 18-ish/115 suite green.
+- **REAL end-to-end** (browser POST = real CORS; real worker photo "ยาว 946" / 234KB rails): HTTP 200 in **3.1s**, Haiku 4.5 ranked **FTI000-145095 0.85 "Long trim rail ~950mm matches worker measurement 946mm"**, FTI000-145095-Ruth 0.80, TS1BHH-120092 0.45 (noted length mismatch) → written to `stock_parts/<id>/ai_suggestion` → review card rendered the ✨ slot → `use` filled the code + enabled Assign (same path as manual). Console clean.
+S3 MVP DONE: photo→AI suggest→เอ๋ confirms. Deferred (per spec): image-to-GLB comparison, confidence gate, multi-photo, hardened RTDB rules. FYI G1/Fusion: FN2BLA-095000 still needs its DXF in uploaded_dxfs (GLB-only today) to be an AI candidate.
+-- RD 13
