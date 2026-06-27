@@ -183,6 +183,21 @@
     if (!useStock) return demand;
     return Math.max(0, demand - Math.max(0, inStock | 0));
   }
+  // S2 row badge: confirmed stock for this code + toggle + cut hint + deep-link.
+  function _stockInfo(p) {
+    const inStock = (!p.manual && window.kdStockPart && typeof window.kdStockPart.stockQtyByCode === 'function') ? (window.kdStockPart.stockQtyByCode(p.code) || 0) : 0;
+    const on = p.useStock !== false;
+    return { inStock: inStock, on: on, cut: _stockAdjustedQty(p.qty, inStock, on) };
+  }
+  function _stockBadge(p) {
+    const s = _stockInfo(p);
+    if (s.inStock <= 0) return '';
+    const hint = !s.on ? 'stock off' : (s.cut <= 0 ? '✓ all in stock' : 'cut ' + s.cut + ' (' + p.qty + '−' + s.inStock + ')');
+    return '<span class="kdnest-stock' + (s.on ? ' kdnest-stock-on' : '') + '" data-code="' + _esc(p.code) + '">'
+      + '<button type="button" class="kdnest-stock-toggle" title="' + s.inStock + ' in stock — click to ' + (s.on ? 'ignore (cut full qty)' : 'use stock') + '">♻' + s.inStock + '</button>'
+      + '<span class="kdnest-stock-hint">' + hint + '</span>'
+      + '<a class="kdnest-stock-link" title="View in Stock Part">↗</a></span>';
+  }
 
   // ── DXF library lazy-load ──────────────────────────────────────────
   // Same CDN+API as app.js's preview modal so we don't double-bundle.
@@ -6770,7 +6785,7 @@
       const rowGrainWarn = grainDir ? ' kdnest-part-grainwarn' : '';
       const reviewMark = _reviewReasons(p).length ? ' kdnest-part-review' : '';
       return `
-        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${(S.highlightCode && p.code === S.highlightCode) ? ' kdnest-part-active' : ''}" data-code="${_esc(p.code)}">
+        <div class="kdnest-part${p.manual ? ' kdnest-part-manual' : ''}${rowGrainWarn}${reviewMark}${(S.highlightCode && p.code === S.highlightCode) ? ' kdnest-part-active' : ''}${(_stockInfo(p).inStock > 0 && _stockInfo(p).on) ? ' kdnest-part-instock' : ''}" data-code="${_esc(p.code)}">
           <input type="checkbox" class="kdnest-part-sel" ${p.selected ? 'checked' : ''}>
           <span class="kdnest-part-num">#${i + 1}</span>
           <span class="kdnest-part-code" title="${_esc(p.code)}${p.origCode ? _esc(' · renamed from ' + p.origCode) : ''}${p.sources && Object.keys(p.sources).length > 1 ? _esc(' — ' + Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + ')) : ''}">${p.manual ? '▭ ' : ''}${p.origCode ? '✎ ' : ''}${_esc(_disp(p.code))}${p.sources && Object.keys(p.sources).length > 1 ? `<sup class="kdnest-part-srcs" title="${_esc(Object.entries(p.sources).map(([pk, q]) => pk + ' ×' + q).join(' + '))}">${Object.keys(p.sources).length}P</sup>` : ''}</span>${(!p.manual && typeof window.isAdmin === 'function' && window.isAdmin()) ? `<button class="kdnest-part-rename" title="${p.origCode ? 'Re-pointed to ' + _esc(p.code) + ' (from ' + _esc(p.origCode) + ') — click to change or revert' : 'Rename / re-point this part code (web override — does not touch Fusion)'}" style="background:none;border:none;cursor:pointer;font-size:0.82em;opacity:0.5;padding:0 1px;line-height:1">✏️</button>` : ''}
@@ -6778,6 +6793,7 @@
           <span class="kdnest-x">×</span>
           <input type="number" class="kdnest-part-h" value="${p.h || ''}" min="0" step="1" placeholder="${_szPh || 'H'}"${whLock}>
           <input type="number" class="kdnest-part-qty" value="${p.qty}" min="0" step="1" title="qty">
+          ${_stockBadge(p)}
           <button class="kdnest-part-grain ${g.cls}${grainWarn}" data-grain="${p.grain}" title="${grainWarn ? 'grain not set yet — pick H/V if it matters · ' : ''}${g.title} — click to cycle ?→H→V→ANY">${g.ch}</button>
           <button class="kdnest-part-view" title="${p.manual ? 'Manual rectangle — no DXF' : 'View this part (preview)'}" ${viewDisabled ? 'disabled' : ''}>👁</button>
           <span class="kdnest-part-orient">
