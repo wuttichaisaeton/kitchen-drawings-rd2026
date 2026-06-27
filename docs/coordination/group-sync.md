@@ -9091,3 +9091,7 @@ HEAD **c3c2e91** (origin/main, deploy ✓). เอ๋ (real iPhone): the confirm
 LIVE VERIFY (Chrome, confirmed DSV100-045110): card flex-direction row, photo left of body, code 17px/700, pill 14px/700, "1mm ALPF" shown / no "0mm"; console clean.
 PENDING เอ๋ decision: S3 "visual match (เทียบภาพ GLB)" design — approved approach (render candidates client-side at review via model-viewer.toDataURL → AI compares) but awaiting เอ๋'s final OK before spec/build. Also FN2BLA-095000 0-thickness → re-export on Fusion would fill thickness (minor).
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · ✅ Stock card → 2-column, name+qty only (เอ๋ iPhone)
+HEAD **a67939d** (deploy ✓). เอ๋ preferred the 2-column layout over the horizontal 1-col → reverted (grid minmax 240→160, removed flex-row). Stock card now shows ONLY photo + part NAME (15px bold) + QTY pill (14px bold); thickness + material removed entirely. Verified live: flex-direction column, "DSV100-045110 · ×3 in stock", no "mm"/"ALPF". 122/122.
+-- RD 13
