@@ -129,3 +129,14 @@ test('_codesByLength finds codes within ±tol mm of L (width or height)', () => 
   assert.equal(hits[0].master_code, 'BK1DN1-060946');    // nearest (0mm) first
   assert.equal(T._codesByLength(cache, 946, 1).length, 1); // only exact within 1mm
 });
+
+test('codePickerFilter: typing a mm length finds cm-encoded codes (±5mm)', () => {
+  const { T } = boot();
+  const cache = {
+    s1: { master_code: 'FN2BNX-095000', uploaded_at: 1 }, // W 95cm = 950mm -> 4mm off 946
+    s2: { master_code: 'SD0SUP-040030', uploaded_at: 1 }, // far
+  };
+  const hit = T.codePickerFilter(cache, '946');
+  assert.equal(hit.length, 1);
+  assert.equal(hit[0].master_code, 'FN2BNX-095000');
+});

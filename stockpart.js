@@ -46,10 +46,15 @@
     var q = String(query || '').trim().toLowerCase();
     var qDigits = q.replace(/\D/g, '');
     var list = Object.keys(byCode).map(function (k) { return byCode[k]; });
+    var qLen = (qDigits && qDigits === q) ? parseInt(qDigits, 10) : null;   // pure-numeric query = a length in mm
     if (q) list = list.filter(function (m) {
       var code = m.master_code.toLowerCase();
       if (code.indexOf(q) !== -1) return true;                                                    // code substring
-      if (qDigits && qDigits === q && code.replace(/\D/g, '').indexOf(qDigits) !== -1) return true; // PURE-numeric query = search by length/dimension
+      if (qLen != null) {
+        if (code.replace(/\D/g, '').indexOf(qDigits) !== -1) return true;                         // digit substring (e.g. cm value)
+        var d = _codeDims(m.master_code);                                                         // dimension ±5mm (cm-encoded ×10, or raw)
+        if (d && Math.min(Math.abs(d.w * 10 - qLen), Math.abs(d.h * 10 - qLen), Math.abs(d.w - qLen), Math.abs(d.h - qLen)) <= 5) return true;
+      }
       return false;
     });
     list.sort(function (a, b) { return a.master_code.localeCompare(b.master_code); });
