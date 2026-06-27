@@ -7812,3 +7812,55 @@ html[data-theme="chalk"] .kdnest-part {
   border: none !important;
   box-shadow: none !important;
 }
+
+/* ── Stock Part (S1) ─────────────────────────────────────────── */
+.kdsp-home { max-width: 760px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 16px; }
+.kdsp-th { font-family: "Flux Architect", "IBM Plex Sans Thai", "Noto Sans Thai", "Leelawadee UI", "Sukhumvit Set", "Thonburi", Tahoma, -apple-system, sans-serif; }
+.kdsp-section { display: flex; flex-direction: column; gap: 10px; }
+.kdsp-h { font-size: 16px; margin: 0 0 4px; }
+.kdsp-count { opacity: .6; font-weight: normal; }
+.kdsp-card { background: #1b2330; border: 1px solid #2c3a4e; border-radius: 12px; padding: 12px; }
+.kdsp-empty, .kdsp-muted { color: #8a97a8; }
+.kdsp-photo { display: flex; align-items: center; justify-content: center; min-height: 120px; border: 1px dashed #3a4a60; border-radius: 12px; cursor: pointer; }
+.kdsp-preview, .kdsp-thumb { max-width: 100%; border-radius: 10px; }
+.kdsp-thumb { width: 92px; height: 92px; object-fit: cover; background: #0f1419; }
+.kdsp-noimg { display: inline-block; }
+.kdsp-row { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.kdsp-qty { display: flex; align-items: center; gap: 12px; }
+.kdsp-qty button { width: 36px; height: 36px; border-radius: 8px; font-size: 18px; }
+.kdsp-input { width: 100%; box-sizing: border-box; padding: 9px 12px; border-radius: 8px; border: 1px solid #2c3a4e; background: #0f1419; color: #e8eef5; margin-top: 8px; }
+.kdsp-btn { padding: 10px 14px; border-radius: 10px; border: 1px solid #2c3a4e; background: transparent; color: #e8eef5; cursor: pointer; }
+.kdsp-btn-primary { background: #d29922; border-color: #d29922; color: #1b2330; font-weight: 600; }
+.kdsp-btn-danger { color: #ff8a80; border-color: #5a2b2b; }
+.kdsp-btn-ghost { opacity: .85; }
+.kdsp-btn[disabled] { opacity: .45; cursor: default; }
+.kdsp-revrow { display: flex; gap: 12px; }
+.kdsp-revmeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.kdsp-actions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.kdsp-flag { color: #ff8a80; font-size: 13px; }
+.kdsp-pick-results, .kdsp-cand { display: flex; flex-direction: column; gap: 4px; }
+.kdsp-cand { flex-direction: row; align-items: center; gap: 8px; padding: 4px 0; }
+.kdsp-cand code { font-size: 13px; }
+.kdsp-listhead { display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+.kdsp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.kdsp-stockcard { display: flex; flex-direction: column; gap: 8px; }
+.kdsp-code { font-size: 13px; }
+.kdsp-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.kdsp-pill { background: #1f3d2e; color: #7ee0a8; border-radius: 999px; padding: 2px 9px; font-size: 12px; }
+.kdsp-cardfoot { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #2c3a4e; padding-top: 8px; }
+.kdsp-link { background: none; border: none; color: #6fb1ff; cursor: pointer; padding: 0; }
+.kdsp-icon { background: none; border: none; color: #8a97a8; cursor: pointer; }
+.kdsp-ai-slot { font-size: 12px; font-style: italic; }
+.kdsp-cmp-cap { color: #8a97a8; font-size: 13px; margin: 4px 0; }
+.kdsp-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kdsp-cmp { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.kdsp-cmp img, .kdsp-cmp model-viewer, .kdsp-cmp .kdsp-noimg { width: 100%; height: 200px; border-radius: 10px; background: #0f1419; object-fit: contain; display: block; }
+.kdsp-cmp figcaption { font-size: 12px; color: #8a97a8; text-align: center; }
+
+/* per-theme opaque overrides — doubled class (0,2,0) to beat the blanket reset (0,2,5) */
+html[data-theme="sketch"] .kdsp-card.kdsp-card { background-color: var(--paper2) !important; border: 1px solid var(--pen) !important; }
+html[data-theme="sketch"] .kdsp-input.kdsp-input { background-color: var(--paper) !important; color: var(--ink) !important; }
+html[data-theme="sketch"] .kdsp-btn-primary.kdsp-btn-primary { background-color: var(--pen) !important; color: var(--paper) !important; }
+html[data-theme="chalk"] .kdsp-card.kdsp-card { background-color: var(--board2) !important; border: 1px solid var(--line) !important; }
+html[data-theme="chalk"] .kdsp-input.kdsp-input { background-color: var(--board) !important; color: var(--chalk, #e8eef5) !important; }
+html[data-theme="chalk"] .kdsp-btn-primary.kdsp-btn-primary { background-color: var(--line) !important; color: var(--board) !important; }
