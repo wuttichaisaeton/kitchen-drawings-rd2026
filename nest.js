@@ -7263,6 +7263,17 @@
       row.querySelector('.kdnest-part-qty')?.addEventListener('change', e => {
         part.qty = parseInt(e.target.value, 10) || 0;
       });
+      // S2 "don't re-cut": ♻ toggles whether this row uses confirmed stock; ↗ deep-links to the Stock Part
+      row.querySelector('.kdnest-stock-toggle')?.addEventListener('click', e => {
+        e.stopPropagation();
+        part.useStock = (part.useStock === false);   // flip (default true)
+        _refreshViewKeepScroll();
+      });
+      row.querySelector('.kdnest-stock-link')?.addEventListener('click', e => {
+        e.stopPropagation();
+        document.getElementById('tab-stockpart')?.click();
+        if (window.kdStockPart && typeof window.kdStockPart.focusCode === 'function') window.kdStockPart.focusCode(code);
+      });
       // Grain toggle — click cycles ? → H → V → ANY → H ...
       // Matches the Python tool's _toggle_grain behavior so a worker
       // switching between tools sees the same interaction.

@@ -757,6 +757,9 @@
     ROOT.appendChild(wrap);
   }
 
+  // S2: deep-link from the nest "↗" — focus the stock list on a code.
+  function focusCode(code) { _listQuery = String(code || ''); renderHome(); }
+
   function init() {
     _stockCache = _loadLS();   // instant paint (no photos yet)
     if (!window.firebaseDB) return;
@@ -771,6 +774,7 @@
 
   window.kdStockPart = {
     renderHome: renderHome,
+    focusCode: focusCode,
     init: init,
     stockQtyByCode: stockQtyByCode,
     confirmedByCode: confirmedByCode,
