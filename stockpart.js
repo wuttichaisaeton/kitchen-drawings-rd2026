@@ -578,6 +578,25 @@
     return el;
   }
 
+  // ── AI image-match suggestion (S3) — render the reserved review slot ──
+  // Pure: ai_suggestion object -> markup. Falls back to the original "coming
+  // soon" placeholder for error/absent/empty so the review card is unchanged
+  // when there's no AI result. The "use" button carries only the code; the
+  // review handler resolves thickness/material/grain at click time.
+  var _AI_SLOT_EMPTY = '<p class="kdsp-ai-slot kdsp-muted">AI image-match — coming soon</p>';
+  function _aiSuggestHtml(sug) {
+    if (!sug || sug.status !== 'ok' || !sug.ranked || !sug.ranked.length) return _AI_SLOT_EMPTY;
+    var picks = sug.ranked.slice(0, 3).map(function (s, i) {
+      var pct = Math.round((Number(s.confidence) || 0) * 100);
+      return '<div class="kdsp-ai-pick' + (i === 0 ? ' kdsp-ai-top' : '') + '">' +
+        '<code>' + escapeHtml(s.code) + '</code>' +
+        '<span class="kdsp-muted">' + pct + '% · ' + escapeHtml(s.reason || '') + '</span>' +
+        '<button type="button" class="kdsp-ai-use" data-code="' + escapeHtml(s.code) + '">use</button>' +
+      '</div>';
+    }).join('');
+    return '<div class="kdsp-ai-slot kdsp-ai-has"><p class="kdsp-muted">✨ AI suggestion</p>' + picks + '</div>';
+  }
+
   // ── role router ─────────────────────────────────────────────
   function renderHome() {
     if (typeof ROOT === 'undefined' || !ROOT) return;
@@ -612,6 +631,7 @@
       confirmedByCode: confirmedByCode,
       codePickerFilter: codePickerFilter,
       catalogNotInStock: catalogNotInStock,
+      _aiSuggestHtml: _aiSuggestHtml,
       _parseLen: _parseLen,
       _codeDims: _codeDims,
       _codesByLength: _codesByLength,

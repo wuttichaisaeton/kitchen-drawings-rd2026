@@ -161,3 +161,33 @@ test('catalogNotInStock returns query matches minus codes already in stock; empt
   // no stock arg → all query matches pass through
   assert.equal(T.catalogNotInStock(cache, 'FN3').length, 2);
 });
+
+test('_aiSuggestHtml: ok+ranked renders code/%/reason + a use button per pick', () => {
+  const { T } = boot();
+  const sug = { status: 'ok', ranked: [
+    { code: 'FN2BNX-095000', confidence: 0.8, reason: 'long floor rail' },
+    { code: 'FN2BLA-060000', confidence: 0.4, reason: 'similar width' },
+  ] };
+  const html = T._aiSuggestHtml(sug);
+  assert.match(html, /kdsp-ai-has/);
+  assert.match(html, /FN2BNX-095000/);
+  assert.match(html, /80%/);
+  assert.match(html, /long floor rail/);
+  assert.equal((html.match(/kdsp-ai-use/g) || []).length, 2);  // one use button per pick
+  assert.match(html, /kdsp-ai-top/);                            // first pick flagged
+});
+
+test('_aiSuggestHtml: error/absent/empty falls back to the coming-soon placeholder', () => {
+  const { T } = boot();
+  const placeholder = /AI image-match — coming soon/;
+  assert.match(T._aiSuggestHtml(undefined), placeholder);
+  assert.match(T._aiSuggestHtml({ status: 'error', error: 'x' }), placeholder);
+  assert.match(T._aiSuggestHtml({ status: 'ok', ranked: [] }), placeholder);
+});
+
+test('_aiSuggestHtml: escapes code and reason (inert against injection)', () => {
+  const { T } = boot();
+  const html = T._aiSuggestHtml({ status: 'ok', ranked: [{ code: '<img src=x>', confidence: 1, reason: '<script>z</script>' }] });
+  assert.ok(html.indexOf('<img src=x>') === -1, 'raw code tag must be escaped');
+  assert.ok(html.indexOf('<script>z</script>') === -1, 'raw reason tag must be escaped');
+});
