@@ -5248,7 +5248,9 @@ html[data-theme="obsidian"] body .kdnest-cab-fr.kdnest-cab-fr {
 .kdnest-partpop-canvas { display: block; width: 100%; height: 100%; }
 .kdnest-partpop-ctrls { display: flex; gap: 8px; padding: 0 12px 12px; }
 .kdnest-partpop-ctrls.kdnest-partpop-busy { opacity: 0.5; pointer-events: none; }
-.kdnest-partpop-btn { flex: 1 1 0; height: auto; min-width: 0; padding: 8px 10px; font-size: 13px; cursor: pointer; border: 1px solid rgba(127,127,127,0.42); background: rgba(127,127,127,0.10); color: inherit; border-radius: 6px; }
+.kdnest-partpop-btn { flex: 1 1 0; height: auto; min-width: 0; padding: 7px 6px; font-size: 13px; cursor: pointer; border: 1px solid rgba(127,127,127,0.42); background: rgba(127,127,127,0.10); color: inherit; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; }
+.kdnest-partpop-ico { font-size: 18px; line-height: 1; }
+.kdnest-partpop-lbl { font-family: "Flux Architect", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; line-height: 1.1; }
 .kdnest-partpop-btn:hover:not(:disabled) { background: rgba(127,127,127,0.20); }
 .kdnest-partpop-btn:disabled { opacity: 0.4; cursor: default; }
 

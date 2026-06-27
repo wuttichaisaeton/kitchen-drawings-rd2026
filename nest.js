@@ -3904,6 +3904,9 @@
     const mirrTitle = (part.manual || !part.polys) ? 'Mirror (disabled — needs DXF geometry)' : 'Mirror horizontally';
     const _g0 = grainGlyph(String(part.grain || '').toUpperCase());
     const _onSheet0 = _sheetIdxOf(code);
+    // Toolbar buttons stack icon-on-top / label-below; the label is pinned to Flux
+    // Architect via .kdnest-partpop-lbl so it stays the brand font in every theme. (เอ๋ 2026-06-27)
+    const _ico = (ch, lbl) => '<span class="kdnest-partpop-ico">' + ch + '</span><span class="kdnest-partpop-lbl">' + lbl + '</span>';
     const pop = document.createElement('div');
     pop.className = 'kdnest-partpop';
     pop.dataset.code = code;
@@ -3917,10 +3920,10 @@
       + '</div>'
       + '<div class="kdnest-partpop-body"><canvas class="kdnest-partpop-canvas"></canvas></div>'
       + '<div class="kdnest-partpop-ctrls">'
-      +   '<button class="kdnest-part-grain kdnest-partpop-btn ' + _g0.cls + '" title="Grain: ' + _g0.title + ' — click to cycle ?→H→V→ANY (EDGE: click an edge)">' + _g0.ch + ' Grain</button>'
-      +   '<button class="kdnest-part-flip180 kdnest-partpop-btn' + (part.flip180 ? ' kdnest-orient-active' : '') + '"' + (part.manual ? ' disabled' : '') + ' title="' + flipTitle + '">⟲ 180°</button>'
-      +   '<button class="kdnest-part-mirror kdnest-partpop-btn' + (part.mirror ? ' kdnest-orient-active' : '') + '"' + ((part.manual || !part.polys) ? ' disabled' : '') + ' title="' + mirrTitle + '">↔︎ Mirror</button>'
-      +   '<button class="kdnest-partpop-sheet kdnest-partpop-btn"' + (_onSheet0 < 0 ? ' disabled' : '') + ' title="Jump to the sheet where this part is placed and highlight it">📍 Sheet</button>'
+      +   '<button class="kdnest-part-grain kdnest-partpop-btn ' + _g0.cls + '" title="Grain: ' + _g0.title + ' — click to cycle ?→H→V→ANY (EDGE: click an edge)">' + _ico(_g0.ch, 'Grain') + '</button>'
+      +   '<button class="kdnest-part-flip180 kdnest-partpop-btn' + (part.flip180 ? ' kdnest-orient-active' : '') + '"' + (part.manual ? ' disabled' : '') + ' title="' + flipTitle + '">' + _ico('⟲', '180°') + '</button>'
+      +   '<button class="kdnest-part-mirror kdnest-partpop-btn' + (part.mirror ? ' kdnest-orient-active' : '') + '"' + ((part.manual || !part.polys) ? ' disabled' : '') + ' title="' + mirrTitle + '">' + _ico('↔︎', 'Mirror') + '</button>'
+      +   '<button class="kdnest-partpop-sheet kdnest-partpop-btn"' + (_onSheet0 < 0 ? ' disabled' : '') + ' title="Jump to the sheet where this part is placed and highlight it">' + _ico('📍', 'Sheet') + '</button>'
       + '</div>';
     document.body.appendChild(pop);
     const q = sel => pop.querySelector(sel);
@@ -3980,7 +3983,7 @@
       if (fb) { fb.disabled = !!p.manual; fb.classList.toggle('kdnest-orient-active', !!p.flip180); }
       if (mb) { mb.disabled = !!(p.manual || !p.polys); mb.classList.toggle('kdnest-orient-active', !!p.mirror); }
       const gb = q('.kdnest-part-grain');
-      if (gb) { const gg = grainGlyph(String(p.grain || '').toUpperCase()); gb.className = 'kdnest-part-grain kdnest-partpop-btn ' + gg.cls; gb.innerHTML = gg.ch + ' Grain'; gb.title = 'Grain: ' + gg.title + ' — click to cycle'; }
+      if (gb) { const gg = grainGlyph(String(p.grain || '').toUpperCase()); gb.className = 'kdnest-part-grain kdnest-partpop-btn ' + gg.cls; gb.innerHTML = _ico(gg.ch, 'Grain'); gb.title = 'Grain: ' + gg.title + ' — click to cycle'; }
       const sb = q('.kdnest-partpop-sheet');
       if (sb) sb.disabled = _sheetIdxOf(p.code) < 0;
     };
