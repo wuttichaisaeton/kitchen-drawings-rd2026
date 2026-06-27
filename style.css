@@ -5424,6 +5424,14 @@ html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rg
 .kdnest-part.kdnest-part-review {
   border-left: 3px solid #c86e1e;
 }
+/* S2 "don't re-cut" — stock badge in the part row */
+.kdnest-part.kdnest-part-instock { border-left: 3px solid #2f6f4a; }
+.kdnest-stock { display: inline-flex; align-items: center; gap: 5px; margin-left: 4px; font-size: 12px; }
+.kdnest-stock-toggle { border: 1px solid #2c3a4e; border-radius: 999px; background: #2a3340; color: #8a97a8; cursor: pointer; padding: 1px 8px; font-size: 12px; }
+.kdnest-stock-on .kdnest-stock-toggle { background: #1f3d2e; color: #7ee0a8; border-color: #2f6f4a; }
+.kdnest-stock:not(.kdnest-stock-on) .kdnest-stock-toggle { text-decoration: line-through; opacity: .7; }
+.kdnest-stock-hint { color: #8a97a8; }
+.kdnest-stock-link { color: #6fb1ff; cursor: pointer; text-decoration: none; }
 /* Row flash when the header error chip is clicked — jump to + blink the failing
    part ROWS in the list so the worker sees the real culprit, not just the banner.
    Red = blocking (can't cut), amber = soft review. (เอ๋ 2026-06-26 'กดแล้วไป
