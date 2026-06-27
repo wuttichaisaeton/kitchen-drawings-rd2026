@@ -9,12 +9,10 @@
   var TARGET_BYTES = 700000;               // compress target (RTDB-friendly)
   var MAX_BYTES = 1500000;                 // hard reject ceiling
   var CAP_WARN = 10, CAP_BLOCK = 20;       // intakes / 24h / device
-  var THAI = '"Flux Architect","IBM Plex Sans Thai","Noto Sans Thai","Leelawadee UI","Sukhumvit Set","Thonburi",Tahoma,-apple-system,sans-serif';
 
   // ── state ───────────────────────────────────────────────────
   var _stockCache = {};   // pushId -> row
   var _undoLast = null;   // pushId of this session's last intake (undo-last)
-  var _pickQuery = {};    // per-pending-row code-search text (review screen)
 
   // ── pure helpers ────────────────────────────────────────────
   function _aggregateConfirmed(rows) {
@@ -88,7 +86,7 @@
   async function _deleteStock(id) { if (window.firebaseDB && id) await _ref(id).remove(); }
   async function assignCode(id, code, meta) {
     meta = meta || {};
-    await _updateStock(id, { status: 'awaiting_worker_confirm', code: code, thickness_mm: (meta.thickness_mm == null ? null : meta.thickness_mm), material: meta.material || '', grain: meta.grain || '', reviewed_at: Date.now(), reviewed_by_role: 'admin' });
+    await _updateStock(id, { status: 'awaiting_worker_confirm', code: code, thickness_mm: (meta.thickness_mm == null ? null : meta.thickness_mm), material: meta.material || '', grain: meta.grain || '', reviewed_at: Date.now(), reviewed_by_role: 'admin', bounced_from: '', bounced_at: null });
   }
   async function rejectIntake(id) { await _updateStock(id, { status: 'rejected', reviewed_at: Date.now(), reviewed_by_role: 'admin' }); }
   async function workerConfirmGlb(id) { await _updateStock(id, { status: 'confirmed', worker_confirmed_at: Date.now() }); }
@@ -188,8 +186,9 @@
       try {
         if (JSON.stringify(row).length > MAX_BYTES) throw new Error('too-large');
         _undoLast = await saveIntake(row);
-        _recordSubmit();
+        var _n = _recordSubmit();
         _kdToast('ส่งแล้ว รอเอ๋ตรวจ · กดเลิกได้');
+        if (_n > CAP_WARN) _kdToast('วันนี้เพิ่มของเยอะแล้วนะ');
         renderHome();
       } catch (e) { submit.disabled = false; _kdToast('บันทึกไม่สำเร็จ ลองใหม่'); }
     });
@@ -343,18 +342,65 @@
       var g = groups[code];
       var card = document.createElement('div'); card.className = 'kdsp-card kdsp-stockcard';
       var photo = (g.rows[0] && g.rows[0].photo_data) ? '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + g.rows[0].photo_data + '" alt="">' : '<div class="kdsp-thumb kdsp-noimg"></div>';
+      var firstQty = (g.rows[0] && g.rows[0].qty != null) ? g.rows[0].qty : 1;
       card.innerHTML = photo +
         '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
         '<div class="kdsp-meta"><span class="kdsp-pill">×' + g.qty + ' in stock</span>' +
         '<span class="kdsp-muted">' + (g.thickness_mm != null ? g.thickness_mm + 'mm ' : '') + escapeHtml(g.material || '') + '</span></div>' +
         '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(code) + '">View 3D</button>' +
-        (readOnly ? '' : '<button type="button" class="kdsp-icon kdsp-del" data-code="' + escapeHtml(code) + '" title="delete one row">✕</button>') + '</div>';
+        (readOnly ? '' :
+          '<span class="kdsp-foot-actions">' +
+            '<button type="button" class="kdsp-icon kdsp-edit" data-code="' + escapeHtml(code) + '" title="edit qty / code">✎</button>' +
+            '<button type="button" class="kdsp-icon kdsp-del" data-code="' + escapeHtml(code) + '" title="delete one row">✕</button>' +
+          '</span>') +
+        '</div>' +
+        (readOnly ? '' :
+          '<div class="kdsp-editbox" hidden>' +
+            '<div class="kdsp-edit-qty">' +
+              '<input type="number" class="kdsp-input kdsp-edit-qval" min="1" max="99" value="' + escapeHtml(String(firstQty)) + '">' +
+              '<button type="button" class="kdsp-btn kdsp-edit-qsave">Save</button>' +
+            '</div>' +
+            '<input type="text" class="kdsp-input kdsp-edit-codeq" placeholder="Change code…">' +
+            '<div class="kdsp-edit-results"></div>' +
+          '</div>');
       grid.appendChild(card);
       card.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(code); });
-      if (!readOnly) card.querySelector('.kdsp-del').addEventListener('click', async function () {
-        var rid = g.rows[0] && g.rows[0].id; if (!rid) return;
-        try { await _deleteStock(rid); _kdToast('ลบ 1 แถวแล้ว'); } catch (e) { _kdToast('ลบไม่สำเร็จ'); }
-      });
+      if (!readOnly) {
+        var rid = g.rows[0] && g.rows[0].id;
+        card.querySelector('.kdsp-del').addEventListener('click', async function () {
+          if (!rid) return;
+          try { await _deleteStock(rid); _kdToast('ลบ 1 แถวแล้ว'); } catch (e) { _kdToast('ลบไม่สำเร็จ'); }
+        });
+        var editBox = card.querySelector('.kdsp-editbox');
+        card.querySelector('.kdsp-edit').addEventListener('click', function () { editBox.hidden = !editBox.hidden; });
+        card.querySelector('.kdsp-edit-qsave').addEventListener('click', async function () {
+          if (!rid) return;
+          var v = card.querySelector('.kdsp-edit-qval').value;
+          var qn = Math.min(99, Math.max(1, Number(v) || 1));
+          try { await _updateStock(rid, { qty: qn }); _kdToast('Saved'); } catch (e) { _kdToast('บันทึกไม่สำเร็จ'); }
+        });
+        var codeQ = card.querySelector('.kdsp-edit-codeq');
+        var codeResults = card.querySelector('.kdsp-edit-results');
+        function paintEditResults() {
+          var list = codePickerFilter(_uploadedDxfsCache || {}, codeQ.value).slice(0, 20);
+          if (!list.length) { codeResults.innerHTML = '<p class="kdsp-muted">No matching code</p>'; return; }
+          codeResults.innerHTML = list.map(function (m) {
+            return '<div class="kdsp-cand" data-code="' + escapeHtml(m.master_code) + '">' +
+              '<code>' + escapeHtml(m.master_code) + '</code>' +
+              '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + '</span>' +
+              '<button type="button" class="kdsp-use" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">use</button>' +
+            '</div>';
+          }).join('');
+        }
+        codeQ.addEventListener('input', paintEditResults);
+        codeResults.addEventListener('click', async function (e) {
+          var bu = e.target.closest('.kdsp-use'); if (!bu || !rid) return;
+          var newCode = bu.getAttribute('data-code');
+          var th = bu.getAttribute('data-th') ? Number(bu.getAttribute('data-th')) : null;
+          try { await _updateStock(rid, { code: newCode, thickness_mm: th, material: bu.getAttribute('data-mat') || '', grain: bu.getAttribute('data-grn') || '' }); _kdToast('Code updated'); }
+          catch (err) { _kdToast('บันทึกไม่สำเร็จ'); }
+        });
+      }
     });
     var search = el.querySelector('#kdsp-search');
     search.addEventListener('input', function () { _listQuery = search.value; renderHome(); setTimeout(function () { var s = ROOT.querySelector('#kdsp-search'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }, 0); });
