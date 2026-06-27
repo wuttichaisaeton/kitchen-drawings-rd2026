@@ -1,7 +1,7 @@
 # Stock Part — reuse already-cut/bent leftover parts (S1: registry + photo intake + owner review) — design
 
 **Owner:** G2 / WEB · RD 13 · **Date:** 2026-06-27 · **Status:** approved (build order A — S1 first); revised after a 5-lens adversarial spec review; + worker GLB-confirm stage (เอ๋ 2026-06-27)
-**Builds on:** the Remnants Stock modal (`nest.js` `_openStockModal` / `_saveRemnant` / `nest_remnants`), the role/admin system (`app.js` `_visibleTabsForRole` / `_TAB_IDS` / `applyTabVisibility` / `isAdmin` / `getRole`), the `uploaded_dxfs` cache (`dxfsForMasterCode` / `_uploadedDxfsCache` / `initUploadedDxfsSync`), the 3D viewer (`_kdOpen3D` / `_kd3dGlbUrl`), the existing Comments Thai-font fallback (system Thai fonts), and the theme system (dark / sketch / chalk / obsidian). **No Fusion / manifest schema change. No GitHub PAT used in S1** (photos live in RTDB; GitHub migration is deferred to S2).
+**Builds on:** the Remnants Stock modal (`nest.js` `_openStockModal` / `_saveRemnant` / `nest_remnants`), the role/admin system (`app.js` `_visibleTabsForRole` / `_TAB_IDS` / `applyTabVisibility` / `isAdmin` / `getRole`), the `uploaded_dxfs` cache (`dxfsForMasterCode` / `_uploadedDxfsCache` / `initUploadedDxfsSync`), the 3D viewer (`_kdOpen3D` / `_kd3dGlbUrl`), the shared helpers `escapeHtml` / `_kdToast`, the existing Comments Thai-font fallback (system Thai fonts), the theme system (dark / sketch / chalk / obsidian), and the jsdom test harness (`node --test test/*.mjs`, precedent `test/nestStockEnable.test.mjs`). **No Fusion / manifest schema change. No GitHub PAT used in S1** (photos live in RTDB; GitHub migration is deferred to S2).
 
 ## Goal
 
@@ -42,23 +42,33 @@ can subtract without re-querying RTDB.
 
 ## Architecture / surfaces
 
-New module **`stock.js`** (loaded directly from `index.html`, like `nest.js` — no bundler),
-owning the whole "Stock" tab. Kept out of `app.js` (already large): the surface is
-genuinely orthogonal (no nest/library/drawing entanglement), has its own role gating, and
-S2/S3 will add weight — so the module boundary unblocks parallel future work and keeps S1
-independently reviewable. It reuses, never forks: `window.firebaseDB`, `isAdmin`,
-`getRole`, `dxfsForMasterCode` / `_uploadedDxfsCache`, and `_kdOpen3D`.
+New module **`stockpart.js`** (own IIFE exposing `window.kdStockPart`, like `nest.js`'s
+`window.kdNest` — no bundler), owning the whole "Stock Part" tab. Kept out of `app.js`
+(already large): the surface is orthogonal (no nest/library/drawing entanglement), has its
+own role gating, and S2/S3 will add weight — so the module boundary unblocks parallel future
+work and keeps S1 independently reviewable. It reuses, never forks: `window.firebaseDB`,
+`isAdmin`, `getRole`, `escapeHtml`, `_kdToast`, `dxfsForMasterCode` / `_uploadedDxfsCache`,
+and `_kdOpen3D` — all defined in `app.js`, so `stockpart.js` only calls them at runtime.
 
-### Tab registration (4 touch-points, mirrors the existing tabs)
-1. `index.html` — add `<button id="tab-stock" class="tab" data-view="stock">…</button>` in
-   `.tabs` (English label "Stock" + the box/package icon, see Icon below — chrome stays English).
-2. `app.js` `_TAB_IDS` (≈line 202) — add `stock: 'tab-stock'`.
-3. `app.js` `_visibleTabsForRole()` (≈line 188) — return `stock: true` for **all** roles
-   (workshop/laser/bend/assemble/admin), like the Drawing tab (not admin-only like Library);
-   `applyTabVisibility()` already show/hides + bounces a hidden tab back to projects.
-4. `app.js` **view router** (the `data-view` → render dispatch) — add the `view === 'stock'`
-   case calling `window.kdStock.render(container)` exposed by `stock.js`. (Confirm the exact
-   dispatcher line during implementation and cite it in the build PR.)
+**Naming — avoid the Remnants collision:** the existing Remnants Stock modal already owns the
+`.kdstock-*` CSS prefix, the `nest_remnants` RTDB node, and `_loadRemnants`/`_saveRemnant` on
+`kdNest`. This feature is distinct: CSS prefix **`.kdsp-*`**, RTDB **`stock_parts`**, module
+**`window.kdStockPart`**, localStorage **`kd_stock_parts_v1`** / **`kd_sp_submit_times`**.
+
+### Tab registration (touch-points, mirrors the existing tabs)
+1. `index.html` **loader array** (`index.html:231`, `var names = [...]`) — add `'stockpart.js'`
+   **before `'app.js'`** so `window.kdStockPart` exists when app.js boots. (Scripts load via a
+   cache-busting `Promise.all` loader, NOT static `<script src>` tags.)
+2. `index.html` `.tabs` (≈line 112) — add `<button id="tab-stockpart" class="tab"
+   data-view="stockpart">…Stock Part</button>` (English label + box/package icon, see Icon).
+3. `app.js` `_TAB_IDS` (line 202) — add `stockpart: 'tab-stockpart'`.
+4. `app.js` `_visibleTabsForRole()` (lines 188-200) — add `stockpart: true` to the admin
+   return AND every `switch(getRole())` branch (all roles see it, like a universal tab);
+   `applyTabVisibility()` + the `.tab` click handler already gate/show using `_TAB_IDS`.
+5. `app.js` `render()` (line 8148) — in the `stack.length === 0` block add
+   `if (view === 'stockpart') return window.kdStockPart.renderHome();`.
+6. `app.js` boot init (near `initUploadedDxfsSync();` at line 15931) — add
+   `if (window.kdStockPart) window.kdStockPart.init();` to attach the live listener.
 
 ### Role visibility (within the tab, branch on `isAdmin()`)
 | Role | Sees |
@@ -77,7 +87,7 @@ outline, amber-500 (#F2A93B) on the active/highlight element only — matching e
 CC_ / web icon. Final glyph chosen at build; confirm it reads as "stock/shelf" at tab size.
 
 ### CSS organization
-All `.kdstock-*` rules live in `style.css` under a `/* Stock module (S1) */` section after
+All `.kdsp-*` rules live in `style.css` under a `/* Stock module (S1) */` section after
 the four theme blocks. **Per-theme opaque overrides** for the card/box surfaces go inside
 their respective theme blocks (see Theme safety). No separate stylesheet.
 
@@ -115,7 +125,7 @@ their respective theme blocks (see Theme safety). No separate stylesheet.
 - Photo is keyed by `<pushId>` because the code is unknown at intake. On **reject**,
   `photo_data` is **kept** (audit) — admin can hard-delete the row to purge it.
 - **`note` and `code` are user/data input → escape on every render:** `textContent` (never
-  `innerHTML`) for text; `_esc()` / `CSS.escape()` for any `data-*` attribute or DOM id that
+  `innerHTML`) for text; `escapeHtml()` / `CSS.escape()` for any `data-*` attribute or DOM id that
   embeds the code (mirror `nest.js`, which already does this). The code passed to
   `_kdOpen3D` → `_kd3dGlbUrl` is `encodeURIComponent`-wrapped (verified `app.js:2059`), and
   the photo `data:image/jpeg;base64,…` URI is parsed as an image MIME (inert, not HTML) — so
@@ -238,39 +248,37 @@ code (mono) + `thickness · material · grain` + a **3D/▶** that opens `_kdOpe
 | empty: code search | "No matching code" |
 | reject | `status:'rejected'`, hidden from queue+list, `photo_data` kept; admin can hard-delete |
 
-## Worker-screen Thai font (reuse the Comments mechanism)
-The existing Comments feature renders Thai via the stack
-`'IBM Plex Sans Thai','Noto Sans Thai',system-ui,sans-serif`. There is **no `@font-face`/Google
-Fonts link** for those families — Comments work because **`system-ui` resolves to the
-device's installed Thai font** (every Thai phone/PC has one). So:
-1. Scope a class `.kdstock-th` with that exact stack and apply it to the **worker capture
-   screen container only** (labels, note, toasts, the too-large error). A plain class
-   selector beats the `font-family` it would otherwise inherit from `body` — **the only
-   global `*` rule sets `box-sizing`/tap-highlight, not fonts** (the earlier "beat the
-   wildcard" worry was unfounded; no extra specificity needed).
-2. **Include the webfont in S1 for guaranteed rendering:** add a `<link>` to IBM Plex Sans
-   Thai (Google Fonts — reachable, the app sets no blocking CSP). It applies only via
-   `.kdstock-th`, so it changes nothing else. system Thai fonts remain the fallback, so the
-   screen still works offline / if the link fails (exactly as Comments prove) — the webfont
-   just removes the "device has no Thai font → boxes" risk for the worker user base. Cheap
-   (~20 KB), worth it for a non-English-speaking screen.
-3. Everything outside the capture screen (tab chrome, review queue, stock list, all
-   admin-facing strings) stays **English / Flux Architect**.
+## Worker-screen Thai font (reuse the exact Comments stack)
+The Comments feature (`style.css:1034` `.comment-text`, `:1078` `.comment-input`) renders mixed
+Thai/Latin via this **proven, webfont-free** stack — Flux first (Latin), then the device's
+**system Thai fonts** (browser does per-glyph fallback):
+```
+font-family: "Flux Architect", "IBM Plex Sans Thai", "Noto Sans Thai",
+             "Leelawadee UI", "Sukhumvit Set", "Thonburi", Tahoma, -apple-system, sans-serif;
+```
+1. Define class **`.kdsp-th`** with that **exact** stack and apply it to the **worker screens**
+   (capture + Confirm-GLB): labels, note input + placeholder, toasts, the too-large error,
+   ✓/✗ button text. A plain class selector overrides the `font-family` inherited from `body`
+   (the only global `*` rule sets `box-sizing`/tap-highlight, not fonts — no specificity
+   battle). No `@font-face`/`<link>` needed: Thai Windows has Leelawadee UI, iOS/Mac have
+   Thonburi/Sukhumvit, Android has Noto — Comments already rely on this and render fine.
+2. Everything else (tab chrome, review queue, stock list, all admin-facing strings) stays
+   **English / Flux Architect**.
 
 ## Theme safety ([[reference_web_themes]], [[reference_remnants_stock_modal]])
 sketch/chalk themes apply a global reset (`html[data-theme] body * { background:transparent
 !important }`) that strips backgrounds, borders, and shadows — new surfaces float
-see-through unless overridden. So every `.kdstock-*` card/box/queue surface needs
+see-through unless overridden. So every `.kdsp-*` card/box/queue surface needs
 **theme-prefixed opaque overrides**, exactly as the Remnants modal does: e.g.
-`html[data-theme="sketch"] .kdstock-box{ background:#f3ecdd !important }`,
-`html[data-theme="chalk"] .kdstock-box{ background:#2f3a38 !important }`, plus obsidian +
+`html[data-theme="sketch"] .kdsp-box{ background:#f3ecdd !important }`,
+`html[data-theme="chalk"] .kdsp-box{ background:#2f3a38 !important }`, plus obsidian +
 default dark. The amber NEW/qty pills follow the existing theme-safe `.part-new-badge`
 pattern (doubled-class to beat the body-text reset where needed).
 
 ## Security & quota (proportionate, trust-based shop)
 - **Anonymous writes** match the existing `nest_remnants`/`uploaded_dxfs` model — no new
   exposure. Guards: the ~700 KB compress target + a ~1.5 MB hard payload reject; a
-  **per-device daily soft cap** (localStorage `kd_stock_submit_times`: warn >10, block >20
+  **per-device daily soft cap** (localStorage `kd_sp_submit_times`: warn >10, block >20
   intakes / 24h) to stop a runaway/fat-finger loop. Not server-enforced — proportionate to a
   trust-based shop.
 - **Admin gating is client-side (`isAdmin()`)** — same as the whole app today
@@ -290,7 +298,7 @@ pattern (doubled-class to beat the body-text reset where needed).
   on each write (bandwidth anti-pattern). Same-row concurrent edits resolve last-write-wins,
   acceptable for an effectively single-admin shop; if multi-admin ever matters, scope a
   transaction to the *single row*, never the tree.
-- **Stored XSS / injection:** see the Data model escaping rules (textContent + `_esc`/
+- **Stored XSS / injection:** see the Data model escaping rules (textContent + `escapeHtml`/
   `CSS.escape`; `_kd3dGlbUrl` already `encodeURIComponent`s; data: URI inert).
 - **localStorage mirror** holds metadata only (no `photo_data`) + defensive parse — see Listener.
 - **No PAT on any device** (S1 uses no GitHub); admin PAT untouched.
@@ -300,20 +308,20 @@ pattern (doubled-class to beat the body-text reset where needed).
 
 | Unit | Purpose | Depends on |
 |---|---|---|
-| `stock.js` `render(container)` (→ `window.kdStock`) | mounts capture / review / list per role | `isAdmin`, `getRole` |
+| `stockpart.js` IIFE → `window.kdStockPart = { renderHome, init, stockQtyByCode, confirmedByCode, _test }` | `renderHome()` mounts capture / worker-confirm / review / list per role; `init()` attaches the listener | `isAdmin`, `getRole` |
 | `compressImage(file) → base64` | canvas downscale + quality-loop + dimension fallback to ≤~700 KB, else reject | — (pure-ish, testable) |
 | `stockStore` (`saveIntake` / `assignCode` / `workerConfirmGlb` / `workerRejectGlb` / `rejectIntake` / `_updateStock` / `_deleteStock`) | RTDB CRUD + the lifecycle transitions on `stock_parts`; on write fail → toast + 1 retry, LS mirror keeps UI painted | `firebaseDB` |
 | `initStockPartsSync()` | live `stock_parts` → `_stockCache` + `kd_stock_parts_v1` | `firebaseDB` |
-| `stockQtyByCode()` / `confirmedByCode()` (**public on `window.kdStock` for S2**) | aggregate confirmed rows by code | `_stockCache` |
-| `renderCapture()` (Thai) | worker photo+qty+note+submit, undo-last | `compressImage`, `saveIntake`, `.kdstock-th` |
+| `stockQtyByCode()` / `confirmedByCode()` (**public on `window.kdStockPart` for S2**) | aggregate confirmed rows by code | `_stockCache` |
+| `renderCapture()` (Thai) | worker photo+qty+note+submit, undo-last | `compressImage`, `saveIntake`, `.kdsp-th` |
 | `renderReview()` (admin) | review queue + bounced flag + code picker + AI-slot + editable qty/code + assign/reject | `assignCode`, `rejectIntake`, code picker, `_kdOpen3D` |
-| `renderWorkerConfirm()` (Thai) | awaiting list: photo beside 3D model + ✓ ถูกต้อง / ✗ ไม่ใช่ | `workerConfirmGlb`, `workerRejectGlb`, `_kdOpen3D`, `.kdstock-th` |
+| `renderWorkerConfirm()` (Thai) | awaiting list: photo beside 3D model + ✓ ถูกต้อง / ✗ ไม่ใช่ | `workerConfirmGlb`, `workerRejectGlb`, `_kdOpen3D`, `.kdsp-th` |
 | `renderList()` | grouped stock cards + search + View 3D + admin edit/delete + empty states | `confirmedByCode`, `_kdOpen3D` |
 | `renderCodePicker()` | searchable `uploaded_dxfs` candidates (dedupe) + 3D compare + direct type-in | `_uploadedDxfsCache`, `_kdOpen3D` |
 
 ## Phase 1 scope
 
-**SHIP:** the "Stock" tab (all roles, role-gated affordances); `stock.js` module; RTDB
+**SHIP:** the "Stock Part" tab (all roles, role-gated affordances); `stockpart.js` module; RTDB
 `stock_parts` (1 row/intake) + the 4-state lifecycle + live sync + LS mirror; worker capture
 (Thai, camera, compress→base64, anonymous write, undo-last, validation); admin review queue
 (manual code picker via `uploaded_dxfs` search + 3D compare + direct type-in, editable
@@ -352,14 +360,22 @@ theme-safe styling across dark/sketch/chalk/obsidian; textContent escaping.
 
 ## Testing
 
-**Tier 1 — pure logic (`_test` hooks, node-checkable, automated):** `compressImage` sizing
-(longest-edge scale, quality-loop + dimension fallback terminate; reject path triggers);
-`stockQtyByCode` / `confirmedByCode` aggregation (only `confirmed` counts; pending /
-`awaiting_worker_confirm` / rejected excluded; multi-row same code summed); code-picker
-filter (substring, case-insensitive, dedupe by master_code newest); relative-time formatter
-(`Nm`/`Nh`/date); escaping (a `<script>` in `note` renders inert).
+**Harness (already in the repo):** `package.json` → `"test": "node --test test/*.mjs"`, with
+`jsdom` available. Name new files `test/stockpart*.test.mjs` (the glob ignores `*.test.js`).
+Boot the browser module in jsdom via the `new window.Function(SRC)(...)` pattern from
+`test/nestOrientDom.test.mjs`, then drive it through `window.kdStockPart._test`. Precedent for
+a stock-table unit test: `test/nestStockEnable.test.mjs`. Run a step's test with
+`node --test test/stockpart-logic.test.mjs` (red → green).
 
-**Tier 2 — RTDB CRUD + lifecycle (synthetic, self-cleaning rows):** push pending → appears in
+**Tier 1 — pure logic (via `window.kdStockPart._test`, real `node --test`):** the compress
+**sizing decision** `_decideCompress(w,h,bytes)` (longest-edge scale, quality-loop + dimension
+fallback terminate; reject path triggers) — factored out of the canvas so it's pure;
+`stockQtyByCode` / `confirmedByCode` aggregation (only `confirmed` counts; pending /
+`awaiting_worker_confirm` / rejected excluded; multi-row same code summed); `codePickerFilter`
+(substring, case-insensitive, dedupe by master_code newest); `relativeTime` formatter
+(`Nm`/`Nh`/date); escaping (`escapeHtml` on a `<script>` in `note` renders inert).
+
+**Tier 2 — RTDB CRUD + lifecycle (jsdom + a firebaseDB mock, or synthetic self-cleaning rows):** push pending → appears in
 review queue; assign code → leaves queue, enters Confirm-GLB list (`awaiting_worker_confirm`);
 worker ✓ → enters stock list with summed qty (`confirmed`); worker ✗ → returns to review
 queue flagged `bounced_from` (and NOT counted in stock); edit qty/code → aggregate updates /
@@ -373,12 +389,12 @@ review queue + edit/delete; hidden-tab bounce); the **round-trip on real devices
 captures, เอ๋ assigns a code, the item appears in the worker's Confirm-GLB list with the 3D
 model beside the photo, ✓ moves it to stock / ✗ bounces it back flagged; Thai font on the
 worker screens (computed `font-family` = the Thai stack) while the rest stays Flux; **theme
-safety across dark / sketch / chalk / obsidian** (every `.kdstock-*` surface opaque +
+safety across dark / sketch / chalk / obsidian** (every `.kdsp-*` surface opaque +
 readable, pills visible — getComputedStyle in Chrome DevTools).
 
 **Ship discipline ([[feedback_verify_before_done]], [[feedback_check_deploy]],
 [[feedback_use_chrome_not_edge]], [[feedback_log_changes_to_sync]]):** Chrome only (never
-Edge). After push, `fetch(no-store)` the deployed `stock.js` until the new symbol appears
+Edge). After push, `fetch(no-store)` the deployed `stockpart.js` until the new symbol appears
 (say "CDN"/"the live file", not "edge"), confirm against the real commit hash, then exercise
 on the live host. Log the change to `docs/coordination/group-sync.md` immediately on
 completion with the real commit hash (one entry, not batched).
