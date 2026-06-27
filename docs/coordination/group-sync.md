@@ -9070,3 +9070,10 @@ NEXT: S2 (nest don't-re-cut) — design approved (per-row toggle, in-memory useS
 - **Thumbnail review fixes** (earlier today, HEAD 5745ae0): edges only on the model (skip ground/shadow plane → no "floor frame"), X-rotation clockwise (`orientation=0deg -90deg 0deg`); "added by X · 6h ago"; centered qty; "↻ Re-run AI" button; AI dimension vocabulary (ยาว/W/L=length, D=thickness, H=height) in the Haiku legend.
 NEXT: S2 (nest don't-re-cut) — spec approved, writing the plan now.
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · 🚀 Stock Part S2 "don't re-cut" LIVE (nest subtracts confirmed stock)
+HEAD **04310c4** (origin/main, deploy ✓). S2 done — pure web (nest is nest.js now). When `_buildNestPieces` expands a part's qty, it subtracts confirmed Stock Part qty: `cut = _stockAdjustedQty(p.qty, kdStockPart.stockQtyByCode(code), p.useStock)`. Per-row `useStock` (default on, in-memory). Row shows a `♻N` toggle + cut hint ("cut 3 (5−2)" / "✓ all in stock" / "stock off") + `↗` deep-link (new `kdStockPart.focusCode(code)`) + `.kdnest-part-instock` left rail. New pure `_stockAdjustedQty` + guard test (`test/nestStockDontRecut.test.mjs`); full suite 122/122.
+LIVE VERIFY (Chrome, project "02 Ruth", real DXF'd part BK1DN1-020000, confirmed stock qty 2, demand 5): badge "♻2 cut 3 (5−2)" + instock rail; **`buildNestPieces` emitted 3 pieces** (5−2); toggle OFF → "♻2 stock off", **5 pieces** (full); ↗ → Stock Part tab focused on the code. Console clean. (Throwaway confirmed-stock rows created for the test were removed.)
+DEFER (per spec): stock reservation ledger (concurrent jobs double-count today), surfacing the saving in the cut-sheet/cost summary, persisting useStock in the saved nest, photo migration RTDB→GitHub.
+== Stock Part S1+S2+S3 + multi-photo all SHIPPED this session. ==
+-- RD 13
