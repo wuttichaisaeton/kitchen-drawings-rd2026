@@ -9095,3 +9095,7 @@ PENDING เอ๋ decision: S3 "visual match (เทียบภาพ GLB)" des
 ### WEB (RD 13) · 2026-06-27 · ✅ Stock card → 2-column, name+qty only (เอ๋ iPhone)
 HEAD **a67939d** (deploy ✓). เอ๋ preferred the 2-column layout over the horizontal 1-col → reverted (grid minmax 240→160, removed flex-row). Stock card now shows ONLY photo + part NAME (15px bold) + QTY pill (14px bold); thickness + material removed entirely. Verified live: flex-direction column, "DSV100-045110 · ×3 in stock", no "mm"/"ALPF". 122/122.
 -- RD 13
+
+### WEB (RD 13) · 2026-06-27 · ✅ Stock qty number = big RED (theme-proof)
+HEAD **5ffbaed** (deploy ✓). เอ๋: stock qty number red. `.kdsp-qtynum` 22px/800 ×N now red — but the sketch/chalk `body *{color:var(--ink)!important}` reset (0,2,5) was forcing black, so used a theme-agnostic `body .kdsp-stockbody .kdsp-qtynum.kdsp-qtynum {color:#ff4d4f!important}` (0,3,1). Verified computed rgb(255,77,79) in BOTH sketch + dark. Stock cards = photo + NAME + big red ×N (no thickness/material), 2-col. (3 confirmed test rows exist: DSV100-045110 ×3, DSV100-050110 ×1, FN2BLA-095000 ×4 — เอ๋ can ✕-delete the test ones.)
+-- RD 13
