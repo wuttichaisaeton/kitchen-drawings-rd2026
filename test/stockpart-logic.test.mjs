@@ -92,3 +92,17 @@ test('_compressLadder is finite and ends at the smallest attempt', () => {
   const last = ladder[ladder.length - 1];
   assert.ok(last.maxEdge <= 640 && last.q <= 0.4);
 });
+
+test('codePickerFilter finds by length / dimension digits', () => {
+  const { T } = boot();
+  const cache = {
+    s1: { master_code: 'BK1DN1-946000', uploaded_at: 1 },
+    s2: { master_code: 'SD0SUP-040030', uploaded_at: 1 },
+    s3: { master_code: 'FN3BLA-060946', uploaded_at: 1 },
+  };
+  const hit = T.codePickerFilter(cache, '946');
+  assert.equal(hit.length, 2);                       // matches width 946 AND height 946
+  const codes = hit.map(m => m.master_code).sort();
+  assert.deepEqual(codes, ['BK1DN1-946000', 'FN3BLA-060946']);
+  assert.equal(T.codePickerFilter(cache, '040').length, 1); // SD0SUP width 040
+});

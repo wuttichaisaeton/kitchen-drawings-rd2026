@@ -44,10 +44,22 @@
       if (!prev || (m.uploaded_at || 0) > (prev.uploaded_at || 0)) byCode[m.master_code] = Object.assign({ master_code: m.master_code }, m);
     }
     var q = String(query || '').trim().toLowerCase();
+    var qDigits = q.replace(/\D/g, '');
     var list = Object.keys(byCode).map(function (k) { return byCode[k]; });
-    if (q) list = list.filter(function (m) { return m.master_code.toLowerCase().indexOf(q) !== -1; });
+    if (q) list = list.filter(function (m) {
+      var code = m.master_code.toLowerCase();
+      if (code.indexOf(q) !== -1) return true;                                                    // code substring
+      if (qDigits && qDigits === q && code.replace(/\D/g, '').indexOf(qDigits) !== -1) return true; // PURE-numeric query = search by length/dimension
+      return false;
+    });
     list.sort(function (a, b) { return a.master_code.localeCompare(b.master_code); });
     return list;
+  }
+  // dimension hint parsed from the code suffix (after the dash). 6-digit WWWHHH -> "946×0mm".
+  function _codeDim(code) {
+    var suf = (String(code || '').split('-')[1] || '').replace(/\D/g, '');
+    if (suf.length === 6) return parseInt(suf.slice(0, 3), 10) + '×' + parseInt(suf.slice(3), 10) + 'mm';
+    return suf;
   }
   function relativeTime(now, ts) {
     if (!ts) return '';
@@ -224,7 +236,8 @@
           '<div class="kdsp-revmeta">' +
             '<p class="kdsp-muted">Qty ' + (r.qty || 0) + ' · by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
             bounce +
-            '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find part code…" data-id="' + escapeHtml(r.id) + '">' +
+            (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;font-style:italic;">“' + escapeHtml(r.note) + '”</p>' : '') +
+            '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
             '<div class="kdsp-pick-results" data-id="' + escapeHtml(r.id) + '"></div>' +
             '<p class="kdsp-ai-slot kdsp-muted">AI suggestion — coming soon</p>' +
             '<div class="kdsp-actions">' +
@@ -245,7 +258,7 @@
         results.innerHTML = list.map(function (m) {
           return '<div class="kdsp-cand" data-code="' + escapeHtml(m.master_code) + '">' +
             '<code>' + escapeHtml(m.master_code) + '</code>' +
-            '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + '</span>' +
+            '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span>' +
             '<button type="button" class="kdsp-3d" data-code="' + escapeHtml(m.master_code) + '">3D</button>' +
             '<button type="button" class="kdsp-use" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">use</button>' +
           '</div>';
@@ -305,6 +318,7 @@
       // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
         '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
+        (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;font-style:italic;">“' + escapeHtml(r.note) + '”</p>' : '') +
         '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
           '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
@@ -387,7 +401,7 @@
           codeResults.innerHTML = list.map(function (m) {
             return '<div class="kdsp-cand" data-code="' + escapeHtml(m.master_code) + '">' +
               '<code>' + escapeHtml(m.master_code) + '</code>' +
-              '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + '</span>' +
+              '<span class="kdsp-muted">' + (m.thickness_mm != null ? m.thickness_mm + 'mm' : '') + ' ' + escapeHtml(m.material || '') + ' ' + escapeHtml(m.grain || '') + (_codeDim(m.master_code) ? ' · ↔' + _codeDim(m.master_code) : '') + '</span>' +
               '<button type="button" class="kdsp-use" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">use</button>' +
             '</div>';
           }).join('');
