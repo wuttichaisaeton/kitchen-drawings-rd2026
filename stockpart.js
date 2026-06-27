@@ -328,11 +328,49 @@
     return el;
   }
 
-  // ── (render added in later tasks) ───────────────────────────
+  // ── stock list ──────────────────────────────────────────────
+  var _listQuery = '';
+  function _buildList(readOnly) {
+    var el = document.createElement('section'); el.className = 'kdsp-section';
+    var groups = confirmedByCode();
+    var codes = Object.keys(groups).sort(function (a, b) { return a.localeCompare(b); });
+    if (_listQuery) { var q = _listQuery.toLowerCase(); codes = codes.filter(function (c) { return c.toLowerCase().indexOf(q) !== -1; }); }
+    el.innerHTML = '<div class="kdsp-listhead"><h3 class="kdsp-h">Stock parts</h3>' +
+      '<input type="text" id="kdsp-search" class="kdsp-input" placeholder="Search code…" value="' + escapeHtml(_listQuery) + '"></div>';
+    var grid = document.createElement('div'); grid.className = 'kdsp-grid'; el.appendChild(grid);
+    if (!codes.length) { grid.innerHTML = '<p class="kdsp-empty">' + (_listQuery ? 'No matching code' : 'No stock yet') + '</p>'; }
+    codes.forEach(function (code) {
+      var g = groups[code];
+      var card = document.createElement('div'); card.className = 'kdsp-card kdsp-stockcard';
+      var photo = (g.rows[0] && g.rows[0].photo_data) ? '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + g.rows[0].photo_data + '" alt="">' : '<div class="kdsp-thumb kdsp-noimg"></div>';
+      card.innerHTML = photo +
+        '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
+        '<div class="kdsp-meta"><span class="kdsp-pill">×' + g.qty + ' in stock</span>' +
+        '<span class="kdsp-muted">' + (g.thickness_mm != null ? g.thickness_mm + 'mm ' : '') + escapeHtml(g.material || '') + '</span></div>' +
+        '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(code) + '">View 3D</button>' +
+        (readOnly ? '' : '<button type="button" class="kdsp-icon kdsp-del" data-code="' + escapeHtml(code) + '" title="delete one row">✕</button>') + '</div>';
+      grid.appendChild(card);
+      card.querySelector('.kdsp-view3d').addEventListener('click', function () { _kdOpen3D(code); });
+      if (!readOnly) card.querySelector('.kdsp-del').addEventListener('click', async function () {
+        var rid = g.rows[0] && g.rows[0].id; if (!rid) return;
+        try { await _deleteStock(rid); _kdToast('ลบ 1 แถวแล้ว'); } catch (e) { _kdToast('ลบไม่สำเร็จ'); }
+      });
+    });
+    var search = el.querySelector('#kdsp-search');
+    search.addEventListener('input', function () { _listQuery = search.value; renderHome(); setTimeout(function () { var s = ROOT.querySelector('#kdsp-search'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }, 0); });
+    return el;
+  }
 
+  // ── role router ─────────────────────────────────────────────
   function renderHome() {
     if (typeof ROOT === 'undefined' || !ROOT) return;
-    ROOT.innerHTML = '<div class="kdsp-home"><p class="kdsp-empty">Stock Part — coming up.</p></div>';
+    if (ROOT.querySelector && ROOT.querySelector('.kdsp-input:focus') && document.activeElement && document.activeElement.id !== 'kdsp-search') return; // don't yank focus mid-type (except search, handled above)
+    var admin = (typeof isAdmin === 'function') && isAdmin();
+    ROOT.innerHTML = '';
+    var wrap = document.createElement('div'); wrap.className = 'kdsp-home';
+    if (admin) { wrap.appendChild(_buildReview()); wrap.appendChild(_buildList(false)); }
+    else { wrap.appendChild(_buildCapture()); wrap.appendChild(_buildWorkerConfirm()); wrap.appendChild(_buildList(true)); }
+    ROOT.appendChild(wrap);
   }
 
   function init() {
