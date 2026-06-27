@@ -8988,3 +8988,10 @@ FYI Group 1: web-only.
 **FIX (e213e3d):** index.html ปุ่ม `#tab-stockpart` SVG → **iso box ซ้อนกัน 2 ใบ** (cube เต็มใบบน + กล่องเตี้ยล่าง แชร์ระนาบสัมผัส) สื่อ stock/คลังชิ้นส่วน. เส้นสไตล์เดียวกับ tab อื่น (nest-glyph, currentColor, vb 0 0 24 24, sw 1.7) → ใช้สีตาม theme อัตโนมัติ.
 **VERIFY:** path ใหม่ขึ้นหน้า live + path cube เดี่ยวเก่าหาย (curl host) ✓ · deploy success. ⚠ screenshot tool ค้างทั้ง session (CDP capture hang แม้หน้า static) → verify geometry เชิงพิกัด + ขึ้น widget ให้เอ๋ดู. ⚠ index.html = max-age 600 → เอ๋ hard-reload (Ctrl+Shift+R) ถึงเห็น (≤10น ไม่งั้น). หมายเหตุ: stockpart.js + test มี WIP session อื่น (dirty) — ไม่แตะ commit เฉพาะ index.html.
 -- WEB
+
+### WEB · 2026-06-27 · ✅ FIX: npm test green again — 3 nestOrientDom tests realigned to popup-only viewer (no nest.js change)
+เอ๋: ขอแก้ 3 fail ที่ค้างใน `npm test` (#59-61 `test/nestOrientDom.test.mjs`) — ที่ RD 13 (Stock Part) flag ไว้ว่า "มีอยู่ก่อนแล้ว ไม่เกี่ยวฟีเจอร์". ยืนยันแล้วว่าเป็น **behavior change ตั้งใจ ไม่ใช่ bug**: commit **f827190** (2026-06-27, GW) เลิกใช้ inline behind-canvas preview → `_setPreview` ไม่เขียน `S.previewCode` อีก (popup = ตัวดู part ตัวเดียว, main canvas โชว์ sheet เสมอ). เทสต์ (แก้ล่าสุด 727aff9 ก่อน refactor) ยัง assert กลไกเก่าที่ถูกถอดไปแล้ว — ทั้ง 3 fail ที่ assertion `previewCode` จุดเดียวเท่านั้น; guard จริง (part ถูกตัวติด flag, decoy ไม่โดน, ปุ่มแต่ละแถวผูกกับ flag ของ part ตัวเอง, flag รอด async save) ผ่านหมด.
+ถาม เอ๋ (fix code คืน inline preview vs แก้เทสต์) → no preference → **แก้เทสต์** (คืน inline preview = ย้อน f827190 ที่เอ๋สั่งถอดเอง). แก้เฉพาะ 3 assertion `previewCode` ที่ล้าสมัย → contract ใหม่ (popup-only); เก็บ guard ที่ยังมีค่าไว้ครบ. **ไม่แตะ nest.js**.
+HEAD **a9e9c46** (test-only). VERIFY: `node --test test/nestOrientDom.test.mjs` = 5/5; full suite `node --test test/*.mjs` = **108/108 pass** (เดิม 101 pass / 3 fail), เสถียร 2 รอบ. ไม่มี deploy (test-only, ไม่อยู่ใน Pages build).
+FYI Group 1: web test-only — ไม่มี Fusion/nest.js/CC_Laser change.
+-- WEB ⏱ 00:18
