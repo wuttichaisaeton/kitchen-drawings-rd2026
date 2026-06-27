@@ -274,7 +274,7 @@
       }
       function checkBuild() {
         if (bannerShown || document.hidden) return;
-        ['app.js', 'nest.js'].forEach(function(name) {
+        ['app.js', 'nest.js', 'stockpart.js'].forEach(function(name) {
           if (!sigs[name]) return;
           fetch(name, { method: 'HEAD', cache: 'no-store' }).then(function(r) {
             if (!r.ok || bannerShown) return;

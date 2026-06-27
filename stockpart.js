@@ -89,6 +89,12 @@
       return best <= tol ? Object.assign({ _lenDelta: best }, m) : null;
     }).filter(Boolean).sort(function (a, b) { return a._lenDelta - b._lenDelta || a.master_code.localeCompare(b.master_code); });
   }
+  // render a note as Flux for everything; wrap ONLY the Thai glyphs in a Thai-capable font
+  function _noteHtml(note) {
+    return escapeHtml(note).replace(/[฀-๿]+/g, function (t) {
+      return '<span style="font-family:\'IBM Plex Sans Thai\',\'Leelawadee UI\',\'Sukhumvit Set\',\'Thonburi\',Tahoma,sans-serif">' + t + '</span>';
+    });
+  }
   function relativeTime(now, ts) {
     if (!ts) return '';
     var m = Math.floor(Math.max(0, now - ts) / 60000);
@@ -302,7 +308,10 @@
               '</div>' +
               '<div style="display:flex;align-items:center;gap:8px;justify-content:space-between;margin-top:4px;">' +
                 '<span class="kdsp-muted"><code>' + escapeHtml(m.master_code) + '</code> · ↔' + _codeDim(m.master_code) + ' · ' + (m.thickness_mm != null ? m.thickness_mm + 'mm ' : '') + escapeHtml(m.material || '') + '</span>' +
-                '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-approve" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">Approve</button>' +
+                '<span style="display:flex;gap:6px;">' +
+                  '<button type="button" class="kdsp-btn kdsp-auto3d" data-code="' + escapeHtml(m.master_code) + '">3D</button>' +
+                  '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-approve" data-code="' + escapeHtml(m.master_code) + '" data-th="' + (m.thickness_mm == null ? '' : m.thickness_mm) + '" data-mat="' + escapeHtml(m.material || '') + '" data-grn="' + escapeHtml(m.grain || '') + '">Approve</button>' +
+                '</span>' +
               '</div>' +
             '</div>';
           }).join('') + '</div>';
@@ -313,7 +322,7 @@
           '<div class="kdsp-revmeta">' +
             '<p class="kdsp-muted">Qty ' + (r.qty || 0) + ' · by ' + escapeHtml(r.created_by_role || '') + ' · ' + relativeTime(now, r.created_at) + '</p>' +
             bounce +
-            (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;">“' + escapeHtml(r.note) + '”</p>' : '') +
+            (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
             autoHtml +
             '<p class="kdsp-muted" style="margin:8px 0 2px;">' + (autos.length ? 'Or find another code:' : (_L ? 'No code within ±5mm of ' + _L + 'mm — find manually:' : 'Find a code:')) + '</p>' +
             '<input type="text" class="kdsp-input kdsp-pick-q" placeholder="Find code or length (e.g. 946)…" data-id="' + escapeHtml(r.id) + '">' +
@@ -338,6 +347,7 @@
           } catch (e) { btn.disabled = false; _kdToast('Save failed'); }
         });
       });
+      card.querySelectorAll('.kdsp-auto3d').forEach(function (b) { b.addEventListener('click', function () { _kdOpen3D(b.getAttribute('data-code')); }); });
 
       var chosen = { code: '', meta: {} };
       var input = card.querySelector('.kdsp-pick-q');
@@ -409,7 +419,7 @@
       // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
         '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
-        (r.note ? '<p class="kdsp-th" style="font-size:13px;color:#b8a06a;margin:4px 0;">“' + escapeHtml(r.note) + '”</p>' : '') +
+        (r.note ? '<p style="font-size:13px;color:#b8a06a;margin:4px 0;">"' + _noteHtml(r.note) + '"</p>' : '') +
         '<p class="kdsp-cmp-cap">Photo ↔ 3D model — do they match?</p>' +
         '<div class="kdsp-compare">' +
           '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>Photo</figcaption></figure>' +
@@ -440,11 +450,18 @@
     var el = document.createElement('section'); el.className = 'kdsp-section';
     var groups = confirmedByCode();
     var codes = Object.keys(groups).sort(function (a, b) { return a.localeCompare(b); });
-    if (_listQuery) { var q = _listQuery.toLowerCase(); codes = codes.filter(function (c) { return c.toLowerCase().indexOf(q) !== -1; }); }
+    if (_listQuery) {
+      var q = _listQuery.toLowerCase(), qn = (/^\d+$/.test(q) ? parseInt(q, 10) : null);
+      codes = codes.filter(function (c) {
+        if (c.toLowerCase().indexOf(q) !== -1) return true;
+        if (qn != null) { var d = _codeDims(c); if (d && Math.min(Math.abs(d.w * 10 - qn), Math.abs(d.h * 10 - qn), Math.abs(d.w - qn), Math.abs(d.h - qn)) <= 5) return true; }
+        return false;
+      });
+    }
     el.innerHTML = '<div class="kdsp-listhead"><h3 class="kdsp-h">Stock parts</h3>' +
-      '<input type="text" id="kdsp-search" class="kdsp-input" placeholder="Search code…" value="' + escapeHtml(_listQuery) + '"></div>';
+      '<input type="text" id="kdsp-search" class="kdsp-input" placeholder="Search code or length…" value="' + escapeHtml(_listQuery) + '"></div>';
     var grid = document.createElement('div'); grid.className = 'kdsp-grid'; el.appendChild(grid);
-    if (!codes.length) { grid.innerHTML = '<p class="kdsp-empty">' + (_listQuery ? 'No matching code' : 'No stock yet') + '</p>'; }
+    if (!codes.length) { grid.innerHTML = '<p class="kdsp-empty">' + (Object.keys(groups).length === 0 ? 'No stock yet — approve items above first' : (_listQuery ? 'No matching code' : 'No stock yet')) + '</p>'; }
     codes.forEach(function (code) {
       var g = groups[code];
       var card = document.createElement('div'); card.className = 'kdsp-card kdsp-stockcard';
