@@ -777,7 +777,26 @@ git commit -m "feat(stock-part): admin review queue + code picker (uploaded_dxfs
 - [ ] **Step 1: Implement the confirm-GLB list** — add to `stockpart.js`
 
 ```javascript
-  // ── worker confirm-GLB list (Thai) ──────────────────────────
+  // ── ensure <model-viewer> is registered (so we can embed it INLINE) ──
+  // เอ๋ requirement: the worker must SEE the GLB beside their photo and compare.
+  // _kdOpen3D already renders <model-viewer> — find how app.js loads it
+  // (grep "model-viewer" in app.js / index.html) and MATCH that exact CDN url+version
+  // below so inline + modal use the same build. Resolves when the element is defined.
+  var _mvReady = null;
+  function _ensureModelViewer() {
+    if (_mvReady) return _mvReady;
+    _mvReady = new Promise(function (resolve) {
+      if (window.customElements && customElements.get('model-viewer')) { resolve(true); return; }
+      var s = document.createElement('script'); s.type = 'module';
+      s.src = 'https://cdn.jsdelivr.net/npm/@google/model-viewer/dist/model-viewer.min.js'; // ← MATCH _kdOpen3D's url/version
+      s.onload = function () { resolve(true); };
+      s.onerror = function () { resolve(false); };
+      document.head.appendChild(s);
+    });
+    return _mvReady;
+  }
+
+  // ── worker confirm-GLB list (Thai) — photo beside the live 3D model ──
   function _awaiting() {
     var out = [];
     for (var id in _stockCache) { var r = _stockCache[id]; if (r && r.status === 'awaiting_worker_confirm') out.push(Object.assign({ id: id }, r)); }
@@ -788,19 +807,22 @@ git commit -m "feat(stock-part): admin review queue + code picker (uploaded_dxfs
     var el = document.createElement('section'); el.className = 'kdsp-section kdsp-th';
     var rows = _awaiting();
     el.innerHTML = '<h3 class="kdsp-h">รอยืนยันว่าใช่ part นี้ไหม</h3>' + (rows.length ? '' : '<p class="kdsp-empty">ยังไม่มีรายการรอยืนยัน</p>');
+    if (rows.length) _ensureModelViewer();   // load the element so the inline GLB renders
     rows.forEach(function (r) {
       var card = document.createElement('div'); card.className = 'kdsp-card';
+      var glb = (typeof _kd3dGlbUrl === 'function' && r.code) ? _kd3dGlbUrl(r.code) : '';
+      // SIDE-BY-SIDE compare: the worker's photo next to the live GLB.
       card.innerHTML =
-        '<div class="kdsp-revrow">' +
-          '<img class="kdsp-thumb" src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt="">' +
-          '<div class="kdsp-revmeta">' +
-            '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
-            '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">ดูรูป 3D</button>' +
-            '<div class="kdsp-actions">' +
-              '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-ok" data-id="' + escapeHtml(r.id) + '">✓ ถูกต้อง</button>' +
-              '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ ไม่ใช่</button>' +
-            '</div>' +
-          '</div>' +
+        '<p class="kdsp-muted"><code>' + escapeHtml(r.code || '') + '</code> · ' + (r.thickness_mm != null ? r.thickness_mm + 'mm ' : '') + escapeHtml(r.material || '') + '</p>' +
+        '<p class="kdsp-cmp-cap">รูปที่ถ่าย ↔ แบบ 3D — เหมือนกันไหม?</p>' +
+        '<div class="kdsp-compare">' +
+          '<figure class="kdsp-cmp"><img src="data:image/jpeg;base64,' + (r.photo_data || '') + '" alt=""><figcaption>รูปถ่าย</figcaption></figure>' +
+          '<figure class="kdsp-cmp">' + (glb ? '<model-viewer src="' + glb + '" camera-controls auto-rotate interaction-prompt="none" reveal="auto"></model-viewer>' : '<div class="kdsp-noimg"></div>') + '<figcaption>แบบ 3D</figcaption></figure>' +
+        '</div>' +
+        '<button type="button" class="kdsp-btn kdsp-btn-ghost kdsp-see3d" data-code="' + escapeHtml(r.code || '') + '">ขยายดู 3D</button>' +
+        '<div class="kdsp-actions">' +
+          '<button type="button" class="kdsp-btn kdsp-btn-primary kdsp-ok" data-id="' + escapeHtml(r.id) + '">✓ ถูกต้อง</button>' +
+          '<button type="button" class="kdsp-btn kdsp-btn-danger kdsp-no" data-id="' + escapeHtml(r.id) + '">✗ ไม่ใช่</button>' +
         '</div>';
       el.appendChild(card);
       card.querySelector('.kdsp-see3d').addEventListener('click', function () { if (r.code) _kdOpen3D(r.code); });
@@ -813,6 +835,11 @@ git commit -m "feat(stock-part): admin review queue + code picker (uploaded_dxfs
     });
     return el;
   }
+```
+
+> **Implementer note (เอ๋ requirement — inline compare):** the GLB must render INLINE next to the worker's photo (not only behind a button) so the worker can directly eyeball "รูปถ่าย ↔ แบบ 3D". Before coding, `grep -n "model-viewer" app.js index.html` to find the exact CDN url + version `_kdOpen3D` uses and set `_ensureModelViewer`'s `s.src` to match. If, after a live test, inline `<model-viewer>` proves unreliable on the workshop devices, keep the photo + the "ขยายดู 3D" button (which already opens the full viewer via `_kdOpen3D`) as the guaranteed fallback — but inline is the goal.
+
+Add these CSS rules in Task 8 (see Task 8 Step 1 addition).
 ```
 
 - [ ] **Step 2: Syntax check + commit**
@@ -939,6 +966,11 @@ git commit -m "feat(stock-part): stock list (grouped, search, admin delete) + ro
 .kdsp-link { background: none; border: none; color: #6fb1ff; cursor: pointer; padding: 0; }
 .kdsp-icon { background: none; border: none; color: #8a97a8; cursor: pointer; }
 .kdsp-ai-slot { font-size: 12px; font-style: italic; }
+.kdsp-cmp-cap { color: #8a97a8; font-size: 13px; margin: 4px 0; }
+.kdsp-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.kdsp-cmp { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.kdsp-cmp img, .kdsp-cmp model-viewer, .kdsp-cmp .kdsp-noimg { width: 100%; height: 200px; border-radius: 10px; background: #0f1419; object-fit: contain; display: block; }
+.kdsp-cmp figcaption { font-size: 12px; color: #8a97a8; text-align: center; }
 ```
 
 - [ ] **Step 2: Add per-theme opaque overrides** — inside the `html[data-theme="sketch"]` block (next to the existing `.kdstock-box.kdstock-box` rule ≈line 5600), add the doubled-class form:

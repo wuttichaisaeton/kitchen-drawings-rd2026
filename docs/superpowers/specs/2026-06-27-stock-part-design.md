@@ -199,9 +199,12 @@ Review queue (rows `status==='pending'`, **newest first** by `created_at`), each
 
 ### 3. Worker confirm GLB (worker, Thai)
 Confirm-GLB list = rows `status==='awaiting_worker_confirm'` (any worker may act — no per-user
-identity; whoever holds the part confirms). Each card shows the worker's **photo** beside the
-**3D model** of the assigned code (`_kdOpen3D(code)` / inline `<model-viewer>`), the code, and
-`thickness · material`, with two big Thai buttons:
+identity; whoever holds the part confirms). Each card shows the worker's **photo** SIDE-BY-SIDE
+with the **live inline GLB** of the assigned code (an embedded `<model-viewer src=_kd3dGlbUrl(code)>`
+shown automatically — NOT hidden behind a tap; เอ๋'s requirement: the worker must directly
+compare "รูปถ่าย ↔ แบบ 3D"), plus the code and `thickness · material`, a caption
+"รูปที่ถ่าย ↔ แบบ 3D — เหมือนกันไหม?", an "ขยายดู 3D" button (opens `_kdOpen3D` full viewer as a
+fallback), and two big Thai buttons:
 - **✓ ถูกต้อง** → `workerConfirmGlb(id)` → `confirmed` (enters stock; card leaves the list).
 - **✗ ไม่ใช่** → `workerRejectGlb(id)` → back to `pending` flagged `bounced_from` (returns to
   เอ๋'s queue). Optional one-tap Thai reason later (not S1).
