@@ -11,6 +11,9 @@
   var CAP_WARN = 10, CAP_BLOCK = 20;       // intakes / 24h / device
   // cube glyph for the "View 3D" click-to-fullscreen cell (matches the tab icon)
   var _CUBE_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5"/><line x1="12" y1="12" x2="12" y2="21"/></svg>';
+  // AI image-match endpoint (S3). Set to the LINE-bot Render base + /api/stock-match.
+  // Empty until configured → _fireAiMatch no-ops (feature dormant, graceful).
+  var KDSP_AI_ENDPOINT = '';   // e.g. 'https://<line-bot>.onrender.com/api/stock-match'
 
   // ── state ───────────────────────────────────────────────────
   var _stockCache = {};   // pushId -> row
@@ -596,6 +599,23 @@
     }).join('');
     return '<div class="kdsp-ai-slot kdsp-ai-has"><p class="kdsp-muted">✨ AI suggestion</p>' + picks + '</div>';
   }
+  // Fire-and-forget the AI match request at intake. endpoint defaults to the
+  // module const (the param exists so tests inject without depending on it).
+  // Prefer window.fetch so it's correct in the browser and the test stub wins.
+  function _fireAiMatch(id, photo, remarks, endpoint) {
+    endpoint = endpoint || KDSP_AI_ENDPOINT;
+    if (!id || !photo || !endpoint) return;
+    try {
+      var w = (typeof window !== 'undefined') ? window : null;
+      var f = (w && typeof w.fetch === 'function') ? w.fetch.bind(w) : (typeof fetch === 'function' ? fetch : null);
+      if (!f) return;
+      f(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id, photo: photo, remarks: remarks || '' })
+      }).catch(function () {});
+    } catch (e) {}
+  }
 
   // ── role router ─────────────────────────────────────────────
   function renderHome() {
@@ -632,6 +652,7 @@
       codePickerFilter: codePickerFilter,
       catalogNotInStock: catalogNotInStock,
       _aiSuggestHtml: _aiSuggestHtml,
+      _fireAiMatch: _fireAiMatch,
       _parseLen: _parseLen,
       _codeDims: _codeDims,
       _codesByLength: _codesByLength,

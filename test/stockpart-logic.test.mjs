@@ -191,3 +191,26 @@ test('_aiSuggestHtml: escapes code and reason (inert against injection)', () => 
   assert.ok(html.indexOf('<img src=x>') === -1, 'raw code tag must be escaped');
   assert.ok(html.indexOf('<script>z</script>') === -1, 'raw reason tag must be escaped');
 });
+
+test('_fireAiMatch POSTs {id,photo,remarks} to the endpoint and swallows rejection', async () => {
+  const { T, window } = boot();
+  const calls = [];
+  window.fetch = (url, opts) => { calls.push({ url, opts }); return Promise.reject(new Error('network')); };
+  // must not throw even though fetch rejects
+  T._fireAiMatch('ID1', 'BASE64', 'ยาว 946', 'https://x.onrender.com/api/stock-match');
+  await new Promise(r => setTimeout(r, 0));
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://x.onrender.com/api/stock-match');
+  assert.equal(calls[0].opts.method, 'POST');
+  const body = JSON.parse(calls[0].opts.body);
+  assert.deepEqual(body, { id: 'ID1', photo: 'BASE64', remarks: 'ยาว 946' });
+});
+
+test('_fireAiMatch no-ops without id/photo/endpoint', () => {
+  const { T, window } = boot();
+  let n = 0; window.fetch = () => { n++; return Promise.resolve(); };
+  T._fireAiMatch('', 'B64', 'r', 'https://x/api');     // no id
+  T._fireAiMatch('ID', '', 'r', 'https://x/api');       // no photo
+  T._fireAiMatch('ID', 'B64', 'r', '');                 // no endpoint
+  assert.equal(n, 0);
+});
