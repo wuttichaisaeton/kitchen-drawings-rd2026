@@ -4511,7 +4511,9 @@
         if (p.fixWidths.some(v => Math.abs(p.w - v) <= tol))      rots = [0, 180];   // width already horizontal
         else if (p.fixWidths.some(v => Math.abs(p.h - v) <= tol)) rots = [90, 270];  // rotate so it's the width
       }
-      for (let i = 0; i < p.qty; i++) {
+      const _inStock = (p.useStock !== false && window.kdStockPart && typeof window.kdStockPart.stockQtyByCode === 'function') ? (window.kdStockPart.stockQtyByCode(p.code) || 0) : 0;
+      const _cutQty = _stockAdjustedQty(p.qty, _inStock, p.useStock !== false);
+      for (let i = 0; i < _cutQty; i++) {
         pieces.push({
           code: p.code,
           w: useW,
