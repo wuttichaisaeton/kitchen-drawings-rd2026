@@ -4604,9 +4604,11 @@ async function _kdOpen3D(code, opts) {
     // to the scene's top child gave "Pivot" → no label. The code lives deeper.)
     let label = null, nd = hit.object;
     while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { label = l; break; } nd = nd.parent; }
-    if (!label || !_ovlRows.some(r => r.code === label)) return;   // labelled parts only
+    if (!label) return;
     // เอ๋ 2026-06-28: in HIDE mode an admin tap HIDES the part's code (shared via
-    // RTDB → workshop view drops it too) instead of isolating.
+    // RTDB → workshop view drops it too). Any raycast-hit labelled part can be
+    // hidden — do NOT gate on _ovlRows (that list is for isolate; if it isn't
+    // populated the hide-tap was being silently dropped).
     if (_hideMode && isAdmin()) {
       _hoverLabel = null; try { _clearHighlight(); } catch {}   // drop the hover glow on the part we're hiding
       _glbHidden.add(label); _saveGlbHidden();
@@ -4614,6 +4616,7 @@ async function _kdOpen3D(code, opts) {
       _renderHideUI();
       return;
     }
+    if (!_ovlRows.some(r => r.code === label)) return;   // isolate: only parts in the overlay list
     // เอ๋ 2026-06-23 (reverse of clicking a label): tap/click a PART → isolate it,
     // highlight its label, zoom-fit. Tap again / tap away restores (handled above).
     _poppedCode = label;
