@@ -4178,6 +4178,7 @@ async function _kdOpen3D(code, opts) {
     // direct THREE scene-graph edits (visibility/scale/position), so the isolate/
     // pop effect was applied but never drawn until a camera move (เอ๋ "ไม่แสดง
     // effect"). queueRender() schedules the repaint.
+    try { _enforceHidden(); } catch {}
     try { const sc = _getScene(); if (sc && typeof sc.queueRender === 'function') sc.queueRender(); } catch {}
     if (_ovlRoot) _ovlRoot.style.display = (pct > 5) ? '' : 'none';
   };
@@ -4190,6 +4191,7 @@ async function _kdOpen3D(code, opts) {
       u.node.visible = !_isUnitHidden(u);   // เอ๋: keep tap-hidden parts hidden on reset
     }
     try { if (explodeRoot) explodeRoot.updateMatrixWorld(true); } catch (e) {}
+    try { _enforceHidden(); } catch {}
     if (_ovlRoot) _ovlRoot.style.display = 'none';
   };
 
@@ -4383,6 +4385,8 @@ async function _kdOpen3D(code, opts) {
         const v = snap.val();
         _glbHidden = new Set(Array.isArray(v) ? v : (v ? Object.values(v) : []));
         try { if (explodeUnits.length) applyExplode(explodePct); } catch {}
+        try { _enforceHidden(); } catch {}
+        try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {}
         try { _renderHideUI(); } catch {}
       });
     } catch (e) { console.warn('[kd3d] glb_hidden load failed', e); }
@@ -4579,6 +4583,14 @@ async function _kdOpen3D(code, opts) {
   const _clearHoverGlow = () => { for (const r of _hoverRestore) { try { r.mesh.material = r.mat; } catch {} } _hoverRestore.length = 0; };
   // The explode UNIT node a raycast hit belongs to (walk up to a node in explodeUnits).
   const _unitNodeForHit = (obj) => { const set = new Set(explodeUnits.map(u => u.node)); let n = obj; while (n && n !== threeScene) { if (set.has(n)) return n; n = n.parent; } return null; };
+  // Belt-and-suspenders hide: traverse the whole model and hide ANY node whose key
+  // is in _glbHidden — covers code-less white/__HW parts even if they aren't in
+  // explodeUnits (granularity differences). Runs after applyExplode/reset + on
+  // subscribe + right after a hide tap. (เอ๋ 2026-06-28 "ไม่ทำงานกับ Object พื้นขาว")
+  const _enforceHidden = () => {
+    if (!threeScene || !_glbHidden.size) return;
+    threeScene.traverse(nd => { try { if (nd !== threeScene && _glbHidden.has(_unitKey(nd))) nd.visible = false; } catch {} });
+  };
   // Red-tint every explode unit whose key matches (coded → all instances; code-less → that node).
   const _hoverGlow = (key) => {
     if (!threeScene || !key) return;
@@ -4633,11 +4645,13 @@ async function _kdOpen3D(code, opts) {
     // label/_ovlRows guards so a code-less part isn't dropped ("Object พื้นขาว").
     if (_hideMode && isAdmin()) {
       const un = _unitNodeForHit(hit.object);
-      const key = un ? _unitKey(un) : label;
+      let key = un ? _unitKey(un) : label;
+      if (!key) { let n = hit.object; while (n && n !== threeScene && !n.name) n = n.parent; key = (n && n.name) || ''; }
       if (!key) return;
       _hoverLabel = null; try { _clearHoverGlow(); } catch {}   // drop the hover tint on the part we're hiding
       _glbHidden.add(key); _saveGlbHidden();
       applyExplode(explodePct);
+      try { _enforceHidden(); } catch {}
       _renderHideUI();
       return;
     }
