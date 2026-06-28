@@ -2771,17 +2771,36 @@ async function _kdOpen3D(code, opts) {
     // (tighter) fit on the first orbit, so the model snapped bigger the moment
     // you dragged — เอ๋ 2026-06-24 "ขนาดตอนเริ่มต้น OK แต่พอคลิ๊ก orbit ขยายใหญ่
     // ทันที". Reading the live radius keeps whatever the zoom-fit (margin 2.6)
-    // or a manual FOV zoom established. Zoom is still done via field-of-view
-    // (narrower = in, wider = out, clamped 3°-50°); radius never changes here.
+    // or a dolly zoom established.
+    //
+    // ZOOM = DOLLY (camera radius / "ระยะ"), NOT field-of-view. The fieldOfView
+    // setter is clamped by model-viewer's framing: it lets you WIDEN the FOV
+    // (zoom out, model smaller) but refuses to NARROW below the framed FOV, so
+    // zoom-IN silently does nothing — เอ๋ 2026-06-28 "zoom out ได้อย่างเดียว
+    // zoom in ไม่ได้". cameraOrbit-radius has no such clamp and persists the
+    // same way the fit/isolate paths do (set + jumpCameraToGoal — see :3083,
+    // :3144), so dolly works in BOTH directions and actually changes distance.
+    // FOV stays pinned at 10° → the flat/isometric look (เอ๋ "ภาพ Isometric")
+    // is preserved while zooming.
+    let _camR0 = null;  // framed radius baseline, captured lazily on first dolly
     const _setOrbit = (theta, phi) => {
       try {
         const r = mv.getCameraOrbit().radius;
         mv.cameraOrbit = `${theta}rad ${phi}rad ${r}m`;
       } catch (e) {}
     };
-    const _setFov = (fov) => {
-      const next = Math.max(3, Math.min(50, fov));
-      try { mv.fieldOfView = `${next}deg`; } catch (e) {}
+    // Dolly the camera in/out by a multiplicative factor on the orbital radius,
+    // clamped to [0.2×, 5×] of the framed radius so you can't fly through the
+    // model or lose it to infinity. jumpCameraToGoal pins it immediately (the
+    // proven persistence pattern; a bare set gets interpolated back).
+    const _dolly = (factor) => {
+      try {
+        const o = mv.getCameraOrbit();
+        if (_camR0 == null) _camR0 = o.radius;
+        const r = Math.max(_camR0 * 0.2, Math.min(_camR0 * 5, o.radius * factor));
+        mv.cameraOrbit = `${o.theta}rad ${o.phi}rad ${r}m`;
+        if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
+      } catch (e) {}
     };
     // Constrained polar clamp — keeps the model upright (CAD convention,
     // เอ๋ "constrained orbit"): clamp φ to [15°, 165°] so the camera can
@@ -2810,8 +2829,8 @@ async function _kdOpen3D(code, opts) {
 
     // Touch model (เอ๋ 2026-06-22 final):
     //   1 finger  = constrained ORBIT (polar clamped 15°-165° so no flip)
-    //   2 fingers = pinch ZOOM + drag PAN (cameraTarget shifts on midpoint move)
-    // Mouse drag = orbit; wheel = zoom (unchanged).
+    //   2 fingers = pinch DOLLY-zoom + drag PAN (cameraTarget shifts on midpoint)
+    // Mouse drag = orbit; wheel = dolly-zoom (radius, not FOV — see _dolly).
     let twoF = null;
     let oneOrbit = null;
     mv.addEventListener('touchstart', (e) => {
@@ -2825,7 +2844,9 @@ async function _kdOpen3D(code, opts) {
           cx: (t1.clientX + t2.clientX) / 2,
           cy: (t1.clientY + t2.clientY) / 2,
           dist: Math.sqrt(dx * dx + dy * dy),
-          fov: mv.getFieldOfView(),
+          radius: orbit.radius,
+          theta: orbit.theta,
+          phi: orbit.phi,
           target: { x: tgt.x, y: tgt.y, z: tgt.z },
           scale: _panScale(orbit, mv.getFieldOfView()),
           basis: _camBasis(orbit.theta, orbit.phi),
@@ -2846,9 +2867,12 @@ async function _kdOpen3D(code, opts) {
         const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
         const dist = Math.sqrt(dx * dx + dy * dy);
         const cx = (t1.clientX + t2.clientX) / 2, cy = (t1.clientY + t2.clientY) / 2;
-        // PINCH → zoom via FOV (consistent with the ortho-fake design).
+        // PINCH → dolly zoom (camera radius). Fingers apart → scale>1 → radius
+        // shrinks → camera moves closer → zoom IN (and vice-versa).
         const scale = dist / Math.max(20, twoF.dist);
-        _setFov(twoF.fov / Math.max(0.2, scale));
+        if (_camR0 == null) _camR0 = twoF.radius;
+        const pr = Math.max(_camR0 * 0.2, Math.min(_camR0 * 5, twoF.radius / Math.max(0.2, scale)));
+        try { mv.cameraOrbit = `${twoF.theta}rad ${twoF.phi}rad ${pr}m`; } catch (e) {}
         // MIDPOINT drag → pan cameraTarget. Drag right → target left so the
         // model appears to follow the fingers.
         const moveDX = cx - twoF.cx, moveDY = cy - twoF.cy;
@@ -2859,6 +2883,8 @@ async function _kdOpen3D(code, opts) {
         const ny = T.y - moveDX * s * right.y + moveDY * s * up.y;
         const nz = T.z - moveDX * s * right.z + moveDY * s * up.z;
         try { mv.cameraTarget = `${nx}m ${ny}m ${nz}m`; } catch (e) {}
+        // Pin both the dolly (radius) and the pan (target) in one snap.
+        if (mv.jumpCameraToGoal) { try { mv.jumpCameraToGoal(); } catch (e) {} }
       } else if (e.touches.length === 1 && oneOrbit) {
         e.preventDefault();
         const t = e.touches[0];
@@ -2943,8 +2969,8 @@ async function _kdOpen3D(code, opts) {
 
     mv.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const factor = e.deltaY > 0 ? 1.12 : 0.89;
-      _setFov(mv.getFieldOfView() * factor);
+      // scroll down (deltaY>0) → radius grows → zoom OUT; up → closer → zoom IN.
+      _dolly(e.deltaY > 0 ? 1.12 : 0.89);
     }, { passive: false });
 
     // Double-tap / double-click toggles fullscreen (RD 07 2026-06-22 — "คลิ๊ก
