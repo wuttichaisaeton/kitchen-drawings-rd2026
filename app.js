@@ -4386,7 +4386,7 @@ async function _kdOpen3D(code, opts) {
   if (_hideBtn) _hideBtn.addEventListener('click', () => {
     _hideMode = !_hideMode;
     try { mv.style.cursor = _hideMode ? 'crosshair' : ''; } catch {}
-    if (!_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} }
+    if (!_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} }
     _renderHideUI();
   });
   if (_restoreBtn) _restoreBtn.addEventListener('click', () => {
@@ -4655,6 +4655,9 @@ async function _kdOpen3D(code, opts) {
       _hoverLabel = label;
       try { _clearHighlight(); } catch {}
       if (label) { try { _highlightCode(label, 0xE5484D, 0.9); } catch {} }
+      // model-viewer renders on-demand — the emissive tint won't paint without a
+      // forced repaint (เอ๋ 2026-06-28 "ไม่มี effect"). Same queueRender applyExplode uses.
+      try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {}
     };
     mv.addEventListener('pointermove', (e) => {
       if (!_hideMode) return;
@@ -4662,7 +4665,7 @@ async function _kdOpen3D(code, opts) {
       const cx = e.clientX, cy = e.clientY;
       _hoverRaf = requestAnimationFrame(() => { _hoverRaf = 0; _hoverHilite(cx, cy); });
     });
-    mv.addEventListener('pointerleave', () => { if (_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} } });
+    mv.addEventListener('pointerleave', () => { if (_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} } });
   }
 
   // ── 3Dconnexion SpaceMouse (WebHID) ──────────────────────────────────
