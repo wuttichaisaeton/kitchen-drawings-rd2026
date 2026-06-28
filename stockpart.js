@@ -646,6 +646,7 @@
               '<input type="number" class="kdsp-input kdsp-edit-qval" min="1" max="99" value="' + escapeHtml(String(firstQty)) + '">' +
               '<button type="button" class="kdsp-btn kdsp-edit-qsave">Save</button>' +
             '</div>' +
+            '<input type="text" class="kdsp-input kdsp-th kdsp-edit-remarks" placeholder="Remarks (Thai OK)" value="' + escapeHtml((g.rows[0] && g.rows[0].note) || '') + '">' +
             '<input type="text" class="kdsp-input kdsp-edit-codeq" placeholder="Change code…">' +
             '<div class="kdsp-edit-results"></div>' +
           '</div>') +
@@ -667,6 +668,9 @@
           var qn = Math.min(99, Math.max(1, Number(v) || 1));
           try { await _updateStock(rid, { qty: qn }); _kdToast('Saved'); } catch (e) { _kdToast('Save failed'); }
         });
+        // admin can edit remarks here too (เอ๋ 2026-06-28) — saves on change,
+        // mirrors the review-card .kdsp-rev-note flow; field = `note`.
+        (function (n) { if (n) n.addEventListener('change', async function () { if (!rid) return; try { await _updateStock(rid, { note: n.value }); _kdToast('Remarks saved'); } catch (e) { _kdToast('Save failed'); } }); })(card.querySelector('.kdsp-edit-remarks'));
         var codeQ = card.querySelector('.kdsp-edit-codeq');
         var codeResults = card.querySelector('.kdsp-edit-results');
         function paintEditResults() {
