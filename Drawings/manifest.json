@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T21:19:50.528835+00:00",
+  "generated_at": "2026-06-28T21:26:32.007149+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4982,7 +4982,7 @@
     "2BK002-100000": {
       "family": "Other",
       "last_drawn_version": 10,
-      "fusion_version": 10,
+      "fusion_version": 12,
       "pdf": "2BK002-000000.pdf",
       "bends": 0,
       "material": "",
@@ -21012,6 +21012,43 @@
           "family": "Other",
           "is_wrapper": true,
           "variant_root": "2BK004-090080"
+        }
+      ]
+    },
+    "2BK000-100080": {
+      "name": "2BK000-100080",
+      "status": "active",
+      "created_at": "2026-06-28T21:26:31.987042+00:00",
+      "updated_at": "2026-06-28T21:26:31.987042+00:00",
+      "total_unique_parts": 3,
+      "total_qty": 7,
+      "parts": [
+        {
+          "code": "2BK001-100080",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:p48VwvKZQ3WSvAoAgq-Gbw"
+        },
+        {
+          "code": "2BK002-100000",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:hjsr6y7rRNSyhXUyihrDSw"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BK004-100080",
+          "variant_root": "2BK004-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:6PE-tJp7Qj6g3xpgu-CItw"
+        },
+        {
+          "code": "2BK004-100080",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "2BK004-100080"
         }
       ]
     }
