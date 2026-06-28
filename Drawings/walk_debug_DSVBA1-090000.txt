@@ -1,0 +1,20 @@
+CC_Assembly walk debug — 2026-06-28T13:26:37.026693
+Project: DSVBA1-090000
+Total occurrences visited: 10
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | DSB0FA-090000 v4:1 (DSB0FA-090000 v4)
+    1 |     |     |                  | DSB0FA-000000 v2:1 (DSB0FA-000000 v2)
+    2 |     |     | Steel            | L:1 (L)
+    3 |     |     | Steel            | Slide-L:1 (Slide-L)
+    2 |     |     | Steel            | R:1 (R)
+    3 |     |     | Steel            | Slide-R:1 (Slide-R)
+    1 | SM  |     | ALPF             | DSB0F0-090050 v4:1 (DSB0F0-090050 v4)
+    1 | SM  |     | ALPF             | DSB0BA-090050 v7:1 (DSB0BA-090050 v7)
+    0 | SM  |     | ALPF             | DSV2B1-090020 v4:1 (DSV2B1-090020 v4)
+    0 | SM  |     | ALPF             | DSV100-090020 v5:1 (DSV100-090020 v5)
