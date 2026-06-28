@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T08:52:39.567862+00:00",
+  "generated_at": "2026-06-28T08:56:19.626045+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -4800,7 +4800,7 @@
     "2CN002-120039": {
       "family": "Other",
       "last_drawn_version": 15,
-      "fusion_version": 15,
+      "fusion_version": 12,
       "pdf": "2CN002-120000.pdf",
       "bends": 0,
       "material": "",
@@ -4954,7 +4954,7 @@
     "2BK002-085000": {
       "family": "Other",
       "last_drawn_version": 10,
-      "fusion_version": 10,
+      "fusion_version": 1,
       "pdf": "2BK002-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5248,7 +5248,7 @@
     "2BK001-085120": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 1,
       "pdf": "2BK001-000000.pdf",
       "bends": 0,
       "material": "",
@@ -5402,7 +5402,7 @@
     "2CN026-120000": {
       "family": "Other",
       "last_drawn_version": 4,
-      "fusion_version": 4,
+      "fusion_version": 3,
       "pdf": "2CN026-000000.pdf",
       "bends": 0,
       "material": "",
@@ -6144,7 +6144,7 @@
     "2SDCN1-120040": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 2,
+      "fusion_version": 1,
       "pdf": "2SDCN1-120040.pdf",
       "bends": 0,
       "material": "",
@@ -13528,7 +13528,7 @@
       "name": "2FCLL0-085043",
       "status": "active",
       "created_at": "2026-06-15T04:20:18.879089+00:00",
-      "updated_at": "2026-06-16T02:13:10.775347+00:00",
+      "updated_at": "2026-06-28T08:56:19.608256+00:00",
       "total_unique_parts": 9,
       "total_qty": 14,
       "parts": [
@@ -13569,10 +13569,10 @@
           "urn": "urn:adsk.wipprod:dm.lineage:K8LfLePoTvCxQFlXAWLYhw"
         },
         {
-          "code": "2CN025-120000",
+          "code": "2CN026-120000",
           "qty": 1,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:uJ8cSQTRQuenCqb6sVbssA"
+          "urn": "urn:adsk.wipprod:dm.lineage:CqMsJwXxTMOeJwIZCHV9xw"
         },
         {
           "code": "2DNCR0-085043",
