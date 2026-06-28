@@ -1,0 +1,20 @@
+CC_Assembly walk debug — 2026-06-28T07:01:12.057002
+Project: 1SHS10-100035
+Total occurrences visited: 10
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | 1SHG00-100035 v48:1 (1SHG00-100035 v48)
+    1 |     |     |                  | Fitting:1 (Fitting)
+    2 |     |     |                  | Shelf Support M5 by SSD v27:1 (Shelf Support M5 by SSD v27)
+    2 |     |     |                  | Shelf Support M5 by SSD v27:2 (Shelf Support M5 by SSD v27)
+    2 |     |     |                  | Shelf Support M5 by SSD v27:3 (Shelf Support M5 by SSD v27)
+    2 |     |     |                  | Shelf Support M5 by SSD v27:4 (Shelf Support M5 by SSD v27)
+    1 |     |     | Steel            | SH0G00-020035:1 (SH0G00-020035)
+    0 |     |     |                  | SH0S10-100035 v8:1 (SH0S10-100035 v8)
+    1 | SM  |     | ALPF             | SH0S11-100035 v7:1 (SH0S11-100035 v7)
+    1 | SM  |     | ALPF             | SH0S12-100000 v3:1 (SH0S12-100000 v3)
