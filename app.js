@@ -2710,6 +2710,8 @@ async function _kdOpen3D(code, opts) {
           field-of-view="10deg"
           min-field-of-view="3deg"
           max-field-of-view="50deg"
+          min-camera-orbit="auto auto 5%"
+          max-camera-orbit="auto auto 1000%"
           shadow-intensity="${initShadow}"
           shadow-softness="${initSoft}"
           exposure="${initExp}"
