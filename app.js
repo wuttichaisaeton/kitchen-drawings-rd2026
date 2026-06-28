@@ -2267,12 +2267,20 @@ async function _kdOpen3D(code, opts) {
     .kd3d-modal .kd3d-explodebar .kd3d-explode-val{flex:0 0 36px;text-align:right;color:#e6edf4;font-weight:600}
     /* เอ๋ 2026-06-24 "จำนวนชิ้นขยายให้ชัดเจน + เขียนเป็น 14 PCS" — piece count
        was dim 11px gray (inherited); make it the prominent amber callout. */
-    .kd3d-modal .kd3d-explodebar .kd3d-explode-info{flex:0 0 auto;white-space:nowrap;color:#F2A93B;font-weight:800;font-size:15px;letter-spacing:.5px}
+    /* เอ๋ 2026-06-28: piece count smaller (was 15px) so the slider has room on phone/iPad. */
+    .kd3d-modal .kd3d-explodebar .kd3d-explode-info{flex:0 0 auto;white-space:nowrap;color:#F2A93B;font-weight:700;font-size:11px;letter-spacing:.3px}
     .kd3d-modal .kd3d-explodebar .kd3d-hidebtn,
     .kd3d-modal .kd3d-explodebar .kd3d-restorebtn{flex:0 0 auto;background:transparent;border:1px solid #2b3a4d;color:#9fb0c0;font:inherit;font-size:11px;padding:5px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
     .kd3d-modal .kd3d-explodebar .kd3d-hidebtn:hover,
     .kd3d-modal .kd3d-explodebar .kd3d-restorebtn:hover{color:#e6edf4;border-color:#3a4a5d}
     .kd3d-modal .kd3d-explodebar .kd3d-hidebtn.is-on{background:#7a2c2c;border-color:#a23b3b;color:#ffd9d9}
+    /* เอ๋ 2026-06-28: on iPhone/iPad (touch, no hover) drop the admin Hide/UnHide
+       buttons so the explode slider gets full width + the model fills the screen.
+       Desktop (mouse) keeps them. !important beats the restore btn's inline display. */
+    @media (hover:none) and (pointer:coarse){
+      .kd3d-modal .kd3d-explodebar .kd3d-hidebtn,
+      .kd3d-modal .kd3d-explodebar .kd3d-restorebtn{display:none !important}
+    }
     .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
     .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
@@ -2701,7 +2709,6 @@ async function _kdOpen3D(code, opts) {
   const initEnv = 'neutral';   // built-in for all four modes (Astronaut-demo default)
   body.innerHTML = `
       <div class="kd3d-explodebar">
-        <span>Explode</span>
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
         <span class="kd3d-explode-val">${explodePct}%</span>
         <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
@@ -3742,8 +3749,11 @@ async function _kdOpen3D(code, opts) {
 
     const info = body.querySelector('.kd3d-explode-info');
     if (info) {
+      // เอ๋ 2026-06-28: count ALPF sheet-metal pieces ONLY (exclude __HW hardware —
+      // hinges/legs/slides) so "N PCS" matches the real cut/nest part count.
+      const _alpfPcs = explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node)).length;
       if (explodeUnits.length >= 2) {
-        info.textContent = `${explodeUnits.length} PCS`;   // เอ๋ 2026-06-24: "14 PCS", enlarged+amber via CSS
+        info.textContent = `${_alpfPcs} PCS`;
       } else if (deepMeshCount >= 2) {
         // Mesh count says multi-leaf but explode walk failed — web bug.
         info.textContent = `· ${deepMeshCount} meshes — explode walk found 0 units (check console)`;
