@@ -1,14 +1,14 @@
 CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 02 Wipha-L
 target_kind       = project
-walk_bodies       = 367
-main_glb_bytes    = 10262492
-main_nodes        = 353
-main_stl_bytes    = 43627452
+walk_bodies       = 352
+main_glb_bytes    = 10169116
+main_nodes        = 338
+main_stl_bytes    = 43065792
 dropped_bodies    = 14 (STL 0-byte/error, skipped — round 16 now counts these)
 transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
 schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
-node_world_mm[0] = 02 Wipha-L v5__Body1__HW @ (0.0, 0.0, 0.0)
+node_world_mm[0] = 02 Wipha-L v6__Body1__HW @ (0.0, 0.0, 0.0)
 node_world_mm[1] = Elec - Outlet  #W Series by Panasonic v40__Body1__HW @ (0.0, -1755.0, 322.0)
 node_world_mm[2] = Elec - Outlet  #W Series by Panasonic v40__Cut__HW @ (0.0, -1755.0, 322.0)
 --- main helper subprocess output ---
@@ -71,8 +71,8 @@ OK MR__Body2__HW 8/12
 OK CV0002-000000_v2__Body1 556/1132
 OK CVH122-S65089_v7__Body1 2342/4768
 OK CVH322-NL6089_v1__Body1 1060/2180
-OK BTHLSR-140000_v2__Body1 5873/11882
-OK BTHLSR-140000_v2__Body2 19382/38760
-OK BTHLSR-140000_v2__Body3 10178/20352
-ORPHAN_SUMMARY median=607.9 threshold=1823.7 count=0/353
-GLB 10262492 353
+OK BTHLNO-140000_v2__Body1 5849/11830
+OK BTHLNO-140000_v2__Body2 19382/38760
+OK BTHLNO-140000_v2__Body3 10178/20352
+ORPHAN_SUMMARY median=608.6 threshold=1825.8 count=0/338
+GLB 10169116 338
