@@ -7979,6 +7979,11 @@ body .kdsp-stockbody .kdsp-qtynum.kdsp-qtynum { color: #ff4d4f !important; }
 }
 .kdsp-foot-actions { display: flex; align-items: center; gap: 6px; }
 .kdsp-editbox { display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #2c3a4e; margin-top: 8px; padding-top: 8px; }
+/* The `hidden` attribute is defeated by the author `display:flex` above (author
+   beats the UA [hidden]{display:none}). Restore it so the qty/Save + Change-code
+   editbox stays collapsed behind the ✎ button (เอ๋ 2026-06-28: "มีปุ่ม edit แล้ว
+   ปุ่มด้านล่างไม่จำเป็น รวมถึง change code"). ✎ toggles .hidden → reveals it. */
+.kdsp-editbox[hidden] { display: none; }
 .kdsp-edit-qty { display: flex; align-items: center; gap: 8px; }
 .kdsp-edit-qty .kdsp-input { margin-top: 0; width: 90px; }
 .kdsp-edit-results { display: flex; flex-direction: column; gap: 4px; }
