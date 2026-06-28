@@ -4386,7 +4386,7 @@ async function _kdOpen3D(code, opts) {
   if (_hideBtn) _hideBtn.addEventListener('click', () => {
     _hideMode = !_hideMode;
     try { mv.style.cursor = _hideMode ? 'crosshair' : ''; } catch {}
-    if (!_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} }
+    if (!_hideMode) { _hoverLabel = null; try { _clearHoverGlow(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} }
     _renderHideUI();
   });
   if (_restoreBtn) _restoreBtn.addEventListener('click', () => {
@@ -4567,6 +4567,22 @@ async function _kdOpen3D(code, opts) {
     }
     _highlightUnits(label, units, hex, intensity);
   };
+  // เอ๋ 2026-06-28 hover-to-hide PREVIEW: tint the hovered part's material.COLOR red
+  // (emissive doesn't show in the flat/hidden-line render mode — verified live).
+  // Clone the material first so shared materials on OTHER parts aren't tinted too;
+  // restore the original material ref on clear. _getScene().queueRender() repaints.
+  const _hoverRestore = [];          // [{mesh, mat}] original material refs
+  const _clearHoverGlow = () => { for (const r of _hoverRestore) { try { r.mesh.material = r.mat; } catch {} } _hoverRestore.length = 0; };
+  const _labelOf = (node) => { let c = node; while (c && c !== threeScene) { const l = _extractPartLabel(c.name || ''); if (l) return l; c = c.parent; } return ''; };
+  const _hoverGlow = (label) => {
+    if (!threeScene || !label) return;
+    threeScene.traverse(nd => {
+      if (!nd.isMesh || nd.isSprite || !nd.material || Array.isArray(nd.material)) return;
+      if (_labelOf(nd) !== label) return;
+      _hoverRestore.push({ mesh: nd, mat: nd.material });
+      try { const c = nd.material.clone(); if (c.color) c.color.setHex(0xff3b30); nd.material = c; } catch {}
+    });
+  };
   // Shared "tap/click a PART → isolate it" — used by the mouse 'click' AND the
   // iPad TAP. On touch, touchstart's preventDefault (needed for orbit) suppresses
   // the synthetic 'click', so iPad was non-interactive (เอ๋ "ที่ ipad ไม่ค่อย
@@ -4610,7 +4626,7 @@ async function _kdOpen3D(code, opts) {
     // hidden — do NOT gate on _ovlRows (that list is for isolate; if it isn't
     // populated the hide-tap was being silently dropped).
     if (_hideMode && isAdmin()) {
-      _hoverLabel = null; try { _clearHighlight(); } catch {}   // drop the hover glow on the part we're hiding
+      _hoverLabel = null; try { _clearHoverGlow(); } catch {}   // drop the hover tint on the part we're hiding
       _glbHidden.add(label); _saveGlbHidden();
       applyExplode(explodePct);
       _renderHideUI();
@@ -4653,10 +4669,10 @@ async function _kdOpen3D(code, opts) {
       if (label && !_ovlRows.some(r => r.code === label)) label = null;
       if (label === _hoverLabel) return;
       _hoverLabel = label;
-      try { _clearHighlight(); } catch {}
-      if (label) { try { _highlightCode(label, 0xE5484D, 0.9); } catch {} }
-      // model-viewer renders on-demand — the emissive tint won't paint without a
-      // forced repaint (เอ๋ 2026-06-28 "ไม่มี effect"). Same queueRender applyExplode uses.
+      try { _clearHoverGlow(); } catch {}
+      if (label) { try { _hoverGlow(label); } catch {} }
+      // model-viewer renders on-demand — force a repaint so the tint shows
+      // (เอ๋ 2026-06-28 "ไม่มี effect"). Same queueRender applyExplode uses.
       try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {}
     };
     mv.addEventListener('pointermove', (e) => {
@@ -4665,7 +4681,7 @@ async function _kdOpen3D(code, opts) {
       const cx = e.clientX, cy = e.clientY;
       _hoverRaf = requestAnimationFrame(() => { _hoverRaf = 0; _hoverHilite(cx, cy); });
     });
-    mv.addEventListener('pointerleave', () => { if (_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} } });
+    mv.addEventListener('pointerleave', () => { if (_hideMode) { _hoverLabel = null; try { _clearHoverGlow(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} } });
   }
 
   // ── 3Dconnexion SpaceMouse (WebHID) ──────────────────────────────────
