@@ -9171,3 +9171,8 @@ LIVE-VERIFIED (Chrome, real wheel events on FN2BNX-095000): radius 5709 → scro
 NOTE เอ๋ (stale-tab): if zoom still feels off, hard-reload (Ctrl+Shift+R) — the old FOV code may be cached in an open tab.
 FYI Group 1: web-only — no Fusion/CC_Export3D/nest change. (CC_Export3D isVisible fix in _MASTERS is export-time, separate.)
 -- RD 13 · ⏱ ~00:25
+
+### WEB (RD 13) · 2026-06-28 · ✅ FIX web3d "zoom OUT ไม่ได้" (mirror) — widen camera-orbit radius range
+HEAD **55cb6c5** (deploy ✓ run 28321916784, live-verified Chrome). After the dolly fix (bc45277) zoom-IN worked but เอ๋: "คราวนี้ zoom in ได้ zoom out ไม่ได้". ROOT CAUSE: model-viewer's DEFAULT `max-camera-orbit` radius = the framing radius, so dollying the camera FARTHER than framed is clamped back (mirror of the FOV narrow-side clamp). FIX: added `min-camera-orbit="auto auto 5%"` + `max-camera-orbit="auto auto 1000%"` to the `<model-viewer>` (azimuth/polar left auto → custom clampPhi 15-165° unaffected); the JS `_dolly` clamp [0.2×,5×] stays the binding limit. LIVE-VERIFIED (real wheel on FN2BNX-095000): R0 5709 → zoom-out ×3 → 8020 (grows past framed ✓, was clamped) → zoom-in ×5 → 4478 (✓); FOV stays 10°. Suite 137/137. ZOOM IS NOW DONE — เอ๋: "อย่าไปยุ่งเรื่อง zoom อีก" (won't).
+NEXT (เอ๋ request): restore the web3d Hide/UnHide feature WITH the hover effect (was fully reverted in 0336392) — separate commit, will NOT touch the zoom/gesture code.
+-- RD 13
