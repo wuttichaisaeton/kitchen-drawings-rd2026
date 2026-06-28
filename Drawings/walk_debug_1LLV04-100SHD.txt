@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-28T07:27:27.201914
+CC_Assembly walk debug — 2026-06-28T08:17:44.108163
 Project: 1LLV04-100SHD
 Total occurrences visited: 97
 CAM-ALPF tagged components: 0
@@ -85,8 +85,8 @@ depth | SM | CAM | material         | display_name (component)
     0 |     |     |                  | DSV0L3-050080 v10:1 (DSV0L3-050080 v10)
     1 | SM  |     | ALPF             | DSV2L3-050080 v4:1 (DSV2L3-050080 v4)
     1 | SM  |     | ALPF             | DSV100-050080 v5:1 (DSV100-050080 v5)
-    0 |     |     |                  | 1SHS10-100035 v28:1 (1SHS10-100035 v28)
-    1 |     |     |                  | 1SHG00-100035 v48:1 (1SHG00-100035 v48)
+    0 |     |     |                  | 1SHS10-100035 v29:1 (1SHS10-100035 v29)
+    1 |     |     |                  | 1SHG00-100035 v49:1 (1SHG00-100035 v49)
     2 |     |     |                  | Fitting:1 (Fitting)
     3 |     |     |                  | Shelf Support M5 by SSD v27:1 (Shelf Support M5 by SSD v27)
     3 |     |     |                  | Shelf Support M5 by SSD v27:2 (Shelf Support M5 by SSD v27)
