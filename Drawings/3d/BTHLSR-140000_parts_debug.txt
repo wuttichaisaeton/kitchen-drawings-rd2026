@@ -2,9 +2,9 @@ CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = BTHLSR-140000
 target_kind       = part
 walk_bodies       = 3
-main_glb_bytes    = 1205680
+main_glb_bytes    = 1279384
 main_nodes        = 3
-main_stl_bytes    = 3344952
+main_stl_bytes    = 3549952
 dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
 transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
 schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
@@ -12,8 +12,8 @@ node_world_mm[0] = BTHLSR-140000 v2__Body1 @ (0.0, 0.0, 0.0)
 node_world_mm[1] = BTHLSR-140000 v2__Body2 @ (0.0, 0.0, 0.0)
 node_world_mm[2] = BTHLSR-140000 v2__Body3 @ (0.0, 0.0, 0.0)
 --- main helper subprocess output ---
-OK BTHLSR-140000_v2__Body1 5282/10684
-OK BTHLSR-140000_v2__Body2 18550/37096
-OK BTHLSR-140000_v2__Body3 9559/19114
+OK BTHLSR-140000_v2__Body1 5873/11882
+OK BTHLSR-140000_v2__Body2 19382/38760
+OK BTHLSR-140000_v2__Body3 10178/20352
 ORPHAN_SUMMARY skipped (only 3 nodes)
-GLB 1205680 3
+GLB 1279384 3

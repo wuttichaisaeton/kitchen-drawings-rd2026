@@ -1,0 +1,70 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = 1LLV04-100SHD
+target_kind       = cabinet
+walk_bodies       = 196
+main_glb_bytes    = 4714580
+main_nodes        = 187
+main_stl_bytes    = 21986708
+dropped_bodies    = 9 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = SD00NA-080000 v32__Body1 @ (482.0, -284.0, 382.0)
+node_world_mm[1] = SD0SUP-000000 v7__Body1 @ (483.0, 281.0, 128.0)
+node_world_mm[2] = SD0SUP-000000 v7__Body1 @ (484.0, 281.0, 636.0)
+--- main helper subprocess output ---
+v2__Body48__HW 1667/3330
+OK HingeW3-H0800_v4__Body38__HW 160/316
+OK DSV2L3-050080_v4__Body2 1307/2670
+OK DSV100-050080_v5__Body4 1691/3378
+OK Shelf_Support_M5_by_SSD_v27__Male__HW 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male__HW_2 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male__HW_3 3980/7956
+OK Shelf_Support_M5_by_SSD_v27__Male__HW_4 3980/7956
+OK SH0G00-020035__Body1__HW 8/12
+OK SH0S11-100035_v7__Body1 1444/2892
+OK SH0S12-100000_v3__Body1 1164/2332
+OK DSV2R3-050080_v4__Body2 1307/2670
+OK DSV100-050080_v5__Body4_2 1691/3378
+OK Door__Body1__HW_2 160/316
+OK Cup_1___Cup__HW_2 7237/14490
+OK Cup_1___cut__HW_2 60/116
+OK Cup_1___cut_2___HW_2 60/116
+OK Cup_1___cut_1___HW_2 226/448
+OK Cup_1___cut-Hal__HW_2 60/116
+OK Cup_1___cut-Hal_1___HW_2 60/116
+OK Cup_1___Cup_1___HW_2 7237/14490
+OK Cup_1___Cup_2___HW_2 7237/14490
+OK Cup_1___cut_3___HW_2 60/116
+OK Cup_1___cut_4___HW_2 60/116
+OK Cup_1___cut_2_1___HW_2 60/116
+OK Cup_1___cut_2_2___HW_2 60/116
+OK Cup_1___cut_1_1___HW_2 226/448
+OK Cup_1___cut_1_2___HW_2 226/448
+OK Cup_1___cut-Hal_2___HW_2 60/116
+OK Cup_1___cut-Hal_3___HW_2 60/116
+OK Cup_1___cut-Hal_1_1___HW_2 60/116
+OK Cup_1___cut-Hal_1_2___HW_2 60/116
+OK B_1___B__HW_2 504/1012
+OK B_1___B_1___HW_2 504/1012
+OK B_1___B_2___HW_2 504/1012
+OK A_1___A__HW_2 440/884
+OK A_1___A_1___HW_2 440/884
+OK A_1___A_2___HW_2 440/884
+OK 1-HingeW_v2__Body1__HW_2 1724/3464
+OK 1-HingeW_v2__cut__HW_2 58/112
+OK 1-HingeW_v2__cut_1___HW_2 58/112
+OK 1-HingeW_v2__Body4__HW_2 311/622
+OK 1-HingeW_v2__Body5__HW_2 1667/3330
+OK 1-HingeW_v2__Body39__HW_2 1724/3464
+OK 1-HingeW_v2__Body44__HW_2 1724/3464
+OK 1-HingeW_v2__cut_2___HW_2 58/112
+OK 1-HingeW_v2__cut_3___HW_2 58/112
+OK 1-HingeW_v2__cut_1_1___HW_2 58/112
+OK 1-HingeW_v2__cut_1_2___HW_2 58/112
+OK 1-HingeW_v2__Body42__HW_2 311/622
+OK 1-HingeW_v2__Body47__HW_2 311/622
+OK 1-HingeW_v2__Body43__HW_2 1667/3330
+OK 1-HingeW_v2__Body48__HW_2 1667/3330
+OK HingeW3-H0800_v4__Body38__HW_2 160/316
+ORPHAN_SUMMARY median=522.7 threshold=1568.1 count=0/187
+GLB 4714580 187

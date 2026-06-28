@@ -1,0 +1,79 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = 1LLVB4-09D0AA
+target_kind       = cabinet
+walk_bodies       = 156
+main_glb_bytes    = 4517580
+main_nodes        = 151
+main_stl_bytes    = 17627984
+dropped_bodies    = 5 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = SD00NA-080000 v32__Body1 @ (432.0, -284.0, 382.0)
+node_world_mm[1] = SD0SUP-000000 v7__Body1 @ (433.0, 281.0, 128.0)
+node_world_mm[2] = SD0SUP-000000 v7__Body1 @ (434.0, 281.0, 636.0)
+--- main helper subprocess output ---
+acket_1___HW 196/396
+OK Slide-R__Back_1___HW 208/432
+OK Slide-R__Rail_5___HW 162/316
+OK Slide-R__Rail_6___HW 384/764
+OK Slide-R__Rail_7___HW 53/102
+OK Slide-R__Logo__HW 624/1244
+OK Slide-R__Slide__HW 243/486
+OK Slide-R__Rail_1_1___HW 98/192
+OK R__Cut-R_2___HW 24/44
+OK R__Cut-R_3___HW 24/44
+OK R__Cut-R__HW 24/44
+OK R__Body__HW 728/1512
+OK R__Cut-R_1___HW 24/44
+OK DSV2B1-090040_v4__Body1 907/1834
+OK DSV100-090040_v6__Body4 1781/3558
+OK Slide-L__C-Side-L__HW_2 224/460
+OK Slide-L__Logo__HW_2 624/1244
+OK Slide-L__Bracket__HW_2 188/380
+OK Slide-L__Slide__HW_2 243/486
+OK Slide-L__Body11__HW 300/612
+OK L__Cut-L_3___HW_2 24/44
+OK L__Cut-L__HW_2 24/44
+OK L__Cut-L_1___HW_2 24/44
+OK L__Cut-L_2___HW_2 24/44
+OK L__Body__HW_2 728/1512
+OK Slide-R__C-Side-R__HW_2 224/460
+OK Slide-R__Bracket_1___HW_2 188/380
+OK Slide-R__Logo__HW_2 624/1244
+OK Slide-R__Slide__HW_2 243/486
+OK Slide-R__Body13__HW 300/612
+OK R__Cut-R_2___HW_2 24/44
+OK R__Cut-R_3___HW_2 24/44
+OK R__Cut-R__HW_2 24/44
+OK R__Body__HW_2 728/1512
+OK R__Cut-R_1___HW_2 24/44
+OK DSB0F0-090050_v4__Body3_2 1548/3180
+OK DSB0BA-090050_v7__Body3 1092/2208
+OK DSV2B3-090020_v4__Body1 758/1528
+OK DSV100-090020_v6__Body4 1562/3124
+OK Slide-L__C-Side-L__HW_3 224/460
+OK Slide-L__Logo__HW_3 624/1244
+OK Slide-L__Bracket__HW_3 188/380
+OK Slide-L__Slide__HW_3 243/486
+OK Slide-L__Body11__HW_2 300/612
+OK L__Cut-L_3___HW_3 24/44
+OK L__Cut-L__HW_3 24/44
+OK L__Cut-L_1___HW_3 24/44
+OK L__Cut-L_2___HW_3 24/44
+OK L__Body__HW_3 728/1512
+OK Slide-R__C-Side-R__HW_3 224/460
+OK Slide-R__Bracket_1___HW_3 188/380
+OK Slide-R__Logo__HW_3 624/1244
+OK Slide-R__Slide__HW_3 243/486
+OK Slide-R__Body13__HW_2 300/612
+OK R__Cut-R_2___HW_3 24/44
+OK R__Cut-R_3___HW_3 24/44
+OK R__Cut-R__HW_3 24/44
+OK R__Body__HW_3 728/1512
+OK R__Cut-R_1___HW_3 24/44
+OK DSB0F0-090050_v4__Body3_3 1548/3180
+OK DSB0BA-090050_v7__Body3_2 1092/2208
+OK DSV2B4-090020_v4__Body1 758/1528
+OK DSV100-090020_v6__Body4_2 1562/3124
+ORPHAN_SUMMARY median=513.0 threshold=1539.1 count=0/151
+GLB 4517580 151
