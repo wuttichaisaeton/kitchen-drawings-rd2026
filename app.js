@@ -2705,7 +2705,7 @@ async function _kdOpen3D(code, opts) {
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
         <span class="kd3d-explode-val">${explodePct}%</span>
         <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
-        ${isAdmin() ? '<button type="button" class="kd3d-hidebtn" title="Tap a part to hide it from the web 3D">🙈 Hide</button><button type="button" class="kd3d-restorebtn" title="Restore hidden parts" style="display:none">↺ <span class="kd3d-restoren">0</span></button>' : ''}
+        ${isAdmin() ? '<button type="button" class="kd3d-hidebtn" title="Tap a part to hide it from the web 3D">🙈 Hide</button><button type="button" class="kd3d-restorebtn" title="Restore all hidden parts" style="display:none">👁 UnHide <span class="kd3d-restoren">0</span></button>' : ''}
       </div>
       <div class="kd3d-viewarea">
       <div class="kd3d-viewer" style="position:relative">
@@ -2993,6 +2993,9 @@ async function _kdOpen3D(code, opts) {
   // (glb_hidden/<key>) so every device incl. the workshop stops showing them.
   let _glbHidden = new Set();      // hidden part codes (labels) for this GLB
   let _hideMode = false;           // admin "🙈 tap-to-hide" toggle
+  let _hoverLabel = null;          // part code currently hover-highlighted in hide mode
+  let _hoverThree = null;          // cached THREE for sync hover raycasts
+  let _hoverRaf = 0;               // rAF throttle for pointermove hover
   let _glbHiddenRef = null;        // RTDB ref (detached on close)
   const _isUnitHidden = (u) => { try { return _glbHidden.has(_extractPartLabel(u.node.name || '')); } catch { return false; } };
   let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
@@ -4380,7 +4383,12 @@ async function _kdOpen3D(code, opts) {
       });
     } catch (e) { console.warn('[kd3d] glb_hidden load failed', e); }
   }
-  if (_hideBtn) _hideBtn.addEventListener('click', () => { _hideMode = !_hideMode; _renderHideUI(); });
+  if (_hideBtn) _hideBtn.addEventListener('click', () => {
+    _hideMode = !_hideMode;
+    try { mv.style.cursor = _hideMode ? 'crosshair' : ''; } catch {}
+    if (!_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} }
+    _renderHideUI();
+  });
   if (_restoreBtn) _restoreBtn.addEventListener('click', () => {
     if (!_glbHidden.size) return;
     _glbHidden.clear(); _saveGlbHidden();
@@ -4571,15 +4579,16 @@ async function _kdOpen3D(code, opts) {
     if (now && now - _lastPick < 280) return;
     _lastPick = now;
     // While a part is ISOLATED, a tap/click anywhere (not a label — those
-    // stopPropagation) restores ALL parts + zoom-fits.
-    if (_poppedCode) {
+    // stopPropagation) restores ALL parts + zoom-fits. SKIP in hide-mode so a
+    // hide-tap is never swallowed by the restore (เอ๋ 2026-06-28).
+    if (_poppedCode && !_hideMode) {
       _poppedCode = null;
       _ovlRows.forEach(r => r.rowEl.classList.remove('kd3d-ovl-sel'));
       applyExplode(explodePct);
       requestAnimationFrame(() => _fitVisibleWorld());
       return;
     }
-    let THREE; try { THREE = await _kd3dEnsureThree(); } catch { return; }
+    let THREE; try { THREE = await _kd3dEnsureThree(); _hoverThree = THREE; } catch { return; }
     const cam = threeScene.camera;
     if (!cam) return;
     const rect = mv.getBoundingClientRect();
@@ -4599,9 +4608,9 @@ async function _kdOpen3D(code, opts) {
     // เอ๋ 2026-06-28: in HIDE mode an admin tap HIDES the part's code (shared via
     // RTDB → workshop view drops it too) instead of isolating.
     if (_hideMode && isAdmin()) {
+      _hoverLabel = null; try { _clearHighlight(); } catch {}   // drop the hover glow on the part we're hiding
       _glbHidden.add(label); _saveGlbHidden();
       applyExplode(explodePct);
-      requestAnimationFrame(() => _fitVisibleWorld());
       _renderHideUI();
       return;
     }
@@ -4622,6 +4631,35 @@ async function _kdOpen3D(code, opts) {
       }
       _pickAndIsolate(e.clientX, e.clientY);
     });
+    // เอ๋ 2026-06-28: in HIDE mode, hovering a part glows it red (preview of what a
+    // click will hide). Throttled to one raycast per frame; cleared on leave.
+    const _hoverHilite = (clientX, clientY) => {
+      if (!_hideMode || !threeScene || !explodeUnits.length) return;
+      const THREE = _hoverThree;
+      if (!THREE) { _kd3dEnsureThree().then(t => { _hoverThree = t; }).catch(() => {}); return; }
+      const cam = threeScene.camera; if (!cam) return;
+      const rect = mv.getBoundingClientRect();
+      const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
+      const my = -((clientY - rect.top) / rect.height) * 2 + 1;
+      const rc = new THREE.Raycaster();
+      rc.setFromCamera(new THREE.Vector2(mx, my), cam);
+      const hits = rc.intersectObjects(threeScene.children, true);
+      const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
+      let label = null;
+      if (hit) { let nd = hit.object; while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { label = l; break; } nd = nd.parent; } }
+      if (label && !_ovlRows.some(r => r.code === label)) label = null;
+      if (label === _hoverLabel) return;
+      _hoverLabel = label;
+      try { _clearHighlight(); } catch {}
+      if (label) { try { _highlightCode(label, 0xE5484D, 0.9); } catch {} }
+    };
+    mv.addEventListener('pointermove', (e) => {
+      if (!_hideMode) return;
+      if (_hoverRaf) return;
+      const cx = e.clientX, cy = e.clientY;
+      _hoverRaf = requestAnimationFrame(() => { _hoverRaf = 0; _hoverHilite(cx, cy); });
+    });
+    mv.addEventListener('pointerleave', () => { if (_hideMode) { _hoverLabel = null; try { _clearHighlight(); } catch {} } });
   }
 
   // ── 3Dconnexion SpaceMouse (WebHID) ──────────────────────────────────
