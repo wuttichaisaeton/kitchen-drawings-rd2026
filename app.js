@@ -3748,11 +3748,14 @@ async function _kdOpen3D(code, opts) {
 
     const info = body.querySelector('.kd3d-explode-info');
     if (info) {
-      // เอ๋ 2026-06-28: count ALPF sheet-metal pieces ONLY (exclude __HW hardware —
-      // hinges/legs/slides) so "N PCS" matches the real cut/nest part count.
-      const _alpfPcs = explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node)).length;
+      // เอ๋ 2026-06-28/29: ALPF sheet-metal only (exclude __HW hardware). Show BOTH
+      // the distinct part TYPES ("N PART" = unique codes) and the total piece count
+      // ("M PCS" = all instances) — "16 PART · 36 PCS".
+      const _alpfUnits = explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node));
+      const _alpfPcs = _alpfUnits.length;
+      const _alpfParts = new Set(_alpfUnits.map(u => _extractPartLabel(u.node.name || '')).filter(Boolean)).size;
       if (explodeUnits.length >= 2) {
-        info.textContent = `${_alpfPcs} PCS`;
+        info.textContent = `${_alpfParts} PART · ${_alpfPcs} PCS`;
       } else if (deepMeshCount >= 2) {
         // Mesh count says multi-leaf but explode walk failed — web bug.
         info.textContent = `· ${deepMeshCount} meshes — explode walk found 0 units (check console)`;
