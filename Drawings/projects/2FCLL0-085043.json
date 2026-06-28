@@ -2,7 +2,7 @@
   "name": "2FCLL0-085043",
   "status": "active",
   "created_at": "2026-06-15T04:20:18.879089+00:00",
-  "updated_at": "2026-06-28T09:49:35.203396+00:00",
+  "updated_at": "2026-06-28T10:41:49.064535+00:00",
   "total_unique_parts": 9,
   "total_qty": 14,
   "parts": [
@@ -49,10 +49,10 @@
       "urn": "urn:adsk.wipprod:dm.lineage:CqMsJwXxTMOeJwIZCHV9xw"
     },
     {
-      "code": "2DNCR0-085043",
+      "code": "2DNCDR-10D575",
       "qty": 1,
       "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:S_I3hKgNTySe0P-rHUbV1g"
+      "urn": "urn:adsk.wipprod:dm.lineage:tbeWJPP8Q0eojrPKUpCgTA"
     },
     {
       "code": "2SDCN1-120040",
