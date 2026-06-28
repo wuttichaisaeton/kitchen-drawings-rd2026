@@ -2807,6 +2807,10 @@ async function _kdOpen3D(code, opts) {
       try {
         const r = mv.getCameraOrbit().radius;
         mv.cameraOrbit = `${theta}rad ${phi}rad ${r}m`;
+        // Snap to the goal so the model tracks the finger/cursor 1:1 instead of
+        // easing behind it — เอ๋ 2026-06-29 "orbit ไม่ลื่นไหลเหมือนเมื่อก่อน".
+        // Same set+jump the dolly + fit/isolate paths use (:3083/:3144).
+        if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
       } catch (e) {}
     };
     // Dolly the camera in/out by a multiplicative factor on the orbital radius,
