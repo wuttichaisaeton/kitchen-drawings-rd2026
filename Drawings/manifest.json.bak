@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T08:21:00.690996+00:00",
+  "generated_at": "2026-06-28T08:33:46.882572+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19635,9 +19635,9 @@
       "name": "02 Wipha-L",
       "status": "active",
       "created_at": "2026-06-28T03:41:36.036691+00:00",
-      "updated_at": "2026-06-28T07:53:45.243236+00:00",
-      "total_unique_parts": 36,
-      "total_qty": 73,
+      "updated_at": "2026-06-28T08:33:46.879521+00:00",
+      "total_unique_parts": 37,
+      "total_qty": 74,
       "parts": [
         {
           "code": "BK1DN1-090000",
@@ -19878,6 +19878,14 @@
           "parent_code": "FN0FL3-100008",
           "variant_root": "1LLV04-100SHD",
           "urn": "urn:adsk.wipprod:dm.lineage:AfFlLYw2RvW2jhRUeFYYPA"
+        },
+        {
+          "code": "FT0000-190006",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "OTHERS-000000",
+          "variant_root": "OTHERS-000000",
+          "urn": "urn:adsk.wipprod:dm.lineage:pbpT_g_lSb6eELJ2b3rSkg"
         },
         {
           "code": "SD00NA-080000",
