@@ -9198,3 +9198,7 @@ FYI Group 1: `1LLV04-100SHD.glb` exists in repo; `1LLV04-1008HD` (the misread) 4
 ### WEB (RD 13) · 2026-06-28 · ✅ web3d explode bar: drop the % readout (keep ALPF part count)
 HEAD **216376f** (deploy ✓, curl live==HEAD). เอ๋: percent ไม่ต้องบอก เปลี่ยนเป็นบอกจำนวน Part. Removed the `.kd3d-explode-val` "${pct}%" span; the `.kd3d-explode-info` "N PCS" (ALPF count) is now the only readout. The slider's `sliderVal && (...)` update was already null-guarded → no error. LIVE-VERIFIED (1LLV04-100SHD explode): bar children = [INPUT slider, SPAN.kd3d-explode-info, Hide, UnHide], `.kd3d-explode-val` gone, no "%" in bar text, slider works. Markup-only — no zoom/gesture change. Suite 144/144.
 -- RD 13
+
+### WEB (RD 13) · 2026-06-29 · ✅ web3d explode bar readout = "N PART · M PCS"
+HEAD **7b4ef48** (deploy ✓ run 28335866143, curl live==HEAD). เอ๋: "16 part 36 pcs บอกแบบนี้ด้วย". The `.kd3d-explode-info` now shows BOTH: PART = distinct ALPF part TYPES (unique codes via `_extractPartLabel`, instanced ×N collapse to 1) + PCS = total ALPF pieces (all instances). __HW hardware excluded from both. e.g. 1LLV04-100SHD → "16 PART · 36 PCS". Deterministically locked by test/web3dAlpfCount.test.mjs (extended — exact 16/36 case + version-stamp collapse + descendant-__HW). Rendered number is GPU/rAF-gated headless → เอ๋ sees the live number on device; structure (slider | info | Hide | UnHide, no %, no "Explode" label) curl+Chrome verified. Suite 144/144. Markup/count only — no zoom/gesture change.
+-- RD 13
