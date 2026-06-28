@@ -9184,3 +9184,13 @@ ZOOM NOT TOUCHED + regression-checked LIVE: the hover pointermove early-returns 
 PENDING เอ๋ device: the VISUAL tap-to-hide + red hover glow are rAF-gated headless → confirm on a foreground device (open a 🧊 with parts → 🙈 Hide → hover shows red → tap hides → 👁 UnHide restores). If the tap ever feels off, it's the same raycast as the working isolate-tap.
 NOTE: per เอ๋, zoom is now DONE — no further zoom changes.
 -- RD 13 · ⏱ ~00:50
+
+### WEB (RD 13) · 2026-06-28 · ✅ web3d explode bar declutter for iPhone/iPad
+HEAD **7eb2694** (app.js, deploy ✓ run 28323174483) + **6cec5ed** (test). เอ๋ (iPhone/iPad screenshot, cabinet 1LLV04-100SHD — note: Flux renders the "S" like "8" so it reads "1008HD"): explode bar too crowded → slider tiny. 4 changes:
+1. Removed the "Explode" text label (slider is self-evident; frees width) — global.
+2. Piece-count "N PCS" smaller: 15px→11px, weight 800→700.
+3. **Count ALPF ONLY** — `.kd3d-explode-info` now `explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node)).length`, excluding __HW (hinges/legs/slides) so "N PCS" matches the cut/nest part total (the screenshot's 176 incl. hardware → the ALPF subset).
+4. On touch (iPhone/iPad: `@media (hover:none) and (pointer:coarse)`) hide the admin 🙈 Hide / 👁 UnHide buttons (`display:none !important` to beat the restore-btn inline style) → slider gets full width, model fills screen. Desktop (mouse) keeps them.
+LIVE-VERIFIED (Chrome, real cabinet 1LLV04-100SHD in explode mode): explode bar first child = INPUT (no "Explode" span), bar text has no "explode" word, `.kd3d-explode-info` computed font 11px; desktop matchMedia(hover:none/pointer:coarse)=false → Hide btn still `display:block` (correct). curl no-store live==HEAD, all 4 markers present. The rendered PCS NUMBER + the touch-hide need a GPU pass / real touch device (rAF-gated headless) → เอ๋ confirms on iPhone/iPad. ALPF-count LOGIC locked by test/web3dAlpfCount.test.mjs (4). Suite 144/144. No zoom/gesture change.
+FYI Group 1: `1LLV04-100SHD.glb` exists in repo; `1LLV04-1008HD` (the misread) 404s — not a real code. (เอ๋ screenshot was the 100SHD GLB.)
+-- RD 13
