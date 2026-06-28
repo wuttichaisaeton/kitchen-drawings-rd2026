@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-28T07:01:12.057002
+CC_Assembly walk debug — 2026-06-28T07:34:41.727954
 Project: 1SHS10-100035
 Total occurrences visited: 10
 CAM-ALPF tagged components: 0
@@ -8,7 +8,7 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 |     |     |                  | 1SHG00-100035 v48:1 (1SHG00-100035 v48)
+    0 |     |     |                  | 1SHG00-100035 v49:1 (1SHG00-100035 v49)
     1 |     |     |                  | Fitting:1 (Fitting)
     2 |     |     |                  | Shelf Support M5 by SSD v27:1 (Shelf Support M5 by SSD v27)
     2 |     |     |                  | Shelf Support M5 by SSD v27:2 (Shelf Support M5 by SSD v27)
