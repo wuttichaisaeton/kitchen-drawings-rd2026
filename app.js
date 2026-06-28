@@ -2705,7 +2705,7 @@ async function _kdOpen3D(code, opts) {
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
         <span class="kd3d-explode-val">${explodePct}%</span>
         <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
-        ${isAdmin() ? '<button type="button" class="kd3d-hidebtn" title="แตะชิ้นเพื่อซ่อนจากเว็บ / Tap a part to hide it">🙈 ซ่อน</button><button type="button" class="kd3d-restorebtn" title="คืนชิ้นที่ซ่อน" style="display:none">↺ <span class="kd3d-restoren">0</span></button>' : ''}
+        ${isAdmin() ? '<button type="button" class="kd3d-hidebtn" title="Tap a part to hide it from the web 3D">🙈 Hide</button><button type="button" class="kd3d-restorebtn" title="Restore hidden parts" style="display:none">↺ <span class="kd3d-restoren">0</span></button>' : ''}
       </div>
       <div class="kd3d-viewarea">
       <div class="kd3d-viewer" style="position:relative">
@@ -4386,7 +4386,7 @@ async function _kdOpen3D(code, opts) {
     _glbHidden.clear(); _saveGlbHidden();
     try { if (explodeUnits.length) applyExplode(explodePct); } catch {}
     _renderHideUI();
-    try { _kdToast && _kdToast('คืนชิ้นที่ซ่อนแล้ว'); } catch {}
+    try { _kdToast && _kdToast('Hidden parts restored'); } catch {}
   });
   _renderHideUI();
   _loadGlbHidden();
