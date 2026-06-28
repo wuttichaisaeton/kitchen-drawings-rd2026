@@ -2064,12 +2064,6 @@ function _kd3dPartsGlbUrl(code) {
   const o = window.__KD_OPEN_NONCE || 0;
   return `https://cdn.jsdelivr.net/gh/wuttichaisaeton/kitchen-drawings-rd2026@${_kd3dGlbRef()}/Drawings/3d/${encodeURIComponent(code)}_parts.glb?v=${v}&o=${o}`;
 }
-// RTDB key for a GLB's hidden-part-code set. RTDB keys forbid . # $ [ ] / — replace
-// them; spaces/hyphens are allowed so "02 Wipha-L" stays readable. (เอ๋ 2026-06-28
-// web 3D tap-to-hide; tested in test/web3dHide.test.mjs — keep in sync.)
-function _glbHiddenKey(code) {
-  return String(code == null ? '' : code).replace(/[.#$\[\]/]/g, '_').trim() || 'unknown';
-}
 
 // ── 🧊 outdated chip (WEB 21, 2026-06-22) ────────────────────────────────────
 // Round 14 (Fusion 31, 2026-06-22) rewrote main `.glb` as per-leaf assembled
@@ -2268,11 +2262,6 @@ async function _kdOpen3D(code, opts) {
     /* เอ๋ 2026-06-24 "จำนวนชิ้นขยายให้ชัดเจน + เขียนเป็น 14 PCS" — piece count
        was dim 11px gray (inherited); make it the prominent amber callout. */
     .kd3d-modal .kd3d-explodebar .kd3d-explode-info{flex:0 0 auto;white-space:nowrap;color:#F2A93B;font-weight:800;font-size:15px;letter-spacing:.5px}
-    .kd3d-modal .kd3d-explodebar .kd3d-hidebtn,
-    .kd3d-modal .kd3d-explodebar .kd3d-restorebtn{flex:0 0 auto;background:transparent;border:1px solid #2b3a4d;color:#9fb0c0;font:inherit;font-size:11px;padding:5px 9px;border-radius:6px;cursor:pointer;white-space:nowrap}
-    .kd3d-modal .kd3d-explodebar .kd3d-hidebtn:hover,
-    .kd3d-modal .kd3d-explodebar .kd3d-restorebtn:hover{color:#e6edf4;border-color:#3a4a5d}
-    .kd3d-modal .kd3d-explodebar .kd3d-hidebtn.is-on{background:#7a2c2c;border-color:#a23b3b;color:#ffd9d9}
     .kd3d-modal .kd3d-foot{padding:8px 14px;color:#9fb0c0;font-size:11px;font-family:ui-monospace,monospace;letter-spacing:.3px;border-top:1px solid #1c2530}
     .kd3d-modal .kd3d-placeholder{flex:1 1 auto;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#9fb0c0;padding:48px 20px;text-align:center;font-family:"Flux Architect",ui-monospace,monospace}
     .kd3d-modal .kd3d-placeholder .kd3d-ph-icon{font-size:48px;opacity:.55}
@@ -2498,7 +2487,7 @@ async function _kdOpen3D(code, opts) {
        </div>`;
   document.body.appendChild(modal);
 
-  const close = () => { try { if (_glbHiddenRef) { _glbHiddenRef.off(); _glbHiddenRef = null; } } catch {} modal.remove(); document.removeEventListener('keydown', onKey); };
+  const close = () => { modal.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   modal.querySelector('.kdstock-backdrop').addEventListener('click', close);
   // ⚠ The 3D modal's close ✕ now lives in the VIEWER template (bottom-right float),
@@ -2705,7 +2694,6 @@ async function _kdOpen3D(code, opts) {
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
         <span class="kd3d-explode-val">${explodePct}%</span>
         <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
-        ${isAdmin() ? '<button type="button" class="kd3d-hidebtn" title="Tap a part to hide it from the web 3D">🙈 Hide</button><button type="button" class="kd3d-restorebtn" title="Restore all hidden parts" style="display:none">👁 UnHide <span class="kd3d-restoren">0</span></button>' : ''}
       </div>
       <div class="kd3d-viewarea">
       <div class="kd3d-viewer" style="position:relative">
@@ -2989,16 +2977,6 @@ async function _kdOpen3D(code, opts) {
   let explodeRoot = null;         // THREE.Object3D whose children are explode units
   let explodeUnits = [];          // [{node, baseX/Y/Z (node.position), gx/y/z (geom centroid in node-local space)}]
   let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
-  // Tap-to-hide (เอ๋ 2026-06-28): per-GLB set of hidden PART CODES, shared via RTDB
-  // (glb_hidden/<key>) so every device incl. the workshop stops showing them.
-  let _glbHidden = new Set();      // hidden part KEYS (code, or node-name for code-less __HW/white parts)
-  let _hideMode = false;           // admin "🙈 tap-to-hide" toggle
-  let _glbHiddenRef = null;        // RTDB ref (detached on close)
-  // Hide KEY for a node: its part code if it has one, else the node's own name —
-  // so code-less hardware/white parts (__HW, e.g. "Body1__HW_3") are hideable too
-  // (เอ๋ 2026-06-28 "ไม่ทำงานกับ Object พื้นขาว").
-  const _unitKey = (node) => { try { return _extractPartLabel(node.name || '') || (node.name || ''); } catch { return (node && node.name) || ''; } };
-  const _isUnitHidden = (u) => { try { return _glbHidden.has(_unitKey(u.node)); } catch { return false; } };
   let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
   let explodeLabels = [];          // [{sprite, unit}] — DEPRECATED 3D-sprite labels (kept for safety; overlay replaces)
   // ── HTML+SVG explode-label OVERLAY (เอ๋ rebuild 2026-06-22) ───────────────
@@ -4145,7 +4123,7 @@ async function _kdOpen3D(code, opts) {
       // chosen part fills the view (visible from any angle). Visibility is a
       // one-time scene edit → needs queueRender (below).
       const sel = _poppedCode && _extractPartLabel(u.node.name || '') === _poppedCode;
-      u.node.visible = (!_poppedCode || sel) && !_isUnitHidden(u);   // เอ๋: tap-hidden parts stay hidden
+      u.node.visible = !_poppedCode || sel;
       // Hardware (__HW) parts never explode — pin them to their assembled base
       // position so hinges/legs/slides stay mounted while the ALPF sheet metal
       // flies out around them. Untagged ALPF units explode exactly as before.
@@ -4175,7 +4153,6 @@ async function _kdOpen3D(code, opts) {
     // direct THREE scene-graph edits (visibility/scale/position), so the isolate/
     // pop effect was applied but never drawn until a camera move (เอ๋ "ไม่แสดง
     // effect"). queueRender() schedules the repaint.
-    try { _enforceHidden(); } catch {}
     try { const sc = _getScene(); if (sc && typeof sc.queueRender === 'function') sc.queueRender(); } catch {}
     if (_ovlRoot) _ovlRoot.style.display = (pct > 5) ? '' : 'none';
   };
@@ -4185,10 +4162,9 @@ async function _kdOpen3D(code, opts) {
       u.node.position.set(u.baseX, u.baseY, u.baseZ);
       u.node.updateMatrix();   // see applyExplode: matrixAutoUpdate=false → must force the matrix.
       if (u.node.scale) u.node.scale.setScalar(1);
-      u.node.visible = !_isUnitHidden(u);   // เอ๋: keep tap-hidden parts hidden on reset
+      u.node.visible = true;
     }
     try { if (explodeRoot) explodeRoot.updateMatrixWorld(true); } catch (e) {}
-    try { _enforceHidden(); } catch {}
     if (_ovlRoot) _ovlRoot.style.display = 'none';
   };
 
@@ -4359,50 +4335,6 @@ async function _kdOpen3D(code, opts) {
     });
   }
 
-  // ── Tap-to-hide (เอ๋ 2026-06-28) — admin hides a part by tapping it; shared
-  // via RTDB glb_hidden/<key> so the workshop view drops it too. No Fusion. ──
-  const _hideBtn = body.querySelector('.kd3d-hidebtn');
-  const _restoreBtn = body.querySelector('.kd3d-restorebtn');
-  function _saveGlbHidden() {
-    try { if (window.firebaseDB) window.firebaseDB.ref('glb_hidden/' + _glbHiddenKey(code)).set([..._glbHidden]); }
-    catch (e) { try { _kdToast && _kdToast('Save failed'); } catch {} }
-  }
-  function _renderHideUI() {
-    if (_hideBtn) _hideBtn.classList.toggle('is-on', _hideMode);
-    if (_restoreBtn) {
-      _restoreBtn.style.display = _glbHidden.size ? '' : 'none';
-      const n = _restoreBtn.querySelector('.kd3d-restoren'); if (n) n.textContent = String(_glbHidden.size);
-    }
-  }
-  function _loadGlbHidden() {
-    try {
-      if (!window.firebaseDB) return;
-      _glbHiddenRef = window.firebaseDB.ref('glb_hidden/' + _glbHiddenKey(code));
-      _glbHiddenRef.on('value', (snap) => {
-        const v = snap.val();
-        _glbHidden = new Set(Array.isArray(v) ? v : (v ? Object.values(v) : []));
-        try { if (explodeUnits.length) applyExplode(explodePct); } catch {}
-        try { _enforceHidden(); } catch {}
-        try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {}
-        try { _renderHideUI(); } catch {}
-      });
-    } catch (e) { console.warn('[kd3d] glb_hidden load failed', e); }
-  }
-  if (_hideBtn) _hideBtn.addEventListener('click', () => {
-    _hideMode = !_hideMode;
-    try { mv.style.cursor = _hideMode ? 'crosshair' : ''; } catch {}
-    _renderHideUI();
-  });
-  if (_restoreBtn) _restoreBtn.addEventListener('click', () => {
-    if (!_glbHidden.size) return;
-    _glbHidden.clear(); _saveGlbHidden();
-    try { if (explodeUnits.length) applyExplode(explodePct); } catch {}
-    _renderHideUI();
-    try { _kdToast && _kdToast('Hidden parts restored'); } catch {}
-  });
-  _renderHideUI();
-  _loadGlbHidden();
-
   const VIS_KEY = 'kd_3d_vis_v1_' + code;
   const browserPanel = body.querySelector('#kd3d-browser');
   const browserList = body.querySelector('.kd3d-browser-list');
@@ -4571,16 +4503,6 @@ async function _kdOpen3D(code, opts) {
     }
     _highlightUnits(label, units, hex, intensity);
   };
-  // The explode UNIT node a raycast hit belongs to (walk up to a node in explodeUnits).
-  const _unitNodeForHit = (obj) => { const set = new Set(explodeUnits.map(u => u.node)); let n = obj; while (n && n !== threeScene) { if (set.has(n)) return n; n = n.parent; } return null; };
-  // Belt-and-suspenders hide: traverse the whole model and hide ANY node whose key
-  // is in _glbHidden — covers code-less white/__HW parts even if they aren't in
-  // explodeUnits (granularity differences). Runs after applyExplode/reset + on
-  // subscribe + right after a hide tap. (เอ๋ 2026-06-28 "ไม่ทำงานกับ Object พื้นขาว")
-  const _enforceHidden = () => {
-    if (!threeScene || !_glbHidden.size) return;
-    threeScene.traverse(nd => { try { if (nd !== threeScene && _glbHidden.has(_unitKey(nd))) nd.visible = false; } catch {} });
-  };
   // Shared "tap/click a PART → isolate it" — used by the mouse 'click' AND the
   // iPad TAP. On touch, touchstart's preventDefault (needed for orbit) suppresses
   // the synthetic 'click', so iPad was non-interactive (เอ๋ "ที่ ipad ไม่ค่อย
@@ -4593,9 +4515,8 @@ async function _kdOpen3D(code, opts) {
     if (now && now - _lastPick < 280) return;
     _lastPick = now;
     // While a part is ISOLATED, a tap/click anywhere (not a label — those
-    // stopPropagation) restores ALL parts + zoom-fits. SKIP in hide-mode so a
-    // hide-tap is never swallowed by the restore (เอ๋ 2026-06-28).
-    if (_poppedCode && !_hideMode) {
+    // stopPropagation) restores ALL parts + zoom-fits.
+    if (_poppedCode) {
       _poppedCode = null;
       _ovlRows.forEach(r => r.rowEl.classList.remove('kd3d-ovl-sel'));
       applyExplode(explodePct);
@@ -4618,21 +4539,7 @@ async function _kdOpen3D(code, opts) {
     // to the scene's top child gave "Pivot" → no label. The code lives deeper.)
     let label = null, nd = hit.object;
     while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { label = l; break; } nd = nd.parent; }
-    // HIDE mode (เอ๋ 2026-06-28): an admin tap hides the part — works on ANY part,
-    // INCLUDING code-less white/__HW parts (keyed by node name). Runs BEFORE the
-    // label/_ovlRows guards so a code-less part isn't dropped ("Object พื้นขาว").
-    if (_hideMode && isAdmin()) {
-      const un = _unitNodeForHit(hit.object);
-      let key = un ? _unitKey(un) : label;
-      if (!key) { let n = hit.object; while (n && n !== threeScene && !n.name) n = n.parent; key = (n && n.name) || ''; }
-      if (!key) return;
-      _glbHidden.add(key); _saveGlbHidden();
-      applyExplode(explodePct);
-      try { _enforceHidden(); } catch {}
-      _renderHideUI();
-      return;
-    }
-    if (!label || !_ovlRows.some(r => r.code === label)) return;   // isolate: only coded parts in the overlay list
+    if (!label || !_ovlRows.some(r => r.code === label)) return;   // labelled parts only
     // เอ๋ 2026-06-23 (reverse of clicking a label): tap/click a PART → isolate it,
     // highlight its label, zoom-fit. Tap again / tap away restores (handled above).
     _poppedCode = label;
