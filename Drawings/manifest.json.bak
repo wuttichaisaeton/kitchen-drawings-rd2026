@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T07:46:31.504000+00:00",
+  "generated_at": "2026-06-28T07:47:14.760186+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -20897,6 +20897,49 @@
           "qty": 1,
           "family": "Floor",
           "urn": "urn:adsk.wipprod:dm.lineage:AfFlLYw2RvW2jhRUeFYYPA"
+        },
+        {
+          "code": "LEG-060",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "LEG-060"
+        }
+      ]
+    },
+    "FN0FL2-110004": {
+      "name": "FN0FL2-110004",
+      "status": "active",
+      "created_at": "2026-06-28T07:47:14.757528+00:00",
+      "updated_at": "2026-06-28T07:47:14.757528+00:00",
+      "total_unique_parts": 4,
+      "total_qty": 4,
+      "parts": [
+        {
+          "code": "FN0F00-090000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:x8QWucqnTBSmx9Q2hWc0xQ"
+        },
+        {
+          "code": "FN2BLA-090000",
+          "qty": 1,
+          "family": "Floor",
+          "variant_root": "FN2BLA-090000",
+          "urn": "urn:adsk.wipprod:dm.lineage:dhAExU6tQ_WSH4IqK0X2vA"
+        },
+        {
+          "code": "FN2BNX-090000",
+          "qty": 1,
+          "family": "Floor",
+          "variant_root": "FN2BNX-090000",
+          "urn": "urn:adsk.wipprod:dm.lineage:NhkVgP9jQR--GqOz4CMTGA"
+        },
+        {
+          "code": "FN3BLA-090000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:xPR1NJ-1Sq6whImKqno4eA"
         },
         {
           "code": "LEG-060",
