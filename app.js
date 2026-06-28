@@ -2710,8 +2710,7 @@ async function _kdOpen3D(code, opts) {
   body.innerHTML = `
       <div class="kd3d-explodebar">
         <input type="range" min="0" max="100" step="1" value="${explodePct}" aria-label="Explode percentage">
-        <span class="kd3d-explode-val">${explodePct}%</span>
-        <span class="kd3d-explode-info" title="How many independent pieces this GLB has"></span>
+        <span class="kd3d-explode-info" title="ALPF sheet-metal piece count"></span>
         ${isAdmin() ? '<button type="button" class="kd3d-hidebtn" title="Tap a part to hide it from the web 3D">🙈 Hide</button><button type="button" class="kd3d-restorebtn" title="Restore all hidden parts" style="display:none">👁 UnHide <span class="kd3d-restoren">0</span></button>' : ''}
       </div>
       <div class="kd3d-viewarea">
