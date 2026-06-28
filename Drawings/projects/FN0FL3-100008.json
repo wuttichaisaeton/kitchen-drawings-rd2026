@@ -1,0 +1,43 @@
+{
+  "name": "FN0FL3-100008",
+  "status": "active",
+  "created_at": "2026-06-28T07:44:50.163901+00:00",
+  "updated_at": "2026-06-28T07:44:50.163901+00:00",
+  "total_unique_parts": 4,
+  "total_qty": 5,
+  "parts": [
+    {
+      "code": "FN0F00-100000",
+      "qty": 1,
+      "family": "Floor",
+      "urn": "urn:adsk.wipprod:dm.lineage:w0OC6wmTQPC4ASQw58jMuQ"
+    },
+    {
+      "code": "FN2BLA-100000",
+      "qty": 1,
+      "family": "Floor",
+      "variant_root": "FN2BLA-100000",
+      "urn": "urn:adsk.wipprod:dm.lineage:9FtmaHV5SBaCjyMC9YPUsQ"
+    },
+    {
+      "code": "FN2BNX-100000",
+      "qty": 2,
+      "family": "Floor",
+      "variant_root": "FN2BNX-100000",
+      "urn": "urn:adsk.wipprod:dm.lineage:_RdCt0QTSa6bf3yzvk7RVw"
+    },
+    {
+      "code": "FN3BLA-100000",
+      "qty": 1,
+      "family": "Floor",
+      "urn": "urn:adsk.wipprod:dm.lineage:AfFlLYw2RvW2jhRUeFYYPA"
+    },
+    {
+      "code": "LEG-060",
+      "qty": 0,
+      "family": "Other",
+      "is_wrapper": true,
+      "variant_root": "LEG-060"
+    }
+  ]
+}
