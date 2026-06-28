@@ -2993,9 +2993,6 @@ async function _kdOpen3D(code, opts) {
   // (glb_hidden/<key>) so every device incl. the workshop stops showing them.
   let _glbHidden = new Set();      // hidden part KEYS (code, or node-name for code-less __HW/white parts)
   let _hideMode = false;           // admin "🙈 tap-to-hide" toggle
-  let _hoverLabel = null;          // part KEY currently hover-highlighted in hide mode
-  let _hoverThree = null;          // cached THREE for sync hover raycasts
-  let _hoverRaf = 0;               // rAF throttle for pointermove hover
   let _glbHiddenRef = null;        // RTDB ref (detached on close)
   // Hide KEY for a node: its part code if it has one, else the node's own name —
   // so code-less hardware/white parts (__HW, e.g. "Body1__HW_3") are hideable too
@@ -4394,7 +4391,6 @@ async function _kdOpen3D(code, opts) {
   if (_hideBtn) _hideBtn.addEventListener('click', () => {
     _hideMode = !_hideMode;
     try { mv.style.cursor = _hideMode ? 'crosshair' : ''; } catch {}
-    if (!_hideMode) { _hoverLabel = null; try { _clearHoverGlow(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} }
     _renderHideUI();
   });
   if (_restoreBtn) _restoreBtn.addEventListener('click', () => {
@@ -4575,12 +4571,6 @@ async function _kdOpen3D(code, opts) {
     }
     _highlightUnits(label, units, hex, intensity);
   };
-  // เอ๋ 2026-06-28 hover-to-hide PREVIEW: tint the hovered part's material.COLOR red
-  // (emissive doesn't show in the flat/hidden-line render mode — verified live).
-  // Clone the material first so shared materials on OTHER parts aren't tinted too;
-  // restore the original material ref on clear. _getScene().queueRender() repaints.
-  const _hoverRestore = [];          // [{mesh, mat}] original material refs
-  const _clearHoverGlow = () => { for (const r of _hoverRestore) { try { r.mesh.material = r.mat; } catch {} } _hoverRestore.length = 0; };
   // The explode UNIT node a raycast hit belongs to (walk up to a node in explodeUnits).
   const _unitNodeForHit = (obj) => { const set = new Set(explodeUnits.map(u => u.node)); let n = obj; while (n && n !== threeScene) { if (set.has(n)) return n; n = n.parent; } return null; };
   // Belt-and-suspenders hide: traverse the whole model and hide ANY node whose key
@@ -4590,18 +4580,6 @@ async function _kdOpen3D(code, opts) {
   const _enforceHidden = () => {
     if (!threeScene || !_glbHidden.size) return;
     threeScene.traverse(nd => { try { if (nd !== threeScene && _glbHidden.has(_unitKey(nd))) nd.visible = false; } catch {} });
-  };
-  // Red-tint every explode unit whose key matches (coded → all instances; code-less → that node).
-  const _hoverGlow = (key) => {
-    if (!threeScene || !key) return;
-    for (const u of explodeUnits) {
-      if (_unitKey(u.node) !== key) continue;
-      u.node.traverse(nd => {
-        if (!nd.isMesh || nd.isSprite || !nd.material || Array.isArray(nd.material)) return;
-        _hoverRestore.push({ mesh: nd, mat: nd.material });
-        try { const c = nd.material.clone(); if (c.color) c.color.setHex(0xff3b30); nd.material = c; } catch {}
-      });
-    }
   };
   // Shared "tap/click a PART → isolate it" — used by the mouse 'click' AND the
   // iPad TAP. On touch, touchstart's preventDefault (needed for orbit) suppresses
@@ -4624,7 +4602,7 @@ async function _kdOpen3D(code, opts) {
       requestAnimationFrame(() => _fitVisibleWorld());
       return;
     }
-    let THREE; try { THREE = await _kd3dEnsureThree(); _hoverThree = THREE; } catch { return; }
+    let THREE; try { THREE = await _kd3dEnsureThree(); } catch { return; }
     const cam = threeScene.camera;
     if (!cam) return;
     const rect = mv.getBoundingClientRect();
@@ -4648,7 +4626,6 @@ async function _kdOpen3D(code, opts) {
       let key = un ? _unitKey(un) : label;
       if (!key) { let n = hit.object; while (n && n !== threeScene && !n.name) n = n.parent; key = (n && n.name) || ''; }
       if (!key) return;
-      _hoverLabel = null; try { _clearHoverGlow(); } catch {}   // drop the hover tint on the part we're hiding
       _glbHidden.add(key); _saveGlbHidden();
       applyExplode(explodePct);
       try { _enforceHidden(); } catch {}
@@ -4673,37 +4650,6 @@ async function _kdOpen3D(code, opts) {
       }
       _pickAndIsolate(e.clientX, e.clientY);
     });
-    // เอ๋ 2026-06-28: in HIDE mode, hovering a part glows it red (preview of what a
-    // click will hide). Throttled to one raycast per frame; cleared on leave.
-    const _hoverHilite = (clientX, clientY) => {
-      if (!_hideMode || !threeScene || !explodeUnits.length) return;
-      const THREE = _hoverThree;
-      if (!THREE) { _kd3dEnsureThree().then(t => { _hoverThree = t; }).catch(() => {}); return; }
-      const cam = threeScene.camera; if (!cam) return;
-      const rect = mv.getBoundingClientRect();
-      const mx = ((clientX - rect.left) / rect.width) * 2 - 1;
-      const my = -((clientY - rect.top) / rect.height) * 2 + 1;
-      const rc = new THREE.Raycaster();
-      rc.setFromCamera(new THREE.Vector2(mx, my), cam);
-      const hits = rc.intersectObjects(threeScene.children, true);
-      const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
-      let key = null;
-      if (hit) { const un = _unitNodeForHit(hit.object); key = un ? _unitKey(un) : null; if (!key) { let nd = hit.object; while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { key = l; break; } nd = nd.parent; } } }
-      if (key === _hoverLabel) return;
-      _hoverLabel = key;
-      try { _clearHoverGlow(); } catch {}
-      if (key) { try { _hoverGlow(key); } catch {} }
-      // model-viewer renders on-demand — force a repaint so the tint shows
-      // (เอ๋ 2026-06-28 "ไม่มี effect"). Same queueRender applyExplode uses.
-      try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {}
-    };
-    mv.addEventListener('pointermove', (e) => {
-      if (!_hideMode) return;
-      if (_hoverRaf) return;
-      const cx = e.clientX, cy = e.clientY;
-      _hoverRaf = requestAnimationFrame(() => { _hoverRaf = 0; _hoverHilite(cx, cy); });
-    });
-    mv.addEventListener('pointerleave', () => { if (_hideMode) { _hoverLabel = null; try { _clearHoverGlow(); } catch {} try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {} } });
   }
 
   // ── 3Dconnexion SpaceMouse (WebHID) ──────────────────────────────────
