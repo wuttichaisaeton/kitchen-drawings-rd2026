@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T03:44:59.306601+00:00",
+  "generated_at": "2026-06-28T03:52:48.961489+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19905,6 +19905,28 @@
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:lZNnuqxpQh6Q5WAob7E16w"
+        }
+      ]
+    },
+    "CVL122-N65087": {
+      "name": "CVL122-N65087",
+      "status": "active",
+      "created_at": "2026-06-28T03:52:48.958675+00:00",
+      "updated_at": "2026-06-28T03:52:48.958675+00:00",
+      "total_unique_parts": 2,
+      "total_qty": 2,
+      "parts": [
+        {
+          "code": "CV0002-000000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:lZNnuqxpQh6Q5WAob7E16w"
+        },
+        {
+          "code": "CVL122-N65087",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:SnQge8jmR2WUHKR6Kr65UA"
         }
       ]
     }
