@@ -7943,6 +7943,8 @@ html[data-theme="chalk"] .kdnest-part {
 .kdsp-stockcard { display: flex; flex-direction: column; gap: 8px; }
 /* เอ๋: 2-column vertical cards; show only photo + NAME + QTY (no thickness/material) */
 .kdsp-stockbody { display: flex; flex-direction: column; gap: 6px; }
+/* code + qty on ONE line (เอ๋ 2026-06-28: "ชื่อ แล้วตามด้วย ×N เลย ตัด in stock ออก") */
+.kdsp-stockbody .kdsp-codeline { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
 .kdsp-stockbody .kdsp-code { font-size: 15px; font-weight: 700; word-break: break-word; }  /* part NAME prominent */
 .kdsp-stockbody .kdsp-pill { font-size: 13px; font-weight: 600; padding: 4px 12px; display: inline-flex; align-items: baseline; gap: 5px; }
 .kdsp-qtynum { font-size: 22px; font-weight: 800; line-height: 1; }   /* qty number big + clear (เอ๋) */

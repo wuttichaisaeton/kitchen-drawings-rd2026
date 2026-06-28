@@ -629,8 +629,10 @@
       var firstQty = (g.rows[0] && g.rows[0].qty != null) ? g.rows[0].qty : 1;
       card.innerHTML = photo +
         '<div class="kdsp-stockbody">' +
-        '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
-        '<div class="kdsp-meta"><span class="kdsp-pill"><b class="kdsp-qtynum">×' + g.qty + '</b> in stock</span></div>' +
+        '<div class="kdsp-codeline">' +
+          '<code class="kdsp-code">' + escapeHtml(code) + '</code>' +
+          '<b class="kdsp-qtynum">×' + g.qty + '</b>' +
+        '</div>' +
         '<div class="kdsp-cardfoot"><button type="button" class="kdsp-link kdsp-view3d" data-code="' + escapeHtml(code) + '">View 3D</button>' +
         (readOnly ? '' :
           '<span class="kdsp-foot-actions">' +
