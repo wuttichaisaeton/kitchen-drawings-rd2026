@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T05:36:17.460941+00:00",
+  "generated_at": "2026-06-28T05:38:53.905828+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1616,8 +1616,8 @@
     },
     "FN2BNX-090000": {
       "family": "Floor",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 14,
+      "fusion_version": 14,
       "pdf": "FN0B00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -1785,8 +1785,8 @@
     },
     "FN0F00-090000": {
       "family": "Floor",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 17,
+      "fusion_version": 17,
       "pdf": "FN0F00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -20021,6 +20021,36 @@
           "is_wrapper": true,
           "parent_code": "FN0FL2-060004",
           "variant_root": "FN0FL2-060004"
+        }
+      ]
+    },
+    "FN0FN2-110004": {
+      "name": "FN0FN2-110004",
+      "status": "active",
+      "created_at": "2026-06-28T05:38:53.889204+00:00",
+      "updated_at": "2026-06-28T05:38:53.889204+00:00",
+      "total_unique_parts": 2,
+      "total_qty": 3,
+      "parts": [
+        {
+          "code": "FN0F00-090000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:x8QWucqnTBSmx9Q2hWc0xQ"
+        },
+        {
+          "code": "FN2BNX-090000",
+          "qty": 2,
+          "family": "Floor",
+          "variant_root": "FN2BNX-090000",
+          "urn": "urn:adsk.wipprod:dm.lineage:NhkVgP9jQR--GqOz4CMTGA"
+        },
+        {
+          "code": "LEG-060",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "LEG-060"
         }
       ]
     }
