@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T01:17:44.129568+00:00",
+  "generated_at": "2026-06-28T02:23:10.066301+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19596,6 +19596,22 @@
           "is_wrapper": true,
           "parent_code": "TS004H-100000",
           "variant_root": "TS004H-100000"
+        }
+      ]
+    },
+    "CV0002-000000": {
+      "name": "CV0002-000000",
+      "status": "active",
+      "created_at": "2026-06-28T02:23:10.048950+00:00",
+      "updated_at": "2026-06-28T02:23:10.048950+00:00",
+      "total_unique_parts": 1,
+      "total_qty": 1,
+      "parts": [
+        {
+          "code": "CV0002-000000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:lZNnuqxpQh6Q5WAob7E16w"
         }
       ]
     }
