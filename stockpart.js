@@ -63,7 +63,7 @@
       if (qLen != null) {
         if (code.replace(/\D/g, '').indexOf(qDigits) !== -1) return true;                         // digit substring (e.g. cm value)
         var d = _codeDims(m.master_code);                                                         // dimension ±5mm (cm-encoded ×10, or raw)
-        if (d && Math.min(Math.abs(d.w * 10 - qLen), Math.abs(d.h * 10 - qLen), Math.abs(d.w - qLen), Math.abs(d.h - qLen)) <= 5) return true;
+        if (d && _dimGap(d, qLen) <= 5) return true;
       }
       return false;
     });
@@ -86,11 +86,25 @@
     if (suf.length === 6) return (parseInt(suf.slice(0, 3), 10) * 10) + '×' + (parseInt(suf.slice(3), 10) * 10) + 'mm';
     return suf;
   }
-  // numeric W/H parsed from the 6-digit code suffix (WWWHHH), for length auto-match
+  // numeric dims parsed from the 6-digit code suffix, for length auto-match.
+  // Most families encode WWW(width)+HHH(height). BUT 2SD/2CN are HEIGHT-FIRST:
+  // first 3 = HEIGHT, next 3 = DEPTH (เอ๋ 2026-06-29, e.g. 2CN002-120039 = H1200
+  // D390). `vals` carries both raw numbers so length matching stays
+  // order-independent regardless of which slot is width/height/depth.
   function _codeDims(code) {
     var suf = (String(code || '').split('-')[1] || '').replace(/\D/g, '');
     if (suf.length < 6) return null;
-    return { w: parseInt(suf.slice(0, 3), 10), h: parseInt(suf.slice(3, 6), 10) };
+    var a = parseInt(suf.slice(0, 3), 10), b = parseInt(suf.slice(3, 6), 10);
+    if (/^2(SD|CN)/i.test(String(code || ''))) return { h: a, d: b, vals: [a, b] };  // height-first
+    return { w: a, h: b, vals: [a, b] };
+  }
+  // closest gap (mm) between `target` and any encoded dim (tried ×10 and raw) —
+  // order-independent so it works whatever the w/h/d labels are.
+  function _dimGap(d, target) {
+    if (!d || !d.vals) return Infinity;
+    var best = Infinity;
+    d.vals.forEach(function (v) { best = Math.min(best, Math.abs(v * 10 - target), Math.abs(v - target)); });
+    return best;
   }
   // largest integer in the worker's remarks = the length they measured (mm)
   function _parseLen(note) {
@@ -104,8 +118,8 @@
   function _codesByLength(dxfCache, L, tol) {
     return codePickerFilter(dxfCache, '').map(function (m) {
       var d = _codeDims(m.master_code); if (!d) return null;
-      // suffix WWW/HHH are in cm (×10 = mm) for most families; also try the raw value to be safe
-      var best = Math.min(Math.abs(d.w * 10 - L), Math.abs(d.h * 10 - L), Math.abs(d.w - L), Math.abs(d.h - L));
+      // suffix dims are in cm (×10 = mm) for most families; _dimGap also tries raw
+      var best = _dimGap(d, L);
       return best <= tol ? Object.assign({ _lenDelta: best }, m) : null;
     }).filter(Boolean).sort(function (a, b) { return a._lenDelta - b._lenDelta || a.master_code.localeCompare(b.master_code); });
   }
@@ -604,7 +618,7 @@
       var q = _listQuery.toLowerCase(), qn = (/^\d+$/.test(q) ? parseInt(q, 10) : null);
       codes = codes.filter(function (c) {
         if (c.toLowerCase().indexOf(q) !== -1) return true;
-        if (qn != null) { var d = _codeDims(c); if (d && Math.min(Math.abs(d.w * 10 - qn), Math.abs(d.h * 10 - qn), Math.abs(d.w - qn), Math.abs(d.h - qn)) <= 5) return true; }
+        if (qn != null) { var d = _codeDims(c); if (d && _dimGap(d, qn) <= 5) return true; }
         return false;
       });
     }
