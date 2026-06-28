@@ -2991,13 +2991,17 @@ async function _kdOpen3D(code, opts) {
   let explodeCenter = { x: 0, y: 0, z: 0 };   // mean of gx/y/z across units
   // Tap-to-hide (เอ๋ 2026-06-28): per-GLB set of hidden PART CODES, shared via RTDB
   // (glb_hidden/<key>) so every device incl. the workshop stops showing them.
-  let _glbHidden = new Set();      // hidden part codes (labels) for this GLB
+  let _glbHidden = new Set();      // hidden part KEYS (code, or node-name for code-less __HW/white parts)
   let _hideMode = false;           // admin "🙈 tap-to-hide" toggle
-  let _hoverLabel = null;          // part code currently hover-highlighted in hide mode
+  let _hoverLabel = null;          // part KEY currently hover-highlighted in hide mode
   let _hoverThree = null;          // cached THREE for sync hover raycasts
   let _hoverRaf = 0;               // rAF throttle for pointermove hover
   let _glbHiddenRef = null;        // RTDB ref (detached on close)
-  const _isUnitHidden = (u) => { try { return _glbHidden.has(_extractPartLabel(u.node.name || '')); } catch { return false; } };
+  // Hide KEY for a node: its part code if it has one, else the node's own name —
+  // so code-less hardware/white parts (__HW, e.g. "Body1__HW_3") are hideable too
+  // (เอ๋ 2026-06-28 "ไม่ทำงานกับ Object พื้นขาว").
+  const _unitKey = (node) => { try { return _extractPartLabel(node.name || '') || (node.name || ''); } catch { return (node && node.name) || ''; } };
+  const _isUnitHidden = (u) => { try { return _glbHidden.has(_unitKey(u.node)); } catch { return false; } };
   let edgeOverlays = [];          // [{mesh, lineVis, lineHid}] — per-mesh LineSegments overlays
   let explodeLabels = [];          // [{sprite, unit}] — DEPRECATED 3D-sprite labels (kept for safety; overlay replaces)
   // ── HTML+SVG explode-label OVERLAY (เอ๋ rebuild 2026-06-22) ───────────────
@@ -4573,15 +4577,19 @@ async function _kdOpen3D(code, opts) {
   // restore the original material ref on clear. _getScene().queueRender() repaints.
   const _hoverRestore = [];          // [{mesh, mat}] original material refs
   const _clearHoverGlow = () => { for (const r of _hoverRestore) { try { r.mesh.material = r.mat; } catch {} } _hoverRestore.length = 0; };
-  const _labelOf = (node) => { let c = node; while (c && c !== threeScene) { const l = _extractPartLabel(c.name || ''); if (l) return l; c = c.parent; } return ''; };
-  const _hoverGlow = (label) => {
-    if (!threeScene || !label) return;
-    threeScene.traverse(nd => {
-      if (!nd.isMesh || nd.isSprite || !nd.material || Array.isArray(nd.material)) return;
-      if (_labelOf(nd) !== label) return;
-      _hoverRestore.push({ mesh: nd, mat: nd.material });
-      try { const c = nd.material.clone(); if (c.color) c.color.setHex(0xff3b30); nd.material = c; } catch {}
-    });
+  // The explode UNIT node a raycast hit belongs to (walk up to a node in explodeUnits).
+  const _unitNodeForHit = (obj) => { const set = new Set(explodeUnits.map(u => u.node)); let n = obj; while (n && n !== threeScene) { if (set.has(n)) return n; n = n.parent; } return null; };
+  // Red-tint every explode unit whose key matches (coded → all instances; code-less → that node).
+  const _hoverGlow = (key) => {
+    if (!threeScene || !key) return;
+    for (const u of explodeUnits) {
+      if (_unitKey(u.node) !== key) continue;
+      u.node.traverse(nd => {
+        if (!nd.isMesh || nd.isSprite || !nd.material || Array.isArray(nd.material)) return;
+        _hoverRestore.push({ mesh: nd, mat: nd.material });
+        try { const c = nd.material.clone(); if (c.color) c.color.setHex(0xff3b30); nd.material = c; } catch {}
+      });
+    }
   };
   // Shared "tap/click a PART → isolate it" — used by the mouse 'click' AND the
   // iPad TAP. On touch, touchstart's preventDefault (needed for orbit) suppresses
@@ -4620,19 +4628,20 @@ async function _kdOpen3D(code, opts) {
     // to the scene's top child gave "Pivot" → no label. The code lives deeper.)
     let label = null, nd = hit.object;
     while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { label = l; break; } nd = nd.parent; }
-    if (!label) return;
-    // เอ๋ 2026-06-28: in HIDE mode an admin tap HIDES the part's code (shared via
-    // RTDB → workshop view drops it too). Any raycast-hit labelled part can be
-    // hidden — do NOT gate on _ovlRows (that list is for isolate; if it isn't
-    // populated the hide-tap was being silently dropped).
+    // HIDE mode (เอ๋ 2026-06-28): an admin tap hides the part — works on ANY part,
+    // INCLUDING code-less white/__HW parts (keyed by node name). Runs BEFORE the
+    // label/_ovlRows guards so a code-less part isn't dropped ("Object พื้นขาว").
     if (_hideMode && isAdmin()) {
+      const un = _unitNodeForHit(hit.object);
+      const key = un ? _unitKey(un) : label;
+      if (!key) return;
       _hoverLabel = null; try { _clearHoverGlow(); } catch {}   // drop the hover tint on the part we're hiding
-      _glbHidden.add(label); _saveGlbHidden();
+      _glbHidden.add(key); _saveGlbHidden();
       applyExplode(explodePct);
       _renderHideUI();
       return;
     }
-    if (!_ovlRows.some(r => r.code === label)) return;   // isolate: only parts in the overlay list
+    if (!label || !_ovlRows.some(r => r.code === label)) return;   // isolate: only coded parts in the overlay list
     // เอ๋ 2026-06-23 (reverse of clicking a label): tap/click a PART → isolate it,
     // highlight its label, zoom-fit. Tap again / tap away restores (handled above).
     _poppedCode = label;
@@ -4664,13 +4673,12 @@ async function _kdOpen3D(code, opts) {
       rc.setFromCamera(new THREE.Vector2(mx, my), cam);
       const hits = rc.intersectObjects(threeScene.children, true);
       const hit = hits.find(h => h.object.isMesh && !h.object.isSprite && h.object.visible);
-      let label = null;
-      if (hit) { let nd = hit.object; while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { label = l; break; } nd = nd.parent; } }
-      if (label && !_ovlRows.some(r => r.code === label)) label = null;
-      if (label === _hoverLabel) return;
-      _hoverLabel = label;
+      let key = null;
+      if (hit) { const un = _unitNodeForHit(hit.object); key = un ? _unitKey(un) : null; if (!key) { let nd = hit.object; while (nd && nd !== threeScene) { const l = _extractPartLabel(nd.name || ''); if (l) { key = l; break; } nd = nd.parent; } } }
+      if (key === _hoverLabel) return;
+      _hoverLabel = key;
       try { _clearHoverGlow(); } catch {}
-      if (label) { try { _hoverGlow(label); } catch {} }
+      if (key) { try { _hoverGlow(key); } catch {} }
       // model-viewer renders on-demand — force a repaint so the tint shows
       // (เอ๋ 2026-06-28 "ไม่มี effect"). Same queueRender applyExplode uses.
       try { const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender(); } catch {}
