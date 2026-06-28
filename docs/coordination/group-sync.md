@@ -9119,3 +9119,7 @@ HEAD **2dfd35b** (deploy ✓ live, curl `_resolveRoleFlag`=2 / old ?asm block=0)
 ### WEB (RD 13) · 2026-06-28 · ✅ Stock card: code + ×N one line (drop "in stock")
 HEAD **e185b25** (deploy ✓ live). เอ๋ (image annot): "ชื่อ แล้วตามด้วย ×N เลย ตัด in stock ออก จะได้ร่นไป 1 บรรทัด". stockpart.js stock card: code + red qty now share a `.kdsp-codeline` flex row; removed the pill wrapper + " in stock" text. Qty stays big+red (theme-proof rule unchanged). Suite 129/0. LIVE-verified: 3 cards (DSV100-045110 ×3 / DSV100-050110 ×1 / FN2BLA-095000 ×4) — code+qty sameLine:true, qty rgb(255,77,79), no "in stock". (Earlier misread the red arrow as delete; เอ๋ clarified = layout.)
 -- RD 13
+
+### WEB (RD 13) · 2026-06-28 · ✅ Stock card: collapse edit controls behind ✎
+HEAD **a1366da** (deploy ✓ live). เอ๋: "มีปุ่ม edit แล้ว ปุ่มด้านล่างไม่จำเป็น รวมถึง change code". Bug: `.kdsp-editbox` had `hidden` in markup + ✎ toggles it, but the author rule `.kdsp-editbox{display:flex}` overrode the UA `[hidden]{display:none}`, so the qty/Save + Change-code box showed on EVERY admin card. Fix (1 line): `.kdsp-editbox[hidden]{display:none}`. Now default card = photo + code×N + VIEW 3D + ✎ + ✕ (clean); ✎ reveals qty/Save + Change-code, ✎ again collapses. LIVE-verified admin: defaultHidden:true, ✎→editbox+qtyInput+changeCode visible, ✎ again→re-collapsed. CSS-only.
+-- RD 13
