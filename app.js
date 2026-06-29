@@ -2826,34 +2826,6 @@ async function _kdOpen3D(code, opts) {
         if (mv.jumpCameraToGoal) mv.jumpCameraToGoal();
       } catch (e) {}
     };
-    // PARK the per-mesh hidden-line edge overlays WHILE a drag is in progress and
-    // restore them on release. An exploded scene has 16+ parts × 2 LineSegments;
-    // drawing all those lines every frame during a 1:1 orbit tanks the framerate
-    // on iPhone → เอ๋ 2026-06-29 "orbit เมื่อ explode ไม่ลื่น". Solid parts still
-    // render during the drag (the model rotates smoothly); the crisp edges snap
-    // back the instant you let go. Parked only on real movement, never on a tap.
-    let _edgesParked = false;
-    const _edgesForGesture = (show) => {
-      try {
-        if (!edgeOverlays || !edgeOverlays.length) return;
-        if (!show) {
-          if (_edgesParked) return;
-          for (const o of edgeOverlays) {
-            if (o.lineVis) { o._vWas = o.lineVis.visible; o.lineVis.visible = false; }
-            if (o.lineHid) { o._hWas = o.lineHid.visible; o.lineHid.visible = false; }
-          }
-          _edgesParked = true;
-        } else {
-          if (!_edgesParked) return;
-          for (const o of edgeOverlays) {
-            if (o.lineVis && o._vWas !== undefined) o.lineVis.visible = o._vWas;
-            if (o.lineHid && o._hWas !== undefined) o.lineHid.visible = o._hWas;
-          }
-          _edgesParked = false;
-          const sc = _getScene && _getScene(); if (sc && sc.queueRender) sc.queueRender();
-        }
-      } catch (e) {}
-    };
     // Constrained polar clamp — keeps the model upright (CAD convention,
     // เอ๋ "constrained orbit"): clamp φ to [15°, 165°] so the camera can
     // never look straight down or invert through the top/bottom poles.
@@ -2915,7 +2887,6 @@ async function _kdOpen3D(code, opts) {
     mv.addEventListener('touchmove', (e) => {
       if (e.touches.length === 2 && twoF) {
         e.preventDefault();
-        _edgesForGesture(false);
         const t1 = e.touches[0], t2 = e.touches[1];
         const dx = t2.clientX - t1.clientX, dy = t2.clientY - t1.clientY;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -2941,7 +2912,7 @@ async function _kdOpen3D(code, opts) {
       } else if (e.touches.length === 1 && oneOrbit) {
         e.preventDefault();
         const t = e.touches[0];
-        if (Math.abs(t.clientX - oneOrbit.x) > 8 || Math.abs(t.clientY - oneOrbit.y) > 8) { oneOrbit.moved = true; _edgesForGesture(false); }
+        if (Math.abs(t.clientX - oneOrbit.x) > 8 || Math.abs(t.clientY - oneOrbit.y) > 8) oneOrbit.moved = true;
         const ROT = 0.006;
         const newTheta = oneOrbit.theta - (t.clientX - oneOrbit.x) * ROT;
         const newPhi = clampPhi(oneOrbit.phi - (t.clientY - oneOrbit.y) * ROT);
@@ -2951,7 +2922,6 @@ async function _kdOpen3D(code, opts) {
     mv.addEventListener('touchend', (e) => {
       if (e.touches.length < 2) twoF = null;
       if (e.touches.length === 0) {
-        _edgesForGesture(true);   // restore crisp edges the moment the gesture ends
         // A 1-finger TAP (no orbit movement) selects/isolates the part under the
         // finger — touchstart's preventDefault killed the synthetic 'click', so
         // we drive the pick from here (เอ๋ "ที่ ipad ไม่ค่อย interactive").
@@ -2989,7 +2959,6 @@ async function _kdOpen3D(code, opts) {
     });
     const onMove = (e) => {
       if (!mouseDrag) return;
-      _edgesForGesture(false);
       if (mouseDrag.mode === 'orbit') {
         const ROT = 0.006;
         const newTheta = mouseDrag.theta - (e.clientX - mouseDrag.x) * ROT;
@@ -3006,7 +2975,7 @@ async function _kdOpen3D(code, opts) {
         try { mv.cameraTarget = `${nx}m ${ny}m ${nz}m`; } catch (err) {}
       }
     };
-    const onUp = () => { mouseDrag = null; _edgesForGesture(true); };
+    const onUp = () => { mouseDrag = null; };
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
     // Cleanup window listeners when the modal closes — modal removal kills mv
