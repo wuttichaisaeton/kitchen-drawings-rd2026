@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-30T05:11:43.439430
+CC_Assembly walk debug — 2026-06-30T05:30:00.450137
 Project: 2FCIL0-100080
 Total occurrences visited: 16
 CAM-ALPF tagged components: 0
@@ -9,8 +9,8 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 | SM  |     | ALPF             | 2DNCDL-100000 v3:1 (2DNCDL-100000 v3)
-    0 | SM  |     | ALPF             | 2SD000-080040 v7:1 (2SD000-080040 v7)
-    0 | SM  |     | ALPF             | 2SD000-080040 v7:2 (2SD000-080040 v7)
+    0 | SM  |     | ALPF             | 2SDC01-080040 v1:1 (2SDC01-080040 v1)
+    0 | SM  |     | ALPF             | 2SD000-080040 v8:2 (2SD000-080040 v8)
     0 |     |     |                  | 2BK000-100080 v2:1 (2BK000-100080 v2)
     1 | SM  |     | ALPF             | 2BK002-100000 v12:1 (2BK002-100000 v12)
     1 | SM  |     | ALPF             | 2BK002-100000 v12:2 (2BK002-100000 v12)

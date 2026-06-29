@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-29T22:24:09.755180+00:00",
+  "generated_at": "2026-06-29T22:30:00.469799+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -21489,8 +21489,8 @@
       "name": "2FCIL0-100080",
       "status": "active",
       "created_at": "2026-06-29T21:33:15.854554+00:00",
-      "updated_at": "2026-06-29T22:11:43.439725+00:00",
-      "total_unique_parts": 9,
+      "updated_at": "2026-06-29T22:30:00.450497+00:00",
+      "total_unique_parts": 10,
       "total_qty": 14,
       "parts": [
         {
@@ -21543,9 +21543,15 @@
         },
         {
           "code": "2SD000-080040",
-          "qty": 2,
+          "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:rSyWfk0wT-a68KaCz99QHA"
+        },
+        {
+          "code": "2SDC01-080040",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:sU11cMbATCGOA1RJIUw01g"
         },
         {
           "code": "2UPIL0-100000",
