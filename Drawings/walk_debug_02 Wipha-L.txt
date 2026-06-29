@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-29T12:10:45.054781
+CC_Assembly walk debug — 2026-06-29T17:42:28.138584
 Project: 02 Wipha-L
 Total occurrences visited: 195
 CAM-ALPF tagged components: 0
@@ -10,7 +10,7 @@ depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
     0 |     |     |                  | Fitting:1 (Fitting)
     1 |     |     | Plastic Generic  | Elec - Outlet  #W Series by Panasonic v40:1 (Elec - Outlet  #W Series by Panasonic v40)
-    0 |     |     |                  | 1LLV04-100SHD v4:1 (1LLV04-100SHD v4)
+    0 |     |     |                  | 1LLV04-100SHD v5:1 (1LLV04-100SHD v5)
     1 |     |     |                  | SD00NA-080000 v27:1 (SD00NA-080000 v27)
     2 |     |     | ALPF             | SD00NA-080000 v32:1 (SD00NA-080000 v32)
     2 |     |     | ALPF             | SD0SUP-000000 v7:1 (SD0SUP-000000 v7)
@@ -25,8 +25,6 @@ depth | SM | CAM | material         | display_name (component)
     3 | SM  |     | ALPF             | BXXTR0-000000:2 (BXXTR0-000000)
     3 | SM  |     | ALPF             | BXXTR0-000000:3 (BXXTR0-000000)
     3 | SM  |     | ALPF             | BXXTR0-000000:4 (BXXTR0-000000)
-    1 |     |     |                  | BM1LI0-100000 v2:1 (BM1LI0-100000 v2)
-    2 | SM  |     | ALPF             | BM1LI0-100000 v2:1 (BM1LI0-100000 v2)
     1 |     |     |                  | FN0FL3-100008 v4:1 (FN0FL3-100008 v4)
     2 | SM  |     | ALPF             | FN0F00-100000 v17:1 (FN0F00-100000 v17)
     2 |     |     |                  | FN2BLA-100000 v10:3 (FN2BLA-100000 v10)
@@ -79,6 +77,8 @@ depth | SM | CAM | material         | display_name (component)
     2 | SM  |     | ALPF             | TS1BHH-100000 v11:2 (TS1BHH-100000 v11)
     2 | SM  |     | ALPF             | TS1BHH-100000 v11:3 (TS1BHH-100000 v11)
     2 | SM  |     | ALPF             | TS1BHH-100000 v11:4 (TS1BHH-100000 v11)
+    1 |     |     |                  | BM1LI0-100000 v3:1 (BM1LI0-100000 v3)
+    2 | SM  |     | ALPF             | BM1LI0-100000 v2:1 (BM1LI0-100000 v2)
     1 |     |     | Steel            | HingeW3-H0800 v4:1 (HingeW3-H0800 v4)
     2 |     |     | Steel            | Door:1 (Door)
     2 |     |     | Steel            | 1-HingeW v2:1 (1-HingeW v2)
@@ -202,4 +202,4 @@ depth | SM | CAM | material         | display_name (component)
     2 | SM  |     | ALPF             | CVH122-S65089 v8:1 (CVH122-S65089 v8)
     1 | SM  |     | ALPF             | CVH322-NL6089 v2:1 (CVH322-NL6089 v2)
     1 | SM  |     | ALPF             | BTHLNO-140000 v2:1 (BTHLNO-140000 v2)
-    1 | SM  |     | ALPF             | FT0000-190006 v1:1 (FT0000-190006 v1)
+    1 | SM  |     | ALPF             | FT0000-190055 v1:1 (FT0000-190055 v1)
