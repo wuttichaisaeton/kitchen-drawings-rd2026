@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-29T01:43:22.235778+00:00",
+  "generated_at": "2026-06-29T02:04:40.316737+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -21049,6 +21049,52 @@
           "family": "Other",
           "is_wrapper": true,
           "variant_root": "2BK004-100080"
+        }
+      ]
+    },
+    "2FCLL0-100043": {
+      "name": "2FCLL0-100043",
+      "status": "active",
+      "created_at": "2026-06-29T02:04:40.313188+00:00",
+      "updated_at": "2026-06-29T02:04:40.313188+00:00",
+      "total_unique_parts": 6,
+      "total_qty": 7,
+      "parts": [
+        {
+          "code": "2CFL00-100000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:ScJa2CdEQhycWKAET2lM9Q"
+        },
+        {
+          "code": "2CN002-080000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:2geCHbDuS7mwnHUU0yyYSQ"
+        },
+        {
+          "code": "2CN026-080000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:jFL2tjH5RVm06yEEf4KsHA"
+        },
+        {
+          "code": "2DNCDR-10D575",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:tbeWJPP8Q0eojrPKUpCgTA"
+        },
+        {
+          "code": "2SD000-080040",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:rSyWfk0wT-a68KaCz99QHA"
+        },
+        {
+          "code": "2UPLL0-100043",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:hzS28tqOScO7Tn5thdNOQQ"
         }
       ]
     }
