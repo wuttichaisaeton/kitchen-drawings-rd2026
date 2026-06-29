@@ -2,7 +2,7 @@
   "name": "2FNN03-100000",
   "status": "active",
   "created_at": "2026-06-29T05:05:29.380187+00:00",
-  "updated_at": "2026-06-29T10:10:19.889808+00:00",
+  "updated_at": "2026-06-29T11:20:39.835025+00:00",
   "total_unique_parts": 6,
   "total_qty": 11,
   "parts": [
@@ -31,10 +31,10 @@
       "urn": "urn:adsk.wipprod:dm.lineage:jKsbeaEnSESWhdG-VxTayg"
     },
     {
-      "code": "2DN0DD-100000",
+      "code": "2DN0DD-090000",
       "qty": 1,
       "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:HBPzhafrT7y8E9mE4cKdJg"
+      "urn": "urn:adsk.wipprod:dm.lineage:atqZvWoBQQmiJrbj98V1WQ"
     },
     {
       "code": "2SD000-080040",
@@ -46,7 +46,7 @@
       "code": "2UPN03-100000",
       "qty": 1,
       "family": "Other",
-      "urn": "urn:adsk.wipprod:dm.lineage:fsoCOKBwQzuOa7tgrTtlZA"
+      "urn": "urn:adsk.wipprod:dm.lineage:hZF4ktRJQ1qq9e5KsZUThw"
     },
     {
       "code": "2BK000-090080",
