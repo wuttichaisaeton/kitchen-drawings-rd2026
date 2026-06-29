@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-29T11:56:14.548982+00:00",
+  "generated_at": "2026-06-29T11:57:13.575067+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -21258,7 +21258,7 @@
       "name": "2FCIL0-100058",
       "status": "active",
       "created_at": "2026-06-29T11:44:39.096377+00:00",
-      "updated_at": "2026-06-29T11:44:39.096377+00:00",
+      "updated_at": "2026-06-29T11:57:13.571828+00:00",
       "total_unique_parts": 9,
       "total_qty": 14,
       "parts": [
