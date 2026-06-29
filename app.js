@@ -3077,6 +3077,7 @@ async function _kdOpen3D(code, opts) {
   let partsProbePromise = null;
   let currentLoadedSrc = null;    // last URL model-viewer fetched; gates dim-recompute
   let dimsCached = false;         // dims read from MAIN .glb only — never from _parts (scattered bbox is wrong)
+  let _kd3dQtyByCode = new Map();  // code → real instance qty (nodes ÷ distinct base-bodies; matches Fusion BOM)
   // REVERTED 2026-06-22 (RD 07 + เอ๋ "ให้กลับไปตอนนั้น"): the dual-export
   // swap (504e84b) routed Component Color + Explode to `<code>_parts.glb`,
   // but the round-11+ Fusion export has scattered/orphan node transforms
@@ -3279,29 +3280,22 @@ async function _kdOpen3D(code, opts) {
     return found;
   };
 
-  // ── Non-flat ALPF filter (เอ๋ 2026-06-29 "ALPF ที่มี Flat Pattern เท่านั้น") ──
-  // Beams / round tubes are ALPF metal but have NO flat pattern → they are not
-  // laser-cut sheet parts and must NOT appear in the PART/PCS list (verified:
-  // 1LLV04-100SHD BM1LI0 = a cylinder). Fusion's own BOM family tags these "Beam";
-  // cross-ref the manifest BOM (code→family) and drop those families. The part
-  // still RENDERS in 3D (like __HW hardware) — only the count/list excludes it.
-  // ⚠ family proxy: the robust signal is a Fusion flat-pattern flag (group-sync
-  // NEEDS); extend _KD_NOFLAT_FAMILIES if more non-flat families turn up.
-  const _KD_NOFLAT_FAMILIES = new Set(['Beam']);
-  let _kdFamilyByCode = null;
-  const _kd3dCodeNoFlat = (code) => {
-    if (!code) return false;
-    if (!_kdFamilyByCode) {
-      _kdFamilyByCode = new Map();
-      try {
-        const projs = (manifest && manifest.projects) || {};
-        for (const pv of Object.values(projs)) for (const p of (pv.parts || [])) {
-          if (p && p.code && p.family && !_kdFamilyByCode.has(p.code)) _kdFamilyByCode.set(p.code, p.family);
-        }
-      } catch (e) {}
-    }
-    const fam = _kdFamilyByCode.get(code);
-    return !!fam && _KD_NOFLAT_FAMILIES.has(fam);
+  // ── No-flat-pattern filter (เอ๋ 2026-06-29 "ALPF ที่มี Flat Pattern เท่านั้น") ──
+  // Some ALPF parts have NO flat pattern (round tubes / solids, e.g. the BM1LI0
+  // cylinder) and must NOT be counted as laser-cut sheet parts. The 3D GLB carries
+  // NO reliable signal for this: no vertex normals, geometry is baked-vs-scaled
+  // inconsistently (BM1LI0 reads 11×12×12 while BM2LI0 reads 39×60×864), and the
+  // BOM "Beam" family conflates a no-flat round tube (BM1LI0) with a flat-pattern
+  // channel bar (BM2LI0 — verified). So the flat-pattern truth MUST come from
+  // Fusion: CC_Export3D tags non-flat parts "__NF" (mirroring "__HW" hardware) and
+  // the web excludes them from the count/list while they still RENDER in 3D. The
+  // tag may sit on the node or any ancestor. No-op until Fusion ships the tag.
+  const _kd3dUnitNoFlat = (node) => {
+    if (!node) return false;
+    if (typeof node.name === 'string' && node.name.includes('__NF')) return true;
+    let found = false;
+    try { node.traverse(n => { if (!found && typeof n.name === 'string' && n.name.includes('__NF')) found = true; }); } catch (e) {}
+    return found;
   };
 
   // Label text colour follows the CURRENT mode's background (เอ๋: black text on
@@ -3446,7 +3440,7 @@ async function _kdOpen3D(code, opts) {
     const countByCode = new Map();
     for (const cu of explodeUnits) {
       const ct = _extractPartLabel(cu.node.name || '');
-      if (ct && !_kd3dCodeNoFlat(ct)) countByCode.set(ct, (countByCode.get(ct) || 0) + 1);
+      if (ct && !_kd3dUnitNoFlat(cu.node)) countByCode.set(ct, (countByCode.get(ct) || 0) + 1);
     }
     // เอ๋ 2026-06-24: show ALL real part codes, sorted ALPHABETICALLY by the code
     // (NOT by the qty prefix), split into two EQUAL columns. Only the 13-char
@@ -3457,7 +3451,7 @@ async function _kdOpen3D(code, opts) {
     for (const u of explodeUnits) {
       const text = _extractPartLabel(u.node.name || '');
       if (!_isPartCode(text)) continue;
-      if (_kd3dCodeNoFlat(text)) continue;   // skip non-flat ALPF (beams/tubes — no flat pattern)
+      if (_kd3dUnitNoFlat(u.node)) continue;   // skip Fusion-tagged no-flat-pattern ALPF (__NF)
       let any = false;
       u.node.traverse(nd => { if (nd.isMesh && nd.geometry && !(nd.userData && nd.userData.isOrphan)) any = true; });
       if (any) codeSet.add(text);
@@ -3481,7 +3475,7 @@ async function _kdOpen3D(code, opts) {
       for (const rr of _ovlRows) rr.rowEl.classList.toggle('kd3d-ovl-sel', _poppedCode === rr.code);
     };
     const _mkRow = (code, side, topPct) => {
-      const qty = String(countByCode.get(code) || 1);
+      const qty = String(_kd3dQtyByCode.get(code) || countByCode.get(code) || 1);
       const row = document.createElement('div');
       row.className = 'kd3d-ovl-row kd3d-ovl-' + (side === 'L' ? 'left' : 'right');
       if (_poppedCode === code) row.classList.add('kd3d-ovl-sel');
@@ -3687,34 +3681,30 @@ async function _kdOpen3D(code, opts) {
           gx: ctr.x, gy: ctr.y, gz: ctr.z,
         });
       }
-      // ── Collapse near-overlapping DUPLICATE units (เอ๋ 2026-06-29) ───────────
-      // CC_Export3D sometimes emits one physical part several times jittered by a
-      // few mm, so they overlap and LOOK like one in 3D but the list/PCS over-
-      // counts (1LLV04-100SHD: BM1LI0 ×4 + FN3BLA ×3, all within ~24mm — verified
-      // against the GLB; genuine multi-parts like BXXTR0/SD00NA/TS sit ≥178mm apart
-      // so they are untouched). Keep one unit per (code, ≤30mm centroid cluster);
-      // hide + drop the rest so count, isolate and explode reflect the real count.
-      // Hardware (no part code) is left as-is. ⚠ viewer-only — nest/BOM read their
-      // own source; the root fix is a Fusion re-export (see group-sync NEEDS).
+      // ── Instance qty per code (เอ๋ 2026-06-29) ────────────────────────────────
+      // The GLB flattens every part to its BODIES, and a part placed N times yields
+      // N×(bodies) nodes. Recover the real instance count = nodes ÷ distinct base-
+      // body names (strip the glTF "_N" dup suffix). Exact for multi-body parts
+      // (BM2LI0: 8 nodes / 4 bodies = 2) AND single-body repeats (BXXTR0: 4 / 1 = 4)
+      // — matches the Fusion BOM qty on every part (verified on 2 cabinets). This
+      // REPLACES the old proximity de-dup, which wrongly HID the distinct bodies of
+      // a multi-body part (BM1LI0 = 4 separate bodies, not 4 duplicates).
+      _kd3dQtyByCode = new Map();
       try {
-        const _DUP_TOL2 = 30 * 30;
-        const _keptByCode = new Map();
-        const _kept = [];
+        const _baseBody = (nm) => { const i = nm.lastIndexOf('__'); let b = i >= 0 ? nm.slice(i + 2) : nm; return b.replace(/_\d+$/, ''); };
+        const _nByCode = new Map(), _basesByCode = new Map();
         for (const u of explodeUnits) {
           const code = _extractPartLabel(u.node.name || '');
-          if (!code) { _kept.push(u); continue; }
-          const seen = _keptByCode.get(code);
-          if (seen && seen.some(c => {
-            const dx = c.x - u.gx, dy = c.y - u.gy, dz = c.z - u.gz;
-            return dx * dx + dy * dy + dz * dz <= _DUP_TOL2;
-          })) { try { u.node.visible = false; } catch {} continue; }
-          if (seen) seen.push({ x: u.gx, y: u.gy, z: u.gz });
-          else _keptByCode.set(code, [{ x: u.gx, y: u.gy, z: u.gz }]);
-          _kept.push(u);
+          if (!code) continue;
+          _nByCode.set(code, (_nByCode.get(code) || 0) + 1);
+          let s = _basesByCode.get(code); if (!s) { s = new Set(); _basesByCode.set(code, s); }
+          s.add(_baseBody(u.node.name || ''));
         }
-        const _dropped = explodeUnits.length - _kept.length;
-        if (_dropped > 0) { explodeUnits = _kept; console.info('[kd3d] collapsed', _dropped, 'overlapping duplicate unit(s)'); }
-      } catch (e) { console.warn('[kd3d] dup-collapse failed', e); }
+        for (const [code, cnt] of _nByCode) {
+          const b = (_basesByCode.get(code) || new Set()).size || 1;
+          _kd3dQtyByCode.set(code, Math.max(1, Math.round(cnt / b)));
+        }
+      } catch (e) { console.warn('[kd3d] qty-by-code failed', e); }
       let sx = 0, sy = 0, sz = 0;
       for (const u of explodeUnits) { sx += u.gx; sy += u.gy; sz += u.gz; }
       const n = explodeUnits.length || 1;
@@ -3806,12 +3796,14 @@ async function _kdOpen3D(code, opts) {
 
     const info = body.querySelector('.kd3d-explode-info');
     if (info) {
-      // เอ๋ 2026-06-28/29: ALPF sheet-metal only (exclude __HW hardware). Show BOTH
-      // the distinct part TYPES ("N PART" = unique codes) and the total piece count
-      // ("M PCS" = all instances) — "16 PART · 36 PCS".
-      const _alpfUnits = explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node) && !_kd3dCodeNoFlat(_extractPartLabel(u.node.name || '')));
-      const _alpfPcs = _alpfUnits.length;
-      const _alpfParts = new Set(_alpfUnits.map(u => _extractPartLabel(u.node.name || '')).filter(Boolean)).size;
+      // เอ๋ 2026-06-28/29: ALPF sheet-metal only (exclude __HW hardware + __NF no-flat).
+      // "N PART" = unique codes; "M PCS" = total INSTANCES (sum of per-code instance
+      // qty, not node/body count — a multi-body part counts once per occurrence).
+      const _alpfCodes = new Set(explodeUnits
+        .filter(u => !_kd3dUnitIsHardware(u.node) && !_kd3dUnitNoFlat(u.node))
+        .map(u => _extractPartLabel(u.node.name || '')).filter(Boolean));
+      const _alpfParts = _alpfCodes.size;
+      let _alpfPcs = 0; for (const c of _alpfCodes) _alpfPcs += (_kd3dQtyByCode.get(c) || 1);
       if (explodeUnits.length >= 2) {
         info.textContent = `${_alpfParts} PART · ${_alpfPcs} PCS`;
       } else if (deepMeshCount >= 2) {
