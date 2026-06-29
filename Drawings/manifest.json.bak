@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-29T22:23:48.949467+00:00",
+  "generated_at": "2026-06-29T22:24:09.739430+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -5766,7 +5766,7 @@
     "2CF000-100000": {
       "family": "Other",
       "last_drawn_version": 7,
-      "fusion_version": 7,
+      "fusion_version": 3,
       "pdf": "2CF000-000000.pdf",
       "bends": 0,
       "material": "",
@@ -21659,7 +21659,7 @@
       "name": "2FEIR0-090080",
       "status": "active",
       "created_at": "2026-06-29T21:44:07.616683+00:00",
-      "updated_at": "2026-06-29T22:11:28.486760+00:00",
+      "updated_at": "2026-06-29T22:24:09.736454+00:00",
       "total_unique_parts": 8,
       "total_qty": 12,
       "parts": [
@@ -21706,7 +21706,7 @@
           "urn": "urn:adsk.wipprod:dm.lineage:rSyWfk0wT-a68KaCz99QHA"
         },
         {
-          "code": "2SDCN2-080034",
+          "code": "2SDC02-080034",
           "qty": 1,
           "family": "Other",
           "urn": "urn:adsk.wipprod:dm.lineage:FOrRyu6zSgORmwuk6ENFHg"
