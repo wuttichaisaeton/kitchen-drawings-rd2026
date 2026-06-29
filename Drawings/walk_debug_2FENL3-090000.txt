@@ -1,0 +1,23 @@
+CC_Assembly walk debug — 2026-06-30T04:09:20.758941
+Project: 2FENL3-090000
+Total occurrences visited: 13
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | 2DN0DD-090000 v3:1 (2DN0DD-090000 v3)
+    0 | SM  |     | ALPF             | 2SDCN2-080034 v4:1 (2SDCN2-080034 v4)
+    0 | SM  |     | ALPF             | 2SD000-080040 v4:2 (2SD000-080040 v4)
+    0 |     |     |                  | 2BK000-090080 v2:1 (2BK000-090080 v2)
+    1 | SM  |     | ALPF             | 2BK002-090000 v12:1 (2BK002-090000 v12)
+    1 | SM  |     | ALPF             | 2BK002-090000 v12:2 (2BK002-090000 v12)
+    1 | SM  |     | ALPF             | 2BK001-090080 v1:2 (2BK001-090080 v1)
+    1 |     |     |                  | 2BK004-090080 v1:1 (2BK004-090080 v1)
+    2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
+    2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
+    2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
+    2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
+    0 | SM  |     | ALPF             | 2UPN03-100000 v2:1 (2UPN03-100000 v2)
