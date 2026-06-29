@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-28T17:41:49.064148
+CC_Assembly walk debug — 2026-06-29T07:33:32.791127
 Project: 2FCLL0-085043
 Total occurrences visited: 16
 CAM-ALPF tagged components: 0
@@ -8,19 +8,19 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | 2SDCN1-120040 v2:1 (2SDCN1-120040 v2)
     0 | SM  |     | ALPF             | 2DNCDR-10D575 v2:1 (2DNCDR-10D575 v2)
-    0 | SM  |     | ALPF             | 2SDCN1-120040 v2:2 (2SDCN1-120040 v2)
-    0 |     |     |                  | 2BK000-085120 v7:1 (2BK000-085120 v7)
-    1 | SM  |     | ALPF             | 2BK002-085000 v10:1 (2BK002-085000 v10)
-    1 | SM  |     | ALPF             | 2BK002-085000 v10:2 (2BK002-085000 v10)
-    1 | SM  |     | ALPF             | 2BK001-085120 v1:2 (2BK001-085120 v1)
-    1 |     |     |                  | 2BK004-085120 v1:1 (2BK004-085120 v1)
+    0 | SM  |     | ALPF             | 2SD000-080040 v3:1 (2SD000-080040 v3)
+    0 | SM  |     | ALPF             | 2SD000-080040 v3:2 (2SD000-080040 v3)
+    0 |     |     |                  | 2BK000-100080 v2:1 (2BK000-100080 v2)
+    1 | SM  |     | ALPF             | 2BK002-100000 v12:1 (2BK002-100000 v12)
+    1 | SM  |     | ALPF             | 2BK002-100000 v12:2 (2BK002-100000 v12)
+    1 | SM  |     | ALPF             | 2BK001-100080 v1:2 (2BK001-100080 v1)
+    1 |     |     |                  | 2BK004-100080 v1:1 (2BK004-100080 v1)
     2 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
     2 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
-    0 | SM  |     | ALPF             | 2UPLL0-085043 v9:1 (2UPLL0-085043 v9)
-    0 | SM  |     | ALPF             | 2CFL00-085000 v2:1 (2CFL00-085000 v2)
-    0 | SM  |     | ALPF             | 2CN026-120000 v5:1 (2CN026-120000 v5)
-    0 | SM  |     | ALPF             | 2CN002-120039 v15:1 (2CN002-120039 v15)
+    0 | SM  |     | ALPF             | 2UPLL0-100043 v2:1 (2UPLL0-100043 v2)
+    0 | SM  |     | ALPF             | 2CFL00-100000 v2:1 (2CFL00-100000 v2)
+    0 | SM  |     | ALPF             | 2CN026-080000 v2:1 (2CN026-080000 v2)
+    0 | SM  |     | ALPF             | 2CN002-080000 v2:1 (2CN002-080000 v2)

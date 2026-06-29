@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-28T21:26:32.007149+00:00",
+  "generated_at": "2026-06-29T00:33:32.812541+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -13528,51 +13528,51 @@
       "name": "2FCLL0-085043",
       "status": "active",
       "created_at": "2026-06-15T04:20:18.879089+00:00",
-      "updated_at": "2026-06-28T10:41:49.064535+00:00",
+      "updated_at": "2026-06-29T00:33:32.791511+00:00",
       "total_unique_parts": 9,
       "total_qty": 14,
       "parts": [
         {
-          "code": "2BK001-085120",
+          "code": "2BK001-100080",
           "qty": 1,
           "family": "Other",
-          "parent_code": "2BK000-085120",
-          "variant_root": "2BK000-085120",
-          "urn": "urn:adsk.wipprod:dm.lineage:UUyYBqS9Szmwdc5bDVLFrA"
+          "parent_code": "2BK000-100080",
+          "variant_root": "2BK000-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:p48VwvKZQ3WSvAoAgq-Gbw"
         },
         {
-          "code": "2BK002-085000",
+          "code": "2BK002-100000",
           "qty": 2,
           "family": "Other",
-          "parent_code": "2BK000-085120",
-          "variant_root": "2BK000-085120",
-          "urn": "urn:adsk.wipprod:dm.lineage:MxB16SZoRlqLoPva3V951g"
+          "parent_code": "2BK000-100080",
+          "variant_root": "2BK000-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:hjsr6y7rRNSyhXUyihrDSw"
         },
         {
           "code": "2BK200-000000",
           "qty": 4,
           "family": "Other",
-          "parent_code": "2BK004-085120",
-          "variant_root": "2BK000-085120",
-          "urn": "urn:adsk.wipprod:dm.lineage:L_vAIu83S0K1sbozBSeznQ"
+          "parent_code": "2BK004-100080",
+          "variant_root": "2BK000-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:6PE-tJp7Qj6g3xpgu-CItw"
         },
         {
-          "code": "2CFL00-085000",
+          "code": "2CFL00-100000",
           "qty": 1,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:H6DM6ivsSDaqJrNyTJDrqA"
+          "urn": "urn:adsk.wipprod:dm.lineage:ScJa2CdEQhycWKAET2lM9Q"
         },
         {
-          "code": "2CN002-120039",
+          "code": "2CN002-080000",
           "qty": 1,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:K8LfLePoTvCxQFlXAWLYhw"
+          "urn": "urn:adsk.wipprod:dm.lineage:2geCHbDuS7mwnHUU0yyYSQ"
         },
         {
-          "code": "2CN026-120000",
+          "code": "2CN026-080000",
           "qty": 1,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:CqMsJwXxTMOeJwIZCHV9xw"
+          "urn": "urn:adsk.wipprod:dm.lineage:jFL2tjH5RVm06yEEf4KsHA"
         },
         {
           "code": "2DNCDR-10D575",
@@ -13581,31 +13581,31 @@
           "urn": "urn:adsk.wipprod:dm.lineage:tbeWJPP8Q0eojrPKUpCgTA"
         },
         {
-          "code": "2SDCN1-120040",
+          "code": "2SD000-080040",
           "qty": 2,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:pqj-I5nVQp-FVksrjQ6t6A"
+          "urn": "urn:adsk.wipprod:dm.lineage:rSyWfk0wT-a68KaCz99QHA"
         },
         {
-          "code": "2UPLL0-085043",
+          "code": "2UPLL0-100043",
           "qty": 1,
           "family": "Other",
-          "urn": "urn:adsk.wipprod:dm.lineage:skxlM5bcQkSUeSS2cIW25w"
+          "urn": "urn:adsk.wipprod:dm.lineage:hzS28tqOScO7Tn5thdNOQQ"
         },
         {
-          "code": "2BK000-085120",
+          "code": "2BK000-100080",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "variant_root": "2BK000-085120"
+          "variant_root": "2BK000-100080"
         },
         {
-          "code": "2BK004-085120",
+          "code": "2BK004-100080",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "parent_code": "2BK000-085120",
-          "variant_root": "2BK000-085120"
+          "parent_code": "2BK000-100080",
+          "variant_root": "2BK000-100080"
         }
       ]
     },
