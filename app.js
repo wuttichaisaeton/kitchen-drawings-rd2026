@@ -3661,6 +3661,34 @@ async function _kdOpen3D(code, opts) {
           gx: ctr.x, gy: ctr.y, gz: ctr.z,
         });
       }
+      // ── Collapse near-overlapping DUPLICATE units (เอ๋ 2026-06-29) ───────────
+      // CC_Export3D sometimes emits one physical part several times jittered by a
+      // few mm, so they overlap and LOOK like one in 3D but the list/PCS over-
+      // counts (1LLV04-100SHD: BM1LI0 ×4 + FN3BLA ×3, all within ~24mm — verified
+      // against the GLB; genuine multi-parts like BXXTR0/SD00NA/TS sit ≥178mm apart
+      // so they are untouched). Keep one unit per (code, ≤30mm centroid cluster);
+      // hide + drop the rest so count, isolate and explode reflect the real count.
+      // Hardware (no part code) is left as-is. ⚠ viewer-only — nest/BOM read their
+      // own source; the root fix is a Fusion re-export (see group-sync NEEDS).
+      try {
+        const _DUP_TOL2 = 30 * 30;
+        const _keptByCode = new Map();
+        const _kept = [];
+        for (const u of explodeUnits) {
+          const code = _extractPartLabel(u.node.name || '');
+          if (!code) { _kept.push(u); continue; }
+          const seen = _keptByCode.get(code);
+          if (seen && seen.some(c => {
+            const dx = c.x - u.gx, dy = c.y - u.gy, dz = c.z - u.gz;
+            return dx * dx + dy * dy + dz * dz <= _DUP_TOL2;
+          })) { try { u.node.visible = false; } catch {} continue; }
+          if (seen) seen.push({ x: u.gx, y: u.gy, z: u.gz });
+          else _keptByCode.set(code, [{ x: u.gx, y: u.gy, z: u.gz }]);
+          _kept.push(u);
+        }
+        const _dropped = explodeUnits.length - _kept.length;
+        if (_dropped > 0) { explodeUnits = _kept; console.info('[kd3d] collapsed', _dropped, 'overlapping duplicate unit(s)'); }
+      } catch (e) { console.warn('[kd3d] dup-collapse failed', e); }
       let sx = 0, sy = 0, sz = 0;
       for (const u of explodeUnits) { sx += u.gx; sy += u.gy; sz += u.gz; }
       const n = explodeUnits.length || 1;
