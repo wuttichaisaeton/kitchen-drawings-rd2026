@@ -3279,6 +3279,31 @@ async function _kdOpen3D(code, opts) {
     return found;
   };
 
+  // ── Non-flat ALPF filter (เอ๋ 2026-06-29 "ALPF ที่มี Flat Pattern เท่านั้น") ──
+  // Beams / round tubes are ALPF metal but have NO flat pattern → they are not
+  // laser-cut sheet parts and must NOT appear in the PART/PCS list (verified:
+  // 1LLV04-100SHD BM1LI0 = a cylinder). Fusion's own BOM family tags these "Beam";
+  // cross-ref the manifest BOM (code→family) and drop those families. The part
+  // still RENDERS in 3D (like __HW hardware) — only the count/list excludes it.
+  // ⚠ family proxy: the robust signal is a Fusion flat-pattern flag (group-sync
+  // NEEDS); extend _KD_NOFLAT_FAMILIES if more non-flat families turn up.
+  const _KD_NOFLAT_FAMILIES = new Set(['Beam']);
+  let _kdFamilyByCode = null;
+  const _kd3dCodeNoFlat = (code) => {
+    if (!code) return false;
+    if (!_kdFamilyByCode) {
+      _kdFamilyByCode = new Map();
+      try {
+        const projs = (manifest && manifest.projects) || {};
+        for (const pv of Object.values(projs)) for (const p of (pv.parts || [])) {
+          if (p && p.code && p.family && !_kdFamilyByCode.has(p.code)) _kdFamilyByCode.set(p.code, p.family);
+        }
+      } catch (e) {}
+    }
+    const fam = _kdFamilyByCode.get(code);
+    return !!fam && _KD_NOFLAT_FAMILIES.has(fam);
+  };
+
   // Label text colour follows the CURRENT mode's background (เอ๋: black text on
   // a light bg, white text on a dark bg, regular weight). Mode→bg facts mirror
   // the per-mode CSS above: compcolor = light #f3f4f6; hidden/hiddenshade = dark
@@ -3421,7 +3446,7 @@ async function _kdOpen3D(code, opts) {
     const countByCode = new Map();
     for (const cu of explodeUnits) {
       const ct = _extractPartLabel(cu.node.name || '');
-      if (ct) countByCode.set(ct, (countByCode.get(ct) || 0) + 1);
+      if (ct && !_kd3dCodeNoFlat(ct)) countByCode.set(ct, (countByCode.get(ct) || 0) + 1);
     }
     // เอ๋ 2026-06-24: show ALL real part codes, sorted ALPHABETICALLY by the code
     // (NOT by the qty prefix), split into two EQUAL columns. Only the 13-char
@@ -3432,6 +3457,7 @@ async function _kdOpen3D(code, opts) {
     for (const u of explodeUnits) {
       const text = _extractPartLabel(u.node.name || '');
       if (!_isPartCode(text)) continue;
+      if (_kd3dCodeNoFlat(text)) continue;   // skip non-flat ALPF (beams/tubes — no flat pattern)
       let any = false;
       u.node.traverse(nd => { if (nd.isMesh && nd.geometry && !(nd.userData && nd.userData.isOrphan)) any = true; });
       if (any) codeSet.add(text);
@@ -3783,7 +3809,7 @@ async function _kdOpen3D(code, opts) {
       // เอ๋ 2026-06-28/29: ALPF sheet-metal only (exclude __HW hardware). Show BOTH
       // the distinct part TYPES ("N PART" = unique codes) and the total piece count
       // ("M PCS" = all instances) — "16 PART · 36 PCS".
-      const _alpfUnits = explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node));
+      const _alpfUnits = explodeUnits.filter(u => !_kd3dUnitIsHardware(u.node) && !_kd3dCodeNoFlat(_extractPartLabel(u.node.name || '')));
       const _alpfPcs = _alpfUnits.length;
       const _alpfParts = new Set(_alpfUnits.map(u => _extractPartLabel(u.node.name || '')).filter(Boolean)).size;
       if (explodeUnits.length >= 2) {
