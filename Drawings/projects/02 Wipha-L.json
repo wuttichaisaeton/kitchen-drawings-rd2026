@@ -2,7 +2,7 @@
   "name": "02 Wipha-L",
   "status": "active",
   "created_at": "2026-06-28T03:41:36.036691+00:00",
-  "updated_at": "2026-06-30T04:06:30.918192+00:00",
+  "updated_at": "2026-06-30T04:40:44.237837+00:00",
   "total_unique_parts": 54,
   "total_qty": 102,
   "parts": [
@@ -58,6 +58,8 @@
       "code": "2CVH04-190000",
       "qty": 1,
       "family": "Other",
+      "parent_code": "OTHERS-000000",
+      "variant_root": "OTHERS-000000",
       "urn": "urn:adsk.wipprod:dm.lineage:_Vl6D08cRTeYuSYnDJEGBg"
     },
     {
@@ -80,12 +82,16 @@
       "code": "2FCVN3-080022",
       "qty": 1,
       "family": "Other",
+      "parent_code": "OTHERS-000000",
+      "variant_root": "OTHERS-000000",
       "urn": "urn:adsk.wipprod:dm.lineage:IbhZPwUiRT-2oUw69DTCZw"
     },
     {
       "code": "2FCVS1-080022",
       "qty": 1,
       "family": "Other",
+      "parent_code": "OTHERS-000000",
+      "variant_root": "OTHERS-000000",
       "urn": "urn:adsk.wipprod:dm.lineage:DCWTsJw_SLueA9N35dU0uA"
     },
     {
@@ -188,6 +194,8 @@
       "code": "BS0000-194072",
       "qty": 1,
       "family": "Other",
+      "parent_code": "OTHERS-000000",
+      "variant_root": "OTHERS-000000",
       "urn": "urn:adsk.wipprod:dm.lineage:m4xQT-oVQ92AnnYZ1X7DIQ"
     },
     {
