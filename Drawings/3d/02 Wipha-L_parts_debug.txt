@@ -1,78 +1,65 @@
 CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
 cabinet           = 02 Wipha-L
 target_kind       = project
-walk_bodies       = 352
-main_glb_bytes    = 10169116
-main_nodes        = 338
-main_stl_bytes    = 43065792
-dropped_bodies    = 14 (STL 0-byte/error, skipped — round 16 now counts these)
+walk_bodies       = 375
+main_glb_bytes    = 11754428
+main_nodes        = 360
+main_stl_bytes    = 48191540
+dropped_bodies    = 15 (STL 0-byte/error, skipped — round 16 now counts these)
 transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
 schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
-node_world_mm[0] = 02 Wipha-L v6__Body1__HW @ (0.0, 0.0, 0.0)
-node_world_mm[1] = Elec - Outlet  #W Series by Panasonic v40__Body1__HW @ (0.0, -1755.0, 322.0)
-node_world_mm[2] = Elec - Outlet  #W Series by Panasonic v40__Cut__HW @ (0.0, -1755.0, 322.0)
+node_world_mm[0] = 02 Wipha-L v12__Body1__HW @ (0.0, 0.0, 0.0)
+node_world_mm[1] = SD00NA-080000 v32__Body1 @ (625.0, -2775.0, 460.0)
+node_world_mm[2] = SD0SUP-000000 v7__Body1 @ (60.0, -2774.0, 206.0)
 --- main helper subprocess output ---
-_Cut-R_3___HW 24/44
-OK R__Cut-R__HW 24/44
-OK R__Body__HW 728/1512
-OK R__Cut-R_1___HW 24/44
-OK DSV2B1-090040_v4__Body1 907/1834
-OK DSV100-090040_v6__Body4 1781/3558
-OK Slide-L__C-Side-L__HW_2 224/460
-OK Slide-L__Logo__HW_2 624/1244
-OK Slide-L__Bracket__HW_2 188/380
-OK Slide-L__Slide__HW_2 243/486
-OK Slide-L__Body11__HW 300/612
-OK L__Cut-L_3___HW_2 24/44
-OK L__Cut-L__HW_2 24/44
-OK L__Cut-L_1___HW_2 24/44
-OK L__Cut-L_2___HW_2 24/44
-OK L__Body__HW_2 728/1512
-OK Slide-R__C-Side-R__HW_2 224/460
-OK Slide-R__Bracket_1___HW_2 188/380
-OK Slide-R__Logo__HW_2 624/1244
-OK Slide-R__Slide__HW_2 243/486
-OK Slide-R__Body13__HW 300/612
-OK R__Cut-R_2___HW_2 24/44
-OK R__Cut-R_3___HW_2 24/44
-OK R__Cut-R__HW_2 24/44
-OK R__Body__HW_2 728/1512
-OK R__Cut-R_1___HW_2 24/44
-OK DSB0F0-090050_v4__Body3_2 1548/3180
-OK DSB0BA-090050_v7__Body3 1092/2208
-OK DSV2B3-090020_v4__Body1 758/1528
-OK DSV100-090020_v6__Body4 1562/3124
-OK Slide-L__C-Side-L__HW_3 224/460
-OK Slide-L__Logo__HW_3 624/1244
-OK Slide-L__Bracket__HW_3 188/380
-OK Slide-L__Slide__HW_3 243/486
-OK Slide-L__Body11__HW_2 300/612
-OK L__Cut-L_3___HW_3 24/44
-OK L__Cut-L__HW_3 24/44
-OK L__Cut-L_1___HW_3 24/44
-OK L__Cut-L_2___HW_3 24/44
-OK L__Body__HW_3 728/1512
-OK Slide-R__C-Side-R__HW_3 224/460
-OK Slide-R__Bracket_1___HW_3 188/380
-OK Slide-R__Logo__HW_3 624/1244
-OK Slide-R__Slide__HW_3 243/486
-OK Slide-R__Body13__HW_2 300/612
-OK R__Cut-R_2___HW_3 24/44
-OK R__Cut-R_3___HW_3 24/44
-OK R__Cut-R__HW_3 24/44
-OK R__Body__HW_3 728/1512
-OK R__Cut-R_1___HW_3 24/44
-OK DSB0F0-090050_v4__Body3_3 1548/3180
+0F0-090050_v4__Body3_3 1548/3180
 OK DSB0BA-090050_v7__Body3_2 1092/2208
 OK DSV2B4-090020_v4__Body1 758/1528
 OK DSV100-090020_v6__Body4_2 1562/3124
 OK MR__Body1__HW 8/12
 OK MR__Body2__HW 8/12
 OK CV0002-000000_v2__Body1 556/1132
-OK CVH122-S65089_v7__Body1 2342/4768
-OK CVH322-NL6089_v1__Body1 1060/2180
+OK CVH122-S65089_v8__Body1 2342/4768
+OK CVH322-NL6089_v3__Body1 1060/2180
 OK BTHLNO-140000_v2__Body1 5849/11830
 OK BTHLNO-140000_v2__Body2 19382/38760
 OK BTHLNO-140000_v2__Body3 10178/20352
-ORPHAN_SUMMARY median=608.6 threshold=1825.8 count=0/338
-GLB 10169116 338
+OK FT0000-190055_v1__Body1 2272/4556
+OK 2SD000-080040_v8__Body1 3056/6360
+OK 2DN0DD-100000_v4__Body1 3208/6608
+OK 2SD000-080040_v8__Body1_2 3056/6360
+OK 2BK002-100000_v12__Body2 1338/2776
+OK 2BK002-100000_v12__Body2_2 1338/2776
+OK 2BK001-100080_v1__Body2 2048/4092
+OK 2BK200-000000__Body1 232/480
+OK 2BK200-000000__Body1_2 232/480
+OK 2BK200-000000__Body1_3 232/480
+OK 2BK200-000000__Body1_4 232/480
+OK 2UPI00-100000_v6__Body1 3960/8156
+OK 2TN000-100000_v2__Body1 1908/3884
+OK 2FCVS1-080022_v5__Body1 1895/3874
+OK 2SD000-080040_v8__Body1_3 3056/6360
+OK 2DN0DD-090000_v3__Body1 3068/6332
+OK 2SDN01-080040_v8__Body1 3056/6360
+OK 2BK002-090000_v12__Body2 1304/2708
+OK 2BK002-090000_v12__Body2_2 1304/2708
+OK 2BK001-090080_v1__Body2 1944/3884
+OK 2BK200-000000__Body1_5 232/480
+OK 2BK200-000000__Body1_6 232/480
+OK 2BK200-000000__Body1_7 232/480
+OK 2BK200-000000__Body1_8 232/480
+OK 2UP000-090000_v2__Body1 3736/7708
+OK 2TN000-090000_v3__Body1 1796/3660
+OK 2FCVN3-080022_v5__Body1 2138/4376
+OK BS0000-194072__Body1 8/12
+OK 2CVH04-190000_v3__Body1 3060/6220
+ORPHAN_SUMMARY median=647.4 threshold=1942.2 count=8/360
+ORPHAN 2BK200-000000__Body1_6 dist=2128.4 (3.3x median)
+ORPHAN 2BK200-000000__Body1 dist=2118.4 (3.3x median)
+ORPHAN 2TN000-090000_v3__Body1 dist=1981.5 (3.1x median)
+ORPHAN 2BK002-090000_v12__Body2_2 dist=1981.2 (3.1x median)
+ORPHAN 2UP000-090000_v2__Body1 dist=1965.1 (3.0x median)
+ORPHAN 2TN000-100000_v2__Body1 dist=1963.9 (3.0x median)
+ORPHAN 2BK002-100000_v12__Body2_2 dist=1963.6 (3.0x median)
+ORPHAN 2UPI00-100000_v6__Body1 dist=1947.3 (3.0x median)
+GLB 11754428 360

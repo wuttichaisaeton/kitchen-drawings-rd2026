@@ -1,0 +1,28 @@
+CC_Export3D round-17 proxy-transform2 (called from CC_BatchExport3D)
+cabinet           = 2TNI00-100080
+target_kind       = cabinet
+walk_bodies       = 12
+main_glb_bytes    = 645716
+main_nodes        = 12
+main_stl_bytes    = 2147608
+dropped_bodies    = 0 (STL 0-byte/error, skipped — round 16 now counts these)
+transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
+schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
+node_world_mm[0] = 2SD000-080040 v8__Body1 @ (18.0, 198.0, 374.0)
+node_world_mm[1] = 2DN0DD-100000 v4__Body1 @ (0.0, 0.0, 0.0)
+node_world_mm[2] = 2SD000-080040 v8__Body1 @ (982.0, 198.0, 374.0)
+--- main helper subprocess output ---
+OK 2SD000-080040_v8__Body1 3056/6360
+OK 2DN0DD-100000_v4__Body1 3208/6608
+OK 2SD000-080040_v8__Body1_2 3056/6360
+OK 2BK002-100000_v12__Body2 1338/2776
+OK 2BK002-100000_v12__Body2_2 1338/2776
+OK 2BK001-100080_v1__Body2 2048/4092
+OK 2BK200-000000__Body1 232/480
+OK 2BK200-000000__Body1_2 232/480
+OK 2BK200-000000__Body1_3 232/480
+OK 2BK200-000000__Body1_4 232/480
+OK 2UPI00-100000_v6__Body1 3960/8156
+OK 2TN000-100000_v2__Body1 1908/3884
+ORPHAN_SUMMARY median=498.5 threshold=1495.5 count=0/12
+GLB 645716 12
