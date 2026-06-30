@@ -8,7 +8,7 @@ main_stl_bytes    = 48191540
 dropped_bodies    = 15 (STL 0-byte/error, skipped — round 16 now counts these)
 transform_src     = proxy transform2 in target frame (round 17; cabinet_inv ignored)
 schema            = main=per-leaf-assembled (round 17); _parts.glb NOT written
-node_world_mm[0] = 02 Wipha-L v12__Body1__HW @ (0.0, 0.0, 0.0)
+node_world_mm[0] = 02 Wipha-L v13__Body1__HW @ (0.0, 0.0, 0.0)
 node_world_mm[1] = SD00NA-080000 v32__Body1 @ (625.0, -2775.0, 460.0)
 node_world_mm[2] = SD0SUP-000000 v7__Body1 @ (60.0, -2774.0, 206.0)
 --- main helper subprocess output ---
@@ -25,6 +25,10 @@ OK BTHLNO-140000_v2__Body1 5849/11830
 OK BTHLNO-140000_v2__Body2 19382/38760
 OK BTHLNO-140000_v2__Body3 10178/20352
 OK FT0000-190055_v1__Body1 2272/4556
+OK 2CVH04-190000_v3__Body1 3060/6220
+OK BS0000-194072__Body1 8/12
+OK 2FCVN3-080022_v5__Body1 2138/4376
+OK 2FCVS1-080022_v5__Body1 1895/3874
 OK 2SD000-080040_v8__Body1 3056/6360
 OK 2DN0DD-100000_v4__Body1 3208/6608
 OK 2SD000-080040_v8__Body1_2 3056/6360
@@ -37,7 +41,6 @@ OK 2BK200-000000__Body1_3 232/480
 OK 2BK200-000000__Body1_4 232/480
 OK 2UPI00-100000_v6__Body1 3960/8156
 OK 2TN000-100000_v2__Body1 1908/3884
-OK 2FCVS1-080022_v5__Body1 1895/3874
 OK 2SD000-080040_v8__Body1_3 3056/6360
 OK 2DN0DD-090000_v3__Body1 3068/6332
 OK 2SDN01-080040_v8__Body1 3056/6360
@@ -50,9 +53,6 @@ OK 2BK200-000000__Body1_7 232/480
 OK 2BK200-000000__Body1_8 232/480
 OK 2UP000-090000_v2__Body1 3736/7708
 OK 2TN000-090000_v3__Body1 1796/3660
-OK 2FCVN3-080022_v5__Body1 2138/4376
-OK BS0000-194072__Body1 8/12
-OK 2CVH04-190000_v3__Body1 3060/6220
 ORPHAN_SUMMARY median=647.4 threshold=1942.2 count=8/360
 ORPHAN 2BK200-000000__Body1_6 dist=2128.4 (3.3x median)
 ORPHAN 2BK200-000000__Body1 dist=2118.4 (3.3x median)
