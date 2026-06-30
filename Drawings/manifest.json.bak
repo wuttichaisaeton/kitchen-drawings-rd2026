@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-30T00:22:11.896294+00:00",
+  "generated_at": "2026-06-30T03:01:36.015805+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -22237,6 +22237,79 @@
           "is_wrapper": true,
           "parent_code": "2BK000-090080",
           "variant_root": "2BK000-090080"
+        }
+      ]
+    },
+    "2TNI00-100080": {
+      "name": "2TNI00-100080",
+      "status": "active",
+      "created_at": "2026-06-30T03:01:36.012815+00:00",
+      "updated_at": "2026-06-30T03:01:36.012815+00:00",
+      "total_unique_parts": 7,
+      "total_qty": 12,
+      "parts": [
+        {
+          "code": "2BK001-100080",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2BK000-100080",
+          "variant_root": "2BK000-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:p48VwvKZQ3WSvAoAgq-Gbw"
+        },
+        {
+          "code": "2BK002-100000",
+          "qty": 2,
+          "family": "Other",
+          "parent_code": "2BK000-100080",
+          "variant_root": "2BK000-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:hjsr6y7rRNSyhXUyihrDSw"
+        },
+        {
+          "code": "2BK200-000000",
+          "qty": 4,
+          "family": "Other",
+          "parent_code": "2BK004-100080",
+          "variant_root": "2BK000-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:6PE-tJp7Qj6g3xpgu-CItw"
+        },
+        {
+          "code": "2CT000-100000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:ckH4N0jgQh6icDrNDJpVHQ"
+        },
+        {
+          "code": "2DN0DD-100000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:HBPzhafrT7y8E9mE4cKdJg"
+        },
+        {
+          "code": "2SD000-080040",
+          "qty": 2,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:rSyWfk0wT-a68KaCz99QHA"
+        },
+        {
+          "code": "2UPI00-100000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:WhQzdFI3TLumhKV3dyVLvw"
+        },
+        {
+          "code": "2BK000-100080",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "variant_root": "2BK000-100080"
+        },
+        {
+          "code": "2BK004-100080",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "2BK000-100080",
+          "variant_root": "2BK000-100080"
         }
       ]
     }
