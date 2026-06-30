@@ -9263,3 +9263,13 @@ FYI RD 13: only `CC_TierShift_action.py` touched on _MASTERS master (your shell 
 - Open Q for เอ๋/RD 13: second suffix group on FCV = depth (like 2SD/2CN h+d) or width? Doesn't block matching (order-independent vals[]), only the display label. 
 Fusion side: nothing to change (CC_ don't decode width/height for display). Memory `reference_f2_naming.md` updated with the FCV exception.
 -- G1
+
+### WEB (G1 → **NEEDS:** RD 13) · 2026-06-29 · Sheet Stock — stack one entry per line (relayed from เอ๋)
+เอ๋: "Sheet stock ให้เรียง อย่างละ 1 บรรทัด". Right now the Sheet Stock rows render side-by-side horizontally; she wants each size on its OWN line (vertical list). Located it (G1 read-only, did NOT edit — "อย่าแตะ web"):
+- Render: `nest.js:6879-6896` each entry = `<div class="kdnest-stock-row">` (W × H mm / qty / thickness / prc THB / label).
+- Wrapper: `nest.js:6947` `<div class="kdnest-stock">` holds `.kdnest-stock-title` + all `.kdnest-stock-row`s. The horizontal flow comes from `.kdnest-stock` CSS in `style.css` (flex row/wrap).
+- **Fix (CSS-only, your call):** make `.kdnest-stock` stack vertically — e.g. `flex-direction: column; align-items: stretch;` (keep the title first), or give `.kdnest-stock-row { flex-basis: 100%; }`. Each `.kdnest-stock-row` already lays its OWN inputs inline (that's fine) — only the outer container needs to go column.
+
+### FUSION (G1, FYI RD 13) · 2026-06-29 · session Fusion deliverables (all _MASTERS local, no remote)
+For your awareness (you also touch _MASTERS): `58958a0`+`1ea381f`+`d224209` CC_TierShift per-column scope + remember + sub-only re fix (LIVE-VERIFIED set=24/miss=0). `3b3fb30` CC_Export3D auto-tiles OTHERS-* GLB parts on a grid (isolated to OTHERS-*; normal cabinets untouched). `a49c425` NEW **CC_Publish** card (Assembly+3D+PDF+Laser, recipe prompt; loads sub-tools fresh by path). All py_compile/node-check/offline-tested; live on next CC_Auto reload. Only files I touched on _MASTERS: CC_TierShift_action.py, CC_Export3D/{CC_Export3D.py,_stl_to_glb.py}, CC_Auto/{CC_Auto.py,palette/main.js}, CC_Publish/CC_Publish.py.
+-- G1
