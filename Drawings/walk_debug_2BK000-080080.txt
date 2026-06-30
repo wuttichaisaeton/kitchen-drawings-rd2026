@@ -1,0 +1,18 @@
+CC_Assembly walk debug — 2026-07-01T05:07:15.517968
+Project: 2BK000-080080
+Total occurrences visited: 8
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 | SM  |     | ALPF             | 2BK002-080000 v12:1 (2BK002-080000 v12)
+    0 | SM  |     | ALPF             | 2BK002-080000 v12:2 (2BK002-080000 v12)
+    0 | SM  |     | ALPF             | 2BK001-080080 v1:1 (2BK001-080080 v1)
+    0 |     |     |                  | 2BK004-080080 v1:1 (2BK004-080080 v1)
+    1 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
+    1 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
+    1 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
+    1 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
