@@ -1,6 +1,6 @@
-CC_Assembly walk debug — 2026-06-29T17:42:28.138584
+CC_Assembly walk debug — 2026-06-30T07:21:52.004378
 Project: 02 Wipha-L
-Total occurrences visited: 195
+Total occurrences visited: 227
 CAM-ALPF tagged components: 0
 
 --- CAM API exploration ---
@@ -8,8 +8,6 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 |     |     |                  | Fitting:1 (Fitting)
-    1 |     |     | Plastic Generic  | Elec - Outlet  #W Series by Panasonic v40:1 (Elec - Outlet  #W Series by Panasonic v40)
     0 |     |     |                  | 1LLV04-100SHD v5:1 (1LLV04-100SHD v5)
     1 |     |     |                  | SD00NA-080000 v27:1 (SD00NA-080000 v27)
     2 |     |     | ALPF             | SD00NA-080000 v32:1 (SD00NA-080000 v32)
@@ -203,3 +201,37 @@ depth | SM | CAM | material         | display_name (component)
     1 | SM  |     | ALPF             | CVH322-NL6089 v2:1 (CVH322-NL6089 v2)
     1 | SM  |     | ALPF             | BTHLNO-140000 v2:1 (BTHLNO-140000 v2)
     1 | SM  |     | ALPF             | FT0000-190055 v1:1 (FT0000-190055 v1)
+    0 |     |     |                  | 2FNI00-100080 v15:1 (2FNI00-100080 v15)
+    1 | SM  |     | ALPF             | 2SD000-080040 v8:1 (2SD000-080040 v8)
+    1 | SM  |     | ALPF             | 2DN0DD-100000 v4:1 (2DN0DD-100000 v4)
+    1 | SM  |     | ALPF             | 2SD000-080040 v8:2 (2SD000-080040 v8)
+    1 |     |     |                  | 2BK000-100080 v2:1 (2BK000-100080 v2)
+    2 | SM  |     | ALPF             | 2BK002-100000 v12:1 (2BK002-100000 v12)
+    2 | SM  |     | ALPF             | 2BK002-100000 v12:2 (2BK002-100000 v12)
+    2 | SM  |     | ALPF             | 2BK001-100080 v1:2 (2BK001-100080 v1)
+    2 |     |     |                  | 2BK004-100080 v1:1 (2BK004-100080 v1)
+    3 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
+    3 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
+    3 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
+    3 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
+    1 | SM  |     | ALPF             | 2UP000-100000 v5:1 (2UP000-100000 v5)
+    1 | SM  |     | ALPF             | 2CF000-100000 v3:1 (2CF000-100000 v3)
+    0 | SM  |     | ALPF             | 2FCVS1-080022 v5:1 (2FCVS1-080022 v5)
+    0 |     |     |                  | 2FNI00-090080 v15:1 (2FNI00-090080 v15)
+    1 | SM  |     | ALPF             | 2DN0DD-090000 v3:1 (2DN0DD-090000 v3)
+    1 | SM  |     | ALPF             | 2SD000-080040 v8:1 (2SD000-080040 v8)
+    1 | SM  |     | ALPF             | 2SDN01-080040 v8:2 (2SDN01-080040 v8)
+    1 |     |     |                  | 2BK000-090080 v2:1 (2BK000-090080 v2)
+    2 | SM  |     | ALPF             | 2BK002-090000 v12:1 (2BK002-090000 v12)
+    2 | SM  |     | ALPF             | 2BK002-090000 v12:2 (2BK002-090000 v12)
+    2 | SM  |     | ALPF             | 2BK001-090080 v1:2 (2BK001-090080 v1)
+    2 |     |     |                  | 2BK004-090080 v1:1 (2BK004-090080 v1)
+    3 | SM  |     | ALPF             | 2BK200-000000:1 (2BK200-000000)
+    3 | SM  |     | ALPF             | 2BK200-000000:2 (2BK200-000000)
+    3 | SM  |     | ALPF             | 2BK200-000000:3 (2BK200-000000)
+    3 | SM  |     | ALPF             | 2BK200-000000:4 (2BK200-000000)
+    1 | SM  |     | ALPF             | 2UP000-090000 v2:1 (2UP000-090000 v2)
+    1 | SM  |     | ALPF             | 2CF000-090000 v4:1 (2CF000-090000 v4)
+    0 | SM  |     | ALPF             | 2FCVN3-080022 v5:1 (2FCVN3-080022 v5)
+    0 | SM  |     | ALPF             | BS0000-194072:1 (BS0000-194072)
+    0 | SM  |     | ALPF             | 2CVH04-190000 v3:1 (2CVH04-190000 v3)
