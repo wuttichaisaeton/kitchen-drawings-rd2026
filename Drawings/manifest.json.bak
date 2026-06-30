@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-30T05:43:18.446360+00:00",
+  "generated_at": "2026-06-30T05:46:11.500821+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19643,7 +19643,7 @@
       "name": "02 Wipha-L",
       "status": "active",
       "created_at": "2026-06-28T03:41:36.036691+00:00",
-      "updated_at": "2026-06-30T05:31:43.626693+00:00",
+      "updated_at": "2026-06-30T05:46:11.497243+00:00",
       "total_unique_parts": 54,
       "total_qty": 102,
       "parts": [
@@ -19704,6 +19704,22 @@
           "urn": "urn:adsk.wipprod:dm.lineage:_Vl6D08cRTeYuSYnDJEGBg"
         },
         {
+          "code": "2CTN00-090000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2TNI00-090080",
+          "variant_root": "2TNI00-090080",
+          "urn": "urn:adsk.wipprod:dm.lineage:pfH3SK4XTJao7o4YoQH6EQ"
+        },
+        {
+          "code": "2CTN00-100000",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "2TNI00-100080",
+          "variant_root": "2TNI00-100080",
+          "urn": "urn:adsk.wipprod:dm.lineage:ckH4N0jgQh6icDrNDJpVHQ"
+        },
+        {
           "code": "2CV122-080S43",
           "qty": 1,
           "family": "Other",
@@ -19758,22 +19774,6 @@
           "parent_code": "2TNI00-090080",
           "variant_root": "2TNI00-090080",
           "urn": "urn:adsk.wipprod:dm.lineage:vV_kdjitQTOzMNHta9yVZA"
-        },
-        {
-          "code": "2TN000-090000",
-          "qty": 1,
-          "family": "Other",
-          "parent_code": "2TNI00-090080",
-          "variant_root": "2TNI00-090080",
-          "urn": "urn:adsk.wipprod:dm.lineage:pfH3SK4XTJao7o4YoQH6EQ"
-        },
-        {
-          "code": "2TN000-100000",
-          "qty": 1,
-          "family": "Other",
-          "parent_code": "2TNI00-100080",
-          "variant_root": "2TNI00-100080",
-          "urn": "urn:adsk.wipprod:dm.lineage:ckH4N0jgQh6icDrNDJpVHQ"
         },
         {
           "code": "2UP000-090000",
