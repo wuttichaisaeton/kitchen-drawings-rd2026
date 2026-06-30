@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-30T05:12:35.072912+00:00",
+  "generated_at": "2026-06-30T05:31:31.292935+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -19643,7 +19643,7 @@
       "name": "02 Wipha-L",
       "status": "active",
       "created_at": "2026-06-28T03:41:36.036691+00:00",
-      "updated_at": "2026-06-30T05:12:35.052149+00:00",
+      "updated_at": "2026-06-30T05:31:31.272813+00:00",
       "total_unique_parts": 54,
       "total_qty": 102,
       "parts": [
@@ -19704,6 +19704,14 @@
           "urn": "urn:adsk.wipprod:dm.lineage:_Vl6D08cRTeYuSYnDJEGBg"
         },
         {
+          "code": "2CV122-080S43",
+          "qty": 1,
+          "family": "Other",
+          "parent_code": "OTHERS-000000",
+          "variant_root": "OTHERS-000000",
+          "urn": "urn:adsk.wipprod:dm.lineage:DCWTsJw_SLueA9N35dU0uA"
+        },
+        {
           "code": "2CV322-080043",
           "qty": 1,
           "family": "Other",
@@ -19726,14 +19734,6 @@
           "parent_code": "2TNI00-100080",
           "variant_root": "2TNI00-100080",
           "urn": "urn:adsk.wipprod:dm.lineage:HBPzhafrT7y8E9mE4cKdJg"
-        },
-        {
-          "code": "2FCVS1-080022",
-          "qty": 1,
-          "family": "Other",
-          "parent_code": "OTHERS-000000",
-          "variant_root": "OTHERS-000000",
-          "urn": "urn:adsk.wipprod:dm.lineage:DCWTsJw_SLueA9N35dU0uA"
         },
         {
           "code": "2SD000-080040",

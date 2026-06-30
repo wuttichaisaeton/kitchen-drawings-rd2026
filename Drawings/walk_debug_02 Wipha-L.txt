@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-30T12:12:35.051544
+CC_Assembly walk debug — 2026-06-30T12:31:31.272003
 Project: 02 Wipha-L
 Total occurrences visited: 227
 CAM-ALPF tagged components: 0
@@ -203,8 +203,8 @@ depth | SM | CAM | material         | display_name (component)
     1 | SM  |     | ALPF             | FT0000-190055 v1:1 (FT0000-190055 v1)
     1 | SM  |     | ALPF             | 2CH002-190000 v4:1 (2CH002-190000 v4)
     1 | SM  |     | ALPF             | BS0000-194072:1 (BS0000-194072)
-    1 | SM  |     | ALPF             | 2CV322-080043 v6:1 (2CV322-080043 v6)
-    1 | SM  |     | ALPF             | 2FCVS1-080022 v5:1 (2FCVS1-080022 v5)
+    1 | SM  |     | ALPF             | 2CV322-080043 v7:1 (2CV322-080043 v7)
+    1 | SM  |     | ALPF             | 2CV122-080S43 v6:1 (2CV122-080S43 v6)
     0 |     |     |                  | 2TNI00-100080 v3:1 (2TNI00-100080 v3)
     1 | SM  |     | ALPF             | 2SD000-080040 v8:1 (2SD000-080040 v8)
     1 | SM  |     | ALPF             | 2DN0DD-100000 v4:1 (2DN0DD-100000 v4)
