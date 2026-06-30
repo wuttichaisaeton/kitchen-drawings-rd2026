@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-06-30T23:37:37.305891+00:00",
+  "generated_at": "2026-06-30T23:47:06.799560+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -3997,8 +3997,8 @@
     },
     "SH0S11-120035": {
       "family": "Other",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 6,
+      "fusion_version": 6,
       "pdf": "SH0S11-000000.pdf",
       "bends": 0,
       "material": "",
@@ -4453,8 +4453,8 @@
     },
     "SH0S12-120000": {
       "family": "Other",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 3,
+      "fusion_version": 3,
       "pdf": "SH0S12-000000.pdf",
       "bends": 0,
       "material": "",
@@ -22619,7 +22619,7 @@
       "name": "1LLV04-120SHD",
       "status": "active",
       "created_at": "2026-06-30T23:37:37.284984+00:00",
-      "updated_at": "2026-06-30T23:37:37.284984+00:00",
+      "updated_at": "2026-06-30T23:47:06.779722+00:00",
       "total_unique_parts": 16,
       "total_qty": 31,
       "parts": [
@@ -22726,20 +22726,20 @@
           "urn": "urn:adsk.wipprod:dm.lineage:wot94TrXREGkBsOh_bhGGA"
         },
         {
-          "code": "SH0S11-100035",
+          "code": "SH0S11-120035",
           "qty": 1,
           "family": "Other",
-          "parent_code": "SH0S10-100035",
-          "variant_root": "1SHS10-100035",
-          "urn": "urn:adsk.wipprod:dm.lineage:pu14vdNIRvuc8UofGhW32w"
+          "parent_code": "SH0S10-120035",
+          "variant_root": "1SHS10-120035",
+          "urn": "urn:adsk.wipprod:dm.lineage:oIGGZZqgTP6lbY_cxV1K9w"
         },
         {
-          "code": "SH0S12-100000",
+          "code": "SH0S12-120000",
           "qty": 1,
           "family": "Other",
-          "parent_code": "SH0S10-100035",
-          "variant_root": "1SHS10-100035",
-          "urn": "urn:adsk.wipprod:dm.lineage:JqD3PJw2QbW9gGKLRDkY8Q"
+          "parent_code": "SH0S10-120035",
+          "variant_root": "1SHS10-120035",
+          "urn": "urn:adsk.wipprod:dm.lineage:zC-jKxi5SEqclhnfwWR2ug"
         },
         {
           "code": "TS1BHH-100000",
@@ -22766,19 +22766,19 @@
           "variant_root": "HINGEW3-H0800"
         },
         {
-          "code": "1SHG00-100035",
+          "code": "1SHG00-120035",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "parent_code": "1SHS10-100035",
-          "variant_root": "1SHS10-100035"
+          "parent_code": "1SHS10-120035",
+          "variant_root": "1SHS10-120035"
         },
         {
-          "code": "1SHS10-100035",
+          "code": "1SHS10-120035",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "variant_root": "1SHS10-100035"
+          "variant_root": "1SHS10-120035"
         },
         {
           "code": "BK0DN0-120000",
@@ -22832,12 +22832,12 @@
           "variant_root": "FN0FL3-100008"
         },
         {
-          "code": "SH0S10-100035",
+          "code": "SH0S10-120035",
           "qty": 0,
           "family": "Other",
           "is_wrapper": true,
-          "parent_code": "1SHS10-100035",
-          "variant_root": "1SHS10-100035"
+          "parent_code": "1SHS10-120035",
+          "variant_root": "1SHS10-120035"
         },
         {
           "code": "TS004H-100000",

@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-07-01T06:37:37.284454
+CC_Assembly walk debug — 2026-07-01T06:47:06.779178
 Project: 1LLV04-120SHD
 Total occurrences visited: 97
 CAM-ALPF tagged components: 0
@@ -85,17 +85,17 @@ depth | SM | CAM | material         | display_name (component)
     0 |     |     |                  | DSV0L3-050080 v10:1 (DSV0L3-050080 v10)
     1 | SM  |     | ALPF             | DSV2L3-050080 v4:1 (DSV2L3-050080 v4)
     1 | SM  |     | ALPF             | DSV100-050080 v5:1 (DSV100-050080 v5)
-    0 |     |     |                  | 1SHS10-100035 v29:1 (1SHS10-100035 v29)
-    1 |     |     |                  | 1SHG00-100035 v49:1 (1SHG00-100035 v49)
+    0 |     |     |                  | 1SHS10-120035 v31:1 (1SHS10-120035 v31)
+    1 |     |     |                  | 1SHG00-120035 v48:1 (1SHG00-120035 v48)
     2 |     |     |                  | Fitting:1 (Fitting)
     3 |     |     |                  | Shelf Support M5 by SSD v27:1 (Shelf Support M5 by SSD v27)
     3 |     |     |                  | Shelf Support M5 by SSD v27:2 (Shelf Support M5 by SSD v27)
     3 |     |     |                  | Shelf Support M5 by SSD v27:3 (Shelf Support M5 by SSD v27)
     3 |     |     |                  | Shelf Support M5 by SSD v27:4 (Shelf Support M5 by SSD v27)
     2 |     |     | Steel            | SH0G00-020035:1 (SH0G00-020035)
-    1 |     |     |                  | SH0S10-100035 v8:1 (SH0S10-100035 v8)
-    2 | SM  |     | ALPF             | SH0S11-100035 v7:1 (SH0S11-100035 v7)
-    2 | SM  |     | ALPF             | SH0S12-100000 v3:1 (SH0S12-100000 v3)
+    1 |     |     |                  | SH0S10-120035 v8:1 (SH0S10-120035 v8)
+    2 | SM  |     | ALPF             | SH0S11-120035 v6:1 (SH0S11-120035 v6)
+    2 | SM  |     | ALPF             | SH0S12-120000 v3:1 (SH0S12-120000 v3)
     0 |     |     |                  | DSV0R3-050080 v10:1 (DSV0R3-050080 v10)
     1 | SM  |     | ALPF             | DSV2R3-050080 v4:1 (DSV2R3-050080 v4)
     1 | SM  |     | ALPF             | DSV100-050080 v5:1 (DSV100-050080 v5)
