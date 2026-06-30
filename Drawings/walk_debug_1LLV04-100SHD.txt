@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-28T14:46:31.500491
+CC_Assembly walk debug — 2026-07-01T06:26:35.803871
 Project: 1LLV04-100SHD
 Total occurrences visited: 97
 CAM-ALPF tagged components: 0
@@ -22,8 +22,6 @@ depth | SM | CAM | material         | display_name (component)
     2 | SM  |     | ALPF             | BXXTR0-000000:2 (BXXTR0-000000)
     2 | SM  |     | ALPF             | BXXTR0-000000:3 (BXXTR0-000000)
     2 | SM  |     | ALPF             | BXXTR0-000000:4 (BXXTR0-000000)
-    0 |     |     |                  | BM1LI0-100000 v2:1 (BM1LI0-100000 v2)
-    1 | SM  |     | ALPF             | BM1LI0-100000 v2:1 (BM1LI0-100000 v2)
     0 |     |     |                  | FN0FL3-100008 v4:1 (FN0FL3-100008 v4)
     1 | SM  |     | ALPF             | FN0F00-100000 v17:1 (FN0F00-100000 v17)
     1 |     |     |                  | FN2BLA-100000 v10:3 (FN2BLA-100000 v10)
@@ -76,6 +74,8 @@ depth | SM | CAM | material         | display_name (component)
     1 | SM  |     | ALPF             | TS1BHH-100000 v11:2 (TS1BHH-100000 v11)
     1 | SM  |     | ALPF             | TS1BHH-100000 v11:3 (TS1BHH-100000 v11)
     1 | SM  |     | ALPF             | TS1BHH-100000 v11:4 (TS1BHH-100000 v11)
+    0 |     |     |                  | BM1LI0-100000 v3:1 (BM1LI0-100000 v3)
+    1 | SM  |     | ALPF             | BM1LI0-100000 v2:1 (BM1LI0-100000 v2)
     0 |     |     | Steel            | HingeW3-H0800 v4:1 (HingeW3-H0800 v4)
     1 |     |     | Steel            | Door:1 (Door)
     1 |     |     | Steel            | 1-HingeW v2:1 (1-HingeW v2)
