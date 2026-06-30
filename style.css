@@ -5514,6 +5514,14 @@ html[data-theme="chalk"] .kdstock-actual input { background: var(--kdflag-bg, rg
 .kdnest-stock:not(.kdnest-stock-on) .kdnest-stock-toggle { text-decoration: line-through; opacity: .7; }
 .kdnest-stock-hint { color: #8a97a8; }
 .kdnest-stock-link { color: #6fb1ff; cursor: pointer; text-decoration: none; }
+/* The sheet-stock PANEL (title + one .kdnest-stock-row per size) shares the
+   .kdnest-stock class with the inline "use stock" toggle just above, whose
+   `display:inline-flex` was bleeding onto the panel and laying every size
+   SIDE-BY-SIDE. Force the panel to stack one size per line (เอ๋ 2026-06-29).
+   Selector hits only the panel — it's the .kdnest-stock that directly contains
+   the title; the toggle holds .kdnest-stock-toggle instead. Later + more
+   specific than line ~5511, so it wins the cascade. */
+.kdnest-stock:has(> .kdnest-stock-title) { display: block; margin-left: 0; }
 /* Row flash when the header error chip is clicked — jump to + blink the failing
    part ROWS in the list so the worker sees the real culprit, not just the banner.
    Red = blocking (can't cut), amber = soft review. (เอ๋ 2026-06-26 'กดแล้วไป
