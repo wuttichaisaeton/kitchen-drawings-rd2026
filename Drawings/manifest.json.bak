@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-01T08:13:02.118003+00:00",
+  "generated_at": "2026-07-01T08:14:40.319582+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1500,7 +1500,7 @@
     "FN2BLA-120000": {
       "family": "Floor",
       "last_drawn_version": 19,
-      "fusion_version": 19,
+      "fusion_version": 20,
       "pdf": "FN0B00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -1656,7 +1656,7 @@
     "FN2BNX-120000": {
       "family": "Floor",
       "last_drawn_version": 20,
-      "fusion_version": 20,
+      "fusion_version": 22,
       "pdf": "FN0B00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -1824,8 +1824,8 @@
     },
     "FN0F00-120000": {
       "family": "Floor",
-      "last_drawn_version": 0,
-      "fusion_version": 0,
+      "last_drawn_version": 18,
+      "fusion_version": 18,
       "pdf": "FN0F00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -21094,7 +21094,7 @@
       "name": "FN0FL3-100008",
       "status": "active",
       "created_at": "2026-06-28T07:44:50.163901+00:00",
-      "updated_at": "2026-06-28T07:44:50.163901+00:00",
+      "updated_at": "2026-07-01T08:14:40.316612+00:00",
       "total_unique_parts": 4,
       "total_qty": 5,
       "parts": [

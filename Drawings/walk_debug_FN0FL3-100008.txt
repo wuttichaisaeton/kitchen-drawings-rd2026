@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-06-28T14:44:50.163451
+CC_Assembly walk debug — 2026-07-01T15:14:40.316243
 Project: FN0FL3-100008
 Total occurrences visited: 41
 CAM-ALPF tagged components: 0
@@ -8,12 +8,12 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | FN0F00-100000 v17:1 (FN0F00-100000 v17)
-    0 |     |     |                  | FN2BLA-100000 v10:3 (FN2BLA-100000 v10)
+    0 | SM  |     | ALPF             | FN0F00-100000 v18:1 (FN0F00-100000 v18)
+    0 |     |     |                  | FN2BLA-100000 v11:3 (FN2BLA-100000 v11)
     1 | SM  |     | ALPF             | FN2BLA-040000:1 (FN2BLA-040000)
-    0 |     |     |                  | FN2BNX-100000 v14:1 (FN2BNX-100000 v14)
+    0 |     |     |                  | FN2BNX-100000 v15:1 (FN2BNX-100000 v15)
     1 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
-    0 |     |     |                  | FN2BNX-100000 v14:2 (FN2BNX-100000 v14)
+    0 |     |     |                  | FN2BNX-100000 v15:2 (FN2BNX-100000 v15)
     1 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
     0 |     |     |                  | Legs:1 (Legs)
     1 |     |     |                  | Leg-060 v4:1 (Leg-060 v4)
