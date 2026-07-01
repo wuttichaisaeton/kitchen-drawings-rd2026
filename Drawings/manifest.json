@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-01T10:01:43.828406+00:00",
+  "generated_at": "2026-07-01T22:43:18.947681+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -1825,7 +1825,7 @@
     "FN0F00-120000": {
       "family": "Floor",
       "last_drawn_version": 18,
-      "fusion_version": 18,
+      "fusion_version": 23,
       "pdf": "FN0F00-000000.pdf",
       "bends": 0,
       "material": "",
@@ -23189,6 +23189,57 @@
           "qty": 1,
           "family": "Floor",
           "urn": "urn:adsk.wipprod:dm.lineage:AGFy2RyxSDOEh4NNoW_XEw"
+        },
+        {
+          "code": "FN0FN3-120007",
+          "qty": 0,
+          "family": "Floor",
+          "is_wrapper": true,
+          "variant_root": "FN0FN3-120007"
+        },
+        {
+          "code": "LEG-060",
+          "qty": 0,
+          "family": "Other",
+          "is_wrapper": true,
+          "parent_code": "FN0FN3-120007",
+          "variant_root": "FN0FN3-120007"
+        }
+      ]
+    },
+    "FN0FL3-120008": {
+      "name": "FN0FL3-120008",
+      "status": "active",
+      "created_at": "2026-07-01T22:43:18.927881+00:00",
+      "updated_at": "2026-07-01T22:43:18.927881+00:00",
+      "total_unique_parts": 4,
+      "total_qty": 5,
+      "parts": [
+        {
+          "code": "FN0F00-120000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:yv0KauwdTuCvXbsugja6hg"
+        },
+        {
+          "code": "FN2BLA-120000",
+          "qty": 1,
+          "family": "Floor",
+          "variant_root": "FN2BLA-120000",
+          "urn": "urn:adsk.wipprod:dm.lineage:adOjm0yrQ6-IUebMMbmxIA"
+        },
+        {
+          "code": "FN2BNX-120000",
+          "qty": 2,
+          "family": "Floor",
+          "variant_root": "FN2BNX-120000",
+          "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ"
+        },
+        {
+          "code": "FN3BLA-120000",
+          "qty": 1,
+          "family": "Floor",
+          "urn": "urn:adsk.wipprod:dm.lineage:TmQW0x0PRAORW4cnl_EvpA"
         },
         {
           "code": "FN0FN3-120007",
