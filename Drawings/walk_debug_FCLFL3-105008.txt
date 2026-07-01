@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-07-01T17:01:43.808075
+CC_Assembly walk debug — 2026-07-02T06:19:35.139959
 Project: FCLFL3-105008
 Total occurrences visited: 41
 CAM-ALPF tagged components: 0
@@ -8,9 +8,9 @@ ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enab
 
 depth | SM | CAM | material         | display_name (component)
 ------------------------------------------------------------------------------------------
-    0 | SM  |     | ALPF             | FCLF00-105000 v1:1 (FCLF00-105000 v1)
     0 |     |     |                  | FN2BLA-105000 v1:4 (FN2BLA-105000 v1)
     1 | SM  |     | ALPF             | FN2BLA-040000:1 (FN2BLA-040000)
+    0 | SM  |     | ALPF             | FCLF00-105000 v3:1 (FCLF00-105000 v3)
     0 |     |     |                  | FN2BNX-105000 v1:3 (FN2BNX-105000 v1)
     1 | SM  |     | ALPF             | FN2BN0-000000:1 (FN2BN0-000000)
     0 |     |     |                  | FN2BNX-105000 v1:2 (FN2BNX-105000 v1)
