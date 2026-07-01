@@ -1,4 +1,4 @@
-CC_Assembly walk debug — 2026-07-01T15:53:17.257130
+CC_Assembly walk debug — 2026-07-01T15:54:03.130844
 Project: FN2BNX-120000
 Total occurrences visited: 1
 CAM-ALPF tagged components: 0
