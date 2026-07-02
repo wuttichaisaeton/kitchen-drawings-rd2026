@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-02T02:06:04.110544+00:00",
+  "generated_at": "2026-07-02T04:50:01.507802+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -23581,6 +23581,34 @@
           "qty": 1,
           "family": "Drawer",
           "urn": "urn:adsk.wipprod:dm.lineage:umzBx7jTSoGH_Vae1gVwGg"
+        }
+      ]
+    },
+    "SH0S20-085029": {
+      "name": "SH0S20-085029",
+      "status": "active",
+      "created_at": "2026-07-02T04:50:01.504153+00:00",
+      "updated_at": "2026-07-02T04:50:01.504153+00:00",
+      "total_unique_parts": 3,
+      "total_qty": 3,
+      "parts": [
+        {
+          "code": "SH0S21-000000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:YiJ1CIJTTL6coMiH4Yatog"
+        },
+        {
+          "code": "SH0S22-000000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:YiJ1CIJTTL6coMiH4Yatog"
+        },
+        {
+          "code": "SH0S23-000000",
+          "qty": 1,
+          "family": "Other",
+          "urn": "urn:adsk.wipprod:dm.lineage:YiJ1CIJTTL6coMiH4Yatog"
         }
       ]
     }
