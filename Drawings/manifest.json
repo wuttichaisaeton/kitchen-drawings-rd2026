@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-02T01:48:38.309834+00:00",
+  "generated_at": "2026-07-02T01:49:24.952396+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -23340,7 +23340,7 @@
       "name": "1LLV04-10500D",
       "status": "active",
       "created_at": "2026-07-02T00:20:07.737868+00:00",
-      "updated_at": "2026-07-02T01:24:39.020511+00:00",
+      "updated_at": "2026-07-02T01:49:24.932969+00:00",
       "total_unique_parts": 14,
       "total_qty": 29,
       "parts": [
