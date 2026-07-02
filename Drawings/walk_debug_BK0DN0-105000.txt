@@ -1,0 +1,16 @@
+CC_Assembly walk debug — 2026-07-02T07:16:17.224784
+Project: BK0DN0-105000
+Total occurrences visited: 6
+CAM-ALPF tagged components: 0
+
+--- CAM API exploration ---
+ENABLE_CAM_PROBE=False — skipped (set True at top of CC_Assembly.py to re-enable)
+
+depth | SM | CAM | material         | display_name (component)
+------------------------------------------------------------------------------------------
+    0 |     |     |                  | BK2TR1-105000 v1:1 (BK2TR1-105000 v1)
+    1 | SM  |     | ALPF             | BXXTR0-000000:1 (BXXTR0-000000)
+    1 | SM  |     | ALPF             | BXXTR0-000000:2 (BXXTR0-000000)
+    1 | SM  |     | ALPF             | BXXTR0-000000:3 (BXXTR0-000000)
+    1 | SM  |     | ALPF             | BXXTR0-000000:4 (BXXTR0-000000)
+    0 | SM  |     | ALPF             | BK1DN1-105000 v1:1 (BK1DN1-105000 v1)
