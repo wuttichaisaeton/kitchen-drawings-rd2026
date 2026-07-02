@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "generated_at": "2026-07-02T01:21:47.165653+00:00",
+  "generated_at": "2026-07-02T01:23:51.250628+00:00",
   "auto_generated": {
     "DSV100-040020": {
       "family": "Drawer",
@@ -23340,7 +23340,7 @@
       "name": "1LLV04-10500D",
       "status": "active",
       "created_at": "2026-07-02T00:20:07.737868+00:00",
-      "updated_at": "2026-07-02T00:20:07.737868+00:00",
+      "updated_at": "2026-07-02T01:23:51.247432+00:00",
       "total_unique_parts": 14,
       "total_qty": 29,
       "parts": [
@@ -23400,36 +23400,36 @@
           "urn": "urn:adsk.wipprod:dm.lineage:k76v0m_ERTq1nahl7iyIcw"
         },
         {
-          "code": "FN0F00-120000",
+          "code": "FN0F00-105000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL3-120008",
-          "variant_root": "FN0FL3-120008",
-          "urn": "urn:adsk.wipprod:dm.lineage:yv0KauwdTuCvXbsugja6hg"
+          "parent_code": "F00000-105000",
+          "variant_root": "F00000-105000",
+          "urn": "urn:adsk.wipprod:dm.lineage:cxKow3XJQ5-Eo4YCwNfzTQ"
         },
         {
-          "code": "FN2BLA-120000",
+          "code": "FN2BLA-105000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL3-120008",
-          "variant_root": "FN0FL3-120008",
-          "urn": "urn:adsk.wipprod:dm.lineage:adOjm0yrQ6-IUebMMbmxIA"
+          "parent_code": "F00000-105000",
+          "variant_root": "F00000-105000",
+          "urn": "urn:adsk.wipprod:dm.lineage:ZpjJBF8oSCKY60Riyc8Ajg"
         },
         {
-          "code": "FN2BNX-120000",
+          "code": "FN2BNX-105000",
           "qty": 2,
           "family": "Floor",
-          "parent_code": "FN0FL3-120008",
-          "variant_root": "FN0FL3-120008",
-          "urn": "urn:adsk.wipprod:dm.lineage:pvqsHkOKTViT_eiNn4vxBQ"
+          "parent_code": "F00000-105000",
+          "variant_root": "F00000-105000",
+          "urn": "urn:adsk.wipprod:dm.lineage:_QcakJU6TE6f2yHEvIahzg"
         },
         {
-          "code": "FN3BLA-120000",
+          "code": "FN3BLA-105000",
           "qty": 1,
           "family": "Floor",
-          "parent_code": "FN0FL3-120008",
-          "variant_root": "FN0FL3-120008",
-          "urn": "urn:adsk.wipprod:dm.lineage:TmQW0x0PRAORW4cnl_EvpA"
+          "parent_code": "F00000-105000",
+          "variant_root": "F00000-105000",
+          "urn": "urn:adsk.wipprod:dm.lineage:AGFy2RyxSDOEh4NNoW_XEw"
         },
         {
           "code": "SD00NA-080000",
@@ -23500,19 +23500,19 @@
           "variant_root": "DSV0R4-060080"
         },
         {
-          "code": "FN0FL3-120008",
+          "code": "F00000-105000",
           "qty": 0,
-          "family": "Floor",
+          "family": "Other",
           "is_wrapper": true,
-          "variant_root": "FN0FL3-120008"
+          "variant_root": "F00000-105000"
         },
         {
           "code": "FN0FN3-120007",
           "qty": 0,
           "family": "Floor",
           "is_wrapper": true,
-          "parent_code": "FN0FL3-120008",
-          "variant_root": "FN0FL3-120008"
+          "parent_code": "F00000-105000",
+          "variant_root": "F00000-105000"
         },
         {
           "code": "HINGEW3-H0800",
@@ -23527,7 +23527,7 @@
           "family": "Other",
           "is_wrapper": true,
           "parent_code": "FN0FN3-120007",
-          "variant_root": "FN0FL3-120008"
+          "variant_root": "F00000-105000"
         },
         {
           "code": "TS004H-105000",
