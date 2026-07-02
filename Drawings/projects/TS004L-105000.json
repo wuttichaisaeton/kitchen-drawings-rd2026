@@ -1,0 +1,31 @@
+{
+  "name": "TS004L-105000",
+  "status": "active",
+  "created_at": "2026-07-02T00:08:26.283120+00:00",
+  "updated_at": "2026-07-02T00:08:26.283120+00:00",
+  "total_unique_parts": 2,
+  "total_qty": 8,
+  "parts": [
+    {
+      "code": "TS1BHL-105000",
+      "qty": 4,
+      "family": "Top Sup",
+      "urn": "urn:adsk.wipprod:dm.lineage:e7TA2wobTWq6PGaTPtnhgA"
+    },
+    {
+      "code": "TS2TRX-000000",
+      "qty": 4,
+      "family": "Top Sup",
+      "parent_code": "TS2TR4-105000",
+      "variant_root": "TS2TR4-105000",
+      "urn": "urn:adsk.wipprod:dm.lineage:zO_7_B85SSWkr7ROYibEDw"
+    },
+    {
+      "code": "TS2TR4-105000",
+      "qty": 0,
+      "family": "Top Sup",
+      "is_wrapper": true,
+      "variant_root": "TS2TR4-105000"
+    }
+  ]
+}
